@@ -5,7 +5,6 @@
 
     <metal:content fill-slot="content">
         <p><strong>${title}</strong></p>
-       ds
     </metal:content>
 
 

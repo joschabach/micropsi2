@@ -9,4 +9,4 @@ run
 -----
 
 	./bin/pserve ./etc/micropsi_server.ini
-	view in browser at http://localhost:6543/
+	view in browser at http://0.0.0.0:6543/

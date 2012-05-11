@@ -17,7 +17,7 @@ var viewProperties = {
     padding: 5,
     slotWidth: 34,
     lineHeight: 15,
-    compactNodes: false,
+    compactNodes: true,
     compactModules: false,
     strokeWidth: 0.3,
     outlineWidth: 0.4,
@@ -40,7 +40,7 @@ view.viewSize = new Size(1800,1800);
 function initializeNodeNet(){
     // determine viewport
     // fetch visible nodes and links
-    var n1 = new Node("abcd", 142, 332, 0, "My first node", "Sensor", 0.3);
+    var n1 = new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3);
     nodes[n1.uid] = n1;
     var n2 = new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.5);
     nodes[n2.uid] = n2;
@@ -143,10 +143,6 @@ function Link(sourceNodeUid, gateIndex, targetNodeUid, slotIndex, weight, certai
  - hover over nodes
  - delete node
 
- - links
- - link start coordinates and directions, based on gate
- - link activations
- - arrows
  - link annotations
  - rotate annotations
  - links into invisible nodespaces
@@ -216,7 +212,47 @@ function drawNodeNet(currentNodeSpace) {
 }
 
 // add or update node, should usually be called from the JSON parser
+
+function addNode(node) {
+    // check if node already exists
+    if (!node.uid in nodes) {
+        if (node.parent == currentNodeSpace) renderNode(node);
+        nodes[node.uid] = node;
+    } else {
+        oldNode = nodes[nodeUid];
+        // if node only updates position or activation, we may save some time
+       // import all properties individually; check if we really need to redraw
+    }
+}
+
+function removeNode(node) {
+    // remove the node from screen, get rid of orphan links, and from hash
+}
+
+function eraseNode(node) {
+    // get rid of the screen representation of a node
+}
+
+function setNodePosition(node) {
+    // like activation change, only put the node elsewhere and redraw the links
+}
+
 // add or update link
+
+function addLink(link) {
+    //check if link already exists
+    // if so, see if we need to redraw it or get away with changing the activation
+    // handle diffs: if properties are missing, we keep the original; if properties are given but null, they are deleted
+    // if link does not exist yet, add it to nodes
+}
+
+function removeLink(link) {
+    // delete a link from the array, and from the screen
+}
+
+function eraseLink(link) {
+    // erase link from screen
+}
 
 initializeNodeNet();
 
@@ -344,8 +380,8 @@ function renderLink(link) {
     arrowPath.rotate(endDirection.angle, endPoint);
     arrowPath.fillColor = linkColor;
 
-    arrowEntry = new Point(viewProperties.arrowLength/2*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
-    nodeExit = new Point(viewProperties.arrowLength/2*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
+    arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
+    nodeExit = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
 
 
     linkPath = new Path([[startPoint],[nodeExit,new Point(0,0),startDirection],[arrowEntry,endDirection]]);

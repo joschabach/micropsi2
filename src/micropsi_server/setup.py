@@ -10,6 +10,7 @@ CHANGES = open(join(here, 'CHANGES.txt')).read()
 requires = [
     'pyramid',
     'WebError',
+    'kotti'
 ]
 
 setup(name='micropsi_server',

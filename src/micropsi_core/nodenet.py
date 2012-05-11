@@ -1,0 +1,218 @@
+"""
+Nodenet definition
+"""
+
+from uuid import uuid1
+
+__author__ = 'joscha'
+__date__ = '09.05.12'
+
+class Nodenet(object):
+    """Main data structure for MicroPsi agents,
+
+    Contains the net entities and runs the activation spreading
+
+    Attributes:
+        nodespaces: A dictionary of node space UIDs and respective node spaces
+        nodes: A dictionary of node UIDs and respective nodes
+        calculate_always_nodes: A set of nodes that is either always active, or has received activation directly
+        calculate_now_nodes: A set of nodes that has received activation in the current step
+        links: A dictionary of link UIDs and respective links
+        datasources: A dictionary of data source UIDs and data sources
+        datatargets: A dictionary of data target UIDs and data targets
+        gate_types: A dictionary of gate type names and the individual types of gates
+        slot_types: A dictionary of slot type names and the individual types of slots
+        native_module_types: A dictionary of native module names and individual native modules types
+        step: a counter for the current simulation step
+        worldadapter: A world adapter object residing in a world implementation
+    """
+
+    def __init__(self, worldadapter, name = ""):
+        """create a new MicroPsi agent
+
+        Arguments:
+            worldadapter: the interface of this agent to its environment
+            name (optional): a name for the agent and its resources. If the name matches an existing nodenet definition,
+                the agent will use this definition.
+        """
+
+        self.uid = uuid1()
+        self.name = name
+        self.nodespaces = {}
+        self.nodes = {}
+        self.calculate_always_nodes = {}
+        self.calculate_now_nodes = {}
+        self.links = {}
+        self.gate_types = {}
+        self.slot_types = {}
+        self.native_module_types = {}
+        self.step = 0
+        self.worldadapter = worldadapter
+        self.datasources = worldadapter.datasources
+        self.datatargets = worldadapter.datatargets
+        #TODO set up persistence
+        #TODO set up initial nodespace
+
+
+    #TODO add functionality for adding, editing and removing of nodes, links, native modules, nodespaces, etc
+
+    def reset(self):
+        """Revert to state of last save"""
+        pass
+
+    def set_worldadapter(self, worldadapter):
+        """connects the nodenet with a worldadapter, and thus to some external environment"""
+        self.worldadapter = worldadapter
+        self.datasources = worldadapter.datasources
+        self.datatargets = worldadapter.datatargets
+        #TODO change connection of all sensors and actors
+
+    def get_nodespace_view(self, nodespace_uid):
+        """returns the nodes and links in a given nodespace"""
+        pass
+
+    # add functions for exporting and importing node nets
+    def export_data(self):
+        """serializes and returns the nodenet data for export to a end user"""
+        pass
+
+    def import_data(self, nodenet_data):
+        """imports nodenet data as the current node net"""
+        pass
+
+    def merge_data(self, nodenet_data):
+        """merges the nodenet data with the current node net, might have to give new UIDs to some entities"""
+        pass
+
+    def step(self):
+        """perform a simulation step"""
+        self.propagate_link_activation()
+        self.calculate_node_functions()
+        self.step +=1
+
+    def propagate_link_activation(self):
+        """propagate activation through all links, taking it from the gates and summing it up in the slots"""
+        pass
+
+    def calculate_node_functions(self):
+        """for all active nodes, call their node function, which in turn should update the gate functions"""
+        pass
+
+
+class NetEntity(object):
+    """The basic building blocks of node nets.
+
+    Attributes:
+        uid: the unique identifier of the net entity
+        name: a human readable name (optional)
+        position: a pair of coordinates on the screen
+        parent_nodespace: the node space this entity is contained in
+    """
+
+    def __init__(self, position, parent_nodespace, name = ""):
+        """create a net entity at a certain position and in a given node space"""
+
+        self.uid = uuid1()
+        self.name = name
+        self.position = position
+        self.parent_nodespace = parent_nodespace
+
+class Nodespace(NetEntity):
+    """A container for net entities.
+
+        One nodespace is marked as root, all others are contained in
+        exactly one other nodespace.
+
+    Attributes:
+        netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
+    """
+    def __init__(self, position, parent_nodespace = 0, name = ""):
+        """create a node space at a given position and within a given node space"""
+        self.netentities = {}
+        NetEntity.__init__(self, position, parent_nodespace, name)
+
+    def get_contents(self):
+        """returns a dictionary with all contained net entities, related links and dependent nodes"""
+        pass
+
+class Link(object):
+    """A link between two nodes, starting from a gate and ending in a slot.
+
+        Links propagate activation between nodes and thereby facilitate the function of the agent.
+        Links have weights, but apart from that, all their properties are held in the gates where they emanate.
+        Gates contain parameters, and the gate type effectively determines a link type.
+
+        You may retrieve links either from the global dictionary (by uid), or from the nodes themselves.
+    """
+    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight = 1):
+        """create a link between the source_node and the target_node, from the source_gate to the target_slot
+
+        Attributes:
+            weight (optional): the weight of the link (default is 1)
+        """
+        self.uid = uuid1()
+        self.link(source_node, source_gate_name, target_node, target_slot_name, weight)
+
+    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight = 1):
+        """link between source and target nodes, from a gate to a slot.
+
+            You may call this function to change the connections of an existing link. If the link is already
+            linked, it will be unlinked first.
+        """
+        if self.source_node: self.unlink()
+        self.source_node = source_node
+        self.target_node = target_node
+        self.source_gate = source_node.get_gate(source_gate_name)
+        self.target_slot = target_node.get_slot(target_slot_name)
+        self.weight = weight
+        self.source_gate.outgoing.add(self.uid)
+        self.target_slot.incoming.add(self.uid)
+
+    def unlink(self):
+        """unplug the link from the node net (either to delete it, or to change its linking).
+
+        WARNING: You MUST delete or re-link the node afterwards, because the connecting nodes will no longer know it.
+        """
+        self.source_gate.outgoing.remove(self.uid)
+        self.target_slot.incoming.remove(self.uid)
+
+class Node(NetEntity):
+    """A net entity with slots and gates and a node function.
+
+        Node functions are called alternating with the link functions. They process the information in the slots
+        and usually call all the gate functions to transmit the activation towards the links.
+
+    Attributes:
+        activation: a numeric value (usually between -1 and 1) to indicate its activation. Activation is determined
+            by the node function, usually depending on the value of the slots.
+        slots: a list of slots (activation inlets)
+        gates: a list of gates (activation outlets)
+        node_function: a function to be executed whenever the node receives activation
+    """
+
+    def __init__(self, position, parent_nodespace = 0, activation = 0, name = ""):
+        self.activation = activation
+        NetEntity.__init__(position, parent_nodespace, name)
+
+    def node_function(self):
+        """called whenever the node is activated or active"""
+        pass
+
+class Gate(object):
+    """
+    """
+    pass
+
+class Slot(object):
+    """
+    """
+    pass
+
+class NativeModule(Node):
+    """A node with a complex node function that may perform arbitrary operations on the node net
+
+        Native Modules encapsulate arbitrary functionality within the node net. They are written in a
+        programming language (here: Python) and refer to an external resource file for the code, so it
+        can be edited at runtime.
+    """
+    pass

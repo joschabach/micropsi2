@@ -1,14 +1,15 @@
-from pyramid.config import Configurator
-from pyramid.response import Response
+from pyramid.view import view_config
+from kotti import base_configure
 
-
-def hello(request):
-    return Response('Hallo, Sie sehen gut aus heute!')
+@view_config(route_name="nodenet", renderer='micropsi_server:templates/nodespaceviewer.pt')
+def start(request):
+    return dict(title='Hallo, Sie sehen gut aus heute!')
 
 
 def main(global_config, **settings):
     """ Configure and create the main application. """
-    config = Configurator(settings=settings)
-    config.add_route('hello', '/')
-    config.add_view(hello, route_name='hello')
+    config = base_configure(global_config, **settings)
+    config.add_static_view('static', 'micropsi_server:static')
+    config.add_route('nodenet', '/nodenet')
+    config.scan()
     return config.make_wsgi_app()

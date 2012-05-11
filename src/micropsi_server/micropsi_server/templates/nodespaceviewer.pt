@@ -1,0 +1,18 @@
+<html xml:lang="en" xmlns:tal="http://xml.zope.org/namespaces/tal"
+      metal:use-macro="api.macro('kotti:templates/view/master.pt')">
+    <metal:script fill-slot="head-more">
+    <script type="text/javascript" src="${request.static_url('micropsi_server:static/js/paper.js')}"></script>
+    <script type="text/paperscript" src="${request.static_url('micropsi_server:static/js/nodenet.js')}" canvas="nodenet"></script>
+    </metal:script>
+    <body>
+
+    <metal:content fill-slot="content">
+        <p>Prototypical nodenet viewer, using paper.js</p>
+        	<div style="width:600px; height:400px; overflow:scroll">
+            <canvas id="nodenet" width="700" height="500"  style="background:#eeeeee"></canvas>
+            </div>
+    </metal:content>
+
+
+    </body>
+</html>

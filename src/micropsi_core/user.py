@@ -1,21 +1,32 @@
 """
 Very simple user management for the MicroPsi service
 
-Agents are created and deleted by individual users. The agents of multiple users may share a common world.
-Users have different roles that determine whether they may manage worlds and create/edit agents.
+The user manager takes care of users, sessions and user roles.
+If the user database is empty, we put a default user "admin" without a password and the role "Administrator" into it.
+Users without a password set can login with an arbitrary password, so make sure that users do not set empty passwords
+if this concerns you.
 
-The user 'admin' may administer other users
+When new users are created, they are given a role and stored along with their hashed password. Because we do not store
+the password itself, it cannot be retrieved if it is lost. Instead, set a new password.
+
+Users, including the admin user, must be logged in to receive a valid session token. The session token is valid until
+the user logs off, or until it expires. To prevent expiration, it may be refreshed during each user interaction.
+
+To check the permissions of a given user, you may use get_permissions_for_session_token. In return, the user manager
+will return the rights matrix of the associated user, if the user is logged in, or the rights of a guest it the session
+token does not correspond to an open session.
 """
-import shelve
 
 __author__ = 'joscha'
 __date__ = '11.05.12'
 
-from hashlib import md5
-from uuid import UUID
-from os import urandom
-from datetime import datetime, timedelta
-from threading import Timer
+import shelve
+import hashlib
+import uuid
+import os
+import datetime
+import threading
+import time
 
 ADMIN_USER = "admin"  # name of the admin user
 USER_FILE = "user-data"  # resource files for all normal users
@@ -23,48 +34,25 @@ DEFAULT_ROLE = "Agent Creator"  # new users can create and edit agents, but not 
 IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the simulation)
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
 
-USER_ROLES = {
-    "Administrator": {
-        "manage users": True,
-        "manage worlds": True,
-        "manage agents": True
-    },
-    "World Creator": {
-        "manage users": False,
-        "manage worlds": True,
-        "manage agents": True
-    },
-    "Agent Creator": {
-        "manage users": False,
-        "manage worlds": False,
-        "manage agents": True
-    },
-    "Guest": {
-        "manage users": False,
-        "manage worlds": False,
-        "manage agents": False
-    }
+USER_ROLES = {  # sets of strings; each represents a permission.
+    "Administrator": {"manage users","manage worlds","manage agents"},
+    "World Creator": {"manage worlds","manage agents"},
+    "Agent Creator": {"manage agents"},
+    "Guest": {}
 }
 
 class UserManager(object):
     """The user manager creates, deletes and authenticates users.
 
-    It must be a singleton, because all user managers would use the same resources for maintaining persistence.
+    It should be a singleton, because all user managers would use the same resources for maintaining persistence.
 
     Attributes:
+        users: a dictionary of user_ids to user objects (containing session tokens, access role and hashed passwords)
+        sessions: a dictionary of active sessions for faster reference
     """
 
-    _shared_state = {}
     users = None
     sessions = {}
-    timer = None
-
-    # Borg pattern
-    def __new__(cls):
-        """share the state of this object with all objects of the same class"""
-        self = object.__new__(cls)
-        self.__dict__ = cls._shared_state
-        return self
 
     def __init__(self):
         """initialize user management.
@@ -75,29 +63,32 @@ class UserManager(object):
         """
         # set up persistence
         if not self.users:
-            self.users = shelve.open(USER_FILE)
+            self.users = shelve.open(USER_FILE, writeback = True)
 
         # create admin user
         if not ADMIN_USER in self.users:
-            self.users[ADMIN_USER] = {
-                "hashed_password": None,
-                "role": "Administrator",
-                "session_token": "1"
-            }
+            self.create_user(ADMIN_USER, "", "Administrator")
 
         # set up sessions
         for i in self.users:
             active_session = self.users[i]["session_token"]
             if active_session: self.sessions[active_session] = i
 
-        self.timed_check_for_expired_user_sessions()
+        # set up session cleanup
+        def _session_expiration():
+            while True:
+                self.check_for_expired_user_sessions()
+                time.sleep(TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS)
+
+        session_expiration_daemon = threading.Thread(target=_session_expiration)
+        session_expiration_daemon.daemon = True
+        session_expiration_daemon.start()
 
     def __del__(self):
         """shut down user management"""
         self.users.close()
-        if self.timer: self.timer.cancel()
 
-    def create_user(self, user_id, password, role = DEFAULT_ROLE):
+    def create_user(self, user_id, password="", role = DEFAULT_ROLE):
         """create a new user.
 
         Returns False if the creation was not successful.
@@ -109,18 +100,20 @@ class UserManager(object):
         """
         if user_id and not user_id in self.users:
             self.users[user_id] = {
-                "hashed_password": md5(password),
+                "hashed_password": hashlib.md5(password).hexdigest(),
                 "role": role,
-                "session_token": None
+                "session_token": None,
+                "session_expires": False
             }
             return True
         else: return False
 
     def list_users(self):
-        """returns a dictionary with all users currently known to the user manager"""
-        return { self.users[self.user_index[i]]: {
-            "role":self.users[self.user_index[i]]["role"],
-            "index":i} for i in self.user_index }
+        """returns a dictionary with all users currently known to the user manager for display purposes"""
+        return { i: {
+            "role": self.users[i]["role"],
+            "is_active": True if self.users[i]["session_token"] else False }
+                 for i in self.users }
 
     def set_user_id(self, user_id_old, user_id_new):
         """returns the new username if the user has been renamed successfully, the old username if the new one was
@@ -144,30 +137,30 @@ class UserManager(object):
     def set_user_password(self, user_id, password):
         """sets the password of a user, returns False if user does not exist"""
         if user_id in self.users:
-            self.users[user_id]["hashed_password"] = md5(password)
+            self.users[user_id]["hashed_password"] = hashlib.md5(password).hexdigest()
             return True
         return False
 
     def delete_user(self, user_id):
         """deletes the specified user, returns True if successful"""
         if user_id in self.users:
-            self.end_session(user_id)
+            # if the user is still active, kill the session
+            if self.users[user_id]["session_token"]: self.end_session(self.users[user_id]["session_token"])
             del self.users[user_id]
             return True
         return False
 
-    def start_session(self, user_id, password=None, keep_logged_in_forever=True):
+    def start_session(self, user_id, password="", keep_logged_in_forever=True):
         """authenticates the specified user, returns session token if successful, or None if not.
 
         Arguments:
             user_id: a string that must be the id of an existing user
-            password (optional): checked against the stored password; ignored if no password is stored
+            password (optional): checked against the stored password
             keep_logged_in_forever (optional): if True, the session will not expire unless manually logging off
         """
-
-        if self.users[user_id]:
-            if not self.users["hashed_password"] or self.users["hashed_password"] == md5(password):
-                session_token = UUID(urandom(16))
+        if user_id in self.users:
+            if self.users[user_id]["hashed_password"] == hashlib.md5(password).hexdigest():
+                session_token = str(uuid.UUID(bytes = os.urandom(16)))
                 self.users[user_id]["session_token"] = session_token
                 self.sessions[session_token] = user_id
                 if keep_logged_in_forever:
@@ -179,10 +172,10 @@ class UserManager(object):
 
     def end_session(self, session_token):
         """ends the session associated with the given token"""
-        if self.sessions[session_token]:
+        if session_token in self.sessions:
             user_id = self.sessions[session_token]
             del self.sessions[session_token]
-            if self.users[user_id]:
+            if user_id in self.users:
                 self.users[user_id]["session_token"] = None
 
     def end_all_sessions(self):
@@ -191,30 +184,27 @@ class UserManager(object):
 
     def refresh_session(self, session_token):
         """resets the idle time until a currently active session expires to some point in the future"""
-        if self.sessions[session_token]:
+        if session_token in self.sessions:
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
-                self.users[user_id]["session_expires"] = datetime.now() + timedelta(
+                self.users[user_id]["session_expires"] = datetime.datetime.now() + datetime.timedelta(
                     seconds=IDLE_TIME_BEFORE_SESSION_EXPIRES)
 
     def check_for_expired_user_sessions(self):
         """removes all user sessions that have been idle for too long"""
-
         for session_token in self.sessions:
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
-                if self.users[user_id]["session_expires"] < datetime.now():
+                if self.users[user_id]["session_expires"] < datetime.datetime.now():
                     self.end_session(session_token)
 
-    def timed_check_for_expired_user_sessions(self):
-        """callback for a timer function that checks if idling users should be logged off"""
-        self.check_for_expired_user_sessions()
-        self.timer = Timer(TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS, self.timed_check_for_expired_user_sessions())
-        self.timer.start()
+    def get_permissions_for_session_token(self, session_token):
+        """returns a set of permissions corresponding to the role of the user associated with the session;
+        if no session with that token exists, the Guest role permissions are returned.
 
-    def get_permissions(self, session_token):
-        """returns a permission object corresponding to the role of the user associated with the session;
-        if no session with that token exists, the Guest role permissions are returned"""
+        Example usage:
+            if "create agents" in usermanager.get_permissions(my_session): ...
+        """
 
         if session_token in self.sessions:
             user_id = self.sessions[session_token]

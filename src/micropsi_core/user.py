@@ -15,6 +15,24 @@ the user logs off, or until it expires. To prevent expiration, it may be refresh
 To check the permissions of a given user, you may use get_permissions_for_session_token. In return, the user manager
 will return the rights matrix of the associated user, if the user is logged in, or the rights of a guest it the session
 token does not correspond to an open session.
+
+Example usage:
+
+>>> um = UserManager()
+>>> um.create_user("eliza", "qwerty", "World Creator")  # new user "eliza" with password "querty" as "World Creator"
+>>> print um.list_users["eliza"]
+{'is_active': False, 'role': 'World Creator'}
+>>> elizas_token = um.start_session("eliza", "querty")  # log in eliza (give this token to her)
+>>> print um.list_users["eliza"]
+{'is_active': True, 'role': 'World Creator'}
+>>> print um.get_permissions(elizas_token)
+set(['manage worlds', 'manage agents'])
+>>> um.set_user_role('eliza', 'Administrator')
+>>> print um.get_permissions(elizas_token)
+Set(['manage users', 'manage worlds', 'manage agents'])
+>>> um.end_session(elizas_token)  # log off eliza
+>>> print um.get_permissions(elizas_token)
+{}
 """
 
 __author__ = 'joscha'

@@ -1,5 +1,4 @@
 var viewProperties = {
-    zoomFactor: 1,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
     selectionColor: new Color("#0099ff"),
@@ -35,19 +34,23 @@ var linkLayer = new Layer();
 var nodeLayer = new Layer();
 var currentNodeSpace = 0;
 
-view.viewSize = new Size(1800,1800);
+view.viewSize = new Size(800,480);
+view.zoom = .8;
 
-function initializeNodeNet(){
+function initializeNodeNet() {
     // determine viewport
     // fetch visible nodes and links
     var n1 = new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3);
     nodes[n1.uid] = n1;
     var n2 = new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.5);
     nodes[n2.uid] = n2;
-    var link1 = new Link("abcd", 0, "sdff", 0, 1, 1);
-    links[link1.uid]=link1;
-    var link2 = new Link("sdff", 0, "abcd", 0, 1, 1);
-    //links[link2.uid]=link2;
+    var n3 = new Node("bla", 420, 230, 0, "Salomon", "Native", 0.9);
+    nodes[n3.uid] = n3;
+
+    var l1 = new Link(n1.uid, 0, n2.uid, 0, 1, 1);
+    links[l1.uid]=l1;
+    var l2 = new Link(n1.uid, 0, n3.uid, 0, 1, 1);
+    links[l2.uid]=l2;
 
     // render nodes
     drawNodeNet(currentNodeSpace);
@@ -276,75 +279,75 @@ function renderLink(link) {
         sourceBounds = calculateCompactNodeDimensions(sourceNode);
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
             if (sourceNode.type == "Sensor")
-                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5*viewProperties.zoomFactor,sourceBounds.y);
+                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,sourceBounds.y);
             else
-                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.4*viewProperties.zoomFactor, sourceBounds.y);
+                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.4, sourceBounds.y);
             startAngle = 270;
         } else {
             switch (linkType){
                 case "por":
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*viewProperties.zoomFactor,
-                        sourceBounds.y + sourceBounds.height*0.4*viewProperties.zoomFactor);
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width,
+                        sourceBounds.y + sourceBounds.height*0.4);
                     startAngle = 0;
                     break;
                 case "ret":
                     startPoint = new Point(sourceBounds.x,
-                        sourceBounds.y + sourceBounds.height*0.6*viewProperties.zoomFactor);
+                        sourceBounds.y + sourceBounds.height*0.6);
                     startAngle = 180;
                     break;
                 case "sub":
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.6*viewProperties.zoomFactor,
-                        sourceBounds.y+ sourceBounds.height*viewProperties.zoomFactor);
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.6,
+                        sourceBounds.y+ sourceBounds.height);
                     startAngle = 90;
                     break;
                 case "sur":
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.4*viewProperties.zoomFactor,
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.4,
                         sourceBounds.y);
                     startAngle = 270;
                     break;
                 default:
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.5*viewProperties.zoomFactor,
-                        sourceBounds.y + sourceBounds.height*0.5*viewProperties.zoomFactor);
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.5,
+                        sourceBounds.y + sourceBounds.height*0.5);
                     startPointIsPreliminary = true;
                     break;
             }
         }
     } else {
         sourceBounds = calculateFullNodeDimensions(sourceNode);
-        startPoint = new Point(sourceBounds.x+sourceBounds.width*viewProperties.zoomFactor,
-            sourceBounds.y+viewProperties.lineHeight*(link.gateIndex+2.5)*viewProperties.zoomFactor);
+        startPoint = new Point(sourceBounds.x+sourceBounds.width,
+            sourceBounds.y+viewProperties.lineHeight*(link.gateIndex+2.5));
         startAngle = 0;
     }
     if (isCompact(targetNode)) {
         targetBounds = calculateCompactNodeDimensions(targetNode);
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
-            endPoint = new Point(targetBounds.x + targetBounds.width*0.6*viewProperties.zoomFactor, targetBounds.y);
+            endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
         } else {
             switch (linkType){
                 case "por":
                     endPoint = new Point(targetBounds.x,
-                        targetBounds.y + targetBounds.height*0.4*viewProperties.zoomFactor);
+                        targetBounds.y + targetBounds.height*0.4);
                     endAngle = 180;
                     break;
                 case "ret":
-                    endPoint = new Point(targetBounds.x + targetBounds.width*viewProperties.zoomFactor,
-                        targetBounds.y + targetBounds.height*0.6*viewProperties.zoomFactor);
+                    endPoint = new Point(targetBounds.x + targetBounds.width,
+                        targetBounds.y + targetBounds.height*0.6);
                     endAngle = 0;
                     break;
                 case "sub":
-                    endPoint = new Point(targetBounds.x + targetBounds.width*0.6*viewProperties.zoomFactor,
+                    endPoint = new Point(targetBounds.x + targetBounds.width*0.6,
                         targetBounds.y);
                     endAngle = 270;
                     break;
                 case "sur":
-                    endPoint = new Point(targetBounds.x + targetBounds.width*0.4*viewProperties.zoomFactor,
-                        targetBounds.y + targetBounds.height*viewProperties.zoomFactor);
+                    endPoint = new Point(targetBounds.x + targetBounds.width*0.4,
+                        targetBounds.y + targetBounds.height);
                     endAngle = 90;
                     break;
                 default:
-                    endPoint = new Point(targetBounds.x + targetBounds.width*0.5*viewProperties.zoomFactor,
-                        targetBounds.y + targetBounds.height*0.5*viewProperties.zoomFactor);
+                    endPoint = new Point(targetBounds.x + targetBounds.width*0.5,
+                        targetBounds.y + targetBounds.height*0.5);
                     endPointIsPreliminary = true;
                     break;
             }
@@ -352,15 +355,16 @@ function renderLink(link) {
     } else {
         targetBounds = calculateFullNodeDimensions(targetNode);
         endAngle = 180;
-        endPoint = new Point(targetBounds.x, targetBounds.y+viewProperties.lineHeight*(link.slotIndex+2.5)*viewProperties.zoomFactor);
+        endPoint = new Point(targetBounds.x, 
+            targetBounds.y+viewProperties.lineHeight*(link.slotIndex+2.5));
     }
     if (startPointIsPreliminary) { // start from boundary of a compact node
-        correctionVector = new Point(sourceBounds.width/2*viewProperties.zoomFactor, 0);
+        correctionVector = new Point(sourceBounds.width/2, 0);
         startAngle = (endPoint - startPoint).angle;
         startPoint += correctionVector.rotate(startAngle-10);
     }
     if (endPointIsPreliminary) { // end at boundary of a compact node
-        correctionVector = new Point(sourceBounds.width/2*viewProperties.zoomFactor, 0);
+        correctionVector = new Point(sourceBounds.width/2, 0);
         endAngle = (startPoint-endPoint).angle;
         endPoint += correctionVector.rotate(endAngle+10);
     }
@@ -369,25 +373,25 @@ function renderLink(link) {
     linkWeight = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)));
     linkColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
 
-    startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(startAngle);
-    endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(endAngle);
+    startDirection = new Point(viewProperties.linkTension,0).rotate(startAngle);
+    endDirection = new Point(viewProperties.linkTension,0).rotate(endAngle);
 
     arrowPath = new Path(endPoint);
     arrowPath.lineBy(new Point(viewProperties.arrowLength, viewProperties.arrowWidth/2));
     arrowPath.lineBy(new Point(0, -viewProperties.arrowWidth));
     arrowPath.closePath();
-    arrowPath.scale(viewProperties.zoomFactor, endPoint);
     arrowPath.rotate(endDirection.angle, endPoint);
     arrowPath.fillColor = linkColor;
 
-    arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
-    nodeExit = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
+    arrowEntry = new Point(viewProperties.arrowLength,0).rotate(endAngle)+endPoint;
+    nodeExit = new Point(viewProperties.arrowLength,0).rotate(startAngle)+startPoint;
 
 
     linkPath = new Path([[startPoint],[nodeExit,new Point(0,0),startDirection],[arrowEntry,endDirection]]);
     linkPath.strokeColor = linkColor;
-    linkPath.strokeWidth = viewProperties.zoomFactor * linkWeight;
-    if (gate.name=="cat" || gate.name == "exp") linkPath.dashArray = [4*viewProperties.zoomFactor,3*viewProperties.zoomFactor];
+    linkPath.strokeWidth = linkWeight;
+    if (gate.name=="cat" || gate.name == "exp")
+        linkPath.dashArray = [4,3];
 
 
     linkItem = new Group([linkPath, arrowPath]);
@@ -395,7 +399,6 @@ function renderLink(link) {
     linkContainer = new Group(linkItem);
     linkContainer.name = link.uid;
 
-    //linkContainer.scale(viewProperties.zoomFactor,endPoint);
     linkLayer.addChild(linkContainer);
 }
 
@@ -428,7 +431,6 @@ function renderFullNode(node) {
     nodeItem.name = "node";
     nodeContainer = new Group(nodeItem);
     nodeContainer.name = node.uid;
-    nodeContainer.scale(viewProperties.zoomFactor, bounds.point);
     nodeLayer.addChild(nodeContainer);
 }
 
@@ -449,7 +451,6 @@ function renderCompactNode(node) {
     nodeItem.name = "node";
     nodeContainer = new Group(nodeItem);
     nodeContainer.name = node.uid;
-    nodeContainer.scale(viewProperties.zoomFactor, bounds.point);
     nodeLayer.addChild(nodeContainer);
 }
 
@@ -458,8 +459,8 @@ function calculateFullNodeDimensions(node) {
     width = viewProperties.nodeWidth;
     height = viewProperties.lineHeight*(Math.max(node.slots.length, node.gates.length)+2);
     if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4);
-    return new Rectangle((node.x-width/2)*viewProperties.zoomFactor,
-                         (node.y-height/2)*viewProperties.zoomFactor, // center node on origin
+    return new Rectangle((node.x-width/2),
+                         (node.y-height/2), // center node on origin
                          width, height);
 }
 
@@ -467,8 +468,8 @@ function calculateFullNodeDimensions(node) {
 function calculateCompactNodeDimensions(node) {
     width = viewProperties.compactNodeWidth;
     height = viewProperties.compactNodeWidth;
-    return new Rectangle(node.x* viewProperties.zoomFactor-width/2,
-        node.y*viewProperties.zoomFactor-height/2, // center node on origin
+    return new Rectangle(node.x - width/2,
+        node.y-height/2, // center node on origin
         width, height);
 }
 
@@ -531,7 +532,7 @@ function createNodeTitleBar(node, bounds) {
 function createNodeTitleBarDelimiter (bounds) {
     titleBarDelimiter = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight,
         bounds.right, bounds.y + viewProperties.lineHeight);
-    titleBarDelimiter.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
+    titleBarDelimiter.strokeWidth = viewProperties.strokeWidth;
     titleBarDelimiter.strokeColor = viewProperties.nodeForegroundColor;
     titleBarDelimiter.name = "titleBarDelimiter";
     return titleBarDelimiter;
@@ -544,7 +545,7 @@ function createNodeShadow(outline) {
     shadow.name = "shadow";
     shadow.strokeColor = viewProperties.shadowColor;
     shadow.strokeColor.alpha = 0.2;
-    shadow.strokeWidth = viewProperties.shadowStrokeWidth * viewProperties.zoomFactor;
+    shadow.strokeWidth = viewProperties.shadowStrokeWidth;
     return shadow;
 }
 
@@ -603,7 +604,7 @@ function createNodeGateElement(startPoint) {
     pill.arcTo(pillBounds.bottomRight);
     pill.closePath();
     pill.fillColor = viewProperties.nodeColor;
-    pill.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
+    pill.strokeWidth = viewProperties.strokeWidth;
     pill.strokeColor = viewProperties.nodeForegroundColor;
     return pill;
 }
@@ -667,7 +668,7 @@ function createCompactNodeLabel(node, bounds) {
         labelText = new PointText(new Point(bounds.x + bounds.width/2, bounds.bottom+viewProperties.lineHeight));
         labelText.content = node.name;
         labelText.characterStyle = {
-            fontSize: viewProperties.fontSize/viewProperties.zoomFactor,
+            fontSize: viewProperties.fontSize,
             fillColor: viewProperties.nodeForegroundColor
         };
         labelText.paragraphStyle.justification = 'center';
@@ -692,7 +693,7 @@ function createCompactNodeSymbol(node, bounds) {
 function createNodeOutline(shape) {
     shape.name = "outline";
     shape.strokeColor = viewProperties.nodeForegroundColor;
-    shape.strokeWidth = viewProperties.outlineWidth * viewProperties.zoomFactor;
+    shape.strokeWidth = viewProperties.outlineWidth;
     return shape;
 }
 
@@ -719,7 +720,7 @@ function setActivation(node) {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if (viewProperties.zoomFactor < 0.5) return true; // you cannot read this anyway
+    if (view.zoom < 0.5) return true; // you cannot read this anyway
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
@@ -742,59 +743,83 @@ function activationColor(activation, baseColor) {
 // ----
 
 var hitOptions = {
-    segments: false,
+    segments: true,
     stroke: true,
     fill: true,
+    //type: PathItem,
     tolerance: 5
 };
 
-var segment, path;
-var movePath = false;
-function onMouseDown(event) {
-    segment = path = null;
-    var hitResult = project.hitTest(event.point, hitOptions);
+// var segment, path;
+// var movePath = false;
+// function onMouseDown(event) {
+//     segment = path = null;
+//     var hitResult = project.hitTest(event.point, hitOptions);
 
-    if (event.modifiers.shift) {
-        if (hitResult.type == 'segment') {
-            hitResult.segment.remove();
-        };
-        return;
+//     if (event.modifiers.shift) {
+//         if (hitResult.type == 'segment') {
+//             hitResult.segment.remove();
+//         };
+//         return;
+//     }
+
+//     if (hitResult) {
+//         path = hitResult.item;
+//         if (hitResult.type == 'segment') {
+//             segment = hitResult.segment;
+//         } else if (hitResult.type == 'stroke') {
+//             var location = hitResult.location;
+//             segment = path.insert(location.index + 1, event.point);
+//             path.smooth();
+//         }
+//     }
+//     movePath = hitResult.type == 'fill';
+//     if (movePath) {
+//     	path = hitResult.item;
+//     	while (path!=project && path.name!="node") path = path.parent;
+//         if (path.name=="node") project.activeLayer.addChild(path.parent);
+
+//     }
+// }
+
+// function onMouseMove(event) {
+//     var hitResult = project.hitTest(event.point, hitOptions);
+//     project.activeLayer.selected = false;
+//     if (hitResult && hitResult.item) {
+//         path = hitResult.item;
+//         while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
+//         if (path.name == "link") {
+//             // test = path.clone();
+//             // test.childen[0].strokeColor=viewProperties.selectionColor;
+//         }
+//     }
+// }
+
+// function onMouseDrag(event) {
+//     if (movePath)
+//         path.position += event.delta;
+// }
+
+function onKeyDown(event) {
+    // support zooming via view.zoom using characters + and -
+    if (event.character == "+") {
+        view.zoom += .1;
     }
-
-    if (hitResult) {
-        path = hitResult.item;
-        if (hitResult.type == 'segment') {
-            segment = hitResult.segment;
-        } else if (hitResult.type == 'stroke') {
-            var location = hitResult.location;
-            segment = path.insert(location.index + 1, event.point);
-            path.smooth();
-        }
-    }
-    movePath = hitResult.type == 'fill';
-    if (movePath) {
-    	path = hitResult.item;
-    	while (path!=project && path.name!="node") path = path.parent;
-        if (path.name=="node") project.activeLayer.addChild(path.parent);
-
+    else if (event.character == "-") {
+        if (view.zoom > .2) view.zoom -= .1;
     }
 }
 
-function onMouseMove(event) {
+var path;
+function onMouseDown(event) {
+    // store hit result
     var hitResult = project.hitTest(event.point, hitOptions);
-    project.activeLayer.selected = false;
-    if (hitResult && hitResult.item) {
-        path = hitResult.item;
-        while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
-        if (path.name == "link") {
-            // test = path.clone();
-            // test.childen[0].strokeColor=viewProperties.selectionColor;
-        }
-    }
+    path = hitResult.item;
 }
 
 function onMouseDrag(event) {
-    if (movePath)
-        path.position += event.delta;
+    // find that element at hit result which is a node and adapt its position
+    while(path!=project && path.name!="node" && path.parent) path = path.parent;
+    path.position += event.delta;
+    //todo: adapt connected links in equal manner
 }
-

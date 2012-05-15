@@ -8,9 +8,9 @@
 
     <metal:content fill-slot="content">
         <p>Prototypical nodenet viewer, using paper.js</p>
-        	<div style="width:600px; height:400px; overflow:scroll">
-            <canvas id="nodenet" width="700" height="500"  style="background:#eeeeee"></canvas>
-            </div>
+        <div>
+            <canvas id="nodenet" width="800" height="480" style="background:#eeeeee;"></canvas>
+        </div>
     </metal:content>
 
 

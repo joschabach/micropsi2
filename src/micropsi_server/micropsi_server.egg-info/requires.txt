@@ -1,3 +1,0 @@
-pyramid
-WebError
-kotti

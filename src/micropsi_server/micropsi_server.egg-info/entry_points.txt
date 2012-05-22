@@ -1,4 +1,0 @@
-
-        [paste.app_factory]
-        main = micropsi_server:main
-    

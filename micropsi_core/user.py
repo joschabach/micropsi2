@@ -16,6 +16,8 @@ To check the permissions of a given user, you may use get_permissions_for_sessio
 will return the rights matrix of the associated user, if the user is logged in, or the rights of a guest it the session
 token does not correspond to an open session.
 
+At the moment, persistence is achieved with a simple file, into which user and session data is dumped in json format.
+
 Example usage:
 
 >>> um = UserManager()
@@ -38,7 +40,7 @@ Set(['manage users', 'manage worlds', 'manage agents'])
 __author__ = 'joscha'
 __date__ = '11.05.12'
 
-import shelve
+import json
 import hashlib
 import uuid
 import os
@@ -67,21 +69,30 @@ class UserManager(object):
     Attributes:
         users: a dictionary of user_ids to user objects (containing session tokens, access role and hashed passwords)
         sessions: a dictionary of active sessions for faster reference
+        user_file: the handle for the user data file
     """
 
     users = None
     sessions = {}
 
-    def __init__(self):
+    def __init__(self, user_file = None):
         """initialize user management.
 
         If no user data are found, a new resource file is created.
         If you loose your admin password, you may delete the admin data from the resource file, so a new admin without
         password is created.
+
+        Parameters:
+            user_file (optional): a file like object to store user data permanently; will be updated after critical
+                operations (new user, change password, shut down)
         """
         # set up persistence
         if not self.users:
-            self.users = shelve.open(USER_FILE, writeback = True)
+            self.user_file = user_file or open(USER_FILE, "w+")
+            try:
+                self.users = json.load(self.user_file)
+            except ValueError, err:
+                self.users = {}
 
         # create admin user
         if not ADMIN_USER in self.users:
@@ -104,25 +115,29 @@ class UserManager(object):
 
     def __del__(self):
         """shut down user management"""
-        self.users.close()
+        json.dump(self.users, self.user_file)
+        self.user_file.flush()  # file is closed if user manager shuts down, and should be kept otherwise
 
-    def create_user(self, user_id, password="", role = DEFAULT_ROLE):
+    def create_user(self, user_id, password="", role = DEFAULT_ROLE, uid = None):
         """create a new user.
 
         Returns False if the creation was not successful.
 
         Arguments:
-            user_id: a non-empty string which must be unique
+            user_id: a non-empty string which must be unique, used for display and urls
             password: an arbitrary string
             role: a string corresponding to a user role (such as "Administrator", or "Agent Creator")
+            uid: a string that acts as a unique, immutable handle (so we can store resources for this user)
         """
         if user_id and not user_id in self.users:
             self.users[user_id] = {
+                "uid": uid or user_id,
                 "hashed_password": hashlib.md5(password).hexdigest(),
                 "role": role,
                 "session_token": None,
                 "session_expires": False
             }
+            json.dump(self.users, self.user_file)
             return True
         else: return False
 
@@ -140,6 +155,7 @@ class UserManager(object):
             if not user_id_new in self.users:
                 self.users[user_id_new] = self.users[user_id_old]
                 del self.users[user_id_old]
+                json.dump(self.users, self.user_file)
                 return user_id_new
             else:
                 return user_id_old
@@ -156,6 +172,7 @@ class UserManager(object):
         """sets the password of a user, returns False if user does not exist"""
         if user_id in self.users:
             self.users[user_id]["hashed_password"] = hashlib.md5(password).hexdigest()
+            json.dump(self.users, self.user_file)
             return True
         return False
 
@@ -210,11 +227,17 @@ class UserManager(object):
 
     def check_for_expired_user_sessions(self):
         """removes all user sessions that have been idle for too long"""
+
+        change_flag = False
         for session_token in self.sessions:
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
                 if self.users[user_id]["session_expires"] < datetime.datetime.now():
                     self.end_session(session_token)
+                    change_flag = True
+        if change_flag:
+            json.dump(self.users, self.user_file)
+            self.user_file.flush()
 
     def get_permissions_for_session_token(self, session_token):
         """returns a set of permissions corresponding to the role of the user associated with the session;
@@ -232,3 +255,22 @@ class UserManager(object):
                     return USER_ROLES[role]
 
         return USER_ROLES["Guest"]
+
+def check_for_url_proof_id(self, id, existing_ids = None, min_id_length = 1, max_id_length = 21):
+    """Returns (True, id) if id is permissible, and (False, error message) otherwise. Since
+    we strip the id, you should use the returned one, not the original one"""
+
+    id = id.strip()
+
+    # maybe this is too restrictive, but I want to use the id directly in urls
+    for c in id:
+        if not c.lower() in "0123456789abcdefghijklmnopqrstuvwxyz@._-":
+            return False, "The character '%s' is not allowed" %c
+
+    if existing_ids and id.lower() in existing_ids: return False, "ID already exists"
+    if len(id) < min_id_length:
+        return False, "Must at least have %s characters" % min_id_length
+    if len(id) > max_id_length:
+        return "Must have less than %s characters" % max_id_length
+
+    return True, id

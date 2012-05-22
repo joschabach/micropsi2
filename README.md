@@ -1,12 +1,7 @@
-install 
------
-( s.a. docs/installation.rst )
-
-	python2.7 bootstrap.py -c development.cfg
-	bin/buildout -c development.cfg
-
 run 
 -----
 
-	./bin/pserve ./etc/micropsi_server.ini
-	view in browser at http://0.0.0.0:6543/
+	./micropsi_server/__init__.py
+	./micropsi_server/micropsi_app.py
+	
+	view in browser at http://localhost:6543/

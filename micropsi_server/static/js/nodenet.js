@@ -162,8 +162,9 @@ function Link(sourceNodeUid, gateIndex, targetNodeUid, slotIndex, weight, certai
  - communicate with server
  - get nodes in viewport
  - get links from visible nodes
- - get individual nodes and links (standard communication should make sure that we get a maximum number of nodes,
- after this restrict it to the visible nodes, but include the linked nodes outside the view)
+ - get individual nodes and links (standard communication should make sure that we get a maximum 
+    number of nodes, after this restrict it to the visible nodes, but include the linked nodes 
+    outside the view)
  - get diffs
  - sent updates of editor to server
  - start and stop simulations
@@ -214,6 +215,19 @@ function drawNodeNet(currentNodeSpace) {
     }
 }
 
+function updateNodeNet(nodeSpace) {
+    
+    //pi: node and link layers aren't hooked into node space yet - TODO?
+    
+    // clear node space
+    if (nodeLayer) nodeLayer.removeChildren();
+    if (linkLayer) linkLayer.removeChildren();
+
+    // redraw node space
+    drawNodeNet(nodeSpace);
+}
+
+
 // add or update node, should usually be called from the JSON parser
 
 function addNode(node) {
@@ -245,7 +259,8 @@ function setNodePosition(node) {
 function addLink(link) {
     //check if link already exists
     // if so, see if we need to redraw it or get away with changing the activation
-    // handle diffs: if properties are missing, we keep the original; if properties are given but null, they are deleted
+    // handle diffs: if properties are missing, we keep the original; if properties are given but 
+    // null, they are deleted
     // if link does not exist yet, add it to nodes
 }
 
@@ -720,7 +735,7 @@ function setActivation(node) {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if (view.zoom < 0.5) return true; // you cannot read this anyway
+    if (view.zoom < 0.71) return true; // you cannot read this anyway
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
@@ -804,9 +819,11 @@ function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
     if (event.character == "+") {
         view.zoom += .1;
+        updateNodeNet(currentNodeSpace);
     }
     else if (event.character == "-") {
         if (view.zoom > .2) view.zoom -= .1;
+        updateNodeNet(currentNodeSpace);
     }
 }
 

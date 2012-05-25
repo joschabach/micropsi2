@@ -27,7 +27,8 @@ def server_static(filepath):
     return static_file(filepath, root='static')
 
 def main(host = DEFAULT_HOST, port = DEFAULT_PORT):
-    run(host=host, port=port)
+    # run(host=host, port=port)
+    run(host=host, port=port, reloader=True) # debug version
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Start the MicroPsi server.")

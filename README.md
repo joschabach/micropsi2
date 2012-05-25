@@ -1,3 +1,7 @@
+about
+-----
+a Python version of the cognitive architecture MicroPsi
+
 run 
 -----
 

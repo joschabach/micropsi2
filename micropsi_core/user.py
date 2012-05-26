@@ -49,7 +49,7 @@ import threading
 import time
 
 ADMIN_USER = "admin"  # name of the admin user
-USER_FILE = "user-data"  # resource files for all normal users
+USER_FILE_NAME = "user-data"  # resource files for all normal users
 DEFAULT_ROLE = "Agent Creator"  # new users can create and edit agents, but not create worlds
 IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the simulation)
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
@@ -88,7 +88,7 @@ class UserManager(object):
         """
         # set up persistence
         if not self.users:
-            self.user_file = user_file or open(USER_FILE, "w+")
+            self.user_file = user_file or open(USER_FILE_NAME, "w+")
             try:
                 self.users = json.load(self.user_file)
             except ValueError, err:

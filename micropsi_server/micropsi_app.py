@@ -14,9 +14,12 @@ __date__ = '15.05.12'
 
 from bottle import route, run, template, static_file
 import argparse
+import os
 
 DEFAULT_PORT = 6543
 DEFAULT_HOST = "localhost"
+
+APP_PATH = os.path.dirname(__file__)
 
 @route("/")
 def index():

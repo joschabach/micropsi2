@@ -12,26 +12,31 @@ The latter parameter is the default port and can be changed as needed.
 __author__ = 'joscha'
 __date__ = '15.05.12'
 
+import bottle
 from bottle import route, run, template, static_file
 import argparse
 import os
+
+# from IPython import embed	#devV
 
 DEFAULT_PORT = 6543
 DEFAULT_HOST = "localhost"
 
 APP_PATH = os.path.dirname(__file__)
 
+bottle.debug( True ) #devV
+bottle.TEMPLATE_PATH.insert( 0, APP_PATH + '/view/' )
+
 @route("/")
 def index():
-    return template("view/nodenet")
+    return template("nodenet")
 
 @route('/static/<filepath:path>')
 def server_static(filepath):
-    return static_file(filepath, root='static')
+    return static_file(filepath, root=APP_PATH+'/static')
 
-def main(host = DEFAULT_HOST, port = DEFAULT_PORT):
-    # run(host=host, port=port)
-    run(host=host, port=port, reloader=True) # debug version
+def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
+	run(host=host, port=port, reloader=True) #devV
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Start the MicroPsi server.")

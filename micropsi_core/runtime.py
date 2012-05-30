@@ -12,6 +12,9 @@ __date__ = '10.05.12'
 # import nodenet
 import world
 import user
+import os
+
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 
 class MicroPsiRuntime(object):
     """The central component of the MicroPsi installation.
@@ -29,7 +32,8 @@ class MicroPsiRuntime(object):
         return self
 
     def __init__(self):
-        self.usermanager = user.UserManager()
+        self.userdata_file = open(os.path.join(RESOURCE_PATH, user.USER_FILE_NAME), "w+")
+        self.usermanager = user.UserManager(user_file = self.userdata_file)
 
         # temporary test code
         print "user manager started"

@@ -54,10 +54,63 @@
             </div>
             <div class="nav-collapse">
                 <ul class="nav">
-                    <li class="active"><a href="#">Agent</a></li>
-                    <li><a href="#about">World</a></li>
-                    <li><a href="#contact">Config</a></li>
-                    <li><a href="#about">Help</a></li>
+                    <li class="dropdown" id="menu_agent">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Agent
+                            <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">New...</a></li>
+                            <li><a href="#">Edit...</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">Delete</a></li>
+                            <li><a href="#">Save</a></li>
+                            <li><a href="#">Revert</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">Export to file...</a></li>
+                            <li><a href="#">Import from file...</a></li>
+                            <li><a href="#">Merge with file...</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="menu_world">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">World
+                            <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">New...</a></li>
+                            <li><a href="#">Edit...</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">Delete</a></li>
+                            <li><a href="#">Save</a></li>
+                            <li><a href="#">Revert</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">Export to file...</a></li>
+                            <li><a href="#">Import from file...</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="menu_users">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_users">Users
+                            <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Show user console...</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="menu_config">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_config">Config
+                            <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Server</a></li>
+                            <li><a href="#">Agent runner</a></li>
+                            <li><a href="#">World runner</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown" id="menu_help">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_help">Help
+                            <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">About</a></li>
+                            <li><a href="#">Documentation</a></li>
+                            <li class="divider"></li>
+                            <li><a href="#">Contact</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
             <!--/.nav-collapse -->

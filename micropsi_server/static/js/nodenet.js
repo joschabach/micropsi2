@@ -17,7 +17,7 @@ var viewProperties = {
     padding: 5,
     slotWidth: 34,
     lineHeight: 15,
-    compactNodes: true,
+    compactNodes: false,
     compactModules: false,
     strokeWidth: 0.3,
     outlineWidth: 0.4,
@@ -41,19 +41,15 @@ view.viewSize = new Size(1800,1800);
 
 
 
-
-
 function initializeNodeNet(){
     // determine viewport
     // fetch visible nodes and links
-    var n1 = new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3);
-    nodes[n1.uid] = n1;
-    var n2 = new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.5);
-    nodes[n2.uid] = n2;
-    var link1 = new Link("abcd", 0, "sdff", 0, 1, 1);
-    links[link1.uid]=link1;
-    var link2 = new Link("sdff", 0, "abcd", 0, 1, 1);
-    //links[link2.uid]=link2;
+    addNode(new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3));
+    addNode(new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.0));
+    addNode(new Node("deds", 350, 180, 0, "Carl", "Native", 0.5));
+    addLink(new Link("abcd", 0, "sdff", 0, 1, 1));
+    addLink(new Link("sdff", 0, "abcd", 0, 1, 1));
+    addLink(new Link("sdff", 1, "deds", 0, 1, 1));
 
     // render nodes
     drawNodeNet(currentNodeSpace);
@@ -183,6 +179,7 @@ function Link(sourceNodeUid, gateIndex, targetNodeUid, slotIndex, weight, certai
 
 
 function drawNodeNet(currentNodeSpace) {
+    // complete redraw of the current node space
     if (nodeLayer) nodeLayer.removeChildren();
     if (linkLayer) linkLayer.removeChildren();
     for (i in nodes) {
@@ -223,11 +220,12 @@ function drawNodeNet(currentNodeSpace) {
 
 function addNode(node) {
     // check if node already exists
-    if (!node.uid in nodes) {
+    if (! (node.uid in nodes)) {
         if (node.parent == currentNodeSpace) renderNode(node);
         nodes[node.uid] = node;
     } else {
-        oldNode = nodes[nodeUid];
+        oldNode = nodes[node.uid];
+
         // if node only updates position or activation, we may save some time
        // import all properties individually; check if we really need to redraw
     }
@@ -244,13 +242,32 @@ function eraseNode(node) {
 
 function setNodePosition(node) {
     // like activation change, only put the node elsewhere and redraw the links
+    nodeLayer.children[node.uid].remove();
+    renderNode(node);
+    redrawNodeLinks();
+}
+
+function redrawNodeLinks(node) {
+    // redraw only the links that are connected to the given node
+    for (gate in node.gates) {
+        for (link in node.gates[gate].outgoing) {
+            linkLayer.children[node.gates[gate].outgoing[link].uid].remove();
+            renderLink(node.gates[gate].outgoing[link]);
+        }
+    }
+    for (slot in node.slots) {
+        for (link in node.slots[slot].incoming) {
+            linkLayer.children[node.slots[slot].incoming[link].uid].remove();
+            renderLink(node.slots[slot].incoming[link]);
+        }
+    }
 }
 
 // add or update link
 
 function addLink(link) {
     //check if link already exists
-    if (!link.uid in links) {
+    if (!(link.uid in links)) {
         // add link to source node and target node
         if (nodes[link.sourceNodeUid] && nodes[link.targetNodeUid]) {
             nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing.push(link);
@@ -270,7 +287,7 @@ function addLink(link) {
         if (oldLink.weight != link.weight ||
             oldLink.certainty != link.certainty ||
             nodes[oldLink.sourceNodeUid].gates[oldLink.gateIndex].activation !=
-                nodes[link.sourceNodeUid].gates[link.gateIndex].activation) {
+            nodes[link.sourceNodeUid].gates[link.gateIndex].activation) {
             linkLayer.removeChild(link.uid);
             renderLink(link);
         }
@@ -291,8 +308,8 @@ initializeNodeNet();
 // draw link
 
 function renderLink(link) {
-    sourceNode = nodes[links[i].sourceNodeUid];
-    targetNode = nodes[links[i].targetNodeUid];
+    sourceNode = nodes[link.sourceNodeUid];
+    targetNode = nodes[link.targetNodeUid];
 
     gate = sourceNode.gates[link.gateIndex];
     linkType = gate.name;
@@ -800,19 +817,22 @@ function onMouseDown(event) {
 
     if (hitResult) {
         path = hitResult.item;
-        if (hitResult.type == 'segment') {
-            segment = hitResult.segment;
-        } else if (hitResult.type == 'stroke') {
-            var location = hitResult.location;
-            segment = path.insert(location.index + 1, event.point);
-            path.smooth();
+        if (hitResult.type == 'stroke') {
+            while (path!=project && path.name!="link") path = path.parent;
+            if (path.name=="link") {
+                path = path.parent;
+                console.log ("clicked link "+path.name)
+            }
         }
     }
     movePath = hitResult.type == 'fill';
     if (movePath) {
     	path = hitResult.item;
     	while (path!=project && path.name!="node") path = path.parent;
-        if (path.name=="node") project.activeLayer.addChild(path.parent);
+        if (path.name=="node") {
+            path = path.parent;
+            project.activeLayer.addChild(path);
+        }
 
     }
 }
@@ -831,8 +851,16 @@ function onMouseMove(event) {
 }
 
 function onMouseDrag(event) {
-    if (movePath)
+    if (movePath) {
         path.position += event.delta;
+
+        if (path.firstChild.name=="node") {
+            node = nodes[path.name];
+            node.x += event.delta.x/viewProperties.zoomFactor;
+            node.y += event.delta.y/viewProperties.zoomFactor;
+            redrawNodeLinks(node);
+        }
+    }
 }
 
 function onKeyDown(event) {

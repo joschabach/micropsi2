@@ -145,7 +145,7 @@
                 <form class="navbar-form">
                     <table>
                         <tr>
-                            <td><span data-toggle="collapse" data-target="#nodenet_editor"><i
+                            <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
                                     class="icon-chevron-right"></i></span></td>
 
 
@@ -159,6 +159,13 @@
                     </span></td>
 
                             <td><input class="span1" disabled="disabled" style="text-align:right" value="0"/></td>
+                            <td><div id="nodespace_control" class="collapse in">
+                                &nbsp;Nodespace:
+                                <input class="span3" disabled="disabled" value="Root"/>
+                                <button class="btn"><i class="icon-share"></i></button>
+                            </div>
+
+                            </td>
                         </tr>
                     </table>
 
@@ -175,15 +182,15 @@
                 <form class="navbar-form">
                     <table>
                         <tr>
-                            <td><span data-toggle="collapse" data-target="#monitor"><i
+                            <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
                                     class="icon-chevron-right"></i></span></td>
 
 
-                            <td> Nodenet Monitor</td>
+                            <td> Nodenet Monitor &nbsp;</td>
 
-                            <td><span class="btn-group">
+                            <td><div class="collapse" id="monitor_controls">
                           <button class="btn">Clear</button>
-                    </span></td>
+                    </div></td>
 
                         </tr>
                     </table>
@@ -242,6 +249,7 @@
 
 <script src="static/js/jquery.min.js" type="text/javascript"></script>
 <script src="static/js/bootstrap.min.js" type="text/javascript"></script>
+<script src="static/js/micropsiviewer.js" type="text/javascript"></script>
 <script src="static/js/paper.js" type="text/javascript"></script>
 <script src="static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
 

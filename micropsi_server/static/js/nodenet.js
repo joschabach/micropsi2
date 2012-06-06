@@ -2,7 +2,7 @@ var viewProperties = {
     zoomFactor: 1,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
-    selectionColor: new Color("#0099ff"),
+    hoverColor: new Color("#0099ff"),
     linkColor: new Color("#000000"),
     bgColor: new Color("#ffffff"),
     nodeColor: new Color("#c2c2d6"),
@@ -20,19 +20,24 @@ var viewProperties = {
     compactNodes: false,
     compactModules: false,
     strokeWidth: 0.3,
+    outlineColor: null,
     outlineWidth: 0.4,
     outlineWidthSelected: 3.0,
+    lightColor: new Color ("#ffffff"),
+    gateShadowColor: new Color("#888888"),
     shadowColor: new Color ("#000000"),
-    shadowStrokeWidth: 2,
-    shadowDisplacement: new Point(0,1),
+    shadowStrokeWidth: 0,
+    shadowDisplacement: new Point(0.3,1),
     linkTension: 50,
     linkRadius: 30,
     arrowWidth: 6,
     arrowLength: 10
 };
 
+var selectionLayer = new Layer();
 var linkLayer = new Layer();
 var nodeLayer = new Layer();
+
 var currentNodeSpace = 0;
 
 
@@ -107,6 +112,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 // hashes from uids to object definitions; we import these via json
 nodes = {};
 links = {};
+selection = {};
 
 // target for links, part of a net entity
 function Slot(name) {
@@ -253,7 +259,7 @@ function setNodePosition(node) {
     // like activation change, only put the node elsewhere and redraw the links
     nodeLayer.children[node.uid].remove();
     renderNode(node);
-    redrawNodeLinks();
+    redrawNodeLinks(node);
 }
 
 function redrawNodeLinks(node) {
@@ -425,7 +431,6 @@ function renderLink(link) {
         endPoint += correctionVector.rotate(endAngle+10);
     }
 
-
     linkWeight = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)));
     linkColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
 
@@ -439,23 +444,22 @@ function renderLink(link) {
     arrowPath.scale(viewProperties.zoomFactor, endPoint);
     arrowPath.rotate(endDirection.angle, endPoint);
     arrowPath.fillColor = linkColor;
+    arrowPath.name = "arrow";
 
     arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
     nodeExit = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
 
-
     linkPath = new Path([[startPoint],[nodeExit,new Point(0,0),startDirection],[arrowEntry,endDirection]]);
     linkPath.strokeColor = linkColor;
     linkPath.strokeWidth = viewProperties.zoomFactor * linkWeight;
+    linkPath.name = "line";
     if (gate.name=="cat" || gate.name == "exp") linkPath.dashArray = [4*viewProperties.zoomFactor,3*viewProperties.zoomFactor];
-
 
     linkItem = new Group([linkPath, arrowPath]);
     linkItem.name = "link";
     linkContainer = new Group(linkItem);
     linkContainer.name = link.uid;
 
-    //linkContainer.scale(viewProperties.zoomFactor,endPoint);
     linkLayer.addChild(linkContainer);
 }
 
@@ -580,7 +584,7 @@ function createNodeTitleBar(node, bounds) {
         titleBar.closePath();
     }
     titleBar.name = "titleBarBackground";
-    titleBar.fillColor = viewProperties.nodeLabelColor;
+    //titleBar.fillColor = viewProperties.nodeLabelColor;
 
     // title bar text
     label = new Group();
@@ -607,10 +611,15 @@ function createNodeTitleBar(node, bounds) {
 
 // draw a line below the title bar
 function createNodeTitleBarDelimiter (bounds) {
-    titleBarDelimiter = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight,
+    upper = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight -viewProperties.strokeWidth,
+        bounds.right, bounds.y + viewProperties.lineHeight - viewProperties.strokeWidth);
+    upper.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
+    upper.strokeColor = viewProperties.nodeForegroundColor;
+    lower = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight,
         bounds.right, bounds.y + viewProperties.lineHeight);
-    titleBarDelimiter.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
-    titleBarDelimiter.strokeColor = viewProperties.nodeForegroundColor;
+    lower.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
+    lower.strokeColor = viewProperties.lightColor;
+    titleBarDelimiter = new Group([upper, lower]);
     titleBarDelimiter.name = "titleBarDelimiter";
     return titleBarDelimiter;
 }
@@ -620,13 +629,8 @@ function createNodeShadow(outline) {
     shadow = outline.clone();
     shadow.position += viewProperties.shadowDisplacement;
     shadow.name = "shadow";
-    shadow.strokeColor = viewProperties.shadowColor;
-    shadow.strokeColor.alpha = 0.2;
-    shadow.strokeWidth = viewProperties.shadowStrokeWidth * viewProperties.zoomFactor;
     shadow.fillColor = viewProperties.shadowColor;
-
-    shadow.shadowColor = viewProperties.shadowColor;
-    shadow.shadowBlur = 10;
+    shadow.fillColor.alpha = 0.5;
     return shadow;
 }
 
@@ -635,6 +639,7 @@ function createFullNodeBody(node, outline, bounds) {
     activation = outline.clone();
     activation.name = "activation";
     activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
+    activation.fillColor.alpha = 0.8;
 
     // body text
     label = new Group();
@@ -720,18 +725,21 @@ function createNodeGates(node, bounds) {
 
 // draw the shape of an individual gate or slot
 function createNodeGateElement(startPoint, type, labelText) {
-    pillBounds = new Rectangle(startPoint.x, startPoint.y, viewProperties.slotWidth - viewProperties.lineHeight,
-        viewProperties.lineHeight - 2*viewProperties.strokeWidth);
+    pillBounds = new Rectangle(startPoint.x, startPoint.y+1, viewProperties.slotWidth - viewProperties.lineHeight,
+        viewProperties.lineHeight - 2);
     pill = new Path();
     pill.add(pillBounds.bottomLeft);
     pill.arcTo(pillBounds.topLeft);
     pill.lineTo(pillBounds.topRight);
     pill.arcTo(pillBounds.bottomRight);
     pill.closePath();
-    pill.fillColor = viewProperties.nodeColor;
-    pill.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
-    pill.strokeColor = viewProperties.nodeForegroundColor;
-    pill.name = "activation";
+    pill.fillColor = viewProperties.gateShadowColor;
+    pill.fillColor.alpha = 0.8;
+    pill.name = "shadow";
+    activation = pill.clone();
+    activation.position -= viewProperties.shadowDisplacement;
+    activation.fillColor = viewProperties.nodeColor;
+    activation.name = "activation";
 
     label = new Group();
     label.name = "label";
@@ -752,7 +760,7 @@ function createNodeGateElement(startPoint, type, labelText) {
     slotText.name = "text";
     label.addChild(slotText);
 
-    nodeGateElement = new Group([pill, label]);
+    nodeGateElement = new Group([pill, activation, label]);
     nodeGateElement.name = type;
 
     return nodeGateElement;
@@ -775,21 +783,10 @@ function createCompactNodeLabel(node, bounds) {
     return null;
 }
 
-// draw the symbol of a compact node
-function createCompactNodeSymbol(node, bounds) {
-    symbolText = new PointText(new Point(bounds.x+bounds.width/2,
-        bounds.y+bounds.height/2+viewProperties.symbolSize/2));
-    symbolText.fillColor = viewProperties.nodeForegroundColor;
-    symbolText.content = node.symbol;
-    symbolText.fontSize = viewProperties.symbolSize;
-    symbolText.paragraphStyle.justification = 'center';
-    return symbolText;
-}
-
 // draw outline of a node
 function createNodeOutline(shape) {
     shape.name = "outline";
-    shape.strokeColor = viewProperties.nodeForegroundColor;
+    shape.strokeColor = viewProperties.outlineColor;
     shape.strokeWidth = viewProperties.outlineWidth * viewProperties.zoomFactor;
     return shape;
 }
@@ -849,19 +846,20 @@ var hitOptions = {
     tolerance: 5
 };
 
-var segment, path;
+var path, hoverPath;
 var movePath = false;
 function onMouseDown(event) {
-    segment = path = null;
+    path = hoverPath = null;
     var hitResult = project.hitTest(event.point, hitOptions);
 
     if (event.modifiers.shift) {
-        if (hitResult.type == 'segment') {
-            hitResult.segment.remove();
-        };
+        //
         return;
     }
-    if (!hitResult) movePath = false;
+    if (!hitResult) {
+        movePath = false;
+        // deselect all
+    }
     else {
         path = hitResult.item;
         if (hitResult.type == 'stroke' || hitResult.type =="fill") {
@@ -881,29 +879,70 @@ function onMouseDown(event) {
             }
             if (path.name=="node") {
                 path = path.parent;
-                project.activeLayer.addChild(path);
+                nodeLayer.addChild(path);
                 movePath = true;
                 console.log ("clicked node "+path.name);
             }
         }
-
     }
 }
 
+var hover = null;
+var hoverArrow = null;
+var oldHoverColor = null;
+var previousItem = null;
+
 function onMouseMove(event) {
+    // hover
     var hitResult = project.hitTest(event.point, hitOptions);
-    project.activeLayer.selected = false;
+    if (hitResult) {
+        if (hitResult.item == previousItem) return;
+        else previousItem = hitResult.item;
+    }
+
+    if (hover) {
+        if (hover.name == "activation") hover.fillColor = oldHoverColor;
+        else {
+            hover.strokeColor = oldHoverColor;
+            hoverArrow.fillColor = oldHoverColor;
+        }
+        hover = null;
+    }
     if (hitResult && hitResult.item) {
         path = hitResult.item;
         while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
+        if (path.name == "slot") {
+            console.log("hovering at slot #" + path.index);
+            hover = path.children["activation"];
+            oldHoverColor = hover.fillColor;
+            hover.fillColor = viewProperties.hoverColor;
+        }
+        if (path.name == "gate") {
+            console.log("hovering at gate #" + path.index);
+            hover = path.children["activation"];
+            oldHoverColor = hover.fillColor;
+            hover.fillColor = viewProperties.hoverColor;
+        }
+        if (path.name == "node") {
+            console.log("hovering at node " + path.parent.name);
+            hover = path.children["body"].children["activation"];
+            oldHoverColor = hover.fillColor;
+            hover.fillColor = viewProperties.hoverColor;
+            //hover.selected=true;
+        }
         if (path.name == "link") {
-            // test = path.clone();
-            // test.childen[0].strokeColor=viewProperties.selectionColor;
+            console.log("hovering at link " + path.parent.name);
+            hover = path.children["line"];
+            oldHoverColor = hover.strokeColor;
+            hover.strokeColor = viewProperties.hoverColor;
+            hoverArrow = path.children["arrow"];
+            hoverArrow.fillColor = viewProperties.hoverColor;
         }
     }
 }
 
 function onMouseDrag(event) {
+    // move current node
     if (movePath) {
 
         if (path.firstChild.name=="node") {

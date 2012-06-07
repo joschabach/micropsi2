@@ -1,8 +1,10 @@
 var viewProperties = {
     zoomFactor: 1,
+    frameWidth: 100,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
-    hoverColor: new Color("#0099ff"),
+    selectionColor: new Color("#0099ff"),
+    hoverColor: new Color("#089AC7"),
     linkColor: new Color("#000000"),
     bgColor: new Color("#ffffff"),
     nodeColor: new Color("#c2c2d6"),
@@ -21,8 +23,8 @@ var viewProperties = {
     compactModules: false,
     strokeWidth: 0.3,
     outlineColor: null,
-    outlineWidth: 0.4,
-    outlineWidthSelected: 3.0,
+    outlineWidth: 0.3,
+    outlineWidthSelected: 2.0,
     lightColor: new Color ("#ffffff"),
     gateShadowColor: new Color("#888888"),
     shadowColor: new Color ("#000000"),
@@ -34,6 +36,11 @@ var viewProperties = {
     arrowLength: 10
 };
 
+// hashes from uids to object definitions; we import these via json
+nodes = {};
+links = {};
+selection = {};
+
 var selectionLayer = new Layer();
 var linkLayer = new Layer();
 var nodeLayer = new Layer();
@@ -43,11 +50,11 @@ var currentNodeSpace = 0;
 
 view.viewSize = new Size(1800,1800);
 
+initializeNodeNet();
 
 
 
 function initializeNodeNet(){
-    // determine viewport
     // fetch visible nodes and links
     addNode(new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3));
     addNode(new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.0));
@@ -55,6 +62,23 @@ function initializeNodeNet(){
     addLink(new Link("abcd", 0, "sdff", 0, 1, 1));
     addLink(new Link("sdff", 0, "abcd", 0, 1, 1));
     addLink(new Link("sdff", 1, "deds", 0, 1, 1));
+    updateViewSize();
+}
+
+function updateViewSize() {
+    // adapt the size of the current view to the contained nodes and the canvas size
+    var maxX = maxY = 0;
+    var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
+    for (nodeUid in nodes) {
+        node = nodes[nodeUid];
+        // make sure no node gets lost to the top or left
+        node.x = Math.max(frameWidth, node.x);
+        node.y = Math.max(frameWidth, node.y);
+        maxX = Math.max(maxX, node.x);
+        maxY = Math.max(maxY, node.y);
+    }
+    view.viewSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor, view.canvas.parentElement.clientWidth),
+        Math.max((maxY+viewProperties.frameWidth)* viewProperties.zoomFactor, view.canvas.parentElement.clientHeight));
 }
 
 
@@ -109,11 +133,6 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 	}
 }
 
-// hashes from uids to object definitions; we import these via json
-nodes = {};
-links = {};
-selection = {};
-
 // target for links, part of a net entity
 function Slot(name) {
 	this.name = name;
@@ -145,11 +164,8 @@ function Link(sourceNodeUid, gateIndex, targetNodeUid, slotIndex, weight, certai
  - multi-select of nodes with shift
  - toggle selct with ctrl
  - multi-select by dragging a frame
- - hover over nodes
  - delete node
 
- - link annotations
- - rotate annotations
  - links into invisible nodespaces
  - select link
  - deselect link
@@ -217,6 +233,7 @@ function redrawNodeNet(currentNodeSpace) {
             renderLink(links[i]);
         }
     }
+    updateViewSize();
 }
 
 // add or update node, should usually be called from the JSON parser
@@ -232,6 +249,8 @@ function addNode(node) {
         // if node only updates position or activation, we may save some time
        // import all properties individually; check if we really need to redraw
     }
+    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth)*viewProperties.zoomFactor);
+    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth)*viewProperties.zoomFactor);
 }
 
 function removeNode(node) {
@@ -320,7 +339,6 @@ function removeLink(link) {
     delete nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid];
 }
 
-initializeNodeNet();
 
 
 function renderLink(link) {
@@ -815,6 +833,23 @@ function setActivation(node) {
     } else console.log ("node "+node.uid+" not found in current view");
 }
 
+// mark node as selected, and add it to the selected nodes
+function selectNode(nodeUid) {
+    selection[nodeUid] = nodes[nodeUid];
+    outline = nodeLayer.children[nodeUid].children["node"].children["outline"];
+    outline.strokeColor = viewProperties.selectionColor;
+    outline.strokeWidth = viewProperties.outlineWidthSelected;
+}
+
+function deselectNode(nodeUid) {
+    if (nodeUid in selection) {
+        delete selection[nodeUid];
+        outline = nodeLayer.children[nodeUid].children["node"].children["outline"];
+        outline.strokeColor = viewProperties.outlineColor;
+        outline.strokeWidth = viewProperties.outlineWidth;
+    }
+}
+
 // should we draw this node in compact style or full?
 function isCompact(node) {
     if (viewProperties.zoomFactor < 0.5) return true; // you cannot read this anyway
@@ -856,9 +891,14 @@ function onMouseDown(event) {
         //
         return;
     }
+    console.log(event);
     if (!hitResult) {
         movePath = false;
         // deselect all
+        for (nodeUid in selection){
+            deselectNode(nodeUid);
+        }
+
     }
     else {
         path = hitResult.item;
@@ -881,6 +921,7 @@ function onMouseDown(event) {
                 path = path.parent;
                 nodeLayer.addChild(path);
                 movePath = true;
+                selectNode(path.name);
                 console.log ("clicked node "+path.name);
             }
         }
@@ -955,6 +996,10 @@ function onMouseDrag(event) {
     }
 }
 
+function onMouseUp(event) {
+    if (movePath) updateViewSize();
+}
+
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
     if (event.character == "+") {
@@ -966,3 +1011,9 @@ function onKeyDown(event) {
         redrawNodeNet(currentNodeSpace);
     }
 }
+
+function onResize(event) {
+    console.log("resize");
+    updateViewSize();
+}
+

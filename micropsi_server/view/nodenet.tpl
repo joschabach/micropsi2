@@ -161,7 +161,7 @@
                             <td><input class="span1" disabled="disabled" style="text-align:right" value="0"/></td>
                             <td><div id="nodespace_control" class="collapse in">
                                 &nbsp;Nodespace:
-                                <input class="span3" disabled="disabled" value="Root"/>
+                                <input class="span2" disabled="disabled" value="Root"/>
                                 <button class="btn"><i class="icon-share"></i></button>
                             </div>
 
@@ -174,7 +174,7 @@
 
 
             <div id="nodenet_editor" class="collapse in">
-                <div style="overflow:scroll; height:400px">
+                <div style="overflow:scroll; height:500px">
                     <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
                 </div>
             </div>

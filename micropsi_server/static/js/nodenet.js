@@ -898,6 +898,7 @@ function onMouseDown(event) {
     if (!hitResult) {
         movePath = false;
         deselectAll();
+        if (event.modifiers.control || event.button == 2) openContextMenu("#create_node_menu", event.event);
     }
     else {
         path = hitResult.item;
@@ -907,26 +908,31 @@ function onMouseDown(event) {
             if (path.name == "slot") {
                 console.log("clicked slot #" + path.index);
                 while (path!=project && path.name!="node") path = path.parent;
+                if (event.modifiers.control || event.button == 2) openContextMenu("#slot_menu", event.event);
             }
-            if (path.name == "gate") {
+            else if (path.name == "gate") {
                 console.log("clicked gate #" + path.index);
                 while (path!=project && path.name!="node") path = path.parent;
+                if (event.modifiers.control || event.button == 2) openContextMenu("#gate_menu", event.event);
             }
-            if (path.name == "link") {
+            else if (path.name == "link") {
                 path = path.parent;
                 if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
                 console.log("clicked link " + path.name);
+                if (event.modifiers.control || event.button == 2) openContextMenu("#link_menu", event.event);
             }
-            if (path.name=="node") {
+            else if (path.name=="node") {
                 path = path.parent;
-                nodeLayer.addChild(path);
-                movePath = true;
+                //nodeLayer.addChild(path);
+
                 if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
                 if (event.modifiers.command && path.name in selection) deselectNode(path.name); // toggle
                 else selectNode(path.name);
                 console.log ("clicked node "+path.name);
+                if (event.modifiers.control || event.button == 2) openNodeContextMenu("#node_menu", event.event, path.name);
+                else movePath = true;
             }
         }
     }
@@ -1025,12 +1031,44 @@ function onResize(event) {
     updateViewSize();
 }
 
+// menus -----------------------------------------------------------------------------
+
+function openContextMenu(menu_id, event) {
+    event.cancelBubble = true;
+    $(menu_id).css({
+        position: "absolute",
+        zIndex: 500,
+        marginLeft: 0, marginTop: 0,
+        top: event.pageY, left: event.pageX });
+    $(menu_id+" .dropdown-toggle").dropdown("toggle");
+}
+
+// build the node menu
+function openNodeContextMenu(menu_id, event, nodeUid) {
+    menu = $(menu_id+" .dropdown-menu");
+    menu.empty();
+    node = nodes[nodeUid];
+    if (node.type == "Concept") {
+        menu.append('<li><a href="#">Create gen link</a></li>');
+        menu.append('<li><a href="#">Create por/ret link</a></li>');
+        menu.append('<li><a href="#">Create sub/sur link</a></li>');
+        menu.append('<li><a href="#">Create cat/exp link</a></li>');
+        menu.append('<li class="divider"></li>');
+    } else if (node.gates) {
+        for (gateIndex in node.gates) {
+            menu.append('<li><a href="#">Create '+node.gates[gateIndex].name+' link</a></li>')
+        }
+        menu.append('<li class="divider"></li>');
+    }
+    menu.append('<li><a href="#">Delete Node</a></li>');
+    openContextMenu(menu_id, event);
+}
+
 /* todo:
  - multi-select by dragging a frame
 
  - links into invisible nodespaces
 
- - context menu
  - add node w type
  - add link w type
  - add link from gate

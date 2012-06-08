@@ -29,7 +29,7 @@
     <link rel="shortcut icon" href="static/favicon.png">
 </head>
 
-<body>
+<body oncontextmenu="return false;">
 
 <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
@@ -247,11 +247,56 @@
 
 </div><!--/.fluid-container-->
 
+<div class="dropdown" id="node_menu">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>
+    <ul class="dropdown-menu">
+    </ul>
+</div>
+
+<div class="dropdown" id="link_menu">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#link_menu"></a>
+    <ul class="dropdown-menu">
+        <li><a href="#">Delete link</a></li>
+    </ul>
+</div>
+
+<div class="dropdown" id="slot_menu">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#slot_menu"></a>
+    <ul class="dropdown-menu">
+        <li><a href="#">Add monitor to slot</a></li>
+    </ul>
+</div>
+
+<div class="dropdown" id="gate_menu">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#gate_menu"></a>
+    <ul class="dropdown-menu">
+        <li><a href="#">Create link</a></li>
+        <li><a href="#">Add monitor to gate</a></li>
+    </ul>
+</div>
+
+<div class="dropdown" id="create_node_menu">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
+    <ul class="dropdown-menu">
+        <li><a href="#">Create concept node</a></li>
+        <li><a href="#">Create register</a></li>
+        <li><a href="#">Create sensor</a></li>
+        <li><a href="#">Create actuator</a></li>
+        <li><a href="#">Create node space</a></li>
+        <li><a href="#">Create native module</a></li>
+    </ul>
+</div>
+
+
+
+
 <script src="static/js/jquery.min.js" type="text/javascript"></script>
 <script src="static/js/bootstrap.min.js" type="text/javascript"></script>
 <script src="static/js/micropsiviewer.js" type="text/javascript"></script>
 <script src="static/js/paper.js" type="text/javascript"></script>
 <script src="static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
+
+
 
 </body>
 </html>

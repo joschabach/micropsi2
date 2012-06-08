@@ -16,3 +16,5 @@ callbacks = new function() {
         this[name] = foo;
     };
 }
+
+

@@ -187,10 +187,7 @@ function addLink(link) {
 // delete a link from the array, and from the screen
 function removeLink(link) {
     delete links[link.uid];
-    if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
-        nodes[link.targetNodeUid].parent == currentNodeSpace) {
-        linkLayer.children[link.uid].remove();
-    }
+    if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
     delete nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid];
     delete nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid];
 }
@@ -213,20 +210,18 @@ function addNode(node) {
 
 // remove the node from hash, get rid of orphan links, and delete it from the screen
 function removeNode(node) {
+    for (gateIndex in node.gates) {
+        for (linkUid in node.gates[gateIndex].outgoing) {
+            removeLink(links[linkUid]);
+        }
+    }
+    for (slotIndex in node.slots) {
+        for (linkUid in node.slots[slotIndex].incoming) {
+            removeLink(links[linkUid]);
+        }
+    }
     if (node.uid in nodeLayer.children) {
         nodeLayer.children[node.uid].remove();
-        for (gateIndex in node.gates) {
-            for (linkUid in node.gates[gateIndex].outgoing) {
-                delete links[linkUid];
-                linkLayer.children[linkUid].remove();
-            }
-        }
-        for (slotIndex in node.slots) {
-            for (linkUid in node.slots[slotIndex].incoming) {
-                delete links[linkUid];
-                linkLayer.children[linkUid].remove();
-            }
-        }
     }
     delete nodes[node.uid];
 }
@@ -1016,6 +1011,13 @@ function onKeyDown(event) {
         if (viewProperties.zoomFactor > .2) viewProperties.zoomFactor -= .1;
         redrawNodeNet(currentNodeSpace);
     }
+    // delete nodes and links
+    else if (event.key == "backspace" || event.key == "delete") {
+        for (uid in selection) {
+            if (uid in nodes) removeNode(nodes[uid]);
+            if (uid in links) removeLink(links[uid]);
+        }
+    }
 }
 
 function onResize(event) {
@@ -1025,10 +1027,8 @@ function onResize(event) {
 
 /* todo:
  - multi-select by dragging a frame
- - delete node
 
  - links into invisible nodespaces
- - delete link
 
  - context menu
  - add node w type

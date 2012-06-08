@@ -1,3 +1,13 @@
+/*
+ * Paperscript code, defines the rendering of the node net within its canvas
+ *
+ * Autor: joscha
+ * Date: 03.05.2012
+ */
+
+
+// initialization ---------------------------------------------------------------------
+
 var viewProperties = {
     zoomFactor: 1,
     frameWidth: 100,
@@ -47,15 +57,10 @@ var nodeLayer = new Layer();
 
 var currentNodeSpace = 0;
 
-
-view.viewSize = new Size(1800,1800);
-
 initializeNodeNet();
 
-
-
+// fetch visible nodes and links
 function initializeNodeNet(){
-    // fetch visible nodes and links
     addNode(new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3));
     addNode(new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.0));
     addNode(new Node("deds", 350, 180, 0, "Carl", "Native", 0.5));
@@ -65,22 +70,7 @@ function initializeNodeNet(){
     updateViewSize();
 }
 
-function updateViewSize() {
-    // adapt the size of the current view to the contained nodes and the canvas size
-    var maxX = maxY = 0;
-    var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
-    for (nodeUid in nodes) {
-        node = nodes[nodeUid];
-        // make sure no node gets lost to the top or left
-        node.x = Math.max(frameWidth, node.x);
-        node.y = Math.max(frameWidth, node.y);
-        maxX = Math.max(maxX, node.x);
-        maxY = Math.max(maxY, node.y);
-    }
-    view.viewSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor, view.canvas.parentElement.clientWidth),
-        Math.max((maxY+viewProperties.frameWidth)* viewProperties.zoomFactor, view.canvas.parentElement.clientHeight));
-}
-
+// data structures ----------------------------------------------------------------------
 
 
 // data structure for net entities
@@ -95,6 +85,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 	this.slots=[];
 	this.gates=[];
     this.parent = nodeSpaceUid; // parent nodespace, default is root
+    this.fillColor = null;
 	switch (type) {
         case "Nodespace":
             this.symbol = "NS";
@@ -156,49 +147,112 @@ function Link(sourceNodeUid, gateIndex, targetNodeUid, slotIndex, weight, certai
     this.slotIndex = slotIndex;
     this.weight = weight;
     this.certainty = certainty;
+
+    this.strokeColor = null;
+    this.strokeWidth = null;
 }
 
-/* todo:
- - selection of node
- - deselect by clicking in background
- - multi-select of nodes with shift
- - toggle selct with ctrl
- - multi-select by dragging a frame
- - delete node
+// data manipulation ----------------------------------------------------------------
 
- - links into invisible nodespaces
- - select link
- - deselect link
- - delete link
+// add or update link
+function addLink(link) {
+    //check if link already exists
+    if (!(link.uid in links)) {
+        // add link to source node and target node
+        if (nodes[link.sourceNodeUid] && nodes[link.targetNodeUid]) {
+            nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid]=link;
+            nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid]=link;
+            // check if link is visible
+            if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
+                nodes[link.targetNodeUid].parent == currentNodeSpace) {
+                renderLink(link);
+            }
+            links[link.uid] = link;
+        } else {
+            console.log("Error: Attempting to create link without establishing nodes first");
+        }
+    } else {
+        // if weight or activation change, we need to redraw
+        oldLink = links[link.uid];
+        if (oldLink.weight != link.weight ||
+            oldLink.certainty != link.certainty ||
+            nodes[oldLink.sourceNodeUid].gates[oldLink.gateIndex].activation !=
+                nodes[link.sourceNodeUid].gates[link.gateIndex].activation) {
+            linkLayer.children[link.uid].remove();
+            renderLink(link);
+        }
+    }
+}
 
- - context menu
- - add node w type
- - add link w type
- - add link from gate
- - add link via dialog
+// delete a link from the array, and from the screen
+function removeLink(link) {
+    delete links[link.uid];
+    if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
+        nodes[link.targetNodeUid].parent == currentNodeSpace) {
+        linkLayer.children[link.uid].remove();
+    }
+    delete nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid];
+    delete nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid];
+}
 
- - communicate with server
- - get nodes in viewport
- - get links from visible nodes
- - get individual nodes and links (standard communication should make sure that we get a maximum number of nodes,
- after this restrict it to the visible nodes, but include the linked nodes outside the view)
- - get diffs
- - sent updates of editor to server
- - start and stop simulations
- - handle connection problems
+// add or update node, should usually be called from the JSON parser
+function addNode(node) {
+    // check if node already exists
+    if (! (node.uid in nodes)) {
+        if (node.parent == currentNodeSpace) renderNode(node);
+        nodes[node.uid] = node;
+    } else {
+        oldNode = nodes[node.uid];
 
- - editor ui elements
- - scaling of viewport
- - multiple viewports
- - creation of agents
- - switching between agents
- - exporting and importing
-  */
+        // if node only updates position or activation, we may save some time
+        // import all properties individually; check if we really need to redraw
+    }
+    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth)*viewProperties.zoomFactor);
+    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth)*viewProperties.zoomFactor);
+}
 
+// remove the node from hash, get rid of orphan links, and delete it from the screen
+function removeNode(node) {
+    if (node.uid in nodeLayer.children) {
+        nodeLayer.children[node.uid].remove();
+        for (gateIndex in node.gates) {
+            for (linkUid in node.gates[gateIndex].outgoing) {
+                delete links[linkUid];
+                linkLayer.children[linkUid].remove();
+            }
+        }
+        for (slotIndex in node.slots) {
+            for (linkUid in node.slots[slotIndex].incoming) {
+                delete links[linkUid];
+                linkLayer.children[linkUid].remove();
+            }
+        }
+    }
+    delete nodes[node.uid];
+}
 
+// rendering ------------------------------------------------------------------------
 
+// adapt the size of the current view to the contained nodes and the canvas size
+function updateViewSize() {
+    var maxX = maxY = 0;
+    var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
+    for (nodeUid in nodes) {
+        node = nodes[nodeUid];
+        // make sure no node gets lost to the top or left
+        node.x = Math.max(frameWidth, node.x);
+        node.y = Math.max(frameWidth, node.y);
+        maxX = Math.max(maxX, node.x);
+        maxY = Math.max(maxY, node.y);
+    }
+    view.viewSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
+        view.canvas.parentElement.clientWidth),
+        Math.max((maxY+viewProperties.frameWidth)* viewProperties.zoomFactor,
+            view.canvas.parentElement.clientHeight));
+}
+
+// complete redraw of the current node space
 function redrawNodeNet(currentNodeSpace) {
-    // complete redraw of the current node space
     if (nodeLayer) nodeLayer.removeChildren();
     if (linkLayer) linkLayer.removeChildren();
     for (i in nodes) {
@@ -236,53 +290,15 @@ function redrawNodeNet(currentNodeSpace) {
     updateViewSize();
 }
 
-// add or update node, should usually be called from the JSON parser
-
-function addNode(node) {
-    // check if node already exists
-    if (! (node.uid in nodes)) {
-        if (node.parent == currentNodeSpace) renderNode(node);
-        nodes[node.uid] = node;
-    } else {
-        oldNode = nodes[node.uid];
-
-        // if node only updates position or activation, we may save some time
-       // import all properties individually; check if we really need to redraw
-    }
-    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth)*viewProperties.zoomFactor);
-    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth)*viewProperties.zoomFactor);
-}
-
-function removeNode(node) {
-    // remove the node from screen, get rid of orphan links, and from hash
-    if (node.uid in nodeLayer.children) {
-        nodeLayer.children[node.uid].remove();
-        for (gateIndex in node.gates) {
-            for (linkUid in node.gates[gateIndex].outgoing) {
-                delete links[linkUid];
-                linkLayer.children[linkUid].remove();
-            }
-        }
-        for (slotIndex in node.slots) {
-            for (linkUid in node.slots[slotIndex].incoming) {
-                delete links[linkUid];
-                linkLayer.children[linkUid].remove();
-            }
-        }
-    }
-    delete nodes[node.uid];
-}
-
-
+// like activation change, only put the node elsewhere and redraw the links
 function setNodePosition(node) {
-    // like activation change, only put the node elsewhere and redraw the links
     nodeLayer.children[node.uid].remove();
     renderNode(node);
     redrawNodeLinks(node);
 }
 
+// redraw only the links that are connected to the given node
 function redrawNodeLinks(node) {
-    // redraw only the links that are connected to the given node
     for (gateIndex in node.gates) {
         for (linkUid in node.gates[gateIndex].outgoing) {
             linkLayer.children[linkUid].remove();
@@ -297,52 +313,8 @@ function redrawNodeLinks(node) {
     }
 }
 
-// add or update link
-
-function addLink(link) {
-    //check if link already exists
-    if (!(link.uid in links)) {
-        // add link to source node and target node
-        if (nodes[link.sourceNodeUid] && nodes[link.targetNodeUid]) {
-            nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid]=link;
-            nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid]=link;
-            // check if link is visible
-            if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
-                nodes[link.targetNodeUid].parent == currentNodeSpace) {
-                renderLink(link);
-            }
-            links[link.uid] = link;
-        } else {
-            console.log("Error: Attempting to create link without establishing nodes first");
-        }
-    } else {
-        // if weight or activation change, we need to redraw
-        oldLink = links[link.uid];
-        if (oldLink.weight != link.weight ||
-            oldLink.certainty != link.certainty ||
-            nodes[oldLink.sourceNodeUid].gates[oldLink.gateIndex].activation !=
-            nodes[link.sourceNodeUid].gates[link.gateIndex].activation) {
-            linkLayer.children[link.uid].remove();
-            renderLink(link);
-        }
-    }
-}
-
-function removeLink(link) {
-    // delete a link from the array, and from the screen
-    delete links[link.uid];
-    if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
-        nodes[link.targetNodeUid].parent == currentNodeSpace) {
-        linkLayer.children[link.uid].remove();
-    }
-    delete nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid];
-    delete nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid];
-}
-
-
-
+// draw link
 function renderLink(link) {
-    // draw link
     sourceNode = nodes[link.sourceNodeUid];
     targetNode = nodes[link.targetNodeUid];
 
@@ -360,9 +332,11 @@ function renderLink(link) {
         sourceBounds = calculateCompactNodeDimensions(sourceNode);
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
             if (sourceNode.type == "Sensor")
-                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5*viewProperties.zoomFactor,sourceBounds.y);
+                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5*viewProperties.zoomFactor,
+                    sourceBounds.y);
             else
-                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.4*viewProperties.zoomFactor, sourceBounds.y);
+                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.4*viewProperties.zoomFactor,
+                    sourceBounds.y);
             startAngle = 270;
         } else {
             switch (linkType){
@@ -436,7 +410,8 @@ function renderLink(link) {
     } else {
         targetBounds = calculateFullNodeDimensions(targetNode);
         endAngle = 180;
-        endPoint = new Point(targetBounds.x, targetBounds.y+viewProperties.lineHeight*(link.slotIndex+2.5)*viewProperties.zoomFactor);
+        endPoint = new Point(targetBounds.x,
+            targetBounds.y+viewProperties.lineHeight*(link.slotIndex+2.5)*viewProperties.zoomFactor);
     }
     if (startPointIsPreliminary) { // start from boundary of a compact node
         correctionVector = new Point(sourceBounds.width/2*viewProperties.zoomFactor, 0);
@@ -449,8 +424,8 @@ function renderLink(link) {
         endPoint += correctionVector.rotate(endAngle+10);
     }
 
-    linkWeight = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)));
-    linkColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
+    link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)));
+    link.strokeColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
 
     startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(startAngle);
     endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(endAngle);
@@ -461,17 +436,18 @@ function renderLink(link) {
     arrowPath.closePath();
     arrowPath.scale(viewProperties.zoomFactor, endPoint);
     arrowPath.rotate(endDirection.angle, endPoint);
-    arrowPath.fillColor = linkColor;
+    arrowPath.fillColor = link.strokeColor;
     arrowPath.name = "arrow";
 
     arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
     nodeExit = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
 
     linkPath = new Path([[startPoint],[nodeExit,new Point(0,0),startDirection],[arrowEntry,endDirection]]);
-    linkPath.strokeColor = linkColor;
-    linkPath.strokeWidth = viewProperties.zoomFactor * linkWeight;
+    linkPath.strokeColor = link.strokeColor;
+    linkPath.strokeWidth = viewProperties.zoomFactor * link.strokeWidth;
     linkPath.name = "line";
-    if (gate.name=="cat" || gate.name == "exp") linkPath.dashArray = [4*viewProperties.zoomFactor,3*viewProperties.zoomFactor];
+    if (gate.name=="cat" || gate.name == "exp") linkPath.dashArray = [4*viewProperties.zoomFactor,
+        3*viewProperties.zoomFactor];
 
     linkItem = new Group([linkPath, arrowPath]);
     linkItem.name = "link";
@@ -656,7 +632,7 @@ function createNodeShadow(outline) {
 function createFullNodeBody(node, outline, bounds) {
     activation = outline.clone();
     activation.name = "activation";
-    activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
+    node.fillColor = activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
     activation.fillColor.alpha = 0.8;
 
     // body text
@@ -683,7 +659,6 @@ function createFullNodeBody(node, outline, bounds) {
 
     return body;
 }
-
 
 // draw background, with activation of the node
 function createCompactNodeBody(node, outline, bounds) {
@@ -816,7 +791,7 @@ function setActivation(node) {
     nodeView = nodeLayer.children[node.uid];
     if (nodeView) {
         nodeItem = nodeView.children["node"];
-        nodeItem.children["body"].children["activation"].fillColor =
+        node.fillColor = nodeItem.children["body"].children["activation"].fillColor =
             activationColor(node.activation, viewProperties.nodeColor);
         if (!isCompact(node) && (node.slots.length || node.gates.length)) {
             for (i in node.slots) {
@@ -838,15 +813,49 @@ function selectNode(nodeUid) {
     selection[nodeUid] = nodes[nodeUid];
     outline = nodeLayer.children[nodeUid].children["node"].children["outline"];
     outline.strokeColor = viewProperties.selectionColor;
-    outline.strokeWidth = viewProperties.outlineWidthSelected;
+    outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
 }
 
+// remove selection marking of node, and remove if from the set of selected nodes
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
         outline = nodeLayer.children[nodeUid].children["node"].children["outline"];
         outline.strokeColor = viewProperties.outlineColor;
         outline.strokeWidth = viewProperties.outlineWidth;
+    }
+}
+
+// mark node as selected, and add it to the selected nodes
+function selectLink(linkUid) {
+    selection[linkUid] = links[linkUid];
+    linkShape = linkLayer.children[linkUid].children["link"];
+    oldHoverColor = viewProperties.selectionColor;
+    linkShape.children["line"].strokeColor = viewProperties.selectionColor;
+    linkShape.children["line"].strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
+    linkShape.children["arrow"].fillColor = viewProperties.selectionColor;
+    linkShape.children["arrow"].strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
+    linkShape.children["arrow"].strokeColor = viewProperties.selectionColor;
+}
+
+// remove selection marking of node, and remove if from the set of selected nodes
+function deselectLink(linkUid) {
+    if (linkUid in selection) {
+        delete selection[linkUid];
+        linkShape = linkLayer.children[linkUid].children["link"];
+        linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
+        linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
+        linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;
+        linkShape.children["arrow"].strokeWidth = 0;
+        linkShape.children["arrow"].strokeColor = null;
+    }
+}
+
+// deselect all nodes and links
+function deselectAll() {
+    for (uid in selection){
+        if (uid in nodes) deselectNode(uid);
+        if (uid in links) deselectLink(uid);
     }
 }
 
@@ -872,7 +881,7 @@ function activationColor(activation, baseColor) {
 	                    baseColor.lightness * r + c.lightness * a);
 }
 
-// ----
+// mouse and keyboard interaction -----------------------------------
 
 var hitOptions = {
     segments: false,
@@ -883,22 +892,17 @@ var hitOptions = {
 
 var path, hoverPath;
 var movePath = false;
+
 function onMouseDown(event) {
     path = hoverPath = null;
     var hitResult = project.hitTest(event.point, hitOptions);
 
     if (event.modifiers.shift) {
         //
-        return;
     }
-    console.log(event);
     if (!hitResult) {
         movePath = false;
-        // deselect all
-        for (nodeUid in selection){
-            deselectNode(nodeUid);
-        }
-
+        deselectAll();
     }
     else {
         path = hitResult.item;
@@ -915,13 +919,18 @@ function onMouseDown(event) {
             }
             if (path.name == "link") {
                 path = path.parent;
+                if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
+                if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
+                else selectLink(path.name);
                 console.log("clicked link " + path.name);
             }
             if (path.name=="node") {
                 path = path.parent;
                 nodeLayer.addChild(path);
                 movePath = true;
-                selectNode(path.name);
+                if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
+                if (event.modifiers.command && path.name in selection) deselectNode(path.name); // toggle
+                else selectNode(path.name);
                 console.log ("clicked node "+path.name);
             }
         }
@@ -939,13 +948,14 @@ function onMouseMove(event) {
     if (hitResult) {
         if (hitResult.item == previousItem) return;
         else previousItem = hitResult.item;
-    }
+    } else previousItem = null;
 
-    if (hover) {
+    if (hover) { // unhover
         if (hover.name == "activation") hover.fillColor = oldHoverColor;
-        else {
+        else if (hover.name == "line") {
             hover.strokeColor = oldHoverColor;
             hoverArrow.fillColor = oldHoverColor;
+            oldHoverColor = null;
         }
         hover = null;
     }
@@ -953,13 +963,11 @@ function onMouseMove(event) {
         path = hitResult.item;
         while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
         if (path.name == "slot") {
-            console.log("hovering at slot #" + path.index);
             hover = path.children["activation"];
             oldHoverColor = hover.fillColor;
             hover.fillColor = viewProperties.hoverColor;
         }
         if (path.name == "gate") {
-            console.log("hovering at gate #" + path.index);
             hover = path.children["activation"];
             oldHoverColor = hover.fillColor;
             hover.fillColor = viewProperties.hoverColor;
@@ -969,7 +977,6 @@ function onMouseMove(event) {
             hover = path.children["body"].children["activation"];
             oldHoverColor = hover.fillColor;
             hover.fillColor = viewProperties.hoverColor;
-            //hover.selected=true;
         }
         if (path.name == "link") {
             console.log("hovering at link " + path.parent.name);
@@ -985,7 +992,6 @@ function onMouseMove(event) {
 function onMouseDrag(event) {
     // move current node
     if (movePath) {
-
         if (path.firstChild.name=="node") {
             path.position += event.delta;
             node = nodes[path.name];
@@ -1017,3 +1023,32 @@ function onResize(event) {
     updateViewSize();
 }
 
+/* todo:
+ - multi-select by dragging a frame
+ - delete node
+
+ - links into invisible nodespaces
+ - delete link
+
+ - context menu
+ - add node w type
+ - add link w type
+ - add link from gate
+ - add link via dialog
+
+ - communicate with server
+ - get nodes in viewport
+ - get links from visible nodes
+ - get individual nodes and links (standard communication should make sure that we get a maximum number of nodes,
+ after this restrict it to the visible nodes, but include the linked nodes outside the view)
+ - get diffs
+ - sent updates of editor to server
+ - start and stop simulations
+ - handle connection problems
+
+ - editor ui elements
+ - multiple viewports
+ - creation of agents
+ - switching between agents
+ - exporting and importing
+ */

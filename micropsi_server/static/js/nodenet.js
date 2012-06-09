@@ -321,8 +321,14 @@ function updateViewSize() {
     for (nodeUid in nodes) {
         node = nodes[nodeUid];
         // make sure no node gets lost to the top or left
-        node.x = Math.max(frameWidth, node.x);
-        node.y = Math.max(frameWidth, node.y);
+        if (node.x < frameWidth) {
+            node.x =viewProperties.frameWidth;
+            redrawNode(node);
+        }
+        if (node.x < frameWidth) {
+            node.y = viewProperties.frameWidth;
+            redrawNode(node);
+        }
         maxX = Math.max(maxX, node.x);
         maxY = Math.max(maxY, node.y);
     }
@@ -349,8 +355,8 @@ function redrawNodeNet(currentNodeSpace) {
                 +nodes[links[i].targetNodeUid]);
             continue;
         }
-        if (sourceNode.gates.length < links[i].slotIndex) {
-            console.log("Node "+sourceNode.uid+ "does not have a slot with index "+links[i].slotIndex);
+        if (sourceNode.gates.length < links[i].gateIndex) {
+            console.log("Node "+sourceNode.uid+ "does not have a gate with index "+links[i].gateIndex);
             continue;
         }
         if (!targetNode) {
@@ -359,8 +365,8 @@ function redrawNodeNet(currentNodeSpace) {
                 +nodes[links[i].targetNodeUid]);
             continue;
         }
-        if (targetNode.gates.length < links[i].gateIndex) {
-            console.log("Node "+targetNode.uid+ " does not have a gate with index "+links[i].gateIndex);
+        if (targetNode.slots.length < links[i].slotIndex) {
+            console.log("Node "+targetNode.uid+ " does not have a slot with index "+links[i].slotIndex);
             continue;
         }
         // check if the link is visible
@@ -383,13 +389,13 @@ function redrawNodeLinks(node) {
     for (gateIndex in node.gates) {
         for (linkUid in node.gates[gateIndex].outgoing) {
             linkLayer.children[linkUid].remove();
-            renderLink(node.gates[gateIndex].outgoing[linkUid]);
+            renderLink(links[linkUid]);
         }
     }
     for (slotIndex in node.slots) {
         for (linkUid in node.slots[slotIndex].incoming) {
             linkLayer.children[linkUid].remove();
-            renderLink(node.slots[slotIndex].incoming[linkUid]);
+            renderLink(links[linkUid]);
         }
     }
 }
@@ -1031,7 +1037,7 @@ var hoverArrow = null;
 var oldHoverColor = null;
 var previousItem = null;
 
-function onMouseMove(event) {
+function disable_onMouseMove(event) {
     // hover
     var hitResult = project.hitTest(event.point, hitOptions);
     if (hitResult) {

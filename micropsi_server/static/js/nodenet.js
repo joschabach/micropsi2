@@ -31,6 +31,7 @@ var viewProperties = {
     lineHeight: 15,
     compactNodes: false,
     compactModules: false,
+    forceCompactBelowZoomFactor: 0.9,
     strokeWidth: 0.3,
     outlineColor: null,
     outlineWidth: 0.3,
@@ -61,9 +62,9 @@ initializeNodeNet();
 
 // fetch visible nodes and links
 function initializeNodeNet(){
-    addNode(new Node("abcd", 142, 332, 0, "My first node", "Actor", 0.3));
-    addNode(new Node("sdff", 300, 100, 0, "Otto", "Concept", 0.0));
-    addNode(new Node("deds", 350, 180, 0, "Carl", "Native", 0.5));
+    addNode(new Node("abcd", 142, 332, 0, "Alice", "Actor", 0.3));
+    addNode(new Node("sdff", 300, 100, 0, "Umzug", "Concept", 0.0));
+    addNode(new Node("deds", 350, 180, 0, "Fahrzeug", "Native", 0.5));
     addLink(new Link("abcd", 0, "sdff", 0, 1, 1));
     addLink(new Link("sdff", 0, "abcd", 0, 1, 1));
     addLink(new Link("sdff", 1, "deds", 0, 1, 1));
@@ -286,7 +287,7 @@ function redrawNodeNet(currentNodeSpace) {
 }
 
 // like activation change, only put the node elsewhere and redraw the links
-function setNodePosition(node) {
+function redrawNode(node) {
     nodeLayer.children[node.uid].remove();
     renderNode(node);
     redrawNodeLinks(node);
@@ -589,7 +590,7 @@ function createNodeTitleBar(node, bounds) {
         fillColor: viewProperties.nodeFontColor,
         fontSize: viewProperties.fontSize
     };
-    titleText.content = node.name.length ? node.name : node.uid;
+    titleText.content = node.name ? node.name : node.uid;
     titleText.name = "text";
     label.addChild(titleText);
     titleBarGroup = new Group([titleBar, label]);
@@ -759,7 +760,7 @@ function createCompactNodeLabel(node, bounds) {
     if (node.name.length) { // only display a label for named nodes
         labelText = new PointText(new Point(bounds.x + bounds.width/2,
             bounds.bottom+viewProperties.lineHeight/viewProperties.zoomFactor));
-        labelText.content = node.name;
+        labelText.content = node.name ? node.name : node.uid;
         labelText.characterStyle = {
             fontSize: viewProperties.fontSize/viewProperties.zoomFactor,
             fillColor: viewProperties.nodeForegroundColor
@@ -856,7 +857,7 @@ function deselectAll() {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if (viewProperties.zoomFactor < 0.5) return true; // you cannot read this anyway
+    if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
@@ -888,22 +889,24 @@ var hitOptions = {
 var path, hoverPath;
 var movePath = false;
 
+var clickTarget = null;
+
 function onMouseDown(event) {
     path = hoverPath = null;
     var hitResult = project.hitTest(event.point, hitOptions);
 
-    if (event.modifiers.shift) {
-        //
-    }
     if (!hitResult) {
         movePath = false;
         deselectAll();
+        clickTarget = null;
         if (event.modifiers.control || event.button == 2) openContextMenu("#create_node_menu", event.event);
     }
     else {
         path = hitResult.item;
         if (hitResult.type == 'stroke' || hitResult.type =="fill") {
             while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
+
+            clickTarget = path;
 
             if (path.name == "slot") {
                 console.log("clicked slot #" + path.index);
@@ -974,13 +977,11 @@ function onMouseMove(event) {
             hover.fillColor = viewProperties.hoverColor;
         }
         if (path.name == "node") {
-            console.log("hovering at node " + path.parent.name);
             hover = path.children["body"].children["activation"];
             oldHoverColor = hover.fillColor;
             hover.fillColor = viewProperties.hoverColor;
         }
         if (path.name == "link") {
-            console.log("hovering at link " + path.parent.name);
             hover = path.children["line"];
             oldHoverColor = hover.strokeColor;
             hover.strokeColor = viewProperties.hoverColor;
@@ -1019,9 +1020,11 @@ function onKeyDown(event) {
     }
     // delete nodes and links
     else if (event.key == "backspace" || event.key == "delete") {
-        for (uid in selection) {
-            if (uid in nodes) removeNode(nodes[uid]);
-            if (uid in links) removeLink(links[uid]);
+        if (event.event.target.tagName == "BODY") {
+            for (uid in selection) {
+                if (uid in nodes) removeNode(nodes[uid]);
+                if (uid in links) removeLink(links[uid]);
+            }
         }
     }
 }
@@ -1033,8 +1036,15 @@ function onResize(event) {
 
 // menus -----------------------------------------------------------------------------
 
+$(".dropdown-menu").on('click', 'li', handleContextMenu);
+
+$("#rename_node_modal .btn-primary").on('click', handleRenameNodeModal);
+
+var clickPosition = null;
+
 function openContextMenu(menu_id, event) {
     event.cancelBubble = true;
+    clickPosition = new Point(event.offsetX, event.offsetY);
     $(menu_id).css({
         position: "absolute",
         zIndex: 500,
@@ -1046,6 +1056,7 @@ function openContextMenu(menu_id, event) {
 // build the node menu
 function openNodeContextMenu(menu_id, event, nodeUid) {
     menu = $(menu_id+" .dropdown-menu");
+    menu.off('click', 'li');
     menu.empty();
     node = nodes[nodeUid];
     if (node.type == "Concept") {
@@ -1054,14 +1065,96 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
         menu.append('<li><a href="#">Create sub/sur link</a></li>');
         menu.append('<li><a href="#">Create cat/exp link</a></li>');
         menu.append('<li class="divider"></li>');
-    } else if (node.gates) {
+    } else if (node.gates.length) {
         for (gateIndex in node.gates) {
             menu.append('<li><a href="#">Create '+node.gates[gateIndex].name+' link</a></li>')
         }
         menu.append('<li class="divider"></li>');
     }
-    menu.append('<li><a href="#">Delete Node</a></li>');
+    menu.append('<li><a href="#">Rename node</a></li>');
+    menu.append('<li><a href="#">Delete node</a></li>');
+    menu.on('click', 'li', handleContextMenu);
     openContextMenu(menu_id, event);
+}
+
+// universal handler for all context menu events. You can get the origin path from the variable clickTarget.
+function handleContextMenu(event) {
+    menuText = event.target.text;
+    origin = clickTarget ? clickTarget.name : null;
+
+    switch (origin) {
+        case null: // create nodes
+            switch (menuText) {
+                case "Create concept node":
+                    type = "Concept";
+                    break;
+                case "Create native module":
+                    type = "Native";
+                    break;
+                case "Create node space":
+                    type = "Nodespace";
+                    break;
+                case "Create sensor":
+                    type = "Sensor";
+                    break;
+                case "Create actor":
+                    type = "Actor";
+                    break;
+                default:
+                    type = "Register";
+            }
+            uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+                return v.toString(16);
+            }); // todo: replace with a uuid fetched from server
+            addNode(new Node(uuid,
+                clickPosition.x/viewProperties.zoomFactor,
+                clickPosition.y/viewProperties.zoomFactor,
+                currentNodeSpace, "", type, 0));
+            // todo: tell the server all about it
+            break;
+        case "node":
+            switch (menuText) {
+                case "Rename node":
+                    nodeUid = clickTarget.parent.name;
+                    if (nodeUid in nodes) {
+                        $("#rename_node_input").val(nodes[nodeUid].name);
+                        $("#rename_node_modal").modal("show");
+                        $("#rename_node_input").select();
+                        $("#rename_node_input").focus();
+                    }
+                    break;
+                case "Delete node":
+                    nodeUid = clickTarget.parent.name;
+                    if (nodeUid in nodes) removeNode(nodes[nodeUid]);
+                    break;
+            }
+            break;
+        case "slot":
+            break;
+        case "gate":
+            break;
+        case "link":
+            switch (menuText) {
+                case "Delete link":
+                    linkUid = clickTarget.parent.name;
+                    if (linkUid in links) removeLink(links[linkUid]);
+                    break;
+            }
+    }
+    view.draw();
+}
+
+// hander for renaming the node
+function handleRenameNodeModal(event) {
+    nodeUid = clickTarget.parent.name;
+    if (nodeUid in nodes) {
+        nodes[nodeUid].name = $("#rename_node_input").val();
+        redrawNode(nodes[nodeUid]);
+        $("#rename_node_modal").modal("hide");
+        view.draw();
+        // todo: tell the server all about it
+    }
 }
 
 /* todo:
@@ -1069,7 +1162,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 
  - links into invisible nodespaces
 
- - add node w type
  - add link w type
  - add link from gate
  - add link via dialog
@@ -1089,4 +1181,8 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
  - creation of agents
  - switching between agents
  - exporting and importing
+
+ - handle double click on node spaces
+ - handle data sources and data targets
+ - handle native modules
  */

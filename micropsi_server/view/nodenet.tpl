@@ -281,13 +281,35 @@
         <li><a href="#">Create concept node</a></li>
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>
-        <li><a href="#">Create actuator</a></li>
+        <li><a href="#">Create actor</a></li>
         <li><a href="#">Create node space</a></li>
         <li><a href="#">Create native module</a></li>
     </ul>
 </div>
 
-
+<div class="modal hide" id="rename_node_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Rename net entity</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="rename_node_input">Node name</label>
+                    <div class="controls">
+                        <input type="text" class="input-xlarge" id="rename_node_input">
+                        <p class="help-block">If you do not give the net entity a name, it will be referred by its uid.</p>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save changes</a>
+    </div>
+</div>
 
 
 <script src="static/js/jquery.min.js" type="text/javascript"></script>
@@ -295,8 +317,6 @@
 <script src="static/js/micropsiviewer.js" type="text/javascript"></script>
 <script src="static/js/paper.js" type="text/javascript"></script>
 <script src="static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
-
-
 
 </body>
 </html>

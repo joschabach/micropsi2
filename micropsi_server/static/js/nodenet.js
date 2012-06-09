@@ -62,12 +62,97 @@ initializeNodeNet();
 
 // fetch visible nodes and links
 function initializeNodeNet(){
-    addNode(new Node("abcd", 142, 332, 0, "Alice", "Actor", 0.3));
-    addNode(new Node("sdff", 300, 100, 0, "Umzug", "Concept", 0.0));
-    addNode(new Node("deds", 350, 180, 0, "Fahrzeug", "Native", 0.5));
-    addLink(new Link("abcd", 0, "sdff", 0, 1, 1));
-    addLink(new Link("sdff", 0, "abcd", 0, 1, 1));
-    addLink(new Link("sdff", 1, "deds", 0, 1, 1));
+    addNode(new Node("a1", 150, 450, 0, "Alice", "Actor", 1));
+    addNode(new Node("a2", 250, 450, 0, "Tom", "Actor", 0.3));
+    addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
+    addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
+    addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
+    addNode(new Node("a5b", 300, 80, 0, "Umzug", "Concept", 0.0));
+    addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.0));
+    addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.0));
+    addNode(new Node("a8", 400, 270, 0, "Fahrzeugbestellung", "Concept", 0.0));
+    addNode(new Node("a9", 550, 270, 0, "Einladung", "Concept", 0.0));
+    addNode(new Node("a10", 700, 270, 0, "Packen", "Concept", 0.0));
+    addNode(new Node("a11", 950, 270, 0, "Durchführung", "Concept", 0.0));
+    addNode(new Node("a11b", 1100, 270, 0, "Fahrzeugrückgabe", "Concept", 0.0));
+    addNode(new Node("a12", 1250, 270, 0, "Party", "Concept", 0.0));
+    addNode(new Node("a12b", 1400, 350, 0, "Einkäufe", "Concept", 0.0));
+    addNode(new Node("a13", 700, 450, 0, "Fahrzeug", "Native", 0.5));
+    addNode(new Node("a14", 800, 450, 0, "Kisten", "Register", 0.5));
+    addNode(new Node("a15", 900, 450, 0, "Getränke", "Register", 0.5));
+    addNode(new Node("a16", 680, 380, 0, "Datum", "Sensor", -0.5));
+    addNode(new Node("a17", 780, 380, 0, "Orts-Temperatur", "Sensor", 0.5));
+
+    addLink(new Link("a1", 0, "a6", 0, 1, 1));
+    addLink(new Link("a1", 0, "a7", 0, 1, 1));
+    addLink(new Link("a1", 0, "a8", 0, 0.5, 1));
+    addLink(new Link("a1", 0, "a9", 0, 0.8, 1));
+    addLink(new Link("a1", 0, "a10", 0, 1, 1));
+    addLink(new Link("a1", 0, "a12", 0, 1, 1));
+    addLink(new Link("a1", 0, "a12b", 0, 1, 1));
+    addLink(new Link("a2", 0, "a12b", 0, 1, 1));
+    addLink(new Link("a2", 0, "a8", 0, 0.5, 1));
+    addLink(new Link("a2", 0, "a11", 0, 1, 1));
+    addLink(new Link("a2", 0, "a11b", 0, 1, 1));
+    addLink(new Link("a2", 0, "a10", 0, 0.8, 1));
+    addLink(new Link("a3", 0, "a10", 0, 1, 1));
+    addLink(new Link("a3", 0, "a12", 0, 1, 1));
+    addLink(new Link("a4", 0, "a11", 0, 1, 1));
+    addLink(new Link("a4", 0, "a12", 0, 1, 1));
+    addLink(new Link("a5", 0, "a11", 0, 1, 1));
+
+    addLink(new Link("a13", 0, "a8", 0, 1, 1));
+    addLink(new Link("a11", 3, "a13", 0, 1, 1));
+    addLink(new Link("a12b", 3, "a13", 0, 1, 1));
+    addLink(new Link("a11b", 3, "a13", 0, 1, 1));
+    addLink(new Link("a12b", 3, "a15", 0, 0.7, 1));
+    addLink(new Link("a15", 0, "a12", 0, 1, 1));
+    addLink(new Link("a14", 0, "a10", 0, 1, 1));
+
+    addLink(new Link("a16", 0, "a8", 0, 1, 1));
+    addLink(new Link("a16", 0, "a11", 0, 0.9, 1));
+    addLink(new Link("a16", 0, "a11b", 0, 1, 1));
+
+    addLink(new Link("a17", 0, "a11", 0, 0.3, 1));
+
+    addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
+    addLink(new Link("a5b", 3, "a7", 0, 0.9, 1));
+    addLink(new Link("a5b", 3, "a8", 0, 1, 1));
+    addLink(new Link("a5b", 3, "a9", 0, 0.9, 1));
+    addLink(new Link("a5b", 3, "a10", 0, 1, 1));
+    addLink(new Link("a5b", 3, "a11", 0, 1, 1));
+    addLink(new Link("a5b", 3, "a11b", 0, 1, 1));
+    addLink(new Link("a5b", 3, "a12", 0, 0.7, 1));
+
+    addLink(new Link("a6", 4, "a5b", 0, 0.2, 1));
+    addLink(new Link("a7", 4, "a5b", 0, 0.1, 1));
+    addLink(new Link("a8", 4, "a5b", 0, 0.4, 1));
+    addLink(new Link("a9", 4, "a5b", 0, 1, 1));
+    addLink(new Link("a10", 4, "a5b", 0, 1, 1));
+    addLink(new Link("a11", 4, "a5b", 0, 1, 1));
+    addLink(new Link("a11b", 4, "a5b", 0, 0.8, 1));
+    addLink(new Link("a12", 4, "a5b", 0, 0.3, 1));
+
+    addLink(new Link("a12b", 4, "a12", 0, 0.7, 1));
+    addLink(new Link("a12", 3, "a12b", 0, 1, 1));
+
+    addLink(new Link("a6", 1, "a7", 0, 1, 1));
+    addLink(new Link("a7", 1, "a8", 0, 1, 1));
+    addLink(new Link("a8", 1, "a9", 0, 1, 1));
+    addLink(new Link("a9", 1, "a10", 0, 1, 1));
+    addLink(new Link("a10", 1, "a11", 0, 1, 1));
+    addLink(new Link("a11", 1, "a11b", 0, 1, 1));
+    addLink(new Link("a11b", 1, "a12", 0, 1, 1));
+    addLink(new Link("a7", 2, "a6", 0, 1, 1));
+    addLink(new Link("a8", 2, "a7", 0, 1, 1));
+    addLink(new Link("a9", 2, "a8", 0, 1, 1));
+    addLink(new Link("a10", 2, "a9", 0, 1, 1));
+    addLink(new Link("a11", 2, "a10", 0, 1, 1));
+    addLink(new Link("a11b", 2, "a11", 0, 1, 1));
+    addLink(new Link("a12", 2, "a11b", 0, 1, 1));
+
+
+
     updateViewSize();
 }
 

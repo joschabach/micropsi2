@@ -986,11 +986,14 @@ function onMouseDown(event) {
     path = hoverPath = null;
     var hitResult = project.hitTest(event.point, hitOptions);
 
+	// note: paper.js seems to ignore event.button, hence use original window.event
+	var rightClick = event.modifiers.control || window.event.button == 2;
+
     if (!hitResult) {
         movePath = false;
         deselectAll();
         clickTarget = null;
-        if (event.modifiers.control || event.button == 2) openContextMenu("#create_node_menu", event.event);
+        if ( rightClick ) openContextMenu("#create_node_menu", event.event);
     }
     else {
         path = hitResult.item;
@@ -1002,12 +1005,12 @@ function onMouseDown(event) {
             if (path.name == "slot") {
                 console.log("clicked slot #" + path.index);
                 while (path!=project && path.name!="node") path = path.parent;
-                if (event.modifiers.control || event.button == 2) openContextMenu("#slot_menu", event.event);
+                if ( rightClick ) openContextMenu("#slot_menu", event.event);
             }
             else if (path.name == "gate") {
                 console.log("clicked gate #" + path.index);
                 while (path!=project && path.name!="node") path = path.parent;
-                if (event.modifiers.control || event.button == 2) openContextMenu("#gate_menu", event.event);
+                if ( rightClick ) openContextMenu("#gate_menu", event.event);
             }
             else if (path.name == "link") {
                 path = path.parent;
@@ -1015,7 +1018,7 @@ function onMouseDown(event) {
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
                 console.log("clicked link " + path.name);
-                if (event.modifiers.control || event.button == 2) openContextMenu("#link_menu", event.event);
+                if ( rightClick ) openContextMenu("#link_menu", event.event);
             }
             else if (path.name=="node") {
                 path = path.parent;
@@ -1025,7 +1028,7 @@ function onMouseDown(event) {
                 if (event.modifiers.command && path.name in selection) deselectNode(path.name); // toggle
                 else selectNode(path.name);
                 console.log ("clicked node "+path.name);
-                if (event.modifiers.control || event.button == 2) openNodeContextMenu("#node_menu", event.event, path.name);
+                if ( rightClick ) openNodeContextMenu("#node_menu", event.event, path.name);
                 else movePath = true;
             }
         }

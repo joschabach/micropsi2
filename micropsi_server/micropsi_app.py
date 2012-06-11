@@ -25,7 +25,7 @@ DEFAULT_HOST = "localhost"
 APP_PATH = os.path.dirname(__file__)
 
 bottle.debug( True ) #devV
-bottle.TEMPLATE_PATH.insert( 0, APP_PATH + '/view/' )
+bottle.TEMPLATE_PATH.insert( 0, os.path.join(APP_PATH, 'view', ''))
 
 @route("/")
 def index():
@@ -33,7 +33,7 @@ def index():
 
 @route('/static/<filepath:path>')
 def server_static(filepath):
-    return static_file(filepath, root=APP_PATH+'/static')
+    return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
 	run(host=host, port=port, reloader=True) #devV

@@ -9,7 +9,7 @@
 // initialization ---------------------------------------------------------------------
 
 var viewProperties = {
-    zoomFactor: 1,
+    zoomFactor: 0.8,
     frameWidth: 100,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
@@ -31,7 +31,7 @@ var viewProperties = {
     lineHeight: 15,
     compactNodes: false,
     compactModules: false,
-    forceCompactBelowZoomFactor: 0.9,
+    forceCompactBelowZoomFactor: 0.7,
     strokeWidth: 0.3,
     outlineColor: null,
     outlineWidth: 0.3,
@@ -44,7 +44,8 @@ var viewProperties = {
     linkTension: 50,
     linkRadius: 30,
     arrowWidth: 6,
-    arrowLength: 10
+    arrowLength: 10,
+    hitMatrixSize: 100
 };
 
 // hashes from uids to object definitions; we import these via json
@@ -52,7 +53,6 @@ nodes = {};
 links = {};
 selection = {};
 
-var selectionLayer = new Layer();
 var linkLayer = new Layer();
 var nodeLayer = new Layer();
 
@@ -67,16 +67,16 @@ function initializeNodeNet(){
     addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
     addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
     addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
-    addNode(new Node("a5b", 300, 80, 0, "Umzug", "Concept", 0.0));
-    addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.0));
-    addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.0));
-    addNode(new Node("a8", 400, 270, 0, "Fahrzeugbestellung", "Concept", 0.0));
-    addNode(new Node("a9", 550, 270, 0, "Einladung", "Concept", 0.0));
-    addNode(new Node("a10", 700, 270, 0, "Packen", "Concept", 0.0));
+    addNode(new Node("a5b", 300, 80, 0, "Umzug", "Concept", 0.2));
+    addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.3));
+    addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.6));
+    addNode(new Node("a8", 400, 270, 0, "Fahrzeugbestellung", "Concept", -0.8));
+    addNode(new Node("a9", 550, 270, 0, "Einladung", "Concept", 0.7));
+    addNode(new Node("a10", 700, 270, 0, "Packen", "Concept", 0.2));
     addNode(new Node("a11", 950, 270, 0, "Durchführung", "Concept", 0.0));
-    addNode(new Node("a11b", 1100, 270, 0, "Fahrzeugrückgabe", "Concept", 0.0));
+    addNode(new Node("a11b", 1100, 270, 0, "Fahrzeugrückgabe", "Concept", -0.6));
     addNode(new Node("a12", 1250, 270, 0, "Party", "Concept", 0.0));
-    addNode(new Node("a12b", 1400, 350, 0, "Einkäufe", "Concept", 0.0));
+    addNode(new Node("a12b", 1400, 350, 0, "Einkäufe", "Concept", 0.2));
     addNode(new Node("a13", 700, 450, 0, "Fahrzeug", "Native", 0.5));
     addNode(new Node("a14", 800, 450, 0, "Kisten", "Register", 0.5));
     addNode(new Node("a15", 900, 450, 0, "Getränke", "Register", 0.5));
@@ -172,6 +172,9 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 	this.gates=[];
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
+    this.bounds = null; // current bounding box (after scaling)
+    this.row = 0; // line within the hittest matrix
+    this.column = 0; // column withn the hittest matrix
 	switch (type) {
         case "Nodespace":
             this.symbol = "NS";
@@ -314,28 +317,27 @@ function removeNode(node) {
 
 // rendering ------------------------------------------------------------------------
 
+
 // adapt the size of the current view to the contained nodes and the canvas size
 function updateViewSize() {
     var maxX = maxY = 0;
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
+    var el = view.canvas.parentElement;
     for (nodeUid in nodes) {
         node = nodes[nodeUid];
         // make sure no node gets lost to the top or left
-        if (node.x < frameWidth) {
-            node.x =viewProperties.frameWidth;
-            redrawNode(node);
-        }
-        if (node.x < frameWidth) {
-            node.y = viewProperties.frameWidth;
+        if (node.x < frameWidth || node.y < frameWidth) {
+            node.x = Math.max(node.x, viewProperties.frameWidth);
+            node.y = Math.max(node.y, viewProperties.frameWidth);
             redrawNode(node);
         }
         maxX = Math.max(maxX, node.x);
         maxY = Math.max(maxY, node.y);
     }
     view.viewSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
-        view.canvas.parentElement.clientWidth),
+        el.clientWidth),
         Math.max((maxY+viewProperties.frameWidth)* viewProperties.zoomFactor,
-            view.canvas.parentElement.clientHeight));
+            el.clientHeight));
 }
 
 // complete redraw of the current node space
@@ -416,102 +418,102 @@ function renderLink(link) {
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
     if (isCompact(sourceNode)) {
-        sourceBounds = calculateCompactNodeDimensions(sourceNode);
+        sourceBounds = sourceNode.bounds;
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
             if (sourceNode.type == "Sensor")
-                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5*viewProperties.zoomFactor,
+                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
                     sourceBounds.y);
             else
-                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.4*viewProperties.zoomFactor,
+                startPoint = new Point(sourceBounds.x+sourceBounds.width*0.4,
                     sourceBounds.y);
             startAngle = 270;
         } else {
             switch (linkType){
                 case "por":
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*viewProperties.zoomFactor,
-                        sourceBounds.y + sourceBounds.height*0.4*viewProperties.zoomFactor);
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width,
+                        sourceBounds.y + sourceBounds.height*0.4);
                     startAngle = 0;
                     break;
                 case "ret":
                     startPoint = new Point(sourceBounds.x,
-                        sourceBounds.y + sourceBounds.height*0.6*viewProperties.zoomFactor);
+                        sourceBounds.y + sourceBounds.height*0.6);
                     startAngle = 180;
                     break;
                 case "sub":
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.6*viewProperties.zoomFactor,
-                        sourceBounds.y+ sourceBounds.height*viewProperties.zoomFactor);
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.6,
+                        sourceBounds.y+ sourceBounds.height);
                     startAngle = 90;
                     break;
                 case "sur":
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.4*viewProperties.zoomFactor,
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.4,
                         sourceBounds.y);
                     startAngle = 270;
                     break;
                 default:
-                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.5*viewProperties.zoomFactor,
-                        sourceBounds.y + sourceBounds.height*0.5*viewProperties.zoomFactor);
+                    startPoint = new Point(sourceBounds.x + sourceBounds.width*0.5,
+                        sourceBounds.y + sourceBounds.height*0.5);
                     startPointIsPreliminary = true;
                     break;
             }
         }
     } else {
-        sourceBounds = calculateFullNodeDimensions(sourceNode);
-        startPoint = new Point(sourceBounds.x+sourceBounds.width*viewProperties.zoomFactor,
+        sourceBounds = sourceNode.bounds;
+        startPoint = new Point(sourceBounds.x+sourceBounds.width,
             sourceBounds.y+viewProperties.lineHeight*(link.gateIndex+2.5)*viewProperties.zoomFactor);
         startAngle = 0;
     }
     if (isCompact(targetNode)) {
-        targetBounds = calculateCompactNodeDimensions(targetNode);
+        targetBounds = targetNode.bounds;
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
-            endPoint = new Point(targetBounds.x + targetBounds.width*0.6*viewProperties.zoomFactor, targetBounds.y);
+            endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
         } else {
             switch (linkType){
                 case "por":
                     endPoint = new Point(targetBounds.x,
-                        targetBounds.y + targetBounds.height*0.4*viewProperties.zoomFactor);
+                        targetBounds.y + targetBounds.height*0.4);
                     endAngle = 180;
                     break;
                 case "ret":
-                    endPoint = new Point(targetBounds.x + targetBounds.width*viewProperties.zoomFactor,
-                        targetBounds.y + targetBounds.height*0.6*viewProperties.zoomFactor);
+                    endPoint = new Point(targetBounds.x + targetBounds.width,
+                        targetBounds.y + targetBounds.height*0.6);
                     endAngle = 0;
                     break;
                 case "sub":
-                    endPoint = new Point(targetBounds.x + targetBounds.width*0.6*viewProperties.zoomFactor,
+                    endPoint = new Point(targetBounds.x + targetBounds.width*0.6,
                         targetBounds.y);
                     endAngle = 270;
                     break;
                 case "sur":
-                    endPoint = new Point(targetBounds.x + targetBounds.width*0.4*viewProperties.zoomFactor,
-                        targetBounds.y + targetBounds.height*viewProperties.zoomFactor);
+                    endPoint = new Point(targetBounds.x + targetBounds.width*0.4,
+                        targetBounds.y + targetBounds.height);
                     endAngle = 90;
                     break;
                 default:
-                    endPoint = new Point(targetBounds.x + targetBounds.width*0.5*viewProperties.zoomFactor,
-                        targetBounds.y + targetBounds.height*0.5*viewProperties.zoomFactor);
+                    endPoint = new Point(targetBounds.x + targetBounds.width*0.5,
+                        targetBounds.y + targetBounds.height*0.5);
                     endPointIsPreliminary = true;
                     break;
             }
         }
     } else {
-        targetBounds = calculateFullNodeDimensions(targetNode);
+        targetBounds = targetNode.bounds;
         endAngle = 180;
         endPoint = new Point(targetBounds.x,
             targetBounds.y+viewProperties.lineHeight*(link.slotIndex+2.5)*viewProperties.zoomFactor);
     }
     if (startPointIsPreliminary) { // start from boundary of a compact node
-        correctionVector = new Point(sourceBounds.width/2*viewProperties.zoomFactor, 0);
+        correctionVector = new Point(sourceBounds.width/2, 0);
         startAngle = (endPoint - startPoint).angle;
         startPoint += correctionVector.rotate(startAngle-10);
     }
     if (endPointIsPreliminary) { // end at boundary of a compact node
-        correctionVector = new Point(sourceBounds.width/2*viewProperties.zoomFactor, 0);
+        correctionVector = new Point(sourceBounds.width/2, 0);
         endAngle = (startPoint-endPoint).angle;
         endPoint += correctionVector.rotate(endAngle+10);
     }
 
-    link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)));
+    link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
     link.strokeColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
 
     startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(startAngle);
@@ -553,14 +555,14 @@ function renderNode(node) {
 
 // draw net entity with slots and gates
 function renderFullNode(node) {
-    bounds = calculateFullNodeDimensions(node);
-    shape = createFullNodeShape(node, bounds);
+    node.bounds = calculateNodeBounds(node);
+    shape = createFullNodeShape(node);
     shadow = createNodeShadow(shape);
-    body = createFullNodeBody(node, shape, bounds);
-    titleBar = createNodeTitleBar(node, bounds);
-    titleBarDelimiter = createNodeTitleBarDelimiter(bounds);
-    slots = createNodeSlots(node, bounds);
-    gates = createNodeGates(node, bounds);
+    body = createFullNodeBody(node, shape);
+    titleBar = createNodeTitleBar(node);
+    titleBarDelimiter = createNodeTitleBarDelimiter(node);
+    slots = createNodeSlots(node);
+    gates = createNodeGates(node);
     outline = createNodeOutline(shape);
     // define structure of the node
     nodeItem = new Group([shadow, body, titleBar, titleBarDelimiter]);
@@ -570,18 +572,17 @@ function renderFullNode(node) {
     nodeItem.name = "node";
     nodeContainer = new Group(nodeItem);
     nodeContainer.name = node.uid;
-    nodeContainer.scale(viewProperties.zoomFactor, bounds.point);
     nodeLayer.addChild(nodeContainer);
 }
 
 // render compact version of a net entity
 function renderCompactNode(node) {
-    bounds = calculateCompactNodeDimensions(node);
+    node.bounds = calculateNodeBounds(node);
 
-    shape = createCompactNodeShape(node, bounds);
-    body = createCompactNodeBody(node, shape, bounds);
+    shape = createCompactNodeShape(node);
+    body = createCompactNodeBody(node, shape);
     shadow = createNodeShadow(shape);
-    label = createCompactNodeLabel(node, bounds);
+    label = createCompactNodeLabel(node);
     outline = createNodeOutline(shape);
 
     // define structure of the node
@@ -591,43 +592,39 @@ function renderCompactNode(node) {
     nodeItem.name = "node";
     nodeContainer = new Group(nodeItem);
     nodeContainer.name = node.uid;
-    nodeContainer.scale(viewProperties.zoomFactor, bounds.point);
     nodeLayer.addChild(nodeContainer);
 }
 
-// calculate dimensions of a fully rendered node
-function calculateFullNodeDimensions(node) {
-    width = viewProperties.nodeWidth;
-    height = viewProperties.lineHeight*(Math.max(node.slots.length, node.gates.length)+2);
-    if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4);
-    return new Rectangle((node.x-width/2)*viewProperties.zoomFactor,
-                         (node.y-height/2)*viewProperties.zoomFactor, // center node on origin
-                         width, height);
-}
+// calculate the dimensions of a node in the current rendering
+function calculateNodeBounds(node) {
+    if (!isCompact(node)) {
+        width = viewProperties.nodeWidth * viewProperties.zoomFactor;
+        height = viewProperties.lineHeight*(Math.max(node.slots.length, node.gates.length)+2)*viewProperties.zoomFactor;
+        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
 
-// calculate dimensions of a node rendered in compact mode
-function calculateCompactNodeDimensions(node) {
-    width = viewProperties.compactNodeWidth;
-    height = viewProperties.compactNodeWidth;
-    return new Rectangle(node.x* viewProperties.zoomFactor-width/2,
-        node.y*viewProperties.zoomFactor-height/2, // center node on origin
+    } else {
+        width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
+    }
+    return new Rectangle(node.x*viewProperties.zoomFactor - width/2,
+        node.y*viewProperties.zoomFactor - height/2, // center node on origin
         width, height);
 }
 
 // determine shape of a full node
-function createFullNodeShape(node, bounds) {
-    if (node.type == "Nodespace") return new Path.Rectangle(bounds);
-    else return new Path.RoundRectangle(bounds, viewProperties.cornerWidth);
+function createFullNodeShape(node) {
+    if (node.type == "Nodespace") return new Path.Rectangle(node.bounds);
+    else return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
 }
 
 // determine shape of a compact node
-function createCompactNodeShape(node, bounds) {
+function createCompactNodeShape(node) {
+    bounds = node.bounds;
     switch (node.type) {
         case "Nodespace":
             shape = new Path.Rectangle(bounds);
             break;
         case "Native":
-            shape = new Path.RoundRectangle(bounds, viewProperties.cornerWidth);
+            shape = new Path.RoundRectangle(bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
             break;
         case "Sensor":
             shape = new Path();
@@ -651,53 +648,46 @@ function createCompactNodeShape(node, bounds) {
 }
 
 // draw title bar shape of a full node
-function createNodeTitleBar(node, bounds) {
-    titleBarBounds = new Rectangle(bounds.x, bounds.y, bounds.width, viewProperties.lineHeight);
-    if (node.type == "Nodespace") titleBar = new Path.Rectangle(titleBarBounds);
-    else { // draw rounded corners
-        titleBar = new Path();
-        titleBar.add(new Point(bounds.x, bounds.y+viewProperties.cornerWidth));
-        titleBar.quadraticCurveTo(bounds.point, new Point(bounds.x+viewProperties.cornerWidth, bounds.y));
-        titleBar.lineTo(new Point(bounds.right - viewProperties.cornerWidth, bounds.y));
-        titleBar.quadraticCurveTo(bounds.topRight, new Point(bounds.right, bounds.y+viewProperties.cornerWidth));
-        titleBar.lineTo(titleBarBounds.bottomRight);
-        titleBar.lineTo(titleBarBounds.bottomLeft);
-        titleBar.closePath();
-    }
-    titleBar.name = "titleBarBackground";
-    //titleBar.fillColor = viewProperties.nodeLabelColor;
-
+function createNodeTitleBar(node) {
+    bounds = node.bounds;
+    //titleBarBounds = new Rectangle(bounds.x, bounds.y, bounds.width, viewProperties.lineHeight);
     // title bar text
     label = new Group();
     label.name = "titleBarLabel";
     // clipping rectangle, so text does not flow out of the node
-    clipper = new Path.Rectangle (bounds.x+viewProperties.padding, bounds.y,
-        bounds.width-2*viewProperties.padding, viewProperties.lineHeight);
+    clipper = new Path.Rectangle (bounds.x+viewProperties.padding*viewProperties.zoomFactor,
+        bounds.y,
+        bounds.width-2*viewProperties.padding*viewProperties.zoomFactor,
+        viewProperties.lineHeight*viewProperties.zoomFactor);
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    titleText = new PointText(new Point(bounds.x+viewProperties.padding, bounds.y+viewProperties.lineHeight*0.8));
+    titleText = new PointText(new Point(bounds.x+viewProperties.padding*viewProperties.zoomFactor,
+        bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
     titleText.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
-        fontSize: viewProperties.fontSize
+        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
     titleText.content = node.name ? node.name : node.uid;
     titleText.name = "text";
     label.addChild(titleText);
-    titleBarGroup = new Group([titleBar, label]);
+    titleBarGroup = new Group([label]);
     titleBarGroup.name = "titleBar";
 
     return titleBarGroup;
 }
 
 // draw a line below the title bar
-function createNodeTitleBarDelimiter (bounds) {
-    upper = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight -viewProperties.strokeWidth,
-        bounds.right, bounds.y + viewProperties.lineHeight - viewProperties.strokeWidth);
+function createNodeTitleBarDelimiter (node) {
+    bounds = node.bounds;
+    upper = new Path.Line(bounds.x,
+        bounds.y + (viewProperties.lineHeight -viewProperties.strokeWidth)*viewProperties.zoomFactor,
+        bounds.right,
+        bounds.y + (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor);
     upper.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
     upper.strokeColor = viewProperties.nodeForegroundColor;
-    lower = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight,
-        bounds.right, bounds.y + viewProperties.lineHeight);
+    lower = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight*viewProperties.zoomFactor,
+        bounds.right, bounds.y + viewProperties.lineHeight*viewProperties.zoomFactor);
     lower.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
     lower.strokeColor = viewProperties.lightColor;
     titleBarDelimiter = new Group([upper, lower]);
@@ -708,7 +698,7 @@ function createNodeTitleBarDelimiter (bounds) {
 // draw shadow of a node
 function createNodeShadow(outline) {
     shadow = outline.clone();
-    shadow.position += viewProperties.shadowDisplacement;
+    shadow.position += viewProperties.shadowDisplacement*viewProperties.zoomFactor;
     shadow.name = "shadow";
     shadow.fillColor = viewProperties.shadowColor;
     shadow.fillColor.alpha = 0.5;
@@ -716,7 +706,8 @@ function createNodeShadow(outline) {
 }
 
 // draw background, with activation of the node
-function createFullNodeBody(node, outline, bounds) {
+function createFullNodeBody(node, outline) {
+    bounds = node.bounds;
     activation = outline.clone();
     activation.name = "activation";
     node.fillColor = activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
@@ -726,15 +717,16 @@ function createFullNodeBody(node, outline, bounds) {
     label = new Group();
     label.name = "bodyLabel";
     // clipping rectangle, so text does not flow out of the node
-    clipper = new Path.Rectangle (bounds.x+viewProperties.padding, bounds.y,
-        bounds.width-2*viewProperties.padding, bounds.height);
+    clipper = new Path.Rectangle (bounds.x+viewProperties.padding*viewProperties.zoomFactor, bounds.y,
+        bounds.width-2*viewProperties.padding*viewProperties.zoomFactor, bounds.height);
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    typeText = new PointText(new Point(bounds.x+bounds.width/2, bounds.y+viewProperties.lineHeight*1.8));
+    typeText = new PointText(new Point(bounds.x+bounds.width/2,
+        bounds.y+viewProperties.lineHeight*1.8*viewProperties.zoomFactor));
     typeText.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
-        fontSize: viewProperties.fontSize
+        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
     typeText.paragraphStyle.justification = 'center';
     typeText.content = node.type;
@@ -748,15 +740,16 @@ function createFullNodeBody(node, outline, bounds) {
 }
 
 // draw background, with activation of the node
-function createCompactNodeBody(node, outline, bounds) {
+function createCompactNodeBody(node, outline) {
+    bounds = node.bounds;
     activation = outline.clone();
     activation.name = "activation";
     activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
     symbolText = new PointText(new Point(bounds.x+bounds.width/2,
-        bounds.y+bounds.height/2+viewProperties.symbolSize/2));
+        bounds.y+bounds.height/2+viewProperties.symbolSize/2*viewProperties.zoomFactor));
     symbolText.fillColor = viewProperties.nodeForegroundColor;
     symbolText.content = node.symbol;
-    symbolText.fontSize = viewProperties.symbolSize;
+    symbolText.fontSize = viewProperties.symbolSize*viewProperties.zoomFactor;
     symbolText.paragraphStyle.justification = 'center';
     body = new Group([activation, symbolText]);
     body.name = "body";
@@ -764,18 +757,19 @@ function createCompactNodeBody(node, outline, bounds) {
 }
 
 // draw slots of a node
-function createNodeSlots(node, bounds) {
+function createNodeSlots(node) {
     if (node.slots.length) {
-        slotStart = new Point(bounds.x+viewProperties.strokeWidth+viewProperties.lineHeight/2,
-            bounds.y+2*viewProperties.lineHeight);
+        slotStart = new Point(node.bounds.x+
+            (viewProperties.strokeWidth+viewProperties.lineHeight/2)*viewProperties.zoomFactor,
+            node.bounds.y+2*viewProperties.lineHeight*viewProperties.zoomFactor);
         slot = createNodeGateElement(slotStart, "slot", node.slots[0].name);
         slots = new Group(slot);
         slots.name = "slots";
-        offset = new Point (0, viewProperties.lineHeight);
+        offset = new Point (0, viewProperties.lineHeight*viewProperties.zoomFactor);
         for (i=1; i<node.slots.length; i++) {
             slot = slots.lastChild.clone();
-            slot.position+=offset;
-            slot.children["label"].children["text"].content=node.slots[i].name;
+            slot.position += offset;
+            slot.children["label"].children["text"].content = node.slots[i].name;
             slots.addChild(slot);
         }
         return slots;
@@ -784,18 +778,19 @@ function createNodeSlots(node, bounds) {
 }
 
 // draw gates of a node
-function createNodeGates(node, bounds) {
+function createNodeGates(node) {
     if (node.gates.length) {
-        gateStart = new Point(bounds.x+viewProperties.lineHeight/2+bounds.width-viewProperties.slotWidth,
-            bounds.y+2*viewProperties.lineHeight);
+        gateStart = new Point(node.bounds.x+node.bounds.width+
+            (viewProperties.lineHeight/2-viewProperties.slotWidth)*viewProperties.zoomFactor,
+            node.bounds.y+2*viewProperties.lineHeight*viewProperties.zoomFactor);
         gate = createNodeGateElement(gateStart, "gate", node.gates[0].name);
         gates = new Group(gate);
         gates.name = "gates";
-        offset = new Point (0, viewProperties.lineHeight);
+        offset = new Point (0, viewProperties.lineHeight*viewProperties.zoomFactor);
         for (i=1; i<node.gates.length; i++) {
             gate = gates.lastChild.clone();
-            gate.position+=offset;
-            gate.children["label"].children["text"].content=node.gates[i].name;
+            gate.position += offset;
+            gate.children["label"].children["text"].content = node.gates[i].name;
             gates.addChild(gate);
         }
         return gates;
@@ -805,8 +800,9 @@ function createNodeGates(node, bounds) {
 
 // draw the shape of an individual gate or slot
 function createNodeGateElement(startPoint, type, labelText) {
-    pillBounds = new Rectangle(startPoint.x, startPoint.y+1, viewProperties.slotWidth - viewProperties.lineHeight,
-        viewProperties.lineHeight - 2);
+    pillBounds = new Rectangle(startPoint.x, startPoint.y+viewProperties.zoomFactor,
+        (viewProperties.slotWidth - viewProperties.lineHeight)*viewProperties.zoomFactor,
+        (viewProperties.lineHeight - 2)*viewProperties.zoomFactor);
     pill = new Path();
     pill.add(pillBounds.bottomLeft);
     pill.arcTo(pillBounds.topLeft);
@@ -817,7 +813,7 @@ function createNodeGateElement(startPoint, type, labelText) {
     pill.fillColor.alpha = 0.8;
     pill.name = "shadow";
     activation = pill.clone();
-    activation.position -= viewProperties.shadowDisplacement;
+    activation.position -= viewProperties.shadowDisplacement*viewProperties.zoomFactor;
     activation.fillColor = viewProperties.nodeColor;
     activation.name = "activation";
 
@@ -829,11 +825,12 @@ function createNodeGateElement(startPoint, type, labelText) {
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    slotText = new PointText(startPoint.x+(viewProperties.slotWidth - viewProperties.lineHeight)/2,
-        startPoint.y + viewProperties.lineHeight/1.5);
+    slotText = new PointText(startPoint.x+
+        (viewProperties.slotWidth - viewProperties.lineHeight)/2*viewProperties.zoomFactor,
+        startPoint.y + viewProperties.lineHeight/1.5*viewProperties.zoomFactor);
     slotText.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
-        fontSize: viewProperties.fontSize
+        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
     slotText.paragraphStyle.justification = 'center';
     slotText.content = labelText;
@@ -847,13 +844,13 @@ function createNodeGateElement(startPoint, type, labelText) {
 }
 
 // draw the label of a compact node
-function createCompactNodeLabel(node, bounds) {
+function createCompactNodeLabel(node) {
     if (node.name.length) { // only display a label for named nodes
-        labelText = new PointText(new Point(bounds.x + bounds.width/2,
-            bounds.bottom+viewProperties.lineHeight/viewProperties.zoomFactor));
+        labelText = new PointText(new Point(bounds.x + node.bounds.width/2,
+            node.bounds.bottom+viewProperties.lineHeight));
         labelText.content = node.name ? node.name : node.uid;
         labelText.characterStyle = {
-            fontSize: viewProperties.fontSize/viewProperties.zoomFactor,
+            fontSize: viewProperties.fontSize,
             fillColor: viewProperties.nodeForegroundColor
         };
         labelText.paragraphStyle.justification = 'center';
@@ -974,7 +971,7 @@ var hitOptions = {
     segments: false,
     stroke: true,
     fill: true,
-    tolerance: 5
+    tolerance: 0
 };
 
 var path, hoverPath;
@@ -990,7 +987,7 @@ function onMouseDown(event) {
         movePath = false;
         deselectAll();
         clickTarget = null;
-        if (event.modifiers.control || event.button == 2) openContextMenu("#create_node_menu", event.event);
+        if (event.modifiers.control || event.event.button == 2) openContextMenu("#create_node_menu", event.event);
     }
     else {
         path = hitResult.item;
@@ -1002,12 +999,12 @@ function onMouseDown(event) {
             if (path.name == "slot") {
                 console.log("clicked slot #" + path.index);
                 while (path!=project && path.name!="node") path = path.parent;
-                if (event.modifiers.control || event.button == 2) openContextMenu("#slot_menu", event.event);
+                if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
             }
             else if (path.name == "gate") {
                 console.log("clicked gate #" + path.index);
                 while (path!=project && path.name!="node") path = path.parent;
-                if (event.modifiers.control || event.button == 2) openContextMenu("#gate_menu", event.event);
+                if (event.modifiers.control || event.event.button == 2) openContextMenu("#gate_menu", event.event);
             }
             else if (path.name == "link") {
                 path = path.parent;
@@ -1015,17 +1012,17 @@ function onMouseDown(event) {
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
                 console.log("clicked link " + path.name);
-                if (event.modifiers.control || event.button == 2) openContextMenu("#link_menu", event.event);
+                if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
             }
             else if (path.name=="node") {
                 path = path.parent;
-                //nodeLayer.addChild(path);
+                nodeLayer.addChild(path);
 
                 if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
                 if (event.modifiers.command && path.name in selection) deselectNode(path.name); // toggle
                 else selectNode(path.name);
                 console.log ("clicked node "+path.name);
-                if (event.modifiers.control || event.button == 2) openNodeContextMenu("#node_menu", event.event, path.name);
+                if (event.modifiers.control || event.event.button == 2) openNodeContextMenu("#node_menu", event.event, path.name);
                 else movePath = true;
             }
         }
@@ -1035,16 +1032,11 @@ function onMouseDown(event) {
 var hover = null;
 var hoverArrow = null;
 var oldHoverColor = null;
-var previousItem = null;
+var previousHover = null;
 
-function disable_onMouseMove(event) {
-    // hover
-    var hitResult = project.hitTest(event.point, hitOptions);
-    if (hitResult) {
-        if (hitResult.item == previousItem) return;
-        else previousItem = hitResult.item;
-    } else previousItem = null;
-
+function onMouseMove(event) {
+    p = event.point;
+    // hovering
     if (hover) { // unhover
         if (hover.name == "activation") hover.fillColor = oldHoverColor;
         else if (hover.name == "line") {
@@ -1054,32 +1046,72 @@ function disable_onMouseMove(event) {
         }
         hover = null;
     }
-    if (hitResult && hitResult.item) {
-        path = hitResult.item;
-        while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
-        if (path.name == "slot") {
-            hover = path.children["activation"];
-            oldHoverColor = hover.fillColor;
-            hover.fillColor = viewProperties.hoverColor;
+    // first, check for nodes
+    // we iterate over all bounding boxes, but should improve speed by maintaining an index
+    for (nodeUid in nodeLayer.children) {
+        if (nodeUid in nodes) {
+            node = nodes[nodeUid];
+            bounds = node.bounds;
+            if (bounds.contains(p)) {
+                hover = nodeLayer.children[nodeUid].children["node"].children["body"].children["activation"];
+                // check for slots and gates
+                if ((i = testSlots(node, p)) >-1) {
+                    hover = nodeLayer.children[nodeUid].children["node"].children["slots"].children[i].children["activation"];
+                } else if ((i = testGates(node, p)) > -1) {
+                    hover = nodeLayer.children[nodeUid].children["node"].children["gates"].children[i].children["activation"];
+                }
+                oldHoverColor = hover.fillColor;
+                hover.fillColor = viewProperties.hoverColor;
+                return;
+            }
         }
-        if (path.name == "gate") {
-            hover = path.children["activation"];
-            oldHoverColor = hover.fillColor;
-            hover.fillColor = viewProperties.hoverColor;
-        }
-        if (path.name == "node") {
-            hover = path.children["body"].children["activation"];
-            oldHoverColor = hover.fillColor;
-            hover.fillColor = viewProperties.hoverColor;
-        }
-        if (path.name == "link") {
-            hover = path.children["line"];
+    }
+    if (!hover) {
+        // check for links
+        var hitResult = project.hitTest(event.point, hitOptions);
+        if (hitResult && hitResult.item && hitResult.item.name == "line") {
+            hover = hitResult.item;
             oldHoverColor = hover.strokeColor;
             hover.strokeColor = viewProperties.hoverColor;
-            hoverArrow = path.children["arrow"];
+            hoverArrow = hover.parent.children["arrow"];
             hoverArrow.fillColor = viewProperties.hoverColor;
         }
     }
+}
+
+// check of the point is within a boundaries of a slot within the given node
+// return -1 if not, and the index of the slot otherwise
+function testSlots(node, p) {
+    if ((!isCompact(node)) && node.slots) {
+        // x coordinate within range
+        if (p.x < node.bounds.x + viewProperties.slotWidth*viewProperties.zoomFactor) {
+            for (slotIndex = 0; slotIndex < node.slots.length; slotIndex++) {
+                // y coordinate within range
+                y = node.bounds.y+(2+slotIndex)*viewProperties.lineHeight*viewProperties.zoomFactor;
+                if (p.y >= y && p.y < y + viewProperties.lineHeight*viewProperties.zoomFactor)
+                    return slotIndex;
+            }
+        }
+    }
+    return -1;
+}
+
+// check of the point is within a boundaries of a gate within the given node
+// return -1 if not, and the index of the slot otherwise
+function testGates(node, p) {
+    if (!isCompact(node) && node.gates) {
+        // x coordinate within range
+        if (p.x > node.bounds.x+node.bounds.width+
+            (viewProperties.lineHeight/2-viewProperties.slotWidth)*viewProperties.zoomFactor) {
+            for (gateIndex = 0; gateIndex < node.gates.length; gateIndex++) {
+                // y coordinate within range
+                y = node.bounds.y+(2+gateIndex)*viewProperties.lineHeight*viewProperties.zoomFactor;
+                if (p.y >= y && p.y < y + viewProperties.lineHeight*viewProperties.zoomFactor)
+                    return gateIndex;
+            }
+        }
+    }
+    return -1;
 }
 
 function onMouseDrag(event) {
@@ -1090,6 +1122,7 @@ function onMouseDrag(event) {
             node = nodes[path.name];
             node.x += event.delta.x/viewProperties.zoomFactor;
             node.y += event.delta.y/viewProperties.zoomFactor;
+            node.bounds = calculateNodeBounds(node);
             redrawNodeLinks(node);
         }
     }

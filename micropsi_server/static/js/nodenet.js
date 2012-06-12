@@ -9,7 +9,7 @@
 // initialization ---------------------------------------------------------------------
 
 var viewProperties = {
-    zoomFactor: 0.8,
+    zoomFactor: 1,
     frameWidth: 100,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
@@ -31,7 +31,7 @@ var viewProperties = {
     lineHeight: 15,
     compactNodes: false,
     compactModules: false,
-    forceCompactBelowZoomFactor: 0.7,
+    forceCompactBelowZoomFactor: 0.9,
     strokeWidth: 0.3,
     outlineColor: null,
     outlineWidth: 0.3,
@@ -44,8 +44,7 @@ var viewProperties = {
     linkTension: 50,
     linkRadius: 30,
     arrowWidth: 6,
-    arrowLength: 10,
-    hitMatrixSize: 100
+    arrowLength: 10
 };
 
 // hashes from uids to object definitions; we import these via json

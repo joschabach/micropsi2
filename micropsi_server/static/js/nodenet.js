@@ -36,11 +36,12 @@ var viewProperties = {
     outlineColor: null,
     outlineWidth: 0.3,
     outlineWidthSelected: 2.0,
-    lightColor: new Color ("#ffffff"),
+    highlightColor: new Color ("#ffffff"),
     gateShadowColor: new Color("#888888"),
     shadowColor: new Color ("#000000"),
     shadowStrokeWidth: 0,
-    shadowDisplacement: new Point(0.3,1),
+    shadowDisplacement: new Point(0.5,1.5),
+    innerShadowDisplacement: new Point(0.2,0.7),
     linkTension: 50,
     linkRadius: 30,
     arrowWidth: 6,
@@ -61,14 +62,16 @@ initializeNodeNet();
 
 // fetch visible nodes and links
 function initializeNodeNet(){
-    addNode(new Node("a1", 150, 450, 0, "Alice", "Actor", 1));
-    addNode(new Node("a2", 250, 450, 0, "Tom", "Actor", 0.3));
-    addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
-    addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
-    addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
+//    addNode(new Node("a1", 150, 450, 0, "Alice", "Actor", 1));
+//    addNode(new Node("a2", 250, 450, 0, "Tom", "Actor", 0.3));
+//    addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
+//    addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
+//    addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
     addNode(new Node("a5b", 300, 80, 0, "Umzug", "Concept", 0.2));
     addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.3));
-    addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.6));
+    addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
+
+    /*addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.6));
     addNode(new Node("a8", 400, 270, 0, "Fahrzeugbestellung", "Concept", -0.8));
     addNode(new Node("a9", 550, 270, 0, "Einladung", "Concept", 0.7));
     addNode(new Node("a10", 700, 270, 0, "Packen", "Concept", 0.2));
@@ -114,7 +117,6 @@ function initializeNodeNet(){
 
     addLink(new Link("a17", 0, "a11", 0, 0.3, 1));
 
-    addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
     addLink(new Link("a5b", 3, "a7", 0, 0.9, 1));
     addLink(new Link("a5b", 3, "a8", 0, 1, 1));
     addLink(new Link("a5b", 3, "a9", 0, 0.9, 1));
@@ -149,7 +151,7 @@ function initializeNodeNet(){
     addLink(new Link("a11", 2, "a10", 0, 1, 1));
     addLink(new Link("a11b", 2, "a11", 0, 1, 1));
     addLink(new Link("a12", 2, "a11b", 0, 1, 1));
-
+*/
 
 
     updateViewSize();
@@ -556,22 +558,21 @@ function renderNode(node) {
 function renderFullNode(node) {
     node.bounds = calculateNodeBounds(node);
     shape = createFullNodeShape(node);
-    shadow = createNodeShadow(shape);
+    border = createBorder(shape.clone(), viewProperties.shadowDisplacement*viewProperties.zoomFactor);
     body = createFullNodeBody(node, shape);
-    titleBar = createNodeTitleBar(node);
+    titleBar = createFullNodeLabel(node);
     titleBarDelimiter = createNodeTitleBarDelimiter(node);
     slots = createNodeSlots(node);
     gates = createNodeGates(node);
     outline = createNodeOutline(shape);
     // define structure of the node
-    nodeItem = new Group([shadow, body, titleBar, titleBarDelimiter]);
+    nodeItem = new Group([body, titleBar, titleBarDelimiter, border]);
     if (slots) nodeItem.addChild(slots);
     if (gates) nodeItem.addChild(gates);
     nodeItem.addChild(outline);
-    nodeItem.name = "node";
-    nodeContainer = new Group(nodeItem);
-    nodeContainer.name = node.uid;
-    nodeLayer.addChild(nodeContainer);
+    nodeItem.name = node.uid;
+    nodeLayer.addChild(nodeItem);
+
 }
 
 // render compact version of a net entity
@@ -579,19 +580,16 @@ function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
 
     shape = createCompactNodeShape(node);
+    border = createBorder(shape.clone(), viewProperties.shadowDisplacement*viewProperties.zoomFactor);
     body = createCompactNodeBody(node, shape);
-    shadow = createNodeShadow(shape);
     label = createCompactNodeLabel(node);
     outline = createNodeOutline(shape);
-
     // define structure of the node
-    nodeItem = new Group([shadow, body]);
+    nodeItem = new Group([body, border]);
     nodeItem.addChild(outline);
     if (label) nodeItem.addChild(label);
-    nodeItem.name = "node";
-    nodeContainer = new Group(nodeItem);
-    nodeContainer.name = node.uid;
-    nodeLayer.addChild(nodeContainer);
+    nodeItem.name = node.uid;
+    nodeLayer.addChild(nodeItem);
 }
 
 // calculate the dimensions of a node in the current rendering
@@ -646,11 +644,9 @@ function createCompactNodeShape(node) {
     return shape;
 }
 
-// draw title bar shape of a full node
-function createNodeTitleBar(node) {
+// draw title bar label of a full node
+function createFullNodeLabel(node) {
     bounds = node.bounds;
-    //titleBarBounds = new Rectangle(bounds.x, bounds.y, bounds.width, viewProperties.lineHeight);
-    // title bar text
     label = new Group();
     label.name = "titleBarLabel";
     // clipping rectangle, so text does not flow out of the node
@@ -670,28 +666,52 @@ function createNodeTitleBar(node) {
     titleText.content = node.name ? node.name : node.uid;
     titleText.name = "text";
     label.addChild(titleText);
-    titleBarGroup = new Group([label]);
-    titleBarGroup.name = "titleBar";
-
-    return titleBarGroup;
+    return label;
 }
 
 // draw a line below the title bar
 function createNodeTitleBarDelimiter (node) {
     bounds = node.bounds;
-    upper = new Path.Line(bounds.x,
-        bounds.y + (viewProperties.lineHeight -viewProperties.strokeWidth)*viewProperties.zoomFactor,
-        bounds.right,
-        bounds.y + (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor);
-    upper.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
-    upper.strokeColor = viewProperties.nodeForegroundColor;
-    lower = new Path.Line(bounds.x, bounds.y + viewProperties.lineHeight*viewProperties.zoomFactor,
-        bounds.right, bounds.y + viewProperties.lineHeight*viewProperties.zoomFactor);
-    lower.strokeWidth = viewProperties.strokeWidth * viewProperties.zoomFactor;
-    lower.strokeColor = viewProperties.lightColor;
+    upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+        bounds.y + (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor,
+        bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+        viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+    upper.fillColor = viewProperties.shadowColor;
+    upper.fillColor.alpha = 0.5;
+    lower = upper.clone();
+    lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
+    lower.fillColor = viewProperties.highlightColor;
+    lower.fillColor.alpha = 0.5;
     titleBarDelimiter = new Group([upper, lower]);
     titleBarDelimiter.name = "titleBarDelimiter";
     return titleBarDelimiter;
+}
+
+// turn shape into shadowed outline
+function createBorder(shape, displacement) {
+    highlight = shape.clone();
+    highlight.fillColor = viewProperties.highlightColor;
+    highlightSubtract = highlight.clone();
+    highlightSubtract.position += displacement;
+    highlightClipper = highlight.clone();
+    highlightClipper.position -= new Point(0.5, 0.5);
+    highlightClipper.clipMask = true;
+    upper = new Group([highlightClipper, new CompoundPath([highlight, highlightSubtract])]);
+    upper.opacity = 0.5;
+
+    shadowSubtract = shape;
+    shadowSubtract.fillColor = viewProperties.shadowColor;
+    shadow = shadowSubtract.clone();
+    shadow.position += displacement;
+    shadowClipper = shadow.clone();
+    shadowClipper.position += new Point(0.5, 0.5);
+    shadowClipper.clipMask = true;
+    lower = new Group([shadowClipper, new CompoundPath([shadow, shadowSubtract])]);
+    lower.opacity = 0.5;
+
+    border = new Group([lower, upper]);
+    border.setName("border");
+    return border;
 }
 
 // draw shadow of a node
@@ -868,12 +888,12 @@ function createNodeOutline(shape) {
 }
 
 // update activation in node background, slots and gates
-function setActivation(node) {
+function setActivation(node) { return;
     if (node.parent!=currentNodeSpace) return; // only do this is the node is visible
 
-    nodeView = nodeLayer.children[node.uid];
-    if (nodeView) {
-        nodeItem = nodeView.children["node"];
+    nodeItem = nodeLayer.children[node.uid];
+    if (nodeItem) {
+        //nodeItem = nodeView.children["node"];
         node.fillColor = nodeItem.children["body"].children["activation"].fillColor =
             activationColor(node.activation, viewProperties.nodeColor);
         if (!isCompact(node) && (node.slots.length || node.gates.length)) {
@@ -894,7 +914,7 @@ function setActivation(node) {
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
     selection[nodeUid] = nodes[nodeUid];
-    outline = nodeLayer.children[nodeUid].children["node"].children["outline"];
+    outline = nodeLayer.children[nodeUid].children["outline"];
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
 }
@@ -903,7 +923,7 @@ function selectNode(nodeUid) {
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
-        outline = nodeLayer.children[nodeUid].children["node"].children["outline"];
+        outline = nodeLayer.children[nodeUid].children["outline"];
         outline.strokeColor = viewProperties.outlineColor;
         outline.strokeWidth = viewProperties.outlineWidth;
     }
@@ -976,53 +996,74 @@ var hitOptions = {
 var path, hoverPath;
 var movePath = false;
 
-var clickTarget = null;
+var clickOriginUid = null;
+var clickType = null;
+var clickIndex = -1;
 
 function onMouseDown(event) {
     path = hoverPath = null;
-    var hitResult = project.hitTest(event.point, hitOptions);
+    p = event.point;
+    // first, check for nodes
+    // we iterate over all bounding boxes, but should improve speed by maintaining an index
+    for (nodeUid in nodeLayer.children) {
+        if (nodeUid in nodes) {
+            node = nodes[nodeUid];
+            bounds = node.bounds;
+            if (bounds.contains(p)) {
+                path = nodeLayer.children[nodeUid];
+                clickOriginUid = nodeUid;
+                nodeLayer.addChild(path); // bring to front
+                if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
+                if (event.modifiers.command && nodeUid in selection) deselectNode(nodeUid); // toggle
+                else selectNode(nodeUid);
+                console.log ("clicked node "+nodeUid);
+                // check for slots and gates
+                if ((i = testSlots(node, p)) >-1) {
+                    console.log("clicked slot #" + i);
+                    clickType = "slot";
+                    clickIndex = i;
+                    if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
+                    return;
+                } else if ((i = testGates(node, p)) > -1) {
+                    console.log("clicked gate #" + i);
+                    clickType = "gate";
+                    clickIndex = i;
+                    if (event.modifiers.control || event.event.button == 2) openContextMenu("#gate_menu", event.event);
+                    return;
+                }
+                clickType = "node";
+                if (event.modifiers.control || event.event.button == 2) openNodeContextMenu("#node_menu", event.event, nodeUid);
+                else movePath = true;
+                return;
+            }
+        }
+    }
+
+
+    var hitResult = project.hitTest(p, hitOptions);
 
     if (!hitResult) {
         movePath = false;
         deselectAll();
-        clickTarget = null;
+        clickOriginUid = null;
+        clickType = null;
+        clickIndex = -1;
         if (event.modifiers.control || event.event.button == 2) openContextMenu("#create_node_menu", event.event);
     }
     else {
         path = hitResult.item;
         if (hitResult.type == 'stroke' || hitResult.type =="fill") {
-            while(path!=project && !/^node|link|gate|slot/.test(path.name) && path.parent) path = path.parent;
+            while(path!=project && path.name!="link" && path.parent) path = path.parent;
 
-            clickTarget = path;
-
-            if (path.name == "slot") {
-                console.log("clicked slot #" + path.index);
-                while (path!=project && path.name!="node") path = path.parent;
-                if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
-            }
-            else if (path.name == "gate") {
-                console.log("clicked gate #" + path.index);
-                while (path!=project && path.name!="node") path = path.parent;
-                if (event.modifiers.control || event.event.button == 2) openContextMenu("#gate_menu", event.event);
-            }
-            else if (path.name == "link") {
+            if (path.name == "link") {
                 path = path.parent;
                 if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
                 console.log("clicked link " + path.name);
+                clickType = "link";
+                clickOriginUid = path.name;
                 if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
-            }
-            else if (path.name=="node") {
-                path = path.parent;
-                nodeLayer.addChild(path);
-
-                if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
-                if (event.modifiers.command && path.name in selection) deselectNode(path.name); // toggle
-                else selectNode(path.name);
-                console.log ("clicked node "+path.name);
-                if (event.modifiers.control || event.event.button == 2) openNodeContextMenu("#node_menu", event.event, path.name);
-                else movePath = true;
             }
         }
     }
@@ -1031,7 +1072,6 @@ function onMouseDown(event) {
 var hover = null;
 var hoverArrow = null;
 var oldHoverColor = null;
-var previousHover = null;
 
 function onMouseMove(event) {
     p = event.point;
@@ -1052,12 +1092,12 @@ function onMouseMove(event) {
             node = nodes[nodeUid];
             bounds = node.bounds;
             if (bounds.contains(p)) {
-                hover = nodeLayer.children[nodeUid].children["node"].children["body"].children["activation"];
+                hover = nodeLayer.children[nodeUid].children["body"].children["activation"];
                 // check for slots and gates
                 if ((i = testSlots(node, p)) >-1) {
-                    hover = nodeLayer.children[nodeUid].children["node"].children["slots"].children[i].children["activation"];
+                    hover = nodeLayer.children[nodeUid].children["slots"].children[i].children["activation"];
                 } else if ((i = testGates(node, p)) > -1) {
-                    hover = nodeLayer.children[nodeUid].children["node"].children["gates"].children[i].children["activation"];
+                    hover = nodeLayer.children[nodeUid].children["gates"].children[i].children["activation"];
                 }
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
@@ -1067,7 +1107,7 @@ function onMouseMove(event) {
     }
     if (!hover) {
         // check for links
-        var hitResult = project.hitTest(event.point, hitOptions);
+        var hitResult = linkLayer.hitTest(event.point, hitOptions);
         if (hitResult && hitResult.item && hitResult.item.name == "line") {
             hover = hitResult.item;
             oldHoverColor = hover.strokeColor;
@@ -1116,14 +1156,12 @@ function testGates(node, p) {
 function onMouseDrag(event) {
     // move current node
     if (movePath) {
-        if (path.firstChild.name=="node") {
             path.position += event.delta;
             node = nodes[path.name];
             node.x += event.delta.x/viewProperties.zoomFactor;
             node.y += event.delta.y/viewProperties.zoomFactor;
             node.bounds = calculateNodeBounds(node);
             redrawNodeLinks(node);
-        }
     }
 }
 
@@ -1203,9 +1241,8 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 // universal handler for all context menu events. You can get the origin path from the variable clickTarget.
 function handleContextMenu(event) {
     menuText = event.target.text;
-    origin = clickTarget ? clickTarget.name : null;
 
-    switch (origin) {
+    switch (clickType) {
         case null: // create nodes
             switch (menuText) {
                 case "Create concept node":
@@ -1239,7 +1276,7 @@ function handleContextMenu(event) {
         case "node":
             switch (menuText) {
                 case "Rename node":
-                    nodeUid = clickTarget.parent.name;
+                    nodeUid = clickOriginUid;
                     if (nodeUid in nodes) {
                         $("#rename_node_input").val(nodes[nodeUid].name);
                         $("#rename_node_modal").modal("show");
@@ -1248,7 +1285,7 @@ function handleContextMenu(event) {
                     }
                     break;
                 case "Delete node":
-                    nodeUid = clickTarget.parent.name;
+                    nodeUid = clickOriginUid;
                     if (nodeUid in nodes) removeNode(nodes[nodeUid]);
                     break;
             }
@@ -1260,7 +1297,7 @@ function handleContextMenu(event) {
         case "link":
             switch (menuText) {
                 case "Delete link":
-                    linkUid = clickTarget.parent.name;
+                    linkUid = clickOriginUid;
                     if (linkUid in links) removeLink(links[linkUid]);
                     break;
             }
@@ -1270,7 +1307,7 @@ function handleContextMenu(event) {
 
 // hander for renaming the node
 function handleRenameNodeModal(event) {
-    nodeUid = clickTarget.parent.name;
+    nodeUid = clickOriginUid;
     if (nodeUid in nodes) {
         nodes[nodeUid].name = $("#rename_node_input").val();
         redrawNode(nodes[nodeUid]);

@@ -714,16 +714,6 @@ function createBorder(shape, displacement) {
     return border;
 }
 
-// draw shadow of a node
-function createNodeShadow(outline) {
-    shadow = outline.clone();
-    shadow.position += viewProperties.shadowDisplacement*viewProperties.zoomFactor;
-    shadow.name = "shadow";
-    shadow.fillColor = viewProperties.shadowColor;
-    shadow.fillColor.alpha = 0.5;
-    return shadow;
-}
-
 // draw background, with activation of the node
 function createFullNodeBody(node, outline) {
     bounds = node.bounds;

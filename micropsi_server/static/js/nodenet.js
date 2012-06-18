@@ -65,11 +65,11 @@ initializeNodeNet();
 
 // fetch visible nodes and links
 function initializeNodeNet(){
-//    addNode(new Node("a1", 150, 450, 0, "Alice", "Actor", 1));
-//    addNode(new Node("a2", 250, 450, 0, "Tom", "Actor", 0.3));
-//    addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
-//    addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
-//    addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
+    addNode(new Node("a1", 150, 450, 0, "Alice", "Actor", 1));
+    addNode(new Node("a2", 250, 450, 0, "Tom", "Actor", 0.3));
+    addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
+    addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
+    addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
     addNode(new Node("a5b", 300, 80, 0, "Umzug", "Concept", 0.2));
     addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.3));
     addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
@@ -177,8 +177,6 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
     this.bounds = null; // current bounding box (after scaling)
-    this.row = 0; // line within the hittest matrix
-    this.column = 0; // column withn the hittest matrix
 	switch (type) {
         case "Nodespace":
             this.symbol = "NS";
@@ -616,11 +614,11 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Actor":
-            shape = new Path();
-            shape.add(bounds.bottomLeft);
-            shape.lineTo(new Point(bounds.x+bounds.width *.35, bounds.y));
-            shape.lineTo(new Point(bounds.x+bounds.width *.65, bounds.y));
-            shape.lineTo(bounds.bottomRight);
+            shape = new Path([bounds.bottomRight,
+                new Point(bounds.x+bounds.width *.65, bounds.y),
+                new Point(bounds.x+bounds.width *.35, bounds.y),
+                bounds.bottomLeft
+            ]);
             shape.closePath();
             break;
         case "Concept": // draw circle

@@ -21,7 +21,7 @@ var viewProperties = {
     nodeLabelColor: new Color ("#94c2f5"),
     nodeForegroundColor: new Color ("#000000"),
     nodeFontColor: new Color ("#000000"),
-    fontSize: 8.5,
+    fontSize: 10,
     symbolSize: 14,
     nodeWidth: 84,
     compactNodeWidth: 32,
@@ -45,7 +45,8 @@ var viewProperties = {
     linkTension: 50,
     linkRadius: 30,
     arrowWidth: 6,
-    arrowLength: 10
+    arrowLength: 10,
+    rasterize: true
 };
 
 // hashes from uids to object definitions; we import these via json
@@ -55,6 +56,8 @@ selection = {};
 
 var linkLayer = new Layer();
 var nodeLayer = new Layer();
+var prerenderLayer = new Layer();
+prerenderLayer.visible = false;
 
 var currentNodeSpace = 0;
 
@@ -71,7 +74,7 @@ function initializeNodeNet(){
     addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.3));
     addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
 
-    /*addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.6));
+    addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.6));
     addNode(new Node("a8", 400, 270, 0, "Fahrzeugbestellung", "Concept", -0.8));
     addNode(new Node("a9", 550, 270, 0, "Einladung", "Concept", 0.7));
     addNode(new Node("a10", 700, 270, 0, "Packen", "Concept", 0.2));
@@ -151,7 +154,7 @@ function initializeNodeNet(){
     addLink(new Link("a11", 2, "a10", 0, 1, 1));
     addLink(new Link("a11b", 2, "a11", 0, 1, 1));
     addLink(new Link("a12", 2, "a11b", 0, 1, 1));
-*/
+
 
 
     updateViewSize();
@@ -180,12 +183,6 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
         case "Nodespace":
             this.symbol = "NS";
             break;
-        case "Native":
-            this.symbol = "Na";
-            this.slots.push(new Slot("gen"));
-            this.gates.push(new Gate("gen"));
-            // TODO: fetch list of slots and gates from server
-            break;
         case "Sensor":
             this.symbol = "S";
             this.gates.push(new Gate("gen"));
@@ -211,6 +208,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 			this.gates.push(new Gate("cat"));
 			this.gates.push(new Gate("exp"));
 			break;
+        default: // native code node (completely custom)
+            this.symbol = "Na";
+            this.slots.push(new Slot("gen"));
+            this.gates.push(new Gate("gen"));
+            // TODO: fetch list of slots and gates from server
+            break;
 	}
 }
 
@@ -323,7 +326,8 @@ function removeNode(node) {
 function updateViewSize() {
     var maxX = maxY = 0;
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
-    var el = view.canvas.parentElement;
+    var el = view.element.parentElement;
+    prerenderLayer.removeChildren();
     for (nodeUid in nodes) {
         node = nodes[nodeUid];
         // make sure no node gets lost to the top or left
@@ -557,36 +561,21 @@ function renderNode(node) {
 // draw net entity with slots and gates
 function renderFullNode(node) {
     node.bounds = calculateNodeBounds(node);
-    shape = createFullNodeShape(node);
-    border = createBorder(shape.clone(), viewProperties.shadowDisplacement*viewProperties.zoomFactor);
-    body = createFullNodeBody(node, shape);
+    skeleton = createFullNodeSkeleton(node);
+    activations = createFullNodeActivations(node);
     titleBar = createFullNodeLabel(node);
-    titleBarDelimiter = createNodeTitleBarDelimiter(node);
-    slots = createNodeSlots(node);
-    gates = createNodeGates(node);
-    outline = createNodeOutline(shape);
-    // define structure of the node
-    nodeItem = new Group([body, titleBar, titleBarDelimiter, border]);
-    if (slots) nodeItem.addChild(slots);
-    if (gates) nodeItem.addChild(gates);
-    nodeItem.addChild(outline);
+    nodeItem = new Group([activations, skeleton, titleBar]);
     nodeItem.name = node.uid;
     nodeLayer.addChild(nodeItem);
-
 }
 
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
-
-    shape = createCompactNodeShape(node);
-    border = createBorder(shape.clone(), viewProperties.shadowDisplacement*viewProperties.zoomFactor);
-    body = createCompactNodeBody(node, shape);
+    skeleton = createCompactNodeSkeleton(node);
+    activations = createCompactNodeActivations(node);
     label = createCompactNodeLabel(node);
-    outline = createNodeOutline(shape);
-    // define structure of the node
-    nodeItem = new Group([body, border]);
-    nodeItem.addChild(outline);
+    nodeItem = new Group([activations, skeleton]);
     if (label) nodeItem.addChild(label);
     nodeItem.name = node.uid;
     nodeLayer.addChild(nodeItem);
@@ -598,7 +587,6 @@ function calculateNodeBounds(node) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slots.length, node.gates.length)+2)*viewProperties.zoomFactor;
         if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
-
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
     }
@@ -620,9 +608,6 @@ function createCompactNodeShape(node) {
         case "Nodespace":
             shape = new Path.Rectangle(bounds);
             break;
-        case "Native":
-            shape = new Path.RoundRectangle(bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
-            break;
         case "Sensor":
             shape = new Path();
             shape.add(bounds.bottomLeft);
@@ -638,8 +623,12 @@ function createCompactNodeShape(node) {
             shape.lineTo(bounds.bottomRight);
             shape.closePath();
             break;
-        default: // draw circle
+        case "Concept": // draw circle
+        case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
+            break;
+        default:
+            shape = new Path.RoundRectangle(bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
     }
     return shape;
 }
@@ -677,11 +666,11 @@ function createNodeTitleBarDelimiter (node) {
         bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
         viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
     upper.fillColor = viewProperties.shadowColor;
-    upper.fillColor.alpha = 0.5;
+    upper.fillColor.alpha = 0.3;
     lower = upper.clone();
     lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
     lower.fillColor = viewProperties.highlightColor;
-    lower.fillColor.alpha = 0.5;
+    lower.fillColor.alpha = 0.3;
     titleBarDelimiter = new Group([upper, lower]);
     titleBarDelimiter.name = "titleBarDelimiter";
     return titleBarDelimiter;
@@ -714,15 +703,9 @@ function createBorder(shape, displacement) {
     return border;
 }
 
-// draw background, with activation of the node
-function createFullNodeBody(node, outline) {
+// full node body text
+function createFullNodeBodyLabel(node) {
     bounds = node.bounds;
-    activation = outline.clone();
-    activation.name = "activation";
-    node.fillColor = activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
-    activation.fillColor.alpha = 0.8;
-
-    // body text
     label = new Group();
     label.name = "bodyLabel";
     // clipping rectangle, so text does not flow out of the node
@@ -739,117 +722,128 @@ function createFullNodeBody(node, outline) {
     };
     typeText.paragraphStyle.justification = 'center';
     typeText.content = node.type;
-    typeText.name = "text";
     label.addChild(typeText);
-
-    body = new Group([activation, label]);
-    body.name = "body";
-
-    return body;
+    return label;
 }
 
-// draw background, with activation of the node
-function createCompactNodeBody(node, outline) {
+// render the static part of a node
+function createFullNodeSkeleton(node) {
+    if (!(node.type in prerenderLayer.children)) {
+        shape = createFullNodeShape(node);
+        border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
+        typeLabel = createFullNodeBodyLabel(node);
+        titleBarDelimiter = createNodeTitleBarDelimiter(node);
+        skeleton = new Group([border, titleBarDelimiter, typeLabel]);
+        if (node.slots) {
+            for (i = 0; i< node.slots.length; i++)
+                skeleton.addChild(createPillsWithLabels(getSlotBounds(node, i), node.slots[i].name));
+        }
+        if (node.gates) {
+            for (i = 0; i< node.gates.length; i++)
+                skeleton.addChild(createPillsWithLabels(getGateBounds(node, i), node.gates[i].name));
+        }
+        if (viewProperties.rasterize) skeleton = skeleton.rasterize();
+        skeleton.name = node.type;
+        prerenderLayer.addChild(skeleton);
+    }
+    skeleton = prerenderLayer.children[node.type].clone();
+    skeleton.position = node.bounds.center;
+    return skeleton;
+}
+
+// render the activation part of a node
+function createFullNodeActivations(node) {
+    name = "fullNodeActivation "+node.type;
+    if (!(name in prerenderLayer.children)) {
+        body = createFullNodeShape(node);
+        body.name = "body";
+        body.fillColor = viewProperties.nodeColor;
+        activation = new Group([body]);
+        activation.name = "activation";
+        if (node.slots.length) {
+            slots = new Group();
+            slots.name = "slots";
+            for (i = 0; i< node.slots.length; i++) {
+                bounds = getSlotBounds(node, i);
+                slots.addChild(new Path.RoundRectangle(bounds, bounds.height/2));
+            }
+            activation.addChild(slots);
+        }
+        if (node.gates.length) {
+            gates = new Group();
+            gates.name = "gates";
+            for (i = 0; i< node.gates.length; i++) {
+                bounds = getGateBounds(node, i);
+                gates.addChild(new Path.RoundRectangle(bounds, bounds.height/2));
+            }
+            activation.addChild(gates);
+        }
+        container = new Group([activation]);
+        container.name = name;
+        prerenderLayer.addChild(container);
+    }
+    activation = prerenderLayer.children[name].firstChild.clone();
+    activation.position = node.bounds.center;
+    return activation;
+}
+
+// render the static part of a compact node
+function createCompactNodeSkeleton(node) {
+    shape = createCompactNodeShape(node);
+    border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
+    typeLabel = createCompactNodeBodyLabel(node);
+    skeleton = new Group([border, typeLabel]);
+    return skeleton;
+}
+
+// render the symbol within the compact node body
+function createCompactNodeBodyLabel(node) {
     bounds = node.bounds;
-    activation = outline.clone();
-    activation.name = "activation";
-    activation.fillColor = activationColor(node.activation, viewProperties.nodeColor);
     symbolText = new PointText(new Point(bounds.x+bounds.width/2,
         bounds.y+bounds.height/2+viewProperties.symbolSize/2*viewProperties.zoomFactor));
     symbolText.fillColor = viewProperties.nodeForegroundColor;
     symbolText.content = node.symbol;
     symbolText.fontSize = viewProperties.symbolSize*viewProperties.zoomFactor;
     symbolText.paragraphStyle.justification = 'center';
-    body = new Group([activation, symbolText]);
+    return symbolText;
+}
+
+// render the activation part of a compact node
+function createCompactNodeActivations(node) {
+    body = createCompactNodeShape(node);
+    body.fillColor = viewProperties.nodeColor;
     body.name = "body";
-    return body;
-}
-
-// draw slots of a node
-function createNodeSlots(node) {
-    if (node.slots.length) {
-        slotStart = new Point(node.bounds.x+
-            (viewProperties.strokeWidth+viewProperties.lineHeight/2)*viewProperties.zoomFactor,
-            node.bounds.y+2*viewProperties.lineHeight*viewProperties.zoomFactor);
-        slot = createNodeGateElement(slotStart, "slot", node.slots[0].name);
-        slots = new Group(slot);
-        slots.name = "slots";
-        offset = new Point (0, viewProperties.lineHeight*viewProperties.zoomFactor);
-        for (i=1; i<node.slots.length; i++) {
-            slot = slots.lastChild.clone();
-            slot.position += offset;
-            slot.children["label"].children["text"].content = node.slots[i].name;
-            slots.addChild(slot);
-        }
-        return slots;
-    }
-    else return null;
-}
-
-// draw gates of a node
-function createNodeGates(node) {
-    if (node.gates.length) {
-        gateStart = new Point(node.bounds.x+node.bounds.width+
-            (viewProperties.lineHeight/2-viewProperties.slotWidth)*viewProperties.zoomFactor,
-            node.bounds.y+2*viewProperties.lineHeight*viewProperties.zoomFactor);
-        gate = createNodeGateElement(gateStart, "gate", node.gates[0].name);
-        gates = new Group(gate);
-        gates.name = "gates";
-        offset = new Point (0, viewProperties.lineHeight*viewProperties.zoomFactor);
-        for (i=1; i<node.gates.length; i++) {
-            gate = gates.lastChild.clone();
-            gate.position += offset;
-            gate.children["label"].children["text"].content = node.gates[i].name;
-            gates.addChild(gate);
-        }
-        return gates;
-    }
-    else return null;
-}
-
-// draw the shape of an individual gate or slot
-function createNodeGateElement(startPoint, type, labelText) {
-    pillBounds = new Rectangle(startPoint.x, startPoint.y+viewProperties.zoomFactor,
-        (viewProperties.slotWidth - viewProperties.lineHeight)*viewProperties.zoomFactor,
-        (viewProperties.lineHeight - 2)*viewProperties.zoomFactor);
-    pill = new Path();
-    pill.add(pillBounds.bottomLeft);
-    pill.arcTo(pillBounds.topLeft);
-    pill.lineTo(pillBounds.topRight);
-    pill.arcTo(pillBounds.bottomRight);
-    pill.closePath();
-    pill.fillColor = viewProperties.gateShadowColor;
-    pill.fillColor.alpha = 0.8;
-    pill.name = "shadow";
-    activation = pill.clone();
-    activation.position -= viewProperties.shadowDisplacement*viewProperties.zoomFactor;
-    activation.fillColor = viewProperties.nodeColor;
+    activation = new Group([body]);
     activation.name = "activation";
+    return activation;
+}
 
+// create the border of slots and gates, and add the respective label
+function createPillsWithLabels(bounds, labeltext) {
+    if (!("pillshape" in prerenderLayer.children)) {
+        shape = Path.RoundRectangle(bounds, bounds.height/2);
+        border = createBorder(shape, viewProperties.innerShadowDisplacement);
+        border.name = "pillshape";
+        if (viewProperties.rasterize) border = border.rasterize();
+        prerenderLayer.addChild(border);
+    }
+    border = prerenderLayer.children["pillshape"].clone();
+    border.position = bounds.center;
     label = new Group();
-    label.name = "label";
-
     // clipping rectangle, so text does not flow out of the node
-    clipper = new Path.Rectangle (pillBounds);
+    clipper = new Path.Rectangle(bounds);
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    slotText = new PointText(startPoint.x+
-        (viewProperties.slotWidth - viewProperties.lineHeight)/2*viewProperties.zoomFactor,
-        startPoint.y + viewProperties.lineHeight/1.5*viewProperties.zoomFactor);
-    slotText.characterStyle = {
+    text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.3));
+    text.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
-    slotText.paragraphStyle.justification = 'center';
-    slotText.content = labelText;
-    slotText.name = "text";
-    label.addChild(slotText);
-
-    nodeGateElement = new Group([pill, activation, label]);
-    nodeGateElement.name = type;
-
-    return nodeGateElement;
+    text.paragraphStyle.justification = 'center';
+    text.content = labeltext;
+    label.addChild(text);
+    return new Group([border, label]);
 }
 
 // draw the label of a compact node
@@ -869,31 +863,20 @@ function createCompactNodeLabel(node) {
     return null;
 }
 
-// draw outline of a node
-function createNodeOutline(shape) {
-    shape.name = "outline";
-    shape.strokeColor = viewProperties.outlineColor;
-    shape.strokeWidth = viewProperties.outlineWidth * viewProperties.zoomFactor;
-    return shape;
-}
-
 // update activation in node background, slots and gates
-function setActivation(node) { return;
-    if (node.parent!=currentNodeSpace) return; // only do this is the node is visible
-
-    nodeItem = nodeLayer.children[node.uid];
-    if (nodeItem) {
-        //nodeItem = nodeView.children["node"];
-        node.fillColor = nodeItem.children["body"].children["activation"].fillColor =
+function setActivation(node) {
+    if (node.uid in nodeLayer.children) {
+        nodeItem = nodeLayer.children[node.uid];
+        node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
             activationColor(node.activation, viewProperties.nodeColor);
         if (!isCompact(node) && (node.slots.length || node.gates.length)) {
             for (i in node.slots) {
-                nodeItem.children["slots"].children[i].children["activation"].fillColor =
+                nodeItem.children["activation"].children["slots"].children[i].fillColor =
                     activationColor(node.slots[i].activation,
                     viewProperties.nodeColor);
             }
             for (i in node.gates) {
-                nodeItem.children["gates"].children[i].children["activation"].fillColor =
+                nodeItem.children["activation"].children["gates"].children[i].fillColor =
                     activationColor(node.gates[i].activation,
                     viewProperties.nodeColor);
             }
@@ -904,7 +887,7 @@ function setActivation(node) { return;
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
     selection[nodeUid] = nodes[nodeUid];
-    outline = nodeLayer.children[nodeUid].children["outline"];
+    outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
 }
@@ -913,7 +896,7 @@ function selectNode(nodeUid) {
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
-        outline = nodeLayer.children[nodeUid].children["outline"];
+        outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
         outline.strokeColor = viewProperties.outlineColor;
         outline.strokeWidth = viewProperties.outlineWidth;
     }
@@ -958,6 +941,25 @@ function isCompact(node) {
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
+}
+
+// calculate the bounding rectangle of the slot with the given index
+function getSlotBounds(node, index) {
+    return new Rectangle(node.bounds.x,
+        node.bounds.y+(2+index)*viewProperties.lineHeight*viewProperties.zoomFactor,
+        viewProperties.slotWidth*viewProperties.zoomFactor,
+        viewProperties.lineHeight*viewProperties.zoomFactor*0.9
+    );
+}
+
+// calculate the bounding rectangle of the gate with the given index
+function getGateBounds(node, index) {
+    return new Rectangle(node.bounds.right-
+        viewProperties.slotWidth*viewProperties.zoomFactor,
+        node.bounds.y+(2+index)*viewProperties.lineHeight*viewProperties.zoomFactor,
+        viewProperties.slotWidth*viewProperties.zoomFactor,
+        viewProperties.lineHeight*viewProperties.zoomFactor*0.9
+    );
 }
 
 // helper function to interpolate between colors
@@ -1067,12 +1069,11 @@ function onMouseMove(event) {
     p = event.point;
     // hovering
     if (hover) { // unhover
-        if (hover.name == "activation") hover.fillColor = oldHoverColor;
-        else if (hover.name == "line") {
+        if (hover.name == "line") {
             hover.strokeColor = oldHoverColor;
             hoverArrow.fillColor = oldHoverColor;
             oldHoverColor = null;
-        }
+        } else hover.fillColor = oldHoverColor;
         hover = null;
     }
     // first, check for nodes
@@ -1082,12 +1083,12 @@ function onMouseMove(event) {
             node = nodes[nodeUid];
             bounds = node.bounds;
             if (bounds.contains(p)) {
-                hover = nodeLayer.children[nodeUid].children["body"].children["activation"];
+                hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
                 // check for slots and gates
                 if ((i = testSlots(node, p)) >-1) {
-                    hover = nodeLayer.children[nodeUid].children["slots"].children[i].children["activation"];
+                    hover = nodeLayer.children[nodeUid].children["activation"].children["slots"].children[i];
                 } else if ((i = testGates(node, p)) > -1) {
-                    hover = nodeLayer.children[nodeUid].children["gates"].children[i].children["activation"];
+                    hover = nodeLayer.children[nodeUid].children["activation"].children["gates"].children[i];
                 }
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
@@ -1115,10 +1116,7 @@ function testSlots(node, p) {
         // x coordinate within range
         if (p.x < node.bounds.x + viewProperties.slotWidth*viewProperties.zoomFactor) {
             for (slotIndex = 0; slotIndex < node.slots.length; slotIndex++) {
-                // y coordinate within range
-                y = node.bounds.y+(2+slotIndex)*viewProperties.lineHeight*viewProperties.zoomFactor;
-                if (p.y >= y && p.y < y + viewProperties.lineHeight*viewProperties.zoomFactor)
-                    return slotIndex;
+                if (getSlotBounds(node, slotIndex).contains(p)) return slotIndex;
             }
         }
     }
@@ -1133,10 +1131,7 @@ function testGates(node, p) {
         if (p.x > node.bounds.x+node.bounds.width+
             (viewProperties.lineHeight/2-viewProperties.slotWidth)*viewProperties.zoomFactor) {
             for (gateIndex = 0; gateIndex < node.gates.length; gateIndex++) {
-                // y coordinate within range
-                y = node.bounds.y+(2+gateIndex)*viewProperties.lineHeight*viewProperties.zoomFactor;
-                if (p.y >= y && p.y < y + viewProperties.lineHeight*viewProperties.zoomFactor)
-                    return gateIndex;
+                if (getGateBounds(node, gateIndex).contains(p)) return gateIndex;
             }
         }
     }
@@ -1308,6 +1303,10 @@ function handleRenameNodeModal(event) {
 }
 
 /* todo:
+
+ - pre-rendering of rasterized pills, node types and unrasterized arrowheads
+ - change activation rendering
+
  - multi-select by dragging a frame
 
  - links into invisible nodespaces

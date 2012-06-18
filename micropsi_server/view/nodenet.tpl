@@ -55,7 +55,7 @@
             <div class="nav-collapse">
                 <ul class="nav">
                     <li class="dropdown" id="menu_agent">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Agent
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Blueprint
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
                             <li><a href="#">New...</a></li>
@@ -71,7 +71,7 @@
                         </ul>
                     </li>
                     <li class="dropdown" id="menu_world">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">World
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Context
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
                             <li><a href="#">New...</a></li>
@@ -97,8 +97,8 @@
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
                             <li><a href="#">Server</a></li>
-                            <li><a href="#">Agent runner</a></li>
-                            <li><a href="#">World runner</a></li>
+                            <li><a href="#">Blueprint runner</a></li>
+                            <li><a href="#">Context runner</a></li>
                         </ul>
                     </li>
                     <li class="dropdown" id="menu_help">
@@ -123,15 +123,15 @@
         <div class="span2">
             <div class="well sidebar-nav">
                 <ul class="nav nav-list">
-                    <li class="nav-header">My Agents</li>
-                    <li class="active"><a href="#">Agent1</a></li>
-                    <li><a href="#">Agent2</a></li>
-                    <li><a href="#">Agent3</a></li>
-                    <li><a href="#">Agent4</a></li>
-                    <li class="nav-header">Other Agents</li>
-                    <li><a href="#">Agent10</a></li>
-                    <li><a href="#">Agent11</a></li>
-                    <li class="nav-header">Active World</li>
+                    <li class="nav-header">My Blueprints</li>
+                    <li class="active"><a href="#">Blueprint1</a></li>
+                    <li><a href="#">Blueprint2</a></li>
+                    <li><a href="#">Blueprint3</a></li>
+                    <li><a href="#">Blueprint4</a></li>
+                    <li class="nav-header">Other Blueprints</li>
+                    <li><a href="#">Blueprint10</a></li>
+                    <li><a href="#">Blueprint11</a></li>
+                    <li class="nav-header">Active Context</li>
                     <li><a href="#">Object1</a></li>
                     <li><a href="#">Object2</a></li>
                     <li><a href="#">Object3</a></li>
@@ -149,7 +149,7 @@
                                     class="icon-chevron-right"></i></span></td>
 
 
-                            <td><input class="span3" disabled="disabled" value="Agent1"/></td>
+                            <td><input class="span3" disabled="disabled" value="Blueprint1"/></td>
 
                             <td><span class="btn-group">
                           <button class="btn"><i class="icon-fast-backward"></i></button>
@@ -212,7 +212,7 @@
                                     class="icon-chevron-right"></i></span></td>
 
 
-                            <td><input class="span3" disabled="disabled" value="World"/></td>
+                            <td><input class="span3" disabled="disabled" value="Context"/></td>
 
                             <td><span class="btn-group">
                           <button class="btn"><i class="icon-fast-backward"></i></button>
@@ -231,7 +231,7 @@
 
             <div id="world_editor" class="collapse">
                 <div class="hero-unit">
-                    <p>World Viewer Placeholder</p>
+                    <p>Context Viewer Placeholder</p>
                 </div>
             </div>
 
@@ -315,7 +315,7 @@
 <script src="static/js/jquery.min.js" type="text/javascript"></script>
 <script src="static/js/bootstrap.min.js" type="text/javascript"></script>
 <script src="static/js/micropsiviewer.js" type="text/javascript"></script>
-<script src="static/js/paper.js" type="text/javascript"></script>
+<script src="static/js/paper_nightly.js" type="text/javascript"></script>
 <script src="static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
 
 </body>

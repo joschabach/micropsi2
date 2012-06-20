@@ -161,8 +161,8 @@
                             <td><input class="span1" disabled="disabled" style="text-align:right" value="0"/></td>
                             <td><div id="nodespace_control" class="collapse in">
                                 &nbsp;Nodespace:
-                                <input class="span2" disabled="disabled" value="Root"/>
-                                <button class="btn"><i class="icon-share"></i></button>
+                                <input id="nodespace_name" class="span2" disabled="disabled" value="Root"/>
+                                <button id="nodespace_up" class="btn"><i class="icon-share"></i></button>
                             </div>
 
                             </td>

@@ -1048,6 +1048,7 @@ var hitOptions = {
 
 var path, hoverPath;
 var movePath = false;
+var clickPoint = null;
 
 var clickOriginUid = null;
 var clickType = null;
@@ -1089,7 +1090,10 @@ function onMouseDown(event) {
                 clickType = "node";
                 if (event.modifiers.control || event.event.button == 2) openNodeContextMenu("#node_menu", event.event, nodeUid);
                 else if (linkCreationStart) finalizeLinkHandler(nodeUid);
-                else movePath = true;
+                else {
+                    movePath = true;
+                    clickPoint = p;
+                }
                 return;
             }
         }
@@ -1179,6 +1183,20 @@ function onMouseMove(event) {
     }
 }
 
+function onDoubleClick(event) {
+    // node space
+    p = view.viewToProject(DomEvent.getOffset(event, view._canvas))
+    for (nodeUid in nodeLayer.children) {
+        if (nodeUid in nodes) {
+            node = nodes[nodeUid];
+            if ((node.type == "Nodespace") && node.bounds.contains(p)) {
+                handleEnterNodespace(node.uid);
+                return;
+            }
+        }
+    }
+}
+
 // check of the point is within a boundaries of a slot within the given node
 // return -1 if not, and the index of the slot otherwise
 function testSlots(node, p) {
@@ -1221,8 +1239,12 @@ function onMouseDrag(event) {
 }
 
 function onMouseUp(event) {
-    if (movePath) updateViewSize();
+    if (movePath) {
+        updateViewSize();
+    }
 }
+
+
 
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
@@ -1257,6 +1279,8 @@ function onResize(event) {
 function initializeMenus() {
     $(".dropdown-menu").on('click', 'li', handleContextMenu);
     $("#rename_node_modal .btn-primary").on('click', handleRenameNodeModal);
+    $("#nodenet").on('dblclick', onDoubleClick);
+    $("#nodespace_up").on('click', handleNodespaceUp);
 }
 
 var clickPosition = null;
@@ -1477,7 +1501,6 @@ function cancelLinkCreationHandler() {
     linkCreationStart = null;
 }
 
-
 // handler for renaming the node
 function handleRenameNodeModal(event) {
     nodeUid = clickOriginUid;
@@ -1487,6 +1510,27 @@ function handleRenameNodeModal(event) {
         $("#rename_node_modal").modal("hide");
         view.draw();
         // todo: tell the server all about it
+    }
+}
+
+// handler for entering a nodespace
+function handleEnterNodespace(nodespaceUid) {
+    if (nodespaceUid in nodes) {
+        deselectAll();
+        c = currentNodeSpace = nodes[nodespaceUid];
+        $("#nodespace_name").val(c ? (c.name ? c.name : c.uid) : "Root");
+        redrawNodeNet(currentNodeSpace);
+        view.draw();
+    }
+}
+
+// handler for entering parent nodespace
+function handleNodespaceUp() {
+    deselectAll();
+    if (currentNodeSpace) { // not yet root nodespace
+        c = currentNodeSpace = currentNodeSpace.parent;
+        $("#nodespace_name").val(c ? (c.name ? c.name : c.uid) : "Root");
+        redrawNodeNet(currentNodeSpace);
     }
 }
 

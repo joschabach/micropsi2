@@ -260,6 +260,47 @@ def create_user_submit():
                 permissions = permissions, userid_error = result)
     return template("error", msg = "Insufficient rights to access user console")
 
+@route("/set_password/<user_id>")
+def set_permissions(user_id):
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
+        if "manage users" in permissions:
+            return template("set_password", version = VERSION, permissions = permissions,
+                user = usermanager.get_user_id_for_session_token(token),
+                user_id=user_id)
+    return template("error", msg = "Insufficient rights to access user console")
+
+@post("/set_password_submit")
+def set_password_submit():
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
+        if "manage users" in permissions:
+            user_id = request.forms.userid
+            password = request.forms.password
+            if user_id in usermanager.users.keys():
+                usermanager.set_user_password(user_id, password)
+            return template("user_mgt", version = VERSION, permissions = permissions,
+                user = usermanager.get_user_id_for_session_token(token),
+                userlist = usermanager.list_users())
+    return template("error", msg = "Insufficient rights to access user console")
+
+@route("/delete_user/<user_id>")
+def set_permissions(user_id):
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
+        if "manage users" in permissions:
+            if user_id in usermanager.users.keys():
+                usermanager.delete_user(user_id)
+            return template("user_mgt", version = VERSION, permissions = permissions,
+                user = usermanager.get_user_id_for_session_token(token),
+                userlist = usermanager.list_users())
+    return template("error", msg = "Insufficient rights to access user console")
+
+
+
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global micropsi
     global usermanager

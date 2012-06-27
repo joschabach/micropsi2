@@ -9,15 +9,22 @@
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th>UserID</th>
-                <th>Permissions</th>
-                <th></th>
+                <th class="span3">UserID</th>
+                <th class="span1">Active</th>
+                <th class="span2">Permissions</th>
+                <th>Actions</th>
             </tr>
             </thead>
             <tbody>
             %for user_id in userlist:
+            %if user_id!=user:
             <tr>
                 <td>{{user_id}}</td>
+                <td>
+                    %if userlist[user_id]["is_active"]:
+                    <i class="icon-ok"></i>
+                    %end
+                </td>
                 <td>
                     <div class="btn-group">
                         <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
@@ -32,9 +39,11 @@
                     </div>
                 </td>
                 <td>
-
+                    <a href="/set_password/{{user_id}}" class="btn">Set new password</a>
+                    <a href="/delete_user/{{user_id}}" class="btn">Delete user</a>
                 </td>
             </tr>
+            %end
             %end
             </tbody>
         </table>

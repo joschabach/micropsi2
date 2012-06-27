@@ -1,4 +1,4 @@
-%include menu.tpl version = version
+%include menu.tpl version = version, permissions = permissions, user = userid
 
 <div class="row-fluid">
     <p>

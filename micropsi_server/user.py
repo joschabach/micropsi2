@@ -88,14 +88,13 @@ class UserManager(object):
                 operations (new user, change password, shut down)
         """
         # set up persistence
-        user_file_name = user_file_name or USER_FILE_NAME
+        self.user_file_name = user_file_name or USER_FILE_NAME
         try:
-            self.users = json.load(open(user_file_name))
+            with open(self.user_file_name) as file:
+                self.users = json.load(file)
         except ValueError, err:
             print "Could not read user data"
             self.users = {}
-
-        self.user_file = open(user_file_name, "w+")
 
         # set up sessions
         for i in self.users:
@@ -141,9 +140,8 @@ class UserManager(object):
 
     def save_users(self):
         """stores the user data to a file"""
-        self.user_file.seek(0)
-        json.dump(self.users, self.user_file, indent = 4)
-        self.user_file.flush()
+        with open(self.user_file_name, mode='w+') as file:
+            json.dump(self.users, file, indent = 4)
 
     def list_users(self):
         """returns a dictionary with all users currently known to the user manager for display purposes"""

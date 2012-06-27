@@ -24,13 +24,13 @@
 
     <!-- HTML5 shim, for IE6-8 -->
     <!--[if lt IE 9]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <script src="/static/js/html5.js"></script>
     <![endif]-->
 
     <script src="/static/js/jquery.min.js" type="text/javascript"></script>
     <script src="/static/js/bootstrap.min.js" type="text/javascript"></script>
 
-    <link rel="shortcut icon" href="static/favicon.png">
+    <link rel="shortcut icon" href="/static/favicon.png">
 </head>
 
 <body oncontextmenu="return false">

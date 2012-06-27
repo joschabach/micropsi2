@@ -33,7 +33,6 @@ RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 bottle.debug( True ) #devV
 bottle.TEMPLATE_PATH.insert( 0, os.path.join(APP_PATH, 'view', ''))
 
-session_token = None
 
 @route('/static/<filepath:path>')
 def server_static(filepath):
@@ -42,14 +41,14 @@ def server_static(filepath):
 @route("/")
 def index():
     if not request.get_cookie("token"):
-        session_token = None
+        token = None
     else:
-        session_token = request.get_cookie("token")
+        token = request.get_cookie("token")
 
     return template("nodenet",
         version = VERSION,
-        user = usermanager.get_user_id_for_session_token(session_token),
-        permissions = usermanager.get_permissions_for_session_token(session_token))
+        user = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
 
 @route("/about")
 def about():
@@ -66,15 +65,14 @@ def about():
 @route("/logout")
 def logout():
     if request.get_cookie("token"):
-        session_token = request.get_cookie("token")
-        usermanager.end_session(session_token)
-    session_token = None
+        token = request.get_cookie("token")
+        usermanager.end_session(token)
+    token = None
     response.delete_cookie("token")
     return template("nodenet",
         version = VERSION,
-        user = usermanager.get_user_id_for_session_token(session_token),
-        permissions = usermanager.get_permissions_for_session_token(session_token))
-
+        user = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
 
 @route("/login")
 def login():
@@ -83,8 +81,8 @@ def login():
 
     return template("login",
         version = VERSION,
-        user = usermanager.get_user_id_for_session_token(session_token),
-        permissions = usermanager.get_permissions_for_session_token(session_token))
+        user = usermanager.get_user_id_for_session_token(None),
+        permissions = usermanager.get_permissions_for_session_token(None))
 
 @post("/login_submit")
 def login_submit():
@@ -92,54 +90,54 @@ def login_submit():
     password = request.forms.password
 
     # log in new user
-    session_token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
-    if session_token:
-        response.set_cookie("token", session_token)
+    token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
+    if token:
+        response.set_cookie("token", token)
         # redirect to start page
         return template("nodenet",
             version = VERSION,
-            user = usermanager.get_user_id_for_session_token(session_token),
-            permissions = usermanager.get_permissions_for_session_token(session_token))
+            user = usermanager.get_user_id_for_session_token(token),
+            permissions = usermanager.get_permissions_for_session_token(token))
     else:
         # login failed, retry
         if user_id in usermanager.users:
             return template("login", version = VERSION, userid=user_id, password=password,
                 password_error="Re-enter the password",
                 login_error="User name and password do not match",
-                cookie_warning = (session_token is None),
-                permissions = usermanager.get_permissions_for_session_token(session_token))
+                cookie_warning = (token is None),
+                permissions = usermanager.get_permissions_for_session_token(token))
         else:
             return template("login", version = VERSION, userid=user_id, password=password,
                 userid_error="Re-enter the user name",
                 login_error="User unknown",
-                cookie_warning = (session_token is None),
-                permissions = usermanager.get_permissions_for_session_token(session_token))
+                cookie_warning = (token is None),
+                permissions = usermanager.get_permissions_for_session_token(token))
 
 @route("/signup")
 def signup():
     if request.get_cookie("token"):
-        session_token = request.get_cookie("token")
+        token = request.get_cookie("token")
     else:
-        session_token = None
+        token = None
 
     if not usermanager.users:  # create first user
-        return template("signup", version = VERSION, first_user = True, cookie_warning = (session_token is None))
+        return template("signup", version = VERSION, first_user = True, cookie_warning = (token is None))
 
     return template("signup", version = VERSION,
-        permissions = usermanager.get_permissions_for_session_token(session_token),
-        cookie_warning = (session_token is None))
+        permissions = usermanager.get_permissions_for_session_token(token),
+        cookie_warning = (token is None))
 
 @post("/signup_submit")
 def signup_submit():
     if request.get_cookie("token"):
-        session_token = request.get_cookie("token")
+        token = request.get_cookie("token")
     else:
-        session_token = None
+        token = None
     user_id = request.forms.userid
     password = request.forms.password
     role = request.forms.get('permissions')
     (success, result) = user.check_for_url_proof_id(user_id, existing_ids = usermanager.users.keys())
-    permissions = usermanager.get_permissions_for_session_token(session_token)
+    permissions = usermanager.get_permissions_for_session_token(token)
 
     if success:
         # check if permissions in form are consistent with internal permissions
@@ -148,70 +146,128 @@ def signup_submit():
             (role == "Restricted" and "create restricted" in permissions)):
             if usermanager.create_user(user_id, password, role, uid = uuid1().hex):
                 # log in new user
-                session_token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
-                response.set_cookie("token", session_token)
+                token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
+                response.set_cookie("token", token)
                 # redirect to start page
                 return template("nodenet",
                     version = VERSION,
-                    user = usermanager.get_user_id_for_session_token(session_token),
-                    permissions = usermanager.get_permissions_for_session_token(session_token))
+                    user = usermanager.get_user_id_for_session_token(token),
+                    permissions = usermanager.get_permissions_for_session_token(token))
             else:
-                return fatality("User creation failed for an obscure internal reason.")
+                return template("error", msg = "User creation failed for an obscure internal reason.")
         else:
-            return fatality("Permission inconsistency during user creation.")
+            return template("error", msg = "Permission inconsistency during user creation.")
     else:
         # something wrong with the user id, retry
         return template("signup", version = VERSION, userid=user_id, password=password, userid_error=result,
-            permissions = permissions, cookie_warning = (session_token is None))
+            permissions = permissions, cookie_warning = (token is None))
 
 @route("/change_password")
 def change_password():
     if request.get_cookie("token"):
-        session_token = request.get_cookie("token")
+        token = request.get_cookie("token")
         return template("change_password", version = VERSION,
-            userid = usermanager.get_user_id_for_session_token(session_token),
-            permissions = usermanager.get_permissions_for_session_token(session_token))
+            userid = usermanager.get_user_id_for_session_token(token),
+            permissions = usermanager.get_permissions_for_session_token(token))
     else:
-        return fatality("Cannot change password outside of a session")
+        return template("error", msg = "Cannot change password outside of a session")
 
 @post("/change_password_submit")
 def change_password_submit():
     if request.get_cookie("token"):
-        session_token = request.get_cookie("token")
+        token = request.get_cookie("token")
 
         old_password = request.forms.old_password
         new_password = request.forms.new_password
-        user_id = usermanager.get_user_id_for_session_token(session_token)
+        user_id = usermanager.get_user_id_for_session_token(token)
 
         if usermanager.test_password(user_id, old_password):
             usermanager.set_user_password(user_id, new_password)
             return template("nodenet",
                 version = VERSION,
-                user = usermanager.get_user_id_for_session_token(session_token),
-                permissions = usermanager.get_permissions_for_session_token(session_token))
+                user = usermanager.get_user_id_for_session_token(token),
+                permissions = usermanager.get_permissions_for_session_token(token))
 
         else:
             return template("change_password", version = VERSION, userid=user_id, old_password=old_password,
                 new_password=new_password, old_password_error="Wrong password, please try again")
     else:
-        return fatality("Cannot change password outside of a session")
+        return template("error", msg = "Cannot change password outside of a session")
+
+@route("/user_mgt")
+def user_mgt():
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
+        if "manage users" in permissions:
+            return template("user_mgt", version = VERSION, permissions = permissions,
+                user = usermanager.get_user_id_for_session_token(token),
+                userlist = usermanager.list_users())
+    return template("error", msg = "Insufficient rights to access user console")
+
+@route("/set_permissions/<user_id>/<role>")
+def set_permissions(user_id, role):
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
+        if "manage users" in permissions:
+            if user_id in usermanager.users.keys() and role in user.USER_ROLES.keys():
+                usermanager.set_user_role(user_id, role)
+            return template("user_mgt", version = VERSION, permissions = permissions,
+                user = usermanager.get_user_id_for_session_token(token),
+                userlist = usermanager.list_users())
+    return template("error", msg = "Insufficient rights to access user console")
+
+@route("/create_user")
+def create_user():
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
+        if "manage users" in permissions:
+            return template("create_user", version = VERSION, user = usermanager.get_user_id_for_session_token(token),
+                permissions = permissions)
+
+    return template("error", msg = "Insufficient rights to access user console")
 
 
+@post("/create_user_submit")
+def create_user_submit():
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+        permissions = usermanager.get_permissions_for_session_token(token)
 
-def fatality(message):
-    """returns a web page with the error message"""
-    return template("error", msg = message)
+        user_id = request.forms.userid
+        password = request.forms.password
+        role = request.forms.get('permissions')
+        (success, result) = user.check_for_url_proof_id(user_id, existing_ids = usermanager.users.keys())
 
-
+        if success:
+            # check if permissions in form are consistent with internal permissions
+            if ((role == "Administrator" and ("create admin" in permissions or not usermanager.users)) or
+                (role == "Full" and "create full" in permissions) or
+                (role == "Restricted" and "create restricted" in permissions)):
+                if usermanager.create_user(user_id, password, role, uid = uuid1().hex):
+                    return template("user_mgt", version = VERSION, permissions = permissions,
+                        user = usermanager.get_user_id_for_session_token(token),
+                        userlist = usermanager.list_users())
+                else:
+                    return template("error", msg = "User creation failed for an obscure internal reason.")
+            else:
+                return template("error", msg = "Permission inconsistency during user creation.")
+        else:
+            # something wrong with the user id, retry
+            return template("create_user", version = VERSION, user = usermanager.get_user_id_for_session_token(token),
+                permissions = permissions, userid_error = result)
+    return template("error", msg = "Insufficient rights to access user console")
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global micropsi
     global usermanager
     micropsi = micropsi_core.runtime.MicroPsiRuntime()
-    usermanager = user.UserManager(user_file = open(os.path.join(RESOURCE_PATH, user.USER_FILE_NAME), "w+"))
-    run(host=host, port=port, reloader=True) #devV
+    usermanager = user.UserManager(user_file_name = os.path.join(RESOURCE_PATH, user.USER_FILE_NAME))
+    run(host=host, port=port) #devV
 
-if __name__=="__main__":
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the MicroPsi server.")
     parser.add_argument('-d', '--host', type=str, default=DEFAULT_HOST)
     parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT)

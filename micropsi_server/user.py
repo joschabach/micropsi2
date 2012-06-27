@@ -76,7 +76,7 @@ class UserManager(object):
     users = None
     sessions = {}
 
-    def __init__(self, user_file = None):
+    def __init__(self, user_file_name = None):
         """initialize user management.
 
         If no user data are found, a new resource file is created.
@@ -88,16 +88,14 @@ class UserManager(object):
                 operations (new user, change password, shut down)
         """
         # set up persistence
-        if not self.users:
-            self.user_file = user_file or open(USER_FILE_NAME, "w+")
-            try:
-                self.users = json.load(self.user_file)
-            except ValueError, err:
-                self.users = {}
+        user_file_name = user_file_name or USER_FILE_NAME
+        try:
+            self.users = json.load(open(user_file_name))
+        except ValueError, err:
+            print "Could not read user data"
+            self.users = {}
 
-        # create admin user
-        if not ADMIN_USER in self.users:
-            self.create_user(ADMIN_USER, "", "Administrator")
+        self.user_file = open(user_file_name, "w+")
 
         # set up sessions
         for i in self.users:
@@ -116,8 +114,7 @@ class UserManager(object):
 
     def __del__(self):
         """shut down user management"""
-        json.dump(self.users, self.user_file)
-        self.user_file.flush()  # file is closed if user manager shuts down, and should be kept otherwise
+        self.save_users()
 
     def create_user(self, user_id, password="", role = DEFAULT_ROLE, uid = None):
         """create a new user.
@@ -138,10 +135,15 @@ class UserManager(object):
                 "session_token": None,
                 "session_expires": False
             }
-            json.dump(self.users, self.user_file)
-            self.user_file.flush()
+            self.save_users()
             return True
         else: return False
+
+    def save_users(self):
+        """stores the user data to a file"""
+        self.user_file.seek(0)
+        json.dump(self.users, self.user_file, indent = 4)
+        self.user_file.flush()
 
     def list_users(self):
         """returns a dictionary with all users currently known to the user manager for display purposes"""
@@ -157,8 +159,7 @@ class UserManager(object):
             if not user_id_new in self.users:
                 self.users[user_id_new] = self.users[user_id_old]
                 del self.users[user_id_old]
-                json.dump(self.users, self.user_file)
-                self.user_file.flush()
+                self.save_users()
                 return user_id_new
             else:
                 return user_id_old
@@ -168,6 +169,7 @@ class UserManager(object):
         """sets the role, and thereby the permissions of a user, returns False if user does not exist"""
         if user_id in self.users:
             self.users[user_id]["role"] = role
+            self.save_users()
             return True
         return False
 
@@ -175,8 +177,7 @@ class UserManager(object):
         """sets the password of a user, returns False if user does not exist"""
         if user_id in self.users:
             self.users[user_id]["hashed_password"] = hashlib.md5(password).hexdigest()
-            json.dump(self.users, self.user_file)
-            self.user_file.flush()
+            self.save_users()
             return True
         return False
 
@@ -186,8 +187,7 @@ class UserManager(object):
             # if the user is still active, kill the session
             if self.users[user_id]["session_token"]: self.end_session(self.users[user_id]["session_token"])
             del self.users[user_id]
-            json.dump(self.users, self.user_file)
-            self.user_file.flush()
+            self.save_users()
             return True
         return False
 
@@ -205,8 +205,7 @@ class UserManager(object):
             self.sessions[session_token] = user_id
             if keep_logged_in_forever:
                 self.users[user_id]["session_expires"] = False
-                json.dump(self.users, self.user_file)
-                self.user_file.flush()
+                self.save_users()
             else:
                 self.refresh_session(session_token)
             return session_token
@@ -250,8 +249,7 @@ class UserManager(object):
                     self.end_session(session_token)
                     change_flag = True
         if change_flag:
-            json.dump(self.users, self.user_file)
-            self.user_file.flush()
+            self.save_users()
 
     def get_permissions_for_session_token(self, session_token):
         """returns a set of permissions corresponding to the role of the user associated with the session;

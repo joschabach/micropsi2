@@ -12,22 +12,24 @@
                 %end
             </a>
             %if defined('user'):
-            <div class="btn-group pull-right">
-                %if user != "Guest":
-                <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-                    <i class="icon-user"></i> {{user}}
-                    <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a href="change_password">Change Password</a></li>
-                    <li class="divider"></li>
-                    <li><a href="logout">Sign Out</a></li>
-                </ul>
-                %else:
-                <a class="btn" href="login">
-                    <i class="icon-user"></i> Log in
-                </a>
-                %end
+            <div class="nav pull-right">
+                <div class="btn-group">
+                    %if user != "Guest":
+                    <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+                        <i class="icon-user"></i> {{user}}
+                        <span class="caret"></span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="change_password">Change Password</a></li>
+                        <li class="divider"></li>
+                        <li><a href="logout">Sign Out</a></li>
+                    </ul>
+                    %else:
+                    <a class="btn" href="login">
+                        <i class="icon-user"></i> Log in
+                    </a>
+                    %end
+                </div>
             </div>
             %end
             <div class="nav-collapse">
@@ -73,7 +75,7 @@
                         <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_users">Users
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">Show user console...</a></li>
+                            <li><a href="/user_mgt">Show user console...</a></li>
                         </ul>
                     </li>
                     %end

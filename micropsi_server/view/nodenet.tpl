@@ -1,34 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>MicroPsi</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="MicroPsi Nodenet editor">
-    <meta name="author" content="Joscha Bach">
-
-    <link href="static/css/bootstrap.min.css" rel="stylesheet">
-    <style type="text/css">
-        body {
-            padding-top: 60px;
-            padding-bottom: 40px;
-        }
-        .sidebar-nav {
-            padding: 9px 0;
-        }
-    </style>
-    <link href="static/css/bootstrap-responsive.css" rel="stylesheet">
-    <link href="static/css/micropsi-styles.css" rel="stylesheet">
-
-    <!-- HTML5 shim, for IE6-8 -->
-    <!--[if lt IE 9]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-
-    <link rel="shortcut icon" href="static/favicon.png">
-</head>
-
-<body oncontextmenu="return false;">
 
 %include menu.tpl version = version, user = user, permissions = permissions
 
@@ -223,14 +192,9 @@
         <a href="#" class="btn" data-dismiss="modal">Close</a>
         <a href="#" class="btn btn-primary">Save changes</a>
     </div>
-</div>
 
+    <script src="/static/js/micropsiviewer.js" type="text/javascript"></script>
+    <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
+    <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
 
-<script src="static/js/jquery.min.js" type="text/javascript"></script>
-<script src="static/js/bootstrap.min.js" type="text/javascript"></script>
-<script src="static/js/micropsiviewer.js" type="text/javascript"></script>
-<script src="static/js/paper_nightly.js" type="text/javascript"></script>
-<script src="static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
-
-</body>
-</html>
+%rebase boilerplate title = "MicroPsi Simulator"

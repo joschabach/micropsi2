@@ -1,4 +1,4 @@
-%include menu.tpl version = version
+%include menu.tpl
 
 <div class="row-fluid">
     <p>

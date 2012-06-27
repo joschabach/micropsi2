@@ -13,7 +13,6 @@
             padding-top: 60px;
             padding-bottom: 40px;
         }
-
         .sidebar-nav {
             padding: 9px 0;
         }
@@ -31,92 +30,7 @@
 
 <body oncontextmenu="return false;">
 
-<div class="navbar navbar-fixed-top">
-    <div class="navbar-inner">
-        <div class="container-fluid">
-            <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </a>
-            <a class="brand" href="#">MicroPsi 2 v0.1</a>
-
-            <div class="btn-group pull-right">
-                <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-                    <i class="icon-user"></i> Administrator
-                    <span class="caret"></span>
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a href="#">Change Password</a></li>
-                    <li class="divider"></li>
-                    <li><a href="#">Sign Out</a></li>
-                </ul>
-            </div>
-            <div class="nav-collapse">
-                <ul class="nav">
-                    <li class="dropdown" id="menu_agent">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Blueprint
-                            <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">New...</a></li>
-                            <li><a href="#">Edit...</a></li>
-                            <li class="divider"></li>
-                            <li><a href="#">Delete</a></li>
-                            <li><a href="#">Save</a></li>
-                            <li><a href="#">Revert</a></li>
-                            <li class="divider"></li>
-                            <li><a href="#">Export to file...</a></li>
-                            <li><a href="#">Import from file...</a></li>
-                            <li><a href="#">Merge with file...</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown" id="menu_world">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Context
-                            <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">New...</a></li>
-                            <li><a href="#">Edit...</a></li>
-                            <li class="divider"></li>
-                            <li><a href="#">Delete</a></li>
-                            <li><a href="#">Save</a></li>
-                            <li><a href="#">Revert</a></li>
-                            <li class="divider"></li>
-                            <li><a href="#">Export to file...</a></li>
-                            <li><a href="#">Import from file...</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown" id="menu_users">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_users">Users
-                            <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">Show user console...</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown" id="menu_config">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_config">Config
-                            <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">Server</a></li>
-                            <li><a href="#">Blueprint runner</a></li>
-                            <li><a href="#">Context runner</a></li>
-                        </ul>
-                    </li>
-                    <li class="dropdown" id="menu_help">
-                        <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_help">Help
-                            <b class="caret"></b></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">About</a></li>
-                            <li><a href="#">Documentation</a></li>
-                            <li class="divider"></li>
-                            <li><a href="#">Contact</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-            <!--/.nav-collapse -->
-        </div>
-    </div>
-</div>
+%include menu.tpl version = version, user = user, permissions = permissions
 
 <div class="container-fluid">
     <div class="row-fluid">

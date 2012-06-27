@@ -70,29 +70,31 @@ function initializeNodeNet(){
     nodeLayer = new Layer();
     prerenderLayer = new Layer();
     prerenderLayer.visible = false;
+    currentNodeSpace = "Root";
+    addNode(new Node("Root", 0, 0, 0, "Root", "Nodespace"));
 
-    addNode(new Node("a1", 150, 450, 0, "Alice", "Actor", 1));
-    addNode(new Node("a2", 250, 450, 0, "Tom", "Actor", 0.3));
-    addNode(new Node("a3", 350, 450, 0, "André", "Actor", 0.0));
-    addNode(new Node("a4", 450, 450, 0, "Boris", "Actor", -0.1));
-    addNode(new Node("a5", 550, 450, 0, "Sarah", "Actor", 0.3));
-    addNode(new Node("a5b", 300, 80, 0, "Umzug", "Concept", 0.2));
-    addNode(new Node("a6", 100, 270, 0, "Planung", "Concept", 0.3));
+    addNode(new Node("a1", 150, 450, "Root", "Alice", "Actor", 1));
+    addNode(new Node("a2", 250, 450, "Root", "Tom", "Actor", 0.3));
+    addNode(new Node("a3", 350, 450, "Root", "André", "Actor", 0.0));
+    addNode(new Node("a4", 450, 450, "Root", "Boris", "Actor", -0.1));
+    addNode(new Node("a5", 550, 450, "Root", "Sarah", "Actor", 0.3));
+    addNode(new Node("a5b", 300, 80, "Root", "Umzug", "Concept", 0.2));
+    addNode(new Node("a6", 100, 270, "Root", "Planung", "Concept", 0.3));
     addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
 
-    addNode(new Node("a7", 250, 270, 0, "Vorbereitung", "Concept", 0.6));
-    addNode(new Node("a8", 400, 270, 0, "Fahrzeugbestellung", "Concept", -0.8));
-    addNode(new Node("a9", 550, 270, 0, "Einladung", "Concept", 0.7));
-    addNode(new Node("a10", 700, 270, 0, "Packen", "Concept", 0.2));
-    addNode(new Node("a11", 950, 270, 0, "Durchführung", "Concept", 0.0));
-    addNode(new Node("a11b", 1100, 270, 0, "Fahrzeugrückgabe", "Concept", -0.6));
-    addNode(new Node("a12", 1250, 270, 0, "Party", "Concept", 0.0));
-    addNode(new Node("a12b", 1400, 350, 0, "Einkäufe", "Concept", 0.2));
-    addNode(new Node("a13", 700, 450, 0, "Fahrzeug", "Native", 0.5));
-    addNode(new Node("a14", 800, 450, 0, "Kisten", "Register", 0.5));
-    addNode(new Node("a15", 900, 450, 0, "Getränke", "Register", 0.5));
-    addNode(new Node("a16", 680, 380, 0, "Datum", "Sensor", -0.5));
-    addNode(new Node("a17", 780, 380, 0, "Orts-Temperatur", "Sensor", 0.5));
+    addNode(new Node("a7", 250, 270, "Root", "Vorbereitung", "Concept", 0.6));
+    addNode(new Node("a8", 400, 270, "Root", "Fahrzeugbestellung", "Concept", -0.8));
+    addNode(new Node("a9", 550, 270, "Root", "Einladung", "Concept", 0.7));
+    addNode(new Node("a10", 700, 270, "Root", "Packen", "Concept", 0.2));
+    addNode(new Node("a11", 950, 270, "Root", "Durchführung", "Concept", 0.0));
+    addNode(new Node("a11b", 1100, 270, "Root", "Fahrzeugrückgabe", "Concept", -0.6));
+    addNode(new Node("a12", 1250, 270, "Root", "Party", "Concept", 0.0));
+    addNode(new Node("a12b", 1400, 350, "Root", "Einkäufe", "Concept", 0.2));
+    addNode(new Node("a13", 700, 450, "Root", "Fahrzeug", "Native", 0.5));
+    addNode(new Node("a14", 800, 450, "Root", "Kisten", "Register", 0.5));
+    addNode(new Node("a15", 900, 450, "Root", "Getränke", "Register", 0.5));
+    addNode(new Node("a16", 680, 380, "Root", "Datum", "Sensor", -0.5));
+    addNode(new Node("a17", 780, 380, "Root", "Orts-Temperatur", "Sensor", 0.5));
 
     addLink(new Link("a1", 0, "a6", 0, 1, 1));
     addLink(new Link("a1", 0, "a7", 0, 1, 1));
@@ -332,16 +334,18 @@ function updateViewSize() {
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
     var el = view.element.parentElement;
     prerenderLayer.removeChildren();
-    for (nodeUid in nodes) {
-        node = nodes[nodeUid];
-        // make sure no node gets lost to the top or left
-        if (node.x < frameWidth || node.y < frameWidth) {
-            node.x = Math.max(node.x, viewProperties.frameWidth);
-            node.y = Math.max(node.y, viewProperties.frameWidth);
-            redrawNode(node);
+    for (nodeUid in nodeLayer.children) {
+        if (nodeUid in nodes) {
+            node = nodes[nodeUid];
+            // make sure no node gets lost to the top or left
+            if (node.x < frameWidth || node.y < frameWidth) {
+                node.x = Math.max(node.x, viewProperties.frameWidth);
+                node.y = Math.max(node.y, viewProperties.frameWidth);
+                redrawNode(node);
+            }
+            maxX = Math.max(maxX, node.x);
+            maxY = Math.max(maxY, node.y);
         }
-        maxX = Math.max(maxX, node.x);
-        maxY = Math.max(maxY, node.y);
     }
     view.viewSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
         el.clientWidth),
@@ -350,9 +354,10 @@ function updateViewSize() {
 }
 
 // complete redraw of the current node space
-function redrawNodeNet(currentNodeSpace) {
-    if (nodeLayer) nodeLayer.removeChildren();
-    if (linkLayer) linkLayer.removeChildren();
+function redrawNodeNet() {
+    nodeLayer.removeChildren();
+    linkLayer.removeChildren();
+
     for (i in nodes) {
         if (nodes[i].parent == currentNodeSpace) renderNode(nodes[i]);
     }
@@ -679,6 +684,7 @@ function createCompactNodeShape(node) {
         case "Actor":
             shape = new Path([bounds.bottomRight,
                 new Point(bounds.x+bounds.width *.65, bounds.y),
+                new Point(bounds.x+bounds.width *.35, bounds.y),
                 new Point(bounds.x+bounds.width *.35, bounds.y),
                 bounds.bottomLeft
             ]);
@@ -1517,9 +1523,9 @@ function handleRenameNodeModal(event) {
 function handleEnterNodespace(nodespaceUid) {
     if (nodespaceUid in nodes) {
         deselectAll();
-        c = currentNodeSpace = nodes[nodespaceUid];
-        $("#nodespace_name").val(c ? (c.name ? c.name : c.uid) : "Root");
-        redrawNodeNet(currentNodeSpace);
+        c = currentNodeSpace = nodespaceUid;
+        $("#nodespace_name").val(nodes[c].name ? nodes[c].name : nodes[c].uid);
+        redrawNodeNet();
         view.draw();
     }
 }
@@ -1527,10 +1533,10 @@ function handleEnterNodespace(nodespaceUid) {
 // handler for entering parent nodespace
 function handleNodespaceUp() {
     deselectAll();
-    if (currentNodeSpace) { // not yet root nodespace
-        c = currentNodeSpace = currentNodeSpace.parent;
-        $("#nodespace_name").val(c ? (c.name ? c.name : c.uid) : "Root");
-        redrawNodeNet(currentNodeSpace);
+    if (nodes[currentNodeSpace].parent) { // not yet root nodespace
+        c = currentNodeSpace = nodes[currentNodeSpace].parent;
+        $("#nodespace_name").val(nodes[c].name ? nodes[c].name : nodes[c].uid);
+        redrawNodeNet();
     }
 }
 

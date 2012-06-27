@@ -2,7 +2,7 @@
 Nodenet definition
 """
 
-from uuid import uuid1 as generate_uid
+from uuid import uuid1
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -36,7 +36,7 @@ class Nodenet(object):
                 the agent will use this definition.
         """
 
-        self.uid = generate_uid()
+        self.uid = uuid1().hex
         self.name = name
         self.nodespaces = {}
         self.nodes = {}

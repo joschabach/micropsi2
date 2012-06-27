@@ -11,7 +11,6 @@ __date__ = '10.05.12'
 
 # import nodenet
 import world
-import user
 import os
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
@@ -23,43 +22,10 @@ class MicroPsiRuntime(object):
     between them. It must be a singleton, otherwise competing instances might conflict over the resource files.
     """
 
-    # Borg pattern: runtime should be a singleton
-    _shared_resources = {}
-
-    def __new__(cls, *args, **kwargs):
-        self = object.__new__(cls, *args, **kwargs)
-        self.__dict__ = cls._shared_resources
-        return self
-
     def __init__(self):
-        self.userdata_file = open(os.path.join(RESOURCE_PATH, user.USER_FILE_NAME), "w+")
-        self.usermanager = user.UserManager(user_file = self.userdata_file)
+        pass
 
-        # temporary test code
-        print "user manager started"
-        um = self.usermanager
-        print um.list_users()
-        um.create_user("tom", "test")
-        print um.list_users()
-        um.create_user("britta", "pwd", "World Creator")
-        print um.list_users()
-        stom = um.start_session("tom")
-        print stom
-        stom1 = um.start_session("tom", "task")
-        print stom1
-        print um.list_users()
-        stom = um.start_session("tom", "test")
-        #um.delete_user("tom")
-        print um.list_users()
-        print stom
-        print um.list_users()
-        print um.get_permissions_for_session_token(stom1)
-        print um.get_permissions_for_session_token(stom)
-        um.end_session(stom)
-        print um.list_users()
-        print um.get_permissions_for_session_token(stom)
-        #um.delete_user("tom")
-        print um.list_users()
+
 
 
 

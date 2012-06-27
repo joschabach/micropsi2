@@ -55,10 +55,11 @@ IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the us
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
 
 USER_ROLES = {  # sets of strings; each represents a permission.
-    "Administrator": {"manage users","manage worlds","manage agents"},
-    "World Creator": {"manage worlds","manage agents"},
-    "Agent Creator": {"manage agents"},
-    "Guest": {}
+    "Administrator": {"manage users","manage worlds","manage agents", "manage server",
+                      "create admin", "create restricted", "create full"},
+    "Full": {"manage worlds","manage agents", "manage server" "create full", "create restricted"},
+    "Restricted": {"manage agents", "create restricted"},
+    "Guest": {"create restricted"}
 }
 
 class UserManager(object):
@@ -138,6 +139,7 @@ class UserManager(object):
                 "session_expires": False
             }
             json.dump(self.users, self.user_file)
+            self.user_file.flush()
             return True
         else: return False
 
@@ -156,6 +158,7 @@ class UserManager(object):
                 self.users[user_id_new] = self.users[user_id_old]
                 del self.users[user_id_old]
                 json.dump(self.users, self.user_file)
+                self.user_file.flush()
                 return user_id_new
             else:
                 return user_id_old
@@ -173,6 +176,7 @@ class UserManager(object):
         if user_id in self.users:
             self.users[user_id]["hashed_password"] = hashlib.md5(password).hexdigest()
             json.dump(self.users, self.user_file)
+            self.user_file.flush()
             return True
         return False
 
@@ -182,6 +186,8 @@ class UserManager(object):
             # if the user is still active, kill the session
             if self.users[user_id]["session_token"]: self.end_session(self.users[user_id]["session_token"])
             del self.users[user_id]
+            json.dump(self.users, self.user_file)
+            self.user_file.flush()
             return True
         return False
 
@@ -193,17 +199,25 @@ class UserManager(object):
             password (optional): checked against the stored password
             keep_logged_in_forever (optional): if True, the session will not expire unless manually logging off
         """
+        if self.test_password(user_id, password):
+            session_token = str(uuid.UUID(bytes = os.urandom(16)))
+            self.users[user_id]["session_token"] = session_token
+            self.sessions[session_token] = user_id
+            if keep_logged_in_forever:
+                self.users[user_id]["session_expires"] = False
+                json.dump(self.users, self.user_file)
+                self.user_file.flush()
+            else:
+                self.refresh_session(session_token)
+            return session_token
+        return None
+
+    def test_password(self, user_id, password):
+        """returns True if the user is known and the password matches, False otherwise"""
         if user_id in self.users:
             if self.users[user_id]["hashed_password"] == hashlib.md5(password).hexdigest():
-                session_token = str(uuid.UUID(bytes = os.urandom(16)))
-                self.users[user_id]["session_token"] = session_token
-                self.sessions[session_token] = user_id
-                if keep_logged_in_forever:
-                    self.users[user_id]["session_expires"] = False
-                else:
-                    self.refresh_session(session_token)
-                return session_token
-        return None
+                return True
+        return False
 
     def end_session(self, session_token):
         """ends the session associated with the given token"""
@@ -256,7 +270,15 @@ class UserManager(object):
 
         return USER_ROLES["Guest"]
 
-def check_for_url_proof_id(self, id, existing_ids = None, min_id_length = 1, max_id_length = 21):
+    def get_user_id_for_session_token(self, session_token):
+        """returns the id of the user associated with the session token, or 'Guest', if the token is invalid"""
+
+        if session_token in self.sessions:
+            return self.sessions[session_token]
+        else:
+            return "Guest"
+
+def check_for_url_proof_id(id, existing_ids = None, min_id_length = 1, max_id_length = 21):
     """Returns (True, id) if id is permissible, and (False, error message) otherwise. Since
     we strip the id, you should use the returned one, not the original one"""
 
@@ -271,6 +293,6 @@ def check_for_url_proof_id(self, id, existing_ids = None, min_id_length = 1, max
     if len(id) < min_id_length:
         return False, "Must at least have %s characters" % min_id_length
     if len(id) > max_id_length:
-        return "Must have less than %s characters" % max_id_length
+        return False, "Must have less than %s characters" % max_id_length
 
     return True, id

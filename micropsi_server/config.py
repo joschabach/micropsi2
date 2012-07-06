@@ -1,0 +1,90 @@
+"""
+Maintain configuration data for the MicroPsi service
+
+The configuration manager takes care of persisting config data for the different MicroPsi components.
+At the moment, persistence is achieved with a simple file, into which config data is dumped in json format.
+
+All configuration data is simply stored as a dictionary, with keys to reference them. The items may be strings,
+arrays or dictionaries. Every change prompts a saving of the config data to disk.
+
+Example usage:
+
+>>> configs = ConfigurationManager("my_configuration_data.json")
+>>> configs["fontsize"] = 12
+>>> configs["lineparameters"] = { "weight" : "2pt", "color" : "blue" }
+>>> print configs["lineparameters"]["color"]
+blue
+"""
+
+__author__ = 'joscha'
+__date__ = '04.07.12'
+
+import json
+import hashlib
+import os
+import datetime
+import threading
+import time
+import uuid
+import micropsi_core.tools
+
+
+class ConfigurationManager(object):
+    """The configuration manager creates, deletes and persists configuration data.
+
+    It should be a singleton, because all config managers would use the same resources for maintaining persistence.
+
+    Attributes:
+        users: a dictionary of user_ids to user objects (containing session tokens, access role and hashed passwords)
+        sessions: a dictionary of active sessions for faster reference
+        user_file: the handle for the user data file
+    """
+
+    def __init__(self, config_path = "config-data.json", auto_save=True):
+        """initialize configuration management.
+
+        If no config data are found, a new resource file is created.
+
+        Parameters:
+            config (optional): a path to store config data permanently.
+            auto_save: if set to True, then the config data will be saved after every change.
+        """
+        # set up persistence
+        micropsi_core.tools.mkdir(os.path.dirname(config_path))
+
+        self.config_file_name = config_path
+        self.auto_save = auto_save
+        self.data = {}
+        self.load_configs()
+
+    def __del__(self):
+        """shut down user management"""
+        self.save_configs()
+
+    def load_configs(self):
+        """load configuration data"""
+        try:
+            with open(self.config_file_name) as file:
+                self.data = json.load(file)
+            return True
+        except ValueError:
+            print "Could not read config data"
+        except IOError:
+            pass
+        return False
+
+    def save_configs(self):
+        """saves the config data to a file"""
+        with open(self.config_file_name, mode='w+') as file:
+            json.dump(self.data, file, indent = 4)
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+        if self.auto_save: self.save_configs()
+
+    def __delitem__(self, key):
+        del self.data[key]
+        if self.auto_save: self.save_configs()
+
+    def __getitem__(self, key):
+        return self.data[key]

@@ -2,7 +2,6 @@
 Very simple user management for the MicroPsi service
 
 The user manager takes care of users, sessions and user roles.
-If the user database is empty, we put a default user "admin" without a password and the role "Administrator" into it.
 Users without a password set can login with an arbitrary password, so make sure that users do not set empty passwords
 if this concerns you.
 
@@ -42,15 +41,15 @@ __date__ = '11.05.12'
 
 import json
 import hashlib
-import uuid
 import os
 import datetime
 import threading
 import time
+import uuid
+import micropsi_core.tools
 
-ADMIN_USER = "admin"  # name of the admin user
-USER_FILE_NAME = "user-data"  # resource files for all normal users
-DEFAULT_ROLE = "Agent Creator"  # new users can create and edit agents, but not create worlds
+ADMIN_USER = "admin"  # default name of the admin user
+DEFAULT_ROLE = "Restricted"  # new users can create and edit agents, but not create worlds
 IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the simulation)
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
 
@@ -76,24 +75,27 @@ class UserManager(object):
     users = None
     sessions = {}
 
-    def __init__(self, user_file_name = None):
+    def __init__(self, userfile_path = "users.json"):
         """initialize user management.
 
         If no user data are found, a new resource file is created.
-        If you loose your admin password, you may delete the admin data from the resource file, so a new admin without
-        password is created.
 
         Parameters:
-            user_file (optional): a file like object to store user data permanently; will be updated after critical
-                operations (new user, change password, shut down)
+            resource_path (optional): a path to store user data permanently.
         """
         # set up persistence
-        self.user_file_name = user_file_name or USER_FILE_NAME
+        micropsi_core.tools.mkdir(os.path.dirname(userfile_path))
+
+        self.user_file_name = userfile_path # todo: make this work without a file system
         try:
             with open(self.user_file_name) as file:
                 self.users = json.load(file)
-        except ValueError, err:
-            print "Could not read user data"
+        except ValueError:
+            print "Invalid user data"
+        except IOError:
+            print "Could not open user data file"
+
+        if not self.users:
             self.users = {}
 
         # set up sessions
@@ -274,21 +276,3 @@ class UserManager(object):
         else:
             return "Guest"
 
-def check_for_url_proof_id(id, existing_ids = None, min_id_length = 1, max_id_length = 21):
-    """Returns (True, id) if id is permissible, and (False, error message) otherwise. Since
-    we strip the id, you should use the returned one, not the original one"""
-
-    id = id.strip()
-
-    # maybe this is too restrictive, but I want to use the id directly in urls
-    for c in id:
-        if not c.lower() in "0123456789abcdefghijklmnopqrstuvwxyz@._-":
-            return False, "The character '%s' is not allowed" %c
-
-    if existing_ids and id.lower() in existing_ids: return False, "ID already exists"
-    if len(id) < min_id_length:
-        return False, "Must at least have %s characters" % min_id_length
-    if len(id) > max_id_length:
-        return False, "Must have less than %s characters" % max_id_length
-
-    return True, id

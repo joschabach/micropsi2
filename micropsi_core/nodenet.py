@@ -2,7 +2,9 @@
 Nodenet definition
 """
 
-from uuid import uuid1
+
+from micropsi_core.tools import generate_uid
+import micropsi_core.tools, os
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -27,38 +29,84 @@ class Nodenet(object):
         worldadapter: A world adapter object residing in a world implementation
     """
 
-    def __init__(self, worldadapter, name = ""):
+    def __init__(self, manager, filename, name = "",
+                 worldadapter = None, owner = "", uid = None):
         """create a new MicroPsi agent
 
         Arguments:
-            worldadapter: the interface of this agent to its environment
-            name (optional): a name for the agent and its resources. If the name matches an existing nodenet definition,
-                the agent will use this definition.
+            manager: the agent manager that controls this node space
+            worldadapter (optional): the interface of this agent to its environment
+            filename: the path and filename of the agent
+            name (optional): the name of the agent
+            owner (optional): the user that created this agent
+            uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        self.uid = uuid1().hex
-        self.name = name
+        self.manager = manager
+        self.worldadapter = worldadapter
+        self.data = {
+            "uid": uid or generate_uid(),
+            "name": name or self.uid,
+            "owner": owner,
+            "worldadapter_name": worldadapter.name if worldadapter else None
+
+        }
+        self.uid = uid or generate_uid()
+        self.name = name or self.uid
+        self.filename = filename
+        self.owner = owner
         self.nodespaces = {}
         self.nodes = {}
         self.calculate_always_nodes = {}
         self.calculate_now_nodes = {}
         self.links = {}
-        self.gate_types = {}
-        self.slot_types = {}
-        self.native_module_types = {}
+        self.node_types = {} # todo: import standard node types first
         self.step = 0
-        self.worldadapter = worldadapter
-        self.datasources = worldadapter.datasources
-        self.datatargets = worldadapter.datatargets
-        #TODO set up persistence
+        self.manager = manager
+        self.worldadapter = manager.get_worldadapter(worldadapter_name)
+
+        if owner:
+            resource_path = os.path.join(resource_path, owner)
+            micropsi_core.tools.mkdir(resource_path)
+        self.filename = resource_path
+
+        self.load_nodenet(os.path.join(resource_path, self.filename))
+
         #TODO set up initial nodespace
+
+    @classmethod
+    def fromfilename(cls, manager, filename):
+        """Attempt to create a nodenet from a file name; if the file is not readable, we return None"""
+        try:
+            with open('filename') as f:
+                # check if file is readable
+                char = f.read(1)
+            if char == '{': return cls(manager = manager, filename = filename)
+        except IOError as e:
+            pass
+        return None
 
 
     #TODO add functionality for adding, editing and removing of nodes, links, native modules, nodespaces, etc
 
     def reset(self):
         """Revert to state of last save"""
-        pass
+        self.load_nodenet(os.path.join(resource_path, self.filename))
+
+    def load_nodenet(self, filename):
+        """Try to load the node net from a file"""
+        # try to access file
+        self.user_file_name = os.path.join(resource_path, USER_FILE_NAME) # todo: make this work without a file system
+        try:
+            with open(self.user_file_name) as file:
+                self.users = json.load(file)
+        except ValueError, err:
+            print "Could not read user data"
+            self.users = {}
+
+    def get_node_types(self):
+        """returns all available node types"""
+        node_types =
 
     def set_worldadapter(self, worldadapter):
         """connects the nodenet with a worldadapter, and thus to some external environment"""
@@ -127,7 +175,7 @@ class Comment(NetEntity):
         comment: a string of text
     """
 
-    def __init__(self, position, nodenet, parent_nodespace, comment = ""):
+    def __init__(self, position, nodenet, parent_nodespace = 0, comment = ""):
         self.comment = comment
         NetEntity.__init__(position, nodenet, parent_nodespace, name = "Comment")
 
@@ -151,6 +199,24 @@ class Nodespace(NetEntity):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
         pass
 
+    def get_activator_value(self, type):
+        """returns the value of the activator of the given type, or 1, if none exists"""
+        pass
+
+    def get_data_targets(self):
+        """Returns a dictionary of available data targets to associate actors with.
+
+        Data targets are either handed down by the node net manager (to operate on the environment), or
+        by the node space itself, to perform directional activation."""
+        pass
+
+    def get_data_sources(self):
+        """Returns a dictionary of available data sources to associate sensors with.
+
+        Data sources are either handed down by the node net manager (to read from the environment), or
+        by the node space itself, to obtain information about its contents."""
+        pass
+
 class Link(object):
     """A link between two nodes, starting from a gate and ending in a slot.
 
@@ -167,7 +233,8 @@ class Link(object):
             weight (optional): the weight of the link (default is 1)
         """
         self.uid = generate_uid()
-        self.link(source_node, source_gate_name, target_node, target_slot_name, weight)
+        self.link(source_node, source_gate_name, target_node, target_slot_name)
+        self.weight = weight
 
     def link(self, source_node, source_gate_name, target_node, target_slot_name, weight = 1):
         """link between source and target nodes, from a gate to a slot.
@@ -204,20 +271,33 @@ class Node(NetEntity):
         node_function: a function to be executed whenever the node receives activation
     """
 
-    def __init__(self, position, nodenet, parent_nodespace = 0, activation = 0, name = ""):
-        self.activation = activation
-        self.slots = []
-        self.gates = []
+    def __init__(self, position, nodenet, parent_nodespace = 0, name = "",
+                 type = "Register",
+                 node_function = None,
+                 activation = 0, slots = None, gates = None):
         NetEntity.__init__(position, nodenet, parent_nodespace, name)
+        self.type = type
+        if type == ""
 
-    def node_function(self):
-        """called whenever the node is activated or active"""
+
+
+    def node_function(self, ):
+        """Called whenever the node is activated or active.
+
+        In different node types, different node functions may be used, i.e. override this one.
+        Generally, a node function must process the slot activations and call each gate function with
+        the result of the slot activations.
+
+        Metaphorically speaking, the node function is the soma of a MicroPsi neuron. It reacts to
+        incoming activations in an arbitrarily specific way, and may then excite the outgoing dendrites (gates),
+        which transmit activation to other neurons with adaptive synaptic strengths (link weights).
+        """
         # process the slots
         if self.slots:
             activation = 0
             for i in self.slots:
                 if self.slots[i].incoming:
-                    if self.slots[i].current_step <
+                    if self.slots[i].current_step < current_step:  # we have not processed this yet
         self.activation = sum([self.slots[slot].incoming[link] for slot in self.slots for link in self.slots[slot].incoming])
 
 class Gate(object):
@@ -231,7 +311,7 @@ class Gate(object):
         gate_function: called by the node function, updates the activation
         outgoing: the set of links originating at the gate
     """
-    def __init__(self, type, node, parameters = None):
+    def __init__(self, type, node, gate_function = None, parameters = None):
         """create a gate.
 
         Parameters:
@@ -244,9 +324,8 @@ class Gate(object):
         self.parameters = parameters
         self.activation = 0
         self.outgoing = {}
-        if parameters: self.parameters = parameters
-        else:
-            self.parameters = {
+        self.gate_function = gate_function or self.gate_function
+        self.parameters = parameters or {
                 "minimum": -1,
                 "maximum": 1,
                 "certainty": 1,
@@ -314,3 +393,8 @@ class NativeModule(Node):
         can be edited at runtime.
     """
     pass
+
+
+# new idea: do not use classes for nodes, slots and gates, instead, make them dicts
+# handlers are defined on the level of the nodenet itself
+# what does the structure look like? we need constructors, destructors, executors, but no changers

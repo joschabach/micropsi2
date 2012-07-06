@@ -309,12 +309,6 @@ def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     usermanager = user.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
     configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "config.json"))
 
-    configs["fontsize"] = 12
-    configs["lineparameters"] = { "weight" : "2pt", "color" : "blue" }
-    print configs["lineparameters"]["color"]
-    print configs["fontsize"]
-    del configs["fontsize"]
-
     run(host=host, port=port) #devV
 
 if __name__ == "__main__":

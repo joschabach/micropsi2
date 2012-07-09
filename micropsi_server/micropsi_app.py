@@ -19,7 +19,7 @@ import micropsi_core.tools
 import user
 import config
 import bottle
-from bottle import route, post, run, request, response, template, static_file
+from bottle import route, post, run, request, response, template, static_file, redirect
 import argparse
 import os
 
@@ -68,10 +68,7 @@ def logout():
         usermanager.end_session(token)
     token = None
     response.delete_cookie("token")
-    return template("nodenet",
-        version = VERSION,
-        user = usermanager.get_user_id_for_session_token(token),
-        permissions = usermanager.get_permissions_for_session_token(token))
+    redirect('/')
 
 @route("/login")
 def login():
@@ -93,10 +90,7 @@ def login_submit():
     if token:
         response.set_cookie("token", token)
         # redirect to start page
-        return template("nodenet",
-            version = VERSION,
-            user = usermanager.get_user_id_for_session_token(token),
-            permissions = usermanager.get_permissions_for_session_token(token))
+        redirect("/")
     else:
         # login failed, retry
         if user_id in usermanager.users:
@@ -148,10 +142,7 @@ def signup_submit():
                 token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
                 response.set_cookie("token", token)
                 # redirect to start page
-                return template("nodenet",
-                    version = VERSION,
-                    user = usermanager.get_user_id_for_session_token(token),
-                    permissions = usermanager.get_permissions_for_session_token(token))
+                redirect('/')
             else:
                 return template("error", msg = "User creation failed for an obscure internal reason.")
         else:

@@ -50,6 +50,18 @@
     background-color: #ffffff;
 }
 
+input, textarea {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 3px;
+  padding: 3px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -webkit-transition: border linear 0.2s,box-shadow linear 0.2s;
+  -moz-transition: border linear 0.2s,box-shadow linear 0.2s;
+}
+
 #notification {
   border-top-left-radius: 0;
   border-top-right-radius: 0;
@@ -58,4 +70,5 @@
   font-weight: bold;
   z-index: 99999;
   padding: 14px 30px 10px 28px;
+
 }

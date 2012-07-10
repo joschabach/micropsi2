@@ -49,3 +49,15 @@
 .uneditable-input input[disabled] {
     background-color: #ffffff;
 }
+
+input, textarea {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 3px;
+  padding: 3px;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  -webkit-transition: border linear 0.2s,box-shadow linear 0.2s;
+  -moz-transition: border linear 0.2s,box-shadow linear 0.2s;
+}

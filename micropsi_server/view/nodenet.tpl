@@ -32,26 +32,25 @@
                                     class="icon-chevron-right"></i></span></td>
 
 
-                            <td><input class="span3" disabled="disabled" value="Blueprint1"/></td>
+                            <td><input disabled="disabled" value="Blueprint1"/></td>
 
                             <td><span class="btn-group">
-                          <button class="btn"><i class="icon-fast-backward"></i></button>
-                          <button class="btn"><i class="icon-play"></i></button>
-                          <button class="btn"><i class="icon-step-forward"></i></button>
-                          <button class="btn"><i class="icon-pause"></i></button>
-                    </span></td>
+                                  <button class="btn"><i class="icon-fast-backward"></i></button>
+                                  <button class="btn"><i class="icon-play"></i></button>
+                                  <button class="btn"><i class="icon-step-forward"></i></button>
+                                  <button class="btn"><i class="icon-pause"></i></button>
+                             </span></td>
 
-                            <td><input class="span1" disabled="disabled" style="text-align:right" value="0"/></td>
+                            <td><input disabled="disabled" style="text-align:right" value="0"/></td>
                             <td><div id="nodespace_control" class="collapse in">
                                 &nbsp;Nodespace:
-                                <input id="nodespace_name" class="span2" disabled="disabled" value="Root"/>
+                                <input id="nodespace_name" disabled="disabled" value="Root"/>
                                 <button id="nodespace_up" class="btn"><i class="icon-share"></i></button>
                             </div>
 
                             </td>
                         </tr>
                     </table>
-
                 </form>
             </div>
 
@@ -95,7 +94,7 @@
                                     class="icon-chevron-right"></i></span></td>
 
 
-                            <td><input class="span3" disabled="disabled" value="Context"/></td>
+                            <td><input disabled="disabled" value="Context"/></td>
 
                             <td><span class="btn-group">
                           <button class="btn"><i class="icon-fast-backward"></i></button>
@@ -104,7 +103,7 @@
                           <button class="btn"><i class="icon-pause"></i></button>
                     </span></td>
 
-                            <td><input class="span1" disabled="disabled" style="text-align:right" value="0"/></td>
+                            <td><input disabled="disabled" style="text-align:right" value="0"/></td>
                         </tr>
                     </table>
 

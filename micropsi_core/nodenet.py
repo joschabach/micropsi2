@@ -4,118 +4,107 @@ Nodenet definition
 
 
 from micropsi_core.tools import generate_uid
-import micropsi_core.tools, os
+import micropsi_core.tools
+import json, os, warnings
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
-class Nodenet(object):
+NODENET_VERSION = 1
+
+
+class NodenetManager(object):
     """Main data structure for MicroPsi agents,
 
-    Contains the net entities and runs the activation spreading
+    Contains the net entities and runs the activation spreading. The nodenet stores persistent data.
 
     Attributes:
+        nodenet: persistent data
         nodespaces: A dictionary of node space UIDs and respective node spaces
         nodes: A dictionary of node UIDs and respective nodes
-        calculate_always_nodes: A set of nodes that is either always active, or has received activation directly
         calculate_now_nodes: A set of nodes that has received activation in the current step
         links: A dictionary of link UIDs and respective links
-        datasources: A dictionary of data source UIDs and data sources
-        datatargets: A dictionary of data target UIDs and data targets
         gate_types: A dictionary of gate type names and the individual types of gates
         slot_types: A dictionary of slot type names and the individual types of slots
         native_module_types: A dictionary of native module names and individual native modules types
-        step: a counter for the current simulation step
-        worldadapter: A world adapter object residing in a world implementation
+        agent_type: The type of the agent, which is matched to a world adapter
+        worldadapter: An actual world adapter object (agent body) residing in a world implementation
     """
 
-    def __init__(self, manager, filename, name = "",
-                 worldadapter = None, owner = "", uid = None):
-        """create a new MicroPsi agent
+    def __init__(self, filename, name = "", agent_type = "Default", worldadapter = None, owner = "", uid = None):
+        """Create a new MicroPsi agent.
 
         Arguments:
-            manager: the agent manager that controls this node space
-            worldadapter (optional): the interface of this agent to its environment
             filename: the path and filename of the agent
+            worldadapter (optional): the interface of this agent to its environment
             name (optional): the name of the agent
             owner (optional): the user that created this agent
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        self.manager = manager
+        # connection to environment
         self.worldadapter = worldadapter
-        self.data = {
-            "uid": uid or generate_uid(),
-            "name": name or self.uid,
-            "owner": owner,
-            "worldadapter_name": worldadapter.name if worldadapter else None
 
+        # persistent data
+        self.nodenet = {
+            "version": NODENET_VERSION,  # used to check compatibility of the node net data
+            "uid": uid or generate_uid(),
+            "agent_type": agent_type,
+            "name": name or os.path.basename(filename),
+            "owner": owner,
+            "world": worldadapter.get_world().uid if worldadapter else None,
+            "worldadapter": worldadapter.uid if worldadapter else None,
+            "datasources": worldadapter.get_available_datasources() if worldadapter else None,
+            "datatargets": worldadapter.get_available_datatargets() if worldadapter else None,
+            "nodes": {},
+            "links": {},
+            "nodespaces": {},
+            "nodetypes": ["Concept", "Register", "Sensor", "Actor"],
+            "nodefunctions": {},
+            "gatetypes": ["por", "ret", "sub", "sur", "cat", "exp"],
+            "step": 0
         }
-        self.uid = uid or generate_uid()
-        self.name = name or self.uid
+
+        # nonpersistent data, either for management or to increase performance
         self.filename = filename
-        self.owner = owner
         self.nodespaces = {}
         self.nodes = {}
-        self.calculate_always_nodes = {}
-        self.calculate_now_nodes = {}
         self.links = {}
-        self.node_types = {} # todo: import standard node types first
-        self.step = 0
-        self.manager = manager
-        self.worldadapter = manager.get_worldadapter(worldadapter_name)
+        self.nodetypes = {}
 
-        if owner:
-            resource_path = os.path.join(resource_path, owner)
-            micropsi_core.tools.mkdir(resource_path)
-        self.filename = resource_path
+        self.active_nodes = {} # these are the nodes that received activation and must be calculated
 
-        self.load_nodenet(os.path.join(resource_path, self.filename))
-
-        #TODO set up initial nodespace
-
-    @classmethod
-    def fromfilename(cls, manager, filename):
-        """Attempt to create a nodenet from a file name; if the file is not readable, we return None"""
-        try:
-            with open('filename') as f:
-                # check if file is readable
-                char = f.read(1)
-            if char == '{': return cls(manager = manager, filename = filename)
-        except IOError as e:
-            pass
-        return None
-
-
-    #TODO add functionality for adding, editing and removing of nodes, links, native modules, nodespaces, etc
-
-    def reset(self):
-        """Revert to state of last save"""
-        self.load_nodenet(os.path.join(resource_path, self.filename))
+        self.load_nodenet(self.filename)
 
     def load_nodenet(self, filename):
-        """Try to load the node net from a file"""
+        """Load the node net from a file"""
         # try to access file
-        self.user_file_name = os.path.join(resource_path, USER_FILE_NAME) # todo: make this work without a file system
         try:
-            with open(self.user_file_name) as file:
-                self.users = json.load(file)
-        except ValueError, err:
-            print "Could not read user data"
-            self.users = {}
+            with open(filename) as file:
+                self.nodenet = json.load(file)
+        except ValueError:
+            print "Could not read nodenet data"
+            return False
+        except IOError:
+            print "Could not open nodenet file"
 
-    def get_node_types(self):
-        """returns all available node types"""
-        node_types =
+        if "version" in self.nodenet and self.nodenet["version"] == NODENET_VERSION:
+            self.initialize_nodenet()
+            return True
+        else:
+            print "Wrong version of the nodenet data; starting new nodenet"
+            return False
 
-    def set_worldadapter(self, worldadapter):
-        """connects the nodenet with a worldadapter, and thus to some external environment"""
-        self.worldadapter = worldadapter
-        self.datasources = worldadapter.datasources
-        self.datatargets = worldadapter.datatargets
-        #TODO change connection of all sensors and actors
+    def initialize_nodenet(self):
+        """Called after reading new nodenet data.
 
-    def get_nodespace_view(self, nodespace_uid):
+        Parses the nodenet data and set up the non-persistent data structures necessary for efficient
+        computation of the node net
+        """
+        # check if data sources and data targets match
+        pass
+
+    def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
         pass
 
@@ -134,8 +123,8 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-        self.propagate_link_activation()
         self.calculate_node_functions()
+        self.propagate_link_activation()
         self.step +=1
 
     def propagate_link_activation(self):
@@ -145,6 +134,12 @@ class Nodenet(object):
     def calculate_node_functions(self):
         """for all active nodes, call their node function, which in turn should update the gate functions"""
         pass
+
+    def set_node_function(self, node_type, node_function_string):
+        """For all nodes of the given type, use the given node function.
+
+        The node function is handed the current node, the current nodespace and the current agent, so that it may
+        """
 
 
 class NetEntity(object):
@@ -277,7 +272,7 @@ class Node(NetEntity):
                  activation = 0, slots = None, gates = None):
         NetEntity.__init__(position, nodenet, parent_nodespace, name)
         self.type = type
-        if type == ""
+        #if type == ""
 
 
 
@@ -297,7 +292,8 @@ class Node(NetEntity):
             activation = 0
             for i in self.slots:
                 if self.slots[i].incoming:
-                    if self.slots[i].current_step < current_step:  # we have not processed this yet
+                    pass
+                    # if self.slots[i].current_step < current_step:  # we have not processed this yet
         self.activation = sum([self.slots[slot].incoming[link] for slot in self.slots for link in self.slots[slot].incoming])
 
 class Gate(object):
@@ -398,3 +394,50 @@ class NativeModule(Node):
 # new idea: do not use classes for nodes, slots and gates, instead, make them dicts
 # handlers are defined on the level of the nodenet itself
 # what does the structure look like? we need constructors, destructors, executors, but no changers
+
+standard_nodetypes = {
+    "register": {
+        "slots": ["gen"],
+        "gates": ["gen"]
+    },
+    "sensor": {
+        "datasource": None,
+        "gates": ["gen"]
+    },
+    "actor": {
+        "datasource": None,
+        "datatarget": None,
+        "slots": ["gen"],
+        "gates": ["gen"]
+    },
+    "concept": {
+        "slots": ["gen"],
+        "gates": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
+    },
+    "activator": {
+        "type": None,
+        "slots": ["gen"]
+    }
+}
+"""
+# nodefunctions will often just change slot and gate values, but may also interact with the environment and the node net itself. Thus, we pass everything into them as parameters.
+
+# the nodefunction gets the node passed. the node has references to the nodespace (and via the nodespace to data sources and data targets), the slots and gates, and the nodenet
+
+    # new idea for refactoring: the node net is a hash, too. all the handling will be done in the agent class. the agent stores all efficiency stuff.
+
+
+standard_nodefunctions = {
+    "actor":
+}
+
+    Nodenet = Nodes, Links, Nodespaces, DataSources, DataTargets, Netfunction (+ owner, agent)
+    Nodespace = Nodes, Nodespaces, Activators
+    Node = id, type, Slots, Gates, Nodefunction (+ parentnodespace, )
+    Slot = slottype, act, slotfunction = avg(incoming acts) --> idea: let us store all incoming activations and process them in the nodefunction
+    even better: slotfunction/gatefunction is given by nodetype
+    Gate = gatetype, gatefunction (params), outputfunction (act(type), amp, min, max)
+
+
+even better: all persistent data is stored within the nodenet, and everything else is in classes as before! yay!
+"""

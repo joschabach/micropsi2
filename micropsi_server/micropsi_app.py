@@ -174,10 +174,7 @@ def change_password_submit():
 
         if usermanager.test_password(user_id, old_password):
             usermanager.set_user_password(user_id, new_password)
-            return template("nodenet",
-                version = VERSION,
-                user = usermanager.get_user_id_for_session_token(token),
-                permissions = permissions)
+            redirect('/')
 
         else:
             return template("change_password", version = VERSION, userid=user_id, old_password=old_password,
@@ -205,9 +202,7 @@ def set_permissions(user_id, role):
         if "manage users" in permissions:
             if user_id in usermanager.users.keys() and role in user.USER_ROLES.keys():
                 usermanager.set_user_role(user_id, role)
-            return template("user_mgt", version = VERSION, permissions = permissions,
-                user = usermanager.get_user_id_for_session_token(token),
-                userlist = usermanager.list_users())
+            redirect('/user_mgt')
     return template("error", msg = "Insufficient rights to access user console")
 
 @route("/create_user")
@@ -239,9 +234,7 @@ def create_user_submit():
                 (role == "Full" and "create full" in permissions) or
                 (role == "Restricted" and "create restricted" in permissions)):
                 if usermanager.create_user(user_id, password, role, uid = micropsi_core.tools.generate_uid()):
-                    return template("user_mgt", version = VERSION, permissions = permissions,
-                        user = usermanager.get_user_id_for_session_token(token),
-                        userlist = usermanager.list_users())
+                    redirect('/user_mgt')
                 else:
                     return template("error", msg = "User creation failed for an obscure internal reason.")
             else:
@@ -273,9 +266,7 @@ def set_password_submit():
             password = request.forms.password
             if user_id in usermanager.users.keys():
                 usermanager.set_user_password(user_id, password)
-            return template("user_mgt", version = VERSION, permissions = permissions,
-                user = usermanager.get_user_id_for_session_token(token),
-                userlist = usermanager.list_users())
+            redirect('/user_mgt')
     return template("error", msg = "Insufficient rights to access user console")
 
 @route("/delete_user/<user_id>")
@@ -286,9 +277,7 @@ def set_permissions(user_id):
         if "manage users" in permissions:
             if user_id in usermanager.users.keys():
                 usermanager.delete_user(user_id)
-            return template("user_mgt", version = VERSION, permissions = permissions,
-                user = usermanager.get_user_id_for_session_token(token),
-                userlist = usermanager.list_users())
+            redirect("user_mgt")
     return template("error", msg = "Insufficient rights to access user console")
 
 

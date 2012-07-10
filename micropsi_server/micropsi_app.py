@@ -277,7 +277,7 @@ def set_permissions(user_id):
         if "manage users" in permissions:
             if user_id in usermanager.users.keys():
                 usermanager.delete_user(user_id)
-            redirect("user_mgt")
+            redirect("/user_mgt")
     return template("error", msg = "Insufficient rights to access user console")
 
 

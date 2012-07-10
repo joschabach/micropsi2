@@ -9,9 +9,9 @@
         <table class="table table-bordered table-striped">
             <thead>
             <tr>
-                <th class="span3">UserID</th>
-                <th class="span1">Active</th>
-                <th class="span2">Permissions</th>
+                <th>UserID</th>
+                <th>Active</th>
+                <th>Permissions</th>
                 <th>Actions</th>
             </tr>
             </thead>
@@ -23,6 +23,8 @@
                 <td>
                     %if userlist[user_id]["is_active"]:
                     <i class="icon-ok"></i>
+                    %else:
+                    &nbsp;
                     %end
                 </td>
                 <td>

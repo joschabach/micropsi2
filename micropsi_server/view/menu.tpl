@@ -12,8 +12,7 @@
                 %end
             </a>
             %if defined('user'):
-            <div class="nav pull-right">
-                <div class="btn-group">
+                <div class="btn-group pull-right">
                     %if user != "Guest":
                     <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
                         <i class="icon-user"></i> {{user}}
@@ -30,7 +29,6 @@
                     </a>
                     %end
                 </div>
-            </div>
             %end
             <div class="nav-collapse">
                 <ul class="nav">

@@ -46,6 +46,7 @@ import datetime
 import threading
 import time
 import uuid
+import warnings
 import micropsi_core.tools
 
 ADMIN_USER = "admin"  # default name of the admin user
@@ -91,9 +92,9 @@ class UserManager(object):
             with open(self.user_file_name) as file:
                 self.users = json.load(file)
         except ValueError:
-            print "Invalid user data"
+            warnings.warn("Invalid user data")
         except IOError:
-            print "Could not open user data file"
+            warnings.warn("Could not open user data file")
 
         if not self.users:
             self.users = {}

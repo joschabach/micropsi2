@@ -41,7 +41,7 @@
                     </div>
                 </td>
                 <td>
-                    <a href="/set_password/{{user_id}}" class="btn">Set new password</a>
+                    <a href="/set_password/{{user_id}}" class="btn set_new_password">Set new password</a>
                     <a href="/delete_user/{{user_id}}" class="btn">Delete user</a>
                 </td>
             </tr>

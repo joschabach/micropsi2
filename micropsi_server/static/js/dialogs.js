@@ -41,6 +41,9 @@ $(function() {
                                     $('#remote_form_dialog div.modal-body').html(form);
                                 } else {
                                     el.modal('hide');
+                                    if(callback){
+                                        callback();
+                                    }
                                     dialogs.notification('Saved');
                                 }
                             }
@@ -101,7 +104,7 @@ $(function() {
 
     $('a.create_user').on('click', function(event){
         event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'));
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(){window.location.reload();});
     });
 
 });

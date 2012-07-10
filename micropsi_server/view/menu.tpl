@@ -19,7 +19,7 @@
                         <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a href="change_password">Change Password</a></li>
+                        <li><a href="change_password" class="set_new_password">Change Password</a></li>
                         <li class="divider"></li>
                         <li><a href="logout">Sign Out</a></li>
                     </ul>

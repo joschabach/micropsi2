@@ -52,7 +52,7 @@
     </div>
     <div class="row-fluid">
         <p>
-        <a class="btn" href="/create_user"><i class="icon-plus"></i> Create a new user</a>
+        <a class="btn create_user" href="/create_user"><i class="icon-plus"></i> Create a new user</a>
         </p>
     </div>
     <div class="row-fluid">

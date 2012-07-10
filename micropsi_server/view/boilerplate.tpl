@@ -30,6 +30,7 @@
     <script src="/static/js/jquery.min.js" type="text/javascript"></script>
     <script src="/static/js/bootstrap.min.js" type="text/javascript"></script>
     <script src="/static/js/dialogs.js" type="text/javascript"></script>
+    <script src="/static/js/jquery.form.js" type="text/javascript"></script>
 
     <link rel="shortcut icon" href="/static/favicon.png">
 </head>

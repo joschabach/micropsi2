@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-
+Startup script for the MicroPsi service.
 """
 
 __author__ = 'joscha'

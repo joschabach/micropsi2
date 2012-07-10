@@ -305,9 +305,11 @@ def set_permissions(user_id):
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global micropsi
     global usermanager
-    micropsi = micropsi_core.runtime.MicroPsiRuntime()
-    usermanager = user.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
+    global configs
     configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "config.json"))
+    micropsi = micropsi_core.runtime.MicroPsiRuntime(RESOURCE_PATH)
+    usermanager = user.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
+
 
     run(host=host, port=port) #devV
 

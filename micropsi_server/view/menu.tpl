@@ -40,12 +40,12 @@
                         <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Blueprint
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">New...</a></li>
-                            <li><a href="#">Edit...</a></li>
+                            <li><a href="blueprint_new">New...</a></li>
+                            <li><a href="blueprint_edit">Edit...</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Delete</a></li>
-                            <li><a href="#">Save</a></li>
-                            <li><a href="#">Revert</a></li>
+                            <li><a href="#" class="agent_delete">Delete</a></li>
+                            <li><a href="#" class="agent_save">Save</a></li>
+                            <li><a href="#" class="agent_revert">Revert</a></li>
                             <li class="divider"></li>
                             <li><a href="#">Export to file...</a></li>
                             <li><a href="#">Import from file...</a></li>
@@ -61,9 +61,9 @@
                             <li><a href="#">New...</a></li>
                             <li><a href="#">Edit...</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Delete</a></li>
-                            <li><a href="#">Save</a></li>
-                            <li><a href="#">Revert</a></li>
+                            <li><a href="#" class="world_delete">Delete</a></li>
+                            <li><a href="#" class="world_save">Save</a></li>
+                            <li><a href="#" class="world_revert">Revert</a></li>
                             <li class="divider"></li>
                             <li><a href="#">Export to file...</a></li>
                             <li><a href="#">Import from file...</a></li>

@@ -31,7 +31,7 @@ class NodenetManager(object):
         worldadapter: An actual world adapter object (agent body) residing in a world implementation
     """
 
-    def __init__(self, filename, name = "", agent_type = "Default", worldadapter = None, owner = "", uid = None):
+    def __init__(self, filename, name = "", agent_type = "Default", world = None, owner = "", uid = None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -43,19 +43,20 @@ class NodenetManager(object):
         """
 
         # connection to environment
-        self.worldadapter = worldadapter
+        self.world = world
+
+        uid = uid or generate_uid()
 
         # persistent data
         self.nodenet = {
             "version": NODENET_VERSION,  # used to check compatibility of the node net data
-            "uid": uid or generate_uid(),
+            "uid": uid,
             "agent_type": agent_type,
             "name": name or os.path.basename(filename),
             "owner": owner,
-            "world": worldadapter.get_world().uid if worldadapter else None,
-            "worldadapter": worldadapter.uid if worldadapter else None,
-            "datasources": worldadapter.get_available_datasources() if worldadapter else None,
-            "datatargets": worldadapter.get_available_datatargets() if worldadapter else None,
+            "world": world.uid if world else None,
+            "datasources": world.get_available_datasources(uid) if world else None,
+            "datatargets": world.get_available_datatargets(uid) if world else None,
             "nodes": {},
             "links": {},
             "nodespaces": {},

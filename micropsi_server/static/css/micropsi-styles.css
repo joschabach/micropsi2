@@ -61,3 +61,14 @@ input, textarea {
   -webkit-transition: border linear 0.2s,box-shadow linear 0.2s;
   -moz-transition: border linear 0.2s,box-shadow linear 0.2s;
 }
+
+#notification {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  position: absolute;
+  top: 0px;
+  font-weight: bold;
+  z-index: 99999;
+  padding: 14px 30px 10px 28px;
+
+}

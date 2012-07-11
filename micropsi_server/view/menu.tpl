@@ -19,7 +19,7 @@
                         <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a href="change_password">Change Password</a></li>
+                        <li><a href="change_password" class="set_new_password">Change Password</a></li>
                         <li class="divider"></li>
                         <li><a href="logout">Sign Out</a></li>
                     </ul>
@@ -38,16 +38,16 @@
                         <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Blueprint
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">New...</a></li>
-                            <li><a href="#">Edit...</a></li>
+                            <li><a href="agent/edit" class="agent_new">New...</a></li>
+                            <li><a href="agent/edit?id=1" class="agent_edit">Edit...</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Delete</a></li>
-                            <li><a href="#">Save</a></li>
-                            <li><a href="#">Revert</a></li>
+                            <li><a href="#" class="agent_delete">Delete</a></li>
+                            <li><a href="#" class="agent_save">Save</a></li>
+                            <li><a href="#" class="agent_revert">Revert</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Export to file...</a></li>
-                            <li><a href="#">Import from file...</a></li>
-                            <li><a href="#">Merge with file...</a></li>
+                            <li><a href="/agent/export" class="agent_export">Export to file...</a></li>
+                            <li><a href="/agent/import" class="agent_import">Import from file...</a></li>
+                            <li><a href="/agent/merge" class="agent_merge">Merge with file...</a></li>
                         </ul>
                     </li>
                     %end
@@ -56,15 +56,15 @@
                         <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Context
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">New...</a></li>
-                            <li><a href="#">Edit...</a></li>
+                            <li><a href="world/edit" class="world_new">New...</a></li>
+                            <li><a href="world/edit?id=1" class="world_edit">Edit...</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Delete</a></li>
-                            <li><a href="#">Save</a></li>
-                            <li><a href="#">Revert</a></li>
+                            <li><a href="#" class="world_delete">Delete</a></li>
+                            <li><a href="#" class="world_save">Save</a></li>
+                            <li><a href="#" class="world_revert">Revert</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Export to file...</a></li>
-                            <li><a href="#">Import from file...</a></li>
+                            <li><a href="/world/export" class="world_export">Export to file...</a></li>
+                            <li><a href="/world/import" class="world_import">Import from file...</a></li>
                         </ul>
                     </li>
                     %end

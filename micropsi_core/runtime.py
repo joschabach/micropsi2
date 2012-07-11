@@ -70,8 +70,8 @@ class MicroPsiRuntime(object):
             world_id (optional): if submitted, attempts to bind the agent to this world
 
         Returns
-            True, agent_uid if successful,
-            False, error_message if failure
+            agent_uid if successful,
+            None if failure
         """
         pass
 
@@ -170,8 +170,8 @@ class MicroPsiRuntime(object):
             owner (optional): the creator of this world
 
         Returns
-            True, agent_uid if successful,
-            False, error_message if failure
+            world_uid if successful,
+            None if failure
         """
         pass
 
@@ -268,8 +268,23 @@ class MicroPsiRuntime(object):
     pass
 
     def get_node(self, agent_uid, node_uid):
-        """Returns a dictionary with all node parameters, if node exists, or None if it does not.
-        """
+        """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
+        structured as follows:
+            node_uid: {
+                name (optional): display name,
+                type: node type
+                x: x position,
+                y: y position,
+                activation: activation value,
+                symbol (optional): a short string for compact display purposes,
+                slots (optional): a list of lists [slot_type, {activation: activation_value,
+                                                               links (optional): [link_uids]} (optional)]
+                gates (optional): a list of lists [gate_type, {activation: activation_value,
+                                                               function: gate_function (optional),
+                                                               params: {gate_parameters} (optional),
+                                                               links (optional): [link_uids]} (optional)]
+                }
+         """
         pass
 
     def add_node(self, agent_uid, type, x, y, nodespace, uid = None, name = ""):
@@ -284,8 +299,8 @@ class MicroPsiRuntime(object):
             name (optional): if not supplied, the uid will be used instead of a display name
 
         Returns:
-            True, node_uid if successful,
-            False, error_message if failure.
+            node_uid if successful,
+            None if failure.
         """
         pass
 
@@ -333,41 +348,75 @@ class MicroPsiRuntime(object):
         """Remove the node type from the current agent definition, if it is part of it."""
         pass
 
-    def get_slots(self, agent_uid, node_type):
-        """Returns the list of slot types for the current node type."""
+    def get_slot_types(self, agent_uid, node_type):
+        """Returns the list of slot types for the given node type."""
         pass
 
-    def get_gates(self, agent_uid, node_type):
+    def get_gate_types(self, agent_uid, node_type):
+        """Returns the list of gate types for the given node type."""
         pass
 
-    def get_gate_function(self, agent_uid, nodespace, node_type, gatetype):
+    def get_gate_function(self, agent_uid, nodespace, node_type, gate_type):
+        """Returns a string with the gate function of the given node and gate within the current nodespace.
+        Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
+        """
         pass
 
-    def set_gate_function(self, agent_uid, nodespace, node_type, gatetype):
+    def set_gate_function(self, agent_uid, nodespace, node_type, gate_type):
+        """Sets the gate function of the given node and gate within the current nodespace.
+        Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
+        The default function is a threshold with parameter t=0.
+        """
         pass
 
-    def set_gate_parameters(self, agent_uid, node_uid, gate):
+    def delete_gate_function(self, agent_uid, nodespace, node_type, gate_type):
+        """Reverts the custom gate function of the given node and gate within the current nodespace to the default.
+        """
+        pass
+
+    def set_gate_parameters(self, agent_uid, node_uid, gate_type):
+        """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
         pass
 
     def get_available_datasources(self, agent_uid):
+        """Returns a list of available datasource types for the given agent."""
         pass
 
     def get_available_datatargets(self, agent_uid):
+        """Returns a list of available datatarget types for the given agent."""
         pass
 
-    def bind_datasource_to_sensor(self, agent_uid, sensor_id, datasource):
+    def bind_datasource_to_sensor(self, agent_uid, sensor_uid, datasource):
+        """Associates the datasource type to the sensor node with the given uid."""
         pass
 
-    def bind_datatarget_to_actor(self, agent_uid, actor_id, datatarget):
+    def bind_datatarget_to_actor(self, agent_uid, actor_uid, datatarget):
+        """Associates the datatarget type to the actor node with the given uid."""
         pass
 
-    def add_link(self, source_node_uid, source_gate_index, target_node_uid, target_node_index, weight, uid = None):
+    def add_link(self, agent_uid, source_node_uid, source_gate_index, target_node_uid, target_slot_index, weight, uid = None):
+        """Creates a new link.
+
+        Arguments.
+            source_node_uid: uid of the origin node
+            source_gate_index: index of the origin gate
+            target_node_uid: uid of the target node
+            target_slot_index: index of the target slot
+            weight: the weight of the link (a float)
+            uid (option): if none is supplied, a uid will be generated
+
+        Returns:
+            link_uid if successful,
+            None if failure
+        """
         pass
 
-    def set_link_weight(self, link_id, weight):
+    def set_link_weight(self, agent_uid, link_uid, weight):
+        """Set weight of the given link."""
         pass
 
-    def delete_link(self, link_id):
+    def delete_link(self, agent_uid, link_uid):
+        """Delete the given link."""
         pass
 
 

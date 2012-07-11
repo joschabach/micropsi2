@@ -25,8 +25,8 @@ $(function() {
                     var form = dialogs.patch_form(data);
                     $('#remote_form_dialog div.modal-body').html(form);
                     var submit = $('#remote_form_dialog .btn-confirm');
-                    submit.on('click', dialogs.async_form_submit);
-                    form.on('submit', dialogs.async_form_submit);
+                    submit.bind('click', {callback: callback}, dialogs.async_form_submit);
+                    form.bind('submit', {callback: callback}, dialogs.async_form_submit);
                 }
             });
             el.modal();
@@ -40,9 +40,10 @@ $(function() {
             return form;
         },
 
-        async_form_submit: function(event){
+        async_form_submit: function(event, callback){
             event.preventDefault();
             var el = $('#remote_form_dialog');
+            form = $('form', el);
             form.ajaxSubmit({
                 success: function(data){
                     if($('.control-group.error', data).length){
@@ -50,8 +51,8 @@ $(function() {
                         $('#remote_form_dialog div.modal-body').html(form);
                     } else {
                         el.modal('hide');
-                        if(callback){
-                            callback();
+                        if(event.data.callback){
+                            event.data.callback();
                         }
                         dialogs.notification('Saved');
                     }
@@ -66,7 +67,7 @@ $(function() {
             el.css('left', ($(document.body).width() / 2) - el.width());
         }
 
-    }
+    };
 
     // Bind Menubar links
 

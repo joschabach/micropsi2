@@ -362,6 +362,18 @@ def export_world():
     return "{}"
 
 
+@route("/world/edit")
+def edit_world():
+    token = request.get_cookie("token")
+    id = request.params.get('id', None)
+    title = 'Edit World' if id is not None else 'New World'
+    return template("world_form.tpl", title=title, world={}, worldtypes=[],
+        version = VERSION,
+        userid = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
+
+
+
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global micropsi
     global usermanager

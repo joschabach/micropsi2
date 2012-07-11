@@ -98,6 +98,9 @@ $(function() {
 
 
     // WORLD
+    $('.navbar a.world_new').on('click', remote_form);
+    $('.navbar a.world_edit').on('click', remote_form);
+
     $('.navbar a.world_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this world?", function(){
             alert('you bastard');

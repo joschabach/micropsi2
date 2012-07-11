@@ -56,8 +56,8 @@
                         <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Context
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">New...</a></li>
-                            <li><a href="#">Edit...</a></li>
+                            <li><a href="world/edit" class="world_new">New...</a></li>
+                            <li><a href="world/edit?id=1" class="world_edit">Edit...</a></li>
                             <li class="divider"></li>
                             <li><a href="#" class="world_delete">Delete</a></li>
                             <li><a href="#" class="world_save">Save</a></li>

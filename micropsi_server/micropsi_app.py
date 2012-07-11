@@ -54,11 +54,11 @@ def about():
     return template("about", version = VERSION)
 
 @route("/docs")
-def about():
+def documentation():
     return template("documentation", version = VERSION)
 
 @route("/contact")
-def about():
+def contact():
     return template("contact", version = VERSION)
 
 @route("/logout")
@@ -246,7 +246,7 @@ def create_user_submit():
     return template("error", msg = "Insufficient rights to access user console")
 
 @route("/set_password/<user_id>")
-def set_permissions(user_id):
+def set_password(user_id):
     if request.get_cookie("token"):
         token = request.get_cookie("token")
         permissions = usermanager.get_permissions_for_session_token(token)
@@ -270,7 +270,7 @@ def set_password_submit():
     return template("error", msg = "Insufficient rights to access user console")
 
 @route("/delete_user/<user_id>")
-def set_permissions(user_id):
+def delete_user(user_id):
     if request.get_cookie("token"):
         token = request.get_cookie("token")
         permissions = usermanager.get_permissions_for_session_token(token)

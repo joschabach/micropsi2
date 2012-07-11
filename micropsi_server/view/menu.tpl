@@ -45,9 +45,9 @@
                             <li><a href="#" class="agent_save">Save</a></li>
                             <li><a href="#" class="agent_revert">Revert</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Export to file...</a></li>
-                            <li><a href="#">Import from file...</a></li>
-                            <li><a href="#">Merge with file...</a></li>
+                            <li><a href="#" class="agent_export">Export to file...</a></li>
+                            <li><a href="/agent/import" class="agent_import">Import from file...</a></li>
+                            <li><a href="/agent/merge" class="agent_merge">Merge with file...</a></li>
                         </ul>
                     </li>
                     %end
@@ -63,8 +63,8 @@
                             <li><a href="#" class="world_save">Save</a></li>
                             <li><a href="#" class="world_revert">Revert</a></li>
                             <li class="divider"></li>
-                            <li><a href="#">Export to file...</a></li>
-                            <li><a href="#">Import from file...</a></li>
+                            <li><a href="#" class="world_export">Export to file...</a></li>
+                            <li><a href="/world/import" class="world_import">Import from file...</a></li>
                         </ul>
                     </li>
                     %end

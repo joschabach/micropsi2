@@ -301,6 +301,41 @@ def set_permissions(user_id):
     return template("error", msg = "Insufficient rights to access user console")
 
 
+@route("/agent/import")
+def import_agent():
+    if('file' in request.forms):
+        # do stuff
+        pass
+    token = request.get_cookie("token")
+    return template("upload.tpl", title='Import agent', message='Select a file to upload and use for importing', action='/agent/import',
+        version = VERSION,
+        userid = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
+
+
+@route("/agent/merge")
+def merge_agent():
+    if('file' in request.forms):
+        # do stuff
+        pass
+    token = request.get_cookie("token")
+    return template("upload.tpl", title='Merge agent', message='Select a file to upload and use for merging', action='/agent/merge',
+        version = VERSION,
+        userid = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
+
+
+@route("/world/import")
+def import_world():
+    if('file' in request.forms):
+        # do stuff
+        pass
+    token = request.get_cookie("token")
+    return template("upload.tpl", title='World import', message='Select a file to upload and use for importing', action='/world/import',
+        version = VERSION,
+        userid = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
+
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global micropsi

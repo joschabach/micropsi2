@@ -38,8 +38,8 @@
                         <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Blueprint
                             <b class="caret"></b></a>
                         <ul class="dropdown-menu">
-                            <li><a href="blueprint_new">New...</a></li>
-                            <li><a href="blueprint_edit">Edit...</a></li>
+                            <li><a href="agent/edit" class="agent_new">New...</a></li>
+                            <li><a href="agent/edit?id=1" class="agent_edit">Edit...</a></li>
                             <li class="divider"></li>
                             <li><a href="#" class="agent_delete">Delete</a></li>
                             <li><a href="#" class="agent_save">Save</a></li>

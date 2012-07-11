@@ -332,6 +332,17 @@ def export_agent():
     return "{}"
 
 
+@route("/agent/edit")
+def edit_agent():
+    token = request.get_cookie("token")
+    id = request.params.get('id', None)
+    title = 'Edit Blueprint' if id is not None else 'New Blueprint'
+    return template("agent_form.tpl", title=title, agent={}, templates=[], worlds=[], worldadapters=[],
+        version = VERSION,
+        userid = usermanager.get_user_id_for_session_token(token),
+        permissions = usermanager.get_permissions_for_session_token(token))
+
+
 @route("/world/import")
 def import_world():
     if('file' in request.forms):

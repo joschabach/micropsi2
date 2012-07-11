@@ -71,6 +71,13 @@ $(function() {
     // Bind Menubar links
 
     // AGENT
+    function remote_form(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr('href'));
+    }
+
+    $('.navbar a.agent_new').on('click', remote_form);
+    $('.navbar a.agent_edit').on('click', remote_form);
 
     $('.navbar a.agent_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this blueprint?", function(){

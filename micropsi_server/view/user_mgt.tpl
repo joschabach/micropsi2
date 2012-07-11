@@ -41,7 +41,7 @@
                     </div>
                 </td>
                 <td>
-                    <a href="/set_password/{{user_id}}" class="btn">Set new password</a>
+                    <a href="/set_password/{{user_id}}" class="btn set_new_password">Set new password</a>
                     <a href="/delete_user/{{user_id}}" class="btn">Delete user</a>
                 </td>
             </tr>
@@ -52,7 +52,7 @@
     </div>
     <div class="row-fluid">
         <p>
-        <a class="btn" href="/create_user"><i class="icon-plus"></i> Create a new user</a>
+        <a class="btn create_user" href="/create_user"><i class="icon-plus"></i> Create a new user</a>
         </p>
     </div>
     <div class="row-fluid">

@@ -325,6 +325,13 @@ def merge_agent():
         permissions = usermanager.get_permissions_for_session_token(token))
 
 
+@route("/agent/export")
+def export_agent():
+    response.set_header('Content-type', 'application/json')
+    response.set_header('Content-Disposition', 'attachment; filename="world.json"')
+    return "{}"
+
+
 @route("/world/import")
 def import_world():
     if('file' in request.forms):
@@ -335,6 +342,13 @@ def import_world():
         version = VERSION,
         userid = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
+
+
+@route("/world/export")
+def export_world():
+    response.set_header('Content-type', 'application/json')
+    response.set_header('Content-Disposition', 'attachment; filename="world.json"')
+    return "{}"
 
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):

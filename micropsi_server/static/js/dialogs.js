@@ -93,15 +93,8 @@ $(function() {
         dialogs.notification("Agent is being reverted");
     });
 
-    $('.navbar a.agent_import').on('click', function(){
-        event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'));
-    });
-
-    $('.navbar a.agent_merge').on('click', function(){
-        event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'));
-    });
+    $('.navbar a.agent_import').on('click', remote_form);
+    $('.navbar a.agent_merge').on('click', remote_form);
 
 
     // WORLD
@@ -119,17 +112,11 @@ $(function() {
         dialogs.notification("World state is being reverted");
     });
 
-    $('.navbar a.world_import').on('click', function(){
-        event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'));
-    });
+    $('.navbar a.world_import').on('click', remote_form);
 
     // USER
 
-    $('a.set_new_password').on('click', function(event){
-        event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'));
-    });
+    $('a.set_new_password').on('click', remote_form);
 
     $('a.create_user').on('click', function(event){
         event.preventDefault();

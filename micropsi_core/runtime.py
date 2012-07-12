@@ -14,6 +14,7 @@ import nodenet
 import os
 import tools
 
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 AGENT_DIRECTORY = "agents"
 WORLD_DIRECTORY = "worlds"
 
@@ -273,8 +274,8 @@ class MicroPsiRuntime(object):
             node_uid: {
                 name (optional): display name,
                 type: node type
-                x: x position,
-                y: y position,
+                x (optional): x position,
+                y (optional): y position,
                 activation: activation value,
                 symbol (optional): a short string for compact display purposes,
                 slots (optional): a list of lists [slot_type, {activation: activation_value,
@@ -283,7 +284,8 @@ class MicroPsiRuntime(object):
                                                                function: gate_function (optional),
                                                                params: {gate_parameters} (optional),
                                                                links (optional): [link_uids]} (optional)]
-                }
+                parameters (optional): a dict of arbitrary parameters that can make nodes stateful
+            }
          """
         pass
 
@@ -293,10 +295,11 @@ class MicroPsiRuntime(object):
         Arguments:
             agent_uid: uid of the nodespace manager
             type: type of the node
-            x, y: position of the node in the current nodespace
+            x, y (optional): position of the node in the current nodespace
             nodespace: uid of the nodespace
             uid (optional): if not supplied, a uid will be generated
             name (optional): if not supplied, the uid will be used instead of a display name
+            parameters (optional): a dict of arbitrary parameters that can make nodes stateful
 
         Returns:
             node_uid if successful,
@@ -330,17 +333,33 @@ class MicroPsiRuntime(object):
         """Returns the current node function for this node type"""
         pass
 
-    def add_node_type(self, agent_uid, node_type, node_function, slots, gates):
+    def set_node_function(self, agent_uid, node_type, node_function = None):
+        """Sets a new node fuction for this node type. This amounts to a program that is executed every time the
+        node becomes active. Parameters of the function are the node itself (and thus, its slots, gates and
+        parent nodespace), the nodenet manager, and the parameter dict of this node).
+        Setting the node_function to None will return it to its default state (passing the slot activations to
+        all gate functions).
+        """
+        pass
+
+    def set_node_parameters(self, agent_uid, node_uid, parameters = None):
+        """Sets a dict of arbitrary values to make the node stateful."""
+        pass
+
+    def add_node_type(self, agent_uid, node_type, slots = None, gates = None, node_function = None, parameters = None):
         """Adds or modifies a native module.
 
         Arguments:
             agent_uid: the agent into which the native module will be saved
             node_type: the identifier of the native module. If it already exists for another user, the new definition
                 will hide the old one from view.
-            node_function: the program code of the native module. The native module is defined as a python function
-                that takes the current node and the current nodenet manager as arguments.
-            slots: the list of slot types for this node type
-            gates: the list of gate types for this node type
+            node_function (optional): the program code of the native module. The native module is defined as a
+                python function that takes the current node, the nodenet manager and the node parameters as arguments.
+                The default node function takes the slot activations and calls all gatefunctions with
+                it as an argument.
+            slots (optional): the list of slot types for this node type
+            gates (optional): the list of gate types for this node type
+            parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
         """
         pass
 
@@ -362,19 +381,15 @@ class MicroPsiRuntime(object):
         """
         pass
 
-    def set_gate_function(self, agent_uid, nodespace, node_type, gate_type):
+    def set_gate_function(self, agent_uid, nodespace, node_type, gate_type, gate_function = None):
         """Sets the gate function of the given node and gate within the current nodespace.
         Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
         The default function is a threshold with parameter t=0.
+        None reverts the custom gate function of the given node and gate within the current nodespace to the default.
         """
         pass
 
-    def delete_gate_function(self, agent_uid, nodespace, node_type, gate_type):
-        """Reverts the custom gate function of the given node and gate within the current nodespace to the default.
-        """
-        pass
-
-    def set_gate_parameters(self, agent_uid, node_uid, gate_type):
+    def set_gate_parameters(self, agent_uid, node_uid, gate_type, parameters = None):
         """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
         pass
 
@@ -394,15 +409,16 @@ class MicroPsiRuntime(object):
         """Associates the datatarget type to the actor node with the given uid."""
         pass
 
-    def add_link(self, agent_uid, source_node_uid, source_gate_index, target_node_uid, target_slot_index, weight, uid = None):
+    def add_link(self, agent_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty = 1, uid = None):
         """Creates a new link.
 
         Arguments.
             source_node_uid: uid of the origin node
-            source_gate_index: index of the origin gate
+            gate_type: type of the origin gate (usually defines the link type)
             target_node_uid: uid of the target node
-            target_slot_index: index of the target slot
+            slot_type: type of the target slot
             weight: the weight of the link (a float)
+            certainty (optional): a probabilistic parameter for the link
             uid (option): if none is supplied, a uid will be generated
 
         Returns:
@@ -411,7 +427,7 @@ class MicroPsiRuntime(object):
         """
         pass
 
-    def set_link_weight(self, agent_uid, link_uid, weight):
+    def set_link_weight(self, agent_uid, link_uid, weight, certainty = 1):
         """Set weight of the given link."""
         pass
 
@@ -419,11 +435,8 @@ class MicroPsiRuntime(object):
         """Delete the given link."""
         pass
 
-
-
-
 def main():
-    run = MicroPsiRuntime()
+    run = MicroPsiRuntime(RESOURCE_PATH)
 
 if __name__ == '__main__':
     main()

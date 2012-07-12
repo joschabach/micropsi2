@@ -271,7 +271,8 @@ class MicroPsiRuntime(object):
     def get_node(self, agent_uid, node_uid):
         """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
         structured as follows:
-            node_uid: {
+            {
+                uid: unique identifier,
                 name (optional): display name,
                 type: node type
                 x (optional): x position,
@@ -429,6 +430,22 @@ class MicroPsiRuntime(object):
 
     def set_link_weight(self, agent_uid, link_uid, weight, certainty = 1):
         """Set weight of the given link."""
+        pass
+
+    def get_link(self, agent_uid, link_uid):
+        """Returns a dictionary of the parameters of the given link, or None if it does not exist. It is
+        structured as follows:
+
+            {
+                uid: unique identifier,
+                source_node_uid: uid of source node,
+                gate_type: type of source gate (amounts to link type),
+                target_node_uid: uid of target node,
+                gate_type: type of target gate,
+                weight: weight of the link (float value),
+                certainty: probabilistic weight of the link (float value),
+            }
+        """
         pass
 
     def delete_link(self, agent_uid, link_uid):

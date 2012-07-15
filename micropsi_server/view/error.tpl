@@ -5,9 +5,8 @@
     <h1>Something went seriously wrong.</h1>
     </p>
 
-    %if defined(msg):
+    %if defined("msg"):
     <div class="row-fluid">
-
         <div class="alert alert-error">
             {{msg}}
         </div>

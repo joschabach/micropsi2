@@ -13,6 +13,7 @@ import environment
 import nodenet
 import os
 import tools
+import json
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 AGENT_DIRECTORY = "agents"
@@ -50,6 +51,14 @@ class MicroPsiRuntime(object):
                 if world.name: self.worlds[world.name] = None
 
     # MicroPsi API
+
+
+    def get_test_response(self, test_argument):
+        response = {
+            "antwort": "testantwort",
+            "parameter": test_argument
+        }
+        return response
 
     # Agent
 
@@ -274,7 +283,8 @@ class MicroPsiRuntime(object):
             {
                 uid: unique identifier,
                 name (optional): display name,
-                type: node type
+                type: node type,
+                parent: parent nodespace,
                 x (optional): x position,
                 y (optional): y position,
                 activation: activation value,
@@ -382,11 +392,12 @@ class MicroPsiRuntime(object):
         """
         pass
 
-    def set_gate_function(self, agent_uid, nodespace, node_type, gate_type, gate_function = None):
+    def set_gate_function(self, agent_uid, nodespace, node_type, gate_type, gate_function = None, parameters = None):
         """Sets the gate function of the given node and gate within the current nodespace.
         Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
         The default function is a threshold with parameter t=0.
         None reverts the custom gate function of the given node and gate within the current nodespace to the default.
+        Parameters is a list of keys for values of the gate function.
         """
         pass
 

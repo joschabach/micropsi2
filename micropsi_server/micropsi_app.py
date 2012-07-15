@@ -20,8 +20,7 @@ import user
 import config
 import bottle
 from bottle import route, post, run, request, response, template, static_file, redirect
-import argparse
-import os
+import argparse, os, json, inspect
 
 DEFAULT_PORT = 6543
 DEFAULT_HOST = "localhost"
@@ -32,26 +31,111 @@ RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 bottle.debug( True ) #devV
 bottle.TEMPLATE_PATH.insert( 0, os.path.join(APP_PATH, 'view', ''))
 
+def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = None):
+    """Defines a decorator for accessing API calls. Use it by specifying the
+    API method, followed by the permissions necessary to execute the method.
+    Within the calling web page, use http://<url>/rpc/<method>(arg1="val1", arg2="val2", ...)
+    Import these arguments into your decorated function:
+        @rpc("my_method")
+        def this_is_my_method(arg1, arg2):
+            pass
+
+    This will either return a JSON object with the result, or {"Error": <error message>}
+    The decorated function can optionally import the following parameters (by specifying them in its signature):
+        argument: the original argument string
+        token: the current session token
+        user_id: the id of the user associated with the current session token
+        permissions: the set of permissions associated with the current session token
+
+    Arguments:
+        command: the command against which we want to match
+        method (optional): the request method
+        permission_required (optional): the type of permission necessary to execute the method;
+            if omitted, permissions won't be tested by the decorator
+    """
+    def _decorator(func):
+        @route(route_prefix + command + "()", method)
+        @route(route_prefix + command + "(<argument>)", method)
+        def _wrapper(argument = None):
+            kwargs = {}
+            if argument:
+                try:
+                    kwargs = dict((n.strip(),json.loads(v)) for n,v in (a.split('=') for a in argument.split(",")))
+                except ValueError:
+                    return {"Error": "Invalid arguments for remote procedure call"}
+            if request.get_cookie("token"):
+                token = request.get_cookie("token")
+            else:
+                token = None
+
+            user_id = usermanager.get_user_id_for_session_token(token)
+            permissions = usermanager.get_permissions_for_session_token(token)
+
+            if permission_required and permission_required not in permissions:
+                return {"Error": "Insufficient permissions for remote procedure call"}
+            else:
+                kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
+                try:
+                    return json.dumps(func(**dict((name, kwargs[name]) for name in inspect.getargspec(func)[0])))
+                except KeyError, err:
+                    return {"Error": "Missing argument in remote procedure call: %s" %err}
+        return _wrapper
+    return _decorator
+
+def page(path, route_prefix = "", method = "GET", permission_required = None):
+    """Defines a decorator for accessing pages, similar to Bottle's @route, but adding user management.
+    Simply supply the argument 'permission_required' with the required permission.
+
+    It the permissions are insufficient, an error page will be shown.
+    The decorated function can optionally import the following parameters (by specifying them in its signature):
+        token: the current session token
+        user_id: the id of the user associated with the current session token
+        permissions: the set of permissions associated with the current session token
+    """
+    def _decorator(func):
+        @route(route_prefix + path, method)
+        def _wrapper():
+            if request.get_cookie("token"):
+                token = request.get_cookie("token")
+            else:
+                token = None
+
+            user_id = usermanager.get_user_id_for_session_token(token)
+            permissions = usermanager.get_permissions_for_session_token(token)
+
+            if permission_required and permission_required not in permissions:
+                return template("error", msg = "Insufficient access rights.")
+            else:
+                kwargs = {"permissions": permissions, "user_id": user_id, "token": token }
+                return func(**dict((name, kwargs[name]) for name in inspect.getargspec(func)[0]))
+        return _wrapper
+    return _decorator
+
+def submit(path, route_prefix = "/submit", method = "POST", permission_required = None):
+    """Defines a decorator for submitting forms, similar to Bottle's @post, but adding user management.
+    Simply supply the argument 'permission_required' with the required permission.
+
+    It the permissions are insufficient, an error page will be shown.
+    The decorated function can optionally import the following parameters (by specifying them in its signature):
+        token: the current session token
+        user_id: the id of the user associated with the current session token
+        permissions: the set of permissions associated with the current session token
+    """
+    return page(path, route_prefix, method, permission_required)
+
+
+# ----------------------------------------------------------------------------------
 
 @route('/static/<filepath:path>')
-def server_static(filepath):
-    return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
+def server_static(filepath): return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
-@route("/")
-def index():
-    if not request.get_cookie("token"):
-        token = None
-    else:
-        token = request.get_cookie("token")
+@page("/")
+def index(user_id, permissions):
+    return template("nodenet", version = VERSION, user = user_id, permissions = permissions)
 
-    return template("nodenet",
-        version = VERSION,
-        user = usermanager.get_user_id_for_session_token(token),
-        permissions = usermanager.get_permissions_for_session_token(token))
-
-@route("/about")
-def about():
-    return template("about", version = VERSION)
+@page("/about")
+def about(user_id, permissions):
+    return template("about", version = VERSION, user = user_id, permissions = permissions)
 
 @route("/docs")
 def documentation():
@@ -66,7 +150,6 @@ def logout():
     if request.get_cookie("token"):
         token = request.get_cookie("token")
         usermanager.end_session(token)
-    token = None
     response.delete_cookie("token")
     redirect('/')
 
@@ -283,7 +366,7 @@ def delete_user(user_id):
 
 @route("/agent/import")
 def import_agent():
-    if('file' in request.forms):
+    if 'file' in request.forms:
         # do stuff
         pass
     token = request.get_cookie("token")
@@ -295,7 +378,7 @@ def import_agent():
 
 @route("/agent/merge")
 def merge_agent():
-    if('file' in request.forms):
+    if 'file' in request.forms:
         # do stuff
         pass
     token = request.get_cookie("token")
@@ -325,11 +408,12 @@ def edit_agent():
 
 @route("/world/import")
 def import_world():
-    if('file' in request.forms):
+    if 'file' in request.forms:
         # do stuff
         pass
     token = request.get_cookie("token")
-    return template("upload.tpl", title='World import', message='Select a file to upload and use for importing', action='/world/import',
+    return template("upload.tpl", title='World import', message='Select a file to upload and use for importing',
+        action='/world/import',
         version = VERSION,
         userid = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
@@ -352,7 +436,13 @@ def edit_world():
         userid = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
+@rpc("generate_uid")
+def generate_uid(): return micropsi_core.tools.generate_uid()
 
+@rpc("produce_test_response")
+def test_it(test_argument): return micropsi.get_test_response(test_argument)
+
+# -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global micropsi
@@ -371,7 +461,3 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT)
     args = parser.parse_args()
     main(host = args.host, port = args.port)
-
-
-
-

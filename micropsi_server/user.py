@@ -62,6 +62,7 @@ USER_ROLES = {  # sets of strings; each represents a permission.
     "Guest": {"create restricted"}
 }
 
+
 class UserManager(object):
     """The user manager creates, deletes and authenticates users.
 
@@ -84,6 +85,7 @@ class UserManager(object):
         Parameters:
             resource_path (optional): a path to store user data permanently.
         """
+
         # set up persistence
         micropsi_core.tools.mkdir(os.path.dirname(userfile_path))
 
@@ -192,7 +194,7 @@ class UserManager(object):
             return True
         return False
 
-    def start_session(self, user_id, password="", keep_logged_in_forever=True):
+    def start_session(self, user_id, password = None, keep_logged_in_forever=True):
         """authenticates the specified user, returns session token if successful, or None if not.
 
         Arguments:
@@ -200,7 +202,7 @@ class UserManager(object):
             password (optional): checked against the stored password
             keep_logged_in_forever (optional): if True, the session will not expire unless manually logging off
         """
-        if self.test_password(user_id, password):
+        if password is None or self.test_password(user_id, password):
             session_token = str(uuid.UUID(bytes = os.urandom(16)))
             self.users[user_id]["session_token"] = session_token
             self.sessions[session_token] = user_id

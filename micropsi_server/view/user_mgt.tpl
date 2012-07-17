@@ -43,6 +43,7 @@
                 <td>
                     <a href="/set_password/{{user_id}}" class="btn set_new_password">Set new password</a>
                     <a href="/delete_user/{{user_id}}" class="btn">Delete user</a>
+                    <a href="/login_as/{{user_id}}" class="btn">Log in as user</a>
                 </td>
             </tr>
             %end

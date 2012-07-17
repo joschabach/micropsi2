@@ -20,12 +20,7 @@ __author__ = 'joscha'
 __date__ = '04.07.12'
 
 import json
-import hashlib
 import os
-import datetime
-import threading
-import time
-import uuid
 import micropsi_core.tools
 
 

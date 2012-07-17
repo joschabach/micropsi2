@@ -15,7 +15,7 @@
                 <div class="control-group">
                     <label class="control-label" for="userid">New user name</label>
                     <div class="controls">
-                        <input type="text" class="input-xlarge" maxlength="21" id="userid" name="userid"
+                        <input type="text" class="input-xlarge focused" maxlength="21" id="userid" name="userid"
                         %if defined('userid'):
                         value="{{userid}}"
                         %else:

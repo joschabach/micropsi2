@@ -21,7 +21,7 @@
                 %end
                     <label class="control-label" for="agent_name">Name</label>
                     <div class="controls">
-                        <input type="text" class="input-xlarge" maxlength="256" id="agent_name" name="agent_name"
+                        <input type="text" class="input-xlarge focused" maxlength="256" id="agent_name" name="agent_name"
                         %if defined('agent'):
                         value="{{agent.get('name', '')}}"
                         %end

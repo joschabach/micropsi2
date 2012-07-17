@@ -14,6 +14,7 @@ import nodenet
 import os
 import tools
 import json
+import warnings
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 AGENT_DIRECTORY = "agents"
@@ -27,48 +28,35 @@ class MicroPsiRuntime(object):
     between them. It should be a singleton, otherwise competing instances might conflict over the resource files.
     """
     def __init__(self, resource_path):
-        """Scan for existing node nets below the agent directory and set up a list of available agents.
+        """Set up the MicroPsi runtime
 
         Arguments:
             resource_path: the path to the directory in which agent and world directories reside
         """
-        self.agent_path = os.path.join(resource_path, AGENT_DIRECTORY)
-        tools.mkdir(self.agent_path)
-        self.agents = {}
 
-        for user_directory_name, user_directory_names, agent_file_names in os.walk(self.agent_path):
-            for agent_file_name in agent_file_names:
-                agent = nodenet.NodenetManager(agent_file_name)
-                if agent.name: self.agents[agent.name] = None
-
-        self.world_path = os.path.join(resource_path, AGENT_DIRECTORY)
-        tools.mkdir(self.world_path)
-        self.worlds = {}
-
-        for user_directory_name, user_directory_names, world_file_names in os.walk(self.world_path):
-            for world_file_name in world_file_names:
-                world = environment.WorldManager(world_file_name)
-                if world.name: self.worlds[world.name] = None
+        self.agents = crawl_definition_files(path = os.path.join(resource_path, AGENT_DIRECTORY), type = "agent")
+        self.worlds = crawl_definition_files(path = os.path.join(resource_path, AGENT_DIRECTORY), type = "world")
 
     # MicroPsi API
-
-
-    def get_test_response(self, test_argument):
-        response = {
-            "antwort": "testantwort",
-            "parameter": test_argument
-        }
-        return response
 
     # Agent
 
     def get_available_agents(self, owner = None):
-        """Returns a dict of uids: names of available (running and stored) agents.
+        """Returns a dict of uids: { "name":<name>, "owner":<owner> } of available (running and stored) agents.
 
         Arguments:
             owner (optional): when submitted, the list is filtered by this owner
         """
-        pass
+        if owner:
+            return { uid: {
+                "owner": self.agents[uid]["owner"],
+                "name": self.agents[uid]["name"]
+            } for uid in self.agents if self.agents[uid]["owner"] == owner }
+        else:
+            return { uid: {
+                "owner": self.agents[uid]["owner"],
+                "name": self.agents[uid]["name"]
+            } for uid in self.agents }
 
     def new_agent(self, agent_name, agent_type, owner = "", world_uid = None):
         """Creates a new node net manager and registers it.
@@ -462,6 +450,32 @@ class MicroPsiRuntime(object):
     def delete_link(self, agent_uid, link_uid):
         """Delete the given link."""
         pass
+
+def crawl_definition_files(path, type = "definition"):
+    """Traverse the directories below the given path for JSON definitions of agents and worlds,
+    and return a dictionary with the signatures of these agents or worlds.
+    """
+    result = {}
+    tools.mkdir(path)
+
+    for user_directory_name, user_directory_names, file_names in os.walk(path):
+        for definition_file_name in file_names:
+            try:
+                filename = os.path.join(user_directory_name, definition_file_name)
+                with open(filename) as file:
+                    data = json.load(file)
+                    if "uid" in data:
+                        result[data["uid"]] = {  # do not instantiate just yet
+                            "name": data["name"] if "name" in data else data["uid"],
+                            "filename": filename,
+                            "owner": data["owner"] if "owner" in data else None
+                        }
+            except ValueError:
+                warnings.warn("Invalid %s data in file '%s'" %(type, definition_file_name))
+            except IOError:
+                warnings.warn("Could not open %s data file '%s'" %(type, definition_file_name))
+
+    return result
 
 def main():
     run = MicroPsiRuntime(RESOURCE_PATH)

@@ -1,133 +1,131 @@
 
 %include menu.tpl version = version, user = user, permissions = permissions
 
-<div class="container-fluid">
-    <div class="row-fluid">
-        <div class="span2">
-            <div class="well sidebar-nav">
-                <ul class="nav nav-list">
-                    <li class="nav-header">My Blueprints</li>
-                    <li class="active"><a href="#">Blueprint1</a></li>
-                    <li><a href="#">Blueprint2</a></li>
-                    <li><a href="#">Blueprint3</a></li>
-                    <li><a href="#">Blueprint4</a></li>
-                    <li class="nav-header">Other Blueprints</li>
-                    <li><a href="#">Blueprint10</a></li>
-                    <li><a href="#">Blueprint11</a></li>
-                    <li class="nav-header">Active Context</li>
-                    <li><a href="#">Object1</a></li>
-                    <li><a href="#">Object2</a></li>
-                    <li><a href="#">Object3</a></li>
-                </ul>
-            </div>
-            <!--/.well -->
-        </div>
-        <!--/span-->
-        <div class="span10">
-            <div class="sectionbar">
-                <form class="navbar-form">
-                    <table>
-                        <tr>
-                            <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
-                                    class="icon-chevron-right"></i></span></td>
+<div class="row-fluid">
+    <div class="sectionbar">
+        <form class="navbar-form">
+            <table>
+                <tr>
+                    <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
+                            class="icon-chevron-right"></i></span></td>
 
+                    <td style="width:250px">
+                        <div class="btn-group" id="agent_list">
+                            <a class="btn" href="#">
+                                (no agent selected)
+                            </a>
+                        </div>
+                    </td>
 
-                            <td><input disabled="disabled" value="Blueprint1"/></td>
+                    <td style="white-space:nowrap;"><span class="btn-group">
+                          <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
+                          <a href="#" class="btn"><i class="icon-play"></i></a>
+                          <a href="#" class="btn"><i class="icon-step-forward"></i></a>
+                          <a href="#" class="btn"><i class="icon-pause"></i></a>
+                     </span></td>
 
-                            <td><span class="btn-group">
-                                  <button class="btn"><i class="icon-fast-backward"></i></button>
-                                  <button class="btn"><i class="icon-play"></i></button>
-                                  <button class="btn"><i class="icon-step-forward"></i></button>
-                                  <button class="btn"><i class="icon-pause"></i></button>
-                             </span></td>
+                    <td><input id="nodenet_step" disabled="disabled" style="text-align:right; width:60px;" value="0" /></td>
+                    <td style="white-space:nowrap;"><div id="nodespace_control" class="collapse in">
+                        &nbsp;Nodespace:
+                        <input id="nodespace_name" class="input-large" disabled="disabled" value="Root"/>
+                        <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
+                    </div>
 
-                            <td><input disabled="disabled" style="text-align:right" value="0"/></td>
-                            <td><div id="nodespace_control" class="collapse in">
-                                &nbsp;Nodespace:
-                                <input id="nodespace_name" disabled="disabled" value="Root"/>
-                                <button id="nodespace_up" class="btn"><i class="icon-share"></i></button>
-                            </div>
-
-                            </td>
-                        </tr>
-                    </table>
-                </form>
-            </div>
-
-
-            <div id="nodenet_editor" class="collapse in">
-                <div style="overflow:scroll; height:500px">
-                    <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
-                </div>
-            </div>
-            <div class="sectionbar">
-                <form class="navbar-form">
-                    <table>
-                        <tr>
-                            <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
-                                    class="icon-chevron-right"></i></span></td>
-
-
-                            <td> Nodenet Monitor &nbsp;</td>
-
-                            <td><div class="collapse" id="monitor_controls">
-                          <button class="btn">Clear</button>
-                    </div></td>
-
-                        </tr>
-                    </table>
-
-                </form>
-            </div>
-
-
-            <div id="monitor" class="collapse">
-                <div class="hero-unit">
-                    <p>Monitor plugin for individual activities</p>
-                </div>
-            </div>
-            <div class="sectionbar">
-                <form class="navbar-form">
-                    <table>
-                        <tr>
-                            <td><span data-toggle="collapse" data-target="#world_editor"><i
-                                    class="icon-chevron-right"></i></span></td>
-
-
-                            <td><input disabled="disabled" value="Context"/></td>
-
-                            <td><span class="btn-group">
-                          <button class="btn"><i class="icon-fast-backward"></i></button>
-                          <button class="btn"><i class="icon-play"></i></button>
-                          <button class="btn"><i class="icon-step-forward"></i></button>
-                          <button class="btn"><i class="icon-pause"></i></button>
-                    </span></td>
-
-                            <td><input disabled="disabled" style="text-align:right" value="0"/></td>
-                        </tr>
-                    </table>
-
-                </form>
-            </div>
-
-
-            <div id="world_editor" class="collapse">
-                <div class="hero-unit">
-                    <p>Context Viewer Placeholder</p>
-                </div>
-            </div>
-
-
-            <!--/span-->
-        </div>
-        <!--/row-->
+                    </td>
+                </tr>
+            </table>
+        </form>
     </div>
-    <!--/span-->
+
+
+    <div id="nodenet_editor" class="section-margin collapse in">
+        <div class="section">
+            <form class="span3" style="height:500px; overflow:scroll;">
+                <div>
+                    <ul class="nav nav-list" id="agent_list_old">
+                        <li class="nav-header">My Blueprints</li>
+                        <li class="active"><a href="#">Blueprint1</a></li>
+                        <li><a href="#">Blueprint2</a></li>
+                        <li><a href="#">Blueprint3</a></li>
+                        <li><a href="#">Blueprint4</a></li>
+                        <li class="nav-header">Other Blueprints</li>
+                        <li><a href="#">Blueprint10</a></li>
+                        <li><a href="#">Blueprint11</a></li>
+                    </ul>
+                    <ul class="nav nav-list" id="object_list">
+                        <li class="nav-header">Active Context</li>
+                        <li><a href="#">Object1</a></li>
+                        <li><a href="#">Object2</a></li>
+                        <li><a href="#">Object3</a></li>
+                    </ul>
+
+                </div>
+            </form>
+            <div style="height:500px; overflow:scroll;">
+            <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
+            </div>
+        </div>
+
+
+    </div>
+    <div class="sectionbar">
+        <form class="navbar-form">
+            <table>
+                <tr>
+                    <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
+                            class="icon-chevron-right"></i></span></td>
+
+
+                    <td> Nodenet Monitor &nbsp;</td>
+
+                    <td><div class="collapse" id="monitor_controls">
+                  <button class="btn">Clear</button>
+            </div></td>
+
+                </tr>
+            </table>
+
+        </form>
+    </div>
+
+
+    <div id="monitor" class="collapse">
+        <div class="hero-unit">
+            <p>Monitor plugin for individual activities</p>
+        </div>
+    </div>
+    <div class="sectionbar">
+        <form class="navbar-form">
+            <table>
+                <tr>
+                    <td><span data-toggle="collapse" data-target="#world_editor"><i
+                            class="icon-chevron-right"></i></span></td>
+
+
+                    <td><input disabled="disabled" value="Context"/></td>
+
+                    <td><span class="btn-group" style="white-space:nowrap;">
+                  <button class="btn"><i class="icon-fast-backward"></i></button>
+                  <button class="btn"><i class="icon-play"></i></button>
+                  <button class="btn"><i class="icon-step-forward"></i></button>
+                  <button class="btn"><i class="icon-pause"></i></button>
+            </span></td>
+
+                    <td><input disabled="disabled" style="text-align:right" value="0"/></td>
+                </tr>
+            </table>
+
+        </form>
+    </div>
+
+
+    <div id="world_editor" class="collapse">
+        <div class="hero-unit">
+            <p>Context Viewer Placeholder</p>
+        </div>
+    </div>
 </div>
-<!--/row-->
 
-
-</div><!--/.fluid-container-->
 
 <div class="dropdown" id="node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>

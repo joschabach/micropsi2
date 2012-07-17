@@ -29,7 +29,7 @@
                 <div class="control-group error">
                     <label class="control-label" for="old_password">Old password</label>
                     <div class="controls">
-                        <input type="password" class="input-xlarge" maxlength="256" id="old_password" name="old_password"
+                        <input type="password" class="input-xlarge focused" maxlength="256" id="old_password" name="old_password"
                         %if defined('old_password'):
                         value="{{old_password}}"
                         %end

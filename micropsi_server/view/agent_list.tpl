@@ -6,7 +6,7 @@
 % if current_agent in my_agents:
    {{my_agents[current_agent]["name"]}}
 % elif current_agent in other_agents:
-   {{other_agents[current_agent]["name"]}}
+   {{other_agents[current_agent]["name"]}} ({{other_agents[current_agent]["owner"]}})
 % else:
    (no agent selected)
 % end

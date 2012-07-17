@@ -2,6 +2,16 @@
  * Additional styles for MicroPsi
  */
 
+.editor_field {
+    height: 500px;
+    overflow: scroll;
+}
+
+.monitor_field {
+    height: 200px;
+    overflow: scroll;
+}
+
 .sectionbar {
   padding: 2px 4px;
   list-style: none;

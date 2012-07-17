@@ -64,14 +64,7 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
                     kwargs = dict((n.strip(),json.loads(v)) for n,v in (a.split('=') for a in argument.split(",")))
                 except ValueError:
                     return {"Error": "Invalid arguments for remote procedure call"}
-            if request.get_cookie("token"):
-                token = request.get_cookie("token")
-            else:
-                token = None
-
-            user_id = usermanager.get_user_id_for_session_token(token)
-            permissions = usermanager.get_permissions_for_session_token(token)
-
+            user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 return {"Error": "Insufficient permissions for remote procedure call"}
             else:
@@ -83,46 +76,14 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
         return _wrapper
     return _decorator
 
-def page(path, route_prefix = "", method = "GET", permission_required = None):
-    """Defines a decorator for accessing pages, similar to Bottle's @route, but adding user management.
-    Simply supply the argument 'permission_required' with the required permission.
-
-    It the permissions are insufficient, an error page will be shown.
-    The decorated function can optionally import the following parameters (by specifying them in its signature):
-        token: the current session token
-        user_id: the id of the user associated with the current session token
-        permissions: the set of permissions associated with the current session token
-    """
-    def _decorator(func):
-        @route(route_prefix + path, method)
-        def _wrapper():
-            if request.get_cookie("token"):
-                token = request.get_cookie("token")
-            else:
-                token = None
-
-            user_id = usermanager.get_user_id_for_session_token(token)
-            permissions = usermanager.get_permissions_for_session_token(token)
-
-            if permission_required and permission_required not in permissions:
-                return template("error", msg = "Insufficient access rights.")
-            else:
-                kwargs = {"permissions": permissions, "user_id": user_id, "token": token }
-                return func(**dict((name, kwargs[name]) for name in inspect.getargspec(func)[0]))
-        return _wrapper
-    return _decorator
-
-def submit(path, route_prefix = "/submit", method = "POST", permission_required = None):
-    """Defines a decorator for submitting forms, similar to Bottle's @post, but adding user management.
-    Simply supply the argument 'permission_required' with the required permission.
-
-    It the permissions are insufficient, an error page will be shown.
-    The decorated function can optionally import the following parameters (by specifying them in its signature):
-        token: the current session token
-        user_id: the id of the user associated with the current session token
-        permissions: the set of permissions associated with the current session token
-    """
-    return page(path, route_prefix, method, permission_required)
+def get_request_data():
+    """Helper function to determine the current user, permissions and token"""
+    if request.get_cookie("token"):
+        token = request.get_cookie("token")
+    else: token = None
+    permissions = usermanager.get_permissions_for_session_token(token)
+    user_id = usermanager.get_user_id_for_session_token(token)
+    return user_id, permissions, token
 
 
 # ----------------------------------------------------------------------------------
@@ -130,8 +91,9 @@ def submit(path, route_prefix = "/submit", method = "POST", permission_required 
 @route('/static/<filepath:path>')
 def server_static(filepath): return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
-@page("/")
-def index(user_id, permissions):
+@route("/")
+def index():
+    user_id, permissions, token = get_request_data()
     return template("nodenet", version = VERSION, user = user_id, permissions = permissions)
 
 @error(404)
@@ -146,8 +108,10 @@ def error_page(error):
 def error_page(error):
     return template("error.tpl", error = error, msg = "Internal server error.", img = "/static/img/brainstorm.gif")
 
-@page("/about")
-def about(user_id, permissions): return template("about", version = VERSION, user = user_id, permissions = permissions)
+@route("/about")
+def about():
+    user_id, permissions, token = get_request_data()
+    return template("about", version = VERSION, user = user_id, permissions = permissions)
 
 @route("/docs")
 def documentation(): return template("documentation", version = VERSION)
@@ -155,8 +119,9 @@ def documentation(): return template("documentation", version = VERSION)
 @route("/contact")
 def contact(): return template("contact", version = VERSION)
 
-@page("/logout")
-def logout(token):
+@route("/logout")
+def logout():
+    user_id, permissions, token = get_request_data()
     usermanager.end_session(token)
     response.delete_cookie("token")
     redirect("/")
@@ -246,28 +211,21 @@ def signup_submit():
 
 @route("/change_password")
 def change_password():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        return template("change_password", version = VERSION,
-            userid = usermanager.get_user_id_for_session_token(token),
-            permissions = usermanager.get_permissions_for_session_token(token))
+    user_id, permissions, token = get_request_data()
+    if token:
+        return template("change_password", version = VERSION, userid = user_id, permissions = permissions)
     else:
         return template("error", msg = "Cannot change password outside of a session")
 
 @post("/change_password_submit")
 def change_password_submit():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-
+    user_id, permissions, token = get_request_data()
+    if token:
         old_password = request.forms.old_password
         new_password = request.forms.new_password
-        user_id = usermanager.get_user_id_for_session_token(token)
-        permissions = usermanager.get_permissions_for_session_token(token)
-
         if usermanager.test_password(user_id, old_password):
             usermanager.set_user_password(user_id, new_password)
             redirect('/')
-
         else:
             return template("change_password", version = VERSION, userid=user_id, old_password=old_password,
                 permissions = permissions, new_password=new_password,
@@ -277,64 +235,52 @@ def change_password_submit():
 
 @route("/user_mgt")
 def user_mgt():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            return template("user_mgt", version = VERSION, permissions = permissions,
-                user = usermanager.get_user_id_for_session_token(token),
-                userlist = usermanager.list_users())
+    user_id, permissions, token = get_request_data()
+    if "manage users" in permissions:
+        return template("user_mgt", version = VERSION, permissions = permissions,
+            user = user_id,
+            userlist = usermanager.list_users())
     return template("error", msg = "Insufficient rights to access user console")
 
-@route("/set_permissions/<user_id>/<role>")
-def set_permissions(user_id, role):
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            if user_id in usermanager.users.keys() and role in user.USER_ROLES.keys():
-                usermanager.set_user_role(user_id, role)
-            redirect('/user_mgt')
+@route("/set_permissions/<user>/<role>")
+def set_permissions(user, role):
+    user_id, permissions, token = get_request_data()
+    if "manage users" in permissions:
+        if user in usermanager.users.keys() and role in user.USER_ROLES.keys():
+            usermanager.set_user_role(user, role)
+        redirect('/user_mgt')
     return template("error", msg = "Insufficient rights to access user console")
 
 @route("/create_user")
 def create_user():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            return template("create_user", version = VERSION, user = usermanager.get_user_id_for_session_token(token),
-                permissions = permissions)
-
+    user_id, permissions, token = get_request_data()
+    if "manage users" in permissions:
+        return template("create_user", version = VERSION, user = user_id, permissions = permissions)
     return template("error", msg = "Insufficient rights to access user console")
-
 
 @post("/create_user_submit")
 def create_user_submit():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
+    user_id, permissions, token = get_request_data()
+    user = request.forms.userid
+    password = request.forms.password
+    role = request.forms.get('permissions')
+    (success, result) = micropsi_core.tools.check_for_url_proof_id(user, existing_ids = usermanager.users.keys())
 
-        user_id = request.forms.userid
-        password = request.forms.password
-        role = request.forms.get('permissions')
-        (success, result) = micropsi_core.tools.check_for_url_proof_id(user_id, existing_ids = usermanager.users.keys())
-
-        if success:
-            # check if permissions in form are consistent with internal permissions
-            if ((role == "Administrator" and ("create admin" in permissions or not usermanager.users)) or
-                (role == "Full" and "create full" in permissions) or
-                (role == "Restricted" and "create restricted" in permissions)):
-                if usermanager.create_user(user_id, password, role, uid = micropsi_core.tools.generate_uid()):
-                    redirect('/user_mgt')
-                else:
-                    return template("error", msg = "User creation failed for an obscure internal reason.")
+    if success:
+        # check if permissions in form are consistent with internal permissions
+        if ((role == "Administrator" and ("create admin" in permissions or not usermanager.users)) or
+            (role == "Full" and "create full" in permissions) or
+            (role == "Restricted" and "create restricted" in permissions)):
+            if usermanager.create_user(user, password, role, uid = micropsi_core.tools.generate_uid()):
+                redirect('/user_mgt')
             else:
-                return template("error", msg = "Permission inconsistency during user creation.")
+                return template("error", msg = "User creation failed for an obscure internal reason.")
         else:
-            # something wrong with the user id, retry
-            return template("create_user", version = VERSION, user = usermanager.get_user_id_for_session_token(token),
-                permissions = permissions, userid_error = result)
+            return template("error", msg = "Permission inconsistency during user creation.")
+    else:
+        # something wrong with the user id, retry
+        return template("create_user", version = VERSION, user = user_id,
+            permissions = permissions, userid_error = result)
     return template("error", msg = "Insufficient rights to access user console")
 
 @route("/set_password/<user_id>")
@@ -378,9 +324,12 @@ def login_as_user(user):
         token = request.get_cookie("token")
         permissions = usermanager.get_permissions_for_session_token(token)
         if "manage users" in permissions:
+            print user
+
             if user in usermanager.users.keys():
                 usermanager.end_session(token)
                 token = usermanager.start_session(user)
+                print token
                 response.set_cookie("token", token)
                 # redirect to start page
                 redirect('/')
@@ -463,16 +412,15 @@ def edit_world():
 
 @route("/agent_list/<current_agent>")
 def agent_list(current_agent):
+    user_id, permissions, token = get_request_data()
     print current_agent
-    token = request.get_cookie("token")
-    user_id = usermanager.get_user_id_for_session_token(token)
     agents = micropsi.get_available_agents()
     return template("agent_list", user_id = user_id,
         current_agent = current_agent,
         my_agents = { uid: agents[uid] for uid in agents if agents[uid]["owner"] == user_id},
         other_agents = { uid: agents[uid] for uid in agents if agents[uid]["owner"] != user_id})
 
-@page("/select_agent")
+@route("/select_agent")
 def select_agent(agent_uid): pass
 
 @rpc("generate_uid")

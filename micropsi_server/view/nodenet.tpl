@@ -4,33 +4,50 @@
 <div class="row-fluid">
     <div class="sectionbar">
         <form class="navbar-form">
-            <table>
+            <table width="100%">
                 <tr>
-                    <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
-                            class="icon-chevron-right"></i></span></td>
+                    <td>
+                        <table>
+                            <tr>
+                                <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
+                                        class="icon-chevron-right"></i></span></td>
 
-                    <td style="width:250px">
-                        <div class="btn-group" id="agent_list">
-                            <a class="btn" href="#">
-                                (no agent selected)
-                            </a>
-                        </div>
+                                <td>
+                                    <div class="btn-group" id="agent_list">
+                                        <a class="btn" href="#">
+                                            (no agent selected)
+                                        </a>
+                                    </div>
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    <div id="nodespace_control" class="collapse in">
+                                        &nbsp;&nbsp;Nodespace:
+                                        <input id="nodespace_name" class="input-large" disabled="disabled"
+                                               value="Root"/>
+                                        <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
+                                    </div>
+
+                                </td>
+                            </tr>
+                        </table>
                     </td>
-
-                    <td style="white-space:nowrap;"><span class="btn-group">
+                    <td>
+                        <table class="pull-right">
+                            <tr>
+                                <td style="white-space:nowrap;">
+                        <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
                           <a href="#" class="btn"><i class="icon-play"></i></a>
                           <a href="#" class="btn"><i class="icon-step-forward"></i></a>
                           <a href="#" class="btn"><i class="icon-pause"></i></a>
-                     </span></td>
+                        </span>
+                                </td>
 
-                    <td><input id="nodenet_step" disabled="disabled" style="text-align:right; width:60px;" value="0" /></td>
-                    <td style="white-space:nowrap;"><div id="nodespace_control" class="collapse in">
-                        &nbsp;Nodespace:
-                        <input id="nodespace_name" class="input-large" disabled="disabled" value="Root"/>
-                        <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
-                    </div>
+                                <td align="right"><input id="nodenet_step" disabled="disabled"
+                                                         style="text-align:right; width:60px;" value="0"/></td>
 
+                            </tr>
+                        </table>
                     </td>
                 </tr>
             </table>
@@ -40,34 +57,34 @@
 
     <div id="nodenet_editor" class="section-margin collapse in">
         <div class="section">
-            <form class="span3" style="height:500px; overflow:scroll;">
-                <div>
-                    <ul class="nav nav-list" id="agent_list_old">
-                        <li class="nav-header">My Blueprints</li>
-                        <li class="active"><a href="#">Blueprint1</a></li>
-                        <li><a href="#">Blueprint2</a></li>
-                        <li><a href="#">Blueprint3</a></li>
-                        <li><a href="#">Blueprint4</a></li>
-                        <li class="nav-header">Other Blueprints</li>
-                        <li><a href="#">Blueprint10</a></li>
-                        <li><a href="#">Blueprint11</a></li>
-                    </ul>
-                    <ul class="nav nav-list" id="object_list">
-                        <li class="nav-header">Active Context</li>
-                        <li><a href="#">Object1</a></li>
-                        <li><a href="#">Object2</a></li>
-                        <li><a href="#">Object3</a></li>
-                    </ul>
-
-                </div>
-            </form>
-            <div style="height:500px; overflow:scroll;">
-            <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
+            <div class="editor_field span9">
+                <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
+            </div>
+            <div class="editor_field " id="nodenet_forms">
+                <form>
+                    <div>
+                        <ul class="nav nav-list" id="agent_list_old">
+                            <li class="nav-header">My Blueprints</li>
+                            <li class="active"><a href="#">Blueprint1</a></li>
+                            <li><a href="#">Blueprint2</a></li>
+                            <li><a href="#">Blueprint3</a></li>
+                            <li><a href="#">Blueprint4</a></li>
+                            <li class="nav-header">Other Blueprints</li>
+                            <li><a href="#">Blueprint10</a></li>
+                            <li><a href="#">Blueprint11</a></li>
+                        </ul>
+                        <ul class="nav nav-list" id="object_list">
+                            <li class="nav-header">Active Context</li>
+                            <li><a href="#">Object1</a></li>
+                            <li><a href="#">Object2</a></li>
+                            <li><a href="#">Object3</a></li>
+                        </ul>
+                    </div>
+                </form>
             </div>
         </div>
-
-
     </div>
+
     <div class="sectionbar">
         <form class="navbar-form">
             <table>
@@ -75,53 +92,95 @@
                     <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
                             class="icon-chevron-right"></i></span></td>
 
-
                     <td> Nodenet Monitor &nbsp;</td>
 
                     <td><div class="collapse" id="monitor_controls">
-                  <button class="btn">Clear</button>
-            </div></td>
+                        <button class="btn">Clear</button>
+                    </div></td>
 
                 </tr>
             </table>
-
         </form>
     </div>
 
-
-    <div id="monitor" class="collapse">
-        <div class="hero-unit">
-            <p>Monitor plugin for individual activities</p>
+    <div id="monitor" class="section-margin collapse">
+        <div class="section">
+            <div class="monitor_field span9">
+                <canvas id="nodenet_monitor" width="700" height="500" style="background:#eeeeee"></canvas>
+            </div>
+            <div class="monitor_field " id="monitor_legend">
+                <form>
+                    <div>
+                        <ul class="nav nav-list" id="monitor_list">
+                            <li class="nav-header">Current monitors</li>
+                            <li class="active"><a href="#">Monitor1</a></li>
+                            <li><a href="#">Monitor2</a></li>
+                            <li><a href="#">Monitor3</a></li>
+                            <li><a href="#">Monitor4</a></li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
+
+
     <div class="sectionbar">
         <form class="navbar-form">
-            <table>
+            <table width="100%">
                 <tr>
-                    <td><span data-toggle="collapse" data-target="#world_editor"><i
-                            class="icon-chevron-right"></i></span></td>
+                    <td>
+                        <table>
+                            <tr>
+                                <td><span data-toggle="collapse" data-target="#world_editor"><i
+                                        class="icon-chevron-right"></i></span></td>
 
+                                <td>
+                                    <input id="current_world_name" disabled="disabled" value="Context"/>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td>
+                        <table class="pull-right">
+                            <tr>
+                                <td style="white-space:nowrap;">
+                        <span class="btn-group">
+                          <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
+                          <a href="#" class="btn"><i class="icon-play"></i></a>
+                          <a href="#" class="btn"><i class="icon-step-forward"></i></a>
+                          <a href="#" class="btn"><i class="icon-pause"></i></a>
+                        </span>
+                                </td>
 
-                    <td><input disabled="disabled" value="Context"/></td>
+                                <td align="right"><input id="world_step" disabled="disabled"
+                                                         style="text-align:right; width:60px;" value="0"/></td>
 
-                    <td><span class="btn-group" style="white-space:nowrap;">
-                  <button class="btn"><i class="icon-fast-backward"></i></button>
-                  <button class="btn"><i class="icon-play"></i></button>
-                  <button class="btn"><i class="icon-step-forward"></i></button>
-                  <button class="btn"><i class="icon-pause"></i></button>
-            </span></td>
-
-                    <td><input disabled="disabled" style="text-align:right" value="0"/></td>
+                            </tr>
+                        </table>
+                    </td>
                 </tr>
             </table>
-
         </form>
     </div>
 
-
-    <div id="world_editor" class="collapse">
-        <div class="hero-unit">
-            <p>Context Viewer Placeholder</p>
+    <div id="world_editor" class="section-margin collapse">
+        <div class="section">
+            <div class="editor_field span9">
+                <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
+            </div>
+            <div class="editor_field " id="world_forms">
+                <form>
+                    <div>
+                        <ul class="nav nav-list" id="object_list">
+                            <li class="nav-header">Active Context</li>
+                            <li><a href="#">Object1</a></li>
+                            <li><a href="#">Object2</a></li>
+                            <li><a href="#">Object3</a></li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

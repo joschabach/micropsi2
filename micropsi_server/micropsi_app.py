@@ -16,7 +16,7 @@ VERSION = "0.1"
 
 import micropsi_core.runtime
 import micropsi_core.tools
-import user
+import usermanagement
 import config
 import bottle
 from bottle import route, post, run, request, response, template, static_file, redirect, error
@@ -94,6 +94,7 @@ def server_static(filepath): return static_file(filepath, root=os.path.join(APP_
 @route("/")
 def index():
     user_id, permissions, token = get_request_data()
+    print "received request with cookie token ", token, " from user ", user_id
     return template("nodenet", version = VERSION, user_id = user_id, permissions = permissions)
 
 @error(404)
@@ -179,24 +180,20 @@ def signup():
 
 @post("/signup_submit")
 def signup_submit():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-    else:
-        token = None
-    user_id = request.forms.userid
+    user_id, permissions, token = get_request_data()
+    userid = request.forms.userid
     password = request.forms.password
     role = request.forms.get('permissions')
-    (success, result) = micropsi_core.tools.check_for_url_proof_id(user_id, existing_ids = usermanager.users.keys())
-    permissions = usermanager.get_permissions_for_session_token(token)
+    (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids = usermanager.users.keys())
 
     if success:
         # check if permissions in form are consistent with internal permissions
         if ((role == "Administrator" and ("create admin" in permissions or not usermanager.users)) or
             (role == "Full" and "create full" in permissions) or
             (role == "Restricted" and "create restricted" in permissions)):
-            if usermanager.create_user(user_id, password, role, uid = micropsi_core.tools.generate_uid()):
+            if usermanager.create_user(userid, password, role, uid = micropsi_core.tools.generate_uid()):
                 # log in new user
-                token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
+                token = usermanager.start_session(userid, password, request.forms.get("keep_logged_in"))
                 response.set_cookie("token", token)
                 # redirect to start page
                 redirect('/')
@@ -206,8 +203,8 @@ def signup_submit():
             return template("error", msg = "Permission inconsistency during user creation.")
     else:
         # something wrong with the user id, retry
-        return template("signup", version = VERSION, userid=user_id, password=password, userid_error=result,
-            permissions = permissions, cookie_warning = (token is None))
+        return template("signup", version = VERSION, userid=userid, password=password, userid_error=result,
+            user_id=user_id, permissions = permissions, cookie_warning = (token is None))
 
 @route("/change_password")
 def change_password():
@@ -246,7 +243,7 @@ def user_mgt():
 def set_permissions(user_key, role):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        if user_key in usermanager.users.keys() and role in user.USER_ROLES.keys():
+        if user_key in usermanager.users.keys() and role in usermanagement.USER_ROLES.keys():
             usermanager.set_user_role(user_key, role)
         redirect('/user_mgt')
     return template("error", msg = "Insufficient rights to access user console")
@@ -315,14 +312,13 @@ def delete_user(userid):
 @route("/login_as/<userid>")
 def login_as_user(userid):
     user_id, permissions, token = get_request_data()
-    print "login as ", userid, " while being ", user_id
     if "manage users" in permissions:
-        if userid in usermanager.users.keys():
-            usermanager.end_session(token)
-            token = usermanager.start_session(userid)
-            response.set_cookie("token", token)
-            # redirect to start page
-            redirect('/')
+        if userid in usermanager.users:
+            if usermanager.switch_user_for_session_token(userid, token):
+                # redirect to start page
+                redirect("/")
+            return template("error", msg = "Could not log in as new user")
+        return template("error", msg = "User does not exist")
     return template("error", msg = "Insufficient rights to access user console")
 
 
@@ -635,7 +631,7 @@ def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     global configs
     configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "config.json"))
     micropsi = micropsi_core.runtime.MicroPsiRuntime(RESOURCE_PATH)
-    usermanager = user.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
+    usermanager = usermanagement.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
 
 
     run(host=host, port=port) #devV

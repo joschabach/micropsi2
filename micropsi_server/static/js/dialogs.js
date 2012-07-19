@@ -127,6 +127,10 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'), function(){window.location.reload();});
     });
 
+    $('a.login').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(){window.location.reload();});
+    });
 });
 
 

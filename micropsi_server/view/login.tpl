@@ -1,4 +1,3 @@
-%include menu.tpl version = version
 
 <div class="row-fluid">
     <p>
@@ -87,6 +86,3 @@
         %end
     </div>
 </div>
-
-
-%rebase boilerplate title = "Log in to use MicroPsi"

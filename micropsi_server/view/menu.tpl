@@ -28,7 +28,7 @@
                 %end
                 %if "manage worlds" in permissions:
                 <li class="dropdown" id="menu_world">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">World
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Environment
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="/world/edit" class="world_new">New...</a></li>
@@ -88,7 +88,7 @@
                         <li><a href="logout">Sign Out</a></li>
                     </ul>
                     %else:
-                    <a class="btn" href="login">
+                    <a class="btn login" href="/login">
                         <i class="icon-user"></i> Log in
                     </a>
                     %end

@@ -214,6 +214,27 @@ class UserManager(object):
             return session_token
         return None
 
+    def switch_user_for_session_token(self, user_id, session_token):
+        """Ends the current session associated with the token, starts a new session for the supplied user,
+        and associates the same token to it. Used for allowing admins to take on the identity of a user, so they
+        can edit resources with the user credentials.
+        Returns True if successful, False if not.
+
+        Arguments:
+            user_id: a string that must be the id of an existing user
+            token: a valid session token
+        """
+        if session_token in self.sessions and user_id in self.users:
+            current_user = self.sessions[session_token]
+            if current_user in self.users:
+                self.users[current_user]["session_token"] = None
+                self.users[user_id]["session_token"] = session_token
+                self.sessions[session_token] = user_id
+                self.refresh_session(session_token)
+                self.save_users()
+            return True
+        return False
+
     def test_password(self, user_id, password):
         """returns True if the user is known and the password matches, False otherwise"""
         if user_id in self.users:

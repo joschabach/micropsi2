@@ -78,7 +78,7 @@
                             %end
                             % for uid in worlds:
                                 % if worlds[uid].owner != user_id:
-                                    % if uid == nodenet.world.uid:
+                                    % if defined ("nodenet") and defined ("nodenet.world.uid") and uid == nodenet.world.uid:
                             <option value="{{uid}}" selected="selected">{{worlds[uid].name}}</option>
                                     %else:
                             <option value="{{uid}}">{{worlds[uid].name}}</option>
@@ -93,7 +93,10 @@
                     <label class="control-label" for="nodenet_worldadapter">World adapter</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nodenet_worldadapter" name="nodenet_worldadapter">
+                            % if not defined("nodenet") or not defined ("nodenet.world.uid") or not nodenet.world.uid in worlds:
                             <option value="None">None</option>
+                            % else:
+                                %for worldadapter in worlds[nodenet.world.uid].worldadapters:
                         </select>
                     </div>
                 </div>

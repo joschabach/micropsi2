@@ -58,7 +58,7 @@ var linkLayer = null;
 var nodeLayer = null;
 var prerenderLayer = null;
 
-var currentAgent = "b2";
+var currentNodenet = "b2";
 var currentWorld = 0;
 var currentNodeSpace = 0;
 
@@ -68,7 +68,7 @@ initializeNodeNet();
 // fetch visible nodes and links
 function initializeNodeNet(){
 
-    $("#agent_list").load("/agent_list/"+currentAgent);
+    $("#nodenet_list").load("/nodenet_list/"+currentNodenet);
 
     linkLayer = new Layer();
     nodeLayer = new Layer();

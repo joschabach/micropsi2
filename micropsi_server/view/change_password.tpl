@@ -1,4 +1,4 @@
-%include menu.tpl version = version, permissions = permissions, user = userid
+%include menu.tpl version = version, permissions = permissions, user_id = user_id
 
 <div class="row-fluid">
     <p>
@@ -12,7 +12,7 @@
                 <b>Important:</b> Make sure that cookies are enabled in your browser.
             </div>
             %end
-            <legend>Enter a new password  for user ‘{{userid}}’</legend>
+            <legend>Enter a new password  for user ‘{{user_id}}’</legend>
             <fieldset>
                 %if not defined("old_password_error"):
                 <div class="control-group">

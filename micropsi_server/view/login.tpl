@@ -3,7 +3,7 @@
 <div class="row-fluid">
     <p>
     <h1>Log in to the MicroPsi server</h1>
-    <div class="lead">Without logging in, you may not create and edit agents.</div>
+    <div class="lead">Without logging in, you may not create and edit nodenets.</div>
     </p>
 
 

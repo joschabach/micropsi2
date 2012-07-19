@@ -1,4 +1,4 @@
-%include menu.tpl version = version, permissions = permissions, user = userid
+%include menu.tpl version = version, permissions = permissions, user_id = user_id
 
 <div class="row-fluid">
     <p>
@@ -23,7 +23,7 @@
                     <div class="controls">
                         <input type="text" class="input-xlarge" maxlength="256" id="world_name" name="world_name"
                         %if defined('world'):
-                        value="{{world.get('name', '')}}"
+                        value="{{world.name}}"
                         %end
                         />
                         %if defined("name_error"):
@@ -38,7 +38,7 @@
                         <select class="input-xlarge" id="world_type" name="world_type">
                             <option value="">None</option>
                             % for type in worldtypes:
-                                %if type == world.get('type'):
+                                %if defined("world") and type == world.type:
                                     <option value="{{type}}" selected="selected">{{type}}</option>
                                 %else:
                                     <option value="{{type}}">{{type}}</option>
@@ -48,8 +48,8 @@
                     </div>
                 </div>
 
-            %if world.get('id'):
-                <input type="hidden" name="world_id" value="{{world.get('id')}}" />
+            %if defined("world"):
+                <input type="hidden" name="world_uid" value="{{world.uid}}" />
             %end
 
             <button type="submit" class="btn btn-primary">Save</button>

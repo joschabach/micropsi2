@@ -1,4 +1,4 @@
-%include menu.tpl version = version, permissions = permissions, user = user
+%include menu.tpl version = version, permissions = permissions, user_id = user_id
 
 <div class="row-fluid">
     <p>
@@ -75,10 +75,10 @@
                             <option value="Administrator">Administrator</option>
                             %end
                             %if "create full" in permissions:
-                            <option value="Full">Create environments and agents</option>
+                            <option value="Full">Create environments and nodenets</option>
                             %end
                             %if "create restricted" in permissions:
-                            <option value="Restricted">Create agents</option>
+                            <option value="Restricted">Create nodenets</option>
                             %end
                         </select>
                         <p class="help-block">Set the access rights for this user.</p>

@@ -1,5 +1,5 @@
 
-%include menu.tpl version = version, user = user, permissions = permissions
+%include menu.tpl version = version, user_id = user_id, permissions = permissions
 
 <div class="row-fluid">
     <div class="sectionbar">
@@ -13,9 +13,9 @@
                                         class="icon-chevron-right"></i></span></td>
 
                                 <td>
-                                    <div class="btn-group" id="agent_list">
+                                    <div class="btn-group" id="nodenet_list">
                                         <a class="btn" href="#">
-                                            (no agent selected)
+                                            (no nodenet selected)
                                         </a>
                                     </div>
                                 </td>
@@ -63,15 +63,15 @@
             <div class="editor_field " id="nodenet_forms">
                 <form>
                     <div>
-                        <ul class="nav nav-list" id="agent_list_old">
-                            <li class="nav-header">My Blueprints</li>
-                            <li class="active"><a href="#">Blueprint1</a></li>
-                            <li><a href="#">Blueprint2</a></li>
-                            <li><a href="#">Blueprint3</a></li>
-                            <li><a href="#">Blueprint4</a></li>
-                            <li class="nav-header">Other Blueprints</li>
-                            <li><a href="#">Blueprint10</a></li>
-                            <li><a href="#">Blueprint11</a></li>
+                        <ul class="nav nav-list" id="nodenet_list_old">
+                            <li class="nav-header">My Nodenets</li>
+                            <li class="active"><a href="#">Nodenet0</a></li>
+                            <li><a href="#">Nodenet1</a></li>
+                            <li><a href="#">Nodenet2</a></li>
+                            <li><a href="#">Nodenet3</a></li>
+                            <li class="nav-header">Other Nodenets</li>
+                            <li><a href="#">Nodenet10</a></li>
+                            <li><a href="#">Nodenet11</a></li>
                         </ul>
                         <ul class="nav nav-list" id="object_list">
                             <li class="nav-header">Active Context</li>
@@ -249,7 +249,6 @@
         <a href="#" class="btn btn-primary">Save changes</a>
     </div>
 
-    <script src="/static/js/micropsiviewer.js" type="text/javascript"></script>
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
 

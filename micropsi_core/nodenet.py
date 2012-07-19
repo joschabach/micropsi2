@@ -4,7 +4,6 @@ Nodenet definition
 
 
 from micropsi_core.tools import generate_uid
-import micropsi_core.tools
 import json, os, warnings
 
 __author__ = 'joscha'
@@ -13,13 +12,13 @@ __date__ = '09.05.12'
 NODENET_VERSION = 1
 
 
-class NodenetManager(object):
+class Nodenet(object):
     """Main data structure for MicroPsi agents,
 
     Contains the net entities and runs the activation spreading. The nodenet stores persistent data.
 
     Attributes:
-        nodenet: persistent data
+        data: persistent nodenet data
         nodespaces: A dictionary of node space UIDs and respective node spaces
         nodes: A dictionary of node UIDs and respective nodes
         calculate_now_nodes: A set of nodes that has received activation in the current step
@@ -31,32 +30,63 @@ class NodenetManager(object):
         worldadapter: An actual world adapter object (agent body) residing in a world implementation
     """
 
-    def __init__(self, filename, name = "", agent_type = "Default", world = None, owner = "", uid = None):
+    @property
+    def uid(self):
+        return self.data.get("uid")
+
+    @uid.setter
+    def uid(self, identifier):
+        self.data["uid"] = identifier
+
+    @property
+    def name(self):
+        return self.data.get("name", self.data.get("uid"))
+
+    @name.setter
+    def name(self, identifier):
+        self.data["name"] = identifier
+
+    @property
+    def owner(self):
+        return self.data.get("owner")
+
+    @owner.setter
+    def owner(self, identifier):
+        self.data["owner"] = identifier
+
+    @property
+    def world(self):
+        return self.runtime.worlds.get(self.data["world"])
+
+    @world.setter
+    def world(self, world):
+        self.data["world"] = world.uid
+
+    @property
+    def world_adapter(self):
+        return self.data.get("worldadapter")
+
+    @world_adapter.setter
+    def world_adapter(self, worldadapter_uid):
+        self.data["worldadapter"] = worldadapter_uid
+
+    @property
+    def step(self):
+        return self.data.get("step")
+
+    def __init__(self, runtime, filename, name = "", world_adapter = "Default", world = None, owner = "", uid = None):
         """Create a new MicroPsi agent.
 
         Arguments:
             filename: the path and filename of the agent
-            worldadapter (optional): the interface of this agent to its environment
+            agent_type (optional): the interface of this agent to its environment
             name (optional): the name of the agent
             owner (optional): the user that created this agent
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        # connection to environment
-        self.world = world
-
-        uid = uid or generate_uid()
-
-        # persistent data
-        self.nodenet = {
+        self.data = {
             "version": NODENET_VERSION,  # used to check compatibility of the node net data
-            "uid": uid,
-            "agent_type": agent_type,
-            "name": name or os.path.basename(filename),
-            "owner": owner,
-            "world": world.uid if world else None,
-            "datasources": world.get_available_datasources(uid) if world else None,
-            "datatargets": world.get_available_datatargets(uid) if world else None,
             "nodes": {},
             "links": {},
             "nodespaces": {},
@@ -66,8 +96,14 @@ class NodenetManager(object):
             "step": 0
         }
 
-        # nonpersistent data, either for management or to increase performance
+        self.world = world
+        self.runtime = runtime
+        self.uid = uid or generate_uid()
+        self.owner = owner
+        self.name = name or os.path.basename(filename)
         self.filename = filename
+        self.world_adapter = world_adapter
+
         self.nodespaces = {}
         self.nodes = {}
         self.links = {}
@@ -75,25 +111,32 @@ class NodenetManager(object):
 
         self.active_nodes = {} # these are the nodes that received activation and must be calculated
 
-        self.load_nodenet(self.filename)
+        self.load()
 
-    def load_nodenet(self, filename):
+    def load(self, string = None):
         """Load the node net from a file"""
         # try to access file
-        try:
-            with open(filename) as file:
-                self.nodenet = json.load(file)
-        except ValueError:
-            print "Could not read nodenet data"
-            return False
-        except IOError:
-            print "Could not open nodenet file"
+        if string:
+            try:
+                self.data = json.loads(string)
+            except ValueError:
+                warnings.warn("Could not read nodenet data from string")
+                return False
+        else:
+            try:
+                with open(self.filename) as file:
+                    self.data = json.load(file)
+            except ValueError:
+                warnings.warn("Could not read nodenet data")
+                return False
+            except IOError:
+                warnings.warn("Could not open nodenet file")
 
-        if "version" in self.nodenet and self.nodenet["version"] == NODENET_VERSION:
+        if "version" in self.data and self.data["version"] == NODENET_VERSION:
             self.initialize_nodenet()
             return True
         else:
-            print "Wrong version of the nodenet data; starting new nodenet"
+            warnings.warn("Wrong version of the nodenet data; starting new nodenet")
             return False
 
     def initialize_nodenet(self):
@@ -126,8 +169,7 @@ class NodenetManager(object):
         """perform a simulation step"""
         self.calculate_node_functions()
         self.propagate_link_activation()
-        self.step +=1
-
+        self.data["step"] +=1
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""
         pass

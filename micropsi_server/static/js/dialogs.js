@@ -71,31 +71,31 @@ $(function() {
 
     // Bind Menubar links
 
-    // AGENT
+    // NODENET
     function remote_form(event){
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
 
-    $('.navbar a.agent_new').on('click', remote_form);
-    $('.navbar a.agent_edit').on('click', remote_form);
+    $('.navbar a.nodenet_new').on('click', remote_form);
+    $('.navbar a.nodenet_edit').on('click', remote_form);
 
-    $('.navbar a.agent_delete').on('click', function(){
-        dialogs.confirm("Do you really want to delete this blueprint?", function(){
+    $('.navbar a.nodenet_delete').on('click', function(){
+        dialogs.confirm("Do you really want to delete this nodenet?", function(){
             alert('kthxbye');
         });
     });
 
-    $('.navbar a.agent_save').on('click', function(){
-        dialogs.notification("Agent state saved");
+    $('.navbar a.nodenet_save').on('click', function(){
+        dialogs.notification("nodenet state saved");
     });
 
-    $('.navbar a.agent_revert').on('click', function(){
-        dialogs.notification("Agent is being reverted");
+    $('.navbar a.nodenet_revert').on('click', function(){
+        dialogs.notification("nodenet is being reverted");
     });
 
-    $('.navbar a.agent_import').on('click', remote_form);
-    $('.navbar a.agent_merge').on('click', remote_form);
+    $('.navbar a.nodenet_import').on('click', remote_form);
+    $('.navbar a.nodenet_merge').on('click', remote_form);
 
 
     // WORLD
@@ -128,4 +128,12 @@ $(function() {
     });
 
 });
+
+
+updateWorldAdapterSelector = function() {
+    var option = $("#nodenet_world option:selected");
+    if (option) {
+        $("#nodenet_worldadapter").load("/create_worldadapter_selector/"+option.val())
+    }
+};
 

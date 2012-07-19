@@ -8,31 +8,31 @@
             </a>
             <ul class="nav">
                 %if defined('permissions'):
-                %if "manage agents" in permissions:
-                <li class="dropdown" id="menu_agent">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_agent">Blueprint
+                %if "manage nodenets" in permissions:
+                <li class="dropdown" id="menu_nodenet">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_nodenet">Nodenet
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="agent/edit" class="agent_new">New...</a></li>
-                        <li><a href="agent/edit?id=1" class="agent_edit">Edit...</a></li>
+                        <li><a href="/nodenet/edit" class="nodenet_new">New...</a></li>
+                        <li><a href="/nodenet/edit?id=1" class="nodenet_edit">Edit...</a></li>
                         <li class="divider"></li>
-                        <li><a href="#" class="agent_delete">Delete</a></li>
-                        <li><a href="#" class="agent_save">Save</a></li>
-                        <li><a href="#" class="agent_revert">Revert</a></li>
+                        <li><a href="#" class="nodenet_delete">Delete</a></li>
+                        <li><a href="#" class="nodenet_save">Save</a></li>
+                        <li><a href="#" class="nodenet_revert">Revert</a></li>
                         <li class="divider"></li>
-                        <li><a href="/agent/export" class="agent_export">Export to file...</a></li>
-                        <li><a href="/agent/import" class="agent_import">Import from file...</a></li>
-                        <li><a href="/agent/merge" class="agent_merge">Merge with file...</a></li>
+                        <li><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
+                        <li><a href="/nodenet/import" class="nodenet_import">Import from file...</a></li>
+                        <li><a href="/nodenet/merge" class="nodenet_merge">Merge with file...</a></li>
                     </ul>
                 </li>
                 %end
                 %if "manage worlds" in permissions:
                 <li class="dropdown" id="menu_world">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">Context
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_world">World
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="world/edit" class="world_new">New...</a></li>
-                        <li><a href="world/edit?id=1" class="world_edit">Edit...</a></li>
+                        <li><a href="/world/edit" class="world_new">New...</a></li>
+                        <li><a href="/world/edit?id=1" class="world_edit">Edit...</a></li>
                         <li class="divider"></li>
                         <li><a href="#" class="world_delete">Delete</a></li>
                         <li><a href="#" class="world_save">Save</a></li>
@@ -58,8 +58,8 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="#">Server</a></li>
-                        <li><a href="#">Blueprint runner</a></li>
-                        <li><a href="#">Context runner</a></li>
+                        <li><a href="#">Nodenet runner</a></li>
+                        <li><a href="#">World runner</a></li>
                     </ul>
                 </li>
                 %end
@@ -75,11 +75,11 @@
                     </ul>
                 </li>
             </ul>
-            %if defined('user'):
+            %if defined('user_id'):
                 <div class="btn-group pull-right">
-                    %if user != "Guest":
+                    %if user_id != "Guest":
                     <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-                        <i class="icon-user"></i> {{user}}
+                        <i class="icon-user"></i> {{user_id}}
                         <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">

@@ -1,4 +1,4 @@
-%include menu.tpl version = version, permissions = permissions, user = user
+%include menu.tpl version = version, permissions = permissions, user_id = user_id
 
 <div class="row-fluid">
     <p>
@@ -16,12 +16,12 @@
             </tr>
             </thead>
             <tbody>
-            %for user_id in userlist:
-            %if user_id!=user:
+            %for userid in userlist:
+            %if userid!=user_id:
             <tr>
-                <td>{{user_id}}</td>
+                <td>{{userid}}</td>
                 <td>
-                    %if userlist[user_id]["is_active"]:
+                    %if userlist[userid]["is_active"]:
                     <i class="icon-ok"></i>
                     %else:
                     &nbsp;
@@ -30,20 +30,20 @@
                 <td>
                     <div class="btn-group">
                         <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
-                            {{userlist[user_id]["role"]}}
+                            {{userlist[userid]["role"]}}
                             <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="/set_permissions/{{user_id}}/Administrator">Administrator</a></li>
-                            <li><a href="/set_permissions/{{user_id}}/Full">Full</a></li>
-                            <li><a href="/set_permissions/{{user_id}}/Restricted">Restricted</a></li>
+                            <li><a href="/set_permissions/{{userid}}/Administrator">Administrator</a></li>
+                            <li><a href="/set_permissions/{{userid}}/Full">Full</a></li>
+                            <li><a href="/set_permissions/{{userid}}/Restricted">Restricted</a></li>
                         </ul>
                     </div>
                 </td>
                 <td>
-                    <a href="/set_password/{{user_id}}" class="btn set_new_password">Set new password</a>
-                    <a href="/delete_user/{{user_id}}" class="btn">Delete user</a>
-                    <a href="/login_as/{{user_id}}" class="btn">Log in as user</a>
+                    <a href="/set_password/{{userid}}" class="btn set_new_password">Set new password</a>
+                    <a href="/delete_user/{{userid}}" class="btn">Delete user</a>
+                    <a href="/login_as/{{userid}}" class="btn">Log in as user</a>
                 </td>
             </tr>
             %end

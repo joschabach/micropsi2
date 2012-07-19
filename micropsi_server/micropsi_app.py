@@ -94,7 +94,7 @@ def server_static(filepath): return static_file(filepath, root=os.path.join(APP_
 @route("/")
 def index():
     user_id, permissions, token = get_request_data()
-    return template("nodenet", version = VERSION, user = user_id, permissions = permissions)
+    return template("nodenet", version = VERSION, user_id = user_id, permissions = permissions)
 
 @error(404)
 def error_page(error):
@@ -111,7 +111,7 @@ def error_page(error):
 @route("/about")
 def about():
     user_id, permissions, token = get_request_data()
-    return template("about", version = VERSION, user = user_id, permissions = permissions)
+    return template("about", version = VERSION, user_id = user_id, permissions = permissions)
 
 @route("/docs")
 def documentation(): return template("documentation", version = VERSION)
@@ -133,7 +133,7 @@ def login():
 
     return template("login",
         version = VERSION,
-        user = usermanager.get_user_id_for_session_token(None),
+        user_id = usermanager.get_user_id_for_session_token(None),
         permissions = usermanager.get_permissions_for_session_token(None))
 
 @post("/login_submit")
@@ -238,16 +238,16 @@ def user_mgt():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
         return template("user_mgt", version = VERSION, permissions = permissions,
-            user = user_id,
+            user_id = user_id,
             userlist = usermanager.list_users())
     return template("error", msg = "Insufficient rights to access user console")
 
-@route("/set_permissions/<user>/<role>")
-def set_permissions(user, role):
+@route("/set_permissions/<user_key>/<role>")
+def set_permissions(user_key, role):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        if user in usermanager.users.keys() and role in user.USER_ROLES.keys():
-            usermanager.set_user_role(user, role)
+        if user_key in usermanager.users.keys() and role in user.USER_ROLES.keys():
+            usermanager.set_user_role(user_key, role)
         redirect('/user_mgt')
     return template("error", msg = "Insufficient rights to access user console")
 
@@ -255,23 +255,23 @@ def set_permissions(user, role):
 def create_user():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        return template("create_user", version = VERSION, user = user_id, permissions = permissions)
+        return template("create_user", version = VERSION, user_id = user_id, permissions = permissions)
     return template("error", msg = "Insufficient rights to access user console")
 
 @post("/create_user_submit")
 def create_user_submit():
     user_id, permissions, token = get_request_data()
-    user = request.forms.userid
+    userid = request.forms.userid
     password = request.forms.password
     role = request.forms.get('permissions')
-    (success, result) = micropsi_core.tools.check_for_url_proof_id(user, existing_ids = usermanager.users.keys())
+    (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids = usermanager.users.keys())
 
     if success:
         # check if permissions in form are consistent with internal permissions
         if ((role == "Administrator" and ("create admin" in permissions or not usermanager.users)) or
             (role == "Full" and "create full" in permissions) or
             (role == "Restricted" and "create restricted" in permissions)):
-            if usermanager.create_user(user, password, role, uid = micropsi_core.tools.generate_uid()):
+            if usermanager.create_user(userid, password, role, uid = micropsi_core.tools.generate_uid()):
                 redirect('/user_mgt')
             else:
                 return template("error", msg = "User creation failed for an obscure internal reason.")
@@ -279,103 +279,94 @@ def create_user_submit():
             return template("error", msg = "Permission inconsistency during user creation.")
     else:
         # something wrong with the user id, retry
-        return template("create_user", version = VERSION, user = user_id,
+        return template("create_user", version = VERSION, user_id = user_id,
             permissions = permissions, userid_error = result)
     return template("error", msg = "Insufficient rights to access user console")
 
-@route("/set_password/<user_id>")
-def set_password(user_id):
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            return template("set_password", version = VERSION, permissions = permissions,
-                user = usermanager.get_user_id_for_session_token(token),
-                user_id=user_id)
+@route("/set_password/<userid>")
+def set_password(userid):
+    user_id, permissions, token = get_request_data()
+    if "manage users" in permissions:
+        return template("set_password", version = VERSION, permissions = permissions,
+            user_id = user_id,
+            userid = userid)
     return template("error", msg = "Insufficient rights to access user console")
 
 @post("/set_password_submit")
 def set_password_submit():
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            user_id = request.forms.userid
-            password = request.forms.password
-            if user_id in usermanager.users.keys():
-                usermanager.set_user_password(user_id, password)
-            redirect('/user_mgt')
+    user_id, permissions, token = get_request_data()
+    if "manage users" in permissions:
+        userid = request.forms.userid
+        password = request.forms.password
+        if userid in usermanager.users.keys():
+            usermanager.set_user_password(userid, password)
+        redirect('/user_mgt')
     return template("error", msg = "Insufficient rights to access user console")
 
-@route("/delete_user/<user_id>")
-def delete_user(user_id):
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            if user_id in usermanager.users.keys():
-                usermanager.delete_user(user_id)
-            redirect("/user_mgt")
+@route("/delete_user/<userid>")
+def delete_user(userid):
+    user_id, permissions, token = get_request_data()
+    if "manage users" in permissions:
+        if userid in usermanager.users.keys():
+            usermanager.delete_user(userid)
+        redirect("/user_mgt")
     return template("error", msg = "Insufficient rights to access user console")
 
-@route("/login_as/<user>")
-def login_as_user(user):
-    if request.get_cookie("token"):
-        token = request.get_cookie("token")
-        permissions = usermanager.get_permissions_for_session_token(token)
-        if "manage users" in permissions:
-            print user
-
-            if user in usermanager.users.keys():
-                usermanager.end_session(token)
-                token = usermanager.start_session(user)
-                print token
-                response.set_cookie("token", token)
-                # redirect to start page
-                redirect('/')
+@route("/login_as/<userid>")
+def login_as_user(userid):
+    user_id, permissions, token = get_request_data()
+    print "login as ", userid, " while being ", user_id
+    if "manage users" in permissions:
+        if userid in usermanager.users.keys():
+            usermanager.end_session(token)
+            token = usermanager.start_session(userid)
+            response.set_cookie("token", token)
+            # redirect to start page
+            redirect('/')
     return template("error", msg = "Insufficient rights to access user console")
 
 
-@route("/agent/import")
-def import_agent():
+@route("/nodenet/import")
+def import_nodenet():
     if 'file' in request.forms:
         # do stuff
         pass
     token = request.get_cookie("token")
-    return template("upload.tpl", title='Import agent', message='Select a file to upload and use for importing', action='/agent/import',
+    return template("upload.tpl", title='Import Nodenet', message='Select a file to upload and use for importing', action='/nodenet/import',
         version = VERSION,
         userid = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
 
-@route("/agent/merge")
-def merge_agent():
+@route("/nodenet/merge")
+def merge_nodenet():
     if 'file' in request.forms:
         # do stuff
         pass
     token = request.get_cookie("token")
-    return template("upload.tpl", title='Merge agent', message='Select a file to upload and use for merging', action='/agent/merge',
+    return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging', action='/nodenet/merge',
         version = VERSION,
         userid = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
 
-@route("/agent/export")
-def export_agent():
+@route("/nodenet/export")
+def export_nodenet():
     response.set_header('Content-type', 'application/json')
     response.set_header('Content-Disposition', 'attachment; filename="world.json"')
     return "{}"
 
 
-@route("/agent/edit")
-def edit_agent():
-    token = request.get_cookie("token")
+@route("/nodenet/edit")
+def edit_nodenet():
+    user_id, permissions, token = get_request_data()
     id = request.params.get('id', None)
-    title = 'Edit Blueprint' if id is not None else 'New Blueprint'
-    return template("agent_form.tpl", title=title, agent={}, templates=[], worlds=[], worldadapters=[],
-        version = VERSION,
-        userid = usermanager.get_user_id_for_session_token(token),
-        permissions = usermanager.get_permissions_for_session_token(token))
+    title = 'Edit Nodenet' if id is not None else 'New Nodenet'
+    return template("nodenet_form.tpl", title=title,
+        nodenets=micropsi.get_available_nodenets(),
+        templates=micropsi.get_available_nodenets(),
+        worlds=micropsi.get_available_worlds(),
+        version = VERSION, user_id = user_id, permissions = permissions)
 
 
 @route("/world/import")
@@ -387,7 +378,7 @@ def import_world():
     return template("upload.tpl", title='World import', message='Select a file to upload and use for importing',
         action='/world/import',
         version = VERSION,
-        userid = usermanager.get_user_id_for_session_token(token),
+        user_id = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
 
@@ -403,79 +394,94 @@ def edit_world():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, world={}, worldtypes=[],
+    return template("world_form.tpl", title=title, worldtypes=["Standard"],
         version = VERSION,
-        userid = usermanager.get_user_id_for_session_token(token),
+        user_id = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
-
-
-@route("/agent_list/<current_agent>")
-def agent_list(current_agent):
+@route("/nodenet_list/<current_nodenet>")
+def nodenet_list(current_nodenet):
     user_id, permissions, token = get_request_data()
-    print current_agent
-    agents = micropsi.get_available_agents()
-    return template("agent_list", user_id = user_id,
-        current_agent = current_agent,
-        my_agents = { uid: agents[uid] for uid in agents if agents[uid]["owner"] == user_id},
-        other_agents = { uid: agents[uid] for uid in agents if agents[uid]["owner"] != user_id})
+    nodenets = micropsi.get_available_nodenets()
+    return template("nodenet_list", user_id = user_id,
+        current_nodenet = current_nodenet,
+        my_nodenets = { uid: nodenets[uid] for uid in nodenets if nodenets[uid].owner == user_id},
+        other_nodenets = { uid: nodenets[uid] for uid in nodenets if nodenets[uid].owner != user_id})
 
-@route("/select_agent")
-def select_agent(agent_uid): pass
+@route("/select_nodenet")
+def select_nodenet(nodenet_uid): pass
 
 @rpc("generate_uid")
 def generate_uid(): return micropsi_core.tools.generate_uid()
 
-@rpc("get_available_agents")
-def get_available_agents(user_id): return micropsi.get_available_agents(user_id)
+@rpc("get_available_nodenets")
+def get_available_nodenets(user_id): return micropsi.get_available_nodenets(user_id)
 
-@rpc("new_agent", permission_required="manage agents")
-def new_agent(agent_name, agent_type, user_id, world_uid):
-    return micropsi.new_agent(agent_name, agent_type, owner = user_id, world_uid = world_uid)
+@route("/create_new_nodenet_form")
+def create_new_nodenet_form():
+    user_id, permissions, token = get_request_data()
+    nodenets = micropsi.get_available_nodenets()
+    worlds = micropsi.get_available_worlds()
+    return template("nodenet_form", user_id = user_id, template = "None",
+        nodenets = nodenets, worlds = worlds)
 
-@rpc("delete_agent", permission_required="manage agents")
-def delete_agent(self, agent_uid): return micropsi.delete_agent(self, agent_uid)
+@route("/create_worldadapter_selector/<world_uid>")
+def create_worldadapter_selector(world_uid):
+    nodenets = micropsi.get_available_nodenets()
+    worlds = micropsi.get_available_worlds()
+    return template("worldadapter_selector", world_uid = world_uid,
+        nodenets = nodenets, worlds = worlds)
 
-@rpc("set_agent_data", permission_required="manage agents")
-def set_agent_data(self, agent_uid, agent_name = None, agent_type = None, world_uid = None, owner = None): return micropsi.set_agent_data(self, agent_uid, agent_name = None, agent_type = None, world_uid = None, owner = None)
+@rpc("new_nodenet", permission_required="manage nodenets")
+def new_nodenet(nodenet_name, worldadapter, user_id, world_uid):
+    return micropsi.new_nodenet(nodenet_name, worldadapter, owner = user_id, world_uid = world_uid)
 
-@rpc("start_agentrunner", permission_required="manage agents")
-def start_agentrunner(self, agent_uid): return micropsi.start_agentrunner
+@rpc("delete_nodenet", permission_required="manage nodenets")
+def delete_nodenet(self, nodenet_uid): return micropsi.delete_nodenet(self, nodenet_uid)
 
-@rpc("set_agentrunner_timestep", permission_required="manage agents")
-def set_agentrunner_timestep(self, timestep): return micropsi.set_agentrunner_timestep
+@rpc("set_nodenet_properties", permission_required="manage nodenets")
+def set_nodenet_data(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None): return micropsi.set_nodenet_properties(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None)
 
-@rpc("get_agentrunner_timestep", permission_required="manage server")
-def get_agentrunner_timestep(self): return micropsi.get_agentrunner_timestep
+@rpc("start_nodenetrunner", permission_required="manage nodenets")
+def start_nodenetrunner(self, nodenet_uid): return micropsi.start_nodenetrunner
 
-@rpc("get_is_agent_running")
-def get_is_agent_running(self, agent_uid): return micropsi.get_is_agent_running
+@rpc("set_nodenetrunner_timestep", permission_required="manage nodenets")
+def set_nodenetrunner_timestep(self, timestep): return micropsi.set_nodenetrunner_timestep
 
-@rpc("stop_agentrunner", permission_required="manage agents")
-def stop_agentrunner(self, agent_uid): return micropsi.stop_agentrunner
+@rpc("get_nodenetrunner_timestep", permission_required="manage server")
+def get_nodenetrunner_timestep(self): return micropsi.get_nodenetrunner_timestep
 
-@rpc("step_agent", permission_required="manage agents")
-def step_agent(self, agent_uid, nodespace = None): return micropsi.step_agent
+@rpc("get_is_nodenet_running")
+def get_is_nodenet_running(self, nodenet_uid): return micropsi.get_is_nodenet_running
 
-@rpc("revert_agent", permission_required="manage agents")
-def revert_agent(self, agent_uid): return micropsi.revert_agent
+@rpc("stop_nodenetrunner", permission_required="manage nodenets")
+def stop_nodenetrunner(self, nodenet_uid): return micropsi.stop_nodenetrunner
 
-@rpc("save_agent", permission_required="manage agents")
-def save_agent(self, agent_uid): return micropsi.save_agent
+@rpc("step_nodenet", permission_required="manage nodenets")
+def step_nodenet(self, nodenet_uid, nodespace = None): return micropsi.step_nodenet
 
-@rpc("export_agent")
-def export_agent(self, agent_uid): return micropsi.export_agent
+@rpc("revert_nodenet", permission_required="manage nodenets")
+def revert_nodenet(self, nodenet_uid): return micropsi.revert_nodenet
 
-@rpc("import_agent", permission_required="manage agents")
-def import_agent(self, agent_uid, nodenet): return micropsi.import_agent
+@rpc("save_nodenet", permission_required="manage nodenets")
+def save_nodenet(self, nodenet_uid): return micropsi.save_nodenet
 
-@rpc("merge_agent", permission_required="manage agents")
-def merge_agent(self, agent_uid, nodenet): return micropsi.merge_agent
+@rpc("export_nodenet")
+def export_nodenet(self, nodenet_uid): return micropsi.export_nodenet
+
+@rpc("import_nodenet", permission_required="manage nodenets")
+def import_nodenet(self, nodenet_uid, nodenet): return micropsi.import_nodenet
+
+@rpc("merge_nodenet", permission_required="manage nodenets")
+def merge_nodenet(self, nodenet_uid, nodenet): return micropsi.merge_nodenet
 
 # World
 
 @rpc("get_available_worlds")
-def get_available_worlds(self, owner = None): return micropsi.get_available_worlds
+def get_available_worlds(): return micropsi.get_available_worlds()
+
+@rpc("get_worldadapters")
+def get_worldadapters(world_uid): return micropsi.get_worldadapters(world_uid)
 
 @rpc("new_world", permission_required="manage worlds")
 def new_world(self, world_name, world_type, owner = ""): return micropsi.new_world
@@ -486,8 +492,8 @@ def delete_world(self, world_uid): return micropsi.delete_world
 @rpc("get_world_view")
 def get_world_view(self, world_uid, step): return micropsi.get_world_view
 
-@rpc("set_world_data", permission_required="manage worlds")
-def set_world_data(self, world_uid, world_name = None, world_type = None, owner = None): return micropsi.set_world_data
+@rpc("set_world_properties", permission_required="manage worlds")
+def set_world_data(self, world_uid, world_name = None, world_type = None, owner = None): return micropsi.set_world_properties
 
 @rpc("start_worldrunner", permission_required="manage worlds")
 def start_worldrunner(self, world_uid): return micropsi.start_worldrunner
@@ -522,10 +528,10 @@ def import_world(self, world_uid, worlddata): return micropsi.import_world
 # Monitor
 
 @rpc("add_gate_monitor")
-def add_gate_monitor(self, agent_uid, node_uid, gate_index): return micropsi.add_gate_monitor
+def add_gate_monitor(self, nodenet_uid, node_uid, gate_index): return micropsi.add_gate_monitor
 
 @rpc("add_slot_monitor")
-def add_slot_monitor(self, agent_uid, node_uid, slot_index): return micropsi.add_slot_monitor
+def add_slot_monitor(self, nodenet_uid, node_uid, slot_index): return micropsi.add_slot_monitor
 
 @rpc("remove_monitor")
 def remove_monitor(self, monitor_uid): return micropsi.remove_monitor
@@ -534,90 +540,90 @@ def remove_monitor(self, monitor_uid): return micropsi.remove_monitor
 def clear_monitor(self, monitor_uid): return micropsi.clear_monitor
 
 @rpc("export_monitor_data")
-def export_monitor_data(self, agent_uid): return micropsi.export_monitor_data
+def export_monitor_data(self, nodenet_uid): return micropsi.export_monitor_data
 
 @rpc("get_monitor_data")
-def get_monitor_data(self, agent_uid, step): return micropsi.get_monitor_data
+def get_monitor_data(self, nodenet_uid, step): return micropsi.get_monitor_data
 
 # Nodenet
 
 @rpc("get_nodespace")
-def get_nodespace(self, agent_uid, nodespace, step): return micropsi.get_nodespace
+def get_nodespace(self, nodenet_uid, nodespace, step): return micropsi.get_nodespace
 
 @rpc("get_node")
-def get_node(self, agent_uid, node_uid): return micropsi.get_node
+def get_node(self, nodenet_uid, node_uid): return micropsi.get_node
 
-@rpc("add_node", permission_required="manage agents")
-def add_node(self, agent_uid, type, x, y, nodespace, uid = None, name = ""): return micropsi.add_node
+@rpc("add_node", permission_required="manage nodenets")
+def add_node(self, nodenet_uid, type, x, y, nodespace, uid = None, name = ""): return micropsi.add_node
 
-@rpc("set_node_position", permission_required="manage agents")
-def set_node_position(self, agent_uid, node_uid, x, y): return micropsi.set_node_position
+@rpc("set_node_position", permission_required="manage nodenets")
+def set_node_position(self, nodenet_uid, node_uid, x, y): return micropsi.set_node_position
 
-@rpc("set_node_name", permission_required="manage agents")
-def set_node_name(self, agent_uid, node_uid, name): return micropsi.set_node_name
+@rpc("set_node_name", permission_required="manage nodenets")
+def set_node_name(self, nodenet_uid, node_uid, name): return micropsi.set_node_name
 
-@rpc("delete_node", permission_required="manage agents")
-def delete_node(self, agent_uid, node_uid): return micropsi.delete_node
+@rpc("delete_node", permission_required="manage nodenets")
+def delete_node(self, nodenet_uid, node_uid): return micropsi.delete_node
 
 @rpc("get_available_node_types")
-def get_available_node_types(self, agent_uid = None): return micropsi.get_available_node_types
+def get_available_node_types(self, nodenet_uid = None): return micropsi.get_available_node_types
 
 @rpc("get_available_native_module_types")
-def get_available_native_module_types(self, agent_uid = None): return micropsi.get_available_native_module_types
+def get_available_native_module_types(self, nodenet_uid = None): return micropsi.get_available_native_module_types
 
 @rpc("get_node_function")
-def get_node_function(self, agent_uid, node_type): return micropsi.get_node_function
+def get_node_function(self, nodenet_uid, node_type): return micropsi.get_node_function
 
-@rpc("set_node_function", permission_required="manage agents")
-def set_node_function(self, agent_uid, node_type, node_function = None): return micropsi.set_node_function
+@rpc("set_node_function", permission_required="manage nodenets")
+def set_node_function(self, nodenet_uid, node_type, node_function = None): return micropsi.set_node_function
 
-@rpc("set_node_parameters", permission_required="manage agents")
-def set_node_parameters(self, agent_uid, node_uid, parameters = None): return micropsi.set_node_parameters
+@rpc("set_node_parameters", permission_required="manage nodenets")
+def set_node_parameters(self, nodenet_uid, node_uid, parameters = None): return micropsi.set_node_parameters
 
-@rpc("add_node_type", permission_required="manage agents")
-def add_node_type(self, agent_uid, node_type, slots = None, gates = None, node_function = None, parameters = None): return micropsi.add_node_type
+@rpc("add_node_type", permission_required="manage nodenets")
+def add_node_type(self, nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None): return micropsi.add_node_type
 
-@rpc("delete_node_type", permission_required="manage agents")
-def delete_node_type(self, agent_uid, node_type): return micropsi.delete_node_type
+@rpc("delete_node_type", permission_required="manage nodenets")
+def delete_node_type(self, nodenet_uid, node_type): return micropsi.delete_node_type
 
 @rpc("get_slot_types")
-def get_slot_types(self, agent_uid, node_type): return micropsi.get_slot_types
+def get_slot_types(self, nodenet_uid, node_type): return micropsi.get_slot_types
 
 @rpc("get_gate_types")
-def get_gate_types(self, agent_uid, node_type): return micropsi.get_gate_types
+def get_gate_types(self, nodenet_uid, node_type): return micropsi.get_gate_types
 
 @rpc("get_gate_function")
-def get_gate_function(self, agent_uid, nodespace, node_type, gate_type): return micropsi.get_gate_function
+def get_gate_function(self, nodenet_uid, nodespace, node_type, gate_type): return micropsi.get_gate_function
 
-@rpc("set_gate_function", permission_required="manage agents")
-def set_gate_function(self, agent_uid, nodespace, node_type, gate_type, gate_function = None, parameters = None): return micropsi.set_gate_function
+@rpc("set_gate_function", permission_required="manage nodenets")
+def set_gate_function(self, nodenet_uid, nodespace, node_type, gate_type, gate_function = None, parameters = None): return micropsi.set_gate_function
 
-@rpc("set_gate_parameters", permission_required="manage agents")
-def set_gate_parameters(self, agent_uid, node_uid, gate_type, parameters = None): return micropsi.set_gate_parameters
+@rpc("set_gate_parameters", permission_required="manage nodenets")
+def set_gate_parameters(self, nodenet_uid, node_uid, gate_type, parameters = None): return micropsi.set_gate_parameters
 
 @rpc("get_available_datasources")
-def get_available_datasources(self, agent_uid): return micropsi.get_available_datasources
+def get_available_datasources(self, nodenet_uid): return micropsi.get_available_datasources
 
 @rpc("get_available_datatargets")
-def get_available_datatargets(self, agent_uid): return micropsi.get_available_datatargets
+def get_available_datatargets(self, nodenet_uid): return micropsi.get_available_datatargets
 
-@rpc("bind_datasource_to_sensor", permission_required="manage agents")
-def bind_datasource_to_sensor(self, agent_uid, sensor_uid, datasource): return micropsi.bind_datasource_to_sensor
+@rpc("bind_datasource_to_sensor", permission_required="manage nodenets")
+def bind_datasource_to_sensor(self, nodenet_uid, sensor_uid, datasource): return micropsi.bind_datasource_to_sensor
 
-@rpc("bind_datatarget_to_actor", permission_required="manage agents")
-def bind_datatarget_to_actor(self, agent_uid, actor_uid, datatarget): return micropsi.bind_datatarget_to_actor
+@rpc("bind_datatarget_to_actor", permission_required="manage nodenets")
+def bind_datatarget_to_actor(self, nodenet_uid, actor_uid, datatarget): return micropsi.bind_datatarget_to_actor
 
-@rpc("add_link", permission_required="manage agents")
-def add_link(self, agent_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty = 1, uid = None): return micropsi.add_link
+@rpc("add_link", permission_required="manage nodenets")
+def add_link(self, nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty = 1, uid = None): return micropsi.add_link
 
-@rpc("set_link_weight", permission_required="manage agents")
-def set_link_weight(self, agent_uid, link_uid, weight, certainty = 1): return micropsi.set_link_weight
+@rpc("set_link_weight", permission_required="manage nodenets")
+def set_link_weight(self, nodenet_uid, link_uid, weight, certainty = 1): return micropsi.set_link_weight
 
 @rpc("get_link")
-def get_link(self, agent_uid, link_uid): return micropsi.get_link
+def get_link(self, nodenet_uid, link_uid): return micropsi.get_link
 
-@rpc("delete_link", permission_required="manage agents")
-def delete_link(self, agent_uid, link_uid): return micropsi.delete_link
+@rpc("delete_link", permission_required="manage nodenets")
+def delete_link(self, nodenet_uid, link_uid): return micropsi.delete_link
 
 
 

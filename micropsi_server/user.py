@@ -27,10 +27,10 @@ Example usage:
 >>> print um.list_users["eliza"]
 {'is_active': True, 'role': 'World Creator'}
 >>> print um.get_permissions(elizas_token)
-set(['manage worlds', 'manage agents'])
+set(['manage worlds', 'manage nodenets'])
 >>> um.set_user_role('eliza', 'Administrator')
 >>> print um.get_permissions(elizas_token)
-Set(['manage users', 'manage worlds', 'manage agents'])
+Set(['manage users', 'manage worlds', 'manage nodenets'])
 >>> um.end_session(elizas_token)  # log off eliza
 >>> print um.get_permissions(elizas_token)
 {}
@@ -50,15 +50,15 @@ import warnings
 import micropsi_core.tools
 
 ADMIN_USER = "admin"  # default name of the admin user
-DEFAULT_ROLE = "Restricted"  # new users can create and edit agents, but not create worlds
+DEFAULT_ROLE = "Restricted"  # new users can create and edit nodenets, but not create worlds
 IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the simulation)
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
 
 USER_ROLES = {  # sets of strings; each represents a permission.
-    "Administrator": {"manage users","manage worlds","manage agents", "manage server",
+    "Administrator": {"manage users","manage worlds","manage nodenets", "manage server",
                       "create admin", "create restricted", "create full"},
-    "Full": {"manage worlds","manage agents", "manage server" "create full", "create restricted"},
-    "Restricted": {"manage agents", "create restricted"},
+    "Full": {"manage worlds","manage nodenets", "manage server" "create full", "create restricted"},
+    "Restricted": {"manage nodenets", "create restricted"},
     "Guest": {"create restricted"}
 }
 
@@ -128,7 +128,7 @@ class UserManager(object):
         Arguments:
             user_id: a non-empty string which must be unique, used for display and urls
             password: an arbitrary string
-            role: a string corresponding to a user role (such as "Administrator", or "Agent Creator")
+            role: a string corresponding to a user role (such as "Administrator", or "Restricted")
             uid: a string that acts as a unique, immutable handle (so we can store resources for this user)
         """
         if user_id and not user_id in self.users:
@@ -259,7 +259,7 @@ class UserManager(object):
         if no session with that token exists, the Guest role permissions are returned.
 
         Example usage:
-            if "create agents" in usermanager.get_permissions(my_session): ...
+            if "create nodenets" in usermanager.get_permissions(my_session): ...
         """
 
         if session_token in self.sessions:

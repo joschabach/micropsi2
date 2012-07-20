@@ -322,9 +322,8 @@ class MicroPsiRuntime(object):
         """Removes the node"""
         pass
 
-    def get_available_node_types(self, nodenet_uid = None):
-        """Returns an ordered list of node types available. (Including native modules.)
-        If a nodenet uid is supplied, filter for node types defined within this nodenet."""
+    def get_available_node_types(self, nodenet_uid):
+        """Returns a list of available node types. (Including native modules.)"""
         pass
 
     def get_available_native_module_types(self, nodenet_uid = None):

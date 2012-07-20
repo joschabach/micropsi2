@@ -185,7 +185,6 @@ def signup_submit():
     password = request.forms.password
     role = request.forms.get('permissions')
     (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids = usermanager.users.keys())
-
     if success:
         # check if permissions in form are consistent with internal permissions
         if ((role == "Administrator" and ("create admin" in permissions or not usermanager.users)) or
@@ -421,6 +420,15 @@ def create_new_nodenet_form():
     return template("nodenet_form", user_id = user_id, template = "None",
         nodenets = nodenets, worlds = worlds)
 
+@route("/edit_nodenet_form")
+def edit_nodenet_form():
+    user_id, permissions, token = get_request_data()
+    nodenets = micropsi.get_available_nodenets()
+    worlds = micropsi.get_available_worlds()
+    return template("nodenet_form", user_id = user_id, template = "None",
+        nodenets = nodenets, worlds = worlds)
+
+
 @route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
     nodenets = micropsi.get_available_nodenets()
@@ -436,7 +444,8 @@ def new_nodenet(nodenet_name, worldadapter, user_id, world_uid):
 def delete_nodenet(self, nodenet_uid): return micropsi.delete_nodenet(self, nodenet_uid)
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_data(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None): return micropsi.set_nodenet_properties(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None)
+def set_nodenet_data(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):
+    return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None)
 
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
 def start_nodenetrunner(self, nodenet_uid): return micropsi.start_nodenetrunner
@@ -633,7 +642,6 @@ def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     micropsi = micropsi_core.runtime.MicroPsiRuntime(RESOURCE_PATH)
     usermanager = usermanagement.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
 
-
     run(host=host, port=port) #devV
 
 if __name__ == "__main__":
@@ -642,3 +650,4 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT)
     args = parser.parse_args()
     main(host = args.host, port = args.port)
+

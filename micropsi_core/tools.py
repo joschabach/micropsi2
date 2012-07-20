@@ -47,3 +47,107 @@ def check_for_url_proof_id(id, existing_ids = None, min_id_length = 1, max_id_le
         return False, "Must have less than %s characters" % max_id_length
 
     return True, id
+
+
+
+# Global parameters for all created functions
+
+# symbols that are included by default in the generated function's environment
+SAFE_SYMBOLS = ["list", "dict", "tuple", "set", "long", "float", "object", "bool", "callable", "True", "False", "dir",
+                "frozenset", "getattr", "hasattr", "abs", "cmp", "complex", "divmod", "id", "pow", "round", "slice",
+                "vars", "hash", "hex", "int", "isinstance", "issubclass", "len", "filter", "max", "min", "oct",
+                "chr", "ord", "range", "repr", "str", "type", "zip", "xrange", "None",
+                "Exception", "KeyboardInterrupt"]
+
+# add standard exceptions
+__bi = __builtins__
+if type(__bi) is not dict: __bi = __bi.__dict__
+for k in __bi:
+    if k.endswith("Error") or k.endswith("Warning"): SAFE_SYMBOLS.append(k)
+del __bi
+
+def create_function(source_string, parameters = "", additional_symbols = None):
+    """Create a python function from the given source code.
+
+    Arguments:
+        source_string: A python string containing the source code of the function.
+        parameters: A string with arguments that are passed to the function by the caller, ("a, b", or "a=12, b").
+        additional_symbols: A dictionary of name : variable/function/object that are passed into the function
+
+    If the users can edit the string, then creating functions on the fly is potentially harmful. To mitigate the risk
+    somewhat, only a set of safe builtins is allowed (for instance, no file operations). Using additional_symbols,
+    other modules, objects or functions can be imported into the function's namespace.
+
+    To make the function stateful, you can pass mutable parameters or mutable additional symbols.
+    In CPython, the created function should execute just as fast as a normal function.
+
+    Example use:
+        my_function_source = '''return usermanager.users[index]'''
+        get_user = create_function(my_function_source, parameters="index = 0",
+                                   additional_symbols = {'usermanager': usermanager})
+        print get_user("klaus")
+    
+    (This function is inspired by a recipe by David Decotigny.)
+    """
+
+    # Include the sourcecode as the code of a function __my_function__:
+    s = "def __my_function__(%s):\n" % parameters
+    s += "\t" + "\n\t".join(source_string.split('\n')) + "\n"
+
+    # Byte-compilation (optional)
+    bytecode = compile(s, "<string>", 'exec')
+
+    # Setup the local and global dictionaries of the execution
+    # environment for __my_function__
+    bis   = dict() # builtins
+    globs = dict()
+    locs  = dict()
+
+    # Setup a standard-compatible python environment
+    bis["locals"]  = lambda: locs
+    bis["globals"] = lambda: globs
+    globs["__builtins__"] = bis
+    globs["__name__"] = "SUBENV"
+    globs["__doc__"] = source_string
+
+    # Determine how the __builtins__ dictionary should be accessed
+    if type(__builtins__) is dict:
+        bi_dict = __builtins__
+    else:
+        bi_dict = __builtins__.__dict__
+
+    # Include the safe symbols
+    for k in SAFE_SYMBOLS:
+        # try from current locals
+        try:
+            locs[k] = locals()[k]
+            continue
+        except KeyError:
+            pass
+            # Try from globals
+        try:
+            globs[k] = globals()[k]
+            continue
+        except KeyError:
+            pass
+            # Try from builtins
+        try:
+            bis[k] = bi_dict[k]
+        except KeyError:
+            # Symbol not available anywhere: silently ignored
+            pass
+
+    # Include the symbols added by the caller, in the globals dictionary
+    globs.update(additional_symbols or {})
+
+    # Finally execute the def __my_function__ statement:
+    eval(bytecode, globs, locs)
+    # As a result, the function is defined as the item __my_function__
+    # in the locals dictionary
+    fct = locs["__my_function__"]
+    # Attach the function to the globals so that it can be recursive
+    del locs["__my_function__"]
+    globs["__my_function__"] = fct
+    # Attach the actual source code to the docstring
+    fct.__doc__ = source_string
+    return fct

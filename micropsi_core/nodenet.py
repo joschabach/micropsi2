@@ -318,7 +318,6 @@ class Node(NetEntity):
         #if type == ""
 
 
-
     def node_function(self, ):
         """Called whenever the node is activated or active.
 
@@ -438,30 +437,137 @@ class NativeModule(Node):
 # handlers are defined on the level of the nodenet itself
 # what does the structure look like? we need constructors, destructors, executors, but no changers
 
-standard_nodetypes = {
+STANDARD_NODETYPES = {
     "register": {
         "slots": ["gen"],
         "gates": ["gen"]
     },
     "sensor": {
-        "datasource": None,
+        "parameters":["datasource"],
+        "nodefunction": """node.gates["gen"].gatefunction(nodenet.datasources[datasource])""",
         "gates": ["gen"]
     },
     "actor": {
-        "datasource": None,
-        "datatarget": None,
-        "slots": ["gen"],
-        "gates": ["gen"]
+        "parameters":["datasource", "datatarget"],
+        "nodefunction": """nodenet.datatargets[datatarget] = node.slots["gen"].activation""",
+        "slots": ["gen"]
     },
     "concept": {
         "slots": ["gen"],
+        "nodefunction": """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])""",
         "gates": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
     },
     "activator": {
-        "type": None,
-        "slots": ["gen"]
+        "slots": ["gen"],
+        "parameters": ["type"],
+        "nodefunction": """node.nodespace.activators[type] = node.slots["gen"].activation"""
     }
 }
+
+class Nodetype(object):
+    """Every node has a type, which is defined by its slot types, gate types, its node function and a list of
+    node parameteres."""
+
+    @property
+    def name(self):
+        return self.data["name"]
+
+    @name.setter
+    def name(self, identifier):
+        self.nodenet.data["nodetypes"][identifier] = self.nodenet.data["nodetypes"][self.data["name"]]
+        del self.nodenet.data["nodetypes"][self.data["name"]]
+        self.data["name"] = identifier
+
+    @property
+    def slottypes(self):
+        return self.data.get("slottypes")
+
+    @slottypes.setter
+    def slottypes(self, list):
+        self.data["slottypes"] = list
+
+    @property
+    def gatetypes(self):
+        return self.data.get("gatetypes")
+
+    @gatetypes.setter
+    def gatetypes(self, list):
+        self.data["gatetypes"] = list
+
+    @property
+    def parameterlist(self):
+        return self.data.get("parameterlist")
+
+    @parameterlist.setter
+    def parameterlist(self, list):
+        for illegal_parameter in ["node", "nodenet", "activation", "slots", "gates", "nodespace"]:
+            if illegal_parameter in list:
+                warnings.warn("Found illegal parameter '%s' in parameter list for node type '%s'"
+                %(illegal_parameter, self.data["name"]))
+                del list["illegal_parameter"]
+        self.data["parameterlist"] = list
+
+    @property
+    def nodefunction_definition(self):
+        return self.data.get("nodefunction_definition")
+
+    @nodefunction_definition.setter
+    def nodefunction_definition(self, string):
+        self.data["nodefunction_definition"] = string
+        try:
+            self._compiled_nodefunction = compile(string, '<string>', 'exec')
+        except SyntaxError, err:
+            warnings.warn("Syntax error while compiling node function.")
+            self._compiled_nodefunction = compile("""node.activation = 'Syntax error in node function'""",
+                '<string>', 'exec')
+
+    def __init__(self, name, nodenet, slots = None, gates = None, parameters = None, nodefunction = None):
+        """Initializes or creates a nodetype.
+
+        Arguments:
+            name: a unique identifier for this nodetype
+            nodenet: the nodenet that this nodetype is part of
+
+        If a nodetype with the same name is already defined in the nodenet, it is overwritten. Parameters that
+        are not given here will be taken from the original definition. Thus, you may use this initializer to
+        set up the nodetypes after loading new nodenet data (by using it without parameters).
+
+        Within the nodenet, the nodenet data dict stores the whole nodenet definition. The part that defines
+        nodetypes is structured as follows:
+
+            { "slots": list of slot types or None,
+              "gates": list of gate types or None,
+              "parameters": list of parameters to store values in or read values from
+              "nodefunction": <a string that stores a sequence of python statements, and gets the node and the
+                    nodenet as arguments>
+            }
+        """
+        self.nodenet = nodenet
+        if not "nodetypes" in nodenet.data: self.nodenet.data["nodetypes"] = {}
+        if not name in self.nodenet.data["nodetypes"]: self.nodenet.data["nodetypes"][name] = {}
+        self.data = self.nodenet.data["nodetypes"][name]
+        self.data["name"] = name
+
+        self.slots = self.data.get("slots", ["gen"]) if slots is None else slots
+        self.gates = self.data.get("gates", ["gen"]) if gates is None else gates
+
+        self.parameters = self.data.get("parameters", []) if parameters is None else parameters
+        # test for reserved parameters
+
+
+        nodefunction = self.data.get("nodefunction",
+            """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])"""
+        ) if nodefunction is None else nodefunction
+
+        self.nodefunction = nodefunction
+
+
+
+
+
+
+
+
 """
 # nodefunctions will often just change slot and gate values, but may also interact with the environment and the node net itself. Thus, we pass everything into them as parameters.
 

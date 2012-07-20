@@ -2,8 +2,7 @@
 Nodenet definition
 """
 
-
-from micropsi_core.tools import generate_uid
+import micropsi_core.tools
 import json, os, warnings
 
 __author__ = 'joscha'
@@ -98,7 +97,7 @@ class Nodenet(object):
 
         self.world = world
         self.runtime = runtime
-        self.uid = uid or generate_uid()
+        self.uid = uid or micropsi_core.tools.generate_uid()
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
@@ -199,7 +198,7 @@ class NetEntity(object):
     def __init__(self, position, nodenet, parent_nodespace, name = ""):
         """create a net entity at a certain position and in a given node space"""
 
-        self.uid = generate_uid()
+        self.uid = micropsi_core.tools.generate_uid()
         self.name = name
         self.position = position
         self.nodenet = nodenet
@@ -270,7 +269,7 @@ class Link(object):
         Attributes:
             weight (optional): the weight of the link (default is 1)
         """
-        self.uid = generate_uid()
+        self.uid = micropsi_core.tools.generate_uid()
         self.link(source_node, source_gate_name, target_node, target_slot_name)
         self.weight = weight
 
@@ -495,17 +494,12 @@ class Nodetype(object):
         self.data["gatetypes"] = list
 
     @property
-    def parameterlist(self):
-        return self.data.get("parameterlist")
+    def parameters(self):
+        return self.data.get("parameters")
 
-    @parameterlist.setter
-    def parameterlist(self, list):
-        for illegal_parameter in ["node", "nodenet", "activation", "slots", "gates", "nodespace"]:
-            if illegal_parameter in list:
-                warnings.warn("Found illegal parameter '%s' in parameter list for node type '%s'"
-                %(illegal_parameter, self.data["name"]))
-                del list["illegal_parameter"]
-        self.data["parameterlist"] = list
+    @parameters.setter
+    def parameters(self, string):
+        self.data["parameters"] = string.strip()
 
     @property
     def nodefunction_definition(self):
@@ -515,11 +509,12 @@ class Nodetype(object):
     def nodefunction_definition(self, string):
         self.data["nodefunction_definition"] = string
         try:
-            self._compiled_nodefunction = compile(string, '<string>', 'exec')
+            self.nodefunction = micropsi_core.tools.create_function(string,
+                parameters = "nodenet, node, " + self.data.get('parameters', ''))
         except SyntaxError, err:
             warnings.warn("Syntax error while compiling node function.")
-            self._compiled_nodefunction = compile("""node.activation = 'Syntax error in node function'""",
-                '<string>', 'exec')
+            self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
+                parameters = "nodenet, node, " + self.data.get('parameters', ''))
 
     def __init__(self, name, nodenet, slots = None, gates = None, parameters = None, nodefunction = None):
         """Initializes or creates a nodetype.
@@ -537,7 +532,7 @@ class Nodetype(object):
 
             { "slots": list of slot types or None,
               "gates": list of gate types or None,
-              "parameters": list of parameters to store values in or read values from
+              "parameters": string of parameters to store values in or read values from
               "nodefunction": <a string that stores a sequence of python statements, and gets the node and the
                     nodenet as arguments>
             }
@@ -551,15 +546,15 @@ class Nodetype(object):
         self.slots = self.data.get("slots", ["gen"]) if slots is None else slots
         self.gates = self.data.get("gates", ["gen"]) if gates is None else gates
 
-        self.parameters = self.data.get("parameters", []) if parameters is None else parameters
-        # test for reserved parameters
-
+        self.parameters = self.data.get("parameters", '') if parameters is None else parameters
 
         nodefunction = self.data.get("nodefunction",
             """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])"""
         ) if nodefunction is None else nodefunction
 
-        self.nodefunction = nodefunction
+        self.nodefunction_definition = self.data.get("nodefunction",
+            """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])"""
+        ) if nodefunction is None else nodefunction
 
 
 

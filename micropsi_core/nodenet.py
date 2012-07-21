@@ -33,10 +33,6 @@ class Nodenet(object):
     def uid(self):
         return self.data.get("uid")
 
-    @uid.setter
-    def uid(self, identifier):
-        self.data["uid"] = identifier
-
     @property
     def name(self):
         return self.data.get("name", self.data.get("uid"))
@@ -70,7 +66,7 @@ class Nodenet(object):
         self.data["worldadapter"] = worldadapter_uid
 
     @property
-    def step(self):
+    def current_step(self):
         return self.data.get("step")
 
     def __init__(self, runtime, filename, name = "", world_adapter = "Default", world = None, owner = "", uid = None):
@@ -84,20 +80,22 @@ class Nodenet(object):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
+        uid = uid or micropsi_core.tools.generate_uid()
+
         self.data = {
             "version": NODENET_VERSION,  # used to check compatibility of the node net data
+            "uid": uid,
             "nodes": {},
             "links": {},
             "nodespaces": {},
-            "nodetypes": ["Concept", "Register", "Sensor", "Actor"],
-            "nodefunctions": {},
-            "gatetypes": ["por", "ret", "sub", "sur", "cat", "exp"],
+            "nodetypes": STANDARD_NODETYPES,
+            "activatortypes": ["por", "ret", "sub", "sur", "cat", "exp"],
             "step": 0
         }
 
+
         self.world = world
         self.runtime = runtime
-        self.uid = uid or micropsi_core.tools.generate_uid()
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
@@ -169,6 +167,7 @@ class Nodenet(object):
         self.calculate_node_functions()
         self.propagate_link_activation()
         self.data["step"] +=1
+
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""
         pass
@@ -176,12 +175,6 @@ class Nodenet(object):
     def calculate_node_functions(self):
         """for all active nodes, call their node function, which in turn should update the gate functions"""
         pass
-
-    def set_node_function(self, node_type, node_function_string):
-        """For all nodes of the given type, use the given node function.
-
-        The node function is handed the current node, the current nodespace and the current agent, so that it may
-        """
 
 
 class NetEntity(object):
@@ -195,13 +188,55 @@ class NetEntity(object):
         parent_nodespace: the node space this entity is contained in
     """
 
-    def __init__(self, position, nodenet, parent_nodespace, name = ""):
+    @property
+    def uid(self):
+        return self.data.get("uid")
+
+    @property
+    def name(self):
+        return self.data.get("name") or self.data.get("uid")
+
+    @name.setter
+    def name(self, string):
+        self.data["name"] = string
+
+    @property
+    def position(self):
+        return self.data.get("position", (0,0))
+
+    @position.setter
+    def position(self, pos):
+        self.data["position"] = pos
+
+    @property
+    def parent_nodespace(self):
+        return self.data.get("parent_nodespace", 0)
+
+    @parent_nodespace.setter
+    def parent_nodespace(self, uid):
+        if uid in self.nodenet.data["nodespaces"][self.entitytype]:
+            self.nodenet.data["nodespaces"][uid][self.entitytype] = self.uid
+            # tell my old parent that I move out
+            if "parent_nodespace" in self.data:
+                old_parent = self.nodenet.data["nodespaces"].get(self.data["parent_nodespace"], {})
+                if self.uid in old_parent.get(self.entitytype, {}):
+                    del old_parent[self.entitytype][self.uid]
+
+    def __init__(self, nodenet, parent_nodespace, position, name = "", entitytype = "abstract_entities", uid = None):
         """create a net entity at a certain position and in a given node space"""
 
-        self.uid = micropsi_core.tools.generate_uid()
+        uid = uid or micropsi_core.tools.generate_uid()
+        self.nodenet = nodenet
+        if not entitytype in nodenet.data:
+            nodenet.data[entitytype] = {}
+        if not uid in nodenet.data[entitytype]:
+            nodenet.data[entitytype][uid] = {}
+        self.data = nodenet.data[entitytype][uid]
+        self.data["uid"] = uid
+        self.entitytype = entitytype
+
         self.name = name
         self.position = position
-        self.nodenet = nodenet
         self.parent_nodespace = parent_nodespace
 
 class Comment(NetEntity):
@@ -212,11 +247,19 @@ class Comment(NetEntity):
         comment: a string of text
     """
 
-    def __init__(self, position, nodenet, parent_nodespace = 0, comment = ""):
-        self.comment = comment
-        NetEntity.__init__(position, nodenet, parent_nodespace, name = "Comment")
+    @property
+    def comment(self):
+        return self.data.get("comment", "")
 
-class Nodespace(NetEntity):
+    @comment.setter
+    def comment(self, string):
+        self.data["comment"] = string
+
+    def __init__(self, nodenet, parent_nodespace, position, comment = "", uid = None):
+        NetEntity.__init__(nodenet, parent_nodespace, position, name = "Comment", entitytype = "comments", uid = uid)
+        self.comment = comment
+
+class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
     """A container for net entities.
 
     One nodespace is marked as root, all others are contained in
@@ -226,7 +269,9 @@ class Nodespace(NetEntity):
         activators: a dictionary of activators that control the spread of activation, via activator nodes
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
-    def __init__(self, position, nodenet, parent_nodespace = None, name = ""):
+
+
+    def __init__(self, nodenet, parent_nodespace, position, name = "Comment", entitytype = "comments", uid = uid):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
@@ -254,7 +299,7 @@ class Nodespace(NetEntity):
         by the node space itself, to obtain information about its contents."""
         pass
 
-class Link(object):
+class Link(object): # todo: adapt to new form, like net entitities
     """A link between two nodes, starting from a gate and ending in a slot.
 
     Links propagate activation between nodes and thereby facilitate the function of the agent.
@@ -308,16 +353,27 @@ class Node(NetEntity):
         node_function: a function to be executed whenever the node receives activation
     """
 
-    def __init__(self, position, nodenet, parent_nodespace = 0, name = "",
-                 type = "Register",
-                 node_function = None,
-                 activation = 0, slots = None, gates = None):
-        NetEntity.__init__(position, nodenet, parent_nodespace, name)
-        self.type = type
-        #if type == ""
+    @property
+    def activation(self):
+        return self.data.get("activation", 0)
 
+    @property
+    def type(self):
+        return self.data.get("type")
 
-    def node_function(self, ):
+    @property
+    def parameters(self):
+        return self.data.get("parameters", {})
+
+    @parameters.setter
+    def parameters(self, dictionary):
+        self.data["parameters"] = dictionary
+
+    def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None):
+        NetEntity.__init__(nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
+        self.data["type"] = type
+
+    def node_function(self):
         """Called whenever the node is activated or active.
 
         In different node types, different node functions may be used, i.e. override this one.
@@ -329,15 +385,20 @@ class Node(NetEntity):
         which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
         # process the slots
-        if self.slots:
-            activation = 0
-            for i in self.slots:
-                if self.slots[i].incoming:
-                    pass
-                    # if self.slots[i].current_step < current_step:  # we have not processed this yet
-        self.activation = sum([self.slots[slot].incoming[link] for slot in self.slots for link in self.slots[slot].incoming])
 
-class Gate(object):
+        #self.activation = sum([self.slots[slot].incoming[link] for slot in self.slots for link in self.slots[slot].incoming])
+
+        # call nodefunction of my node type
+        try:
+            self.nodenet.nodetypes[type].nodefunction(nodenet = self.nodenet, node = self, parameters = self.parameters)
+        except SyntaxError, err:
+            warnings.warn("Syntax error during node execution")
+            self.data["activation"] = "Syntax error"
+        except TypeError, err:
+            warnings.warn("Type error during node execution")
+            self.data["activation"] = "Parameter mismatch"
+
+class Gate(object): # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
 
     Attributes:
@@ -418,23 +479,12 @@ class Slot(object):
             node: the parent node
         """
         self.type = type
+        self.node = node
         self.incoming = {}
         self.current_step = -1
         self.activation = 0
 
-class NativeModule(Node):
-    """A node with a complex node function that may perform arbitrary operations on the node net
 
-        Native Modules encapsulate arbitrary functionality within the node net. They are written in a
-        programming language (here: Python) and refer to an external resource file for the code, so it
-        can be edited at runtime.
-    """
-    pass
-
-
-# new idea: do not use classes for nodes, slots and gates, instead, make them dicts
-# handlers are defined on the level of the nodenet itself
-# what does the structure look like? we need constructors, destructors, executors, but no changers
 
 STANDARD_NODETYPES = {
     "register": {
@@ -557,31 +607,3 @@ class Nodetype(object):
         ) if nodefunction is None else nodefunction
 
 
-
-
-
-
-
-
-"""
-# nodefunctions will often just change slot and gate values, but may also interact with the environment and the node net itself. Thus, we pass everything into them as parameters.
-
-# the nodefunction gets the node passed. the node has references to the nodespace (and via the nodespace to data sources and data targets), the slots and gates, and the nodenet
-
-    # new idea for refactoring: the node net is a hash, too. all the handling will be done in the agent class. the agent stores all efficiency stuff.
-
-
-standard_nodefunctions = {
-    "actor":
-}
-
-    Nodenet = Nodes, Links, Nodespaces, DataSources, DataTargets, Netfunction (+ owner, agent)
-    Nodespace = Nodes, Nodespaces, Activators
-    Node = id, type, Slots, Gates, Nodefunction (+ parentnodespace, )
-    Slot = slottype, act, slotfunction = avg(incoming acts) --> idea: let us store all incoming activations and process them in the nodefunction
-    even better: slotfunction/gatefunction is given by nodetype
-    Gate = gatetype, gatefunction (params), outputfunction (act(type), amp, min, max)
-
-
-even better: all persistent data is stored within the nodenet, and everything else is in classes as before! yay!
-"""

@@ -271,7 +271,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
     """
 
 
-    def __init__(self, nodenet, parent_nodespace, position, name = "Comment", entitytype = "comments", uid = uid):
+    def __init__(self, nodenet, parent_nodespace, position, name = "Comment", entitytype = "comments", uid = None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}

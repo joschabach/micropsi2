@@ -1,19 +1,22 @@
-%include menu.tpl version = version, permissions = permissions, user_id = user_id
 
-<div class="row-fluid">
-    <p>
-    <h1>Change password</h1>
-    </p>
+<div class="dialogform modal">
 
-    <div class="row-fluid">
-        <form class="form-horizontal well span8" action="change_password_submit" method="POST">
+    <form class="form-horizontal" action="/change_password_submit" method="POST">
+
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>{{title}}</h3>
+    </div>
+
+    <div class="modal-body">
+
             %if defined('cookie_warning') and cookie_warning:
             <div class="alert alert-info">
                 <b>Important:</b> Make sure that cookies are enabled in your browser.
             </div>
             %end
             <legend>Enter a new password  for user ‘{{user_id}}’</legend>
-            <fieldset>
+            <fieldset class="well">
                 %if not defined("old_password_error"):
                 <div class="control-group">
                     <label class="control-label" for="old_password">Old password</label>
@@ -64,11 +67,13 @@
                 </div>
                 %end
             </fieldset>
-            <button type="submit" class="btn btn-primary">Change password</button>
-            <a class="btn" href="/">Cancel</a>
-        </form>
     </div>
+
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Change password</button>
+        <a class="btn" data-dismiss="modal">Cancel</a>
+    </div>
+
+    </form>
+
 </div>
-
-
-%rebase boilerplate title = "Change the password"

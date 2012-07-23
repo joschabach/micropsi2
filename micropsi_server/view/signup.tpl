@@ -1,14 +1,16 @@
-%include menu.tpl version = version
 
-<div class="row-fluid">
-    <p>
-    <h1>Create {{'a new user' if not defined("first_user") else 'the administrator'}} for the MicroPsi server</h1>
-    <div class="lead">Without logging in, you may not create and edit nodenets.</div>
-    </p>
+<div class="dialogform modal">
+
+    <form class="form-horizontal" action="/signup_submit" method="POST">
+
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>{{title}}</h3>
+    </div>
+
+    <div class="modal-body">
 
 
-    <div class="row-fluid">
-        <form class="form-horizontal well span8" action="signup_submit" method="POST">
             %if defined('cookie_warning') and cookie_warning:
             <div class="alert alert-info">
                 <b>Important:</b> Make sure that cookies are enabled in your browser.
@@ -110,11 +112,13 @@
                     </label>
                 </div>
             </fieldset>
-            <button type="submit" class="btn btn-primary">Create new user, and log in</button>
-            <a class="btn" href="/">Cancel</a>
-        </form>
     </div>
+
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Create new user, and log in</button>
+        <a class="btn" data-dismiss="modal">Cancel</a>
+    </div>
+
+    </form>
+
 </div>
-
-
-%rebase boilerplate title = "Sign up to use MicroPsi"

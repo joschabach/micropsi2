@@ -1,19 +1,21 @@
-%include menu.tpl version = version, permissions = permissions, user_id = user_id
+<div class="dialogform modal">
 
-<div class="row-fluid">
-    % print nodenets
-    <p>
-    <h1>{{title}}</h1>
-    </p>
+    <form class="form-horizontal" action="/edit_nodenet/" method="POST">
 
-    <div class="row-fluid">
-        <form class="form-horizontal well" action="/edit_nodenet/" method="POST">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>{{title}}</h3>
+    </div>
+
+    <div class="modal-body">
+
             %if defined('error') and error:
             <div class="alert alert-info">
                 <b>Error:</b> {{error}}.
             </div>
             %end
-            <fieldset>
+
+            <fieldset class="well">
 
                 %if not defined("name_error"):
                 <div class="control-group">
@@ -97,19 +99,27 @@
                             <option value="None">None</option>
                             % else:
                                 %for worldadapter in worlds[nodenet.world.uid].worldadapters:
+                                    <!-- TODO -->
+                                    <option>{{worldadapter}}</option>
+                                %end
+                            % end
                         </select>
                     </div>
                 </div>
+
+                %if defined("nodenet"):
+                    <input type="hidden" name="nodenet_uid" value="{{nodenet.uid}}" />
+                %end
+
             </fieldset>
-
-            %if defined("nodenet"):
-                <input type="hidden" name="nodenet_uid" value="{{nodenet.uid}}" />
-            %end
-
-            <button type="submit" class="btn btn-primary">Save</button>
-            <a class="btn" href="/">Cancel</a>
-        </form>
     </div>
+
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a class="btn" data-dismiss="modal" href="/">Cancel</a>
+    </div>
+
+    </form>
+
 </div>
 
-%rebase boilerplate title = title

@@ -3,6 +3,10 @@ $(function() {
 
     var dialogs = {
 
+        /**
+            renders a simple confirmation modal, containing the given message
+            the callback is executed, if the user confirms the dialog.
+        */
         confirm: function(message, callback){
             $('#confirm_dialog p.message').html(message);
             var el = $('#confirm_dialog');
@@ -15,54 +19,96 @@ $(function() {
             });
         },
 
+
+        /**
+            renders a modal, with the html obtained from the url.
+        */
         remote_form_dialog: function(url, callback){
-            var el = $('#remote_form_dialog');
-            $('#remote_form_dialog div.modal-body').html('');
+            $('#remote_form_dialog').html('').modal();
             $.ajax(url, {
                 success: function(data){
-                    // uuh, hacky. but works. :)
-                    $('#remote_form_dialog h3').html($('h1', data));
-                    var form = dialogs.patch_form(data);
-                    $('#remote_form_dialog div.modal-body').html(form);
-                    var submit = $('#remote_form_dialog .btn-confirm');
-                    submit.bind('click', {callback: callback}, dialogs.async_form_submit);
-                    form.bind('submit', {callback: callback}, dialogs.async_form_submit);
+                    dialogs.setModalForm(data, callback);
                 }
             });
-            el.modal();
         },
 
-        patch_form: function(data){
-            var form = $('form', data);
-            form.removeClass('span5 span6 span7 span8 span9 span10 span11');
-            $('button', form).css('visibility', 'hidden');
-            $('a.btn', form).hide();
-            return form;
+        /**
+            Set the content of the modal and bind form-submit events
+
+            If you want a second dialog, or want to display another dialog,
+            use links with the class "modal_followup". The JS will then fetch the html
+            from the href attribute, and set it as the dialog's content.
+
+        */
+        setModalForm: function(data, callback){
+            var el = $('#remote_form_dialog');
+            if (data.msg){
+                el.modal('hide');
+                return dialogs.notification(data.msg, data.status);
+            }
+            el.html(data);
+            var links = $('.modal_followup', el);
+            if(links){
+                links.on('click', function(event){
+                    event.preventDefault();
+                    dialogs.remote_form_dialog($(event.target).attr('href'), callback);
+                });
+            }
+            var submit = $('#remote_form_dialog .btn-primary');
+            submit.bind('click', {callback: callback}, dialogs.async_form_submit);
+            $('form', el).bind('submit', {callback: callback}, dialogs.async_form_submit);
         },
 
+        /**
+            callback after submission of the form.
+            The backend can deliver the following responses:
+
+                * A dict, with a 'status' and a 'msg'. The modal will close,
+                  and the message will be displayed as a notification. the status
+                  can be one of ['info', 'error', 'success'] to correspond with the
+                  bootstrap notification themes
+
+                * A dict, with a 'redirect' parameter. The JS will then trigger
+                  a reload to the given url
+
+                * HTML. The modal will persist, and set the delivered html as its content
+
+        */
         async_form_submit: function(event, callback){
             event.preventDefault();
             var el = $('#remote_form_dialog');
             form = $('form', el);
             form.ajaxSubmit({
                 success: function(data){
-                    if($('.control-group.error', data).length){
-                        var form = dialogs.patch_form(data);
-                        $('#remote_form_dialog div.modal-body').html(form);
-                    } else {
+                    if(data.redirect){
+                        window.location.replace(data.redirect);
+                    } else if (data.msg){
                         el.modal('hide');
-                        if(event.data.callback){
+                        if(data.status == 'success' && event.data.callback){
                             event.data.callback();
                         }
-                        dialogs.notification('Saved');
+                        dialogs.notification(data.msg, data.status);
+                    } else {
+                        dialogs.setModalForm(data, callback);
                     }
                 }
             });
         },
 
-        notification: function(message){
-            $('#notification p.message').html(message);
+        /**
+            render a simple and temporary twitter bootstrap notification.
+            Parameters:
+                message - the message to display
+                status - one of ['error', 'info', 'success']
+        */
+        notification: function(message, status){
             var el = $('#notification');
+            $('p.message', el).html(message);
+            el.removeClass('alert-info alert-success alert-error');
+            if(status != 'error' && status != 'success'){
+                status = 'info';
+            }
+            el.addClass('alert-' + status);
             el.slideDown().delay(2000).fadeOut();
             el.css('left', ($(document.body).width() / 2) - el.width());
         }
@@ -137,7 +183,7 @@ $(function() {
 updateWorldAdapterSelector = function() {
     var option = $("#nodenet_world option:selected");
     if (option) {
-        $("#nodenet_worldadapter").load("/create_worldadapter_selector/"+option.val())
+        $("#nodenet_worldadapter").load("/create_worldadapter_selector/"+option.val());
     }
 };
 

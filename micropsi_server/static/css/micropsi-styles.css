@@ -59,6 +59,14 @@
     background-color: #ffffff;
 }
 
+/** overwrite bottom margin for forms in modal dialogs: **/
+.modal .form-horizontal {
+  margin: 0;
+}
+.modal form legend {
+  font-size: 120%;
+}
+
 input, textarea {
   border-width: 1px;
   border-style: solid;

@@ -130,9 +130,11 @@ def logout():
 @route("/login")
 def login():
     if not usermanager.users:  # create first user
-        return template("signup", version = VERSION, first_user = True, userid="admin")
+        return template("signup", version = VERSION, first_user = True, userid="admin",
+            title="Create the administrator for the MicroPsi server")
 
     return template("login",
+        title="Log in to the MicroPsi server",
         version = VERSION,
         user_id = usermanager.get_user_id_for_session_token(None),
         permissions = usermanager.get_permissions_for_session_token(None))
@@ -147,17 +149,19 @@ def login_submit():
     if token:
         response.set_cookie("token", token)
         # redirect to start page
-        redirect("/")
+        return dict(redirect="/")
     else:
         # login failed, retry
         if user_id in usermanager.users:
             return template("login", version = VERSION, userid=user_id, password=password,
+                title="Log in to the MicroPsi server",
                 password_error="Re-enter the password",
                 login_error="User name and password do not match",
                 cookie_warning = (token is None),
                 permissions = usermanager.get_permissions_for_session_token(token))
         else:
             return template("login", version = VERSION, userid=user_id, password=password,
+                title="Log in to the MicroPsi server",
                 userid_error="Re-enter the user name",
                 login_error="User unknown",
                 cookie_warning = (token is None),
@@ -172,9 +176,12 @@ def signup():
         token = None
 
     if not usermanager.users:  # create first user
-        return template("signup", version = VERSION, first_user = True, cookie_warning = (token is None))
+        return template("signup", version = VERSION,
+            title="Create the administrator for the MicroPsi server",
+            first_user = True, cookie_warning = (token is None))
 
     return template("signup", version = VERSION,
+        title="Create a new user for the MicroPsi server",
         permissions = usermanager.get_permissions_for_session_token(token),
         cookie_warning = (token is None))
 
@@ -195,23 +202,24 @@ def signup_submit():
                 token = usermanager.start_session(userid, password, request.forms.get("keep_logged_in"))
                 response.set_cookie("token", token)
                 # redirect to start page
-                redirect('/')
+                return dict(redirect='/')
             else:
-                return template("error", msg = "User creation failed for an obscure internal reason.")
+                return dict(status="error", msg = "User creation failed for an obscure internal reason.")
         else:
-            return template("error", msg = "Permission inconsistency during user creation.")
+            return dict(status="error", msg = "Permission inconsistency during user creation.")
     else:
         # something wrong with the user id, retry
         return template("signup", version = VERSION, userid=userid, password=password, userid_error=result,
+            title="Create a new user for the MicroPsi server",
             user_id=user_id, permissions = permissions, cookie_warning = (token is None))
 
 @route("/change_password")
 def change_password():
     user_id, permissions, token = get_request_data()
     if token:
-        return template("change_password", version = VERSION, userid = user_id, permissions = permissions)
+        return template("change_password", title="Change password", version = VERSION, user_id = user_id, permissions = permissions)
     else:
-        return template("error", msg = "Cannot change password outside of a session")
+        return dict(status="error", msg = "Cannot change password outside of a session")
 
 @post("/change_password_submit")
 def change_password_submit():
@@ -221,13 +229,13 @@ def change_password_submit():
         new_password = request.forms.new_password
         if usermanager.test_password(user_id, old_password):
             usermanager.set_user_password(user_id, new_password)
-            redirect('/')
+            return dict(msg='New password saved', status="success")
         else:
-            return template("change_password", version = VERSION, userid=user_id, old_password=old_password,
+            return template("change_password", title="Change password", version = VERSION, user_id=user_id, old_password=old_password,
                 permissions = permissions, new_password=new_password,
                 old_password_error="Wrong password, please try again")
     else:
-        return template("error", msg = "Cannot change password outside of a session")
+        return dict(status="error", msg = "Cannot change password outside of a session")
 
 @route("/user_mgt")
 def user_mgt():
@@ -251,7 +259,8 @@ def set_permissions(user_key, role):
 def create_user():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        return template("create_user", version = VERSION, user_id = user_id, permissions = permissions)
+        return template("create_user", version = VERSION, user_id = user_id,
+            title="Create a user for the MicroPsi server", permissions = permissions)
     return template("error", msg = "Insufficient rights to access user console")
 
 @post("/create_user_submit")
@@ -270,20 +279,22 @@ def create_user_submit():
             if usermanager.create_user(userid, password, role, uid = micropsi_core.tools.generate_uid()):
                 redirect('/user_mgt')
             else:
-                return template("error", msg = "User creation failed for an obscure internal reason.")
+                return dict(status="error", msg = "User creation failed for an obscure internal reason.")
         else:
-            return template("error", msg = "Permission inconsistency during user creation.")
+            return dict(status="error", msg = "Permission inconsistency during user creation.")
     else:
         # something wrong with the user id, retry
         return template("create_user", version = VERSION, user_id = user_id,
+            title="Create a user for the MicroPsi server",
             permissions = permissions, userid_error = result)
-    return template("error", msg = "Insufficient rights to access user console")
+    return dict(status="error", msg = "Insufficient rights to access user console")
 
 @route("/set_password/<userid>")
 def set_password(userid):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
         return template("set_password", version = VERSION, permissions = permissions,
+            title="Change Password",
             user_id = user_id,
             userid = userid)
     return template("error", msg = "Insufficient rights to access user console")
@@ -296,8 +307,8 @@ def set_password_submit():
         password = request.forms.password
         if userid in usermanager.users.keys():
             usermanager.set_user_password(userid, password)
-        redirect('/user_mgt')
-    return template("error", msg = "Insufficient rights to access user console")
+        return dict(status='success', msg="New password saved")
+    return dict(status="error", msg = "Insufficient rights to access user console")
 
 @route("/delete_user/<userid>")
 def delete_user(userid):

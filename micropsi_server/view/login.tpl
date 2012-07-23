@@ -1,25 +1,28 @@
 
-<div class="row-fluid">
-    <p>
-    <h1>Log in to the MicroPsi server</h1>
-    <div class="lead">Without logging in, you may not create and edit nodenets.</div>
-    </p>
+<div class="dialogform modal">
 
+    <form class="form-horizontal" action="/login_submit" method="POST">
 
-    <div class="row-fluid">
-        <form class="form-horizontal well span8" action="login_submit" method="POST">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>{{title}}</h3>
+    </div>
+
+    <div class="modal-body">
+
             %if defined('cookie_warning') and cookie_warning:
             <div class="alert alert-info">
+                <div class="lead">Without logging in, you may not create and edit nodenets.</div>
                 <b>Important:</b> Make sure that cookies are enabled in your browser.
             </div>
             %end
 
-            <fieldset>
-                %if defined('login_error'):
-                <div class="alert alert-error">{{login_error}}</div>
-                %else:
-                <legend>Already got a login? Please enter user name and password.</legend>
-                %end
+            %if defined('login_error'):
+            <div class="alert alert-error">{{login_error}}</div>
+            %end
+
+            <legend>Already got a login? Please enter user name and password.</legend>
+            <fieldset class="well">
 
                 %if not defined("userid_error"):
                 <div class="control-group">
@@ -73,16 +76,23 @@
                     </label>
                 </div>
             </fieldset>
-            <button type="submit" class="btn btn-primary">Log in</button>
-            <a class="btn" href="/">Cancel</a>
-        </form>
+
+            %if defined('permissions') and ("create restricted" in permissions or "create full" in permissions):
+            <legend>If you do not have a login:</legend>
+            <fieldset>
+                <a class="btn modal_followup" href="/signup">
+                    Create a new user
+                </a>
+            </fieldset>
+            %end
+
     </div>
-    <div class="row-fluid">
-        %if defined('permissions') and ("create restricted" in permissions or "create full" in permissions):
-        <h3>If you do not have a login:</h3>
-        <a class="btn btn-large" href="signup">
-            Create a new user
-        </a>
-        %end
+
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Log in</button>
+        <a class="btn cancel" data-dismiss="modal">Cancel</a>
     </div>
+
+    </form>
+
 </div>

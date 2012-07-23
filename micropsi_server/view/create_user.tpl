@@ -1,16 +1,15 @@
-%include menu.tpl version = version, permissions = permissions, user_id = user_id
 
-<div class="row-fluid">
-    <p>
-    <h1>Create a user for the MicroPsi server</h1>
-    </p>
+<div class="dialogform modal">
 
+    <form class="form-horizontal" action="create_user_submit" method="POST">
 
-    <div class="row-fluid">
-        <form class="form-horizontal well span8" action="create_user_submit" method="POST">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>{{title}}</h3>
+    </div>
 
-            <fieldset>
-
+    <div class="modal-body">
+        <fieldset class="well">
                 %if not defined("userid_error"):
                 <div class="control-group">
                     <label class="control-label" for="userid">New user name</label>
@@ -85,12 +84,14 @@
                     </div>
                 </div>
                 %end
-            </fieldset>
-            <button type="submit" class="btn btn-primary">Create new user</button>
-            <a class="btn" href="/">Cancel</a>
-        </form>
+        </fieldset>
     </div>
+
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Create new user</button>
+        <a class="btn" data-dismiss="modal" href="/">Cancel</a>
+    </div>
+
+    </form>
+
 </div>
-
-
-%rebase boilerplate title = "Create new user"

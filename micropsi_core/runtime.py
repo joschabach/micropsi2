@@ -9,12 +9,13 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-import world
+from world import World
 import nodenet
 import os
 import tools
 import json
 import warnings
+from bunch import Bunch
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 NODENET_DIRECTORY = "nodenets"
@@ -22,6 +23,10 @@ WORLD_DIRECTORY = "worlds"
 
 
 class MicroPsiRuntime(object):
+
+    worlds = {}
+    nodenets = {}
+
     """The central component of the MicroPsi installation.
 
     The runtime instantiates nodenets and worlds and coordinates the interaction
@@ -34,8 +39,12 @@ class MicroPsiRuntime(object):
             resource_path: the path to the directory in which nodenet and world directories reside
         """
 
-        self.nodenets = crawl_definition_files(path = os.path.join(resource_path, NODENET_DIRECTORY), type = "nodenet")
-        self.worlds = crawl_definition_files(path = os.path.join(resource_path, WORLD_DIRECTORY), type = "world")
+        self.nodenet_data = crawl_definition_files(path = os.path.join(resource_path, NODENET_DIRECTORY), type = "nodenet")
+        self.world_data = crawl_definition_files(path = os.path.join(resource_path, WORLD_DIRECTORY), type = "world")
+        for uid in self.world_data:
+            import pdb; pdb.set_trace()
+            self.worlds[uid] = World(self, **self.world_data[uid])
+
 
     # MicroPsi API
 
@@ -48,9 +57,9 @@ class MicroPsiRuntime(object):
             owner (optional): when submitted, the list is filtered by this owner
         """
         if owner:
-            return { uid: self.nodenets[uid] for uid in self.nodenets if self.nodenets[uid].owner == owner }
+            return { uid: self.nodenet_data[uid] for uid in self.nodenet_data if self.nodenet_data[uid].owner == owner }
         else:
-            return self.nodenets
+            return self.nodenet_data
 
     def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):
         """Creates a new node net manager and registers it.

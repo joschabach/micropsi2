@@ -13,7 +13,7 @@ from micropsi_core.tools import generate_uid
 
 WORLD_VERSION = 1.0
 
-def World(object):
+class World(object):
     """The environment of MicroPsi agents. The world connects to their nodenets via world adapters."""
 
     @property
@@ -44,10 +44,6 @@ def World(object):
     def step(self):
         return self.data.get("step")
 
-    @property
-    def worldadapters(self):
-        return [self.worldadapters[type].world_adapter for type in self.worldadapters]
-
     def __init__(self, runtime, filename, name = "", world_type = "Default", owner = "", uid = None):
         """Create a new MicroPsi simulation environment.
 
@@ -59,14 +55,6 @@ def World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.runtime = runtime
-        self.uid = uid or generate_uid()
-        self.owner = owner
-        self.name = name or os.path.basename(filename)
-        self.filename = filename
-        self.agents = {}
-        self.world_type = world_type
-
         self.worldadapters = {"Default": worldadapter.WorldAdapter(self, "Default")}
 
         # persistent data
@@ -76,6 +64,15 @@ def World(object):
             "objects": {},
             "step": 0
         }
+
+        self.runtime = runtime
+        self.uid = uid or generate_uid()
+        self.owner = owner
+        self.name = name or os.path.basename(filename)
+        self.filename = filename
+        self.agents = {}
+        self.world_type = world_type
+
         self.load()
 
     def load(self, string = None):
@@ -108,7 +105,11 @@ def World(object):
             warnings.warn("Wrong version of the world data; starting new world")
             return False
 
-    def initialize_worlddata(self):
+    def get_available_worldadapters(self):
+        return [self.worldadapters[type].world_adapter for type in self.worldadapters]
+
+
+    def initialize_world(self):
         """Called after reading new world data.
 
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient

@@ -461,9 +461,6 @@ def crawl_definition_files(path, type = "definition"):
     result = {}
     tools.mkdir(path)
 
-    class Bunch(object):
-        def __init__(self, **kwargs): self.__dict__.update(kwargs)
-
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
             try:

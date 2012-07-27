@@ -42,9 +42,7 @@ class MicroPsiRuntime(object):
         self.nodenet_data = crawl_definition_files(path = os.path.join(resource_path, NODENET_DIRECTORY), type = "nodenet")
         self.world_data = crawl_definition_files(path = os.path.join(resource_path, WORLD_DIRECTORY), type = "world")
         for uid in self.world_data:
-            import pdb; pdb.set_trace()
             self.worlds[uid] = World(self, **self.world_data[uid])
-
 
     # MicroPsi API
 

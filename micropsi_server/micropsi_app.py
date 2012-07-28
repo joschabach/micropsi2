@@ -58,6 +58,7 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
         @route(route_prefix + command + "()", method)
         @route(route_prefix + command + "(<argument>)", method)
         def _wrapper(argument = None):
+            response.content_type = 'application/json; charset=utf8'
             kwargs = {}
             if argument:
                 try:

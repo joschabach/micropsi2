@@ -106,7 +106,8 @@ class World(object):
             return False
 
     def get_available_worldadapters(self):
-        return [self.worldadapters[type].world_adapter for type in self.worldadapters]
+        """ return the list of instantiated worldadapters """
+        return [self.worldadapters[type].worldadapter for type in self.worldadapters]
 
 
     def initialize_world(self):
@@ -131,7 +132,7 @@ class World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            if self.agent[nodenet_uid].world_adapter == worldadapter:
+            if self.agents[nodenet_uid].worldadapter == worldadapter:
                 return True, nodenet_uid
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
@@ -145,24 +146,26 @@ class World(object):
         """
         pass
 
-    def spawn_agent(self, worldadapter, nodenet_uid, options = None):
+    def spawn_agent(self, worldadapter, nodenet_uid, options = {}):
         """Creates an agent object (nodenet incarnation),
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
-        pass
+        filename = self.runtime.nodenet_data[nodenet_uid].filename
+        self.agents[nodenet_uid] = Nodenet(self.runtime, filename, worldadapter=worldadapter, world=self, owner=self.owner, **options)
+        return True, nodenet_uid
 
     def get_available_datasources(self, nodenet_uid):
         """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.agents:
-            return self.agent[nodenet_uid].datasources
+            return self.agents[nodenet_uid].datasources
         else: return None
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.worldadapters:
-            return self.agent[nodenet_uid].datatargets
+            return self.agents[nodenet_uid].datatargets
         else: return None
 
     def get_datasource(self, nodenet_uid, key):

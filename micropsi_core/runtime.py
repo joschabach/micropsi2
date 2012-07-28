@@ -44,6 +44,13 @@ class MicroPsiRuntime(object):
         for uid in self.world_data:
             self.worlds[uid] = World(self, **self.world_data[uid])
 
+
+    def get_world_uid_for_nodenet_uid(self, nodenet_uid):
+        """ Temporary method to get the world uid to a given nodenet uid.
+            I guess this should be handled a bit differently
+        """
+        return self.nodenet_data[nodenet_uid].world
+
     # MicroPsi API
 
     # Nodenet
@@ -58,6 +65,29 @@ class MicroPsiRuntime(object):
             return { uid: self.nodenet_data[uid] for uid in self.nodenet_data if self.nodenet_data[uid].owner == owner }
         else:
             return self.nodenet_data
+
+    def load_nodenet(self, nodenet_uid):
+        """ Load the nodenet with the given uid into memeory
+            TODO: how do we know in which world we want to load the nodenet?
+            I've added the world uid to the nodenet serialized data for the moment
+
+            Arguments:
+                nodenet_uid
+            Returns:
+                 True, nodenet_uid on success
+                 False, errormessage on failure
+
+        """
+        world_uid = self.get_world_uid_for_nodenet_uid(nodenet_uid)
+        return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
+
+    def get_nodenet_area(self, nodenet_uid, x1=0, x2=-1, y1=0, y2=-1):
+        """ return all nodes and links within the given area of the nodenet
+            for representation in the UI
+            TODO
+        """
+        return self.nodenet_data[nodenet_uid]
+
 
     def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):
         """Creates a new node net manager and registers it.
@@ -481,8 +511,9 @@ def crawl_definition_files(path, type = "definition"):
                             filename = filename,
                             owner = data.get("owner")
                         )
-                        if "worldadapters" in data:
-                            result[data["uid"]].worldadapters = data["worldadapters"]
+                        if "worldadapter" in data:
+                            result[data["uid"]].worldadapter = data["worldadapter"]
+                            result[data["uid"]].world = data["world"]
             except ValueError:
                 warnings.warn("Invalid %s data in file '%s'" %(type, definition_file_name))
             except IOError:

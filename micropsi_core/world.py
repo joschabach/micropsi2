@@ -9,6 +9,7 @@ import worldadapter
 import json
 import os
 import warnings
+from nodenet import Nodenet
 from micropsi_core.tools import generate_uid
 
 WORLD_VERSION = 1.0

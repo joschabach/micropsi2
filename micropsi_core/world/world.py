@@ -79,10 +79,10 @@ def World(object):
         self.load()
 
     def load(self, string = None):
-        """Load the world data from a file
+        """Load the world state from a file
 
         Arguments:
-            string (optional): if given, the world data is taken from the string instead.
+            string (optional): if given, the world state is taken from the string instead.
         """
         # try to access file
         if string:
@@ -105,7 +105,7 @@ def World(object):
             self.initialize_world()
             return True
         else:
-            warnings.warn("Wrong version of the world data; starting new world")
+            warnings.warn("Wrong version of the world data")
             return False
 
     def initialize_worlddata(self):
@@ -136,7 +136,6 @@ def World(object):
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
 
         return self.spawn_agent(worldadapter, nodenet_uid)
-
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding

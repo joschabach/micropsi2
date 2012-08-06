@@ -17,57 +17,61 @@ class Nodenet(object):
     Contains the net entities and runs the activation spreading. The nodenet stores persistent data.
 
     Attributes:
-        data: persistent nodenet data
-        nodespaces: A dictionary of node space UIDs and respective node spaces
-        nodes: A dictionary of node UIDs and respective nodes
-        calculate_now_nodes: A set of nodes that has received activation in the current step
-        links: A dictionary of link UIDs and respective links
-        gate_types: A dictionary of gate type names and the individual types of gates
-        slot_types: A dictionary of slot type names and the individual types of slots
-        native_module_types: A dictionary of native module names and individual native modules types
-        agent_type: The type of the agent, which is matched to a world adapter
-        worldadapter: An actual world adapter object (agent body) residing in a world implementation
+        state: a dict of persistent nodenet data; everything stored within the state can be stored and exported
+        uid: a unique identifier for the node net
+        name: an optional name for the node net
+        filename: the path and file name to the file storing the persisted net data
+        nodespaces: a dictionary of node space UIDs and respective node spaces
+        nodes: a dictionary of node UIDs and respective nodes
+        links: a dictionary of link UIDs and respective links
+        gate_types: a dictionary of gate type names and the individual types of gates
+        slot_types: a dictionary of slot type names and the individual types of slots
+        node_types: a dictionary of node type names and node type definitions
+        world: an environment for the node net
+        worldadapter: an actual world adapter object residing in a world implementation, provides interface
+        owner: an id of the user who created the node net
+        step: the current simulation step of the node net
     """
 
     @property
     def uid(self):
-        return self.data.get("uid")
+        return self.state.get("uid")
 
     @property
     def name(self):
-        return self.data.get("name", self.data.get("uid"))
+        return self.state.get("name", self.state.get("uid"))
 
     @name.setter
     def name(self, identifier):
-        self.data["name"] = identifier
+        self.state["name"] = identifier
 
     @property
     def owner(self):
-        return self.data.get("owner")
+        return self.state.get("owner")
 
     @owner.setter
     def owner(self, identifier):
-        self.data["owner"] = identifier
+        self.state["owner"] = identifier
 
     @property
     def world(self):
-        return self.runtime.worlds.get(self.data["world"])
+        return self.runtime.worlds.get(self.state["world"])
 
     @world.setter
     def world(self, world):
-        self.data["world"] = world.uid
+        self.state["world"] = world.uid
 
     @property
     def world_adapter(self):
-        return self.data.get("worldadapter")
+        return self.state.get("worldadapter")
 
     @world_adapter.setter
     def world_adapter(self, worldadapter_uid):
-        self.data["worldadapter"] = worldadapter_uid
+        self.state["worldadapter"] = worldadapter_uid
 
     @property
     def current_step(self):
-        return self.data.get("step")
+        return self.state.get("step")
 
     def __init__(self, runtime, filename, name = "", world_adapter = "Default", world = None, owner = "", uid = None):
         """Create a new MicroPsi agent.
@@ -82,14 +86,14 @@ class Nodenet(object):
 
         uid = uid or micropsi_core.tools.generate_uid()
 
-        self.data = {
+        self.state = {
             "version": NODENET_VERSION,  # used to check compatibility of the node net data
             "uid": uid,
             "nodes": {},
             "links": {},
             "nodespaces": {},
             "nodetypes": STANDARD_NODETYPES,
-            "activatortypes": ["por", "ret", "sub", "sur", "cat", "exp"],
+            "activatortypes": STANDARD_NODETYPES.keys(),
             "step": 0
         }
 
@@ -115,21 +119,21 @@ class Nodenet(object):
         # try to access file
         if string:
             try:
-                self.data = json.loads(string)
+                self.state = json.loads(string)
             except ValueError:
                 warnings.warn("Could not read nodenet data from string")
                 return False
         else:
             try:
                 with open(self.filename) as file:
-                    self.data = json.load(file)
+                    self.state = json.load(file)
             except ValueError:
                 warnings.warn("Could not read nodenet data")
                 return False
             except IOError:
                 warnings.warn("Could not open nodenet file")
 
-        if "version" in self.data and self.data["version"] == NODENET_VERSION:
+        if "version" in self.state and self.state["version"] == NODENET_VERSION:
             self.initialize_nodenet()
             return True
         else:
@@ -137,9 +141,9 @@ class Nodenet(object):
             return False
 
     def initialize_nodenet(self):
-        """Called after reading new nodenet data.
+        """Called after reading new nodenet state.
 
-        Parses the nodenet data and set up the non-persistent data structures necessary for efficient
+        Parses the nodenet state and set up the non-persistent data structures necessary for efficient
         computation of the node net
         """
         # check if data sources and data targets match
@@ -151,22 +155,22 @@ class Nodenet(object):
 
     # add functions for exporting and importing node nets
     def export_data(self):
-        """serializes and returns the nodenet data for export to a end user"""
+        """serializes and returns the nodenet state for export to a end user"""
         pass
 
     def import_data(self, nodenet_data):
-        """imports nodenet data as the current node net"""
+        """imports nodenet state as the current node net"""
         pass
 
     def merge_data(self, nodenet_data):
-        """merges the nodenet data with the current node net, might have to give new UIDs to some entities"""
+        """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
         pass
 
     def step(self):
         """perform a simulation step"""
         self.calculate_node_functions()
         self.propagate_link_activation()
-        self.data["step"] +=1
+        self.state["step"] +=1
 
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""
@@ -239,25 +243,6 @@ class NetEntity(object):
         self.position = position
         self.parent_nodespace = parent_nodespace
 
-class Comment(NetEntity):
-    """Comments are simple text boxes that can be arbitrarily positioned to aid in understanding the node net.
-
-    Attributes:
-        the same as for NetEntities, and
-        comment: a string of text
-    """
-
-    @property
-    def comment(self):
-        return self.data.get("comment", "")
-
-    @comment.setter
-    def comment(self, string):
-        self.data["comment"] = string
-
-    def __init__(self, nodenet, parent_nodespace, position, comment = "", uid = None):
-        NetEntity.__init__(nodenet, parent_nodespace, position, name = "Comment", entitytype = "comments", uid = uid)
-        self.comment = comment
 
 class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
     """A container for net entities.
@@ -575,9 +560,9 @@ class Nodetype(object):
 
         If a nodetype with the same name is already defined in the nodenet, it is overwritten. Parameters that
         are not given here will be taken from the original definition. Thus, you may use this initializer to
-        set up the nodetypes after loading new nodenet data (by using it without parameters).
+        set up the nodetypes after loading new nodenet state (by using it without parameters).
 
-        Within the nodenet, the nodenet data dict stores the whole nodenet definition. The part that defines
+        Within the nodenet, the nodenet state dict stores the whole nodenet definition. The part that defines
         nodetypes is structured as follows:
 
             { "slots": list of slot types or None,

@@ -35,6 +35,8 @@ class ConfigurationManager(object):
         user_file: the handle for the user data file
     """
 
+    instances = {}
+
     def __init__(self, config_path = "config-data.json", auto_save=True):
         """initialize configuration management.
 
@@ -44,6 +46,14 @@ class ConfigurationManager(object):
             config (optional): a path to store config data permanently.
             auto_save: if set to True, then the config data will be saved after every change.
         """
+
+        # check if we already have a configuration manager with this resource file
+        absolute_path = os.path.abspath(config_path)
+        if absolute_path in ConfigurationManager.instances:
+            raise RuntimeError("A configuration manager with this resource path already exists!")
+
+        ConfigurationManager.instances[absolute_path] = self
+
         # set up persistence
         micropsi_core.tools.mkdir(os.path.dirname(config_path))
 
@@ -55,6 +65,7 @@ class ConfigurationManager(object):
     def __del__(self):
         """shut down user management"""
         self.save_configs()
+        del ConfigurationManager.instances[os.path.abspath(self.config_file_name)]
 
     def load_configs(self):
         """load configuration data"""
@@ -63,9 +74,9 @@ class ConfigurationManager(object):
                 self.data = json.load(file)
             return True
         except ValueError:
-            print "Could not read config data"
+            warnings.warn("Could not read config data")
         except IOError:
-            pass
+            warnings.warn("Could not open config data")
         return False
 
     def save_configs(self):

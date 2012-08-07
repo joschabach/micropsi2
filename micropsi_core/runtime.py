@@ -9,12 +9,13 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-import world
+from world import World
 import nodenet
 import os
 import tools
 import json
 import warnings
+from bunch import Bunch
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 NODENET_DIRECTORY = "nodenets"
@@ -22,6 +23,10 @@ WORLD_DIRECTORY = "worlds"
 
 
 class MicroPsiRuntime(object):
+
+    worlds = {}
+    nodenets = {}
+
     """The central component of the MicroPsi installation.
 
     The runtime instantiates nodenets and worlds and coordinates the interaction
@@ -34,8 +39,17 @@ class MicroPsiRuntime(object):
             resource_path: the path to the directory in which nodenet and world directories reside
         """
 
-        self.nodenets = crawl_definition_files(path = os.path.join(resource_path, NODENET_DIRECTORY), type = "nodenet")
-        self.worlds = crawl_definition_files(path = os.path.join(resource_path, WORLD_DIRECTORY), type = "world")
+        self.nodenet_data = crawl_definition_files(path = os.path.join(resource_path, NODENET_DIRECTORY), type = "nodenet")
+        self.world_data = crawl_definition_files(path = os.path.join(resource_path, WORLD_DIRECTORY), type = "world")
+        for uid in self.world_data:
+            self.worlds[uid] = World(self, **self.world_data[uid])
+
+
+    def get_world_uid_for_nodenet_uid(self, nodenet_uid):
+        """ Temporary method to get the world uid to a given nodenet uid.
+            I guess this should be handled a bit differently
+        """
+        return self.nodenet_data[nodenet_uid].world
 
     # MicroPsi API
 
@@ -48,9 +62,32 @@ class MicroPsiRuntime(object):
             owner (optional): when submitted, the list is filtered by this owner
         """
         if owner:
-            return { uid: self.nodenets[uid] for uid in self.nodenets if self.nodenets[uid].owner == owner }
+            return { uid: self.nodenet_data[uid] for uid in self.nodenet_data if self.nodenet_data[uid].owner == owner }
         else:
-            return self.nodenets
+            return self.nodenet_data
+
+    def load_nodenet(self, nodenet_uid):
+        """ Load the nodenet with the given uid into memeory
+            TODO: how do we know in which world we want to load the nodenet?
+            I've added the world uid to the nodenet serialized data for the moment
+
+            Arguments:
+                nodenet_uid
+            Returns:
+                 True, nodenet_uid on success
+                 False, errormessage on failure
+
+        """
+        world_uid = self.get_world_uid_for_nodenet_uid(nodenet_uid)
+        return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
+
+    def get_nodenet_area(self, nodenet_uid, x1=0, x2=-1, y1=0, y2=-1):
+        """ return all nodes and links within the given area of the nodenet
+            for representation in the UI
+            TODO
+        """
+        return self.nodenet_data[nodenet_uid]
+
 
     def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):
         """Creates a new node net manager and registers it.
@@ -461,9 +498,6 @@ def crawl_definition_files(path, type = "definition"):
     result = {}
     tools.mkdir(path)
 
-    class Bunch(object):
-        def __init__(self, **kwargs): self.__dict__.update(kwargs)
-
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
             try:
@@ -477,8 +511,9 @@ def crawl_definition_files(path, type = "definition"):
                             filename = filename,
                             owner = data.get("owner")
                         )
-                        if "worldadapters" in data:
-                            result[data["uid"]].worldadapters = data["worldadapters"]
+                        if "worldadapter" in data:
+                            result[data["uid"]].worldadapter = data["worldadapter"]
+                            result[data["uid"]].world = data["world"]
             except ValueError:
                 warnings.warn("Invalid %s data in file '%s'" %(type, definition_file_name))
             except IOError:

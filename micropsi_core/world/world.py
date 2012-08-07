@@ -9,11 +9,12 @@ import worldadapter
 import json
 import os
 import warnings
+from nodenet import Nodenet
 from micropsi_core.tools import generate_uid
 
 WORLD_VERSION = 1.0
 
-def World(object):
+class World(object):
     """The environment of MicroPsi agents. The world connects to their nodenets via world adapters."""
 
     @property
@@ -44,10 +45,6 @@ def World(object):
     def step(self):
         return self.data.get("step")
 
-    @property
-    def worldadapters(self):
-        return [self.worldadapters[type].world_adapter for type in self.worldadapters]
-
     def __init__(self, runtime, filename, name = "", world_type = "Default", owner = "", uid = None):
         """Create a new MicroPsi simulation environment.
 
@@ -59,14 +56,6 @@ def World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.runtime = runtime
-        self.uid = uid or generate_uid()
-        self.owner = owner
-        self.name = name or os.path.basename(filename)
-        self.filename = filename
-        self.agents = {}
-        self.world_type = world_type
-
         self.worldadapters = {"Default": worldadapter.WorldAdapter(self, "Default")}
 
         # persistent data
@@ -76,6 +65,15 @@ def World(object):
             "objects": {},
             "step": 0
         }
+
+        self.runtime = runtime
+        self.uid = uid or generate_uid()
+        self.owner = owner
+        self.name = name or os.path.basename(filename)
+        self.filename = filename
+        self.agents = {}
+        self.world_type = world_type
+
         self.load()
 
     def load(self, string = None):
@@ -108,7 +106,12 @@ def World(object):
             warnings.warn("Wrong version of the world data")
             return False
 
-    def initialize_worlddata(self):
+    def get_available_worldadapters(self):
+        """ return the list of instantiated worldadapters """
+        return [self.worldadapters[type].worldadapter for type in self.worldadapters]
+
+
+    def initialize_world(self):
         """Called after reading new world data.
 
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
@@ -130,7 +133,7 @@ def World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            if self.agent[nodenet_uid].world_adapter == worldadapter:
+            if self.agents[nodenet_uid].worldadapter == worldadapter:
                 return True, nodenet_uid
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
@@ -143,24 +146,26 @@ def World(object):
         """
         pass
 
-    def spawn_agent(self, worldadapter, nodenet_uid, options = None):
+    def spawn_agent(self, worldadapter, nodenet_uid, options = {}):
         """Creates an agent object (nodenet incarnation),
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
-        pass
+        filename = self.runtime.nodenet_data[nodenet_uid].filename
+        self.agents[nodenet_uid] = Nodenet(self.runtime, filename, worldadapter=worldadapter, world=self, owner=self.owner, **options)
+        return True, nodenet_uid
 
     def get_available_datasources(self, nodenet_uid):
         """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.agents:
-            return self.agent[nodenet_uid].datasources
+            return self.agents[nodenet_uid].datasources
         else: return None
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.worldadapters:
-            return self.agent[agent_uid].datatargets
+            return self.agents[nodenet_uid].datatargets
         else: return None
 
     def get_datasource(self, nodenet_uid, key):

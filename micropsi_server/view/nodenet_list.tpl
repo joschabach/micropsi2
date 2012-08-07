@@ -18,13 +18,13 @@
 <ul class="dropdown-menu">
 % for uid in my_nodenets:
     % if uid != current_nodenet:
-<li><a href="/rpc/select_nodenet(nodenet_uid='{{uid}}')">{{my_nodenets[uid].name}}</a></li>
+<li><a href="/rpc/select_nodenet" data="{{uid}}" class="nodenet_select">{{my_nodenets[uid].name}}</a></li>
     % end
 % end
 
 % for uid in other_nodenets:
     % if uid != current_nodenet:
-<li><a href="/rpc/select_nodenet(nodenet_uid='{{uid}}')">{{other_nodenets[uid].name}} ({{other_nodenets[uid].owner}})</a></li>
+<li><a href="/rpc/select_nodenet" data="{{uid}}" class="nodenet_select">{{other_nodenets[uid].name}} ({{other_nodenets[uid].owner}})</a></li>
     % end
 % end
 </ul>

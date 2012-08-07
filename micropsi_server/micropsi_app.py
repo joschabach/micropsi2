@@ -58,19 +58,20 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
         @route(route_prefix + command + "()", method)
         @route(route_prefix + command + "(<argument>)", method)
         def _wrapper(argument = None):
+            response.content_type = 'application/json; charset=utf8'
             kwargs = {}
             if argument:
                 try:
                     kwargs = dict((n.strip(),json.loads(v)) for n,v in (a.split('=') for a in argument.split(",")))
-                except ValueError:
-                    return {"Error": "Invalid arguments for remote procedure call"}
+                except ValueError, err:
+                    return {"Error": "Invalid arguments for remote procedure call: " + err.message}
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 return {"Error": "Insufficient permissions for remote procedure call"}
             else:
                 kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 try:
-                    return json.dumps(func(**dict((name, kwargs[name]) for name in inspect.getargspec(func)[0])))
+                    return json.dumps(func(**dict((name, kwargs[name]) for name in inspect.getargspec(func).args)))
                 except KeyError, err:
                     return {"Error": "Missing argument in remote procedure call: %s" %err}
         return _wrapper
@@ -414,8 +415,20 @@ def nodenet_list(current_nodenet):
         my_nodenets = { uid: nodenets[uid] for uid in nodenets if nodenets[uid].owner == user_id},
         other_nodenets = { uid: nodenets[uid] for uid in nodenets if nodenets[uid].owner != user_id})
 
-@route("/select_nodenet")
-def select_nodenet(nodenet_uid): pass
+@rpc("select_nodenet")
+def select_nodenet(nodenet_uid):
+    result, msg = micropsi.load_nodenet(nodenet_uid)
+    if result:
+        return dict(Status="OK")
+    else:
+        return dict(Error=msg)
+
+@rpc("load_nodenet_into_ui")
+def load_nodenet_into_ui(nodenet_uid, **coordinates):
+    result, uid = micropsi.load_nodenet(nodenet_uid)
+    if not result:
+        return dict(Error=uid)
+    return micropsi.get_nodenet_area(nodenet_uid, **coordinates)
 
 @rpc("generate_uid")
 def generate_uid(): return micropsi_core.tools.generate_uid()

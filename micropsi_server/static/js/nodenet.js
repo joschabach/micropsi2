@@ -54,25 +54,57 @@ nodes = {};
 links = {};
 selection = {};
 
-var linkLayer = null;
-var nodeLayer = null;
-var prerenderLayer = null;
+var linkLayer = new Layer();
+var nodeLayer = new Layer();
+var prerenderLayer = new Layer();
+prerenderLayer.visible = false;
 
-var currentNodenet = "b2";
-var currentWorld = 0;
-var currentNodeSpace = 0;
+
+var currentNodenet = "b2";  // TODO: fetch from cookie
+var currentWorld = 0;       // cookie
+var currentNodeSpace = 0;   // cookie
 
 initializeMenus();
-initializeNodeNet();
+//initializeNodeNet();
+
+refreshNodenetList();
+
+function refreshNodenetList(){
+    $("#nodenet_list").load("/nodenet_list/"+currentNodenet, function(data){
+        $('#nodenet_list .nodenet_select').on('click', function(event){
+            event.preventDefault();
+            var el = $(event.target);
+            uid = el.attr('data');
+            setCurrentNodenet(uid);
+        });
+    });
+}
+
+function setCurrentNodenet(uid){
+    $.ajax('/rpc/load_nodenet_into_ui(nodenet_uid="'+uid+'")', {
+        success: function(data){
+            // todo: server should deliver according status code.
+            if (!data.Error){
+                currentNodenet = uid;
+                initializeNodeNet(data);
+                refreshNodenetList();
+            } else {
+                dialogs.notification(data.Error, "error");
+            }
+        }
+    });
+}
 
 // fetch visible nodes and links
-function initializeNodeNet(){
+function initializeNodeNet(data){
 
-    $("#nodenet_list").load("/nodenet_list/"+currentNodenet);
+    console.log("initializing new nodenet");
+    console.log(data);
 
-    linkLayer = new Layer();
-    nodeLayer = new Layer();
-    prerenderLayer = new Layer();
+    linkLayer.removeChildren();
+    nodeLayer.removeChildren();
+    prerenderLayer.removeChildren();
+
     prerenderLayer.visible = false;
     currentNodeSpace = "Root";
     addNode(new Node("Root", 0, 0, 0, "Root", "Nodespace"));

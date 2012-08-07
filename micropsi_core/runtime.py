@@ -120,18 +120,18 @@ class MicroPsiRuntime(object):
         pass
 
     def export_nodenet(self, nodenet_uid):
-        """Exports the nodenet data to the user, so it can be viewed and exchanged.
+        """Exports the nodenet state to the user, so it can be viewed and exchanged.
 
-        Returns a string that contains the nodenet data in JSON format.
+        Returns a string that contains the nodenet state in JSON format.
         """
         pass
 
     def import_nodenet(self, anodenet_uid, string):
-        """Imports the nodenet data, instantiates the nodenet.
+        """Imports the nodenet state, instantiates the nodenet.
 
         Arguments:
             nodenet_uid: the uid of the nodenet (may overwrite existing nodenet)
-            string: a string that contains the nodenet data in JSON format.
+            string: a string that contains the nodenet state in JSON format.
         """
         pass
 
@@ -223,7 +223,7 @@ class MicroPsiRuntime(object):
         pass
 
     def save_world(self, world_uid):
-        """Stores the world data on the server."""
+        """Stores the world state on the server."""
         pass
 
     def export_world(self, world_uid):

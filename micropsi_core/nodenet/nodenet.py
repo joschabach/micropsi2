@@ -62,18 +62,18 @@ class Nodenet(object):
         self.state["world"] = world.uid
 
     @property
-    def world_adapter(self):
+    def worldadapter(self):
         return self.state.get("worldadapter")
 
-    @world_adapter.setter
-    def world_adapter(self, worldadapter_uid):
+    @worldadapter.setter
+    def worldadapter(self, worldadapter_uid):
         self.state["worldadapter"] = worldadapter_uid
 
     @property
     def current_step(self):
         return self.state.get("step")
 
-    def __init__(self, runtime, filename, name = "", world_adapter = "Default", world = None, owner = "", uid = None):
+    def __init__(self, runtime, filename, name = "", worldadapter = "Default", world = None, owner = "", uid = None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -103,7 +103,7 @@ class Nodenet(object):
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
-        self.world_adapter = world_adapter
+        self.worldadapter = worldadapter
 
         self.nodespaces = {}
         self.nodes = {}

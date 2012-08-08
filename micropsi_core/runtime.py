@@ -9,8 +9,8 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from world import World
-import nodenet
+from micropsi_core.world.world import World
+from micropsi_core.nodenet import nodenet
 import os
 import tools
 import json
@@ -87,7 +87,7 @@ class MicroPsiRuntime(object):
             TODO
         """
         world_uid = self.get_world_uid_for_nodenet_uid(nodenet_uid)
-        return self.worlds[world_uid].agents[nodenet_uid].data
+        return self.worlds[world_uid].agents[nodenet_uid].state
 
 
 

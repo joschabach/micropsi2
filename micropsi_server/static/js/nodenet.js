@@ -65,7 +65,7 @@ var currentWorld = 0;       // cookie
 var currentNodeSpace = 0;   // cookie
 
 initializeMenus();
-//initializeNodeNet();
+initializeNodeNet();
 
 refreshNodenetList();
 

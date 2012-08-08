@@ -54,21 +54,24 @@ nodes = {};
 links = {};
 selection = {};
 
-var linkLayer = new Layer();
-var nodeLayer = new Layer();
-var prerenderLayer = new Layer();
+linkLayer = new Layer();
+linkLayer.name = 'LinkLayer';
+nodeLayer = new Layer();
+nodeLayer.name = 'NodeLayer';
+prerenderLayer = new Layer();
+prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
-
 
 var currentNodenet = "b2";  // TODO: fetch from cookie
 var currentWorld = 0;       // cookie
 var currentNodeSpace = 0;   // cookie
 
+var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
+
 initializeMenus();
 initializeNodeNet();
 
 refreshNodenetList();
-
 function refreshNodenetList(){
     $("#nodenet_list").load("/nodenet_list/"+currentNodenet, function(data){
         $('#nodenet_list .nodenet_select').on('click', function(event){
@@ -98,109 +101,43 @@ function setCurrentNodenet(uid){
 // fetch visible nodes and links
 function initializeNodeNet(data){
 
-    console.log("initializing new nodenet");
-    console.log(data);
-
-    linkLayer.removeChildren();
-    nodeLayer.removeChildren();
-    prerenderLayer.removeChildren();
-
-    prerenderLayer.visible = false;
     currentNodeSpace = "Root";
-    addNode(new Node("Root", 0, 0, 0, "Root", "Nodespace"));
 
-    addNode(new Node("a1", 150, 450, "Root", "Alice", "Actor", 1));
-    addNode(new Node("a2", 250, 450, "Root", "Tom", "Actor", 0.3));
-    addNode(new Node("a3", 350, 450, "Root", "André", "Actor", 0.0));
-    addNode(new Node("a4", 450, 450, "Root", "Boris", "Actor", -0.1));
-    addNode(new Node("a5", 550, 450, "Root", "Sarah", "Actor", 0.3));
-    addNode(new Node("a5b", 300, 80, "Root", "Umzug", "Concept", 0.2));
-    addNode(new Node("a6", 100, 270, "Root", "Planung", "Concept", 0.3));
-    addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
+    for (var key in nodes){
+        if (key != "Root"){
+            delete nodes[key];
+        }
+    }
+    links = {};
+    nodeLayer.removeChildren();
+    addNode(rootNode);
+    linkLayer.removeChildren();
 
-    addNode(new Node("a7", 250, 270, "Root", "Vorbereitung", "Concept", 0.6));
-    addNode(new Node("a8", 400, 270, "Root", "Fahrzeugbestellung", "Concept", -0.8));
-    addNode(new Node("a9", 550, 270, "Root", "Einladung", "Concept", 0.7));
-    addNode(new Node("a10", 700, 270, "Root", "Packen", "Concept", 0.2));
-    addNode(new Node("a11", 950, 270, "Root", "Durchführung", "Concept", 0.0));
-    addNode(new Node("a11b", 1100, 270, "Root", "Fahrzeugrückgabe", "Concept", -0.6));
-    addNode(new Node("a12", 1250, 270, "Root", "Party", "Concept", 0.0));
-    addNode(new Node("a12b", 1400, 350, "Root", "Einkäufe", "Concept", 0.2));
-    addNode(new Node("a13", 700, 450, "Root", "Fahrzeug", "Native", 0.5));
-    addNode(new Node("a14", 800, 450, "Root", "Kisten", "Register", 0.5));
-    addNode(new Node("a15", 900, 450, "Root", "Getränke", "Register", 0.5));
-    addNode(new Node("a16", 680, 380, "Root", "Datum", "Sensor", -0.5));
-    addNode(new Node("a17", 780, 380, "Root", "Orts-Temperatur", "Sensor", 0.5));
+    if (data){
+        console.log(data);
 
-    addLink(new Link("a1", 0, "a6", 0, 1, 1));
-    addLink(new Link("a1", 0, "a7", 0, 1, 1));
-    addLink(new Link("a1", 0, "a8", 0, 0.5, 1));
-    addLink(new Link("a1", 0, "a9", 0, 0.8, 1));
-    addLink(new Link("a1", 0, "a10", 0, 1, 1));
-    addLink(new Link("a1", 0, "a12", 0, 1, 1));
-    addLink(new Link("a1", 0, "a12b", 0, 1, 1));
-    addLink(new Link("a2", 0, "a12b", 0, 1, 1));
-    addLink(new Link("a2", 0, "a8", 0, 0.5, 1));
-    addLink(new Link("a2", 0, "a11", 0, 1, 1));
-    addLink(new Link("a2", 0, "a11b", 0, 1, 1));
-    addLink(new Link("a2", 0, "a10", 0, 0.8, 1));
-    addLink(new Link("a3", 0, "a10", 0, 1, 1));
-    addLink(new Link("a3", 0, "a12", 0, 1, 1));
-    addLink(new Link("a4", 0, "a11", 0, 1, 1));
-    addLink(new Link("a4", 0, "a12", 0, 1, 1));
-    addLink(new Link("a5", 0, "a11", 0, 1, 1));
+        for(var uid in data.nodes){
+            console.log('adding node:' + uid);
+            pos = data.nodes[uid].pos.split(',');
+            addNode(new Node(uid, parseInt(pos[0], 10), parseInt(pos[1], 10), "Root", data.nodes[uid].name, data.nodes[uid].type));
+        }
 
-    addLink(new Link("a13", 0, "a8", 0, 1, 1));
-    addLink(new Link("a11", 3, "a13", 0, 1, 1));
-    addLink(new Link("a12b", 3, "a13", 0, 1, 1));
-    addLink(new Link("a11b", 3, "a13", 0, 1, 1));
-    addLink(new Link("a12b", 3, "a15", 0, 0.7, 1));
-    addLink(new Link("a15", 0, "a12", 0, 1, 1));
-    addLink(new Link("a14", 0, "a10", 0, 1, 1));
+        var link;
+        for(var index in data.links){
+            link = data.links[index];
+            console.log('adding link: ' + link.sourceNode + ' -> ' + link.targetNode);
+            addLink(new Link(link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+        }
 
-    addLink(new Link("a16", 0, "a8", 0, 1, 1));
-    addLink(new Link("a16", 0, "a11", 0, 0.9, 1));
-    addLink(new Link("a16", 0, "a11b", 0, 1, 1));
+    } else {
 
-    addLink(new Link("a17", 0, "a11", 0, 0.3, 1));
+        addNode(new Node("aa1", 150, 450, "Root", "Alice", "Actor", 1));
+        addNode(new Node("aa5b", 300, 80, "Root", "Umzug", "Concept", 0.2));
+        addNode(new Node("aa6", 500, 270, "Root", "Planung", "Concept", 0.3));
+        addLink(new Link("aa5b", 3, "aa6", 0, 0.8, 1));
+        addLink(new Link("aa1", 0, "aa6", 0, 1, 1));
 
-    addLink(new Link("a5b", 3, "a7", 0, 0.9, 1));
-    addLink(new Link("a5b", 3, "a8", 0, 1, 1));
-    addLink(new Link("a5b", 3, "a9", 0, 0.9, 1));
-    addLink(new Link("a5b", 3, "a10", 0, 1, 1));
-    addLink(new Link("a5b", 3, "a11", 0, 1, 1));
-    addLink(new Link("a5b", 3, "a11b", 0, 1, 1));
-    addLink(new Link("a5b", 3, "a12", 0, 0.7, 1));
-
-    addLink(new Link("a6", 4, "a5b", 0, 0.2, 1));
-    addLink(new Link("a7", 4, "a5b", 0, 0.1, 1));
-    addLink(new Link("a8", 4, "a5b", 0, 0.4, 1));
-    addLink(new Link("a9", 4, "a5b", 0, 1, 1));
-    addLink(new Link("a10", 4, "a5b", 0, 1, 1));
-    addLink(new Link("a11", 4, "a5b", 0, 1, 1));
-    addLink(new Link("a11b", 4, "a5b", 0, 0.8, 1));
-    addLink(new Link("a12", 4, "a5b", 0, 0.3, 1));
-
-    addLink(new Link("a12b", 4, "a12", 0, 0.7, 1));
-    addLink(new Link("a12", 3, "a12b", 0, 1, 1));
-
-    addLink(new Link("a6", 1, "a7", 0, 1, 1));
-    addLink(new Link("a7", 1, "a8", 0, 1, 1));
-    addLink(new Link("a8", 1, "a9", 0, 1, 1));
-    addLink(new Link("a9", 1, "a10", 0, 1, 1));
-    addLink(new Link("a10", 1, "a11", 0, 1, 1));
-    addLink(new Link("a11", 1, "a11b", 0, 1, 1));
-    addLink(new Link("a11b", 1, "a12", 0, 1, 1));
-    addLink(new Link("a7", 2, "a6", 0, 1, 1));
-    addLink(new Link("a8", 2, "a7", 0, 1, 1));
-    addLink(new Link("a9", 2, "a8", 0, 1, 1));
-    addLink(new Link("a10", 2, "a9", 0, 1, 1));
-    addLink(new Link("a11", 2, "a10", 0, 1, 1));
-    addLink(new Link("a11b", 2, "a11", 0, 1, 1));
-    addLink(new Link("a12", 2, "a11b", 0, 1, 1));
-
-
-
+    }
     updateViewSize();
 }
 
@@ -304,7 +241,7 @@ function addLink(link) {
             }
             links[link.uid] = link;
         } else {
-            console.log("Error: Attempting to create link without establishing nodes first");
+            console.error("Error: Attempting to create link without establishing nodes first");
         }
     } else {
         // if weight or activation change, we need to redraw

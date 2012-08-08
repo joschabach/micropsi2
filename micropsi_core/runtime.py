@@ -86,7 +86,9 @@ class MicroPsiRuntime(object):
             for representation in the UI
             TODO
         """
-        return self.nodenet_data[nodenet_uid]
+        world_uid = self.get_world_uid_for_nodenet_uid(nodenet_uid)
+        return self.worlds[world_uid].agents[nodenet_uid].data
+
 
 
     def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):

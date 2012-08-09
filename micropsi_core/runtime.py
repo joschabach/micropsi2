@@ -45,11 +45,21 @@ class MicroPsiRuntime(object):
             self.worlds[uid] = World(self, **self.world_data[uid])
 
 
-    def get_world_uid_for_nodenet_uid(self, nodenet_uid):
+    def _get_world_uid_for_nodenet_uid(self, nodenet_uid):
         """ Temporary method to get the world uid to a given nodenet uid.
-            I guess this should be handled a bit differently
+            TODO: I guess this should be handled a bit differently?
         """
         return self.nodenet_data[nodenet_uid].world
+
+
+    def _get_nodenet(nodenet_uid):
+        """ get the nodenet instance to the given nodenet_uid.
+            this will lookup the world this nodenet lives in from the nodenet_data,
+            and then fetch the nodenet instance from the respective world instance.
+            TODO: please review: should we leave it like that or rather add a hash of
+                  nodenets in addition to the hash of worlds?
+        """
+        return self.worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].agents[nodenet_uid]
 
     # MicroPsi API
 
@@ -78,7 +88,7 @@ class MicroPsiRuntime(object):
                  False, errormessage on failure
 
         """
-        world_uid = self.get_world_uid_for_nodenet_uid(nodenet_uid)
+        world_uid = self._get_world_uid_for_nodenet_uid(nodenet_uid)
         return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
 
     def get_nodenet_area(self, nodenet_uid, x1=0, x2=-1, y1=0, y2=-1):
@@ -86,8 +96,7 @@ class MicroPsiRuntime(object):
             for representation in the UI
             TODO
         """
-        world_uid = self.get_world_uid_for_nodenet_uid(nodenet_uid)
-        return self.worlds[world_uid].agents[nodenet_uid].state
+        return self._get_nodenet(nodenet_uid).state
 
 
 

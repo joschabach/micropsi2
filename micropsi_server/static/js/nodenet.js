@@ -118,8 +118,7 @@ function initializeNodeNet(data){
 
         for(var uid in data.nodes){
             console.log('adding node:' + uid);
-            pos = data.nodes[uid].pos.split(',');
-            addNode(new Node(uid, parseInt(pos[0], 10), parseInt(pos[1], 10), "Root", data.nodes[uid].name, data.nodes[uid].type));
+            addNode(new Node(uid, data.nodes[uid].x, data.nodes[uid].y, "Root", data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation));
         }
 
         var link;

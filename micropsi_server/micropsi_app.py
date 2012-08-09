@@ -406,8 +406,9 @@ def edit_world():
         user_id = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
+@route("/nodenet_list/")
 @route("/nodenet_list/<current_nodenet>")
-def nodenet_list(current_nodenet):
+def nodenet_list(current_nodenet=None):
     user_id, permissions, token = get_request_data()
     nodenets = micropsi.get_available_nodenets()
     return template("nodenet_list", user_id = user_id,

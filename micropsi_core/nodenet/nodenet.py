@@ -91,7 +91,7 @@ class Nodenet(object):
             "uid": uid,
             "nodes": {},
             "links": {},
-            "nodespaces": {},
+            "nodespaces": {'root': {}},
             "nodetypes": STANDARD_NODETYPES,
             "activatortypes": STANDARD_NODETYPES.keys(),
             "step": 0
@@ -105,7 +105,8 @@ class Nodenet(object):
         self.filename = filename
         self.worldadapter = worldadapter
 
-        self.nodespaces = {}
+        self.nodespaces = {"root": Nodespace(self, None, (0,0), name="Root", entitytype="nodespaces", uid = "root")}
+
         self.nodes = {}
         self.links = {}
         self.nodetypes = {}
@@ -146,6 +147,15 @@ class Nodenet(object):
         Parses the nodenet state and set up the non-persistent data structures necessary for efficient
         computation of the node net
         """
+        # set up nodes
+        for uid in self.state['nodes']:
+            data = self.state['nodes'][uid]
+            self.nodes[uid] = Node(self, "Root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
+        # set up links
+        for data in self.state['links']:
+            # TODO: use sloatName and gateName instead of index HERE  ........................................  and HERE
+            link = Link(self.nodes[data['sourceNode']], data['sourceGate'], self.nodes[data['targetNode']], data['targetSlot'], data['weight'])
+            self.links[link.uid] = link
         # check if data sources and data targets match
         pass
 

@@ -1460,7 +1460,17 @@ function handleContextMenu(event) {
 
 // let user create a new node
 function createNodeHandler(x, y, currentNodespace, name, type) {
-    addNode(new Node(makeUuid(), x, y, currentNodeSpace, "", type, 0));
+    uid = makeUuid();
+    addNode(new Node(uid, x, y, currentNodeSpace, "", type, 0));
+    $.ajax('/rpc/add_node('+
+        'nodenet_uid="' + currentNodenet + '",' +
+        'type="' + type + '",' +
+        'x=' + x + ',' +
+        'y=' + y + ',' +
+        'nodespace="' + currentNodespace + '",' +
+        'uid="' + uid + '",' +
+        'name="' + uid + '")'
+    ).error(function(data){dialogs.notification(data.Error || "Error", "error");});
     // todo: tell the server all about it
 }
 

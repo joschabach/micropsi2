@@ -585,7 +585,12 @@ def get_nodespace(self, nodenet_uid, nodespace, step): return micropsi.get_nodes
 def get_node(self, nodenet_uid, node_uid): return micropsi.get_node
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(self, nodenet_uid, type, x, y, nodespace, uid = None, name = ""): return micropsi.add_node
+def add_node(nodenet_uid, type, x, y, nodespace, uid = None, name = ""):
+    result, uid = micropsi.add_node(nodenet_uid, type, x, y, nodespace, uid = uid, name = name)
+    if result:
+        return dict(Status="OK")
+    else:
+        return dict(Error=uid)
 
 @rpc("set_node_position", permission_required="manage nodenets")
 def set_node_position(self, nodenet_uid, node_uid, x, y): return micropsi.set_node_position

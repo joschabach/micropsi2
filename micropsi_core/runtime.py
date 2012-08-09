@@ -356,7 +356,9 @@ class MicroPsiRuntime(object):
             node_uid if successful,
             None if failure.
         """
-        pass
+        self._get_nodenet(nodenet_uid)
+        return True, uid
+
 
     def set_node_position(self, nodenet_uid, node_uid, x, y):
         """Positions the specified node at the given coordinates."""

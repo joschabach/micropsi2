@@ -71,9 +71,10 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
             else:
                 kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 try:
-                    return json.dumps(func(**dict((name, kwargs[name]) for name in inspect.getargspec(func).args)))
+                    arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args)
                 except KeyError, err:
                     return {"Error": "Missing argument in remote procedure call: %s" %err}
+                return json.dumps(func(**arguments))
         return _wrapper
     return _decorator
 

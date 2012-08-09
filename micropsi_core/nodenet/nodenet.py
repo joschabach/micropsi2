@@ -259,7 +259,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
-        NetEntity.__init__(self, position, nodenet, parent_nodespace, name)
+        NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid)
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
@@ -354,7 +354,7 @@ class Node(NetEntity):
         self.data["parameters"] = dictionary
 
     def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None):
-        NetEntity.__init__(nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
+        NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
         self.data["type"] = type
 
     def node_function(self):

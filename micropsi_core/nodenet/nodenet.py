@@ -218,24 +218,23 @@ class NetEntity(object):
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        if uid in self.nodenet.data["nodespaces"][self.entitytype]:
-            self.nodenet.data["nodespaces"][uid][self.entitytype] = self.uid
+        if uid is not None and uid in self.nodenet.state["nodespaces"][self.entitytype]:
+            self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
             # tell my old parent that I move out
             if "parent_nodespace" in self.data:
-                old_parent = self.nodenet.data["nodespaces"].get(self.data["parent_nodespace"], {})
+                old_parent = self.nodenet.state["nodespaces"].get(self.data["parent_nodespace"], {})
                 if self.uid in old_parent.get(self.entitytype, {}):
                     del old_parent[self.entitytype][self.uid]
 
     def __init__(self, nodenet, parent_nodespace, position, name = "", entitytype = "abstract_entities", uid = None):
         """create a net entity at a certain position and in a given node space"""
-
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
-        if not entitytype in nodenet.data:
-            nodenet.data[entitytype] = {}
-        if not uid in nodenet.data[entitytype]:
-            nodenet.data[entitytype][uid] = {}
-        self.data = nodenet.data[entitytype][uid]
+        if not entitytype in nodenet.state:
+            nodenet.state[entitytype] = {}
+        if not uid in nodenet.state[entitytype]:
+            nodenet.state[entitytype][uid] = {}
+        self.data = nodenet.state[entitytype][uid]
         self.data["uid"] = uid
         self.entitytype = entitytype
 
@@ -508,8 +507,8 @@ class Nodetype(object):
 
     @name.setter
     def name(self, identifier):
-        self.nodenet.data["nodetypes"][identifier] = self.nodenet.data["nodetypes"][self.data["name"]]
-        del self.nodenet.data["nodetypes"][self.data["name"]]
+        self.nodenet.state["nodetypes"][identifier] = self.nodenet.state["nodetypes"][self.data["name"]]
+        del self.nodenet.state["nodetypes"][self.data["name"]]
         self.data["name"] = identifier
 
     @property
@@ -573,9 +572,9 @@ class Nodetype(object):
             }
         """
         self.nodenet = nodenet
-        if not "nodetypes" in nodenet.data: self.nodenet.data["nodetypes"] = {}
-        if not name in self.nodenet.data["nodetypes"]: self.nodenet.data["nodetypes"][name] = {}
-        self.data = self.nodenet.data["nodetypes"][name]
+        if not "nodetypes" in nodenet.state: self.nodenet.state["nodetypes"] = {}
+        if not name in self.nodenet.state["nodetypes"]: self.nodenet.state["nodetypes"][name] = {}
+        self.data = self.nodenet.state["nodetypes"][name]
         self.data["name"] = name
 
         self.slots = self.data.get("slots", ["gen"]) if slots is None else slots

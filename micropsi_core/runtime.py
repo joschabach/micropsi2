@@ -52,14 +52,14 @@ class MicroPsiRuntime(object):
         return self.nodenet_data[nodenet_uid].world
 
 
-    def _get_nodenet(nodenet_uid):
+    def _get_nodenet(self, nodenet_uid):
         """ get the nodenet instance to the given nodenet_uid.
             this will lookup the world this nodenet lives in from the nodenet_data,
             and then fetch the nodenet instance from the respective world instance.
             TODO: please review: should we leave it like that or rather add a hash of
                   nodenets in addition to the hash of worlds?
         """
-        return self.worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].agents[nodenet_uid]
+        return self.worlds[self._get_world_uid_for_nodenet_uid(nodenet_uid)].agents[nodenet_uid]
 
     # MicroPsi API
 

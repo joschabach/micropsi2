@@ -150,7 +150,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, "Root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
+            self.nodes[uid] = Node(self, "root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
         # set up links
         for data in self.state['links']:
             # TODO: use sloatName and gateName instead of index HERE  ........................................  and HERE
@@ -228,13 +228,17 @@ class NetEntity(object):
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        if uid is not None and uid in self.nodenet.state["nodespaces"][self.entitytype]:
-            self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
+        nodespace = self.nodenet.nodespaces[uid]
+        if self.entitytype not in nodespace.netentities:
+            nodespace.netentities[self.entitytype] = []
+        nodespace.netentities[self.entitytype].append(self.uid)
+        #if uid in self.nodenet.state["nodespaces"][uid][self.entitytype]:
+        #    self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
             # tell my old parent that I move out
-            if "parent_nodespace" in self.data:
-                old_parent = self.nodenet.state["nodespaces"].get(self.data["parent_nodespace"], {})
-                if self.uid in old_parent.get(self.entitytype, {}):
-                    del old_parent[self.entitytype][self.uid]
+        if "parent_nodespace" in self.data:
+            old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
+            if old_parent and self.uid in old_parent.netentities.get(self.entitytype, []):
+                old_parent.netentities[self.entitytype].remove(self.uid)
 
     def __init__(self, nodenet, parent_nodespace, position, name = "", entitytype = "abstract_entities", uid = None):
         """create a net entity at a certain position and in a given node space"""
@@ -250,7 +254,8 @@ class NetEntity(object):
 
         self.name = name
         self.position = position
-        self.parent_nodespace = parent_nodespace
+        if parent_nodespace:
+            self.parent_nodespace = parent_nodespace
 
 
 class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
@@ -302,6 +307,9 @@ class Link(object): # todo: adapt to new form, like net entitities
 
     You may retrieve links either from the global dictionary (by uid), or from the gates of nodes themselves.
     """
+    source_node = None
+    target_node = None
+
     def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight = 1):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot
 
@@ -325,8 +333,8 @@ class Link(object): # todo: adapt to new form, like net entitities
         self.source_gate = source_node.get_gate(source_gate_name)
         self.target_slot = target_node.get_slot(target_slot_name)
         self.weight = weight
-        self.source_gate.outgoing.add(self.uid)
-        self.target_slot.incoming[self.uid] = 0
+        self.source_gate.outgoing[self.uid] = self
+        self.target_slot.incoming[self.uid] = self
 
     def __del__(self):
         """unplug the link from the node net"""
@@ -347,6 +355,9 @@ class Node(NetEntity):
         node_function: a function to be executed whenever the node receives activation
     """
 
+    gates = {}
+    slots = {}
+
     @property
     def activation(self):
         return self.data.get("activation", 0)
@@ -366,6 +377,8 @@ class Node(NetEntity):
     def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
         self.data["type"] = type
+        self.gates['test'] = Gate('gen', self)
+        self.slots['test'] = Slot('gen', self)
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -391,6 +404,12 @@ class Node(NetEntity):
         except TypeError, err:
             warnings.warn("Type error during node execution")
             self.data["activation"] = "Parameter mismatch"
+
+    def get_gate(self, gatename):
+        return self.gates.get('test')
+
+    def get_slot(self, slotname):
+        return self.slots.get('test')
 
 class Gate(object): # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.

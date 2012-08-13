@@ -378,9 +378,9 @@ class Node(NetEntity):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
         self.data["type"] = type
         if type in STANDARD_NODETYPES:
-            for gate in STANDARD_NODETYPES[type]["gates"]:
+            for gate in STANDARD_NODETYPES[type].get('gates', []):
                 self.gates[gate] = Gate(gate, self)
-            for slot in STANDARD_NODETYPES[type]["slots"]:
+            for slot in STANDARD_NODETYPES[type].get("slots", []):
                 self.slots[slot] = Slot(slot, self)
 
     def node_function(self):

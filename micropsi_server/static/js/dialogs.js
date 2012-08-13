@@ -140,7 +140,10 @@ $(function() {
     });
 
     $('.navbar a.nodenet_save').on('click', function(){
-        dialogs.notification("nodenet state saved");
+        event.preventDefault();
+        $.get('/rpc/save_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+            dialogs.notification("nodenet state saved");
+        });
     });
 
     $('.navbar a.nodenet_revert').on('click', function(){

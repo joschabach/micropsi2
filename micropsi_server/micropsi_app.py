@@ -502,7 +502,8 @@ def step_nodenet(self, nodenet_uid, nodespace = None): return micropsi.step_node
 def revert_nodenet(self, nodenet_uid): return micropsi.revert_nodenet
 
 @rpc("save_nodenet", permission_required="manage nodenets")
-def save_nodenet(self, nodenet_uid): return micropsi.save_nodenet
+def save_nodenet(nodenet_uid):
+    return micropsi.save_nodenet(nodenet_uid)
 
 @rpc("export_nodenet")
 def export_nodenet(self, nodenet_uid): return micropsi.export_nodenet

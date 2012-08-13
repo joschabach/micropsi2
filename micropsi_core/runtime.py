@@ -183,7 +183,11 @@ class MicroPsiRuntime(object):
 
     def save_nodenet(self, nodenet_uid):
         """Stores the nodenet on the server (but keeps it open)."""
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
+            fp.write(json.dumps(nodenet.state))
+        fp.close
+        return True
 
     def export_nodenet(self, nodenet_uid):
         """Exports the nodenet state to the user, so it can be viewed and exchanged.

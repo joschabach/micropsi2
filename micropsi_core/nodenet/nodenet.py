@@ -310,7 +310,7 @@ class Link(object): # todo: adapt to new form, like net entitities
     source_node = None
     target_node = None
 
-    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight = 1):
+    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot
 
         Attributes:
@@ -320,7 +320,7 @@ class Link(object): # todo: adapt to new form, like net entitities
         self.link(source_node, source_gate_name, target_node, target_slot_name)
         self.weight = weight
 
-    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight = 1):
+    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1):
         """link between source and target nodes, from a gate to a slot.
 
             You may call this function to change the connections of an existing link. If the link is already
@@ -409,10 +409,10 @@ class Node(NetEntity):
             self.data["activation"] = "Parameter mismatch"
 
     def get_gate(self, gatename):
-        return self.gates.get('test')
+        return self.gates.get(gatename)
 
     def get_slot(self, slotname):
-        return self.slots.get('test')
+        return self.slots.get(slotname)
 
 class Gate(object): # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.

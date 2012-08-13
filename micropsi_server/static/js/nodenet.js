@@ -124,8 +124,9 @@ function initializeNodeNet(data){
         var link;
         for(var index in data.links){
             link = data.links[index];
+            // TODO: Decide whether to use gate/slot INDEX or gate/slot NAME
             console.log('adding link: ' + link.sourceNode + ' -> ' + link.targetNode);
-            addLink(new Link(link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+            addLink(new Link(link.sourceNode, 0, link.targetNode, 0, link.weight, link.certainty));
         }
 
     } else {
@@ -1565,6 +1566,18 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
             default:
                 addLink(new Link(sourceUid, gateIndex, targetUid, slotIndex, 1, 1));
         }
+        $.ajax({
+            url: '/rpc/add_link('+
+                'nodenet_uid="' + currentNodenet + '",' +
+                'source_node_uid="' + sourceUid + '",' +
+                'gate_type="' + nodes[sourceUid].gates[gateIndex].name + '",' +
+                'target_node_uid="' + targetUid + '",' +
+                'slot_type="' + nodes[targetUid].slots[slotIndex].name + '",' +
+                'weight=1)',
+            error: function(data){
+                dialogs.notification(data.Error || "Error", "error");
+            }
+        });
         // todo: tell the server about it
         cancelLinkCreationHandler();
     }

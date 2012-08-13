@@ -10,7 +10,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 from micropsi_core.world.world import World
-from micropsi_core.nodenet.nodenet import Nodenet, Node, Gate, Slot, Nodespace
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Gate, Slot, Nodespace
 import os
 import tools
 import json
@@ -494,7 +494,7 @@ class MicroPsiRuntime(object):
         """Associates the datatarget type to the actor node with the given uid."""
         pass
 
-    def add_link(self, nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty = 1, uid = None):
+    def add_link(self, nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1, uid=None):
         """Creates a new link.
 
         Arguments.
@@ -510,7 +510,26 @@ class MicroPsiRuntime(object):
             link_uid if successful,
             None if failure
         """
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet.state['links'].append(dict(
+            sourceNode=source_node_uid,
+            sourceGate=gate_type,
+            targetNode=target_node_uid,
+            targetSlot=slot_type,
+            weight=weight,
+            certainty=certainty
+        ));
+        link = Link(
+            nodenet.nodes[source_node_uid],
+            gate_type,
+            nodenet.nodes[target_node_uid],
+            slot_type,
+            weight=weight,
+            certainty=certainty)
+        nodenet.links[link.uid] = link
+        return True, link.uid
+
+
 
     def set_link_weight(self, nodenet_uid, link_uid, weight, certainty = 1):
         """Set weight of the given link."""

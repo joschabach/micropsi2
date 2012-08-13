@@ -1462,16 +1462,19 @@ function handleContextMenu(event) {
 function createNodeHandler(x, y, currentNodespace, name, type) {
     uid = makeUuid();
     addNode(new Node(uid, x, y, currentNodeSpace, "", type, 0));
-    $.ajax('/rpc/add_node('+
-        'nodenet_uid="' + currentNodenet + '",' +
-        'type="' + type + '",' +
-        'x=' + x + ',' +
-        'y=' + y + ',' +
-        'nodespace="' + currentNodespace + '",' +
-        'uid="' + uid + '",' +
-        'name="' + uid + '")'
-    ).error(function(data){dialogs.notification(data.Error || "Error", "error");});
-    // todo: tell the server all about it
+    $.ajax({
+        url: '/rpc/add_node('+
+            'nodenet_uid="' + currentNodenet + '",' +
+            'type="' + type + '",' +
+            'x=' + x + ',' +
+            'y=' + y + ',' +
+            'nodespace="' + currentNodespace + '",' +
+            'uid="' + uid + '",' +
+            'name="' + uid + '")',
+        error: function(data){
+            dialogs.notification(data.Error || "Error", "error");
+        }
+    });
 }
 
 // let user delete the current node, or all selected nodes

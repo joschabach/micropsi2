@@ -379,15 +379,16 @@ class MicroPsiRuntime(object):
             None if failure.
         """
         nodenet = self._get_nodenet(nodenet_uid)
-        nodenet.state['nodes'][nodenet_uid] = dict(
+        nodenet.state['nodes'][uid] = dict(
             name=name,
+            uid=uid,
             nodespace=nodespace,
             x=x,
             y=y,
             type=type,
             activation=0
         )
-        nodenet.nodes[nodenet_uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=nodenet_uid)
+        nodenet.nodes[nodenet_uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
         return True, nodenet_uid
 
 

@@ -91,7 +91,7 @@ class Nodenet(object):
             "uid": uid,
             "nodes": {},
             "links": {},
-            "nodespaces": {'root': {}},
+            "nodespaces": {'Root': {}},
             "nodetypes": STANDARD_NODETYPES,
             "activatortypes": STANDARD_NODETYPES.keys(),
             "step": 0
@@ -105,7 +105,7 @@ class Nodenet(object):
         self.filename = filename
         self.worldadapter = worldadapter
 
-        self.nodespaces = {"root": Nodespace(self, None, (0,0), name="Root", entitytype="nodespaces", uid = "root")}
+        self.nodespaces = {"Root": Nodespace(self, None, (0,0), name="Root", entitytype="nodespaces", uid = "Root")}
 
         self.nodes = {}
         self.links = {}
@@ -150,7 +150,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, "root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
+            self.nodes[uid] = Node(self, "Root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
         # set up links
         for data in self.state['links']:
             # TODO: use sloatName and gateName instead of index HERE  ........................................  and HERE

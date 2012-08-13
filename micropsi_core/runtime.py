@@ -10,7 +10,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 from micropsi_core.world.world import World
-from micropsi_core.nodenet import nodenet
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Gate, Slot, Nodespace
 import os
 import tools
 import json
@@ -374,8 +374,17 @@ class MicroPsiRuntime(object):
             node_uid if successful,
             None if failure.
         """
-        self._get_nodenet(nodenet_uid)
-        return True, uid
+        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet.state['nodes'][nodenet_uid] = dict(
+            name=name,
+            nodespace=nodespace,
+            x=x,
+            y=y,
+            type=type,
+            activation=0
+        )
+        nodenet.nodes[nodenet_uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=nodenet_uid)
+        return True, nodenet_uid
 
 
     def set_node_position(self, nodenet_uid, node_uid, x, y):

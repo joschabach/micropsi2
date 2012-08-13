@@ -112,8 +112,25 @@ class MicroPsiRuntime(object):
         Returns
             world_uid if successful,
             None if failure
+
+        TODO: I'd suggest, that this should rather return the nodenet UID?
         """
-        pass
+        data = dict(
+            uid=tools.generate_uid(),
+            name=nodenet_name,
+            worldadapter=worldadapter,
+            owner=owner,
+            world=world_uid,
+            nodes=dict(),
+            links=[],
+            version=1
+        )
+        self.nodenet_data[data['uid']] = Bunch(**data)
+        with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid']), 'w+') as fp:
+            fp.write(json.dumps(data))
+        fp.close
+        #self.load_nodenet(data['uid'])
+        return True, data['uid']
 
     def delete_nodenet(self, nodenet_uid):
         """Unloads the given nodenet from memory and deletes it from the storage.

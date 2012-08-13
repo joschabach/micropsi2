@@ -124,7 +124,13 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
 
-    $('.navbar a.nodenet_new').on('click', remote_form);
+    $('.navbar a.nodenet_new').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(){
+            // refreshNodenetList();  -- does not work. damn.
+            window.location.reload();
+        });
+    });
     $('.navbar a.nodenet_edit').on('click', remote_form);
 
     $('.navbar a.nodenet_delete').on('click', function(){

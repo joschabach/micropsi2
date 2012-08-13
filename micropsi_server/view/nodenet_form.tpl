@@ -1,6 +1,6 @@
 <div class="dialogform modal">
 
-    <form class="form-horizontal" action="/edit_nodenet/" method="POST">
+    <form class="form-horizontal" action="/nodenet/edit" method="POST">
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>

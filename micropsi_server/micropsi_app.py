@@ -365,6 +365,17 @@ def export_nodenet():
     return "{}"
 
 
+@route("/nodenet/edit", method="POST")
+def write_nodenet():
+    user_id, permissions, token = get_request_data()
+    if "manage nodenets" in permissions:
+        result, nodenet_uid = micropsi.new_nodenet(request.params['nodenet_name'], request.params['nodenet_worldadapter'], owner=user_id, world_uid=request.params['nodenet_world'])
+        if result:
+            return dict(status="success", msg="Nodenet created")
+        else:
+            return dict(status="error", msg="Error saving nodenet: %s" % nodenet_uid )
+    return dict(status="error", msg="Insufficient rights to access user console")
+
 @route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()

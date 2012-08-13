@@ -234,7 +234,7 @@ class NetEntity(object):
         nodespace.netentities[self.entitytype].append(self.uid)
         #if uid in self.nodenet.state["nodespaces"][uid][self.entitytype]:
         #    self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
-            # tell my old parent that I move out
+        # tell my old parent that I move out
         if "parent_nodespace" in self.data:
             old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
             if old_parent and self.uid in old_parent.netentities.get(self.entitytype, []):
@@ -377,8 +377,11 @@ class Node(NetEntity):
     def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
         self.data["type"] = type
-        self.gates['test'] = Gate('gen', self)
-        self.slots['test'] = Slot('gen', self)
+        if type in STANDARD_NODETYPES:
+            for gate in STANDARD_NODETYPES[type]["gates"]:
+                self.gates[gate] = Gate(gate, self)
+            for slot in STANDARD_NODETYPES[type]["slots"]:
+                self.slots[slot] = Slot(slot, self)
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -500,26 +503,26 @@ class Slot(object):
 
 
 STANDARD_NODETYPES = {
-    "register": {
+    "Register": {
         "slots": ["gen"],
         "gates": ["gen"]
     },
-    "sensor": {
+    "Sensor": {
         "parameters":["datasource"],
         "nodefunction": """node.gates["gen"].gatefunction(nodenet.datasources[datasource])""",
         "gates": ["gen"]
     },
-    "actor": {
+    "Actor": {
         "parameters":["datasource", "datatarget"],
         "nodefunction": """nodenet.datatargets[datatarget] = node.slots["gen"].activation""",
         "slots": ["gen"]
     },
-    "concept": {
+    "Concept": {
         "slots": ["gen"],
         "nodefunction": """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])""",
         "gates": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
     },
-    "activator": {
+    "Activator": {
         "slots": ["gen"],
         "parameters": ["type"],
         "nodefunction": """node.nodespace.activators[type] = node.slots["gen"].activation"""

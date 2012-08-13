@@ -473,10 +473,6 @@ def create_worldadapter_selector(world_uid):
     return template("worldadapter_selector", world_uid = world_uid,
         nodenets = nodenets, worlds = worlds)
 
-@rpc("new_nodenet", permission_required="manage nodenets")
-def new_nodenet(nodenet_name, worldadapter, user_id, world_uid):
-    return micropsi.new_nodenet(nodenet_name, worldadapter, owner = user_id, world_uid = world_uid)
-
 @rpc("delete_nodenet", permission_required="manage nodenets")
 def delete_nodenet(self, nodenet_uid): return micropsi.delete_nodenet(self, nodenet_uid)
 

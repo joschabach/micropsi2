@@ -125,6 +125,7 @@ class MicroPsiRuntime(object):
             links=[],
             version=1
         )
+        data['filename'] = data['uid']
         self.nodenet_data[data['uid']] = Bunch(**data)
         with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid']), 'w+') as fp:
             fp.write(json.dumps(data))

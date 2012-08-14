@@ -1501,7 +1501,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 if (targetGates > 6) addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
                 break;
             case "gen":
-                addLink(new Link(uids, sourceUid, "gen", targetUid, "gen", 1, 1));
+                addLink(new Link(uid, sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
                 addLink(new Link(uid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));

@@ -64,15 +64,18 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
                 try:
                     kwargs = dict((n.strip(),json.loads(v)) for n,v in (a.split('=') for a in argument.split(",")))
                 except ValueError, err:
+                    response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
+                response.status = 401
                 return {"Error": "Insufficient permissions for remote procedure call"}
             else:
                 kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 try:
                     arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args)
                 except KeyError, err:
+                    response.status = 400
                     return {"Error": "Missing argument in remote procedure call: %s" %err}
                 return json.dumps(func(**arguments))
         return _wrapper

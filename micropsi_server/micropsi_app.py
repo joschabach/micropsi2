@@ -658,8 +658,8 @@ def bind_datasource_to_sensor(self, nodenet_uid, sensor_uid, datasource): return
 def bind_datatarget_to_actor(self, nodenet_uid, actor_uid, datatarget): return micropsi.bind_datatarget_to_actor
 
 @rpc("add_link", permission_required="manage nodenets")
-def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight):
-    return micropsi.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight);
+def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, uid):
+    return micropsi.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid);
 
 @rpc("set_link_weight", permission_required="manage nodenets")
 def set_link_weight(self, nodenet_uid, link_uid, weight, certainty = 1): return micropsi.set_link_weight
@@ -668,9 +668,8 @@ def set_link_weight(self, nodenet_uid, link_uid, weight, certainty = 1): return 
 def get_link(self, nodenet_uid, link_uid): return micropsi.get_link
 
 @rpc("delete_link", permission_required="manage nodenets")
-def delete_link(self, nodenet_uid, link_uid): return micropsi.delete_link
-
-
+def delete_link(nodenet_uid, link_uid):
+    return micropsi.delete_link(nodenet_uid, link_uid)
 
 # -----------------------------------------------------------------------------------------------
 

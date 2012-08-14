@@ -185,7 +185,7 @@ class MicroPsiRuntime(object):
         """Stores the nodenet on the server (but keeps it open)."""
         nodenet = self._get_nodenet(nodenet_uid)
         with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
-            fp.write(json.dumps(nodenet.state))
+            fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
         fp.close
         return True
 
@@ -388,7 +388,7 @@ class MicroPsiRuntime(object):
             type=type,
             activation=0
         )
-        nodenet.nodes[nodenet_uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
+        nodenet.nodes[uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
         return True, nodenet_uid
 
 
@@ -511,21 +511,23 @@ class MicroPsiRuntime(object):
             None if failure
         """
         nodenet = self._get_nodenet(nodenet_uid)
-        nodenet.state['links'].append(dict(
-            sourceNode=source_node_uid,
-            sourceGate=gate_type,
-            targetNode=target_node_uid,
-            targetSlot=slot_type,
-            weight=weight,
-            certainty=certainty
-        ));
         link = Link(
             nodenet.nodes[source_node_uid],
             gate_type,
             nodenet.nodes[target_node_uid],
             slot_type,
             weight=weight,
-            certainty=certainty)
+            certainty=certainty,
+            uid=uid)
+        nodenet.state['links'][link.uid] = dict(
+            sourceNode=source_node_uid,
+            sourceGate=gate_type,
+            targetNode=target_node_uid,
+            targetSlot=slot_type,
+            weight=weight,
+            certainty=certainty,
+            uid=link.uid
+        )
         nodenet.links[link.uid] = link
         return True, link.uid
 
@@ -553,7 +555,12 @@ class MicroPsiRuntime(object):
 
     def delete_link(self, nodenet_uid, link_uid):
         """Delete the given link."""
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet.links[link_uid].remove()
+        del nodenet.links[link_uid]
+        del nodenet.state[link_uid]
+        return True
+
 
 def crawl_definition_files(path, type = "definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,

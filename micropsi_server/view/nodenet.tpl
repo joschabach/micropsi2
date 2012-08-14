@@ -188,27 +188,27 @@
 
 <div class="dropdown" id="node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
     </ul>
 </div>
 
 <div class="dropdown" id="link_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#link_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Delete link</a></li>
     </ul>
 </div>
 
 <div class="dropdown" id="slot_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#slot_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Add monitor to slot</a></li>
     </ul>
 </div>
 
 <div class="dropdown" id="gate_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#gate_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create link</a></li>
         <li><a href="#">Add monitor to gate</a></li>
     </ul>
@@ -216,7 +216,7 @@
 
 <div class="dropdown" id="create_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create concept node</a></li>
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>

@@ -152,12 +152,10 @@ class Nodenet(object):
             data = self.state['nodes'][uid]
             self.nodes[uid] = Node(self, "Root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
         # set up links
-        for data in self.state['links']:
-            # TODO: use sloatName and gateName instead of index HERE  ........................................  and HERE
-            link = Link(self.nodes[data['sourceNode']], data['sourceGate'], self.nodes[data['targetNode']], data['targetSlot'], data['weight'])
-            self.links[link.uid] = link
-        # check if data sources and data targets match
-        pass
+        for uid in self.state['links']:
+            data = self.state['links'][uid]
+            self.links[uid] = Link(self.nodes[data['sourceNode']], data['sourceGate'], self.nodes[data['targetNode']], data['targetSlot'], weight=data['weight'], uid=uid)
+        # TODO: check if data sources and data targets match
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
@@ -310,13 +308,13 @@ class Link(object): # todo: adapt to new form, like net entitities
     source_node = None
     target_node = None
 
-    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
+    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1, uid=None):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot
 
         Attributes:
             weight (optional): the weight of the link (default is 1)
         """
-        self.uid = micropsi_core.tools.generate_uid()
+        self.uid = uid or  micropsi_core.tools.generate_uid()
         self.link(source_node, source_gate_name, target_node, target_slot_name)
         self.weight = weight
 
@@ -336,9 +334,11 @@ class Link(object): # todo: adapt to new form, like net entitities
         self.source_gate.outgoing[self.uid] = self
         self.target_slot.incoming[self.uid] = self
 
-    def __del__(self):
-        """unplug the link from the node net"""
-        self.source_gate.outgoing.remove(self.uid)
+    def remove(self):
+        """unplug the link from the node net
+           can't be handled in the destructor, since it removes references to the instance
+        """
+        del self.source_gate.outgoing[self.uid]
         del self.target_slot.incoming[self.uid]
 
 class Node(NetEntity):

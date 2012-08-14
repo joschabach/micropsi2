@@ -126,100 +126,14 @@ function initializeNodeNet(data){
             link = data.links[index];
             // TODO: Decide whether to use gate/slot INDEX or gate/slot NAME
             console.log('adding link: ' + link.sourceNode + ' -> ' + link.targetNode);
-            addLink(new Link(link.sourceNode, 0, link.targetNode, 0, link.weight, link.certainty));
+            addLink(new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
         }
 
     } else {
 
-        addNode(new Node("a1", 150, 450, "Root", "Alice", "Actor", 1));
-        addNode(new Node("a2", 250, 450, "Root", "Tom", "Actor", 0.3));
-        addNode(new Node("a3", 350, 450, "Root", "André", "Actor", 0.0));
-        addNode(new Node("a4", 450, 450, "Root", "Boris", "Actor", -0.1));
-        addNode(new Node("a5", 550, 450, "Root", "Sarah", "Actor", 0.3));
-        addNode(new Node("a5b", 300, 80, "Root", "Umzug", "Concept", 0.2));
-        addNode(new Node("a6", 100, 270, "Root", "Planung", "Concept", 0.3));
-        addLink(new Link("a5b", 3, "a6", 0, 0.8, 1));
-
-        addNode(new Node("a7", 250, 270, "Root", "Vorbereitung", "Concept", 0.6));
-        addNode(new Node("a8", 400, 270, "Root", "Fahrzeugbestellung", "Concept", -0.8));
-        addNode(new Node("a9", 550, 270, "Root", "Einladung", "Concept", 0.7));
-        addNode(new Node("a10", 700, 270, "Root", "Packen", "Concept", 0.2));
-        addNode(new Node("a11", 950, 270, "Root", "Durchführung", "Concept", 0.0));
-        addNode(new Node("a11b", 1100, 270, "Root", "Fahrzeugrückgabe", "Concept", -0.6));
-        addNode(new Node("a12", 1250, 270, "Root", "Party", "Concept", 0.0));
-        addNode(new Node("a12b", 1400, 350, "Root", "Einkäufe", "Concept", 0.2));
-        addNode(new Node("a13", 700, 450, "Root", "Fahrzeug", "Native", 0.5));
-        addNode(new Node("a14", 800, 450, "Root", "Kisten", "Register", 0.5));
-        addNode(new Node("a15", 900, 450, "Root", "Getränke", "Register", 0.5));
-        addNode(new Node("a16", 680, 380, "Root", "Datum", "Sensor", -0.5));
-        addNode(new Node("a17", 780, 380, "Root", "Orts-Temperatur", "Sensor", 0.5));
-
-        addLink(new Link("a1", 0, "a6", 0, 1, 1));
-        addLink(new Link("a1", 0, "a7", 0, 1, 1));
-        addLink(new Link("a1", 0, "a8", 0, 0.5, 1));
-        addLink(new Link("a1", 0, "a9", 0, 0.8, 1));
-        addLink(new Link("a1", 0, "a10", 0, 1, 1));
-        addLink(new Link("a1", 0, "a12", 0, 1, 1));
-        addLink(new Link("a1", 0, "a12b", 0, 1, 1));
-        addLink(new Link("a2", 0, "a12b", 0, 1, 1));
-        addLink(new Link("a2", 0, "a8", 0, 0.5, 1));
-        addLink(new Link("a2", 0, "a11", 0, 1, 1));
-        addLink(new Link("a2", 0, "a11b", 0, 1, 1));
-        addLink(new Link("a2", 0, "a10", 0, 0.8, 1));
-        addLink(new Link("a3", 0, "a10", 0, 1, 1));
-        addLink(new Link("a3", 0, "a12", 0, 1, 1));
-        addLink(new Link("a4", 0, "a11", 0, 1, 1));
-        addLink(new Link("a4", 0, "a12", 0, 1, 1));
-        addLink(new Link("a5", 0, "a11", 0, 1, 1));
-
-        addLink(new Link("a13", 0, "a8", 0, 1, 1));
-        addLink(new Link("a11", 3, "a13", 0, 1, 1));
-        addLink(new Link("a12b", 3, "a13", 0, 1, 1));
-        addLink(new Link("a11b", 3, "a13", 0, 1, 1));
-        addLink(new Link("a12b", 3, "a15", 0, 0.7, 1));
-        addLink(new Link("a15", 0, "a12", 0, 1, 1));
-        addLink(new Link("a14", 0, "a10", 0, 1, 1));
-
-        addLink(new Link("a16", 0, "a8", 0, 1, 1));
-        addLink(new Link("a16", 0, "a11", 0, 0.9, 1));
-        addLink(new Link("a16", 0, "a11b", 0, 1, 1));
-
-        addLink(new Link("a17", 0, "a11", 0, 0.3, 1));
-
-        addLink(new Link("a5b", 3, "a7", 0, 0.9, 1));
-        addLink(new Link("a5b", 3, "a8", 0, 1, 1));
-        addLink(new Link("a5b", 3, "a9", 0, 0.9, 1));
-        addLink(new Link("a5b", 3, "a10", 0, 1, 1));
-        addLink(new Link("a5b", 3, "a11", 0, 1, 1));
-        addLink(new Link("a5b", 3, "a11b", 0, 1, 1));
-        addLink(new Link("a5b", 3, "a12", 0, 0.7, 1));
-
-        addLink(new Link("a6", 4, "a5b", 0, 0.2, 1));
-        addLink(new Link("a7", 4, "a5b", 0, 0.1, 1));
-        addLink(new Link("a8", 4, "a5b", 0, 0.4, 1));
-        addLink(new Link("a9", 4, "a5b", 0, 1, 1));
-        addLink(new Link("a10", 4, "a5b", 0, 1, 1));
-        addLink(new Link("a11", 4, "a5b", 0, 1, 1));
-        addLink(new Link("a11b", 4, "a5b", 0, 0.8, 1));
-        addLink(new Link("a12", 4, "a5b", 0, 0.3, 1));
-
-        addLink(new Link("a12b", 4, "a12", 0, 0.7, 1));
-        addLink(new Link("a12", 3, "a12b", 0, 1, 1));
-
-        addLink(new Link("a6", 1, "a7", 0, 1, 1));
-        addLink(new Link("a7", 1, "a8", 0, 1, 1));
-        addLink(new Link("a8", 1, "a9", 0, 1, 1));
-        addLink(new Link("a9", 1, "a10", 0, 1, 1));
-        addLink(new Link("a10", 1, "a11", 0, 1, 1));
-        addLink(new Link("a11", 1, "a11b", 0, 1, 1));
-        addLink(new Link("a11b", 1, "a12", 0, 1, 1));
-        addLink(new Link("a7", 2, "a6", 0, 1, 1));
-        addLink(new Link("a8", 2, "a7", 0, 1, 1));
-        addLink(new Link("a9", 2, "a8", 0, 1, 1));
-        addLink(new Link("a10", 2, "a9", 0, 1, 1));
-        addLink(new Link("a11", 2, "a10", 0, 1, 1));
-        addLink(new Link("a11b", 2, "a11", 0, 1, 1));
-        addLink(new Link("a12", 2, "a11b", 0, 1, 1));
+        addNode(new Node("a1", 150, 150, "Root", "Alice", "Actor", 1));
+        addNode(new Node("a2", 350, 150, "Root", "Tom", "Actor", 0.3));
+        addLink(new Link("a3", "a1", "gen", "a2", "gen", 1, 1));
 
     }
     updateViewSize();
@@ -237,8 +151,8 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 	this.name = name;
 	this.type = type;
 	this.symbol = "?";
-	this.slots=[];
-	this.gates=[];
+	this.slots={};
+	this.gates={};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
     this.bounds = null; // current bounding box (after scaling)
@@ -248,36 +162,38 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
             break;
         case "Sensor":
             this.symbol = "S";
-            this.gates.push(new Gate("gen"));
+            this.gates.gen = new Gate("gen");
             break;
         case "Actor":
             this.symbol = "A";
-            this.slots.push(new Slot("gen"));
-            this.gates.push(new Gate("gen"));
+            this.slots.gen = new Slot("gen");
+            this.gates.gen = new Gate("gen");
             break;
         case "Register":
 			this.symbol = "R";
-			this.slots.push(new Slot("gen"));
-			this.gates.push(new Gate("gen"));
+            this.slots.gen = new Slot("gen");
+            this.gates.gen = new Gate("gen");
 			break;
 		case "Concept":
 			this.symbol = "C";
-			this.slots.push(new Slot("gen"));
-            this.gates.push(new Gate("gen"));
-			this.gates.push(new Gate("por"));
-			this.gates.push(new Gate("ret"));
-			this.gates.push(new Gate("sub"));
-			this.gates.push(new Gate("sur"));
-			this.gates.push(new Gate("cat"));
-			this.gates.push(new Gate("exp"));
+            this.slots.gen = new Slot("gen");
+            this.gates.gen = new Gate("gen");
+			this.gates.por = new Gate("por");
+			this.gates.ret = new Gate("ret");
+			this.gates.sub = new Gate("sub");
+			this.gates.sur = new Gate("sur");
+			this.gates.cat = new Gate("cat");
+			this.gates.exp = new Gate("exp");
 			break;
         default: // native code node (completely custom)
             this.symbol = "Na";
-            this.slots.push(new Slot("gen"));
-            this.gates.push(new Gate("gen"));
+            this.slots.gen = new Slot("gen");
+            this.gates.gen = new Gate("gen");
             // TODO: fetch list of slots and gates from server
             break;
 	}
+    this.slotIndexes = Object.keys(this.slots);
+    this.gateIndexes = Object.keys(this.gates);
 }
 
 // target for links, part of a net entity
@@ -295,12 +211,12 @@ function Gate(name) {
 }
 
 // link, connects two nodes, from a gate to a slot
-function Link(sourceNodeUid, gateIndex, targetNodeUid, slotIndex, weight, certainty){
-    this.uid = [sourceNodeUid,"#",gateIndex,"-",targetNodeUid,"#",slotIndex].join("");
+function Link(uid, sourceNodeUid, gateName, targetNodeUid, slotName, weight, certainty){
+    this.uid = uid;
     this.sourceNodeUid = sourceNodeUid;
-    this.gateIndex = gateIndex;
+    this.gateName = gateName;
     this.targetNodeUid = targetNodeUid;
-    this.slotIndex = slotIndex;
+    this.slotName = slotName;
     this.weight = weight;
     this.certainty = certainty;
 
@@ -316,8 +232,8 @@ function addLink(link) {
     if (!(link.uid in links)) {
         // add link to source node and target node
         if (nodes[link.sourceNodeUid] && nodes[link.targetNodeUid]) {
-            nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid]=link;
-            nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid]=link;
+            nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
+            nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             // check if link is visible
             if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
                 nodes[link.targetNodeUid].parent == currentNodeSpace) {
@@ -332,8 +248,8 @@ function addLink(link) {
         oldLink = links[link.uid];
         if (oldLink.weight != link.weight ||
             oldLink.certainty != link.certainty ||
-            nodes[oldLink.sourceNodeUid].gates[oldLink.gateIndex].activation !=
-                nodes[link.sourceNodeUid].gates[link.gateIndex].activation) {
+            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
+                nodes[link.sourceNodeUid].gates[link.gateName].activation) {
             linkLayer.children[link.uid].remove();
             renderLink(link);
         }
@@ -344,8 +260,8 @@ function addLink(link) {
 function removeLink(link) {
     delete links[link.uid];
     if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
-    delete nodes[link.sourceNodeUid].gates[link.gateIndex].outgoing[link.uid];
-    delete nodes[link.targetNodeUid].slots[link.slotIndex].incoming[link.uid];
+    delete nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid];
+    delete nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid];
 }
 
 // add or update node, should usually be called from the JSON parser
@@ -366,13 +282,14 @@ function addNode(node) {
 
 // remove the node from hash, get rid of orphan links, and delete it from the screen
 function removeNode(node) {
-    for (gateIndex in node.gates) {
-        for (linkUid in node.gates[gateIndex].outgoing) {
+    var linkUid;
+    for (var gateName in node.gates) {
+        for (linkUid in node.gates[gateName].outgoing) {
             removeLink(links[linkUid]);
         }
     }
-    for (slotIndex in node.slots) {
-        for (linkUid in node.slots[slotIndex].incoming) {
+    for (var slotName in node.slots) {
+        for (linkUid in node.slots[slotName].incoming) {
             removeLink(links[linkUid]);
         }
     }
@@ -387,11 +304,12 @@ function removeNode(node) {
 
 // adapt the size of the current view to the contained nodes and the canvas size
 function updateViewSize() {
-    var maxX = maxY = 0;
+    var maxX = 0;
+    var maxY = 0;
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
     var el = view.element.parentElement;
     prerenderLayer.removeChildren();
-    for (nodeUid in nodeLayer.children) {
+    for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             node = nodes[nodeUid];
             // make sure no node gets lost to the top or left
@@ -412,9 +330,10 @@ function updateViewSize() {
 
 // complete redraw of the current node space
 function redrawNodeNet() {
+    console.log("redrawNodeNet");
     nodeLayer.removeChildren();
     linkLayer.removeChildren();
-
+    var i;
     for (i in nodes) {
         if (nodes[i].parent == currentNodeSpace) renderNode(nodes[i]);
     }
@@ -423,23 +342,23 @@ function redrawNodeNet() {
         targetNode = nodes[links[i].targetNodeUid];
         // check for source and target nodes, slots and gates
         if (!sourceNode) {
-            console.log("Did not find source Node for link from "
-                +nodes[links[i].sourceNodeUid]+" to "
-                +nodes[links[i].targetNodeUid]);
+            console.log("Did not find source Node for link from " +
+                nodes[links[i].sourceNodeUid] + " to " +
+                nodes[links[i].targetNodeUid]);
             continue;
         }
-        if (sourceNode.gates.length < links[i].gateIndex) {
-            console.log("Node "+sourceNode.uid+ "does not have a gate with index "+links[i].gateIndex);
+        if (!(links[i].gateName in sourceNode.gates)) {
+            console.log("Node "+sourceNode.uid+ "does not have a gate with name "+links[i].gateName);
             continue;
         }
         if (!targetNode) {
-            console.log("Did not find target Node for link from "
-                +nodes[links[i].sourceNodeUid]+" to "
-                +nodes[links[i].targetNodeUid]);
+            console.log("Did not find target Node for link from " +
+                nodes[links[i].sourceNodeUid] + " to " +
+                nodes[links[i].targetNodeUid]);
             continue;
         }
-        if (targetNode.slots.length < links[i].slotIndex) {
-            console.log("Node "+targetNode.uid+ " does not have a slot with index "+links[i].slotIndex);
+        if (!(links[i].slotName in targetNode.slots)) {
+            console.log("Node "+targetNode.uid+ " does not have a slot with name "+links[i].slotName);
             continue;
         }
         // check if the link is visible
@@ -459,14 +378,15 @@ function redrawNode(node) {
 
 // redraw only the links that are connected to the given node
 function redrawNodeLinks(node) {
-    for (gateIndex in node.gates) {
-        for (linkUid in node.gates[gateIndex].outgoing) {
+    var linkUid;
+    for (var gateName in node.gates) {
+        for (linkUid in node.gates[gateName].outgoing) {
             linkLayer.children[linkUid].remove();
             renderLink(links[linkUid]);
         }
     }
-    for (slotIndex in node.slots) {
-        for (linkUid in node.slots[slotIndex].incoming) {
+    for (var slotName in node.slots) {
+        for (linkUid in node.slots[slotName].incoming) {
             linkLayer.children[linkUid].remove();
             renderLink(links[linkUid]);
         }
@@ -474,9 +394,9 @@ function redrawNodeLinks(node) {
 }
 
 // determine the point where link leaves the node
-function calculateLinkStart(sourceNode, gateIndex) {
+function calculateLinkStart(sourceNode, gateName) {
     var startPointIsPreliminary = false;
-    gate = sourceNode.gates[gateIndex];
+    gate = sourceNode.gates[gateName];
     // Depending on whether the node is drawn in compact or full shape, links may originate at odd positions.
     // This depends on the node type and the link type.
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
@@ -520,22 +440,23 @@ function calculateLinkStart(sourceNode, gateIndex) {
             }
         }
     } else {
+        index = sourceNode.gateIndexes.indexOf(gateName);
         sourceBounds = sourceNode.bounds;
         startPoint = new Point(sourceBounds.x+sourceBounds.width,
-            sourceBounds.y+viewProperties.lineHeight*(gateIndex+2.5)*viewProperties.zoomFactor);
+            sourceBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
         startAngle = 0;
     }
     return {
         "point": startPoint,
         "angle": startAngle,
         "isPreliminary": startPointIsPreliminary
-    }
+    };
 }
 
 // determine the point where a link enters the node
-function calculateLinkEnd(targetNode, slotIndex, linkType) {
+function calculateLinkEnd(targetNode, slotName, linkType) {
     var endPointIsPreliminary = false;
-    slot = targetNode.slots[slotIndex];
+    slot = targetNode.slots[slotName];
     if (isCompact(targetNode)) {
         targetBounds = targetNode.bounds;
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
@@ -571,16 +492,17 @@ function calculateLinkEnd(targetNode, slotIndex, linkType) {
             }
         }
     } else {
+        index = targetNode.slotIndexes.indexOf(slotName);
         targetBounds = targetNode.bounds;
         endAngle = 180;
         endPoint = new Point(targetBounds.x,
-            targetBounds.y+viewProperties.lineHeight*(slotIndex+2.5)*viewProperties.zoomFactor);
+            targetBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
     }
     return {
         "point": endPoint,
         "angle": endAngle,
         "isPreliminary": endPointIsPreliminary
-    }
+    };
 }
 
 // draw link
@@ -588,9 +510,8 @@ function renderLink(link) {
     sourceNode = nodes[link.sourceNodeUid];
     targetNode = nodes[link.targetNodeUid];
 
-    linkStart = calculateLinkStart(sourceNode, link.gateIndex);
-    linkEnd = calculateLinkEnd(targetNode, link.slotIndex, gate.name);
-
+    linkStart = calculateLinkStart(sourceNode, link.gateName);
+    linkEnd = calculateLinkEnd(targetNode, link.slotName, link.gateName);
 
     if (linkStart.isPreliminary) { // start from boundary of a compact node
         correctionVector = new Point(sourceBounds.width/2, 0);
@@ -652,7 +573,7 @@ function renderLinkDuringCreation(endPoint) {
     sourceNode = linkCreationStart.sourceNode;
     gateIndex = linkCreationStart.gateIndex;
 
-    linkStart = calculateLinkStart(sourceNode, gateIndex);
+    linkStart = calculateLinkStart(sourceNode, sourceNode.gateIndexes[gateIndex]);
 
     if (linkStart.isPreliminary) { // start from boundary of a compact node
         correctionVector = new Point(sourceBounds.width/2, 0);
@@ -708,7 +629,7 @@ function renderCompactNode(node) {
 function calculateNodeBounds(node) {
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
-        height = viewProperties.lineHeight*(Math.max(node.slots.length, node.gates.length)+2)*viewProperties.zoomFactor;
+        height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
         if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
@@ -734,15 +655,15 @@ function createCompactNodeShape(node) {
         case "Sensor":
             shape = new Path();
             shape.add(bounds.bottomLeft);
-            shape.cubicCurveTo(new Point(bounds.x, bounds.y-bounds.height *.3),
-                new Point(bounds.right, bounds.y-bounds.height *.3), bounds.bottomRight);
+            shape.cubicCurveTo(new Point(bounds.x, bounds.y-bounds.height * 0.3),
+                new Point(bounds.right, bounds.y-bounds.height * 0.3), bounds.bottomRight);
             shape.closePath();
             break;
         case "Actor":
             shape = new Path([bounds.bottomRight,
-                new Point(bounds.x+bounds.width *.65, bounds.y),
-                new Point(bounds.x+bounds.width *.35, bounds.y),
-                new Point(bounds.x+bounds.width *.35, bounds.y),
+                new Point(bounds.x+bounds.width * 0.65, bounds.y),
+                new Point(bounds.x+bounds.width * 0.35, bounds.y),
+                new Point(bounds.x+bounds.width * 0.35, bounds.y),
                 bounds.bottomLeft
             ]);
             shape.closePath();
@@ -859,12 +780,12 @@ function createFullNodeSkeleton(node) {
         titleBarDelimiter = createNodeTitleBarDelimiter(node);
         skeleton = new Group([border, titleBarDelimiter, typeLabel]);
         if (node.slots) {
-            for (i = 0; i< node.slots.length; i++)
-                skeleton.addChild(createPillsWithLabels(getSlotBounds(node, i), node.slots[i].name));
+            for (i = 0; i< node.slotIndexes.length; i++)
+                skeleton.addChild(createPillsWithLabels(getSlotBounds(node, i), node.slotIndexes[i]));
         }
         if (node.gates) {
-            for (i = 0; i< node.gates.length; i++)
-                skeleton.addChild(createPillsWithLabels(getGateBounds(node, i), node.gates[i].name));
+            for (i = 0; i< node.gateIndexes.length; i++)
+                skeleton.addChild(createPillsWithLabels(getGateBounds(node, i), node.gateIndexes[i]));
         }
         if (viewProperties.rasterize) skeleton = skeleton.rasterize();
         skeleton.name = node.type;
@@ -877,26 +798,26 @@ function createFullNodeSkeleton(node) {
 
 // render the activation part of a node
 function createFullNodeActivations(node) {
-    name = "fullNodeActivation "+node.type;
+    var name = "fullNodeActivation "+node.type;
     if (!(name in prerenderLayer.children)) {
         body = createFullNodeShape(node);
         body.name = "body";
         body.fillColor = viewProperties.nodeColor;
         activation = new Group([body]);
         activation.name = "activation";
-        if (node.slots.length) {
+        if (node.slotIndexes.length) {
             slots = new Group();
             slots.name = "slots";
-            for (i = 0; i< node.slots.length; i++) {
+            for (i = 0; i< node.slotIndexes.length; i++) {
                 bounds = getSlotBounds(node, i);
                 slots.addChild(new Path.RoundRectangle(bounds, bounds.height/2));
             }
             activation.addChild(slots);
         }
-        if (node.gates.length) {
+        if (node.gateIndexes.length) {
             gates = new Group();
             gates.name = "gates";
-            for (i = 0; i< node.gates.length; i++) {
+            for (i = 0; i< node.gateIndexes.length; i++) {
                 bounds = getGateBounds(node, i);
                 gates.addChild(new Path.RoundRectangle(bounds, bounds.height/2));
             }
@@ -990,18 +911,21 @@ function createCompactNodeLabel(node) {
 // update activation in node background, slots and gates
 function setActivation(node) {
     if (node.uid in nodeLayer.children) {
-        nodeItem = nodeLayer.children[node.uid];
+        var nodeItem = nodeLayer.children[node.uid];
         node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
             activationColor(node.activation, viewProperties.nodeColor);
-        if (!isCompact(node) && (node.slots.length || node.gates.length)) {
-            for (i in node.slots) {
-                nodeItem.children["activation"].children["slots"].children[i].fillColor =
-                    activationColor(node.slots[i].activation,
+        if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
+            var i=0;
+            var type;
+            for (type in node.slots) {
+                nodeItem.children["activation"].children["slots"].children[i++].fillColor =
+                    activationColor(node.slots[type].activation,
                     viewProperties.nodeColor);
             }
-            for (i in node.gates) {
-                nodeItem.children["activation"].children["gates"].children[i].fillColor =
-                    activationColor(node.gates[i].activation,
+            i=0;
+            for (type in node.gates) {
+                nodeItem.children["activation"].children["gates"].children[i++].fillColor =
+                    activationColor(node.gates[type].activation,
                     viewProperties.nodeColor);
             }
         }
@@ -1053,7 +977,7 @@ function deselectLink(linkUid) {
 
 // deselect all nodes and links
 function deselectAll() {
-    for (uid in selection){
+    for (var uid in selection){
         if (uid in nodes) deselectNode(uid);
         if (uid in links) deselectLink(uid);
     }
@@ -1096,8 +1020,8 @@ function activationColor(activation, baseColor) {
 	a = Math.abs(activation);
 	r = 1.0-a;
 	return new HSLColor(c.hue,
-	                    baseColor.saturation * r + c.saturation * a,
-	                    baseColor.lightness * r + c.lightness * a);
+                        baseColor.saturation * r + c.saturation * a,
+                        baseColor.lightness * r + c.lightness * a);
 }
 
 // mouse and keyboard interaction -----------------------------------
@@ -1122,7 +1046,7 @@ function onMouseDown(event) {
     p = event.point;
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
-    for (nodeUid in nodeLayer.children) {
+    for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             node = nodes[nodeUid];
             bounds = node.bounds;
@@ -1141,7 +1065,7 @@ function onMouseDown(event) {
                     clickType = "slot";
                     clickIndex = i;
                     if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
-                    else if (linkCreationStart) finalizeLinkHandler(nodeUid, slotIndex);
+                    else if (linkCreationStart) finalizeLinkHandler(nodeUid, clickIndex); // was slotIndex TODO: clickIndex?? linkcreationstart.gateIndex???
                     return;
                 } else if ((i = testGates(node, p)) > -1) {
                     console.log("clicked gate #" + i);
@@ -1202,7 +1126,7 @@ var hoverArrow = null;
 var oldHoverColor = null;
 
 function onMouseMove(event) {
-    p = event.point;
+    var p = event.point;
     if (linkCreationStart) renderLinkDuringCreation(p);
     // hovering
     if (hover) { // unhover
@@ -1215,7 +1139,7 @@ function onMouseMove(event) {
     }
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
-    for (nodeUid in nodeLayer.children) {
+    for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             node = nodes[nodeUid];
             bounds = node.bounds;
@@ -1248,8 +1172,8 @@ function onMouseMove(event) {
 
 function onDoubleClick(event) {
     // node space
-    p = view.viewToProject(DomEvent.getOffset(event, view._canvas))
-    for (nodeUid in nodeLayer.children) {
+    var p = view.viewToProject(DomEvent.getOffset(event, view._canvas));
+    for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             node = nodes[nodeUid];
             if ((node.type == "Nodespace") && node.bounds.contains(p)) {
@@ -1266,7 +1190,7 @@ function testSlots(node, p) {
     if ((!isCompact(node)) && node.slots) {
         // x coordinate within range
         if (p.x < node.bounds.x + viewProperties.slotWidth*viewProperties.zoomFactor) {
-            for (slotIndex = 0; slotIndex < node.slots.length; slotIndex++) {
+            for (var slotIndex = 0; slotIndex < node.slotIndexes.length; slotIndex++) {
                 if (getSlotBounds(node, slotIndex).contains(p)) return slotIndex;
             }
         }
@@ -1281,7 +1205,7 @@ function testGates(node, p) {
         // x coordinate within range
         if (p.x > node.bounds.x+node.bounds.width+
             (viewProperties.lineHeight/2-viewProperties.slotWidth)*viewProperties.zoomFactor) {
-            for (gateIndex = 0; gateIndex < node.gates.length; gateIndex++) {
+            for (var gateIndex = 0; gateIndex < node.gateIndexes.length; gateIndex++) {
                 if (getGateBounds(node, gateIndex).contains(p)) return gateIndex;
             }
         }
@@ -1312,11 +1236,11 @@ function onMouseUp(event) {
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
     if (event.character == "+") {
-        viewProperties.zoomFactor += .1;
+        viewProperties.zoomFactor += 0.1;
         redrawNodeNet(currentNodeSpace);
     }
     else if (event.character == "-") {
-        if (viewProperties.zoomFactor > .2) viewProperties.zoomFactor -= .1;
+        if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
         redrawNodeNet(currentNodeSpace);
     }
     // delete nodes and links
@@ -1340,7 +1264,7 @@ function onResize(event) {
 
 
 function initializeMenus() {
-    $(".dropdown-menu").on('click', 'li', handleContextMenu);
+    $(".nodenet_menu").on('click', 'li', handleContextMenu);
     $("#rename_node_modal .btn-primary").on('click', handleRenameNodeModal);
     $("#nodenet").on('dblclick', onDoubleClick);
     $("#nodespace_up").on('click', handleNodespaceUp);
@@ -1371,9 +1295,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
         menu.append('<li><a href="#">Create sub/sur link</a></li>');
         menu.append('<li><a href="#">Create cat/exp link</a></li>');
         menu.append('<li class="divider"></li>');
-    } else if (node.gates.length) {
-        for (gateIndex in node.gates) {
-            menu.append('<li><a href="#">Create '+node.gates[gateIndex].name+' link</a></li>')
+    } else if (node.gateIndexes.length) {
+        for (var gateName in node.gates) {
+            menu.append('<li><a href="#">Create '+gateName+' link</a></li>');
         }
         menu.append('<li class="divider"></li>');
     }
@@ -1385,7 +1309,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 
 // universal handler for all context menu events. You can get the origin path from the variable clickTarget.
 function handleContextMenu(event) {
-    menuText = event.target.text;
+    var menuText = event.target.text;
 
     switch (clickType) {
         case null: // create nodes
@@ -1480,29 +1404,45 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
+    var deletedNodes = [];
     if (nodeUid in nodes) {
         removeNode(nodes[nodeUid]);
         if (nodeUid in selection) delete selection[nodeUid];
         // todo: tell the server all about it
     }
-    for (nodeUid in selection) {
-        removeNode(nodes[nodeUid]);
-        delete selection[nodeUid];
+    for (var selected in selection) {
+        removeNode(nodes[selected]);
+        delete selection[selected];
         // todo: tell the server all about it
     }
 }
 
 // let user delete the current link, or all selected links
 function deleteLinkHandler(linkUid) {
+    function removeLinkOnServer(linkUid){
+        var url = '/rpc/delete_link('+
+                'nodenet_uid="'+ currentNodenet +'",'+
+                'link_uid="'+ linkUid +'")';
+        $.ajax({
+            url: url,
+            error: function(data){
+                dialogs.notification(data.Error || "Error removing link", "error");
+            },
+            success: function(data){
+                dialogs.notification('Link removed', 'success');
+            }
+        });
+    }
+
     if (linkUid in links) {
         removeLink(links[linkUid]);
         if (linkUid in selection) delete selection[linkUid];
-        // todo: tell the server all about it
+        removeLinkOnServer(linkUid);
     }
-    for (linkUid in selection) {
-        removeLink(links[linkUid]);
-        delete selection[linkUid];
-        // todo: tell the server all about it
+    for (var selected in selection) {
+        removeLink(links[selected]);
+        delete selection[selected];
+        removeLinkOnServer(selected);
     }
 }
 
@@ -1510,7 +1450,7 @@ linkCreationStart = null;
 
 // start the creation of a new link
 function createLinkHandler(nodeUid, gateIndex, creationType) {
-    if ((nodeUid in nodes) && (nodes[nodeUid].gates.length > gateIndex)){
+    if ((nodeUid in nodes) && (nodes[nodeUid].gateIndexes.length > gateIndex)){
         gateIndex = Math.max(gateIndex,0); // if no gate give, assume gen gate
         switch (creationType) {
             case "por/ret":
@@ -1530,7 +1470,7 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
             sourceNode: nodes[nodeUid],
             gateIndex: gateIndex, // if no gate give, assume gen gate
             creationType: creationType
-        }
+        };
     }
 }
 
@@ -1542,38 +1482,39 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
     if (!slotIndex || slotIndex < 0) slotIndex = 0;
 
     if ((targetUid in nodes) &&
-        nodes[targetUid].slots && (nodes[targetUid].slots.length > slotIndex) &&
+        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex) &&
         (targetUid != sourceUid)) {
 
-        targetGates = nodes[targetUid].gates ? nodes[targetUid].gates.length : 0;
-
+        targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
+        var uuid = makeUuid();
         switch (linkCreationStart.creationType) {
             case "por/ret":
-                addLink(new Link(sourceUid, 1, targetUid, 0, 1, 1));
-                if (targetGates > 2) addLink(new Link(targetUid, 2, sourceUid, 0, 1, 1));
+                addLink(new Link(uid, sourceUid, "por", targetUid, "gen", 1, 1));
+                if (targetGates > 2) addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
                 break;
             case "sub/sur":
-                addLink(new Link(sourceUid, 3, targetUid, 0, 1, 1));
-                if (targetGates > 4) addLink(new Link(targetUid, 4, sourceUid, 0, 1, 1));
+                addLink(new Link(uid, sourceUid, "sub", targetUid, "gen", 1, 1));
+                if (targetGates > 4) addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
                 break;
             case "cat/exp":
-                addLink(new Link(sourceUid, 5, targetUid, 0, 1, 1));
-                if (targetGates > 6) addLink(new Link(targetUid, 6, sourceUid, 0, 1, 1));
+                addLink(new Link(uid, sourceUid, "cat", targetUid, "gen", 1, 1));
+                if (targetGates > 6) addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
                 break;
             case "gen":
-                addLink(new Link(sourceUid, 0, targetUid, 0, 1, 1));
+                addLink(new Link(uids, sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
-                addLink(new Link(sourceUid, gateIndex, targetUid, slotIndex, 1, 1));
+                addLink(new Link(uid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
         $.ajax({
             url: '/rpc/add_link('+
                 'nodenet_uid="' + currentNodenet + '",' +
                 'source_node_uid="' + sourceUid + '",' +
-                'gate_type="' + nodes[sourceUid].gates[gateIndex].name + '",' +
+                'gate_type="' + nodes[sourceUid].gateIndexes[gateIndex] + '",' +
                 'target_node_uid="' + targetUid + '",' +
-                'slot_type="' + nodes[targetUid].slots[slotIndex].name + '",' +
-                'weight=1)',
+                'slot_type="' + nodes[targetUid].slotIndexes[slotIndex] + '",' +
+                'weight=1,'+
+                'uid="'+ uid +'")',
             error: function(data){
                 dialogs.notification(data.Error || "Error", "error");
             }

@@ -245,7 +245,7 @@ function addLink(link) {
         }
     } else {
         // if weight or activation change, we need to redraw
-        oldLink = links[link.uid];
+        var oldLink = links[link.uid];
         if (oldLink.weight != link.weight ||
             oldLink.certainty != link.certainty ||
             nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
@@ -271,7 +271,7 @@ function addNode(node) {
         if (node.parent == currentNodeSpace) renderNode(node);
         nodes[node.uid] = node;
     } else {
-        oldNode = nodes[node.uid];
+        var oldNode = nodes[node.uid];
 
         // if node only updates position or activation, we may save some time
         // import all properties individually; check if we really need to redraw
@@ -311,7 +311,7 @@ function updateViewSize() {
     prerenderLayer.removeChildren();
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
-            node = nodes[nodeUid];
+            var node = nodes[nodeUid];
             // make sure no node gets lost to the top or left
             if (node.x < frameWidth || node.y < frameWidth) {
                 node.x = Math.max(node.x, viewProperties.frameWidth);
@@ -338,8 +338,8 @@ function redrawNodeNet() {
         if (nodes[i].parent == currentNodeSpace) renderNode(nodes[i]);
     }
     for (i in links) {
-        sourceNode = nodes[links[i].sourceNodeUid];
-        targetNode = nodes[links[i].targetNodeUid];
+        var sourceNode = nodes[links[i].sourceNodeUid];
+        var targetNode = nodes[links[i].targetNodeUid];
         // check for source and target nodes, slots and gates
         if (!sourceNode) {
             console.log("Did not find source Node for link from " +
@@ -396,11 +396,12 @@ function redrawNodeLinks(node) {
 // determine the point where link leaves the node
 function calculateLinkStart(sourceNode, gateName) {
     var startPointIsPreliminary = false;
-    gate = sourceNode.gates[gateName];
+    var gate = sourceNode.gates[gateName];
     // Depending on whether the node is drawn in compact or full shape, links may originate at odd positions.
     // This depends on the node type and the link type.
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
+    var sourcePoints, startPoint, startAngle;
     if (isCompact(sourceNode)) {
         sourceBounds = sourceNode.bounds;
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
@@ -440,7 +441,7 @@ function calculateLinkStart(sourceNode, gateName) {
             }
         }
     } else {
-        index = sourceNode.gateIndexes.indexOf(gateName);
+        var index = sourceNode.gateIndexes.indexOf(gateName);
         sourceBounds = sourceNode.bounds;
         startPoint = new Point(sourceBounds.x+sourceBounds.width,
             sourceBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
@@ -456,7 +457,8 @@ function calculateLinkStart(sourceNode, gateName) {
 // determine the point where a link enters the node
 function calculateLinkEnd(targetNode, slotName, linkType) {
     var endPointIsPreliminary = false;
-    slot = targetNode.slots[slotName];
+    var slot = targetNode.slots[slotName];
+    var targetBounds, endPoint, endAngle;
     if (isCompact(targetNode)) {
         targetBounds = targetNode.bounds;
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
@@ -492,7 +494,7 @@ function calculateLinkEnd(targetNode, slotName, linkType) {
             }
         }
     } else {
-        index = targetNode.slotIndexes.indexOf(slotName);
+        var index = targetNode.slotIndexes.indexOf(slotName);
         targetBounds = targetNode.bounds;
         endAngle = 180;
         endPoint = new Point(targetBounds.x,
@@ -507,12 +509,15 @@ function calculateLinkEnd(targetNode, slotName, linkType) {
 
 // draw link
 function renderLink(link) {
-    sourceNode = nodes[link.sourceNodeUid];
-    targetNode = nodes[link.targetNodeUid];
+    var sourceNode = nodes[link.sourceNodeUid];
+    var targetNode = nodes[link.targetNodeUid];
 
-    linkStart = calculateLinkStart(sourceNode, link.gateName);
-    linkEnd = calculateLinkEnd(targetNode, link.slotName, link.gateName);
+    var gate = sourceNode.gates[link.gateName];
 
+    var linkStart = calculateLinkStart(sourceNode, link.gateName);
+    var linkEnd = calculateLinkEnd(targetNode, link.slotName, link.gateName);
+
+    var correctionVector;
     if (linkStart.isPreliminary) { // start from boundary of a compact node
         correctionVector = new Point(sourceBounds.width/2, 0);
         linkStart.angle = (linkEnd.point - linkStart.point).angle;
@@ -527,37 +532,38 @@ function renderLink(link) {
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
     link.strokeColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
 
-    startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
-    endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkEnd.angle);
+    var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
+    var endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkEnd.angle);
 
-    arrowPath = createArrow(linkEnd.point, endDirection.angle, link.strokeColor);
-    linkPath = createLink(linkStart.point, linkStart.angle, startDirection, linkEnd.point, linkEnd.angle, endDirection, link.strokeColor, link.strokeWidth);
+    var arrowPath = createArrow(linkEnd.point, endDirection.angle, link.strokeColor);
+    var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, linkEnd.point, linkEnd.angle, endDirection, link.strokeColor, link.strokeWidth, gate.name);
 
-    linkItem = new Group([linkPath, arrowPath]);
+    var linkItem = new Group([linkPath, arrowPath]);
     linkItem.name = "link";
-    linkContainer = new Group(linkItem);
+    var linkContainer = new Group(linkItem);
     linkContainer.name = link.uid;
 
     linkLayer.addChild(linkContainer);
 }
 
 // draw the line part of the link
-function createLink(startPoint, startAngle, startDirection, endPoint, endAngle, endDirection, linkColor, linkWidth) {
-    arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
-    nodeExit = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
+function createLink(startPoint, startAngle, startDirection, endPoint, endAngle, endDirection, linkColor, linkWidth, linkType) {
+    var arrowEntry = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(endAngle)+endPoint;
+    var nodeExit = new Point(viewProperties.arrowLength*viewProperties.zoomFactor,0).rotate(startAngle)+startPoint;
 
-    linkPath = new Path([[startPoint],[nodeExit,new Point(0,0),startDirection],[arrowEntry,endDirection]]);
+    var linkPath = new Path([[startPoint],[nodeExit,new Point(0,0),startDirection],[arrowEntry,endDirection]]);
     linkPath.strokeColor = linkColor;
     linkPath.strokeWidth = viewProperties.zoomFactor * linkWidth;
     linkPath.name = "line";
-    if (gate.name=="cat" || gate.name == "exp") linkPath.dashArray = [4*viewProperties.zoomFactor,
+
+    if (linkType=="cat" || linkType == "exp") linkPath.dashArray = [4*viewProperties.zoomFactor,
         3*viewProperties.zoomFactor];
     return linkPath;
 }
 
 // draw the arrow head of the link
 function createArrow(endPoint, endAngle, arrowColor) {
-    arrowPath = new Path(endPoint);
+    var arrowPath = new Path(endPoint);
     arrowPath.lineBy(new Point(viewProperties.arrowLength, viewProperties.arrowWidth/2));
     arrowPath.lineBy(new Point(0, -viewProperties.arrowWidth));
     arrowPath.closePath();
@@ -570,25 +576,26 @@ function createArrow(endPoint, endAngle, arrowColor) {
 
 // draw link during creation
 function renderLinkDuringCreation(endPoint) {
-    sourceNode = linkCreationStart.sourceNode;
-    gateIndex = linkCreationStart.gateIndex;
+    var sourceNode = linkCreationStart.sourceNode;
+    var gateIndex = linkCreationStart.gateIndex;
 
-    linkStart = calculateLinkStart(sourceNode, sourceNode.gateIndexes[gateIndex]);
+    var linkStart = calculateLinkStart(sourceNode, sourceNode.gateIndexes[gateIndex]);
 
+    var correctionVector;
     if (linkStart.isPreliminary) { // start from boundary of a compact node
         correctionVector = new Point(sourceBounds.width/2, 0);
         linkStart.angle = (endPoint - linkStart.point).angle;
         linkStart.point += correctionVector.rotate(linkStart.angle-10);
     }
 
-    startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
-    endDirection = new Point(-viewProperties.linkTension*viewProperties.zoomFactor,0);
+    var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
+    var endDirection = new Point(-viewProperties.linkTension*viewProperties.zoomFactor,0);
 
-    arrowPath = createArrow(endPoint, 180, viewProperties.selectionColor);
-    linkPath = createLink(linkStart.point, linkStart.angle, startDirection, endPoint, 180, endDirection,
+    var arrowPath = createArrow(endPoint, 180, viewProperties.selectionColor);
+    var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, endPoint, 180, endDirection,
         viewProperties.selectionColor, 2*viewProperties.zoomFactor);
 
-    tempLink = new Group([linkPath, arrowPath]);
+    var tempLink = new Group([linkPath, arrowPath]);
     tempLink.name = "tempLink";
 
     if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
@@ -605,10 +612,10 @@ function renderNode(node) {
 // draw net entity with slots and gates
 function renderFullNode(node) {
     node.bounds = calculateNodeBounds(node);
-    skeleton = createFullNodeSkeleton(node);
-    activations = createFullNodeActivations(node);
-    titleBar = createFullNodeLabel(node);
-    nodeItem = new Group([activations, skeleton, titleBar]);
+    var skeleton = createFullNodeSkeleton(node);
+    var activations = createFullNodeActivations(node);
+    var titleBar = createFullNodeLabel(node);
+    var nodeItem = new Group([activations, skeleton, titleBar]);
     nodeItem.name = node.uid;
     nodeLayer.addChild(nodeItem);
 }
@@ -616,10 +623,10 @@ function renderFullNode(node) {
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
-    skeleton = createCompactNodeSkeleton(node);
-    activations = createCompactNodeActivations(node);
-    label = createCompactNodeLabel(node);
-    nodeItem = new Group([activations, skeleton]);
+    var skeleton = createCompactNodeSkeleton(node);
+    var activations = createCompactNodeActivations(node);
+    var label = createCompactNodeLabel(node);
+    var nodeItem = new Group([activations, skeleton]);
     if (label) nodeItem.addChild(label);
     nodeItem.name = node.uid;
     nodeLayer.addChild(nodeItem);
@@ -627,6 +634,7 @@ function renderCompactNode(node) {
 
 // calculate the dimensions of a node in the current rendering
 function calculateNodeBounds(node) {
+    var width, height;
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
@@ -647,7 +655,8 @@ function createFullNodeShape(node) {
 
 // determine shape of a compact node
 function createCompactNodeShape(node) {
-    bounds = node.bounds;
+    var bounds = node.bounds;
+    var shape;
     switch (node.type) {
         case "Nodespace":
             shape = new Path.Rectangle(bounds);
@@ -680,18 +689,18 @@ function createCompactNodeShape(node) {
 
 // draw title bar label of a full node
 function createFullNodeLabel(node) {
-    bounds = node.bounds;
-    label = new Group();
+    var bounds = node.bounds;
+    var label = new Group();
     label.name = "titleBarLabel";
     // clipping rectangle, so text does not flow out of the node
-    clipper = new Path.Rectangle (bounds.x+viewProperties.padding*viewProperties.zoomFactor,
+    var clipper = new Path.Rectangle (bounds.x+viewProperties.padding*viewProperties.zoomFactor,
         bounds.y,
         bounds.width-2*viewProperties.padding*viewProperties.zoomFactor,
         viewProperties.lineHeight*viewProperties.zoomFactor);
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    titleText = new PointText(new Point(bounds.x+viewProperties.padding*viewProperties.zoomFactor,
+    var titleText = new PointText(new Point(bounds.x+viewProperties.padding*viewProperties.zoomFactor,
         bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
     titleText.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
@@ -705,14 +714,14 @@ function createFullNodeLabel(node) {
 
 // draw a line below the title bar
 function createNodeTitleBarDelimiter (node) {
-    bounds = node.bounds;
-    upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
+    var bounds = node.bounds;
+    var upper = new Path.Rectangle(bounds.x+viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
         bounds.y + (viewProperties.lineHeight - viewProperties.strokeWidth)*viewProperties.zoomFactor,
         bounds.width - viewProperties.shadowDisplacement.x*viewProperties.zoomFactor,
         viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
     upper.fillColor = viewProperties.shadowColor;
     upper.fillColor.alpha = 0.3;
-    lower = upper.clone();
+    var lower = upper.clone();
     lower.position += new Point(0, viewProperties.innerShadowDisplacement.y*viewProperties.zoomFactor);
     lower.fillColor = viewProperties.highlightColor;
     lower.fillColor.alpha = 0.3;
@@ -723,43 +732,43 @@ function createNodeTitleBarDelimiter (node) {
 
 // turn shape into shadowed outline
 function createBorder(shape, displacement) {
-    highlight = shape.clone();
+    var highlight = shape.clone();
     highlight.fillColor = viewProperties.highlightColor;
-    highlightSubtract = highlight.clone();
+    var highlightSubtract = highlight.clone();
     highlightSubtract.position += displacement;
-    highlightClipper = highlight.clone();
+    var highlightClipper = highlight.clone();
     highlightClipper.position -= new Point(0.5, 0.5);
     highlightClipper.clipMask = true;
-    upper = new Group([highlightClipper, new CompoundPath([highlight, highlightSubtract])]);
+    var upper = new Group([highlightClipper, new CompoundPath([highlight, highlightSubtract])]);
     upper.opacity = 0.5;
 
-    shadowSubtract = shape;
+    var shadowSubtract = shape;
     shadowSubtract.fillColor = viewProperties.shadowColor;
-    shadow = shadowSubtract.clone();
+    var shadow = shadowSubtract.clone();
     shadow.position += displacement;
-    shadowClipper = shadow.clone();
+    var shadowClipper = shadow.clone();
     shadowClipper.position += new Point(0.5, 0.5);
     shadowClipper.clipMask = true;
-    lower = new Group([shadowClipper, new CompoundPath([shadow, shadowSubtract])]);
+    var lower = new Group([shadowClipper, new CompoundPath([shadow, shadowSubtract])]);
     lower.opacity = 0.5;
 
-    border = new Group([lower, upper]);
+    var border = new Group([lower, upper]);
     border.setName("border");
     return border;
 }
 
 // full node body text
 function createFullNodeBodyLabel(node) {
-    bounds = node.bounds;
-    label = new Group();
+    var bounds = node.bounds;
+    var label = new Group();
     label.name = "bodyLabel";
     // clipping rectangle, so text does not flow out of the node
-    clipper = new Path.Rectangle (bounds.x+viewProperties.padding*viewProperties.zoomFactor, bounds.y,
+    var clipper = new Path.Rectangle (bounds.x+viewProperties.padding*viewProperties.zoomFactor, bounds.y,
         bounds.width-2*viewProperties.padding*viewProperties.zoomFactor, bounds.height);
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    typeText = new PointText(new Point(bounds.x+bounds.width/2,
+    var typeText = new PointText(new Point(bounds.x+bounds.width/2,
         bounds.y+viewProperties.lineHeight*1.8*viewProperties.zoomFactor));
     typeText.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
@@ -773,11 +782,12 @@ function createFullNodeBodyLabel(node) {
 
 // render the static part of a node
 function createFullNodeSkeleton(node) {
+    var skeleton;
     if (!(node.type in prerenderLayer.children)) {
-        shape = createFullNodeShape(node);
-        border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
-        typeLabel = createFullNodeBodyLabel(node);
-        titleBarDelimiter = createNodeTitleBarDelimiter(node);
+        var shape = createFullNodeShape(node);
+        var border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
+        var typeLabel = createFullNodeBodyLabel(node);
+        var titleBarDelimiter = createNodeTitleBarDelimiter(node);
         skeleton = new Group([border, titleBarDelimiter, typeLabel]);
         if (node.slots) {
             for (i = 0; i< node.slotIndexes.length; i++)
@@ -799,14 +809,16 @@ function createFullNodeSkeleton(node) {
 // render the activation part of a node
 function createFullNodeActivations(node) {
     var name = "fullNodeActivation "+node.type;
+    var activation;
     if (!(name in prerenderLayer.children)) {
-        body = createFullNodeShape(node);
+        var body = createFullNodeShape(node);
         body.name = "body";
         body.fillColor = viewProperties.nodeColor;
         activation = new Group([body]);
         activation.name = "activation";
+        var bounds, i;
         if (node.slotIndexes.length) {
-            slots = new Group();
+            var slots = new Group();
             slots.name = "slots";
             for (i = 0; i< node.slotIndexes.length; i++) {
                 bounds = getSlotBounds(node, i);
@@ -815,7 +827,7 @@ function createFullNodeActivations(node) {
             activation.addChild(slots);
         }
         if (node.gateIndexes.length) {
-            gates = new Group();
+            var gates = new Group();
             gates.name = "gates";
             for (i = 0; i< node.gateIndexes.length; i++) {
                 bounds = getGateBounds(node, i);
@@ -823,7 +835,7 @@ function createFullNodeActivations(node) {
             }
             activation.addChild(gates);
         }
-        container = new Group([activation]);
+        var container = new Group([activation]);
         container.name = name;
         prerenderLayer.addChild(container);
     }
@@ -834,17 +846,17 @@ function createFullNodeActivations(node) {
 
 // render the static part of a compact node
 function createCompactNodeSkeleton(node) {
-    shape = createCompactNodeShape(node);
-    border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
-    typeLabel = createCompactNodeBodyLabel(node);
-    skeleton = new Group([border, typeLabel]);
+    var shape = createCompactNodeShape(node);
+    var border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
+    var typeLabel = createCompactNodeBodyLabel(node);
+    var skeleton = new Group([border, typeLabel]);
     return skeleton;
 }
 
 // render the symbol within the compact node body
 function createCompactNodeBodyLabel(node) {
-    bounds = node.bounds;
-    symbolText = new PointText(new Point(bounds.x+bounds.width/2,
+    var bounds = node.bounds;
+    var symbolText = new PointText(new Point(bounds.x+bounds.width/2,
         bounds.y+bounds.height/2+viewProperties.symbolSize/2*viewProperties.zoomFactor));
     symbolText.fillColor = viewProperties.nodeForegroundColor;
     symbolText.content = node.symbol;
@@ -855,18 +867,19 @@ function createCompactNodeBodyLabel(node) {
 
 // render the activation part of a compact node
 function createCompactNodeActivations(node) {
-    body = createCompactNodeShape(node);
+    var body = createCompactNodeShape(node);
     body.fillColor = viewProperties.nodeColor;
     body.name = "body";
-    activation = new Group([body]);
+    var activation = new Group([body]);
     activation.name = "activation";
     return activation;
 }
 
 // create the border of slots and gates, and add the respective label
 function createPillsWithLabels(bounds, labeltext) {
+    var border;
     if (!("pillshape" in prerenderLayer.children)) {
-        shape = Path.RoundRectangle(bounds, bounds.height/2);
+        var shape = Path.RoundRectangle(bounds, bounds.height/2);
         border = createBorder(shape, viewProperties.innerShadowDisplacement);
         border.name = "pillshape";
         if (viewProperties.rasterize) border = border.rasterize();
@@ -874,13 +887,13 @@ function createPillsWithLabels(bounds, labeltext) {
     }
     border = prerenderLayer.children["pillshape"].clone();
     border.position = bounds.center;
-    label = new Group();
+    var label = new Group();
     // clipping rectangle, so text does not flow out of the node
-    clipper = new Path.Rectangle(bounds);
+    var clipper = new Path.Rectangle(bounds);
     clipper.clipMask = true;
     label.addChild(clipper);
     label.opacity = 0.99; // clipping workaround to bug in paper.js
-    text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.3));
+    var text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.3));
     text.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
@@ -894,7 +907,7 @@ function createPillsWithLabels(bounds, labeltext) {
 // draw the label of a compact node
 function createCompactNodeLabel(node) {
     if (node.name.length) { // only display a label for named nodes
-        labelText = new PointText(new Point(bounds.x + node.bounds.width/2,
+        var labelText = new PointText(new Point(bounds.x + node.bounds.width/2,
             node.bounds.bottom+viewProperties.lineHeight));
         labelText.content = node.name ? node.name : node.uid;
         labelText.characterStyle = {
@@ -935,7 +948,7 @@ function setActivation(node) {
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
     selection[nodeUid] = nodes[nodeUid];
-    outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+    var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
 }
@@ -944,7 +957,7 @@ function selectNode(nodeUid) {
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
-        outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+        var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
         outline.strokeColor = viewProperties.outlineColor;
         outline.strokeWidth = viewProperties.outlineWidth;
     }
@@ -953,8 +966,8 @@ function deselectNode(nodeUid) {
 // mark node as selected, and add it to the selected nodes
 function selectLink(linkUid) {
     selection[linkUid] = links[linkUid];
-    linkShape = linkLayer.children[linkUid].children["link"];
-    oldHoverColor = viewProperties.selectionColor;
+    var linkShape = linkLayer.children[linkUid].children["link"];
+    var oldHoverColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
     linkShape.children["arrow"].fillColor = viewProperties.selectionColor;
@@ -966,7 +979,7 @@ function selectLink(linkUid) {
 function deselectLink(linkUid) {
     if (linkUid in selection) {
         delete selection[linkUid];
-        linkShape = linkLayer.children[linkUid].children["link"];
+        var linkShape = linkLayer.children[linkUid].children["link"];
         linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
         linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
         linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;
@@ -1015,10 +1028,11 @@ function activationColor(activation, baseColor) {
 	activation = Math.max(Math.min(activation, 1.0), -1.0);
 	if (activation == 0) return baseColor;
 	if (activation == 1) return viewProperties.activeColor;
-	col = new Color();
+	var col = new Color();
+    var c;
 	if (activation >0) c = viewProperties.activeColor; else c = viewProperties.inhibitedColor;
-	a = Math.abs(activation);
-	r = 1.0-a;
+	var a = Math.abs(activation);
+	var r = 1.0-a;
 	return new HSLColor(c.hue,
                         baseColor.saturation * r + c.saturation * a,
                         baseColor.lightness * r + c.lightness * a);
@@ -1043,13 +1057,13 @@ var clickIndex = -1;
 
 function onMouseDown(event) {
     path = hoverPath = null;
-    p = event.point;
+    var p = event.point;
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
-            node = nodes[nodeUid];
-            bounds = node.bounds;
+            var node = nodes[nodeUid];
+            var bounds = node.bounds;
             if (bounds.contains(p)) {
                 path = nodeLayer.children[nodeUid];
                 clickOriginUid = nodeUid;
@@ -1060,6 +1074,7 @@ function onMouseDown(event) {
                 else if (!linkCreationStart) selectNode(nodeUid);
                 console.log ("clicked node "+nodeUid);
                 // check for slots and gates
+                var i;
                 if ((i = testSlots(node, p)) >-1) {
                     console.log("clicked slot #" + i);
                     clickType = "slot";
@@ -1141,8 +1156,8 @@ function onMouseMove(event) {
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
-            node = nodes[nodeUid];
-            bounds = node.bounds;
+            var node = nodes[nodeUid];
+            var bounds = node.bounds;
             if (bounds.contains(p)) {
                 hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
                 // check for slots and gates
@@ -1175,7 +1190,7 @@ function onDoubleClick(event) {
     var p = view.viewToProject(DomEvent.getOffset(event, view._canvas));
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
-            node = nodes[nodeUid];
+            var node = nodes[nodeUid];
             if ((node.type == "Nodespace") && node.bounds.contains(p)) {
                 handleEnterNodespace(node.uid);
                 return;
@@ -1217,7 +1232,7 @@ function onMouseDrag(event) {
     // move current node
     if (movePath) {
             path.position += event.delta;
-            node = nodes[path.name];
+            var node = nodes[path.name];
             node.x += event.delta.x/viewProperties.zoomFactor;
             node.y += event.delta.y/viewProperties.zoomFactor;
             node.bounds = calculateNodeBounds(node);
@@ -1285,10 +1300,10 @@ function openContextMenu(menu_id, event) {
 
 // build the node menu
 function openNodeContextMenu(menu_id, event, nodeUid) {
-    menu = $(menu_id+" .dropdown-menu");
+    var menu = $(menu_id+" .dropdown-menu");
     menu.off('click', 'li');
     menu.empty();
-    node = nodes[nodeUid];
+    var node = nodes[nodeUid];
     if (node.type == "Concept") {
         menu.append('<li><a href="#">Create gen link</a></li>');
         menu.append('<li><a href="#">Create por/ret link</a></li>');
@@ -1310,9 +1325,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 // universal handler for all context menu events. You can get the origin path from the variable clickTarget.
 function handleContextMenu(event) {
     var menuText = event.target.text;
-
     switch (clickType) {
         case null: // create nodes
+            var type;
             switch (menuText) {
                 case "Create concept node":
                     type = "Concept";
@@ -1338,7 +1353,7 @@ function handleContextMenu(event) {
         case "node":
             switch (menuText) {
                 case "Rename node":
-                    nodeUid = clickOriginUid;
+                    var nodeUid = clickOriginUid;
                     if (nodeUid in nodes) {
                         $("#rename_node_input").val(nodes[nodeUid].name);
                         $("#rename_node_modal").modal("show");
@@ -1385,7 +1400,7 @@ function handleContextMenu(event) {
 
 // let user create a new node
 function createNodeHandler(x, y, currentNodespace, name, type) {
-    uid = makeUuid();
+    var uid = makeUuid();
     addNode(new Node(uid, x, y, currentNodeSpace, "", type, 0));
     $.ajax({
         url: '/rpc/add_node('+
@@ -1448,7 +1463,6 @@ function deleteLinkHandler(linkUid) {
             }
         });
     }
-
     if (linkUid in links) {
         removeLink(links[linkUid]);
         if (linkUid in selection) delete selection[linkUid];
@@ -1491,16 +1505,17 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
 
 // establish the created link
 function finalizeLinkHandler(nodeUid, slotIndex) {
-    sourceUid = linkCreationStart.sourceNode.uid;
-    targetUid = nodeUid;
-    gateIndex = linkCreationStart.gateIndex;
+    var sourceUid = linkCreationStart.sourceNode.uid;
+    var targetUid = nodeUid;
+    var gateIndex = linkCreationStart.gateIndex;
+
     if (!slotIndex || slotIndex < 0) slotIndex = 0;
 
     if ((targetUid in nodes) &&
         nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex) &&
         (targetUid != sourceUid)) {
 
-        targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
+        var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
         var uuid = makeUuid();
         switch (linkCreationStart.creationType) {
             case "por/ret":
@@ -1548,7 +1563,7 @@ function cancelLinkCreationHandler() {
 
 // handler for renaming the node
 function handleRenameNodeModal(event) {
-    nodeUid = clickOriginUid;
+    var nodeUid = clickOriginUid;
     if (nodeUid in nodes) {
         nodes[nodeUid].name = $("#rename_node_input").val();
         redrawNode(nodes[nodeUid]);
@@ -1562,7 +1577,8 @@ function handleRenameNodeModal(event) {
 function handleEnterNodespace(nodespaceUid) {
     if (nodespaceUid in nodes) {
         deselectAll();
-        c = currentNodeSpace = nodespaceUid;
+        currentNodeSpace = nodespaceUid;
+        var c = currentNodeSpace;
         $("#nodespace_name").val(nodes[c].name ? nodes[c].name : nodes[c].uid);
         redrawNodeNet();
         view.draw();
@@ -1573,18 +1589,18 @@ function handleEnterNodespace(nodespaceUid) {
 function handleNodespaceUp() {
     deselectAll();
     if (nodes[currentNodeSpace].parent) { // not yet root nodespace
-        c = currentNodeSpace = nodes[currentNodeSpace].parent;
+        currentNodeSpace = nodes[currentNodeSpace].parent;
+        var c = currentNodeSpace;
         $("#nodespace_name").val(nodes[c].name ? nodes[c].name : nodes[c].uid);
         redrawNodeNet();
     }
 }
 
 function makeUuid() {
-    uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
         return v.toString(16);
     }); // todo: replace with a uuid fetched from server
-    return uuid;
 }
 
 

@@ -1588,7 +1588,18 @@ function handleRenameNodeModal(event) {
         redrawNode(nodes[nodeUid]);
         $("#rename_node_modal").modal("hide");
         view.draw();
-        // todo: tell the server all about it
+        $.ajax({
+            url: '/rpc/set_node_parameters('+
+                'nodenet_uid="'+currentNodenet+'",'+
+                'node_uid="'+nodeUid+'",'+
+                'name="'+nodes[nodeUid].name+'")',
+            success: function(data){
+                dialogs.notification('node renamed', 'success');
+            },
+            error: function(data){
+                dialogs.notification('error renaming node', 'error');
+            }
+        });
     }
 }
 

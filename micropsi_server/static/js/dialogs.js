@@ -127,7 +127,7 @@ $(function() {
     $('.navbar a.nodenet_new').on('click', function(event){
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(){
-            // refreshNodenetList();  -- does not work. damn.
+            // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
             window.location.reload();
         });
     });
@@ -146,8 +146,13 @@ $(function() {
         });
     });
 
-    $('.navbar a.nodenet_revert').on('click', function(){
-        dialogs.notification("nodenet is being reverted");
+    $('.navbar a.nodenet_revert').on('click', function(event){
+        event.preventDefault();
+        $.get('/rpc/revert_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+            dialogs.notification("nodenet is being reverted");
+            //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
+            window.location.reload();
+        });
     });
 
     $('.navbar a.nodenet_import').on('click', remote_form);

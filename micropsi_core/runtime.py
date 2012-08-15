@@ -179,7 +179,9 @@ class MicroPsiRuntime(object):
 
     def revert_nodenet(self, nodenet_uid):
         """Returns the nodenet to the last saved state."""
-        pass
+        world = self.worlds[self._get_world_uid_for_nodenet_uid(nodenet_uid)]
+        world.unregister_nodenet(nodenet_uid)
+        return world.register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
 
     def save_nodenet(self, nodenet_uid):
         """Stores the nodenet on the server (but keeps it open)."""

@@ -1231,18 +1231,19 @@ function testGates(node, p) {
 function onMouseDrag(event) {
     // move current node
     if (movePath) {
-            path.position += event.delta;
-            var node = nodes[path.name];
-            node.x += event.delta.x/viewProperties.zoomFactor;
-            node.y += event.delta.y/viewProperties.zoomFactor;
-            node.bounds = calculateNodeBounds(node);
-            redrawNodeLinks(node);
+        path.nodeMoved = true;
+        path.position += event.delta;
+        var node = nodes[path.name];
+        node.x += event.delta.x/viewProperties.zoomFactor;
+        node.y += event.delta.y/viewProperties.zoomFactor;
+        node.bounds = calculateNodeBounds(node);
+        redrawNodeLinks(node);
     }
 }
 
 function onMouseUp(event) {
     if (movePath) {
-        if(nodes[path.name]){
+        if(path.nodeMoved && nodes[path.name]){
             // update position on server
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
         }

@@ -1242,6 +1242,10 @@ function onMouseDrag(event) {
 
 function onMouseUp(event) {
     if (movePath) {
+        if(nodes[path.name]){
+            // update position on server
+            moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+        }
         updateViewSize();
     }
 }
@@ -1559,6 +1563,21 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
 function cancelLinkCreationHandler() {
     if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
     linkCreationStart = null;
+}
+
+function moveNode(nodeUid, x, y){
+    $.ajax({
+        url: '/rpc/set_node_parameters('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'node_uid="'+nodeUid+'",'+
+            'x='+x+',y='+y+')',
+        success: function(data){
+            dialogs.notification('node moved', 'success');
+        },
+        error: function(data){
+            dialogs.notification('error moving node', 'error');
+        }
+    });
 }
 
 // handler for renaming the node

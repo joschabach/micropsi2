@@ -71,12 +71,13 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
                 response.status = 401
                 return {"Error": "Insufficient permissions for remote procedure call"}
             else:
-                kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
+                #kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 try:
                     arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args)
                 except KeyError, err:
                     response.status = 400
                     return {"Error": "Missing argument in remote procedure call: %s" %err}
+                arguments.update(kwargs)
                 return json.dumps(func(**arguments))
         return _wrapper
     return _decorator
@@ -627,7 +628,8 @@ def get_node_function(nodenet_uid, node_type): return micropsi.get_node_function
 def set_node_function(nodenet_uid, node_type, node_function = None): return micropsi.set_node_function
 
 @rpc("set_node_parameters", permission_required="manage nodenets")
-def set_node_parameters(nodenet_uid, node_uid, parameters = None): return micropsi.set_node_parameters
+def set_node_parameters(nodenet_uid, node_uid, **parameters):
+    return micropsi.set_node_parameters(nodenet_uid, node_uid, **parameters)
 
 @rpc("add_node_type", permission_required="manage nodenets")
 def add_node_type(nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None): return micropsi.add_node_type

@@ -77,7 +77,7 @@ function refreshNodenetList(){
         $('#nodenet_list .nodenet_select').on('click', function(event){
             event.preventDefault();
             var el = $(event.target);
-            uid = el.attr('data');
+            var uid = el.attr('data');
             setCurrentNodenet(uid);
         });
     });
@@ -1404,16 +1404,31 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
+    function deleteNodeOnServer(node_uid){
+        $.ajax({
+            url: '/rpc/delete_node('+
+                'nodenet_uid="' + currentNodenet + '",'+
+                'node_uid="' + node_uid + '")',
+            error: function(data){
+                dialogs.notification(data.Error || "Error removing Node", "error");
+            }
+        });
+    }
     var deletedNodes = [];
     if (nodeUid in nodes) {
+        deletedNodes.push(nodeUid);
         removeNode(nodes[nodeUid]);
         if (nodeUid in selection) delete selection[nodeUid];
         // todo: tell the server all about it
     }
     for (var selected in selection) {
+        deletedNodes.push(selected);
         removeNode(nodes[selected]);
         delete selection[selected];
         // todo: tell the server all about it
+    }
+    for(var i in deletedNodes){
+        deleteNodeOnServer(deletedNodes[i]);
     }
 }
 
@@ -1489,23 +1504,24 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
         var uuid = makeUuid();
         switch (linkCreationStart.creationType) {
             case "por/ret":
-                addLink(new Link(uid, sourceUid, "por", targetUid, "gen", 1, 1));
+                addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));
                 if (targetGates > 2) addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
                 break;
             case "sub/sur":
-                addLink(new Link(uid, sourceUid, "sub", targetUid, "gen", 1, 1));
+                addLink(new Link(uuid, sourceUid, "sub", targetUid, "gen", 1, 1));
                 if (targetGates > 4) addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
                 break;
             case "cat/exp":
-                addLink(new Link(uid, sourceUid, "cat", targetUid, "gen", 1, 1));
+                addLink(new Link(uuid, sourceUid, "cat", targetUid, "gen", 1, 1));
                 if (targetGates > 6) addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
                 break;
             case "gen":
-                addLink(new Link(uid, sourceUid, "gen", targetUid, "gen", 1, 1));
+                addLink(new Link(uuid, sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
-                addLink(new Link(uid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
+                addLink(new Link(uuid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
+        // TODO: also write backwards link??
         $.ajax({
             url: '/rpc/add_link('+
                 'nodenet_uid="' + currentNodenet + '",' +
@@ -1514,7 +1530,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 'target_node_uid="' + targetUid + '",' +
                 'slot_type="' + nodes[targetUid].slotIndexes[slotIndex] + '",' +
                 'weight=1,'+
-                'uid="'+ uid +'")',
+                'uid="'+ uuid +'")',
             error: function(data){
                 dialogs.notification(data.Error || "Error", "error");
             }

@@ -611,7 +611,8 @@ def set_node_position(nodenet_uid, node_uid, x, y): return micropsi.set_node_pos
 def set_node_name(nodenet_uid, node_uid, name): return micropsi.set_node_name
 
 @rpc("delete_node", permission_required="manage nodenets")
-def delete_node(nodenet_uid, node_uid): return micropsi.delete_node
+def delete_node(nodenet_uid, node_uid):
+    return micropsi.delete_node(nodenet_uid, node_uid)
 
 @rpc("get_available_node_types")
 def get_available_node_types(nodenet_uid = None): return micropsi.get_available_node_types

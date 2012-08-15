@@ -97,7 +97,6 @@ class Nodenet(object):
             "step": 0
         }
 
-
         self.world = world
         self.runtime = runtime
         self.owner = owner
@@ -150,7 +149,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, "Root", (data['x'], data['x']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
+            self.nodes[uid] = Node(self, "Root", (data['x'], data['y']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -355,9 +354,6 @@ class Node(NetEntity):
         node_function: a function to be executed whenever the node receives activation
     """
 
-    gates = {}
-    slots = {}
-
     @property
     def activation(self):
         return self.data.get("activation", 0)
@@ -376,6 +372,10 @@ class Node(NetEntity):
 
     def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
+
+        self.gates = {}
+        self.slots = {}
+
         self.data["type"] = type
         if type in STANDARD_NODETYPES:
             for gate in STANDARD_NODETYPES[type].get('gates', []):

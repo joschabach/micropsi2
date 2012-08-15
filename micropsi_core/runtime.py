@@ -404,7 +404,18 @@ class MicroPsiRuntime(object):
 
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        link_uids = []
+        for key, gate in nodenet.nodes[node_uid].gates.items():
+            link_uids.extend(gate.outgoing.keys())
+        for key, slot in nodenet.nodes[node_uid].slots.items():
+            link_uids.extend(slot.incoming.keys())
+        del nodenet.nodes[node_uid]
+        del nodenet.state['nodes'][node_uid]
+        for uid in link_uids:
+            del nodenet.links[uid]
+            del nodenet.state['links'][uid]
+        return True
 
     def get_available_node_types(self, nodenet_uid):
         """Returns a list of available node types. (Including native modules.)"""
@@ -560,7 +571,7 @@ class MicroPsiRuntime(object):
         nodenet = self._get_nodenet(nodenet_uid)
         nodenet.links[link_uid].remove()
         del nodenet.links[link_uid]
-        del nodenet.state[link_uid]
+        del nodenet.state['links'][link_uid]
         return True
 
 

@@ -448,10 +448,12 @@ def load_nodenet_into_ui(nodenet_uid, **coordinates):
     return micropsi.get_nodenet_area(nodenet_uid, **coordinates)
 
 @rpc("generate_uid")
-def generate_uid(): return micropsi_core.tools.generate_uid()
+def generate_uid():
+    return micropsi_core.tools.generate_uid()
 
 @rpc("get_available_nodenets")
-def get_available_nodenets(user_id): return micropsi.get_available_nodenets(user_id)
+def get_available_nodenets(user_id):
+    return micropsi.get_available_nodenets(user_id)
 
 @route("/create_new_nodenet_form")
 def create_new_nodenet_form():

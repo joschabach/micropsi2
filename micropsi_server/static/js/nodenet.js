@@ -62,14 +62,18 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
-var currentNodenet = "b2";  // TODO: fetch from cookie
+currentNodenet = $.cookie('selected_nodenet');  // TODO: fetch from cookie
 var currentWorld = 0;       // cookie
 var currentNodeSpace = 0;   // cookie
 
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
 initializeMenus();
-initializeNodeNet();
+if(currentNodenet){
+    setCurrentNodenet(currentNodenet);
+} else {
+    initializeNodeNet();
+}
 
 refreshNodenetList();
 function refreshNodenetList(){
@@ -89,6 +93,7 @@ function setCurrentNodenet(uid){
             // todo: server should deliver according status code.
             if (!data.Error){
                 currentNodenet = uid;
+                $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
                 initializeNodeNet(data);
                 refreshNodenetList();
             } else {

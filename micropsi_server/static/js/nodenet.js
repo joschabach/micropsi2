@@ -98,6 +98,7 @@ function setCurrentNodenet(uid){
                 refreshNodenetList();
             } else {
                 dialogs.notification(data.Error, "error");
+                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
             }
         }
     });

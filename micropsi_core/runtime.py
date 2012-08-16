@@ -49,7 +49,9 @@ class MicroPsiRuntime(object):
         """ Temporary method to get the world uid to a given nodenet uid.
             TODO: I guess this should be handled a bit differently?
         """
-        return self.nodenet_data[nodenet_uid].world
+        if nodenet_uid in self.nodenet_data:
+            return self.nodenet_data[nodenet_uid].world
+        return None
 
 
     def _get_nodenet(self, nodenet_uid):
@@ -89,7 +91,9 @@ class MicroPsiRuntime(object):
 
         """
         world_uid = self._get_world_uid_for_nodenet_uid(nodenet_uid)
-        return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
+        if world_uid:
+            return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
+        return False, "no such nodenet"
 
     def get_nodenet_area(self, nodenet_uid, x1=0, x2=-1, y1=0, y2=-1):
         """ return all nodes and links within the given area of the nodenet
@@ -122,13 +126,13 @@ class MicroPsiRuntime(object):
             owner=owner,
             world=world_uid,
             nodes=dict(),
-            links=[],
+            links=dict(),
             version=1
         )
-        data['filename'] = data['uid']
+        data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'])
         self.nodenet_data[data['uid']] = Bunch(**data)
-        with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid']), 'w+') as fp:
-            fp.write(json.dumps(data))
+        with open(data['filename'], 'w+') as fp:
+            fp.write(json.dumps(data, sort_keys=True, indent=4))
         fp.close
         #self.load_nodenet(data['uid'])
         return True, data['uid']
@@ -138,7 +142,11 @@ class MicroPsiRuntime(object):
 
         Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
         """
-        pass
+        data = self.nodenet_data[nodenet_uid]
+        self.worlds[data.world].unregister_nodenet(nodenet_uid)
+        os.remove(data.filename)
+        del self.nodenet_data[nodenet_uid]
+        return True
 
     def set_nodenet_properties(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):
         """Sets the supplied parameters (and only those) for the nodenet with the given uid."""

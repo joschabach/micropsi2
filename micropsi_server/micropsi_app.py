@@ -478,7 +478,8 @@ def create_worldadapter_selector(world_uid):
         nodenets = nodenets, worlds = worlds)
 
 @rpc("delete_nodenet", permission_required="manage nodenets")
-def delete_nodenet(nodenet_uid): return micropsi.delete_nodenet(nodenet_uid)
+def delete_nodenet(nodenet_uid):
+    return micropsi.delete_nodenet(nodenet_uid)
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
 def set_nodenet_data(nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):

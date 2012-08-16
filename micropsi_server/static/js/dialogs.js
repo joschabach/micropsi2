@@ -128,6 +128,7 @@ $(function() {
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(){
             // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
+            dialogs.notification('Nodenet created', 'success');
             window.location.reload();
         });
     });
@@ -135,21 +136,27 @@ $(function() {
 
     $('.navbar a.nodenet_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this nodenet?", function(){
-            alert('kthxbye');
+            $.get('/rpc/delete_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+                currentNodenet=null;
+                // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
+                $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+                dialogs.notification('Nodenet deleted');
+                window.location.reload();
+            });
         });
     });
 
     $('.navbar a.nodenet_save').on('click', function(){
         event.preventDefault();
         $.get('/rpc/save_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
-            dialogs.notification("nodenet state saved");
+            dialogs.notification("nodenet state saved", 'success');
         });
     });
 
     $('.navbar a.nodenet_revert').on('click', function(event){
         event.preventDefault();
         $.get('/rpc/revert_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
-            dialogs.notification("nodenet is being reverted");
+            dialogs.notification("nodenet reverted");
             //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
             window.location.reload();
         });

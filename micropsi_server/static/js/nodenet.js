@@ -251,14 +251,18 @@ function addLink(link) {
         }
     } else {
         // if weight or activation change, we need to redraw
-        var oldLink = links[link.uid];
-        if (oldLink.weight != link.weight ||
-            oldLink.certainty != link.certainty ||
-            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
-                nodes[link.sourceNodeUid].gates[link.gateName].activation) {
-            linkLayer.children[link.uid].remove();
-            renderLink(link);
-        }
+        redrawLink(link);
+    }
+}
+
+function redrawLink(link, forceRedraw){
+    var oldLink = links[link.uid];
+    if (forceRedraw || (oldLink.weight != link.weight ||
+        oldLink.certainty != link.certainty ||
+        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
+            nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
+        linkLayer.children[link.uid].remove();
+        renderLink(link);
     }
 }
 
@@ -1292,6 +1296,9 @@ function onResize(event) {
 function initializeMenus() {
     $(".nodenet_menu").on('click', 'li', handleContextMenu);
     $("#rename_node_modal .btn-primary").on('click', handleRenameNodeModal);
+    $('#rename_node_modal form').on('submit', handleRenameNodeModal);
+    $("#edit_link_modal .btn-primary").on('click', handleEditLink);
+    $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
     $("#nodespace_up").on('click', handleNodespaceUp);
 }
@@ -1404,6 +1411,15 @@ function handleContextMenu(event) {
                 case "Delete link":
                     deleteLinkHandler(clickOriginUid);
                     break;
+                case "Edit link":
+                    var linkUid = clickOriginUid;
+                    if (linkUid in links) {
+                        $("#link_weight_input").val(links[linkUid].weight);
+                        $("#link_certainty_input").val(links[linkUid].certainty);
+                        $("#edit_link_modal").modal("show");
+                        $("#link_weight_input").focus();
+                    }
+                    break;
             }
     }
     view.draw();
@@ -1484,6 +1500,31 @@ function deleteLinkHandler(linkUid) {
         delete selection[selected];
         removeLinkOnServer(selected);
     }
+}
+
+function handleEditLink(event){
+    var linkUid = clickOriginUid;
+    if (linkUid in links) {
+        links[linkUid].weight = parseInt($('#link_weight_input').val(), 10);
+        links[linkUid].certainty = parseInt($('#link_certainty_input').val(), 10);
+        redrawLink(links[linkUid], true);
+        $("#edit_link_modal").modal("hide");
+        view.draw();
+        $.ajax({
+            url: '/rpc/set_link_weight('+
+                'nodenet_uid="'+currentNodenet+'",'+
+                'link_uid="'+linkUid+'",'+
+                'weight='+links[linkUid].weight+','+
+                'certainty='+links[linkUid].weight+')',
+            success: function(data){
+                dialogs.notification('link changed', 'success');
+            },
+            error: function(data){
+                dialogs.notification('error changing link', 'error');
+            }
+        });
+    }
+
 }
 
 linkCreationStart = null;

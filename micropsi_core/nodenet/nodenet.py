@@ -317,6 +317,7 @@ class Link(object): # todo: adapt to new form, like net entitities
         self.uid = uid or  micropsi_core.tools.generate_uid()
         self.link(source_node, source_gate_name, target_node, target_slot_name)
         self.weight = weight
+        self.certainty = 1
 
     def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1):
         """link between source and target nodes, from a gate to a slot.

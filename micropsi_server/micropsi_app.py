@@ -672,7 +672,8 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
     return micropsi.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid);
 
 @rpc("set_link_weight", permission_required="manage nodenets")
-def set_link_weight(nodenet_uid, link_uid, weight, certainty = 1): return micropsi.set_link_weight
+def set_link_weight(nodenet_uid, link_uid, weight, certainty = 1):
+    return micropsi.set_link_weight(nodenet_uid, link_uid, weight, certainty)
 
 @rpc("get_link")
 def get_link(nodenet_uid, link_uid): return micropsi.get_link

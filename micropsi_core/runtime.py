@@ -560,7 +560,13 @@ class MicroPsiRuntime(object):
 
     def set_link_weight(self, nodenet_uid, link_uid, weight, certainty = 1):
         """Set weight of the given link."""
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet.state['links'][link_uid]['weight'] = weight
+        nodenet.state['links'][link_uid]['certainty'] = certainty
+        nodenet.links[link_uid].weight = weight
+        nodenet.links[link_uid].certainty = certainty
+        return True
+
 
     def get_link(self, nodenet_uid, link_uid):
         """Returns a dictionary of the parameters of the given link, or None if it does not exist. It is

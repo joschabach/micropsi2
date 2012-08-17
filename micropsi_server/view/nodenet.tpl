@@ -195,6 +195,7 @@
 <div class="dropdown" id="link_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#link_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
+        <li><a href="#">Edit link</a></li>
         <li><a href="#">Delete link</a></li>
     </ul>
 </div>
@@ -249,6 +250,36 @@
         <a href="#" class="btn btn-primary">Save changes</a>
     </div>
 </div>
+
+<div class="modal hide" id="edit_link_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Edit Link</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="link_weight_input">Weight</label>
+                    <div class="controls">
+                        <input type="text" class="input-xlarge" id="link_weight_input">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_certainty_input">Certainty</label>
+                    <div class="controls">
+                        <input type="text" class="input-xlarge" id="link_certainty_input">
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save changes</a>
+    </div>
+</div>
+
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
 

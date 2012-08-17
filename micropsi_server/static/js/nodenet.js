@@ -1505,8 +1505,8 @@ function deleteLinkHandler(linkUid) {
 function handleEditLink(event){
     var linkUid = clickOriginUid;
     if (linkUid in links) {
-        links[linkUid].weight = parseInt($('#link_weight_input').val(), 10);
-        links[linkUid].certainty = parseInt($('#link_certainty_input').val(), 10);
+        links[linkUid].weight = parseFloat($('#link_weight_input').val());
+        links[linkUid].certainty = parseFloat($('#link_certainty_input').val());
         redrawLink(links[linkUid], true);
         $("#edit_link_modal").modal("hide");
         view.draw();
@@ -1515,7 +1515,7 @@ function handleEditLink(event){
                 'nodenet_uid="'+currentNodenet+'",'+
                 'link_uid="'+linkUid+'",'+
                 'weight='+links[linkUid].weight+','+
-                'certainty='+links[linkUid].weight+')',
+                'certainty='+links[linkUid].certainty+')',
             success: function(data){
                 dialogs.notification('link changed', 'success');
             },

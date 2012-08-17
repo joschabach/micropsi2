@@ -1265,11 +1265,11 @@ function onMouseUp(event) {
 
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
-    if (event.character == "+") {
+    if (event.character == "+" && event.event.target.tagName == "BODY") {
         viewProperties.zoomFactor += 0.1;
         redrawNodeNet(currentNodeSpace);
     }
-    else if (event.character == "-") {
+    else if (event.character == "-" && event.event.target.tagName == "BODY") {
         if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
         redrawNodeNet(currentNodeSpace);
     }

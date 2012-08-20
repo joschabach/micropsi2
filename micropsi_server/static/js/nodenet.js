@@ -719,7 +719,7 @@ function createFullNodeLabel(node) {
         fillColor: viewProperties.nodeFontColor,
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
-    titleText.content = node.name ? node.name : node.uid;
+    titleText.content = (node.name ? node.name : node.uid).substring(0,8) +": "+ node.activation;
     titleText.name = "text";
     label.addChild(titleText);
     return label;

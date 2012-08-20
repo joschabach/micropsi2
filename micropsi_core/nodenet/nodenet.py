@@ -412,22 +412,22 @@ class Node(NetEntity):
         which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
         # process the slots
-
         if self.type == "Sensor":
             self.activation = self.nodenet.worldadapter.datasources[self.name]
         else:
             self.activation = sum([self.slots[slot].activation for slot in self.slots])
 
         # call nodefunction of my node type
-        try:
-            exec self.nodefunction
-            # self.nodenet.nodetypes[type].nodefunction(nodenet = self.nodenet, node = self, parameters = self.parameters)
-        except SyntaxError, err:
-            warnings.warn("Syntax error during node execution: %s" % err.message)
-            self.data["activation"] = "Syntax error"
-        except TypeError, err:
-            warnings.warn("Type error during node execution: %s" % err.message)
-            self.data["activation"] = "Parameter mismatch"
+        if self.nodefunction:
+            try:
+                exec self.nodefunction
+                # self.nodenet.nodetypes[type].nodefunction(nodenet = self.nodenet, node = self, parameters = self.parameters)
+            except SyntaxError, err:
+                warnings.warn("Syntax error during node execution: %s" % err.message)
+                self.data["activation"] = "Syntax error"
+            except TypeError, err:
+                warnings.warn("Type error during node execution: %s" % err.message)
+                self.data["activation"] = "Parameter mismatch"
 
     def get_gate(self, gatename):
         return self.gates.get(gatename)

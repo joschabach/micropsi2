@@ -114,7 +114,7 @@ class Nodenet(object):
         self.load()
 
         # these are the nodes that received activation and must be calculated
-        if self.data['step'] == 0:
+        if self.state['step'] == 0:
             self.active_nodes = {uid: node for uid,node in self.nodes.items() if node.type == "Sensor"}
         else:
             self.active_nodes = {}

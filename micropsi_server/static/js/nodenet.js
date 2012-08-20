@@ -1258,6 +1258,7 @@ function onMouseUp(event) {
     if (movePath) {
         if(path.nodeMoved && nodes[path.name]){
             // update position on server
+            path.nodeMoved = false;
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
         }
         updateViewSize();

@@ -27,12 +27,12 @@ class WorldAdapter(object):
     takes care of translating between the world and these values at each world cycle.
     """
 
-    def __init__(self, world, agent_type):
+    def __init__(self, world, agent_type, datasources={}, datatargets={}):
         self.world = world
         self.agent_type = agent_type
         # data sources and data targets are dicts that match keys with activation values (floating point values)
-        self.datasources = {}
-        self.datatargets = {}
+        self.datasources = datasources
+        self.datatargets = datatargets
 
     # agent facing methods:
 

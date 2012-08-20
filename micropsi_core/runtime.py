@@ -102,8 +102,6 @@ class MicroPsiRuntime(object):
         """
         return self._get_nodenet(nodenet_uid).state
 
-
-
     def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):
         """Creates a new node net manager and registers it.
 
@@ -183,7 +181,9 @@ class MicroPsiRuntime(object):
             nodenet_uid: The uid of the nodenet
             nodespace (optional): when supplied, returns the contents of the nodespace after the simulation step
         """
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet.step()
+        return nodenet.state['step']
 
     def revert_nodenet(self, nodenet_uid):
         """Returns the nodenet to the last saved state."""

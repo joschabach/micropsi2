@@ -38,7 +38,7 @@
                         <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
                           <a href="#" class="btn"><i class="icon-play"></i></a>
-                          <a href="#" class="btn"><i class="icon-step-forward"></i></a>
+                          <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
                           <a href="#" class="btn"><i class="icon-pause"></i></a>
                         </span>
                                 </td>

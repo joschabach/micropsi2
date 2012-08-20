@@ -69,6 +69,7 @@ var currentNodeSpace = 0;   // cookie
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
 initializeMenus();
+initializeControls();
 if(currentNodenet){
     setCurrentNodenet(currentNodenet);
 } else {
@@ -95,6 +96,7 @@ function setCurrentNodenet(uid){
                 currentNodenet = uid;
                 $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
                 initializeNodeNet(data);
+                $('#nodenet_step').val(data.step);
                 refreshNodenetList();
             } else {
                 dialogs.notification(data.Error, "error");
@@ -1304,6 +1306,27 @@ function initializeMenus() {
     $("#nodespace_up").on('click', handleNodespaceUp);
 }
 
+function initializeControls(){
+    $('#nodenet_step_forward').on('click', stepNodenet);
+}
+
+function stepNodenet(event){
+    event.preventDefault();
+    console.log('foo');
+    $.ajax({
+        url: '/rpc/step_nodenet('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'nodespace="'+currentNodeSpace+'")',
+        success: function(){
+            setCurrentNodenet(currentNodenet);
+            dialogs.notification("Nodenet stepped", "success");
+        },
+        error: function(){
+            dialogs.notification("Error stepping", "error");
+        }
+    });
+}
+
 var clickPosition = null;
 
 function openContextMenu(menu_id, event) {
@@ -1423,6 +1446,7 @@ function handleContextMenu(event) {
                     break;
             }
     }
+    console.log(view);
     view.draw();
 }
 

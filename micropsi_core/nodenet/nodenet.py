@@ -61,13 +61,13 @@ class Nodenet(object):
     def world(self, world):
         self.state["world"] = world.uid
 
-    @property
-    def worldadapter(self):
-        return self.state.get("worldadapter")
+    # @property
+    # def worldadapter(self):
+    #     return self.state.get("worldadapter")
 
-    @worldadapter.setter
-    def worldadapter(self, worldadapter_uid):
-        self.state["worldadapter"] = worldadapter_uid
+    # @worldadapter.setter
+    # def worldadapter(self, worldadapter_uid):
+    #     self.state["worldadapter"] = worldadapter_uid
 
     @property
     def current_step(self):
@@ -103,7 +103,7 @@ class Nodenet(object):
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
-        self.worldadapter = worldadapter
+        self.worldadapter = self.world.worldadapters[worldadapter]
 
         self.nodespaces = {"Root": Nodespace(self, None, (0,0), name="Root", entitytype="nodespaces", uid = "Root")}
 
@@ -111,9 +111,13 @@ class Nodenet(object):
         self.links = {}
         self.nodetypes = {}
 
-        self.active_nodes = {} # these are the nodes that received activation and must be calculated
-
         self.load()
+
+        # these are the nodes that received activation and must be calculated
+        if self.data['step'] == 0:
+            self.active_nodes = {uid: node for uid,node in self.nodes.items() if node.type == "Sensor"}
+        else:
+            self.active_nodes = {}
 
     def load(self, string = None):
         """Load the node net from a file"""
@@ -182,11 +186,18 @@ class Nodenet(object):
 
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""
-        pass
+        new_active_nodes = {}
+        for uid, node in self.active_nodes.items():
+            for type, gate in node.gates.items():
+                for uid, link in gate.outgoing.items():
+                    link.target_slot.activation += gate.activation * link.weight
+                    new_active_nodes[link.target_node.uid] = link.target_node
+        self.active_nodes = new_active_nodes
 
     def calculate_node_functions(self):
         """for all active nodes, call their node function, which in turn should update the gate functions"""
-        pass
+        for uid, node in self.active_nodes.items():
+            node.node_function()
 
 
 class NetEntity(object):
@@ -305,8 +316,6 @@ class Link(object): # todo: adapt to new form, like net entitities
 
     You may retrieve links either from the global dictionary (by uid), or from the gates of nodes themselves.
     """
-    source_node = None
-    target_node = None
 
     def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1, uid=None):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot
@@ -315,6 +324,8 @@ class Link(object): # todo: adapt to new form, like net entitities
             weight (optional): the weight of the link (default is 1)
         """
         self.uid = uid or  micropsi_core.tools.generate_uid()
+        self.source_node = None
+        self.target_node = None
         self.link(source_node, source_gate_name, target_node, target_slot_name)
         self.weight = weight
         self.certainty = 1
@@ -360,6 +371,10 @@ class Node(NetEntity):
     def activation(self):
         return self.data.get("activation", 0)
 
+    @activation.setter
+    def activation(self, activation):
+        self.data['activation'] = activation
+
     @property
     def type(self):
         return self.data.get("type")
@@ -377,13 +392,13 @@ class Node(NetEntity):
 
         self.gates = {}
         self.slots = {}
-
         self.data["type"] = type
         if type in STANDARD_NODETYPES:
             for gate in STANDARD_NODETYPES[type].get('gates', []):
                 self.gates[gate] = Gate(gate, self)
             for slot in STANDARD_NODETYPES[type].get("slots", []):
                 self.slots[slot] = Slot(slot, self)
+            self.nodefunction = STANDARD_NODETYPES[type].get('nodefunction')
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -398,16 +413,20 @@ class Node(NetEntity):
         """
         # process the slots
 
-        #self.activation = sum([self.slots[slot].incoming[link] for slot in self.slots for link in self.slots[slot].incoming])
+        if self.type == "Sensor":
+            self.activation = self.nodenet.worldadapter.datasources[self.name]
+        else:
+            self.activation = sum([self.slots[slot].activation for slot in self.slots])
 
         # call nodefunction of my node type
         try:
-            self.nodenet.nodetypes[type].nodefunction(nodenet = self.nodenet, node = self, parameters = self.parameters)
+            exec self.nodefunction
+            # self.nodenet.nodetypes[type].nodefunction(nodenet = self.nodenet, node = self, parameters = self.parameters)
         except SyntaxError, err:
-            warnings.warn("Syntax error during node execution")
+            warnings.warn("Syntax error during node execution: %s" % err.message)
             self.data["activation"] = "Syntax error"
         except TypeError, err:
-            warnings.warn("Type error during node execution")
+            warnings.warn("Type error during node execution: %s" % err.message)
             self.data["activation"] = "Parameter mismatch"
 
     def get_gate(self, gatename):
@@ -461,7 +480,7 @@ class Gate(object): # todo: take care of gate functions at the level of nodespac
         gate_factor = 1
 
         # check if the current node space has an activator that would prevent the activity of this gate
-        if self.type in self.node.parent_nodespace.activators:
+        if self.type in self.node.nodenet.nodespaces[self.node.data['nodespace']].activators:
             gate_factor = self.node.parent_nodespace.activators[self.type]
             if gate_factor == 0.0:
                 self.activation = 0
@@ -511,23 +530,24 @@ STANDARD_NODETYPES = {
     },
     "Sensor": {
         "parameters":["datasource"],
-        "nodefunction": """node.gates["gen"].gatefunction(nodenet.datasources[datasource])""",
+        "nodefunction": """self.gates["gen"].gate_function(self.nodenet.worldadapter.datasources[self.name])""",
         "gates": ["gen"]
     },
     "Actor": {
         "parameters":["datasource", "datatarget"],
-        "nodefunction": """nodenet.datatargets[datatarget] = node.slots["gen"].activation""",
-        "slots": ["gen"]
+        "nodefunction": """self.nodenet.worldadapter.datatargets[self.name] = self.slots["gen"].activation""",
+        "slots": ["gen"],
+        "gates": ["gen"]
     },
     "Concept": {
         "slots": ["gen"],
-        "nodefunction": """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])""",
+        "nodefunction": """for type, gate in self.gates.items(): gate.gate_function(self.activation)""",
         "gates": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
     },
     "Activator": {
         "slots": ["gen"],
         "parameters": ["type"],
-        "nodefunction": """node.nodespace.activators[type] = node.slots["gen"].activation"""
+        "nodefunction": """self.nodenet.nodespaces[self.parent_nodespace].activators[self.type] = self.node.slots["gen"].activation"""
     }
 }
 

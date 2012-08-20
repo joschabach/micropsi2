@@ -56,7 +56,13 @@ class World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.worldadapters = {"Default": worldadapter.WorldAdapter(self, "Default")}
+        self.worldadapters = {
+            "Default": worldadapter.WorldAdapter(self, "Default", datasources={
+                    "red": 1,
+                    "green": 0.7,
+                    "blue": 0.2
+                })
+        }
 
         # persistent data
         self.data = {
@@ -133,10 +139,10 @@ class World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            if self.agents[nodenet_uid].worldadapter == worldadapter:
+            #if self.agents[nodenet_uid].worldadapter == worldadapter:
                 return True, nodenet_uid
-            else:
-                return False, "Nodenet agent already exists in this world, but has the wrong type"
+            #else:
+            #    return False, "Nodenet agent already exists in this world, but has the wrong type"
 
         return self.spawn_agent(worldadapter, nodenet_uid)
 

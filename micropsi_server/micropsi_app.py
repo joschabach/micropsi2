@@ -503,7 +503,8 @@ def get_is_nodenet_running(nodenet_uid): return micropsi.get_is_nodenet_running
 def stop_nodenetrunner(nodenet_uid): return micropsi.stop_nodenetrunner
 
 @rpc("step_nodenet", permission_required="manage nodenets")
-def step_nodenet(nodenet_uid, nodespace = None): return micropsi.step_nodenet
+def step_nodenet(nodenet_uid, nodespace = None):
+    return micropsi.step_nodenet(nodenet_uid, nodespace)
 
 @rpc("revert_nodenet", permission_required="manage nodenets")
 def revert_nodenet(nodenet_uid):

@@ -115,8 +115,10 @@ class Nodenet(object):
 
         # these are the nodes that received activation and must be calculated
         if self.state['step'] == 0:
+            # initially, these are the Sensors
             self.active_nodes = {uid: node for uid,node in self.nodes.items() if node.type == "Sensor"}
         else:
+            # otherwise, we probably need to persist the ids of the active nodes...
             self.active_nodes = {}
 
     def load(self, string = None):
@@ -412,8 +414,8 @@ class Node(NetEntity):
         which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
         # process the slots
-        if self.type == "Sensor":
-            self.activation = self.nodenet.worldadapter.datasources[self.name]
+        if self.type == 'Sensor' and 'datasource' in self.data:
+            self.activation = self.nodenet.worldadapter.datasources[self.data['datasource']]
         else:
             self.activation = sum([self.slots[slot].activation for slot in self.slots])
 
@@ -530,7 +532,7 @@ STANDARD_NODETYPES = {
     },
     "Sensor": {
         "parameters":["datasource"],
-        "nodefunction": """self.gates["gen"].gate_function(self.nodenet.worldadapter.datasources[self.name])""",
+        "nodefunction": """if "datasource" in self.data: self.gates["gen"].gate_function(self.nodenet.worldadapter.datasources[self.data['datasource']])""",
         "gates": ["gen"]
     },
     "Actor": {

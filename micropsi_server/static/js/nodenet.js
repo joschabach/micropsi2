@@ -1338,6 +1338,8 @@ function initializeMenus() {
     $(".nodenet_menu").on('click', 'li', handleContextMenu);
     $("#rename_node_modal .btn-primary").on('click', handleRenameNodeModal);
     $('#rename_node_modal form').on('submit', handleRenameNodeModal);
+    $("#select_datasource_modal .btn-primary").on('click', handleSelectDatasourceModal);
+    $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -1396,6 +1398,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
         }
         menu.append('<li class="divider"></li>');
     }
+    if(node.type == "Sensor"){
+        menu.append('<li><a href="#">Select datasource</li>');
+    }
     menu.append('<li><a href="#">Rename node</a></li>');
     menu.append('<li><a href="#">Delete node</a></li>');
     menu.on('click', 'li', handleContextMenu);
@@ -1435,14 +1440,26 @@ function handleContextMenu(event) {
                 case "Rename node":
                     var nodeUid = clickOriginUid;
                     if (nodeUid in nodes) {
-                        $("#rename_node_input").val(nodes[nodeUid].name);
+                        var input = $('#rename_node_input');
                         $("#rename_node_modal").modal("show");
-                        $("#rename_node_input").select();
-                        $("#rename_node_input").focus();
+                        input.val(nodes[nodeUid].name).select().focus();
                     }
                     break;
                 case "Delete node":
                     deleteNodeHandler(clickOriginUid);
+                    break;
+                case "Select datasource":
+                    var select = $('#select_datasource_modal select');
+                    $("#select_datasource_modal").modal("show");
+                    $.ajax({
+                        url: '/rpc/get_available_datasources(nodenet_uid="'+currentNodenet+'")',
+                        success: function(data){
+                            for(var i in data){
+                                select.append($('<option>', {value:data[i]}).text(data[i]));
+                            }
+                            select.val(nodes[clickOriginUid].datasource).select().focus();
+                        }
+                    });
                     break;
                 default:
                     // link creation
@@ -1715,6 +1732,23 @@ function handleRenameNodeModal(event) {
             }
         });
     }
+}
+
+function handleSelectDatasourceModal(event){
+    var nodeUid = clickOriginUid;
+    $("#select_datasource_modal").modal("hide");
+    $.ajax({
+        url: '/rpc/bind_datasource_to_sensor('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'sensor_uid="'+nodeUid+'",'+
+            'datasource="'+$('#select_datasource_modal select').val()+'")',
+        success: function(data){
+            dialogs.notification('datasource selected', 'success');
+        },
+        error: function(data){
+            dialogs.notification('error selecting datasource', 'error');
+        }
+    });
 }
 
 // handler for entering a nodespace

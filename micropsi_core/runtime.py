@@ -505,7 +505,7 @@ class MicroPsiRuntime(object):
 
     def get_available_datasources(self, nodenet_uid):
         """Returns a list of available datasource types for the given nodenet."""
-        pass
+        return self._get_nodenet(nodenet_uid).worldadapter.get_available_datasources()
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns a list of available datatarget types for the given nodenet."""
@@ -513,7 +513,12 @@ class MicroPsiRuntime(object):
 
     def bind_datasource_to_sensor(self, nodenet_uid, sensor_uid, datasource):
         """Associates the datasource type to the sensor node with the given uid."""
-        pass
+        node = self._get_nodenet(nodenet_uid).nodes[sensor_uid]
+        if node.type == "Sensor":
+            node.nodenet.state['nodes'][sensor_uid]['datasource'] = datasource
+            node.data['datasource'] = datasource
+            return True
+        return False
 
     def bind_datatarget_to_actor(self, nodenet_uid, actor_uid, datatarget):
         """Associates the datatarget type to the actor node with the given uid."""

@@ -657,13 +657,15 @@ def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_functio
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters = None): return micropsi.set_gate_parameters
 
 @rpc("get_available_datasources")
-def get_available_datasources(nodenet_uid): return micropsi.get_available_datasources
+def get_available_datasources(nodenet_uid):
+    return micropsi.get_available_datasources(nodenet_uid)
 
 @rpc("get_available_datatargets")
 def get_available_datatargets(nodenet_uid): return micropsi.get_available_datatargets
 
 @rpc("bind_datasource_to_sensor", permission_required="manage nodenets")
-def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource): return micropsi.bind_datasource_to_sensor
+def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
+    return micropsi.bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource)
 
 @rpc("bind_datatarget_to_actor", permission_required="manage nodenets")
 def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget): return micropsi.bind_datatarget_to_actor

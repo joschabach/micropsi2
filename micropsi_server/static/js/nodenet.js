@@ -121,6 +121,7 @@ function initializeNodeNet(data){
     nodeLayer.removeChildren();
     addNode(rootNode);
     linkLayer.removeChildren();
+    nodeLayer.addChild(selectionBox);
 
     if (data){
         console.log(data);
@@ -1068,6 +1069,13 @@ var clickOriginUid = null;
 var clickType = null;
 var clickIndex = -1;
 
+var selectionStart = null;
+var selectionRectangle = new Rectangle(1,1,1,1);
+selectionBox = new Path.Rectangle(selectionRectangle);
+selectionBox.strokeWidth = 0.5;
+selectionBox.strokeColor = 'black';
+selectionBox.dashArray = [4,2];
+
 function onMouseDown(event) {
     path = hoverPath = null;
     var p = event.point;
@@ -1128,6 +1136,9 @@ function onMouseDown(event) {
         clickOriginUid = null;
         clickType = null;
         clickIndex = -1;
+        selectionStart = p;
+        selectionRectangle.x = p.x;
+        selectionRectangle.y = p.y;
         if (event.modifiers.control || event.event.button == 2) openContextMenu("#create_node_menu", event.event);
     }
     else {
@@ -1243,6 +1254,9 @@ function testGates(node, p) {
 
 function onMouseDrag(event) {
     // move current node
+    if(selectionStart){
+        updateSelection(event);
+    }
     if (movePath) {
         path.nodeMoved = true;
         path.position += event.delta;
@@ -1263,9 +1277,14 @@ function onMouseUp(event) {
         }
         updateViewSize();
     }
+    if(selectionStart){
+        selectionStart = null;
+        selectionRectangle.x = selectionRectangle.y = 1;
+        selectionRectangle.width = selectionRectangle.height = 1;
+        selectionBox.setBounds(selectionRectangle);
+    }
+
 }
-
-
 
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
@@ -1292,6 +1311,24 @@ function onKeyDown(event) {
 function onResize(event) {
     console.log("resize");
     updateViewSize();
+}
+
+function updateSelection(event){
+    var pos = event.point;
+    if(Math.abs(pos.x - selectionStart.x) > 5 && Math.abs(pos.y - selectionStart.y) > 5){
+        selectionRectangle.x = Math.min(pos.x, selectionStart.x);
+        selectionRectangle.y = Math.min(pos.y, selectionStart.y);
+        selectionRectangle.width = Math.abs(event.point.x - selectionStart.x);
+        selectionRectangle.height = Math.abs(event.point.y - selectionStart.y);
+        selectionBox.setBounds(selectionRectangle);
+        for(var uid in nodes){
+            if(selectionRectangle.contains(nodes[uid])){
+                selectNode(uid);
+            } else {
+                deselectNode(uid);
+            }
+        }
+    }
 }
 
 // menus -----------------------------------------------------------------------------

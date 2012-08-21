@@ -101,15 +101,12 @@ var dialogs = {
             status - one of ['error', 'info', 'success']
     */
     notification: function(message, status){
-        var el = $('#notification');
-        $('p.message', el).html(message);
-        el.removeClass('alert-info alert-success alert-error');
-        if(status != 'error' && status != 'success'){
-            status = 'info';
-        }
-        el.addClass('alert-' + status);
-        el.slideDown().delay(2000).fadeOut();
-        el.css('left', ($(document.body).width() / 2) - el.width());
+        if(status == 'error') status = 'warning';
+        $('#notification').notify({
+            message: { text: message },
+            fadeOut: { enabled: true, delay: 1000 },
+            type: status
+        }).show();
     }
 
 };

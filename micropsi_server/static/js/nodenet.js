@@ -1626,6 +1626,9 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 'uid="'+ uuid +'")',
             error: function(data){
                 dialogs.notification(data.Error || "Error", "error");
+            },
+            success: function(){
+                dialogs.notification('link added', 'success');
             }
         });
         // todo: tell the server about it

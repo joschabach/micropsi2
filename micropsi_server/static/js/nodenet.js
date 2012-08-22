@@ -1698,7 +1698,7 @@ function cancelLinkCreationHandler() {
 
 function moveNode(nodeUid, x, y){
     $.ajax({
-        url: '/rpc/set_node_parameters('+
+        url: '/rpc/set_node_position('+
             'nodenet_uid="'+currentNodenet+'",'+
             'node_uid="'+nodeUid+'",'+
             'x='+x+',y='+y+')',

@@ -404,12 +404,13 @@ class MicroPsiRuntime(object):
 
     def set_node_position(self, nodenet_uid, node_uid, x, y):
         """Positions the specified node at the given coordinates."""
-        self.set_node_parameters(nodenet_uid, node_uid, x=x, y=y)
+        return self.set_node_parameters(nodenet_uid, node_uid, x=x, y=y)
 
 
     def set_node_name(self, nodenet_uid, node_uid, name):
         """Sets the display name of the node"""
-        pass
+        return self.set_node_parameters(nodenet_uid, node_uid, x=x, y=y)
+
 
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""

@@ -1720,7 +1720,7 @@ function handleRenameNodeModal(event) {
         $("#rename_node_modal").modal("hide");
         view.draw();
         $.ajax({
-            url: '/rpc/set_node_parameters('+
+            url: '/rpc/set_node_name('+
                 'nodenet_uid="'+currentNodenet+'",'+
                 'node_uid="'+nodeUid+'",'+
                 'name="'+nodes[nodeUid].name+'")',

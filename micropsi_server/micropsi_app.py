@@ -526,10 +526,12 @@ def merge_nodenet(nodenet_uid, nodenet): return micropsi.merge_nodenet
 # World
 
 @rpc("get_available_worlds")
-def get_available_worlds(): return micropsi.get_available_worlds()
+def get_available_worlds():
+    return micropsi.get_available_worlds()
 
 @rpc("get_worldadapters")
-def get_worldadapters(world_uid): return micropsi.get_worldadapters(world_uid)
+def get_worldadapters(world_uid):
+    return micropsi.get_worldadapters(world_uid)
 
 @rpc("new_world", permission_required="manage worlds")
 def new_world(world_name, world_type, owner = ""): return micropsi.new_world

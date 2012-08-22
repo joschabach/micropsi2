@@ -537,7 +537,7 @@ STANDARD_NODETYPES = {
     },
     "Actor": {
         "parameters":["datasource", "datatarget"],
-        "nodefunction": """self.nodenet.worldadapter.datatargets[self.name] = self.slots["gen"].activation""",
+        "nodefunction": """if "datatarget" in self.data: self.nodenet.worldadapter.datatargets[self.data['datatarget']] = self.activation""",
         "slots": ["gen"],
         "gates": ["gen"]
     },

@@ -275,6 +275,29 @@
         <a href="#" class="btn btn-primary">Save</a>
     </div>
 </div>
+<div class="modal hide" id="select_datatarget_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Select datatarget</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="datatarget_select">Datatarget</label>
+                    <div class="controls">
+                        <select class="input-xlarge" id="datatarget_select">
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save</a>
+    </div>
+</div>
 
 <div class="modal hide" id="edit_link_modal">
     <div class="modal-header">

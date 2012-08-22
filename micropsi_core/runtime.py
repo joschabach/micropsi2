@@ -511,7 +511,7 @@ class MicroPsiRuntime(object):
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns a list of available datatarget types for the given nodenet."""
-        pass
+        return self._get_nodenet(nodenet_uid).worldadapter.get_available_datatargets()
 
     def bind_datasource_to_sensor(self, nodenet_uid, sensor_uid, datasource):
         """Associates the datasource type to the sensor node with the given uid."""
@@ -524,7 +524,12 @@ class MicroPsiRuntime(object):
 
     def bind_datatarget_to_actor(self, nodenet_uid, actor_uid, datatarget):
         """Associates the datatarget type to the actor node with the given uid."""
-        pass
+        node = self._get_nodenet(nodenet_uid).nodes[actor_uid]
+        if node.type == "Actor":
+            node.nodenet.state['nodes'][actor_uid]['datatarget'] = datatarget
+            node.data['datatarget'] = datatarget
+            return True
+        return False
 
     def add_link(self, nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1, uid=None):
         """Creates a new link.

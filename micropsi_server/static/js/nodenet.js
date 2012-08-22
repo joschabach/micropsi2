@@ -1340,6 +1340,8 @@ function initializeMenus() {
     $('#rename_node_modal form').on('submit', handleRenameNodeModal);
     $("#select_datasource_modal .btn-primary").on('click', handleSelectDatasourceModal);
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
+    $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
+    $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -1401,6 +1403,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Sensor"){
         menu.append('<li><a href="#">Select datasource</li>');
     }
+    if(node.type == "Actor"){
+        menu.append('<li><a href="#">Select datatarget</li>');
+    }
     menu.append('<li><a href="#">Rename node</a></li>');
     menu.append('<li><a href="#">Delete node</a></li>');
     menu.on('click', 'li', handleContextMenu);
@@ -1449,15 +1454,30 @@ function handleContextMenu(event) {
                     deleteNodeHandler(clickOriginUid);
                     break;
                 case "Select datasource":
-                    var select = $('#select_datasource_modal select');
+                    var source_select = $('#select_datasource_modal select');
+                    source_select.html('');
                     $("#select_datasource_modal").modal("show");
                     $.ajax({
                         url: '/rpc/get_available_datasources(nodenet_uid="'+currentNodenet+'")',
                         success: function(data){
                             for(var i in data){
-                                select.append($('<option>', {value:data[i]}).text(data[i]));
+                                source_select.append($('<option>', {value:data[i]}).text(data[i]));
                             }
-                            select.val(nodes[clickOriginUid].datasource).select().focus();
+                            source_select.val(nodes[clickOriginUid].datasource).select().focus();
+                        }
+                    });
+                    break;
+                case "Select datatarget":
+                    var target_select = $('#select_datatarget_modal select');
+                    $("#select_datatarget_modal").modal("show");
+                    target_select.html('');
+                    $.ajax({
+                        url: '/rpc/get_available_datatargets(nodenet_uid="'+currentNodenet+'")',
+                        success: function(data){
+                            for(var i in data){
+                                target_select.append($('<option>', {value:data[i]}).text(data[i]));
+                            }
+                            target_select.val(nodes[clickOriginUid].datatarget).select().focus();
                         }
                     });
                     break;
@@ -1747,6 +1767,23 @@ function handleSelectDatasourceModal(event){
         },
         error: function(data){
             dialogs.notification('error selecting datasource', 'error');
+        }
+    });
+}
+
+function handleSelectDatatargetModal(event){
+    var nodeUid = clickOriginUid;
+    $("#select_datatarget_modal").modal("hide");
+    $.ajax({
+        url: '/rpc/bind_datatarget_to_actor('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'actor_uid="'+nodeUid+'",'+
+            'datatarget="'+$('#select_datatarget_modal select').val()+'")',
+        success: function(data){
+            dialogs.notification('datatarget selected', 'success');
+        },
+        error: function(data){
+            dialogs.notification('error selecting datatarget', 'error');
         }
     });
 }

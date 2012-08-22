@@ -61,6 +61,9 @@ class World(object):
                     "red": 1,
                     "green": 0.7,
                     "blue": 0.2
+                }, datatargets={
+                    "foo": 0.5,
+                    "bar": 0
                 })
         }
 

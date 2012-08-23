@@ -450,12 +450,9 @@ class MicroPsiRuntime(object):
         """
         pass
 
-    def set_node_parameters(self, nodenet_uid, node_uid, **parameters):
+    def set_node_parameters(self, nodenet_uid, node_uid, parameters):
         """Sets a dict of arbitrary values to make the node stateful."""
-        nodenet = self._get_nodenet(nodenet_uid)
-        state = nodenet.state['nodes'][node_uid]
-        node = nodenet.nodes[node_uid]
-        node.parameters.update(parameters)
+        self._get_nodenet(nodenet_uid).nodes[nodes_uid].parameters = parameters
 
     def add_node_type(self, nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None):
         """Adds or modifies a native module.

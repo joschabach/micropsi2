@@ -463,15 +463,6 @@ def create_new_nodenet_form():
     return template("nodenet_form", user_id = user_id, template = "None",
         nodenets = nodenets, worlds = worlds)
 
-@route("/edit_nodenet_form")
-def edit_nodenet_form():
-    user_id, permissions, token = get_request_data()
-    nodenets = micropsi.get_available_nodenets()
-    worlds = micropsi.get_available_worlds()
-    return template("nodenet_form", user_id = user_id, template = "None",
-        nodenets = nodenets, worlds = worlds)
-
-
 @route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
     nodenets = micropsi.get_available_nodenets()

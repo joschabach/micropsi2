@@ -630,10 +630,12 @@ def get_available_node_types(nodenet_uid = None):return micropsi.get_available_n
 def get_available_native_module_types(nodenet_uid = None): return micropsi.get_available_native_module_types
 
 @rpc("get_node_function")
-def get_node_function(nodenet_uid, node_type): return micropsi.get_node_function
+def get_node_function(nodenet_uid, node_type):
+    return micropsi.get_node_function(nodenet_uid, node_type)
 
 @rpc("set_node_function", permission_required="manage nodenets")
-def set_node_function(nodenet_uid, node_type, node_function = None): return micropsi.set_node_function
+def set_node_function(nodenet_uid, node_type, node_function = None):
+    return micropsi.set_node_function(nodenet_uid, node_type, node_function)
 
 @rpc("set_node_parameters", permission_required="manage nodenets")
 def set_node_parameters(nodenet_uid, node_uid, **parameters):
@@ -646,10 +648,12 @@ def add_node_type(nodenet_uid, node_type, slots = None, gates = None, node_funct
 def delete_node_type(nodenet_uid, node_type): return micropsi.delete_node_type
 
 @rpc("get_slot_types")
-def get_slot_types(nodenet_uid, node_type): return micropsi.get_slot_types
+def get_slot_types(nodenet_uid, node_type):
+    return micropsi.get_slot_types(node_uid, node_type)
 
 @rpc("get_gate_types")
-def get_gate_types(nodenet_uid, node_type): return micropsi.get_gate_types
+def get_gate_types(nodenet_uid, node_type):
+    return micropsi.get_gate_types(nodenet_uid, node_type)
 
 @rpc("get_gate_function")
 def get_gate_function(nodenet_uid, nodespace, node_type, gate_type): return micropsi.get_gate_function

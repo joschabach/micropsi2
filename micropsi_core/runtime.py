@@ -439,7 +439,7 @@ class MicroPsiRuntime(object):
 
     def get_node_function(self, nodenet_uid, node_type):
         """Returns the current node function for this node type"""
-        pass
+        return self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition
 
     def set_node_function(self, nodenet_uid, node_type, node_function = None):
         """Sets a new node fuction for this node type. This amounts to a program that is executed every time the
@@ -448,11 +448,13 @@ class MicroPsiRuntime(object):
         Setting the node_function to None will return it to its default state (passing the slot activations to
         all gate functions).
         """
-        pass
+        self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition = node_function
+        return True
 
     def set_node_parameters(self, nodenet_uid, node_uid, parameters):
         """Sets a dict of arbitrary values to make the node stateful."""
         self._get_nodenet(nodenet_uid).nodes[nodes_uid].parameters = parameters
+        return True
 
     def add_node_type(self, nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None):
         """Adds or modifies a native module.
@@ -477,11 +479,11 @@ class MicroPsiRuntime(object):
 
     def get_slot_types(self, nodenet_uid, node_type):
         """Returns the list of slot types for the given node type."""
-        pass
+        return self._get_nodenet(nodenet_uid).nodetypes[node_type].slottypes
 
     def get_gate_types(self, nodenet_uid, node_type):
         """Returns the list of gate types for the given node type."""
-        pass
+        return self._get_nodenet(nodenet_uid).nodetypes[node_type].gatetypes
 
     def get_gate_function(self, nodenet_uid, nodespace, node_type, gate_type):
         """Returns a string with the gate function of the given node and gate within the current nodespace.

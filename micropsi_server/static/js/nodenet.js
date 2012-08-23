@@ -1354,7 +1354,6 @@ function initializeControls(){
 
 function stepNodenet(event){
     event.preventDefault();
-    console.log('foo');
     $.ajax({
         url: '/rpc/step_nodenet('+
             'nodenet_uid="'+currentNodenet+'",'+

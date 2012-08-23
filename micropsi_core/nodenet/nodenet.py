@@ -153,14 +153,17 @@ class Nodenet(object):
         Parses the nodenet state and set up the non-persistent data structures necessary for efficient
         computation of the node net
         """
+        for type, data in self.state.get('nodetypes', STANDARD_NODETYPES).items():
+            self.nodetypes[type] = Nodetype(nodenet=self, **data)
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, "Root", (data['x'], data['y']), name=data['name'], type=data.get('type', 'Concept'), uid=uid)
+            self.nodes[uid] = Node(self, "Root", (data['x'], data['y']), name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters = data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
             self.links[uid] = Link(self.nodes[data['sourceNode']], data['sourceGate'], self.nodes[data['targetNode']], data['targetSlot'], weight=data['weight'], uid=uid)
+
         # TODO: check if data sources and data targets match
 
     def get_nodespace_data(self, nodespace_uid):
@@ -389,18 +392,20 @@ class Node(NetEntity):
     def parameters(self, dictionary):
         self.data["parameters"] = dictionary
 
-    def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None):
+    def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None, parameters = None):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
 
         self.gates = {}
         self.slots = {}
         self.data["type"] = type
-        if type in STANDARD_NODETYPES:
-            for gate in STANDARD_NODETYPES[type].get('gates', []):
+        self.parameters = {}
+        if type in self.nodenet.nodetypes:
+            self.nodetype = self.nodenet.nodetypes[type]
+            self.parameters = {key:None for key in self.nodetype.parameters} if parameters is None else parameters
+            for gate in self.nodetype.gatetypes:
                 self.gates[gate] = Gate(gate, self)
-            for slot in STANDARD_NODETYPES[type].get("slots", []):
+            for slot in self.nodetype.slottypes:
                 self.slots[slot] = Slot(slot, self)
-            self.nodefunction = STANDARD_NODETYPES[type].get('nodefunction')
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -414,16 +419,18 @@ class Node(NetEntity):
         which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
         # process the slots
-        if self.type == 'Sensor' and 'datasource' in self.data:
-            self.activation = self.nodenet.worldadapter.datasources[self.data['datasource']]
+        if self.type == 'Sensor':
+            if self.parameters['datasource']:
+                self.activation = self.nodenet.worldadapter.datasources[self.parameters['datasource']]
+            else:
+                self.activation = 0
         else:
             self.activation = sum([self.slots[slot].activation for slot in self.slots])
 
         # call nodefunction of my node type
-        if self.nodefunction:
+        if self.nodetype and self.nodetype.nodefunction is not None:
             try:
-                exec self.nodefunction
-                # self.nodenet.nodetypes[type].nodefunction(nodenet = self.nodenet, node = self, parameters = self.parameters)
+                self.nodetype.nodefunction(nodenet = self.nodenet, node = self, **self.parameters)
             except SyntaxError, err:
                 warnings.warn("Syntax error during node execution: %s" % err.message)
                 self.data["activation"] = "Syntax error"
@@ -527,29 +534,34 @@ class Slot(object):
 
 STANDARD_NODETYPES = {
     "Register": {
-        "slots": ["gen"],
-        "gates": ["gen"]
+        "name": "Register",
+        "slottypes": ["gen"],
+        "gatetypes": ["gen"]
     },
     "Sensor": {
+        "name": "Sensor",
         "parameters":["datasource"],
-        "nodefunction": """if "datasource" in self.data: self.gates["gen"].gate_function(self.nodenet.worldadapter.datasources[self.data['datasource']])""",
-        "gates": ["gen"]
+        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.worldadapter.get_datasource(datasource))""",
+        "gatetypes": ["gen"]
     },
     "Actor": {
+        "name": "Actor",
         "parameters":["datasource", "datatarget"],
-        "nodefunction": """if "datatarget" in self.data: self.nodenet.worldadapter.datatargets[self.data['datatarget']] = self.activation""",
-        "slots": ["gen"],
-        "gates": ["gen"]
+        "nodefunction_definition": """node.nodenet.worldadapter.set_datatarget(datatarget, node.activation)""",
+        "slottypes": ["gen"],
+        "gatetypes": ["gen"]
     },
     "Concept": {
-        "slots": ["gen"],
-        "nodefunction": """for type, gate in self.gates.items(): gate.gate_function(self.activation)""",
-        "gates": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
+        "name": "Concept",
+        "slottypes": ["gen"],
+        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
     },
     "Activator": {
-        "slots": ["gen"],
+        "name": "Activator",
+        "slottypes": ["gen"],
         "parameters": ["type"],
-        "nodefunction": """self.nodenet.nodespaces[self.parent_nodespace].activators[self.type] = self.node.slots["gen"].activation"""
+        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.type] = node.slots["gen"].activation"""
     }
 }
 
@@ -585,11 +597,11 @@ class Nodetype(object):
 
     @property
     def parameters(self):
-        return self.data.get("parameters")
+        return self.data.get("parameters", [])
 
     @parameters.setter
-    def parameters(self, string):
-        self.data["parameters"] = string.strip()
+    def parameters(self, list):
+        self.data["parameters"] = list
 
     @property
     def nodefunction_definition(self):
@@ -598,15 +610,16 @@ class Nodetype(object):
     @nodefunction_definition.setter
     def nodefunction_definition(self, string):
         self.data["nodefunction_definition"] = string
+        args = ','.join(self.parameters).strip(',')
         try:
             self.nodefunction = micropsi_core.tools.create_function(string,
-                parameters = "nodenet, node, " + self.data.get('parameters', ''))
+                parameters = "nodenet, node, " + args)
         except SyntaxError, err:
             warnings.warn("Syntax error while compiling node function.")
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-                parameters = "nodenet, node, " + self.data.get('parameters', ''))
+                parameters = "nodenet, node, " + args)
 
-    def __init__(self, name, nodenet, slots = None, gates = None, parameters = None, nodefunction = None):
+    def __init__(self, name, nodenet, slottypes = None, gatetypes = None, parameters = None, nodefunction_definition = None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -633,17 +646,15 @@ class Nodetype(object):
         self.data = self.nodenet.state["nodetypes"][name]
         self.data["name"] = name
 
-        self.slots = self.data.get("slots", ["gen"]) if slots is None else slots
-        self.gates = self.data.get("gates", ["gen"]) if gates is None else gates
+        self.slottypes = self.data.get("slottypes", ["gen"]) if slottypes is None else slottypes
+        self.gatetypes = self.data.get("gatetypes", ["gen"]) if gatetypes is None else gatetypes
 
-        self.parameters = self.data.get("parameters", '') if parameters is None else parameters
+        self.parameters = self.data.get("parameters", []) if parameters is None else parameters
 
-        nodefunction = self.data.get("nodefunction",
-            """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])"""
-        ) if nodefunction is None else nodefunction
+        if nodefunction_definition:
+            self.nodefunction_definition = nodefunction_definition
+        else:
+            self.nodefunction = None
 
-        self.nodefunction_definition = self.data.get("nodefunction",
-            """for type in node.gates: node.gates[type].gatefunction(node.slots["gen"])"""
-        ) if nodefunction is None else nodefunction
 
 

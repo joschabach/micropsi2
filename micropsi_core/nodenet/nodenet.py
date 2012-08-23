@@ -257,6 +257,7 @@ class NetEntity(object):
             old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
             if old_parent and self.uid in old_parent.netentities.get(self.entitytype, []):
                 old_parent.netentities[self.entitytype].remove(self.uid)
+        self.data['parent_nodespace'] = uid
 
     def __init__(self, nodenet, parent_nodespace, position, name = "", entitytype = "abstract_entities", uid = None):
         """create a net entity at a certain position and in a given node space"""
@@ -493,7 +494,7 @@ class Gate(object): # todo: take care of gate functions at the level of nodespac
         gate_factor = 1
 
         # check if the current node space has an activator that would prevent the activity of this gate
-        if self.type in self.node.nodenet.nodespaces[self.node.data['nodespace']].activators:
+        if self.type in self.node.nodenet.nodespaces[self.node.parent_nodespace].activators:
             gate_factor = self.node.parent_nodespace.activators[self.type]
             if gate_factor == 0.0:
                 self.activation = 0

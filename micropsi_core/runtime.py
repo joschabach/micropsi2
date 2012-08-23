@@ -390,16 +390,8 @@ class MicroPsiRuntime(object):
             None if failure.
         """
         nodenet = self._get_nodenet(nodenet_uid)
-        nodenet.state['nodes'][uid] = dict(
-            name=name,
-            uid=uid,
-            nodespace=nodespace,
-            x=x,
-            y=y,
-            type=type,
-            activation=0
-        )
         nodenet.nodes[uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
+        nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
         return True, nodenet_uid
 
 
@@ -424,6 +416,7 @@ class MicroPsiRuntime(object):
         del nodenet.nodes[node_uid]
         del nodenet.state['nodes'][node_uid]
         for uid in link_uids:
+            nodenet.links[uid].remove()
             del nodenet.links[uid]
             del nodenet.state['links'][uid]
         return True
@@ -516,8 +509,7 @@ class MicroPsiRuntime(object):
         """Associates the datasource type to the sensor node with the given uid."""
         node = self._get_nodenet(nodenet_uid).nodes[sensor_uid]
         if node.type == "Sensor":
-            node.nodenet.state['nodes'][sensor_uid]['parameters']['datasource'] = datasource
-            node.data['parameters']['datasource'] = datasource #todo: parameters setter?
+            node.parameters.update({'datasource':datasource})
             return True
         return False
 
@@ -525,8 +517,7 @@ class MicroPsiRuntime(object):
         """Associates the datatarget type to the actor node with the given uid."""
         node = self._get_nodenet(nodenet_uid).nodes[actor_uid]
         if node.type == "Actor":
-            node.nodenet.state['nodes'][actor_uid]['parameters']['datatarget'] = datatarget
-            node.data['parameters']['datatarget'] = datatarget
+            node.parameters.update({'datatarget':datatarget})
             return True
         return False
 

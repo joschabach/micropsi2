@@ -68,6 +68,12 @@ var currentNodeSpace = 0;   // cookie
 
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
+var selectionRectangle = new Rectangle(1,1,1,1);
+var selectionBox = new Path.Rectangle(selectionRectangle);
+selectionBox.strokeWidth = 0.5;
+selectionBox.strokeColor = 'black';
+selectionBox.dashArray = [4,2];
+
 initializeMenus();
 initializeControls();
 if(currentNodenet){
@@ -1070,11 +1076,6 @@ var clickType = null;
 var clickIndex = -1;
 
 var selectionStart = null;
-var selectionRectangle = new Rectangle(1,1,1,1);
-selectionBox = new Path.Rectangle(selectionRectangle);
-selectionBox.strokeWidth = 0.5;
-selectionBox.strokeColor = 'black';
-selectionBox.dashArray = [4,2];
 
 function onMouseDown(event) {
     path = hoverPath = null;

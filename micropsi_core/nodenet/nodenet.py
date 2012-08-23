@@ -114,7 +114,7 @@ class Nodenet(object):
         self.load()
 
         # these are the nodes that received activation and must be calculated
-        if self.state['step'] == 0:
+        if self.state.get('step', 0) == 0:
             # initially, these are the Sensors
             self.active_nodes = {uid: node for uid,node in self.nodes.items() if node.type == "Sensor"}
         else:
@@ -234,6 +234,8 @@ class NetEntity(object):
 
     @position.setter
     def position(self, pos):
+        self.data['x'] = pos[0]
+        self.data['y'] = pos[1]
         self.data["position"] = pos
 
     @property

@@ -125,6 +125,7 @@ class MicroPsiRuntime(object):
             world=world_uid,
             nodes=dict(),
             links=dict(),
+            step=0,
             version=1
         )
         data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'])
@@ -404,13 +405,13 @@ class MicroPsiRuntime(object):
 
     def set_node_position(self, nodenet_uid, node_uid, x, y):
         """Positions the specified node at the given coordinates."""
-        return self.set_node_parameters(nodenet_uid, node_uid, x=x, y=y)
-
+        self._get_nodenet(nodenet_uid).nodes[node_uid].position = (x, y)
+        return True
 
     def set_node_name(self, nodenet_uid, node_uid, name):
         """Sets the display name of the node"""
-        return self.set_node_parameters(nodenet_uid, node_uid, x=x, y=y)
-
+        self._get_nodenet(nodenet_uid).nodes[node_uid].name = name
+        return True
 
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""
@@ -454,8 +455,7 @@ class MicroPsiRuntime(object):
         nodenet = self._get_nodenet(nodenet_uid)
         state = nodenet.state['nodes'][node_uid]
         node = nodenet.nodes[node_uid]
-        for key,value in parameters.items():
-            if key in state: state[key] = value
+        node.parameters.update(parameters)
 
     def add_node_type(self, nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None):
         """Adds or modifies a native module.

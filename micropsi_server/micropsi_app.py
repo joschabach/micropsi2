@@ -375,7 +375,7 @@ def write_nodenet():
     if "manage nodenets" in permissions:
         result, nodenet_uid = micropsi.new_nodenet(request.params['nodenet_name'], request.params['nodenet_worldadapter'], owner=user_id, world_uid=request.params['nodenet_world'])
         if result:
-            return dict(status="success", msg="Nodenet created")
+            return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
             return dict(status="error", msg="Error saving nodenet: %s" % nodenet_uid )
     return dict(status="error", msg="Insufficient rights to access user console")

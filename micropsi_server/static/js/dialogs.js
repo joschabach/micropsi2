@@ -84,7 +84,7 @@ var dialogs = {
                 } else if (data.msg){
                     el.modal('hide');
                     if(data.status == 'success' && event.data.callback){
-                        event.data.callback();
+                        event.data.callback(data);
                     }
                     dialogs.notification(data.msg, data.status);
                 } else {
@@ -123,9 +123,10 @@ $(function() {
 
     $('.navbar a.nodenet_new').on('click', function(event){
         event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'), function(){
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
             // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
-            dialogs.notification('Nodenet created', 'success');
+            dialogs.notification('Nodenet created. ID: ' + data.nodenet_uid, 'success');
+            $.cookie('selected_nodenet', data.nodenet_uid, { expires: 7, path: '/' });
             window.location.reload();
         });
     });

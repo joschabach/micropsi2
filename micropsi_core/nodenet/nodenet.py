@@ -113,13 +113,9 @@ class Nodenet(object):
 
         self.load()
 
-        # these are the nodes that received activation and must be calculated
-        if self.state.get('step', 0) == 0:
-            # initially, these are the Sensors
-            self.active_nodes = {uid: node for uid,node in self.nodes.items() if node.type == "Sensor"}
-        else:
-            # otherwise, we probably need to persist the ids of the active nodes...
-            self.active_nodes = {}
+        # todo: persist these?
+        self.active_nodes = {}
+
 
     def load(self, string = None):
         """Load the node net from a file"""
@@ -185,9 +181,14 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-        self.calculate_node_functions()
-        self.propagate_link_activation()
-        self.state["step"] +=1
+        # first step will activate the sensors:
+        if self.state['step'] == 0:
+            self.active_nodes = {uid: node for uid,node in self.nodes.items() if node.type == "Sensor"}
+
+        if self.active_nodes:
+            self.calculate_node_functions()
+            self.propagate_link_activation()
+            self.state["step"] +=1
 
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""
@@ -198,6 +199,7 @@ class Nodenet(object):
                     link.target_slot.activation += gate.activation * link.weight
                     new_active_nodes[link.target_node.uid] = link.target_node
         self.active_nodes = new_active_nodes
+        print self.active_nodes
 
     def calculate_node_functions(self):
         """for all active nodes, call their node function, which in turn should update the gate functions"""

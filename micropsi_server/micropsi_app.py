@@ -592,7 +592,8 @@ def get_monitor_data(nodenet_uid, step): return micropsi.get_monitor_data
 def get_nodespace(nodenet_uid, nodespace, step): return micropsi.get_nodespace
 
 @rpc("get_node")
-def get_node(nodenet_uid, node_uid): return micropsi.get_node
+def get_node(nodenet_uid, node_uid):
+    return micropsi.get_node(nodenet_uid, node_uid)
 
 @rpc("add_node", permission_required="manage nodenets")
 def add_node(nodenet_uid, type, x, y, nodespace, uid = None, name = ""):
@@ -680,7 +681,8 @@ def set_link_weight(nodenet_uid, link_uid, weight, certainty = 1):
     return micropsi.set_link_weight(nodenet_uid, link_uid, weight, certainty)
 
 @rpc("get_link")
-def get_link(nodenet_uid, link_uid): return micropsi.get_link
+def get_link(nodenet_uid, link_uid):
+    return micropsi.get_link(nodenet_uid, link_uid)
 
 @rpc("delete_link", permission_required="manage nodenets")
 def delete_link(nodenet_uid, link_uid):

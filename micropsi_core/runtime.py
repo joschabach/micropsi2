@@ -371,7 +371,7 @@ class MicroPsiRuntime(object):
                 parameters (optional): a dict of arbitrary parameters that can make nodes stateful
             }
          """
-        pass
+        return self._get_nodenet(nodenet_uid).nodes[node_uid]
 
     def add_node(self, nodenet_uid, type, x, y, nodespace, uid = None, name = ""):
         """Creates a new node. (Including nodespace, native module.)
@@ -584,7 +584,7 @@ class MicroPsiRuntime(object):
                 certainty: probabilistic weight of the link (float value),
             }
         """
-        pass
+        return self._get_nodenet(nodenet_uid).links[link_uid]
 
     def delete_link(self, nodenet_uid, link_uid):
         """Delete the given link."""

@@ -1540,6 +1540,9 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
             'nodespace="' + currentNodespace + '",' +
             'uid="' + uid + '",' +
             'name="' + uid + '")',
+        success: function(data){
+            dialogs.notification('node created', 'success');
+        },
         error: function(data){
             dialogs.notification(data.Error || "Error", "error");
         }
@@ -1553,6 +1556,9 @@ function deleteNodeHandler(nodeUid) {
             url: '/rpc/delete_node('+
                 'nodenet_uid="' + currentNodenet + '",'+
                 'node_uid="' + node_uid + '")',
+            success: function(data){
+                dialogs.notification('node deleted', 'success');
+            },
             error: function(data){
                 dialogs.notification(data.Error || "Error removing Node", "error");
             }

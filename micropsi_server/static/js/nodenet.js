@@ -350,6 +350,7 @@ function updateViewSize() {
         el.clientWidth),
         Math.max((maxY+viewProperties.frameWidth)* viewProperties.zoomFactor,
             el.clientHeight));
+    view.draw(true);
 }
 
 // complete redraw of the current node space

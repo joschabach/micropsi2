@@ -419,17 +419,24 @@ class MicroPsiRuntime(object):
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""
         nodenet = self._get_nodenet(nodenet_uid)
-        link_uids = []
-        for key, gate in nodenet.nodes[node_uid].gates.items():
-            link_uids.extend(gate.outgoing.keys())
-        for key, slot in nodenet.nodes[node_uid].slots.items():
-            link_uids.extend(slot.incoming.keys())
-        del nodenet.nodes[node_uid]
-        del nodenet.state['nodes'][node_uid]
-        for uid in link_uids:
-            nodenet.links[uid].remove()
-            del nodenet.links[uid]
-            del nodenet.state['links'][uid]
+        if node_uid in nodenet.nodespaces:
+            for uid, node in nodenet.nodes.items():
+                if node.parent_nodespace == node_uid:
+                    self.delete_node(nodenet_uid, uid)
+            del nodenet.nodespaces[node_uid]
+            del nodenet.state['nodespaces'][node_uid]
+        else:
+            link_uids = []
+            for key, gate in nodenet.nodes[node_uid].gates.items():
+                link_uids.extend(gate.outgoing.keys())
+            for key, slot in nodenet.nodes[node_uid].slots.items():
+                link_uids.extend(slot.incoming.keys())
+            del nodenet.nodes[node_uid]
+            del nodenet.state['nodes'][node_uid]
+            for uid in link_uids:
+                nodenet.links[uid].remove()
+                del nodenet.links[uid]
+                del nodenet.state['links'][uid]
         return True
 
     def get_available_node_types(self, nodenet_uid):

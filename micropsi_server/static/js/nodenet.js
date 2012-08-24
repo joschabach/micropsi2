@@ -134,7 +134,7 @@ function initializeNodeNet(data){
 
         for(var uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid].x, data.nodes[uid].y, "Root", data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation));
+            addNode(new Node(uid, data.nodes[uid].x, data.nodes[uid].y, "Root", data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
         }
 
         var link;
@@ -159,7 +159,7 @@ function initializeNodeNet(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -171,6 +171,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation) {
 	this.gates={};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
+    this.parameters = parameters;
     this.bounds = null; // current bounding box (after scaling)
 	switch (type) {
         case "Nodespace":
@@ -1460,10 +1461,11 @@ function handleContextMenu(event) {
                     $.ajax({
                         url: '/rpc/get_available_datasources(nodenet_uid="'+currentNodenet+'")',
                         success: function(data){
+                            data.unshift("");
                             for(var i in data){
                                 source_select.append($('<option>', {value:data[i]}).text(data[i]));
                             }
-                            source_select.val(nodes[clickOriginUid].datasource).select().focus();
+                            source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                         }
                     });
                     break;
@@ -1756,12 +1758,14 @@ function handleRenameNodeModal(event) {
 
 function handleSelectDatasourceModal(event){
     var nodeUid = clickOriginUid;
+    var value = $('#select_datasource_modal select').val();
     $("#select_datasource_modal").modal("hide");
+    nodes[clickOriginUid].parameters['datasource'] = value;
     $.ajax({
         url: '/rpc/bind_datasource_to_sensor('+
             'nodenet_uid="'+currentNodenet+'",'+
             'sensor_uid="'+nodeUid+'",'+
-            'datasource="'+$('#select_datasource_modal select').val()+'")',
+            'datasource="'+value+'")',
         success: function(data){
             dialogs.notification('datasource selected', 'success');
         },

@@ -131,12 +131,15 @@ function initializeNodeNet(data){
 
     if (data){
         console.log(data);
-
-        for(var uid in data.nodes){
+        var uid;
+        for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid].x, data.nodes[uid].y, "Root", data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid].x, data.nodes[uid].y, data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
         }
 
+        for(uid in data.nodespaces){
+            addNode(new Node(uid, data.nodespaces[uid].x, data.nodespaces[uid].y, data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0));
+        }
         var link;
         for(var index in data.links){
             link = data.links[index];
@@ -171,7 +174,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
 	this.gates={};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
-    this.parameters = parameters;
+    this.parameters = parameters || {};
     this.bounds = null; // current bounding box (after scaling)
 	switch (type) {
         case "Nodespace":

@@ -348,7 +348,7 @@ class MicroPsiRuntime(object):
 
     def get_nodespace(self, nodenet_uid, nodespace, step):
         """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
-    pass
+        pass
 
     def get_node(self, nodenet_uid, node_uid):
         """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
@@ -390,19 +390,30 @@ class MicroPsiRuntime(object):
             None if failure.
         """
         nodenet = self._get_nodenet(nodenet_uid)
-        nodenet.nodes[uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
-        nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
+        if type == "Nodespace":
+            nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, (x, y), name=name, entitytype='nodespaces', uid=uid)
+        else:
+            nodenet.nodes[uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
+            nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
         return True, nodenet_uid
 
 
     def set_node_position(self, nodenet_uid, node_uid, x, y):
         """Positions the specified node at the given coordinates."""
-        self._get_nodenet(nodenet_uid).nodes[node_uid].position = (x, y)
+        nodenet = self._get_nodenet(nodenet_uid)
+        if node_uid in nodenet.nodes:
+            nodenet.nodes[node_uid].position = (x, y)
+        elif node_uid in nodenet.nodespaces:
+            nodenet.nodespaces[node_uid].position = (x, y)
         return True
 
     def set_node_name(self, nodenet_uid, node_uid, name):
         """Sets the display name of the node"""
-        self._get_nodenet(nodenet_uid).nodes[node_uid].name = name
+        nodenet = self._get_nodenet(nodenet_uid)
+        if node_uid in nodenet.nodes:
+            nodenet.nodes[node_uid].name = name
+        elif node_uid in nodenet.nodespaces:
+            nodenet.nodespaces[node_uid].name = name
         return True
 
     def delete_node(self, nodenet_uid, node_uid):

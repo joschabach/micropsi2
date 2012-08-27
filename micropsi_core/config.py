@@ -22,6 +22,7 @@ __date__ = '04.07.12'
 import json
 import os
 import micropsi_core.tools
+import warnings
 
 
 class ConfigurationManager(object):

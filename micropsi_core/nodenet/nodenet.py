@@ -93,10 +93,8 @@ class Nodenet(object):
             "links": {},
             "nodespaces": {},
             "nodetypes": STANDARD_NODETYPES,
-            "activatortypes": STANDARD_NODETYPES.keys(),
             "step": 0
         }
-
 
         self.world = world
         self.runtime = runtime
@@ -151,7 +149,11 @@ class Nodenet(object):
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
-        pass
+        nodespace = self.state["nodespaces"].get(nodespace_uid)
+        nodes = {}
+        links = {}
+#        for node in nodespace.
+
 
     # add functions for exporting and importing node nets
     def export_data(self):

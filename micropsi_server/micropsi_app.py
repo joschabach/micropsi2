@@ -656,6 +656,13 @@ def delete_link(self, nodenet_uid, link_uid): return micropsi.delete_link
 
 
 
+@rpc("get_example_nodenet")
+def return_dummy_nodenet():
+    return {
+
+    }
+
+
 # -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):

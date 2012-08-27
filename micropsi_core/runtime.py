@@ -9,13 +9,12 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from world import World
+from world.world import World
 import nodenet
 import os
 import tools
 import json
 import warnings
-from bunch import Bunch
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 NODENET_DIRECTORY = "nodenets"
@@ -495,6 +494,13 @@ def crawl_definition_files(path, type = "definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.
     """
+
+    class Bunch(dict):
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+            for i in kwargs: self[i] = kwargs[i]
+
+
     result = {}
     tools.mkdir(path)
 

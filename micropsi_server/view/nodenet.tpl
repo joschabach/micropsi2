@@ -38,7 +38,7 @@
                         <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
                           <a href="#" class="btn"><i class="icon-play"></i></a>
-                          <a href="#" class="btn"><i class="icon-step-forward"></i></a>
+                          <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
                           <a href="#" class="btn"><i class="icon-pause"></i></a>
                         </span>
                                 </td>
@@ -188,27 +188,28 @@
 
 <div class="dropdown" id="node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
     </ul>
 </div>
 
 <div class="dropdown" id="link_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#link_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
+        <li><a href="#">Edit link</a></li>
         <li><a href="#">Delete link</a></li>
     </ul>
 </div>
 
 <div class="dropdown" id="slot_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#slot_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Add monitor to slot</a></li>
     </ul>
 </div>
 
 <div class="dropdown" id="gate_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#gate_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create link</a></li>
         <li><a href="#">Add monitor to gate</a></li>
     </ul>
@@ -216,7 +217,7 @@
 
 <div class="dropdown" id="create_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
-    <ul class="dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create concept node</a></li>
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>
@@ -248,6 +249,84 @@
         <a href="#" class="btn" data-dismiss="modal">Close</a>
         <a href="#" class="btn btn-primary">Save changes</a>
     </div>
+</div>
+
+
+<div class="modal hide" id="select_datasource_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Select datasource</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="datasource_select">Datasource</label>
+                    <div class="controls">
+                        <select class="input-xlarge" id="datasource_select">
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save</a>
+    </div>
+</div>
+<div class="modal hide" id="select_datatarget_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Select datatarget</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="datatarget_select">Datatarget</label>
+                    <div class="controls">
+                        <select class="input-xlarge" id="datatarget_select">
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save</a>
+    </div>
+</div>
+
+<div class="modal hide" id="edit_link_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Edit Link</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="link_weight_input">Weight</label>
+                    <div class="controls">
+                        <input type="text" class="input-xlarge" id="link_weight_input">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_certainty_input">Certainty</label>
+                    <div class="controls">
+                        <input type="text" class="input-xlarge" id="link_certainty_input">
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save changes</a>
+    </div>
+</div>
 
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>

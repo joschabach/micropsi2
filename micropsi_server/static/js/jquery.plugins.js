@@ -1,3 +1,189 @@
+/**
+
+Plugins:
+
+    bootstrap improved notifications
+    jquery cookie
+    jquery form
+
+**/
+
+/**
+ * bootstrap-notify.js v1.0
+ * --
+ * http://twitter.com/nijikokun
+ * Copyright 2012 Nijiko Yonskai, Goodybag
+ * --
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+!function ($) {
+  var Notification = function (element, options) {
+    var self = this;
+
+    // Element collection
+    this.$element = $(element);
+    this.$note    = $('<div class="alert"></div>');
+    this.options  = $.extend({}, $.fn.notify.defaults, options);
+
+    // Setup from options
+    if(this.options.transition)
+      if(this.options.transition == 'fade')
+        this.$note.addClass('in').addClass(this.options.transition);
+      else this.$note.addClass(this.options.transition);
+    else this.$note.addClass('fade').addClass('in');
+
+    if(this.options.type)
+      this.$note.addClass('alert-' + this.options.type);
+    else this.$note.addClass('alert-success');
+
+    if(!this.options.message && this.$element.data("message") !== '') // dom text
+      this.$note.html(this.$element.data("message"));
+    else
+      if(typeof this.options.message === 'object')
+        if(this.options.message.html)
+          this.$note.html(this.options.message.html);
+        else if(this.options.message.text)
+          this.$note.text(this.options.message.text);
+      else
+        this.$note.html(this.options.message);
+
+    if(this.options.closable)
+      this.$note.prepend($('<a class="close pull-right" data-dismiss="alert" href="#">&times;</a>'));
+
+    return this;
+  };
+
+  Notification.prototype.show = function () {
+    var self = this;
+
+    if(this.options.fadeOut.enabled)
+      this.$note.delay(this.options.fadeOut.delay || 3000).fadeOut('slow', function () {
+        self.options.onClose();
+        $(this).remove();
+        self.options.onClosed();
+      });
+
+    this.$element.append(this.$note);
+    this.$note.alert();
+  };
+
+  Notification.prototype.hide = function () {
+    var self = this;
+
+    if(this.options.fadeOut.enabled)
+      this.$note.delay(this.options.fadeOut.delay || 3000).fadeOut('slow', function () {
+        self.options.onClose();
+        $(this).remove();
+        self.options.onClosed();
+      });
+    else {
+      self.options.onClose();
+      this.$note.remove();
+      self.options.onClosed();
+    }
+  };
+
+  $.fn.notify = function (options) {
+    return new Notification(this, options);
+  };
+
+  $.fn.notify.defaults = {
+    type: 'success',
+    closable: true,
+    transition: 'fade',
+    fadeOut: {
+      enabled: true,
+      delay: 3000
+    },
+    message: null,
+    onClose: function () {},
+    onClosed: function () {}
+  };
+}(window.jQuery);
+/*jshint eqnull:true */
+/*!
+ * jQuery Cookie Plugin v1.2
+ * https://github.com/carhartl/jquery-cookie
+ *
+ * Copyright 2011, Klaus Hartl
+ * Dual licensed under the MIT or GPL Version 2 licenses.
+ * http://www.opensource.org/licenses/mit-license.php
+ * http://www.opensource.org/licenses/GPL-2.0
+ */
+(function ($, document, undefined) {
+
+    var pluses = /\+/g;
+
+    function raw(s) {
+        return s;
+    }
+
+    function decoded(s) {
+        return decodeURIComponent(s.replace(pluses, ' '));
+    }
+
+    $.cookie = function (key, value, options) {
+
+        // key and at least value given, set cookie...
+        if (value !== undefined && !/Object/.test(Object.prototype.toString.call(value))) {
+            options = $.extend({}, $.cookie.defaults, options);
+
+            if (value === null) {
+                options.expires = -1;
+            }
+
+            if (typeof options.expires === 'number') {
+                var days = options.expires, t = options.expires = new Date();
+                t.setDate(t.getDate() + days);
+            }
+
+            value = String(value);
+
+            return (document.cookie = [
+                encodeURIComponent(key), '=', options.raw ? value : encodeURIComponent(value),
+                options.expires ? '; expires=' + options.expires.toUTCString() : '', // use expires attribute, max-age is not supported by IE
+                options.path    ? '; path=' + options.path : '',
+                options.domain  ? '; domain=' + options.domain : '',
+                options.secure  ? '; secure' : ''
+            ].join(''));
+        }
+
+        // key and possibly options given, get cookie...
+        options = value || $.cookie.defaults || {};
+        var decode = options.raw ? raw : decoded;
+        var cookies = document.cookie.split('; ');
+        for (var i = 0, parts; (parts = cookies[i] && cookies[i].split('=')); i++) {
+            if (decode(parts.shift()) === key) {
+                return decode(parts.join('='));
+            }
+        }
+
+        return null;
+    };
+
+    $.cookie.defaults = {};
+
+    $.removeCookie = function (key, options) {
+        if ($.cookie(key, options) !== null) {
+            $.cookie(key, null, options);
+            return true;
+        }
+        return false;
+    };
+
+})(jQuery, document);
+
 /*!
  * jQuery Form Plugin
  * version: 3.09 (16-APR-2012)

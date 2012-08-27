@@ -75,9 +75,9 @@ class ConfigurationManager(object):
                 self.data = json.load(file)
             return True
         except ValueError:
-            warnings.warn("Could not read config data")
+            warnings.warn("Could not read config data at %s" % self.config_file_name)
         except IOError:
-            warnings.warn("Could not open config data")
+            warnings.warn("Could not open config data at %s" % self.config_file_name)
         return False
 
     def save_configs(self):

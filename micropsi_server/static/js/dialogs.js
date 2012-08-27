@@ -84,7 +84,7 @@ var dialogs = {
                 } else if (data.msg){
                     el.modal('hide');
                     if(data.status == 'success' && event.data.callback){
-                        event.data.callback();
+                        event.data.callback(data);
                     }
                     dialogs.notification(data.msg, data.status);
                 } else {
@@ -101,15 +101,12 @@ var dialogs = {
             status - one of ['error', 'info', 'success']
     */
     notification: function(message, status){
-        var el = $('#notification');
-        $('p.message', el).html(message);
-        el.removeClass('alert-info alert-success alert-error');
-        if(status != 'error' && status != 'success'){
-            status = 'info';
-        }
-        el.addClass('alert-' + status);
-        el.slideDown().delay(2000).fadeOut();
-        el.css('left', ($(document.body).width() / 2) - el.width());
+        if(status == 'error') status = 'warning';
+        $('#notification').notify({
+            message: { text: message },
+            fadeOut: { enabled: true, delay: 1000 },
+            type: status
+        }).show();
     }
 
 };
@@ -124,21 +121,43 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
 
-    $('.navbar a.nodenet_new').on('click', remote_form);
+    $('.navbar a.nodenet_new').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
+            // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
+            dialogs.notification('Nodenet created. ID: ' + data.nodenet_uid, 'success');
+            $.cookie('selected_nodenet', data.nodenet_uid, { expires: 7, path: '/' });
+            window.location.reload();
+        });
+    });
     $('.navbar a.nodenet_edit').on('click', remote_form);
 
     $('.navbar a.nodenet_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this nodenet?", function(){
-            alert('kthxbye');
+            $.get('/rpc/delete_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+                currentNodenet=null;
+                // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
+                $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+                dialogs.notification('Nodenet deleted');
+                window.location.reload();
+            });
         });
     });
 
     $('.navbar a.nodenet_save').on('click', function(){
-        dialogs.notification("nodenet state saved");
+        event.preventDefault();
+        $.get('/rpc/save_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+            dialogs.notification("nodenet state saved", 'success');
+        });
     });
 
-    $('.navbar a.nodenet_revert').on('click', function(){
-        dialogs.notification("nodenet is being reverted");
+    $('.navbar a.nodenet_revert').on('click', function(event){
+        event.preventDefault();
+        $.get('/rpc/revert_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+            dialogs.notification("nodenet reverted");
+            //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
+            window.location.reload();
+        });
     });
 
     $('.navbar a.nodenet_import').on('click', remote_form);

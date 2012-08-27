@@ -15,6 +15,5 @@
 <div id="remote_form_dialog" class="hide">
 </div>
 
-<div id="notification" class="alert alert-info hide">
-    <p class="message"></p>
+<div id="notification" class="notifications top-center">
 </div>

@@ -79,17 +79,6 @@ input, textarea {
   -moz-transition: border linear 0.2s,box-shadow linear 0.2s;
 }
 
-#notification {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  position: absolute;
-  top: 0px;
-  font-weight: bold;
-  z-index: 99999;
-  padding: 14px 30px 10px 28px;
-
-}
-
 .section {
     min-height: 20px;
     padding: 0px;
@@ -109,3 +98,49 @@ input, textarea {
     width: 200px;
     min-width: 200px;
 }
+
+
+/**
+  bootstrap notifications
+**/
+
+.notifications {
+  position: fixed;
+}
+
+/* Positioning */
+.notifications.top-right {
+  right: 10px;
+  top: 25px;
+}
+
+.notifications.top-left {
+  left: 10px;
+  top: 25px;
+}
+
+.notifications.top-center{
+  width: 400px;
+  left: 50%;
+  top: 10px;
+  margin-left: -200px;
+}
+
+.notifications.bottom-left {
+  left: 10px;
+  bottom: 25px;
+}
+
+.notifications.bottom-right {
+  right: 10px;
+  bottom: 25px;
+}
+
+/* Notification Element */
+.notifications > div {
+  position: relative;
+  z-index: 9999;
+  margin: 5px 0px;
+}
+
+

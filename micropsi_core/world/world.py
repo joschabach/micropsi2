@@ -56,7 +56,16 @@ class World(object):
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.worldadapters = {"Default": worldadapter.WorldAdapter(self, "Default")}
+        self.worldadapters = {
+            "Default": worldadapter.WorldAdapter(self, "Default", datasources={
+                    "red": 1,
+                    "green": 0.7,
+                    "blue": 0.2
+                }, datatargets={
+                    "foo": 0.5,
+                    "bar": 0
+                })
+        }
 
         # persistent data
         self.data = {
@@ -133,10 +142,10 @@ class World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            if self.agents[nodenet_uid].worldadapter == worldadapter:
+            #if self.agents[nodenet_uid].worldadapter == worldadapter:
                 return True, nodenet_uid
-            else:
-                return False, "Nodenet agent already exists in this world, but has the wrong type"
+            #else:
+            #    return False, "Nodenet agent already exists in this world, but has the wrong type"
 
         return self.spawn_agent(worldadapter, nodenet_uid)
 
@@ -144,7 +153,7 @@ class World(object):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
         agent object
         """
-        pass
+        del self.agents[nodenet_uid]
 
     def spawn_agent(self, worldadapter, nodenet_uid, options = {}):
         """Creates an agent object (nodenet incarnation),

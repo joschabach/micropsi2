@@ -61,7 +61,7 @@
 
     <div class="modal-footer">
         <button type="submit" class="btn btn-primary">Save</button>
-        <a class="btn" data-dismiss="/">Cancel</a>
+        <a class="btn" data-dismiss="modal">Cancel</a>
     </div>
 
     </form>

@@ -186,7 +186,8 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-        
+        if self.state['step'] == 0 and not self.active_nodes:
+            self.active_nodes = {uid: node for uid, node in self.nodes.items() if node.type == "Sensor"}
         self.calculate_node_functions()
         self.propagate_link_activation()
         self.state["step"] +=1
@@ -425,7 +426,7 @@ class Node(NetEntity):
         # process the slots
         if self.type == 'Sensor':
             if self.parameters['datasource']:
-                self.activation = self.nodenet.runtime.world.get_datasource(self.parameters['datasource'])
+                self.activation = self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource'])
             else:
                 self.activation = 0
         else:
@@ -545,13 +546,13 @@ STANDARD_NODETYPES = {
     "Sensor": {
         "name": "Sensor",
         "parameters":["datasource"],
-        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(datasource))""",
+        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))""",
         "gatetypes": ["gen"]
     },
     "Actor": {
         "name": "Actor",
         "parameters":["datasource", "datatarget"],
-        "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, node.activation)""",
+        "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, nodenet.uid, node.activation)""",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },

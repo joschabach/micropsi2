@@ -180,10 +180,10 @@ class World(object):
     def get_datasource(self, nodenet_uid, key):
         """allows the nodenet to read a value from a datasource"""
         if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].datasources.get(key)
+            return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_datasource(key)
         else: return None
 
     def set_datatarget(self, nodenet_uid, key, value):
         """allows the nodenet to write a value to a datatarget"""
         if nodenet_uid in self.agents:
-            self.agents[nodenet_uid].datatargets.set(key, value)
+            return self.worldadapters[self.agents[nodenet_uid].worldadapter].set_datatarget(key, value)

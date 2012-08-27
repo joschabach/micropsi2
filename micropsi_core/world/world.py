@@ -142,10 +142,10 @@ class World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            #if self.agents[nodenet_uid].worldadapter == worldadapter:
+            if self.agents[nodenet_uid].worldadapter == worldadapter:
                 return True, nodenet_uid
-            #else:
-            #    return False, "Nodenet agent already exists in this world, but has the wrong type"
+            else:
+                return False, "Nodenet agent already exists in this world, but has the wrong type"
 
         return self.spawn_agent(worldadapter, nodenet_uid)
 

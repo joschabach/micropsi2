@@ -516,11 +516,11 @@ class MicroPsiRuntime(object):
 
     def get_available_datasources(self, nodenet_uid):
         """Returns a list of available datasource types for the given nodenet."""
-        return self._get_nodenet(nodenet_uid).worldadapter.get_available_datasources()
+        return self.worlds[self._get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datasources(nodenet_uid)
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns a list of available datatarget types for the given nodenet."""
-        return self._get_nodenet(nodenet_uid).worldadapter.get_available_datatargets()
+        return self.worlds[self._get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datatargets(nodenet_uid)
 
     def bind_datasource_to_sensor(self, nodenet_uid, sensor_uid, datasource):
         """Associates the datasource type to the sensor node with the given uid."""

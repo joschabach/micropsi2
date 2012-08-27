@@ -62,18 +62,18 @@ class Nodenet(object):
         self.state["world"] = world.uid
 
     @property
-    def world_adapter(self):
+    def worldadapter(self):
         return self.state.get("worldadapter")
 
-    @world_adapter.setter
-    def world_adapter(self, worldadapter_uid):
+    @worldadapter.setter
+    def worldadapter(self, worldadapter_uid):
         self.state["worldadapter"] = worldadapter_uid
 
     @property
     def current_step(self):
         return self.state.get("step")
 
-    def __init__(self, runtime, filename, name = "", world_adapter = "Default", world = None, owner = "", uid = None):
+    def __init__(self, runtime, filename, name = "", worldadapter = "Default", world = None, owner = "", uid = None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -103,7 +103,7 @@ class Nodenet(object):
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
-        self.world_adapter = world_adapter
+        self.worldadapter = worldadapter
 
         self.nodespaces = {"Root": Nodespace(self, None, (0,0), name="Root", entitytype="nodespaces", uid = "Root")}
 
@@ -425,7 +425,7 @@ class Node(NetEntity):
         # process the slots
         if self.type == 'Sensor':
             if self.parameters['datasource']:
-                self.activation = self.nodenet.worldadapter.datasources[self.parameters['datasource']]
+                self.activation = self.nodenet.runtime.world.get_datasource(self.parameters['datasource'])
             else:
                 self.activation = 0
         else:
@@ -545,13 +545,13 @@ STANDARD_NODETYPES = {
     "Sensor": {
         "name": "Sensor",
         "parameters":["datasource"],
-        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.worldadapter.get_datasource(datasource))""",
+        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(datasource))""",
         "gatetypes": ["gen"]
     },
     "Actor": {
         "name": "Actor",
         "parameters":["datasource", "datatarget"],
-        "nodefunction_definition": """node.nodenet.worldadapter.set_datatarget(datatarget, node.activation)""",
+        "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, node.activation)""",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },

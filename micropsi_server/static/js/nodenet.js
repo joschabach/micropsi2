@@ -65,7 +65,7 @@ prerenderLayer.visible = false;
 currentNodenet = $.cookie('selected_nodenet');  // TODO: fetch from cookie
 var currentWorld = 0;       // cookie
 var currentNodeSpace = 0;   // cookie
-
+currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
 var selectionRectangle = new Rectangle(1,1,1,1);
@@ -76,11 +76,14 @@ selectionBox.dashArray = [4,2];
 
 initializeMenus();
 initializeControls();
+initializeSidebarForms();
 if(currentNodenet){
     setCurrentNodenet(currentNodenet);
 } else {
     initializeNodeNet();
 }
+
+world_data = {};
 
 refreshNodenetList();
 function refreshNodenetList(){
@@ -91,6 +94,18 @@ function refreshNodenetList(){
             var uid = el.attr('data');
             setCurrentNodenet(uid);
         });
+    });
+}
+
+function loadWorldData(world){
+    $.ajax({
+        url:'/rpc/get_world_properties(world_uid="'+world+'")',
+        success: function(data){
+            self.world_data = data;
+        },
+        error: function(){
+            dialogs.notification('cannot load world data', 'error');
+        }
     });
 }
 
@@ -123,6 +138,8 @@ function initializeNodeNet(data){
             delete nodes[key];
         }
     }
+    loadWorldData(data.world); // TODO: move this out once we managed world selection
+    currentWorldadapter = data.worldadapter;
     links = {};
     nodeLayer.removeChildren();
     addNode(rootNode);
@@ -1462,30 +1479,21 @@ function handleContextMenu(event) {
                     var source_select = $('#select_datasource_modal select');
                     source_select.html('');
                     $("#select_datasource_modal").modal("show");
-                    $.ajax({
-                        url: '/rpc/get_available_datasources(nodenet_uid="'+currentNodenet+'")',
-                        success: function(data){
-                            data.unshift("");
-                            for(var i in data){
-                                source_select.append($('<option>', {value:data[i]}).text(data[i]));
-                            }
-                            source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
-                        }
-                    });
+                    var sources = world_data.datasources[currentWorldadapter];
+                    for(var i in sources){
+                        source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
+                    }
+                    source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     break;
                 case "Select datatarget":
                     var target_select = $('#select_datatarget_modal select');
                     $("#select_datatarget_modal").modal("show");
                     target_select.html('');
-                    $.ajax({
-                        url: '/rpc/get_available_datatargets(nodenet_uid="'+currentNodenet+'")',
-                        success: function(data){
-                            for(var i in data){
-                                target_select.append($('<option>', {value:data[i]}).text(data[i]));
-                            }
-                            target_select.val(nodes[clickOriginUid].datatarget).select().focus();
-                        }
-                    });
+                    var datatargets = world_data.datatargets[currentWorldadapter];
+                    for(var j in datatargets){
+                        target_select.append($('<option>', {value:datatargets[j]}).text(datatargets[j]));
+                    }
+                    target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     break;
                 default:
                     // link creation

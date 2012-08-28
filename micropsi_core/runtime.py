@@ -237,6 +237,35 @@ class MicroPsiRuntime(object):
         else:
             return self.worlds
 
+    def get_world_properties(self, world_uid):
+        """ Returns some information about the current world for the client:
+        * Available worldadapters
+        * Datasources and -targets offered by the world / worldadapter
+        * Available Nodetypes
+
+        Arguments:
+            world_uid: the uid of the worldad
+
+        Returns:
+            dictionary containing the information
+
+        TODO: simplify, decide about datatargets: worldadaper, nodenet or world?
+        """
+        from micropsi_core.nodenet.nodenet import STANDARD_NODETYPES
+        world = self.worlds[world_uid]
+        data = {
+            'worldadapters': [],
+            'datatargets': {},
+            'datasources': {},
+            'nodetypes': STANDARD_NODETYPES
+        }
+        for uid in world.worldadapters:
+            data['worldadapters'].append(uid)
+            data['datasources'][uid] = world.worldadapters[uid].datatargets.keys()
+            data['datasources'][uid] = world.worldadapters[uid].datasources.keys()
+        return data
+
+
     def get_worldadapters(self, world_uid):
         """Returns the world adapters available in the given world"""
         if world_uid in self.worlds:

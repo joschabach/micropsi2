@@ -166,24 +166,32 @@ class World(object):
         return True, nodenet_uid
 
     def get_available_datasources(self, nodenet_uid):
-        """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
+        """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered.
+            TODO: Use worldadapter as param rather than nodenet_uid?
+        """
         if nodenet_uid in self.agents:
             return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_available_datasources()
         else: return None
 
     def get_available_datatargets(self, nodenet_uid):
-        """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
+        """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered.
+            TODO: Use worldadapter as param rather than nodenet_uid?
+        """
         if nodenet_uid in self.worldadapters:
             return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_available_datatargets()
         else: return None
 
     def get_datasource(self, nodenet_uid, key):
-        """allows the nodenet to read a value from a datasource"""
+        """allows the nodenet to read a value from a datasource
+            TODO: Use worldadapter as param rather than nodenet_uid?
+        """
         if nodenet_uid in self.agents:
             return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_datasource(key)
         else: return None
 
     def set_datatarget(self, nodenet_uid, key, value):
-        """allows the nodenet to write a value to a datatarget"""
+        """allows the nodenet to write a value to a datatarget
+            TODO: Use worldadapter as param rather than nodenet_uid?
+        """
         if nodenet_uid in self.agents:
             return self.worldadapters[self.agents[nodenet_uid].worldadapter].set_datatarget(key, value)

@@ -520,6 +520,10 @@ def merge_nodenet(nodenet_uid, nodenet): return micropsi.merge_nodenet
 def get_available_worlds():
     return micropsi.get_available_worlds()
 
+@rpc("get_world_properties")
+def get_world_properties(world_uid):
+    return micropsi.get_world_properties(world_uid)
+
 @rpc("get_worldadapters")
 def get_worldadapters(world_uid):
     return micropsi.get_worldadapters(world_uid)

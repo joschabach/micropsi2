@@ -61,7 +61,9 @@
                 <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
             </div>
             <div class="editor_field " id="nodenet_forms">
-                <form>
+
+
+                <form class="form-horizontal" id="default_editor_content">
                     <div>
                         <ul class="nav nav-list" id="nodenet_list_old">
                             <li class="nav-header">My Nodenets</li>
@@ -81,10 +83,63 @@
                         </ul>
                     </div>
                 </form>
+
+                <form class="form-horizontal hide" id="edit_link_form">
+                    <h4 class="nav-header">Link</h4>
+                    <fieldset>
+                        <div class="control-group">
+                            <label class="control-label" for="link_weight_input">Weight</label>
+                            <div class="controls">
+                                <input type="text" class="" id="link_weight_input">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="link_certainty_input">Certainty</label>
+                            <div class="controls">
+                                <input type="text" class="" id="link_certainty_input">
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="controls">
+                        <a href="#" class="btn btn-primary">Save changes</a>
+                    </div>
+                </form>
+
+                <form class="form-horizontal hide" id="edit_node_form">
+                    <h4 class="nav-header">Node</h4>
+                    <fieldset>
+                        <div class="control-group">
+                            <label class="control-label" for="node_name_input">Name</label>
+                            <div class="controls">
+                                <input type="text" class="" id="node_name_input">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="node_type_input">Type</label>
+                            <div class="controls">
+                                <input type="text" disabled="disabled" id="node_type_input" />
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="node_activation_input">Activation</label>
+                            <div class="controls">
+                                <input type="text" disabled="disabled" id="node_activation_input">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Parameters</label>
+                            <div class="controls">
+                                <table id="node_parameters" class="table-striped table-condensed"></table>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="controls">
+                        <a href="#" class="btn btn-primary">Save changes</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-
     <div class="sectionbar">
         <form class="navbar-form">
             <table>
@@ -299,34 +354,7 @@
     </div>
 </div>
 
-<div class="modal hide" id="edit_link_modal">
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal">×</button>
-        <h3>Edit Link</h3>
-    </div>
-    <div class="modal-body">
-        <form class="form-horizontal">
-            <fieldset>
-                <div class="control-group">
-                    <label class="control-label" for="link_weight_input">Weight</label>
-                    <div class="controls">
-                        <input type="text" class="input-xlarge" id="link_weight_input">
-                    </div>
-                </div>
-                <div class="control-group">
-                    <label class="control-label" for="link_certainty_input">Certainty</label>
-                    <div class="controls">
-                        <input type="text" class="input-xlarge" id="link_certainty_input">
-                    </div>
-                </div>
-            </fieldset>
-        </form>
-    </div>
-    <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Save changes</a>
-    </div>
-</div>
+
 
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>

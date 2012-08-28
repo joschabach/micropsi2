@@ -1115,7 +1115,10 @@ function onMouseDown(event) {
                 if (!event.modifiers.shift &&
                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) deselectAll();
                 if (event.modifiers.command && nodeUid in selection) deselectNode(nodeUid); // toggle
-                else if (!linkCreationStart) selectNode(nodeUid);
+                else if (!linkCreationStart) {
+                    selectNode(nodeUid);
+                    showNodeForm(nodeUid);
+                }
                 console.log ("clicked node "+nodeUid);
                 // check for slots and gates
                 var i;
@@ -1163,6 +1166,7 @@ function onMouseDown(event) {
         selectionRectangle.x = p.x;
         selectionRectangle.y = p.y;
         if (event.modifiers.control || event.event.button == 2) openContextMenu("#create_node_menu", event.event);
+        showDefaultForm();
     }
     else {
         path = hitResult.item;
@@ -1178,6 +1182,7 @@ function onMouseDown(event) {
                 clickType = "link";
                 clickOriginUid = path.name;
                 if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
+                showLinkForm(path.name);
             }
         }
     }
@@ -1838,6 +1843,63 @@ function makeUuid() {
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
         return v.toString(16);
     }); // todo: replace with a uuid fetched from server
+}
+
+
+
+// sidebar editor forms ---------------------------------------------------------------
+
+function initializeSidebarForms(){
+
+}
+
+function showLinkForm(linkUid){
+    $('#nodenet_forms .form-horizontal').hide();
+    $('#edit_link_form').show();
+    $('#link_weight_input').val(links[linkUid].weight);
+    $('#link_certainty_input').val(links[linkUid].certainty);
+}
+
+function showNodeForm(nodeUid){
+    $('#nodenet_forms .form-horizontal').hide();
+    $('#edit_node_form').show();
+    $('#node_name_input').val(nodes[nodeUid].name);
+    $('#node_type_input').val(nodes[nodeUid].type);
+    $('#node_activation_input').val(nodes[nodeUid].activation);
+    $('#node_function_input').val("Todo");
+    var html = '<tr><td>This node type has no parameters</td></tr>';
+    var input='';
+    if(nodes[nodeUid].parameters && !jQuery.isEmptyObject(nodes[nodeUid].parameters)) {
+        html = '<tr><th>Key</th><th>Value</th></tr>';
+        for(var param in nodes[nodeUid].parameters){
+            var i;
+            switch(param){
+                case "datatarget":
+                    for(i in world_data.datatargets[currentWorldadapter]){
+                        input += "<option>"+world_data.datatargets[currentWorldadapter][i]+"</option>";
+                    }
+                    input = "<select class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
+                    break;
+                case "datasource":
+                    for(i in world_data.datasources[currentWorldadapter]){
+                        input += "<option>"+world_data.datasources[currentWorldadapter][i]+"</option>";
+                    }
+                    input = "<select class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
+                    break;
+                default:
+                    input = "<input class=\"inplace\" value=\""+nodes[nodeUid].parameters[param]+"\"/>";
+            }
+            html += "<tr><td>"+param+"</td><td>"+input+"</td></tr>";
+        }
+    }
+    $('#node_parameters').html(html);
+    $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
+    $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+}
+
+function showDefaultForm(){
+    $('#nodenet_forms .form-horizontal').hide();
+    $('#default_editor_content').show();
 }
 
 

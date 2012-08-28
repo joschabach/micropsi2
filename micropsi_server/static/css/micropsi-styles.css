@@ -144,3 +144,18 @@ input, textarea {
 }
 
 
+/** side bar / form bar **/
+#nodenet_forms h4{
+  padding: 1em;
+  border-bottom: 1px solid #dedede;
+  margin-bottom: 2em;
+}
+.controls .table-condensed {
+  width:218px;
+  border: 1px solid #ccc;
+}
+input.inplace, select.inplace{
+  width: auto;
+  border: 1px solid #dedede;
+}
+

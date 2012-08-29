@@ -112,18 +112,17 @@ function loadWorldData(world){
 function setCurrentNodenet(uid){
     $.ajax('/rpc/load_nodenet_into_ui(nodenet_uid="'+uid+'")', {
         success: function(data){
-            // todo: server should deliver according status code.
-            if (!data.Error){
-                currentNodenet = uid;
-                $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
-                initializeNodeNet(data);
-                $('#nodenet_step').val(data.step);
-                refreshNodenetList();
-            } else {
-                dialogs.notification(data.Error, "error");
-                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-            }
+            showDefaultForm();
+            currentNodenet = uid;
+            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+            initializeNodeNet(data);
+            $('#nodenet_step').val(data.step);
+            refreshNodenetList();
             view.draw(true);
+        },
+        error: function() {
+            dialogs.notification(data.Error, "error");
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
         }
     });
 }

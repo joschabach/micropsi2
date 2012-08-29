@@ -475,8 +475,8 @@ def delete_nodenet(nodenet_uid):
     return micropsi.delete_nodenet(nodenet_uid)
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_data(nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):
-    return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None)
+def set_nodenet_properties(nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):
+    return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
 
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
 def start_nodenetrunner(nodenet_uid): return micropsi.start_nodenetrunner

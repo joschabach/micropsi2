@@ -62,30 +62,49 @@
             </div>
             <div class="editor_field " id="nodenet_forms">
 
+                <form class="form-horizontal" id="edit_nodenet_form">
+                    <h4>Nodenet</h4>
+                    <fieldset>
+                        <div class="control-group">
+                            <label class="control-label" for="nodenet_name">Name</label>
+                            <div class="controls">
+                                <input type="text" name="nodenet_name" id="nodenet_name">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="nodenet_worldadapter">Worldadapter</label>
+                            <div class="controls">
+                                <select name="nodenet_worldadapter" id="nodenet_worldadapter"></select>
+                            </div>
+                        </div>
 
-                <form class="form-horizontal" id="default_editor_content">
-                    <div>
-                        <ul class="nav nav-list" id="nodenet_list_old">
-                            <li class="nav-header">My Nodenets</li>
-                            <li class="active"><a href="#">Nodenet0</a></li>
-                            <li><a href="#">Nodenet1</a></li>
-                            <li><a href="#">Nodenet2</a></li>
-                            <li><a href="#">Nodenet3</a></li>
-                            <li class="nav-header">Other Nodenets</li>
-                            <li><a href="#">Nodenet10</a></li>
-                            <li><a href="#">Nodenet11</a></li>
-                        </ul>
-                        <ul class="nav nav-list" id="object_list">
-                            <li class="nav-header">Active Context</li>
-                            <li><a href="#">Object1</a></li>
-                            <li><a href="#">Object2</a></li>
-                            <li><a href="#">Object3</a></li>
-                        </ul>
-                    </div>
+                        <div class="control-group">
+                            <label class="control-label">Nodetypes</label>
+                            <div class="controls">
+                                <table id="nodenet_nodetypes" class="table-striped table-condensed"></table>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Datasources</label>
+                            <div class="controls">
+                                <table id="nodenet_datasources" class="table-striped table-condensed"></table>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Datatargets</label>
+                            <div class="controls">
+                                <table id="nodenet_datatargets" class="table-striped table-condensed"></table>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </fieldset>
+
                 </form>
 
                 <form class="form-horizontal hide" id="edit_link_form">
-                    <h4 class="nav-header">Link</h4>
+                    <h4>Link</h4>
                     <fieldset>
                         <div class="control-group">
                             <label class="control-label" for="link_weight_input">Weight</label>
@@ -106,7 +125,7 @@
                 </form>
 
                 <form class="form-horizontal hide" id="edit_node_form">
-                    <h4 class="nav-header">Node</h4>
+                    <h4>Node</h4>
                     <fieldset>
                         <div class="control-group">
                             <label class="control-label" for="node_name_input">Name</label>

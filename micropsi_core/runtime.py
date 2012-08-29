@@ -20,6 +20,10 @@ RESOURCE_PATH = os.path.join(os.path.dirname(__file__),"..","resources")
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
+class Bunch(dict):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+        for i in kwargs: self[i] = kwargs[i]
 
 class MicroPsiRuntime(object):
 
@@ -148,7 +152,20 @@ class MicroPsiRuntime(object):
 
     def set_nodenet_properties(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):
         """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        if world_uid is not None or worldadapter is not None:
+            if world_uid is None:
+                world_uid = nodenet.world
+            if worldadapter is None:
+                worldadapter = nodenet.worldadapter
+            assert worldadapter in self.worlds[world_uid].worldadapters
+            nodenet.world = self.worlds[world_uid]
+            nodenet.worldadapter = worldadapter
+        if nodenet_name:
+            nodenet.name = nodenet_name
+        if owner:
+            nodenet.owner = owner
+        self.nodenet_data[nodenet_uid] = Bunch(**nodenet.state)
 
     def start_nodenetrunner(self, nodenet_uid):
         """Starts a thread that regularly advances the given nodenet by one step."""
@@ -645,12 +662,6 @@ def crawl_definition_files(path, type = "definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.
     """
-
-    class Bunch(dict):
-        def __init__(self, **kwargs):
-            self.__dict__.update(kwargs)
-            for i in kwargs: self[i] = kwargs[i]
-
 
     result = {}
     tools.mkdir(path)

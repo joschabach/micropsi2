@@ -97,16 +97,48 @@ function refreshNodenetList(){
     });
 }
 
-function loadWorldData(world){
+function loadWorldData(nodenet_data){
     $.ajax({
-        url:'/rpc/get_world_properties(world_uid="'+world+'")',
+        url:'/rpc/get_world_properties(world_uid="'+nodenet_data.world+'")',
         success: function(data){
-            self.world_data = data;
+            world_data = data;
+            world_data.uid = nodenet_data.world;
+            var str = '';
+            for (var key in world_data.nodetypes){
+                str += '<tr><td>'+key+'</td></tr>';
+            }
+            $('#nodenet_nodetypes').html(str);
+            str = '';
+            for (var i in world_data.worldadapters){
+                str += '<option>'+world_data.worldadapters[i]+'</option>';
+            }
+            $('#nodenet_worldadapter').html(str);
+            setNodenetValues(nodenet_data);
         },
         error: function(){
             dialogs.notification('cannot load world data', 'error');
         }
     });
+}
+
+function setNodenetValues(data){
+    $('#nodenet_name').val(data.name);
+    $('#nodenet_worldadapter').val(data.worldadapter);
+
+    var str = ''; var i;
+    if (world_data.datatargets[data.worldadapter]) {
+        for (i in world_data.datatargets[data.worldadapter]){
+            str += '<tr><td>'+world_data.datatargets[data.worldadapter][i]+'</td></tr>';
+        }
+    }
+    $('#nodenet_datatargets').html(str || '<tr><td>Keine datatargets definiert</td></tr>');
+    str = '';
+    if (world_data.datasources[data.worldadapter]){
+        for (i in world_data.datasources[data.worldadapter]){
+            str += '<tr><td>'+world_data.datasources[data.worldadapter][i]+'</td></tr>';
+        }
+    }
+    $('#nodenet_datasources').html(str || '<tr><td>Keine datasources definiert</td></tr>');
 }
 
 function setCurrentNodenet(uid){
@@ -137,7 +169,7 @@ function initializeNodeNet(data){
             delete nodes[key];
         }
     }
-    loadWorldData(data.world); // TODO: move this out once we managed world selection
+    loadWorldData(data); // TODO: move this out once we managed world selection
     currentWorldadapter = data.worldadapter;
     links = {};
     nodeLayer.removeChildren();
@@ -1875,6 +1907,26 @@ function handleNodespaceUp() {
     }
 }
 
+function handleEditNodenet(event){
+    event.preventDefault();
+    var form = event.target;
+    $.ajax({
+        url: '/rpc/set_nodenet_properties('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'nodenet_name="'+$('#nodenet_name', form).val()+'",'+
+            'worldadapter="'+$('#nodenet_worldadapter', form).val()+'",'+
+            'world_uid="'+world_data.uid+'",'+
+            'owner="")',
+        success: function(data){
+            dialogs.notification('Nodenet data saved', 'success');
+            setCurrentNodenet(currentNodenet);
+        },
+        error: function(){
+            dialogs.notification('Error saving', 'error');
+        }
+    });
+}
+
 function makeUuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
@@ -1889,6 +1941,7 @@ function makeUuid() {
 function initializeSidebarForms(){
     $('#edit_link_form').submit(handleEditLink);
     $('#edit_node_form').submit(handleEditNode);
+    $('#edit_nodenet_form').submit(handleEditNodenet);
 }
 
 function showLinkForm(linkUid){
@@ -1937,7 +1990,7 @@ function showNodeForm(nodeUid){
 
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
-    $('#default_editor_content').show();
+    $('#edit_nodenet_form').show();
 }
 
 

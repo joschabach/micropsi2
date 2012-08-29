@@ -634,8 +634,8 @@ def set_node_function(nodenet_uid, node_type, node_function = None):
     return micropsi.set_node_function(nodenet_uid, node_type, node_function)
 
 @rpc("set_node_parameters", permission_required="manage nodenets")
-def set_node_parameters(nodenet_uid, node_uid, **parameters):
-    return micropsi.set_node_parameters(nodenet_uid, node_uid, **parameters)
+def set_node_parameters(nodenet_uid, node_uid, parameters):
+    return micropsi.set_node_parameters(nodenet_uid, node_uid, parameters)
 
 @rpc("add_node_type", permission_required="manage nodenets")
 def add_node_type(nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None): return micropsi.add_node_type

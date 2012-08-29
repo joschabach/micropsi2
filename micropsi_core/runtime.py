@@ -492,7 +492,7 @@ class MicroPsiRuntime(object):
 
     def set_node_parameters(self, nodenet_uid, node_uid, parameters):
         """Sets a dict of arbitrary values to make the node stateful."""
-        self._get_nodenet(nodenet_uid).nodes[nodes_uid].parameters = parameters
+        self._get_nodenet(nodenet_uid).nodes[node_uid].parameters = parameters
         return True
 
     def add_node_type(self, nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None):

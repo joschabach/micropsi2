@@ -1364,8 +1364,8 @@ function updateSelection(event){
 
 function initializeMenus() {
     $(".nodenet_menu").on('click', 'li', handleContextMenu);
-    $("#rename_node_modal .btn-primary").on('click', handleRenameNodeModal);
-    $('#rename_node_modal form').on('submit', handleRenameNodeModal);
+    $("#rename_node_modal .btn-primary").on('click', handleEditNode);
+    $('#rename_node_modal form').on('submit', handleEditNode);
     $("#select_datasource_modal .btn-primary").on('click', handleSelectDatasourceModal);
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
@@ -1386,7 +1386,7 @@ function stepNodenet(event){
         url: '/rpc/step_nodenet('+
             'nodenet_uid="'+currentNodenet+'",'+
             'nodespace="'+currentNodeSpace+'")',
-        success: function(){
+        success: function(data){
             setCurrentNodenet(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
         },
@@ -1534,7 +1534,6 @@ function handleContextMenu(event) {
                     if (linkUid in links) {
                         $("#link_weight_input").val(links[linkUid].weight);
                         $("#link_certainty_input").val(links[linkUid].certainty);
-                        $("#edit_link_modal").modal("show");
                         $("#link_weight_input").focus();
                     }
                     break;
@@ -1628,28 +1627,28 @@ function deleteLinkHandler(linkUid) {
 }
 
 function handleEditLink(event){
+    event.preventDefault();
+    var form = event.target.form;
     var linkUid = clickOriginUid;
-    if (linkUid in links) {
-        links[linkUid].weight = parseFloat($('#link_weight_input').val());
-        links[linkUid].certainty = parseFloat($('#link_certainty_input').val());
-        redrawLink(links[linkUid], true);
-        $("#edit_link_modal").modal("hide");
-        view.draw();
-        $.ajax({
-            url: '/rpc/set_link_weight('+
-                'nodenet_uid="'+currentNodenet+'",'+
-                'link_uid="'+linkUid+'",'+
-                'weight='+links[linkUid].weight+','+
-                'certainty='+links[linkUid].certainty+')',
-            success: function(data){
-                dialogs.notification('link changed', 'success');
-            },
-            error: function(data){
-                dialogs.notification('error changing link', 'error');
-            }
-        });
-    }
-
+    var weight = parseFloat($('input[name="link_weight"]', form).val());
+    var certainty = parseFloat($('input[name="link_certainty"]', form).val());
+    links[linkUid].weight = weight;
+    links[linkUid].certainty = certainty;
+    redrawLink(links[linkUid], true);
+    view.draw();
+    $.ajax({
+        url: '/rpc/set_link_weight('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'link_uid="'+linkUid+'",'+
+            'weight='+weight+','+
+            'certainty='+certainty+')',
+        success: function(data){
+            dialogs.notification('link changed', 'success');
+        },
+        error: function(data){
+            dialogs.notification('error changing link', 'error');
+        }
+    });
 }
 
 linkCreationStart = null;
@@ -1756,27 +1755,66 @@ function moveNode(nodeUid, x, y){
     });
 }
 
-// handler for renaming the node
-function handleRenameNodeModal(event) {
+function handleEditNode(event){
+    event.preventDefault();
+    form = $(event.target);
     var nodeUid = clickOriginUid;
-    if (nodeUid in nodes) {
-        nodes[nodeUid].name = $("#rename_node_input").val();
-        redrawNode(nodes[nodeUid]);
-        $("#rename_node_modal").modal("hide");
-        view.draw();
-        $.ajax({
-            url: '/rpc/set_node_name('+
-                'nodenet_uid="'+currentNodenet+'",'+
-                'node_uid="'+nodeUid+'",'+
-                'name="'+nodes[nodeUid].name+'")',
-            success: function(data){
-                dialogs.notification('node renamed', 'success');
-            },
-            error: function(data){
-                dialogs.notification('error renaming node', 'error');
-            }
-        });
+    $(".modal").modal("hide");
+    var parameters = {};
+    var fields = form.serializeArray();
+    var name = null;
+    for (var i in fields){
+        if((world_data['nodetypes'][nodes[nodeUid].type].parameters || []).indexOf(fields[i].name) > -1 &&
+            nodes[nodeUid].parameters[fields[i].name] != fields[i].value){
+                parameters[fields[i].name] = fields[i].value;
+        }
+        if (fields[i].name == "node_name"){
+            name = fields[i].value;
+        }
     }
+    if(name && nodes[nodeUid].name != name){
+        renameNode(nodeUid, name);
+    }
+    console.log(parameters);
+    if(!jQuery.isEmptyObject(parameters)){
+        updateNodeParameters(nodeUid, parameters);
+    }
+}
+
+function updateNodeParameters(nodeUid, parameters){
+    nodes[nodeUid].parameters = parameters;
+    $.ajax({
+        url: '/rpc/set_node_parameters('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'node_uid="'+nodeUid+'",'+
+            'parameters='+JSON.stringify(parameters)+')',
+        success: function(data){
+            dialogs.notification('parameters saved', 'success');
+        },
+        error: function(data){
+            dialogs.notification('error saving parameters', 'error');
+        }
+    });
+
+}
+
+// handler for renaming the node
+function renameNode(nodeUid, name) {
+    nodes[nodeUid].name = name;
+    redrawNode(nodes[nodeUid]);
+    view.draw();
+    $.ajax({
+        url: '/rpc/set_node_name('+
+            'nodenet_uid="'+currentNodenet+'",'+
+            'node_uid="'+nodeUid+'",'+
+            'name="'+name+'")',
+        success: function(data){
+            dialogs.notification('node renamed', 'success');
+        },
+        error: function(data){
+            dialogs.notification('error renaming node', 'error');
+        }
+    });
 }
 
 function handleSelectDatasourceModal(event){
@@ -1850,7 +1888,8 @@ function makeUuid() {
 // sidebar editor forms ---------------------------------------------------------------
 
 function initializeSidebarForms(){
-
+    $('#edit_link_form').submit(handleEditLink);
+    $('#edit_node_form').submit(handleEditNode);
 }
 
 function showLinkForm(linkUid){
@@ -1878,16 +1917,16 @@ function showNodeForm(nodeUid){
                     for(i in world_data.datatargets[currentWorldadapter]){
                         input += "<option>"+world_data.datatargets[currentWorldadapter][i]+"</option>";
                     }
-                    input = "<select class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
+                    input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
                     break;
                 case "datasource":
                     for(i in world_data.datasources[currentWorldadapter]){
                         input += "<option>"+world_data.datasources[currentWorldadapter][i]+"</option>";
                     }
-                    input = "<select class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
+                    input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     break;
                 default:
-                    input = "<input class=\"inplace\" value=\""+nodes[nodeUid].parameters[param]+"\"/>";
+                    input = "<input name=\""+param+"\" class=\"inplace\" value=\""+nodes[nodeUid].parameters[param]+"\"/>";
             }
             html += "<tr><td>"+param+"</td><td>"+input+"</td></tr>";
         }

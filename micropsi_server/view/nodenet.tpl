@@ -90,18 +90,18 @@
                         <div class="control-group">
                             <label class="control-label" for="link_weight_input">Weight</label>
                             <div class="controls">
-                                <input type="text" class="" id="link_weight_input">
+                                <input type="text" class="" name="link_weight" id="link_weight_input">
                             </div>
                         </div>
                         <div class="control-group">
                             <label class="control-label" for="link_certainty_input">Certainty</label>
                             <div class="controls">
-                                <input type="text" class="" id="link_certainty_input">
+                                <input type="text" class="" name="link_certainty" id="link_certainty_input">
                             </div>
                         </div>
                     </fieldset>
                     <div class="controls">
-                        <a href="#" class="btn btn-primary">Save changes</a>
+                        <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </form>
 
@@ -111,7 +111,7 @@
                         <div class="control-group">
                             <label class="control-label" for="node_name_input">Name</label>
                             <div class="controls">
-                                <input type="text" class="" id="node_name_input">
+                                <input type="text" name="node_name" id="node_name_input">
                             </div>
                         </div>
                         <div class="control-group">
@@ -126,7 +126,7 @@
                                 <input type="text" disabled="disabled" id="node_activation_input">
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="control-group parameters">
                             <label class="control-label">Parameters</label>
                             <div class="controls">
                                 <table id="node_parameters" class="table-striped table-condensed"></table>
@@ -134,7 +134,7 @@
                         </div>
                     </fieldset>
                     <div class="controls">
-                        <a href="#" class="btn btn-primary">Save changes</a>
+                        <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </form>
             </div>
@@ -293,7 +293,7 @@
                 <div class="control-group">
                     <label class="control-label" for="rename_node_input">Node name</label>
                     <div class="controls">
-                        <input type="text" class="input-xlarge" id="rename_node_input">
+                        <input type="text" name="node_name"class="input-xlarge" id="rename_node_input">
                         <p class="help-block">If you do not give the net entity a name, it will be referred by its uid.</p>
                     </div>
                 </div>
@@ -307,7 +307,7 @@
 </div>
 
 
-<div class="modal hide" id="select_datasource_modal">
+<div class="modal hide edit_node_modal" id="select_datasource_modal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>
         <h3>Select datasource</h3>

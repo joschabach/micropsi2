@@ -188,9 +188,10 @@ class Nodenet(object):
         """perform a simulation step"""
         if self.state['step'] == 0 and not self.active_nodes:
             self.active_nodes = {uid: node for uid, node in self.nodes.items() if node.type == "Sensor"}
-        self.calculate_node_functions()
-        self.propagate_link_activation()
-        self.state["step"] +=1
+        if self.active_nodes:
+            self.calculate_node_functions()
+            self.propagate_link_activation()
+            self.state["step"] +=1
 
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""

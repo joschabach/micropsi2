@@ -1588,8 +1588,7 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
         url: '/rpc/add_node('+
             'nodenet_uid="' + currentNodenet + '",' +
             'type="' + type + '",' +
-            'x=' + x + ',' +
-            'y=' + y + ',' +
+            'pos=[' + [x,y] + '],' +
             'nodespace="' + currentNodespace + '",' +
             'uid="' + uid + '",' +
             'name="' + uid + '")',
@@ -1802,7 +1801,7 @@ function moveNode(nodeUid, x, y){
         url: '/rpc/set_node_position('+
             'nodenet_uid="'+currentNodenet+'",'+
             'node_uid="'+nodeUid+'",'+
-            'x='+x+',y='+y+')',
+            'pos=['+[x,y]+'])',
         success: function(data){
             dialogs.notification('node moved', 'success');
         },

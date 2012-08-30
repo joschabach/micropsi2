@@ -62,7 +62,14 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
             kwargs = {}
             if argument:
                 try:
-                    kwargs = dict((n.strip(),json.loads(v)) for n,v in (a.split('=') for a in argument.split(",")))
+                    # split at commas and correct illegaly split lists:
+                    kwargs = argument.split(",")
+                    for index, val in enumerate(kwargs):
+                        if '=' not in val:
+                            kwargs[index-1] += ','+val
+                            del kwargs[index]
+                            index = index -1
+                    kwargs = dict((n.strip(),json.loads(v)) for n,v in (item.split('=') for item in kwargs))
                 except ValueError, err:
                     response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
@@ -600,16 +607,16 @@ def get_node(nodenet_uid, node_uid):
     return micropsi.get_node(nodenet_uid, node_uid)
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(nodenet_uid, type, x, y, nodespace, uid = None, name = ""):
-    result, uid = micropsi.add_node(nodenet_uid, type, x, y, nodespace, uid = uid, name = name)
+def add_node(nodenet_uid, type, pos, nodespace, uid = None, name = ""):
+    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, uid = uid, name = name)
     if result:
         return dict(Status="OK")
     else:
         return dict(Error=uid)
 
 @rpc("set_node_position", permission_required="manage nodenets")
-def set_node_position(nodenet_uid, node_uid, x, y):
-    return micropsi.set_node_position(nodenet_uid, node_uid, x, y)
+def set_node_position(nodenet_uid, node_uid, pos):
+    return micropsi.set_node_position(nodenet_uid, node_uid, pos)
 
 @rpc("set_node_name", permission_required="manage nodenets")
 def set_node_name(nodenet_uid, node_uid, name):

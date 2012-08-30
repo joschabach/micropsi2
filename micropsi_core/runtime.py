@@ -418,13 +418,13 @@ class MicroPsiRuntime(object):
          """
         return self._get_nodenet(nodenet_uid).nodes[node_uid]
 
-    def add_node(self, nodenet_uid, type, x, y, nodespace, uid = None, name = ""):
+    def add_node(self, nodenet_uid, type, pos, nodespace, uid = None, name = ""):
         """Creates a new node. (Including nodespace, native module.)
 
         Arguments:
             nodenet_uid: uid of the nodespace manager
             type: type of the node
-            x, y (optional): position of the node in the current nodespace
+            position: position of the node in the current nodespace
             nodespace: uid of the nodespace
             uid (optional): if not supplied, a uid will be generated
             name (optional): if not supplied, the uid will be used instead of a display name
@@ -436,20 +436,20 @@ class MicroPsiRuntime(object):
         """
         nodenet = self._get_nodenet(nodenet_uid)
         if type == "Nodespace":
-            nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, (x, y), name=name, entitytype='nodespaces', uid=uid)
+            nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
         else:
-            nodenet.nodes[uid] = Node(nodenet, nodespace, (x,y), name=name, type=type, uid=uid)
+            nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid)
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
         return True, nodenet_uid
 
 
-    def set_node_position(self, nodenet_uid, node_uid, x, y):
+    def set_node_position(self, nodenet_uid, node_uid, pos):
         """Positions the specified node at the given coordinates."""
         nodenet = self._get_nodenet(nodenet_uid)
         if node_uid in nodenet.nodes:
-            nodenet.nodes[node_uid].position = (x, y)
+            nodenet.nodes[node_uid].position = pos
         elif node_uid in nodenet.nodespaces:
-            nodenet.nodespaces[node_uid].position = (x, y)
+            nodenet.nodespaces[node_uid].position = pos
         return True
 
     def set_node_name(self, nodenet_uid, node_uid, name):

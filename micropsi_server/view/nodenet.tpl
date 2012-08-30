@@ -128,6 +128,12 @@
                     <h4>Node</h4>
                     <fieldset>
                         <div class="control-group">
+                            <label class="control-label" for="node_uid_input">UID</label>
+                            <div class="controls">
+                                <input type="text" disabled="disabled" id="node_uid_input" />
+                            </div>
+                        </div>
+                        <div class="control-group">
                             <label class="control-label" for="node_name_input">Name</label>
                             <div class="controls">
                                 <input type="text" name="node_name" id="node_name_input">

@@ -350,6 +350,7 @@ function addNode(node) {
     }
     view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth)*viewProperties.zoomFactor);
     view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth)*viewProperties.zoomFactor);
+    return node;
 }
 
 // remove the node from hash, get rid of orphan links, and delete it from the screen
@@ -1577,7 +1578,12 @@ function handleContextMenu(event) {
 // let user create a new node
 function createNodeHandler(x, y, currentNodespace, name, type) {
     var uid = makeUuid();
-    addNode(new Node(uid, x, y, currentNodeSpace, "", type, 0));
+    params = {};
+    for (var i in world_data.nodetypes[type].parameters){
+        params[world_data.nodetypes[type].parameters] = null;
+    }
+    addNode(new Node(uid, x, y, currentNodeSpace, uid, type, 0, params));
+    selectNode(uid);
     $.ajax({
         url: '/rpc/add_node('+
             'nodenet_uid="' + currentNodenet + '",' +
@@ -1588,7 +1594,25 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
             'uid="' + uid + '",' +
             'name="' + uid + '")',
         success: function(data){
-            dialogs.notification('node created', 'success');
+            switch(type){
+                case "Sensor":
+                    clickOriginUid = uid;
+                    dialogs.notification('Please Select a datasource for this sensor');
+                    var source_select = $('#select_datasource_modal select');
+                    source_select.html('');
+                    $("#select_datasource_modal").modal("show");
+                    var sources = world_data.datasources[currentWorldadapter];
+                    for(var i in sources){
+                        source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
+                    }
+                    source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
+                    break;
+                case "Native":
+                    break;
+                default:
+                    dialogs.notification('Node created', 'success');
+            }
+            showNodeForm(uid);
         },
         error: function(data){
             dialogs.notification(data.Error || "Error", "error");
@@ -1627,6 +1651,7 @@ function deleteNodeHandler(nodeUid) {
     for(var i in deletedNodes){
         deleteNodeOnServer(deletedNodes[i]);
     }
+    showDefaultForm();
 }
 
 // let user delete the current link, or all selected links
@@ -1655,6 +1680,7 @@ function deleteLinkHandler(linkUid) {
         delete selection[selected];
         removeLinkOnServer(selected);
     }
+    showDefaultForm();
 }
 
 function handleEditLink(event){
@@ -1853,6 +1879,7 @@ function handleSelectDatasourceModal(event){
     var value = $('#select_datasource_modal select').val();
     $("#select_datasource_modal").modal("hide");
     nodes[clickOriginUid].parameters['datasource'] = value;
+    showNodeForm(nodeUid);
     $.ajax({
         url: '/rpc/bind_datasource_to_sensor('+
             'nodenet_uid="'+currentNodenet+'",'+
@@ -1869,12 +1896,15 @@ function handleSelectDatasourceModal(event){
 
 function handleSelectDatatargetModal(event){
     var nodeUid = clickOriginUid;
+    var value = $('#select_datatarget_modal select').val();
     $("#select_datatarget_modal").modal("hide");
+    nodes[clickOriginUid].parameters['datatargets'] = value;
+    showNodeForm(nodeUid);
     $.ajax({
         url: '/rpc/bind_datatarget_to_actor('+
             'nodenet_uid="'+currentNodenet+'",'+
             'actor_uid="'+nodeUid+'",'+
-            'datatarget="'+$('#select_datatarget_modal select').val()+'")',
+            'datatarget="'+value+'")',
         success: function(data){
             dialogs.notification('datatarget selected', 'success');
         },
@@ -1955,6 +1985,7 @@ function showNodeForm(nodeUid){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_node_form').show();
     $('#node_name_input').val(nodes[nodeUid].name);
+    $('#node_uid_input').val(nodeUid);
     $('#node_type_input').val(nodes[nodeUid].type);
     $('#node_activation_input').val(nodes[nodeUid].activation);
     $('#node_function_input').val("Todo");

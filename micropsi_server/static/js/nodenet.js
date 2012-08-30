@@ -182,11 +182,11 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid].x, data.nodes[uid].y, data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
         }
 
         for(uid in data.nodespaces){
-            addNode(new Node(uid, data.nodespaces[uid].x, data.nodespaces[uid].y, data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0));
+            addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0));
         }
         var link;
         for(var index in data.links){

@@ -149,13 +149,13 @@ class Nodenet(object):
         computation of the node net
         """
         for name, data in self.state.get('nodespaces',{}).items():
-            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], (data['x'], data['y']), name=data['name'], entitytype='nodespaces', uid=name)
+            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name)
         for type, data in self.state.get('nodetypes', STANDARD_NODETYPES).items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), (data['x'], data['y']), name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters = data.get('parameters'))
+            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters = data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]

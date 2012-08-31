@@ -493,19 +493,50 @@ class MicroPsiRuntime(object):
         If an nodenet uid is supplied, filter for node types defined within this nodenet."""
         pass
 
-    def get_node_function(self, nodenet_uid, node_type):
+    def get_nodefunction_for_nodetype(self, nodenet_uid, node_type):
         """Returns the current node function for this node type"""
         return self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition
 
-    def set_node_function(self, nodenet_uid, node_type, node_function = None):
+    def get_nodefunction_for_native_module(self, nodenet_uid, node_uid):
+        """Returns the current node function for the given native module node"""
+        return self._get_nodenet(nodenet_uid).nodes[node_uid].nodetype.nodefunction_definition
+
+    def set_nodefunction_for_nodetype(self, nodenet_uid, node_type, nodefunction=None):
         """Sets a new node fuction for this node type. This amounts to a program that is executed every time the
         node becomes active. Parameters of the function are the node itself (and thus, its slots, gates and
         parent nodespace), the nodenet, and the parameter dict of this node).
         Setting the node_function to None will return it to its default state (passing the slot activations to
         all gate functions).
         """
-        self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition = node_function
+        self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition = nodefunction
         return True
+
+    def set_nodefunction_for_native_module(self, nodenet_uid, node_uid, nodefunction=None):
+        """Sets a new node fuction for this native module node. See above.
+        """
+        self._get_nodenet(nodenet_uid).nodes[node_uid].nodefunction = nodefunction
+        self._get_nodenet(nodenet_uid).nodes[node_uid].nodetype.nodefunction_definition = nodefunction
+
+    def get_node_function(self, nodenet_uid, node_type):
+        """Returns the current node function for this node type"""
+        return self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition
+
+    def set_node_function(self, nodenet_uid, node_type, node_uid = None, node_function = None):
+        """Sets a new node fuction for this node type. This amounts to a program that is executed every time the
+        node becomes active. Parameters of the function are the node itself (and thus, its slots, gates and
+        parent nodespace), the nodenet, and the parameter dict of this node).
+        Setting the node_function to None will return it to its default state (passing the slot activations to
+        all gate functions).
+        """
+        nodenet = self._get_nodenet(nodenet_uid)
+        if node_uid and node_type == "Native":
+            nodenet.nodes[node_uid].nodetype.nodefunction_definition = node_function
+        else:
+            self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition = node_function
+        return True
+
+
+
 
     def set_node_parameters(self, nodenet_uid, node_uid, parameters):
         """Sets a dict of arbitrary values to make the node stateful."""

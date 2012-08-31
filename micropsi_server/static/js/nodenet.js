@@ -114,6 +114,7 @@ function loadWorldData(nodenet_data){
             }
             $('#nodenet_worldadapter').html(str);
             setNodenetValues(nodenet_data);
+            showDefaultForm();
         },
         error: function(){
             dialogs.notification('cannot load world data', 'error');
@@ -182,7 +183,7 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters, data.nodes[uid].nodefunction || null));
         }
 
         for(uid in data.nodespaces){
@@ -210,7 +211,7 @@ function initializeNodeNet(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters, nodefunction) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -257,6 +258,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
             this.symbol = "Na";
             this.slots.gen = new Slot("gen");
             this.gates.gen = new Gate("gen");
+            this.nodefunction = nodefunction;
             // TODO: fetch list of slots and gates from server
             break;
 	}
@@ -1149,7 +1151,11 @@ function onMouseDown(event) {
                 if (event.modifiers.command && nodeUid in selection) deselectNode(nodeUid); // toggle
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
-                    showNodeForm(nodeUid);
+                    if(nodes[nodeUid].type == "Native"){
+                        showNativeModuleForm(nodeUid);
+                    } else {
+                        showNodeForm(nodeUid);
+                    }
                 }
                 console.log ("clicked node "+nodeUid);
                 // check for slots and gates
@@ -1402,6 +1408,7 @@ function initializeMenus() {
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
     $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
+    $('#edit_native_modal btn-primary').on('click', handleEditNativeModule);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -1571,7 +1578,6 @@ function handleContextMenu(event) {
                     break;
             }
     }
-    console.log(view);
     view.draw();
 }
 
@@ -1607,6 +1613,13 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
                     source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     break;
                 case "Native":
+                    clickOriginUid = uid;
+                    dialogs.notification('Please configure your Native Node');
+                    var form = $('#native_module_form');
+                    $('#edit_native_modal .modal-body').append(form);
+                    form.show();
+                    setNativeModuleFormValues(form, uid);
+                    $('#edit_native_modal').modal("show");
                     break;
                 default:
                     dialogs.notification('Node created', 'success');
@@ -1831,7 +1844,6 @@ function handleEditNode(event){
     if(name && nodes[nodeUid].name != name){
         renameNode(nodeUid, name);
     }
-    console.log(parameters);
     if(!jQuery.isEmptyObject(parameters)){
         updateNodeParameters(nodeUid, parameters);
     }
@@ -1956,6 +1968,42 @@ function handleEditNodenet(event){
     });
 }
 
+function handleEditNativeModule(event){
+    event.preventDefault();
+    var node = nodes[clickOriginUid];
+    var form = $('#native_module_form');
+    var values = form.serializeArray();
+    var parameters = {};
+    $('#edit_native_modal').modal("hide");
+    var newname = $('#native_name', form).val();
+    if (node.name != newname){
+        renameNode(node.uid, newname);
+    }
+    var nodefunction = $('#native_function', form).val();
+    if(node.nodefunction != nodefunction){
+        node.nodefunction = nodefunction;
+        $.ajax({
+            url: '/rpc/set_nodefunction_for_native_module('+
+                'nodenet_uid="'+currentNodenet+'",'+
+                'node_uid="'+node.uid+'",'+
+                'nodefunction="'+nodefunction+'")',
+            success: function(data){
+                dialogs.notification('nodefunction saved', 'success');
+            },
+            error: function(data){
+                dialogs.notification('error saving nodefunction', 'error');
+            }
+        });
+    }
+    for(var i in values){
+        if(values[i].name == "param_name"){
+            parameters[values[i].value] = values[++i].value;
+        }
+    }
+    updateNodeParameters(node.uid, parameters);
+    showNativeModuleForm(node.uid);
+}
+
 function makeUuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
@@ -1971,6 +2019,10 @@ function initializeSidebarForms(){
     $('#edit_link_form').submit(handleEditLink);
     $('#edit_node_form').submit(handleEditNode);
     $('#edit_nodenet_form').submit(handleEditNodenet);
+    $('#native_module_form').submit(handleEditNativeModule);
+    $('#native_add_param').click(function(){
+        $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
+    });
 }
 
 function showLinkForm(linkUid){
@@ -2016,6 +2068,26 @@ function showNodeForm(nodeUid){
     $('#node_parameters').html(html);
     $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
     $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+}
+
+function showNativeModuleForm(nodeUid){
+    $('#nodenet_forms .form-horizontal').hide();
+    var form = $('#native_module_form');
+    $('#nodenet_forms').append(form);
+    form.show();
+    setNativeModuleFormValues(form, nodeUid);
+}
+
+function setNativeModuleFormValues(form, nodeUid){
+    var node = nodes[nodeUid];
+    $('#native_name', form).val(node.name);
+    var param_table = $('#native_parameters', form);
+    param_table.html('<tr><th>Key</th><th>Value</th></tr>');
+    for (var key in node.parameters){
+        param_table.append('<tr><td><input name="param_name" type="text" class="inplace" value="'+key+'"/></td><td><input name="param_value" type="text"  class="inplace" value="'+node.parameters[key]+'"/></td></tr>');
+    }
+    $('#native_activation').val(node.activation);
+    $('#native_function', form).val(node.nodefunction);
 }
 
 function showDefaultForm(){

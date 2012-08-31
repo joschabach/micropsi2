@@ -632,13 +632,21 @@ def get_available_node_types(nodenet_uid = None):return micropsi.get_available_n
 @rpc("get_available_native_module_types")
 def get_available_native_module_types(nodenet_uid = None): return micropsi.get_available_native_module_types
 
-@rpc("get_node_function")
-def get_node_function(nodenet_uid, node_type):
-    return micropsi.get_node_function(nodenet_uid, node_type)
+@rpc("get_nodefunction_for_nodetype")
+def get_nodefunction_for_nodetype(nodenet_uid, node_type):
+    return micropsi.get_nodefunction_for_nodetype(nodenet_uid, node_type)
 
-@rpc("set_node_function", permission_required="manage nodenets")
-def set_node_function(nodenet_uid, node_type, node_function = None):
-    return micropsi.set_node_function(nodenet_uid, node_type, node_function)
+@rpc("get_nodefunction_for_native_module")
+def get_nodefunction_for_native_module(nodenet_uid, node_uid):
+    return micropsi.get_nodefunction_for_native_module(nodenet_uid, node_uid)
+
+@rpc("set_nodefunction_for_nodetype", permission_required="manage nodenets")
+def set_nodefunction_for_nodetype(nodenet_uid, node_type, nodefunction=None):
+    return micropsi.set_nodefunction_for_nodetype(nodenet_uid, node_type, nodefunction)
+
+@rpc("set_nodefunction_for_native_module")
+def set_nodefunction_for_native_module(nodenet_uid, node_uid, nodefunction=None):
+    return micropsi.set_nodefunction_for_native_module(nodenet_uid, node_uid, nodefunction)
 
 @rpc("set_node_parameters", permission_required="manage nodenets")
 def set_node_parameters(nodenet_uid, node_uid, parameters):

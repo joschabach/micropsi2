@@ -62,7 +62,7 @@
             </div>
             <div class="editor_field " id="nodenet_forms">
 
-                <form class="form-horizontal" id="edit_nodenet_form">
+                <form class="form-horizontal hide" id="edit_nodenet_form">
                     <h4>Nodenet</h4>
                     <fieldset>
                         <div class="control-group">
@@ -154,7 +154,8 @@
                         <div class="control-group parameters">
                             <label class="control-label">Parameters</label>
                             <div class="controls">
-                                <table id="node_parameters" class="table-striped table-condensed"></table>
+                                <table id="node_parameters" class="table-striped table-condensed">
+                                </table>
                             </div>
                         </div>
                     </fieldset>
@@ -162,6 +163,46 @@
                         <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </form>
+
+                <form class="form-horizontal hide" id="native_module_form">
+                    <h4>Native Module</h4>
+                    <fieldset>
+                        <div class="control-group">
+                            <label class="control-label" for="native_name">Name</label>
+                            <div class="controls">
+                                <input id="native_name" name="native_name" type="text"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="native_activation">Activation</label>
+                            <div class="controls">
+                                <input id="native_activation" name="native_activation" type="text" disabled="disabled" />
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="native_params">Parameters</label>
+                            <div class="controls">
+                                <table id="native_parameters" class="table-striped table-condensed">
+                                </table>
+                                <a href="#" class="btn btn-mini" id="native_add_param">add parameter</a>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="native_function">Nodefunction</label>
+                            <div class="controls dropdown">
+                                <code>def nodefunction(nodenet, node
+                                    <span id="params"></span>
+                                    ):
+                                </code>
+                               <textarea name="native_function" id="native_function"></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="controls buttons">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+
             </div>
         </div>
     </div>
@@ -372,6 +413,20 @@
                 </div>
             </fieldset>
         </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Close</a>
+        <a href="#" class="btn btn-primary">Save</a>
+    </div>
+</div>
+
+<div class="modal hide" id="edit_native_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Native module</h3>
+    </div>
+    <div class="modal-body">
+
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>

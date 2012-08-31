@@ -206,4 +206,3 @@ updateWorldAdapterSelector = function() {
         $("#nodenet_worldadapter").load("/create_worldadapter_selector/"+option.val());
     }
 };
-

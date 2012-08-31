@@ -156,6 +156,10 @@ input, textarea {
 }
 input.inplace, select.inplace{
   width: auto;
-  border: 1px solid #dedede;
 }
-
+.table-condensed .inplace {
+    max-width: 90px;
+}
+.modal-body form .buttons{
+  display: none;  /** hide submit buttons in modal (modal footer bears the buttons) **/
+}

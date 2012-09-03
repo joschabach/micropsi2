@@ -84,6 +84,7 @@ if(currentNodenet){
 }
 
 world_data = {};
+nodetypes = {};
 
 refreshNodenetList();
 function refreshNodenetList(){
@@ -103,11 +104,6 @@ function loadWorldData(nodenet_data){
         success: function(data){
             world_data = data;
             world_data.uid = nodenet_data.world;
-            var str = '';
-            for (var key in world_data.nodetypes){
-                str += '<tr><td>'+key+'</td></tr>';
-            }
-            $('#nodenet_nodetypes').html(str);
             str = '';
             for (var i in world_data.worldadapters){
                 str += '<option>'+world_data.worldadapters[i]+'</option>';
@@ -126,7 +122,15 @@ function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
     $('#nodenet_worldadapter').val(data.worldadapter);
 
-    var str = ''; var i;
+    nodetypes = data.nodetypes;
+    var str = '';
+    for (var key in data.nodetypes){
+        str += '<tr><td>'+key+'</td></tr>';
+    }
+    $('#nodenet_nodetypes').html(str);
+
+    var i;
+    str = '';
     if (world_data.datatargets[data.worldadapter]) {
         for (i in world_data.datatargets[data.worldadapter]){
             str += '<tr><td>'+world_data.datatargets[data.worldadapter][i]+'</td></tr>';
@@ -183,7 +187,7 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters, data.nodes[uid].nodefunction || null));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
         }
 
         for(uid in data.nodespaces){
@@ -211,7 +215,7 @@ function initializeNodeNet(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters, nodefunction) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -258,7 +262,6 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters, nodef
             this.symbol = "Na";
             this.slots.gen = new Slot("gen");
             this.gates.gen = new Gate("gen");
-            this.nodefunction = nodefunction;
             // TODO: fetch list of slots and gates from server
             break;
 	}
@@ -1585,9 +1588,9 @@ function handleContextMenu(event) {
 function createNodeHandler(x, y, currentNodespace, name, type) {
     var uid = makeUuid();
     params = {};
-    if (world_data.nodetypes[type]){
-        for (var i in world_data.nodetypes[type].parameters){
-            params[world_data.nodetypes[type].parameters] = null;
+    if (nodetypes[type]){
+        for (var i in nodetypes[type].parameters){
+            params[nodetypes[type].parameters] = null;
         }
     }
     addNode(new Node(uid, x, y, currentNodeSpace, uid, type, 0, params));
@@ -1616,6 +1619,12 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
                     break;
                 case "Native":
                     clickOriginUid = uid;
+                    nodetypes[uid] = {
+                        gatetypes: ["gen"],
+                        slottypes: ["gen"],
+                        name: uid,
+                        nodefunction: ""
+                    };
                     dialogs.notification('Please configure your Native Node');
                     var form = $('#native_module_form');
                     $('#edit_native_modal .modal-body').append(form);
@@ -1982,12 +1991,12 @@ function handleEditNativeModule(event){
         renameNode(node.uid, newname);
     }
     var nodefunction = $('#native_function', form).val();
-    if(node.nodefunction != nodefunction){
-        node.nodefunction = nodefunction;
+    if(nodetypes[node.uid].nodefunction_definition != nodefunction){
+        nodetypes[node.uid].nodefunction_definition = nodefunction;
         $.ajax({
-            url: '/rpc/set_nodefunction_for_native_module('+
+            url: '/rpc/set_nodefunction('+
                 'nodenet_uid="'+currentNodenet+'",'+
-                'node_uid="'+node.uid+'",'+
+                'node_type="'+node.uid+'",'+
                 'nodefunction="'+nodefunction+'")',
             success: function(data){
                 dialogs.notification('nodefunction saved', 'success');
@@ -2083,13 +2092,14 @@ function showNativeModuleForm(nodeUid){
 function setNativeModuleFormValues(form, nodeUid){
     var node = nodes[nodeUid];
     $('#native_name', form).val(node.name);
+    $('#native_uid', form).val(node.uid);
     var param_table = $('#native_parameters', form);
     param_table.html('<tr><th>Key</th><th>Value</th></tr>');
     for (var key in node.parameters){
         param_table.append('<tr><td><input name="param_name" type="text" class="inplace" value="'+key+'"/></td><td><input name="param_value" type="text"  class="inplace" value="'+node.parameters[key]+'"/></td></tr>');
     }
     $('#native_activation').val(node.activation);
-    $('#native_function', form).val(node.nodefunction);
+    $('#native_function', form).val(nodetypes[nodeUid].nodefunction_definition);
 }
 
 function showDefaultForm(){

@@ -155,7 +155,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters = data.get('parameters'), nodefunction=data.get('nodefunction'))
+            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters = data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -398,15 +398,7 @@ class Node(NetEntity):
     def parameters(self, dictionary):
         self.data["parameters"] = dictionary
 
-    @property
-    def nodefunction(self):
-        return self.data.get("nodefunction")
-
-    @nodefunction.setter
-    def nodefunction(self, nodefunction):
-        self.data["nodefunction"] = nodefunction
-
-    def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None, parameters = None, nodefunction=None):
+    def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None, parameters = None):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
 
         self.gates = {}
@@ -414,13 +406,10 @@ class Node(NetEntity):
         self.data["type"] = type
         self.parameters = {}
         self.nodetype = None
+        if type == "Native":
+            type = self.uid
         if type in self.nodenet.nodetypes:
             self.nodetype = self.nodenet.nodetypes[type]
-        elif type == "Native":
-            self.nodefunction = nodefunction
-            # TODO: temporary install this as a own nodetype
-            self.nodetype = Nodetype(self.uid, self.nodenet, slottypes=["gen"], gatetypes=["gen"], parameters=parameters, nodefunction_definition=nodefunction)
-        if self.nodetype:
             self.parameters = {key:None for key in self.nodetype.parameters} if parameters is None else parameters
             for gate in self.nodetype.gatetypes:
                 self.gates[gate] = Gate(gate, self)

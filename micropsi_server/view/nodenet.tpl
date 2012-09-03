@@ -168,6 +168,12 @@
                     <h4>Native Module</h4>
                     <fieldset>
                         <div class="control-group">
+                            <label class="control-label" for="native_uid">UID</label>
+                            <div class="controls">
+                                <input id="native_uid" name="native_uid" type="text" disabled="disabled"/>
+                            </div>
+                        </div>
+                        <div class="control-group">
                             <label class="control-label" for="native_name">Name</label>
                             <div class="controls">
                                 <input id="native_name" name="native_name" type="text"/>

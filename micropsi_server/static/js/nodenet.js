@@ -99,9 +99,8 @@ function refreshNodenetList(){
 }
 
 function loadWorldData(nodenet_data){
-    $.ajax({
-        url:'/rpc/get_world_properties(world_uid="'+nodenet_data.world+'")',
-        success: function(data){
+    api("get_world_properties", {world_uid: nodenet_data.world},
+        success=function(data){
             world_data = data;
             world_data.uid = nodenet_data.world;
             str = '';
@@ -111,10 +110,6 @@ function loadWorldData(nodenet_data){
             $('#nodenet_worldadapter').html(str);
             setNodenetValues(nodenet_data);
             showDefaultForm();
-        },
-        error: function(){
-            dialogs.notification('cannot load world data', 'error');
-        }
     });
 }
 
@@ -147,8 +142,9 @@ function setNodenetValues(data){
 }
 
 function setCurrentNodenet(uid){
-    $.ajax('/rpc/load_nodenet_into_ui(nodenet_uid="'+uid+'")', {
-        success: function(data){
+    api('load_nodenet_into_ui',
+        {nodenet_uid: uid},
+        success = function(data){
             showDefaultForm();
             currentNodenet = uid;
             $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
@@ -157,11 +153,10 @@ function setCurrentNodenet(uid){
             refreshNodenetList();
             view.draw(true);
         },
-        error: function() {
+        error = function() {
             dialogs.notification(data.Error, "error");
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-        }
-    });
+        });
 }
 
 // fetch visible nodes and links
@@ -1424,18 +1419,12 @@ function initializeControls(){
 
 function stepNodenet(event){
     event.preventDefault();
-    $.ajax({
-        url: '/rpc/step_nodenet('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'nodespace="'+currentNodeSpace+'")',
-        success: function(data){
+    api("step_nodenet",
+        {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
+        success=function(data){
             setCurrentNodenet(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
-        },
-        error: function(){
-            dialogs.notification("Error stepping", "error");
-        }
-    });
+        });
 }
 
 var clickPosition = null;
@@ -1595,15 +1584,14 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
     }
     addNode(new Node(uid, x, y, currentNodeSpace, uid, type, 0, params));
     selectNode(uid);
-    $.ajax({
-        url: '/rpc/add_node('+
-            'nodenet_uid="' + currentNodenet + '",' +
-            'type="' + type + '",' +
-            'pos=[' + [x,y] + '],' +
-            'nodespace="' + currentNodespace + '",' +
-            'uid="' + uid + '",' +
-            'name="' + uid + '")',
-        success: function(data){
+    api("add_node", {
+        nodenet_uid: currentNodenet,
+        type: type,
+        pos: [x,y],
+        nodespace: currentNodespace,
+        uid: uid,
+        name: name},
+        success=function(data){
             switch(type){
                 case "Sensor":
                     clickOriginUid = uid;
@@ -1636,27 +1624,18 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
                     dialogs.notification('Node created', 'success');
             }
             showNodeForm(uid);
-        },
-        error: function(data){
-            dialogs.notification(data.Error || "Error", "error");
-        }
-    });
+        });
 }
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
     function deleteNodeOnServer(node_uid){
-        $.ajax({
-            url: '/rpc/delete_node('+
-                'nodenet_uid="' + currentNodenet + '",'+
-                'node_uid="' + node_uid + '")',
-            success: function(data){
+        api("delete_node",
+            {nodenet_uid:currentNodenet, node_uid: node_uid},
+            success=function(data){
                 dialogs.notification('node deleted', 'success');
-            },
-            error: function(data){
-                dialogs.notification(data.Error || "Error removing Node", "error");
             }
-        });
+        );
     }
     var deletedNodes = [];
     if (nodeUid in nodes) {
@@ -1680,18 +1659,12 @@ function deleteNodeHandler(nodeUid) {
 // let user delete the current link, or all selected links
 function deleteLinkHandler(linkUid) {
     function removeLinkOnServer(linkUid){
-        var url = '/rpc/delete_link('+
-                'nodenet_uid="'+ currentNodenet +'",'+
-                'link_uid="'+ linkUid +'")';
-        $.ajax({
-            url: url,
-            error: function(data){
-                dialogs.notification(data.Error || "Error removing link", "error");
-            },
-            success: function(data){
+        api("delete_link",
+            {nodenet_uid:currentNodenet, link_uid:linkUid},
+            success= function(data){
                 dialogs.notification('Link removed', 'success');
             }
-        });
+        );
     }
     if (linkUid in links) {
         removeLink(links[linkUid]);
@@ -1716,18 +1689,11 @@ function handleEditLink(event){
     links[linkUid].certainty = certainty;
     redrawLink(links[linkUid], true);
     view.draw();
-    $.ajax({
-        url: '/rpc/set_link_weight('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'link_uid="'+linkUid+'",'+
-            'weight='+weight+','+
-            'certainty='+certainty+')',
-        success: function(data){
-            dialogs.notification('link changed', 'success');
-        },
-        error: function(data){
-            dialogs.notification('error changing link', 'error');
-        }
+    api("set_link_weight", {
+        nodenet_uid:currentNodenet,
+        link_uid: linkUid,
+        weight: weight,
+        certainty: certainty
     });
 }
 
@@ -1793,23 +1759,15 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 addLink(new Link(uuid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
         // TODO: also write backwards link??
-        $.ajax({
-            url: '/rpc/add_link('+
-                'nodenet_uid="' + currentNodenet + '",' +
-                'source_node_uid="' + sourceUid + '",' +
-                'gate_type="' + nodes[sourceUid].gateIndexes[gateIndex] + '",' +
-                'target_node_uid="' + targetUid + '",' +
-                'slot_type="' + nodes[targetUid].slotIndexes[slotIndex] + '",' +
-                'weight=1,'+
-                'uid="'+ uuid +'")',
-            error: function(data){
-                dialogs.notification(data.Error || "Error", "error");
-            },
-            success: function(){
-                dialogs.notification('link added', 'success');
-            }
+        api("add_link", {
+            nodenet_uid: currentNodenet,
+            source_node_uid: sourceUid,
+            gate_type: nodes[sourceUid].gateIndexes[gateIndex],
+            target_node_uid: targetUid,
+            slot_type: nodes[targetUid].slotIndexes[slotIndex],
+            weight: 1,
+            uid: uuid
         });
-        // todo: tell the server about it
         cancelLinkCreationHandler();
     }
 }
@@ -1821,18 +1779,10 @@ function cancelLinkCreationHandler() {
 }
 
 function moveNode(nodeUid, x, y){
-    $.ajax({
-        url: '/rpc/set_node_position('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'node_uid="'+nodeUid+'",'+
-            'pos=['+[x,y]+'])',
-        success: function(data){
-            dialogs.notification('node moved', 'success');
-        },
-        error: function(data){
-            dialogs.notification('error moving node', 'error');
-        }
-    });
+    api("set_node_position", {
+        nodenet_uid: currentNodenet,
+        node_uid: nodeUid,
+        pos: [x,y]});
 }
 
 function handleEditNode(event){
@@ -1868,19 +1818,11 @@ function updateNodeParameters(nodeUid, parameters){
         }
     }
     nodes[nodeUid].parameters = parameters;
-    $.ajax({
-        url: '/rpc/set_node_parameters('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'node_uid="'+nodeUid+'",'+
-            'parameters='+JSON.stringify(parameters)+')',
-        success: function(data){
-            dialogs.notification('parameters saved', 'success');
-        },
-        error: function(data){
-            dialogs.notification('error saving parameters', 'error');
-        }
+    api("set_node_parameters", {
+        nodenet_uid: currentNodenet,
+        node_uid: nodeUid,
+        parameters: parameters
     });
-
 }
 
 // handler for renaming the node
@@ -1888,17 +1830,10 @@ function renameNode(nodeUid, name) {
     nodes[nodeUid].name = name;
     redrawNode(nodes[nodeUid]);
     view.draw();
-    $.ajax({
-        url: '/rpc/set_node_name('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'node_uid="'+nodeUid+'",'+
-            'name="'+name+'")',
-        success: function(data){
-            dialogs.notification('node renamed', 'success');
-        },
-        error: function(data){
-            dialogs.notification('error renaming node', 'error');
-        }
+    api("set_node_name", {
+        nodenet_uid: currentNodenet,
+        node_uid: nodeUid,
+        name: name
     });
 }
 
@@ -1908,17 +1843,10 @@ function handleSelectDatasourceModal(event){
     $("#select_datasource_modal").modal("hide");
     nodes[clickOriginUid].parameters['datasource'] = value;
     showNodeForm(nodeUid);
-    $.ajax({
-        url: '/rpc/bind_datasource_to_sensor('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'sensor_uid="'+nodeUid+'",'+
-            'datasource="'+value+'")',
-        success: function(data){
-            dialogs.notification('datasource selected', 'success');
-        },
-        error: function(data){
-            dialogs.notification('error selecting datasource', 'error');
-        }
+    api("bind_datasource_to_sensor", {
+        nodenet_uid: currentNodenet,
+        sensor_uid: nodeUid,
+        datasource: value
     });
 }
 
@@ -1928,17 +1856,10 @@ function handleSelectDatatargetModal(event){
     $("#select_datatarget_modal").modal("hide");
     nodes[clickOriginUid].parameters['datatargets'] = value;
     showNodeForm(nodeUid);
-    $.ajax({
-        url: '/rpc/bind_datatarget_to_actor('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'actor_uid="'+nodeUid+'",'+
-            'datatarget="'+value+'")',
-        success: function(data){
-            dialogs.notification('datatarget selected', 'success');
-        },
-        error: function(data){
-            dialogs.notification('error selecting datatarget', 'error');
-        }
+    api("bind_datasource_to_sensor", {
+        nodenet_uid: currentNodenet,
+        actor_uid: nodeUid,
+        datatarget: value
     });
 }
 
@@ -1968,21 +1889,16 @@ function handleNodespaceUp() {
 function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
-    $.ajax({
-        url: '/rpc/set_nodenet_properties('+
-            'nodenet_uid="'+currentNodenet+'",'+
-            'nodenet_name="'+$('#nodenet_name', form).val()+'",'+
-            'worldadapter="'+$('#nodenet_worldadapter', form).val()+'",'+
-            'world_uid="'+world_data.uid+'",'+
-            'owner="")',
-        success: function(data){
+    api("set_nodenet_properties", {
+        nodenet_uid: currentNodenet,
+        nodenet_name: $('#nodenet_name', form).val(),
+        worldadapter: $('#nodenet_worldadapter', form).val(),
+        world_uid: world_data.uid,
+        owner: ""},
+        success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
             setCurrentNodenet(currentNodenet);
-        },
-        error: function(){
-            dialogs.notification('Error saving', 'error');
-        }
-    });
+        });
 }
 
 function handleEditNativeModule(event){
@@ -1999,17 +1915,10 @@ function handleEditNativeModule(event){
     var nodefunction = $('#native_function', form).val();
     if(nodetypes[node.uid].nodefunction_definition != nodefunction){
         nodetypes[node.uid].nodefunction_definition = nodefunction;
-        $.ajax({
-            url: '/rpc/set_nodefunction('+
-                'nodenet_uid="'+currentNodenet+'",'+
-                'node_type="'+node.uid+'",'+
-                'nodefunction="'+nodefunction+'")',
-            success: function(data){
-                dialogs.notification('nodefunction saved', 'success');
-            },
-            error: function(data){
-                dialogs.notification('error saving nodefunction', 'error');
-            }
+        api("set_nodefunction",{
+            nodenet_uid: currentNodenet,
+            node_type: node.uid,
+            nodefunction: nodefunction
         });
     }
     for(var i in values){
@@ -2114,6 +2023,26 @@ function showDefaultForm(){
     $('#edit_nodenet_form').show();
 }
 
+
+function api(name, params, success, error){
+    var url = '/rpc/'+name+'(';
+    for(var key in params){
+        url += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
+    }
+    url = url.substr(0, url.length-1) + ')';
+    $.ajax({
+        url: url,
+        success: success || defaultSuccessCallback,
+        error: error || defaultErrorCallback
+    });
+}
+function defaultSuccessCallback(data){
+    dialogs.notification("Changes saved", 'success');
+}
+function defaultErrorCallback(data){
+    dialogs.notification("Error: " + data.Error || "serverside exception", 'error');
+}
+function EmptyCallback(){}
 
 /* todo:
 

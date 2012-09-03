@@ -396,6 +396,8 @@ class Node(NetEntity):
 
     @parameters.setter
     def parameters(self, dictionary):
+        if self.data["type"] == "Native":
+            self.nodetype.parameters = dictionary.keys()
         self.data["parameters"] = dictionary
 
     def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None, parameters = None):
@@ -404,10 +406,10 @@ class Node(NetEntity):
         self.gates = {}
         self.slots = {}
         self.data["type"] = type
-        self.parameters = {}
         self.nodetype = None
         if type == "Native":
             type = self.uid
+
         if type in self.nodenet.nodetypes:
             self.nodetype = self.nodenet.nodetypes[type]
             self.parameters = {key:None for key in self.nodetype.parameters} if parameters is None else parameters
@@ -415,7 +417,6 @@ class Node(NetEntity):
                 self.gates[gate] = Gate(gate, self)
             for slot in self.nodetype.slottypes:
                 self.slots[slot] = Slot(slot, self)
-
 
     def node_function(self):
         """Called whenever the node is activated or active.

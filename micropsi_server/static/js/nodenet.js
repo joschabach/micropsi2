@@ -1408,7 +1408,7 @@ function initializeMenus() {
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
     $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
-    $('#edit_native_modal btn-primary').on('click', handleEditNativeModule);
+    $('#edit_native_modal .btn-primary').on('click', handleEditNativeModule);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -1585,8 +1585,10 @@ function handleContextMenu(event) {
 function createNodeHandler(x, y, currentNodespace, name, type) {
     var uid = makeUuid();
     params = {};
-    for (var i in world_data.nodetypes[type].parameters){
-        params[world_data.nodetypes[type].parameters] = null;
+    if (world_data.nodetypes[type]){
+        for (var i in world_data.nodetypes[type].parameters){
+            params[world_data.nodetypes[type].parameters] = null;
+        }
     }
     addNode(new Node(uid, x, y, currentNodeSpace, uid, type, 0, params));
     selectNode(uid);

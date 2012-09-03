@@ -1861,6 +1861,11 @@ function handleEditNode(event){
 }
 
 function updateNodeParameters(nodeUid, parameters){
+    for(var key in parameters){
+        if(key.length === 0){
+            delete parameters[key];
+        }
+    }
     nodes[nodeUid].parameters = parameters;
     $.ajax({
         url: '/rpc/set_node_parameters('+

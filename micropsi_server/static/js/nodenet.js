@@ -1590,7 +1590,7 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
     params = {};
     if (nodetypes[type]){
         for (var i in nodetypes[type].parameters){
-            params[nodetypes[type].parameters] = null;
+            params[nodetypes[type].parameters[i]] = "";
         }
     }
     addNode(new Node(uid, x, y, currentNodeSpace, uid, type, 0, params));
@@ -1862,7 +1862,7 @@ function handleEditNode(event){
 
 function updateNodeParameters(nodeUid, parameters){
     for(var key in parameters){
-        if(key.length === 0){
+        if(!key.length){
             delete parameters[key];
         }
     }
@@ -2061,6 +2061,7 @@ function showNodeForm(nodeUid){
     if(nodes[nodeUid].parameters && !jQuery.isEmptyObject(nodes[nodeUid].parameters)) {
         html = '<tr><th>Key</th><th>Value</th></tr>';
         for(var param in nodes[nodeUid].parameters){
+            input = '';
             var i;
             switch(param){
                 case "datatarget":

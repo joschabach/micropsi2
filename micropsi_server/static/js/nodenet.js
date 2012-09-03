@@ -1844,7 +1844,8 @@ function handleEditNode(event){
     var fields = form.serializeArray();
     var name = null;
     for (var i in fields){
-        if((world_data['nodetypes'][nodes[nodeUid].type].parameters || []).indexOf(fields[i].name) > -1 &&
+        if(nodetypes[nodes[nodeUid].type] &&
+            (nodetypes[nodes[nodeUid].type].parameters || []).indexOf(fields[i].name) > -1 &&
             nodes[nodeUid].parameters[fields[i].name] != fields[i].value){
                 parameters[fields[i].name] = fields[i].value;
         }

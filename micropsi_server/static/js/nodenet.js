@@ -169,8 +169,6 @@ function initializeNodeNet(data){
             delete nodes[key];
         }
     }
-    loadWorldData(data); // TODO: move this out once we managed world selection
-    currentWorldadapter = data.worldadapter;
     links = {};
     nodeLayer.removeChildren();
     addNode(rootNode);
@@ -179,6 +177,8 @@ function initializeNodeNet(data){
 
     if (data){
         console.log(data);
+        loadWorldData(data); // TODO: move this out once we managed world selection
+        currentWorldadapter = data.worldadapter;
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);

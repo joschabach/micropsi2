@@ -47,7 +47,7 @@ class MicroPsiRuntime(object):
         if not self.world_data:
             # create a default world for convenience.
             uid = tools.generate_uid()
-            self.world_data[uid] = Bunch(uid=uid, name="default")
+            self.world_data[uid] = Bunch(uid=uid, name="default", filename=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), version=1)
             self.save_world(uid);
         for uid in self.world_data:
             self.worlds[uid] = World(self, **self.world_data[uid])

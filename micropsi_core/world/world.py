@@ -45,7 +45,7 @@ class World(object):
     def step(self):
         return self.data.get("step")
 
-    def __init__(self, runtime, filename, name = "", world_type = "Default", owner = "", uid = None):
+    def __init__(self, runtime, filename, name = "", world_type = "Default", owner = "", uid = None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
@@ -106,7 +106,7 @@ class World(object):
                 warnings.warn("Could not read world data")
                 return False
             except IOError:
-                warnings.warn("Could not open world file")
+                warnings.warn("Could not open world file: "+ self.filename)
 
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()

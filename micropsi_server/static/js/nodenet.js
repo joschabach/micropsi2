@@ -1704,7 +1704,9 @@ function createNativeModuleHandler(event){
                             nodename,
                             nodetype,
                             parameters);
-                    }
+                    },
+                    defaultErrorCallback,
+                    "post"
                 );
             } else {
                 parameters = {};
@@ -2090,14 +2092,19 @@ function showDefaultForm(){
 }
 
 
-function api(name, params, success, error){
-    var url = '/rpc/'+name+'(';
-    for(var key in params){
-        url += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
+function api(functionname, params, success, error, method){
+    var url = '/rpc/'+functionname;
+    if(method != "post"){
+        args = '';
+        for(var key in params){
+            args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
+        }
+        url += '('+args.substr(0, args.length-1) + ')';
     }
-    url = url.substr(0, url.length-1) + ')';
     $.ajax({
         url: url,
+        data: ((method == "post") ? params : null),
+        type: method || "get",
         success: success || defaultSuccessCallback,
         error: error || defaultErrorCallback
     });

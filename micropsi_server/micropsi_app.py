@@ -55,6 +55,7 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
             if omitted, permissions won't be tested by the decorator
     """
     def _decorator(func):
+        @route(route_prefix + command, "POST")
         @route(route_prefix + command + "()", method)
         @route(route_prefix + command + "(<argument>)", method)
         def _wrapper(argument = None):
@@ -74,6 +75,8 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
                 except ValueError, err:
                     response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
+            elif len(request.params) > 0:
+                kwargs = dict((key.strip('[]'), val) for key,val in request.params.iteritems())
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401

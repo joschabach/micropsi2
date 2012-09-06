@@ -62,8 +62,8 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
-currentNodenet = $.cookie('selected_nodenet');  // TODO: fetch from cookie
-var currentWorld = 0;       // cookie
+currentNodenet = $.cookie('selected_nodenet') || null;
+var currentWorld = 0;       // TODO: fetch from cookie
 var currentNodeSpace = 0;   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -143,7 +143,7 @@ function setNodenetValues(data){
 function setCurrentNodenet(uid){
     api('load_nodenet_into_ui',
         {nodenet_uid: uid},
-        success = function(data){
+        function(data){
             showDefaultForm();
             currentNodenet = uid;
             $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
@@ -152,9 +152,10 @@ function setCurrentNodenet(uid){
             refreshNodenetList();
             view.draw(true);
         },
-        error = function() {
-            dialogs.notification(data.Error, "error");
+        function(data) {
+            currentNodenet = null;
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+            dialogs.notification(data.Error, "error");
         });
 }
 

@@ -2105,7 +2105,15 @@ function api(functionname, params, success, error, method){
         url: url,
         data: ((method == "post") ? params : null),
         type: method || "get",
-        success: success || defaultSuccessCallback,
+        success: function(data){
+            if(data.Error){
+                if(error) error(data);
+                else defaultErrorCallback(data);
+            } else{
+                if(success) success(data);
+                else defaultSuccessCallback(data);
+            }
+        },
         error: error || defaultErrorCallback
     });
 }

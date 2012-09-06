@@ -77,7 +77,6 @@
                                 <select name="nodenet_worldadapter" id="nodenet_worldadapter"></select>
                             </div>
                         </div>
-
                         <div class="control-group">
                             <label class="control-label">Nodetypes</label>
                             <div class="controls">
@@ -164,25 +163,31 @@
                     </div>
                 </form>
 
+
                 <form class="form-horizontal hide" id="native_module_form">
                     <h4>Native Module</h4>
-                    <fieldset>
+
+                    <fielset id="native_choose_type" class="native-default">
+                        <p class="help-inline">You can either choose the type of this native module by choosing from an existing type...</p>
                         <div class="control-group">
-                            <label class="control-label" for="native_uid">UID</label>
+                            <label class="control-label" for="native_type">Type</label>
                             <div class="controls">
-                                <input id="native_uid" name="native_uid" type="text" disabled="disabled"/>
+                                <select id="native_type" name="native_type"></select>
                             </div>
                         </div>
+                        <p class="help-inline">or you can create your own type:</p>
+                        <div class="control-group">
+                            <label class="control-label" for="native_new_type">Typename</label>
+                            <div class="controls">
+                                <input id="native_new_type" name="native_new_type" type="text"/>
+                            </div>
+                         </div>
+                    </fielset>
+                    <fieldset id="native_basics" class="native-details native-template hide">
                         <div class="control-group">
                             <label class="control-label" for="native_name">Name</label>
                             <div class="controls">
                                 <input id="native_name" name="native_name" type="text"/>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label class="control-label" for="native_activation">Activation</label>
-                            <div class="controls">
-                                <input id="native_activation" name="native_activation" type="text" disabled="disabled" />
                             </div>
                         </div>
                         <div class="control-group">
@@ -193,6 +198,8 @@
                                 <a href="#" class="btn btn-mini" id="native_add_param">add parameter</a>
                             </div>
                         </div>
+                    </fieldset>
+                    <fieldset id="native_typedef"  class="native-details native-custom hide">
                         <div class="control-group">
                             <label class="control-label" for="native_function">Nodefunction</label>
                             <div class="controls dropdown">
@@ -201,6 +208,30 @@
                                     ):
                                 </code>
                                <textarea name="native_function" id="native_function"></textarea>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Slots and Gates</label>
+                            <div class="controls">
+                                <table id="native_slots_gates" class="table-striped table-condensed">
+                                    <tr><th>Type</th><th>Slot</th><th>Gate</th></tr>
+                                    <tr><td>gen</td>
+                                        <td><input type="checkbox" name="gen_slot"/></td>
+                                        <td><input type="checkbox" name="gen_gate"/></td>
+                                    </tr>
+                                    <tr><td>por/ret</td>
+                                        <td><input type="checkbox" name="por_slot"/></td>
+                                        <td><input type="checkbox" name="por_gate"/></td>
+                                    </tr>
+                                    <tr><td>sub/sur</td>
+                                        <td><input type="checkbox" name="sub_slot"/></td>
+                                        <td><input type="checkbox" name="sub_gate"/></td>
+                                    </tr>
+                                    <tr><td>is-a/exp</td>
+                                        <td><input type="checkbox" name="isa_slot"/></td>
+                                        <td><input type="checkbox" name="isa_gate"/></td>
+                                    </tr>
+                                </table>
                             </div>
                         </div>
                     </fieldset>
@@ -434,9 +465,13 @@
     <div class="modal-body">
 
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer footer-next native-default">
+        <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+        <a href="#" class="btn btn-primary native-next">Next</a>
+    </div>
+    <div class="modal-footer footer-save native-details hide">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Save</a>
+        <a href="#" class="btn btn-primary native-save">Save</a>
     </div>
 </div>
 

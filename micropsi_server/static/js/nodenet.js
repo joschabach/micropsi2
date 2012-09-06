@@ -117,7 +117,6 @@ function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
     $('#nodenet_worldadapter').val(data.worldadapter);
 
-    nodetypes = data.nodetypes;
     var str = '';
     for (var key in data.nodetypes){
         str += '<tr><td>'+key+'</td></tr>';
@@ -178,6 +177,7 @@ function initializeNodeNet(data){
     if (data){
         console.log(data);
         loadWorldData(data); // TODO: move this out once we managed world selection
+        nodetypes = data.nodetypes;
         currentWorldadapter = data.worldadapter;
         var uid;
         for(uid in data.nodes){
@@ -255,9 +255,13 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
 			break;
         default: // native code node (completely custom)
             this.symbol = "Na";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-            // TODO: fetch list of slots and gates from server
+            var i;
+            for (i in nodetypes[type].slottypes){
+                this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
+            }
+            for (i in nodetypes[type].gatetypes){
+                this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i]);
+            }
             break;
 	}
     this.slotIndexes = Object.keys(this.slots);
@@ -1407,7 +1411,7 @@ function initializeMenus() {
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
     $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
-    $('#edit_native_modal .btn-primary').on('click', handleEditNativeModule);
+    $('#edit_native_modal .btn-primary').on('click', createNativeModuleHandler);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -1477,6 +1481,9 @@ function handleContextMenu(event) {
     switch (clickType) {
         case null: // create nodes
             var type;
+            var callback = function(data){
+                dialogs.notification('Node created', 'success');
+            };
             switch (menuText) {
                 case "Create concept node":
                     type = "Concept";
@@ -1489,6 +1496,18 @@ function handleContextMenu(event) {
                     break;
                 case "Create sensor":
                     type = "Sensor";
+                    callback = function(data){
+                        clickOriginUid = data.uid;
+                        dialogs.notification('Please Select a datasource for this sensor');
+                        var source_select = $('#select_datasource_modal select');
+                        source_select.html('');
+                        $("#select_datasource_modal").modal("show");
+                        var sources = world_data.datasources[currentWorldadapter];
+                        for(var i in sources){
+                            source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
+                        }
+                        source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
+                    };
                     break;
                 case "Create actor":
                     type = "Actor";
@@ -1496,8 +1515,12 @@ function handleContextMenu(event) {
                 default:
                     type = "Register";
             }
-            createNodeHandler(clickPosition.x/viewProperties.zoomFactor, clickPosition.y/viewProperties.zoomFactor,
-                currentNodeSpace, "", type);
+            if(type == "Native"){
+                createNativeModuleHandler();
+            } else {
+                createNodeHandler(clickPosition.x/viewProperties.zoomFactor, clickPosition.y/viewProperties.zoomFactor,
+                    currentNodeSpace, "", type, null, callback);
+            }
             break;
         case "node":
             switch (menuText) {
@@ -1575,15 +1598,17 @@ function handleContextMenu(event) {
 }
 
 // let user create a new node
-function createNodeHandler(x, y, currentNodespace, name, type) {
+function createNodeHandler(x, y, currentNodespace, name, type, parameters, callback) {
     var uid = makeUuid();
     params = {};
+    if (!parameters) parameters = {};
     if (nodetypes[type]){
         for (var i in nodetypes[type].parameters){
-            params[nodetypes[type].parameters[i]] = "";
+            params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
         }
     }
-    addNode(new Node(uid, x, y, currentNodeSpace, uid, type, 0, params));
+    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, params));
+    view.draw();
     selectNode(uid);
     api("add_node", {
         nodenet_uid: currentNodenet,
@@ -1591,42 +1616,117 @@ function createNodeHandler(x, y, currentNodespace, name, type) {
         pos: [x,y],
         nodespace: currentNodespace,
         uid: uid,
-        name: name},
+        name: name,
+        parameters: params },
         success=function(data){
-            switch(type){
-                case "Sensor":
-                    clickOriginUid = uid;
-                    dialogs.notification('Please Select a datasource for this sensor');
-                    var source_select = $('#select_datasource_modal select');
-                    source_select.html('');
-                    $("#select_datasource_modal").modal("show");
-                    var sources = world_data.datasources[currentWorldadapter];
-                    for(var i in sources){
-                        source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
-                    }
-                    source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
-                    break;
-                case "Native":
-                    clickOriginUid = uid;
-                    nodetypes[uid] = {
-                        gatetypes: ["gen"],
-                        slottypes: ["gen"],
-                        name: uid,
-                        nodefunction: ""
-                    };
-                    dialogs.notification('Please configure your Native Node');
-                    var form = $('#native_module_form');
-                    $('#edit_native_modal .modal-body').append(form);
-                    form.show();
-                    setNativeModuleFormValues(form, uid);
-                    $('#edit_native_modal').modal("show");
-                    break;
-                default:
-                    dialogs.notification('Node created', 'success');
-            }
+            if(callback) callback(data);
             showNodeForm(uid);
         });
+    return uid;
 }
+
+
+function createNativeModuleHandler(event){
+    var form = $('#native_module_form');
+    if (!event){
+        $('#edit_native_modal .modal-body').append(form);
+        form.show();
+        var types = '';
+        for (var name in nodetypes){
+            types += '<option>'+name+'</option>';
+        }
+        $('#native_type').html(types);
+        $('input[type="checkbox"]', false).checked = false;
+        $('#native_function', form).val('');
+        $('.native-default').show();
+        $('.native-details').hide();
+        //setNativeModuleFormValues(form, this.uid);
+        $('#edit_native_modal').modal("show");
+    } else {
+        var type = $('#native_type');
+        var custom = $('#native_new_type');
+        var nodetype = custom.val() || type.val();
+        if(event.target.className.indexOf('native-next') >= 0){
+            $('.native-default').hide();
+            $('.native-details').show();
+            form.data = nodetype;
+            if(nodetypes[nodetype]){
+                $('.native-custom').hide();
+                $('#native_parameters').html(getNodeParameterHTML(nodetypes[type.val()].parameters));
+            }
+        } else if (event.target.className.indexOf('native-save') >= 0){
+            var parameters;
+            var nodename = $('#native_name').val();
+            if(!nodetypes[nodetype]){
+                var mapping = {'por': 'ret', 'sub': 'sur', 'isa': 'exp'};
+                var relations = {gate: [], slot: []};
+                var parts;
+                var checkboxes = $('input[type="checkbox"]');
+                for(var idx in checkboxes){
+                    if(checkboxes[idx].checked){
+                        parts = checkboxes[idx].name.split('_');
+                        relations[parts[1]].push(parts[0]);
+                        if (mapping[parts[0]]){
+                            relations[parts[1]].push(mapping[parts[0]]);
+                        }
+                    }
+                }
+                parameters = {};
+                var param_fields = $('input[name^="param_"]', form);
+                var param_list = [];
+                for(var i in param_fields){
+                    if(param_fields[i].name == "param_name"){
+                        param_list.push(param_fields[i].value);
+                        parameters[param_fields[i].value] = param_fields[++i].value;
+                    }
+                }
+                var nodefunction = $('#native_function').val();
+                nodetypes[nodetype] = {
+                    gatetypes: relations.gate,
+                    slottypes: relations.slot,
+                    parameters: param_list,
+                    nodefunction_definition: nodefunction,
+                    name: nodetype
+                };
+                api('add_node_type', {
+                    nodenet_uid: currentNodenet,
+                    node_type: nodetype,
+                    slots: relations.slot,
+                    gates: relations.gate,
+                    parameters: param_list,
+                    node_function: nodefunction},
+                    function(data){
+                        $('#edit_native_modal').modal("hide");
+                        createNodeHandler(
+                            clickPosition.x/viewProperties.zoomFactor,
+                            clickPosition.y/viewProperties.zoomFactor,
+                            currentNodeSpace,
+                            nodename,
+                            nodetype,
+                            parameters);
+                    }
+                );
+            } else {
+                parameters = {};
+                var fields = $(":input", $('native_parameters'));
+                for(var j in fields){
+                    parameters[fields[j].name] = fields[j].value;
+                }
+                $('#edit_native_modal').modal("hide");
+                createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
+                    clickPosition.y/viewProperties.zoomFactor,
+                    currentNodeSpace,
+                    nodename,
+                    nodetype,
+                    parameters);
+            }
+
+            // save this thing.
+
+        }
+    }
+}
+
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
@@ -1902,35 +2002,6 @@ function handleEditNodenet(event){
         });
 }
 
-function handleEditNativeModule(event){
-    event.preventDefault();
-    var node = nodes[clickOriginUid];
-    var form = $('#native_module_form');
-    var values = form.serializeArray();
-    var parameters = {};
-    $('#edit_native_modal').modal("hide");
-    var newname = $('#native_name', form).val();
-    if (node.name != newname){
-        renameNode(node.uid, newname);
-    }
-    var nodefunction = $('#native_function', form).val();
-    if(nodetypes[node.uid].nodefunction_definition != nodefunction){
-        nodetypes[node.uid].nodefunction_definition = nodefunction;
-        api("set_nodefunction",{
-            nodenet_uid: currentNodenet,
-            node_type: node.uid,
-            nodefunction: nodefunction
-        });
-    }
-    for(var i in values){
-        if(values[i].name == "param_name"){
-            parameters[values[i].value] = values[++i].value;
-        }
-    }
-    updateNodeParameters(node.uid, parameters);
-    showNativeModuleForm(node.uid);
-}
-
 function makeUuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
@@ -1946,7 +2017,7 @@ function initializeSidebarForms(){
     $('#edit_link_form').submit(handleEditLink);
     $('#edit_node_form').submit(handleEditNode);
     $('#edit_nodenet_form').submit(handleEditNodenet);
-    $('#native_module_form').submit(handleEditNativeModule);
+    $('#native_module_form').submit(createNativeModuleHandler);
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
@@ -1967,14 +2038,23 @@ function showNodeForm(nodeUid){
     $('#node_type_input').val(nodes[nodeUid].type);
     $('#node_activation_input').val(nodes[nodeUid].activation);
     $('#node_function_input').val("Todo");
+    $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
+    $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
+    $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+}
+
+function getNodeParameterHTML(parameters){
     var html = '<tr><td>This node type has no parameters</td></tr>';
     var input='';
-    if(nodes[nodeUid].parameters && !jQuery.isEmptyObject(nodes[nodeUid].parameters)) {
+    var is_array = jQuery.isArray(parameters);
+    if(parameters && !jQuery.isEmptyObject(parameters)) {
         html = '<tr><th>Key</th><th>Value</th></tr>';
-        for(var param in nodes[nodeUid].parameters){
+        for(var param in parameters){
             input = '';
+            var name = (is_array) ? parameters[param] : param;
+            var value = (is_array) ? '' : parameters[param];
             var i;
-            switch(param){
+            switch(name){
                 case "datatarget":
                     for(i in world_data.datatargets[currentWorldadapter]){
                         input += "<option>"+world_data.datatargets[currentWorldadapter][i]+"</option>";
@@ -1988,14 +2068,12 @@ function showNodeForm(nodeUid){
                     input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     break;
                 default:
-                    input = "<input name=\""+param+"\" class=\"inplace\" value=\""+nodes[nodeUid].parameters[param]+"\"/>";
+                    input = "<input name=\""+name+"\" class=\"inplace\" value=\""+value+"\"/>";
             }
-            html += "<tr><td>"+param+"</td><td>"+input+"</td></tr>";
+            html += "<tr><td>"+name+"</td><td>"+input+"</td></tr>";
         }
     }
-    $('#node_parameters').html(html);
-    $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
-    $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+    return html;
 }
 
 function showNativeModuleForm(nodeUid){
@@ -2003,20 +2081,7 @@ function showNativeModuleForm(nodeUid){
     var form = $('#native_module_form');
     $('#nodenet_forms').append(form);
     form.show();
-    setNativeModuleFormValues(form, nodeUid);
-}
-
-function setNativeModuleFormValues(form, nodeUid){
-    var node = nodes[nodeUid];
-    $('#native_name', form).val(node.name);
-    $('#native_uid', form).val(node.uid);
-    var param_table = $('#native_parameters', form);
-    param_table.html('<tr><th>Key</th><th>Value</th></tr>');
-    for (var key in node.parameters){
-        param_table.append('<tr><td><input name="param_name" type="text" class="inplace" value="'+key+'"/></td><td><input name="param_value" type="text"  class="inplace" value="'+node.parameters[key]+'"/></td></tr>');
-    }
-    $('#native_activation').val(node.activation);
-    $('#native_function', form).val(nodetypes[nodeUid].nodefunction_definition);
+    //setNativeModuleFormValues(form, nodeUid);
 }
 
 function showDefaultForm(){

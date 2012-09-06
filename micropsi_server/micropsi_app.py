@@ -63,12 +63,13 @@ def rpc(command, route_prefix = "/rpc/", method = "GET", permission_required = N
             if argument:
                 try:
                     # split at commas and correct illegaly split lists:
-                    kwargs = argument.split(",")
-                    for index, val in enumerate(kwargs):
+                    arglist = argument.split(",")
+                    kwargs = []
+                    for index, val in enumerate(arglist):
                         if '=' not in val:
-                            kwargs[index-1] += ','+val
-                            del kwargs[index]
-                            index = index -1
+                            kwargs[len(kwargs)-1] = kwargs[-1:][0] + ',' + val  # ugly.
+                        else:
+                            kwargs.append(val)
                     kwargs = dict((n.strip(),json.loads(v)) for n,v in (item.split('=') for item in kwargs))
                 except ValueError, err:
                     response.status = 400
@@ -607,10 +608,10 @@ def get_node(nodenet_uid, node_uid):
     return micropsi.get_node(nodenet_uid, node_uid)
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(nodenet_uid, type, pos, nodespace, uid = None, name = ""):
-    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, uid = uid, name = name)
+def add_node(nodenet_uid, type, pos, nodespace, uid = None, name = "", parameters={}):
+    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, uid = uid, name = name, parameters=parameters)
     if result:
-        return dict(Status="OK")
+        return dict(Status="OK", uid=uid)
     else:
         return dict(Error=uid)
 
@@ -645,7 +646,9 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return micropsi.set_node_parameters(nodenet_uid, node_uid, parameters)
 
 @rpc("add_node_type", permission_required="manage nodenets")
-def add_node_type(nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None): return micropsi.add_node_type
+def add_node_type(nodenet_uid, node_type, slots = [], gates = [], node_function = None, parameters = []):
+    return micropsi.add_node_type(nodenet_uid, node_type, slots, gates, node_function, parameters)
+
 
 @rpc("delete_node_type", permission_required="manage nodenets")
 def delete_node_type(nodenet_uid, node_type): return micropsi.delete_node_type

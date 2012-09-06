@@ -417,7 +417,7 @@ class MicroPsiRuntime(object):
          """
         return self._get_nodenet(nodenet_uid).nodes[node_uid]
 
-    def add_node(self, nodenet_uid, type, pos, nodespace, uid = None, name = ""):
+    def add_node(self, nodenet_uid, type, pos, nodespace, uid = None, name = "", parameters={}):
         """Creates a new node. (Including nodespace, native module.)
 
         Arguments:
@@ -437,9 +437,7 @@ class MicroPsiRuntime(object):
         if type == "Nodespace":
             nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
         else:
-            if type == "Native":
-                nodenet.nodetypes[uid] = Nodetype(uid, nodenet)
-            nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid)
+            nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
         return True, nodenet_uid
 
@@ -513,7 +511,7 @@ class MicroPsiRuntime(object):
         self._get_nodenet(nodenet_uid).nodes[node_uid].parameters = parameters
         return True
 
-    def add_node_type(self, nodenet_uid, node_type, slots = None, gates = None, node_function = None, parameters = None):
+    def add_node_type(self, nodenet_uid, node_type, slots = [], gates = [], node_function = None, parameters = []):
         """Adds or modifies a native module.
 
         Arguments:
@@ -528,7 +526,9 @@ class MicroPsiRuntime(object):
             gates (optional): the list of gate types for this node type
             parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
         """
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, parameters, nodefunction_definition=node_function)
+        return True
 
     def delete_node_type(self, nodenet_uid, node_type):
         """Remove the node type from the current nodenet definition, if it is part of it."""

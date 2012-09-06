@@ -1363,6 +1363,7 @@ function onKeyDown(event) {
     // delete nodes and links
     else if (event.key == "backspace" || event.key == "delete") {
         if (event.event.target.tagName == "BODY") {
+            event.preventDefault(); // browser-back
             deleteNodeHandler();
             deleteLinkHandler();
         }

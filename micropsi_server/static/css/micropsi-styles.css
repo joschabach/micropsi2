@@ -163,3 +163,4 @@ input.inplace, select.inplace{
 .modal-body form .buttons{
   display: none;  /** hide submit buttons in modal (modal footer bears the buttons) **/
 }
+

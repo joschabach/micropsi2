@@ -46,7 +46,10 @@ class MicroPsiRuntime(object):
         self.world_data = crawl_definition_files(path = os.path.join(resource_path, WORLD_DIRECTORY), type = "world")
         if not self.world_data:
             # create a default world for convenience.
-            self.new_world('default', 'default')
+            uid = tools.generate_uid()
+            filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
+            self.world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
+            self.save_world(uid)
         for uid in self.world_data:
             self.worlds[uid] = World(self, **self.world_data[uid])
 
@@ -304,8 +307,9 @@ class MicroPsiRuntime(object):
         """
         uid = tools.generate_uid()
         filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
-        self.world_data[uid] = Bunch(uid=uid, name="default", filename=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), version=1)
+        self.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename, version=1, owner=owner)
         self.save_world(uid)
+        self.worlds[uid] = World(self, filename, name=world_name, world_type=world_type, owner=owner, uid=uid, version=1)
         return uid
 
     def delete_world(self, world_uid):

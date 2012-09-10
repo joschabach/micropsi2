@@ -433,6 +433,18 @@ def edit_world():
         user_id = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
+@route("/world/edit", method="POST")
+def edit_world():
+    user_id, permissions, token = get_request_data()
+    if "manage worlds" in permissions:
+        result = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        if result:
+            return dict(status="success", msg="World created", world_uid=result)
+        else:
+            return dict(status="error", msg="Error saving nodenet: %s" % result )
+    return dict(status="error", msg="Insufficient rights to create world")
+
+
 @route("/nodenet_list/")
 @route("/nodenet_list/<current_nodenet>")
 def nodenet_list(current_nodenet=None):

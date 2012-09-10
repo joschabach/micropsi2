@@ -389,7 +389,7 @@ def write_nodenet():
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
             return dict(status="error", msg="Error saving nodenet: %s" % nodenet_uid )
-    return dict(status="error", msg="Insufficient rights to access user console")
+    return dict(status="error", msg="Insufficient rights to write nodenet")
 
 @route("/nodenet/edit")
 def edit_nodenet():

@@ -106,7 +106,8 @@ def get_request_data():
 # ----------------------------------------------------------------------------------
 
 @route('/static/<filepath:path>')
-def server_static(filepath): return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
+def server_static(filepath):
+    return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
 @route("/")
 def index():
@@ -132,10 +133,12 @@ def about():
     return template("about", version = VERSION, user_id = user_id, permissions = permissions)
 
 @route("/docs")
-def documentation(): return template("documentation", version = VERSION)
+def documentation():
+    return template("documentation", version = VERSION)
 
 @route("/contact")
-def contact(): return template("contact", version = VERSION)
+def contact():
+    return template("contact", version = VERSION)
 
 @route("/logout")
 def logout():

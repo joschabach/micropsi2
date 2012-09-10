@@ -130,14 +130,14 @@ function setNodenetValues(data){
             str += '<tr><td>'+world_data.datatargets[data.worldadapter][i]+'</td></tr>';
         }
     }
-    $('#nodenet_datatargets').html(str || '<tr><td>Keine datatargets definiert</td></tr>');
+    $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
     str = '';
     if (world_data.datasources[data.worldadapter]){
         for (i in world_data.datasources[data.worldadapter]){
             str += '<tr><td>'+world_data.datasources[data.worldadapter][i]+'</td></tr>';
         }
     }
-    $('#nodenet_datasources').html(str || '<tr><td>Keine datasources definiert</td></tr>');
+    $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
 }
 
 function setCurrentNodenet(uid){

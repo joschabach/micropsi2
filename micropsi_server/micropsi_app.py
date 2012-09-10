@@ -106,7 +106,8 @@ def get_request_data():
 # ----------------------------------------------------------------------------------
 
 @route('/static/<filepath:path>')
-def server_static(filepath): return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
+def server_static(filepath):
+    return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
 @route("/")
 def index():
@@ -132,10 +133,12 @@ def about():
     return template("about", version = VERSION, user_id = user_id, permissions = permissions)
 
 @route("/docs")
-def documentation(): return template("documentation", version = VERSION)
+def documentation():
+    return template("documentation", version = VERSION)
 
 @route("/contact")
-def contact(): return template("contact", version = VERSION)
+def contact():
+    return template("contact", version = VERSION)
 
 @route("/logout")
 def logout():
@@ -389,7 +392,7 @@ def write_nodenet():
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
             return dict(status="error", msg="Error saving nodenet: %s" % nodenet_uid )
-    return dict(status="error", msg="Insufficient rights to access user console")
+    return dict(status="error", msg="Insufficient rights to write nodenet")
 
 @route("/nodenet/edit")
 def edit_nodenet():
@@ -432,6 +435,18 @@ def edit_world():
         version = VERSION,
         user_id = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
+
+@route("/world/edit", method="POST")
+def edit_world():
+    user_id, permissions, token = get_request_data()
+    if "manage worlds" in permissions:
+        result = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        if result:
+            return dict(status="success", msg="World created", world_uid=result)
+        else:
+            return dict(status="error", msg="Error saving nodenet: %s" % result )
+    return dict(status="error", msg="Insufficient rights to create world")
+
 
 @route("/nodenet_list/")
 @route("/nodenet_list/<current_nodenet>")

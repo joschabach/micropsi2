@@ -163,9 +163,13 @@ $(function() {
     $('.navbar a.nodenet_import').on('click', remote_form);
     $('.navbar a.nodenet_merge').on('click', remote_form);
 
-
     // WORLD
-    $('.navbar a.world_new').on('click', remote_form);
+    $('.navbar a.world_new').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
+            dialogs.notification('World created. ID: ' + data.world_uid, 'success');
+        });
+    });
     $('.navbar a.world_edit').on('click', remote_form);
 
     $('.navbar a.world_delete').on('click', function(){

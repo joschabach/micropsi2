@@ -454,7 +454,7 @@ class MicroPsiRuntime(object):
         else:
             nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
-        return True, nodenet_uid
+        return True, uid
 
 
     def set_node_position(self, nodenet_uid, node_uid, pos):

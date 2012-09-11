@@ -32,7 +32,7 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="/world/edit" class="world_new">New...</a></li>
-                        <li><a href="/world/edit?id=1" class="world_edit">Edit...</a></li>
+                        <li><a href="/world/edit" class="world_edit">Edit...</a></li>
                         <li class="divider"></li>
                         <li><a href="#" class="world_delete">Delete</a></li>
                         <li><a href="#" class="world_save">Save</a></li>

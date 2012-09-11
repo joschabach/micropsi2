@@ -1,7 +1,7 @@
 
 <div class="dialogform modal">
 
-    <form class="form-horizontal" action="{{action}}" method="POST">
+    <form class="form-horizontal" action="{{action}}" enctype="multipart/form-data" method="POST">
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>

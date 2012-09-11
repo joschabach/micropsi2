@@ -354,9 +354,6 @@ def login_as_user(userid):
 
 @route("/nodenet/import")
 def import_nodenet():
-    if 'file' in request.forms:
-        # do stuff
-        pass
     token = request.get_cookie("token")
     return template("upload.tpl", title='Import Nodenet', message='Select a file to upload and use for importing', action='/nodenet/import',
         version = VERSION,
@@ -364,23 +361,46 @@ def import_nodenet():
         permissions = usermanager.get_permissions_for_session_token(token))
 
 
-@route("/nodenet/merge")
-def merge_nodenet():
-    if 'file' in request.forms:
-        # do stuff
-        pass
+@route("/nodenet/import", method="POST")
+def import_nodenet():
+    user_id, p, t = get_request_data()
+    nodenet_uid = micropsi_core.tools.generate_uid()
+    result = micropsi.import_nodenet(nodenet_uid, request.files['file_upload'].file.read(), owner=user_id)
+    return dict(status='success', msg="Nodenet imported", nodenet_uid=nodenet_uid)
+
+
+@route("/nodenet/merge/<nodenet_uid>")
+def merge_nodenet(nodenet_uid):
     token = request.get_cookie("token")
-    return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging', action='/nodenet/merge',
+    return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging', action='/nodenet/merge/%s' % nodenet_uid ,
         version = VERSION,
         userid = usermanager.get_user_id_for_session_token(token),
         permissions = usermanager.get_permissions_for_session_token(token))
 
 
-@route("/nodenet/export")
-def export_nodenet():
+@route("/nodenet/merge/<nodenet_uid>", method="POST")
+def merge_nodenet(nodenet_uid):
+    micropsi.merge_nodenet(nodenet_uid, request.files['file_upload'].file.read())
+    return dict(status='success', msg="Nodenet merged")
+
+
+@route("/nodenet/export/<nodenet_uid>")
+def export_nodenet(nodenet_uid):
     response.set_header('Content-type', 'application/json')
-    response.set_header('Content-Disposition', 'attachment; filename="world.json"')
-    return "{}"
+    response.set_header('Content-Disposition', 'attachment; filename="nodenet.json"')
+    return micropsi.export_nodenet(nodenet_uid)
+
+
+@route("/nodenet/edit")
+def edit_nodenet():
+    user_id, permissions, token = get_request_data()
+    id = request.params.get('id', None)
+    title = 'Edit Nodenet' if id is not None else 'New Nodenet'
+    return template("nodenet_form.tpl", title=title,
+        nodenets=micropsi.get_available_nodenets(),
+        templates=micropsi.get_available_nodenets(),
+        worlds=micropsi.get_available_worlds(),
+        version = VERSION, user_id = user_id, permissions = permissions)
 
 
 @route("/nodenet/edit", method="POST")
@@ -394,16 +414,6 @@ def write_nodenet():
             return dict(status="error", msg="Error saving nodenet: %s" % nodenet_uid )
     return dict(status="error", msg="Insufficient rights to write nodenet")
 
-@route("/nodenet/edit")
-def edit_nodenet():
-    user_id, permissions, token = get_request_data()
-    id = request.params.get('id', None)
-    title = 'Edit Nodenet' if id is not None else 'New Nodenet'
-    return template("nodenet_form.tpl", title=title,
-        nodenets=micropsi.get_available_nodenets(),
-        templates=micropsi.get_available_nodenets(),
-        worlds=micropsi.get_available_worlds(),
-        version = VERSION, user_id = user_id, permissions = permissions)
 
 
 @route("/world/import")
@@ -532,7 +542,8 @@ def save_nodenet(nodenet_uid):
     return micropsi.save_nodenet(nodenet_uid)
 
 @rpc("export_nodenet")
-def export_nodenet(nodenet_uid): return micropsi.export_nodenet
+def export_nodenet(nodenet_uid):
+    return micropsi.export_nodenet(nodenet_uid)
 
 @rpc("import_nodenet", permission_required="manage nodenets")
 def import_nodenet(nodenet_uid, nodenet): return micropsi.import_nodenet
@@ -544,7 +555,8 @@ def merge_nodenet(nodenet_uid, nodenet): return micropsi.merge_nodenet
 
 @rpc("get_available_worlds")
 def get_available_worlds():
-    return micropsi.get_available_worlds()
+    user_id, p, t = get_request_data()
+    return micropsi.get_available_worlds(user_id)
 
 @rpc("get_world_properties")
 def get_world_properties(world_uid):
@@ -555,7 +567,8 @@ def get_worldadapters(world_uid):
     return micropsi.get_worldadapters(world_uid)
 
 @rpc("new_world", permission_required="manage worlds")
-def new_world(world_name, world_type, owner = ""): return micropsi.new_world
+def new_world(world_name, world_type, owner = ""):
+    return micropsi.new_world(world_name, world_type, owner)
 
 @rpc("delete_world", permission_required="manage worlds")
 def delete_world(world_uid): return micropsi.delete_world

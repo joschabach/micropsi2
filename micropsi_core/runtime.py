@@ -140,7 +140,7 @@ class MicroPsiRuntime(object):
         self.nodenet_data[data['uid']] = Bunch(**data)
         with open(data['filename'], 'w+') as fp:
             fp.write(json.dumps(data, sort_keys=True, indent=4))
-        fp.close
+        fp.close()
         #self.load_nodenet(data['uid'])
         return True, data['uid']
 
@@ -218,7 +218,7 @@ class MicroPsiRuntime(object):
         nodenet = self._get_nodenet(nodenet_uid)
         with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
             fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
-        fp.close
+        fp.close()
         return True
 
     def export_nodenet(self, nodenet_uid):
@@ -362,7 +362,7 @@ class MicroPsiRuntime(object):
         self.world_data[world_uid]
         with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, world_uid), 'w+') as fp:
             fp.write(json.dumps(self.world_data[world_uid], sort_keys=True, indent=4))
-        fp.close
+        fp.close()
         return True
 
 

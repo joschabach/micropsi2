@@ -160,8 +160,18 @@ $(function() {
         });
     });
 
-    $('.navbar a.nodenet_import').on('click', remote_form);
-    $('.navbar a.nodenet_merge').on('click', remote_form);
+    $('.navbar a.nodenet_import').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog(event.target.href, function(){
+            window.location.reload();
+        });
+    });
+    $('.navbar a.nodenet_merge').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog(event.target.href + '/' + currentNodenet, function(){
+            window.location.reload();
+        });
+    });
 
     // WORLD
     $('.navbar a.world_new').on('click', function(event){
@@ -200,6 +210,11 @@ $(function() {
     $('a.login').on('click', function(event){
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(){window.location.reload();});
+    });
+
+    $('.nodenet_export').on('click', function(event){
+        event.preventDefault();
+        window.location.replace(event.target.href + '/' + currentNodenet);
     });
 });
 

@@ -103,6 +103,19 @@ class MicroPsiRuntime(object):
             return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
         return False, "no such nodenet"
 
+
+    def unload_nodenet(self, nodenet_uid):
+        """ Unload the nodenet.
+            Deletes the instance of this nodenet without deleting it from the storage
+
+            Arguments:
+                nodenet_uid
+        """
+        world_uid = self._get_world_uid_for_nodenet_uid(nodenet_uid)
+        self.worlds[world_uid].unregister_nodenet(nodenet_uid)
+        return True
+
+
     def get_nodenet_area(self, nodenet_uid, x1=0, x2=-1, y1=0, y2=-1):
         """ return all nodes and links within the given area of the nodenet
             for representation in the UI
@@ -120,7 +133,7 @@ class MicroPsiRuntime(object):
             world_uid (optional): if submitted, attempts to bind the nodenet to this world
 
         Returns
-            world_uid if successful,
+            nodenet_uid if successful,
             None if failure
 
         TODO: I'd suggest, that this should rather return the nodenet UID?
@@ -171,6 +184,7 @@ class MicroPsiRuntime(object):
         if owner:
             nodenet.owner = owner
         self.nodenet_data[nodenet_uid] = Bunch(**nodenet.state)
+        return True
 
     def start_nodenetrunner(self, nodenet_uid):
         """Starts a thread that regularly advances the given nodenet by one step."""
@@ -226,16 +240,25 @@ class MicroPsiRuntime(object):
 
         Returns a string that contains the nodenet state in JSON format.
         """
-        pass
+        return json.dumps(self._get_nodenet(nodenet_uid).state, sort_keys=True, indent=4)
 
-    def import_nodenet(self, anodenet_uid, string):
+    def import_nodenet(self, nodenet_uid, string, owner=None):
         """Imports the nodenet state, instantiates the nodenet.
 
         Arguments:
             nodenet_uid: the uid of the nodenet (may overwrite existing nodenet)
             string: a string that contains the nodenet state in JSON format.
         """
-        pass
+        nodenet_data = json.loads(string)
+        nodenet_data['owner'] = owner
+        assert nodenet_data['world'] in self.worlds
+        filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid)
+        with open(filename, 'w+') as fp:
+            fp.write(string)
+        fp.close()
+        self.nodenet_data[nodenet_uid] = parse_definition(nodenet_data, filename)
+        return True
+
 
     def merge_nodenet(self, nodenet_uid, string):
         """Merges the nodenet data with an existing nodenet, instantiates the nodenet.
@@ -244,7 +267,16 @@ class MicroPsiRuntime(object):
             nodenet_uid: the uid of the existing nodenet (may overwrite existing nodenet)
             string: a string that contains the nodenet data that is to be merged in JSON format.
         """
-        pass
+        nodenet = self._get_nodenet(nodenet_uid)
+        data = json.loads(string)
+        # these values shouldn't be overwritten:
+        for key in ['uid', 'filename', 'world']:
+            data.pop(key, None)
+        nodenet.state.update(data)
+        self.save_nodenet(nodenet_uid)
+        self.unload_nodenet(nodenet_uid)
+        self.load_nodenet(nodenet_uid)
+
 
     # World
 
@@ -687,22 +719,26 @@ def crawl_definition_files(path, type = "definition"):
             try:
                 filename = os.path.join(user_directory_name, definition_file_name)
                 with open(filename) as file:
-                    data = json.load(file)
-                    if "uid" in data:
-                        result[data["uid"]] = Bunch(
-                            uid = data["uid"],
-                            name = data.get("name", data["uid"]),
-                            filename = filename,
-                            owner = data.get("owner")
-                        )
-                        if "worldadapter" in data:
-                            result[data["uid"]].worldadapter = data["worldadapter"]
-                            result[data["uid"]].world = data["world"]
+                    data = parse_definition(json.load(file), filename)
+                    result[data.uid] = data
             except ValueError:
                 warnings.warn("Invalid %s data in file '%s'" %(type, definition_file_name))
             except IOError:
                 warnings.warn("Could not open %s data file '%s'" %(type, definition_file_name))
     return result
+
+def parse_definition(json, filename=None):
+    if "uid" in json:
+        result = Bunch(
+            uid = json["uid"],
+            name = json.get("name", json["uid"]),
+            filename = filename or json.get("filename"),
+            owner = json.get("owner")
+        )
+        if "worldadapter" in json:
+            result.worldadapter = json["worldadapter"]
+            result.world = json["world"]
+        return result
 
 def main():
     run = MicroPsiRuntime(RESOURCE_PATH)

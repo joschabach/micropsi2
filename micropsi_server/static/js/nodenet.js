@@ -88,7 +88,7 @@ nodetypes = {};
 
 refreshNodenetList();
 function refreshNodenetList(){
-    $("#nodenet_list").load("/nodenet_list/"+currentNodenet, function(data){
+    $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
         $('#nodenet_list .nodenet_select').on('click', function(event){
             event.preventDefault();
             var el = $(event.target);
@@ -115,8 +115,11 @@ function loadWorldData(nodenet_data){
 
 function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
-    $('#nodenet_worldadapter').val(data.worldadapter);
-
+    var worldadapter_select = $('#nodenet_worldadapter');
+    worldadapter_select.val(data.worldadapter);
+    if(worldadapter_select.val() != data.worldadapter){
+        dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
+    }
     var str = '';
     for (var key in data.nodetypes){
         str += '<tr><td>'+key+'</td></tr>';

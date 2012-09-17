@@ -61,16 +61,6 @@ class MicroPsiRuntime(object):
             return self.nodenet_data[nodenet_uid].world
         return None
 
-
-    def _get_nodenet(self, nodenet_uid):
-        """ get the nodenet instance to the given nodenet_uid.
-            this will lookup the world this nodenet lives in from the nodenet_data,
-            and then fetch the nodenet instance from the respective world instance.
-            TODO: please review: should we leave it like that or rather add a hash of
-                  nodenets in addition to the hash of worlds?
-        """
-        return self.worlds[self._get_world_uid_for_nodenet_uid(nodenet_uid)].agents[nodenet_uid]
-
     # MicroPsi API
 
     # Nodenet
@@ -98,9 +88,18 @@ class MicroPsiRuntime(object):
                  False, errormessage on failure
 
         """
-        world_uid = self._get_world_uid_for_nodenet_uid(nodenet_uid)
-        if world_uid:
-            return self.worlds[world_uid].register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
+        if nodenet_uid in self.nodenet_data:
+            if nodenet_uid not in self.nodenets:
+                data = self.nodenet_data[nodenet_uid]
+                world = self.worlds[data.world] or None
+                worldadapter = data.worldadapter
+                self.nodenets[nodenet_uid] = Nodenet(self, data.filename, name=data.name, worldadapter=data.worldadapter, world=world, owner=data.owner, uid=data.uid)
+            else:
+                world = self.nodenets[nodenet_uid].world
+                worldadapter = self.nodenets[nodenet_uid].worldadapter
+            if world:
+                world.register_nodenet(worldadapter, nodenet_uid)
+            return True, nodenet_uid
         return False, "no such nodenet"
 
 
@@ -111,8 +110,8 @@ class MicroPsiRuntime(object):
             Arguments:
                 nodenet_uid
         """
-        world_uid = self._get_world_uid_for_nodenet_uid(nodenet_uid)
-        self.worlds[world_uid].unregister_nodenet(nodenet_uid)
+        self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
+        del self.nodenets[nodenet_uid]
         return True
 
 
@@ -121,7 +120,7 @@ class MicroPsiRuntime(object):
             for representation in the UI
             TODO
         """
-        return self._get_nodenet(nodenet_uid).state
+        return self.nodenets[nodenet_uid].state
 
     def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):
         """Creates a new node net manager and registers it.
@@ -162,23 +161,23 @@ class MicroPsiRuntime(object):
 
         Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
         """
-        data = self.nodenet_data[nodenet_uid]
-        self.worlds[data.world].unregister_nodenet(nodenet_uid)
-        os.remove(data.filename)
+        self.unload_nodenet(nodenet_uid)
+        os.remove(self.nodenet_data[nodenet_uid].filename)
         del self.nodenet_data[nodenet_uid]
         return True
 
     def set_nodenet_properties(self, nodenet_uid, nodenet_name = None, worldadapter = None, world_uid = None, owner = None):
         """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         if world_uid is not None or worldadapter is not None:
             if world_uid is None:
                 world_uid = nodenet.world
             if worldadapter is None:
                 worldadapter = nodenet.worldadapter
-            assert worldadapter in self.worlds[world_uid].worldadapters
+            assert worldadapter in self.worlds[world_uid].supported_worldadapters
             nodenet.world = self.worlds[world_uid]
             nodenet.worldadapter = worldadapter
+            self.worlds[world_uid].register_nodenet(nodenet_uid, worldadapter)
         if nodenet_name:
             nodenet.name = nodenet_name
         if owner:
@@ -217,19 +216,18 @@ class MicroPsiRuntime(object):
             nodenet_uid: The uid of the nodenet
             nodespace (optional): when supplied, returns the contents of the nodespace after the simulation step
         """
-        nodenet = self._get_nodenet(nodenet_uid)
-        nodenet.step()
-        return nodenet.state['step']
+        self.nodenets[nodenet_uid].step()
+        return self.nodenets[nodenet_uid].state['step']
 
     def revert_nodenet(self, nodenet_uid):
         """Returns the nodenet to the last saved state."""
-        world = self.worlds[self._get_world_uid_for_nodenet_uid(nodenet_uid)]
-        world.unregister_nodenet(nodenet_uid)
-        return world.register_nodenet(self.nodenet_data[nodenet_uid].worldadapter, nodenet_uid)
+        self.unload_nodenet(nodenet_uid)
+        self.load_nodenet(nodenet_uid)
+        return True
 
     def save_nodenet(self, nodenet_uid):
         """Stores the nodenet on the server (but keeps it open)."""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
             fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
         fp.close()
@@ -240,7 +238,7 @@ class MicroPsiRuntime(object):
 
         Returns a string that contains the nodenet state in JSON format.
         """
-        return json.dumps(self._get_nodenet(nodenet_uid).state, sort_keys=True, indent=4)
+        return json.dumps(self.nodenets[nodenet_uid].state, sort_keys=True, indent=4)
 
     def import_nodenet(self, nodenet_uid, string, owner=None):
         """Imports the nodenet state, instantiates the nodenet.
@@ -267,7 +265,7 @@ class MicroPsiRuntime(object):
             nodenet_uid: the uid of the existing nodenet (may overwrite existing nodenet)
             string: a string that contains the nodenet data that is to be merged in JSON format.
         """
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         data = json.loads(string)
         # these values shouldn't be overwritten:
         for key in ['uid', 'filename', 'world']:
@@ -308,14 +306,10 @@ class MicroPsiRuntime(object):
         from micropsi_core.nodenet.nodenet import STANDARD_NODETYPES
         world = self.worlds[world_uid]
         data = {
-            'worldadapters': [],
+            'worldadapters': world.supported_worldadapters,
             'datatargets': {},
             'datasources': {}
         }
-        for uid in world.worldadapters:
-            data['worldadapters'].append(uid)
-            data['datasources'][uid] = world.worldadapters[uid].datatargets.keys()
-            data['datasources'][uid] = world.worldadapters[uid].datasources.keys()
         return data
 
 
@@ -462,7 +456,7 @@ class MicroPsiRuntime(object):
                 parameters (optional): a dict of arbitrary parameters that can make nodes stateful
             }
          """
-        return self._get_nodenet(nodenet_uid).nodes[node_uid]
+        return self.nodenets[nodenet_uid].nodes[node_uid]
 
     def add_node(self, nodenet_uid, type, pos, nodespace, uid = None, name = "", parameters={}):
         """Creates a new node. (Including nodespace, native module.)
@@ -480,7 +474,7 @@ class MicroPsiRuntime(object):
             node_uid if successful,
             None if failure.
         """
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         if type == "Nodespace":
             nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
         else:
@@ -491,7 +485,7 @@ class MicroPsiRuntime(object):
 
     def set_node_position(self, nodenet_uid, node_uid, pos):
         """Positions the specified node at the given coordinates."""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         if node_uid in nodenet.nodes:
             nodenet.nodes[node_uid].position = pos
         elif node_uid in nodenet.nodespaces:
@@ -500,7 +494,7 @@ class MicroPsiRuntime(object):
 
     def set_node_name(self, nodenet_uid, node_uid, name):
         """Sets the display name of the node"""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         if node_uid in nodenet.nodes:
             nodenet.nodes[node_uid].name = name
         elif node_uid in nodenet.nodespaces:
@@ -509,7 +503,7 @@ class MicroPsiRuntime(object):
 
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         if node_uid in nodenet.nodespaces:
             for uid, node in nodenet.nodes.items():
                 if node.parent_nodespace == node_uid:
@@ -541,7 +535,7 @@ class MicroPsiRuntime(object):
 
     def get_nodefunction(self, nodenet_uid, node_type):
         """Returns the current node function for this node type"""
-        return self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition
+        return self.nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition
 
     def set_nodefunction(self, nodenet_uid, node_type, nodefunction=None):
         """Sets a new node fuction for this node type. This amounts to a program that is executed every time the
@@ -550,12 +544,12 @@ class MicroPsiRuntime(object):
         Setting the node_function to None will return it to its default state (passing the slot activations to
         all gate functions).
         """
-        self._get_nodenet(nodenet_uid).nodetypes[node_type].nodefunction_definition = nodefunction
+        self.nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition = nodefunction
         return True
 
     def set_node_parameters(self, nodenet_uid, node_uid, parameters):
         """Sets a dict of arbitrary values to make the node stateful."""
-        self._get_nodenet(nodenet_uid).nodes[node_uid].parameters = parameters
+        self.nodenets[nodenet_uid].nodes[node_uid].parameters = parameters
         return True
 
     def add_node_type(self, nodenet_uid, node_type, slots = [], gates = [], node_function = None, parameters = []):
@@ -573,7 +567,7 @@ class MicroPsiRuntime(object):
             gates (optional): the list of gate types for this node type
             parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
         """
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, parameters, nodefunction_definition=node_function)
         return True
 
@@ -583,11 +577,11 @@ class MicroPsiRuntime(object):
 
     def get_slot_types(self, nodenet_uid, node_type):
         """Returns the list of slot types for the given node type."""
-        return self._get_nodenet(nodenet_uid).nodetypes[node_type].slottypes
+        return self.nodenets[nodenet_uid].nodetypes[node_type].slottypes
 
     def get_gate_types(self, nodenet_uid, node_type):
         """Returns the list of gate types for the given node type."""
-        return self._get_nodenet(nodenet_uid).nodetypes[node_type].gatetypes
+        return self.nodenets[nodenet_uid].nodetypes[node_type].gatetypes
 
     def get_gate_function(self, nodenet_uid, nodespace, node_type, gate_type):
         """Returns a string with the gate function of the given node and gate within the current nodespace.
@@ -618,7 +612,7 @@ class MicroPsiRuntime(object):
 
     def bind_datasource_to_sensor(self, nodenet_uid, sensor_uid, datasource):
         """Associates the datasource type to the sensor node with the given uid."""
-        node = self._get_nodenet(nodenet_uid).nodes[sensor_uid]
+        node = self.nodenets[nodenet_uid].nodes[sensor_uid]
         if node.type == "Sensor":
             node.parameters.update({'datasource':datasource})
             return True
@@ -626,7 +620,7 @@ class MicroPsiRuntime(object):
 
     def bind_datatarget_to_actor(self, nodenet_uid, actor_uid, datatarget):
         """Associates the datatarget type to the actor node with the given uid."""
-        node = self._get_nodenet(nodenet_uid).nodes[actor_uid]
+        node = self.nodenets[nodenet_uid].nodes[actor_uid]
         if node.type == "Actor":
             node.parameters.update({'datatarget':datatarget})
             return True
@@ -648,7 +642,7 @@ class MicroPsiRuntime(object):
             link_uid if successful,
             None if failure
         """
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         link = Link(
             nodenet.nodes[source_node_uid],
             gate_type,
@@ -673,7 +667,7 @@ class MicroPsiRuntime(object):
 
     def set_link_weight(self, nodenet_uid, link_uid, weight, certainty = 1):
         """Set weight of the given link."""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         nodenet.state['links'][link_uid]['weight'] = weight
         nodenet.state['links'][link_uid]['certainty'] = certainty
         nodenet.links[link_uid].weight = weight
@@ -695,11 +689,11 @@ class MicroPsiRuntime(object):
                 certainty: probabilistic weight of the link (float value),
             }
         """
-        return self._get_nodenet(nodenet_uid).links[link_uid]
+        return self.nodenets[nodenet_uid].links[link_uid]
 
     def delete_link(self, nodenet_uid, link_uid):
         """Delete the given link."""
-        nodenet = self._get_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
         nodenet.links[link_uid].remove()
         del nodenet.links[link_uid]
         del nodenet.state['links'][link_uid]
@@ -726,6 +720,7 @@ def crawl_definition_files(path, type = "definition"):
             except IOError:
                 warnings.warn("Could not open %s data file '%s'" %(type, definition_file_name))
     return result
+
 
 def parse_definition(json, filename=None):
     if "uid" in json:

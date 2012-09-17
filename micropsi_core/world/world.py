@@ -1,4 +1,5 @@
 """
+The World superclass.
 A simple world simulator for MicroPsi nodenet agents
 """
 
@@ -9,7 +10,6 @@ import worldadapter
 import json
 import os
 import warnings
-from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.tools import generate_uid
 
 WORLD_VERSION = 1.0
@@ -45,32 +45,21 @@ class World(object):
     def step(self):
         return self.data.get("step")
 
-    def __init__(self, runtime, filename, name = "", world_type = "Default", owner = "", uid = None, version=WORLD_VERSION):
+    supported_worldadapters = ['Default', 'Breitenberg']
+
+    def __init__(self, runtime, filename, name = "", owner = "", uid = None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
             filename: the path and filename of the world data
-            world_type (optional): the type of the environment
             name (optional): the name of the environment
             owner (optional): the user that created this environment
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
 
-        self.worldadapters = {
-            "Default": worldadapter.WorldAdapter(self, "Default", datasources={
-                    "red": 1,
-                    "green": 0.7,
-                    "blue": 0.2
-                }, datatargets={
-                    "foo": 0.5,
-                    "bar": 0
-                })
-        }
-
         # persistent data
         self.data = {
             "version": WORLD_VERSION,  # used to check compatibility of the world data
-            "worldadapters": self.worldadapters,
             "objects": {},
             "step": 0
         }
@@ -81,7 +70,6 @@ class World(object):
         self.name = name or os.path.basename(filename)
         self.filename = filename
         self.agents = {}
-        self.world_type = world_type
 
         self.load()
 
@@ -117,7 +105,7 @@ class World(object):
 
     def get_available_worldadapters(self):
         """ return the list of instantiated worldadapters """
-        return [self.worldadapters[type].worldadapter for type in self.worldadapters]
+        return self.worldadapters  # .keys()??
 
 
     def initialize_world(self):
@@ -142,7 +130,7 @@ class World(object):
         world definition itself.
         """
         if nodenet_uid in self.agents:
-            if self.agents[nodenet_uid].worldadapter == worldadapter:
+            if self.agents[nodenet_uid].__class__.__name__ == worldadapter:
                 return True, nodenet_uid
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
@@ -155,43 +143,42 @@ class World(object):
         """
         del self.agents[nodenet_uid]
 
-    def spawn_agent(self, worldadapter, nodenet_uid, options = {}):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, options = {}):
         """Creates an agent object (nodenet incarnation),
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
-        filename = self.runtime.nodenet_data[nodenet_uid].filename
-        self.agents[nodenet_uid] = Nodenet(self.runtime, filename, worldadapter=worldadapter, world=self, owner=self.owner, **options)
-        return True, nodenet_uid
+        try:
+            if worldadapter_name == 'Default':
+                self.agents[nodenet_uid] = worldadapter.Worldadapter()
+            else:
+                self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, nodenet_uid)
+            return True, nodenet_uid
+        except AttributeError:
+            if worldadapter_name in self.supported_worldadapters:
+                return False, "Worldadapter \"%s\" not found" % worldadapter_name
+            return False, "Incompatible Worldadapter for this World."
 
     def get_available_datasources(self, nodenet_uid):
-        """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered.
-            TODO: Use worldadapter as param rather than nodenet_uid?
-        """
+        """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.agents:
-            return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_available_datasources()
+            return self.agents[nodenet_uid].get_available_datasources()
         else: return None
 
     def get_available_datatargets(self, nodenet_uid):
-        """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered.
-            TODO: Use worldadapter as param rather than nodenet_uid?
-        """
+        """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.worldadapters:
-            return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_available_datatargets()
+            return self.agents[nodenet_uid].get_available_datatargets()
         else: return None
 
     def get_datasource(self, nodenet_uid, key):
-        """allows the nodenet to read a value from a datasource
-            TODO: Use worldadapter as param rather than nodenet_uid?
-        """
+        """allows the nodenet to read a value from a datasource"""
         if nodenet_uid in self.agents:
-            return self.worldadapters[self.agents[nodenet_uid].worldadapter].get_datasource(key)
+            return self.agents[nodenet_uid].get_datasource(key)
         else: return None
 
     def set_datatarget(self, nodenet_uid, key, value):
-        """allows the nodenet to write a value to a datatarget
-            TODO: Use worldadapter as param rather than nodenet_uid?
-        """
+        """allows the nodenet to write a value to a datatarget"""
         if nodenet_uid in self.agents:
-            return self.worldadapters[self.agents[nodenet_uid].worldadapter].set_datatarget(key, value)
+            return self.agents[nodenet_uid].set_datatarget(key, value)

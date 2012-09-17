@@ -407,7 +407,7 @@ def edit_nodenet():
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
-        result, nodenet_uid = micropsi.new_nodenet(request.params['nodenet_name'], request.params['nodenet_worldadapter'], owner=user_id, world_uid=request.params['nodenet_world'])
+        result, nodenet_uid = micropsi.new_nodenet(request.params['nn_name'], request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:

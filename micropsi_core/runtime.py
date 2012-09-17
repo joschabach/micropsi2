@@ -9,8 +9,8 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from micropsi_core.world.world import World
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Gate, Slot, Nodespace, Nodetype
+from micropsi_core.world import world
 import os
 import tools
 import json
@@ -51,7 +51,13 @@ class MicroPsiRuntime(object):
             self.world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
             self.save_world(uid)
         for uid in self.world_data:
-            self.worlds[uid] = World(self, **self.world_data[uid])
+            if "world_type" in self.world_data[uid]:
+                try:
+                    self.worlds[uid] = getattr(world, self.world_data[uid].world_type)(self, **self.world_data[uid])
+                except AttributeError, err:
+                    warnings.warn("Unknown world_type: %s (%s)" % (self.world_data[uid].world_type,err.message))
+            else:
+                self.worlds[uid] = world.World(self, **self.world_data[uid])
 
     def _get_world_uid_for_nodenet_uid(self, nodenet_uid):
         """ Temporary method to get the world uid to a given nodenet uid.
@@ -124,7 +130,7 @@ class MicroPsiRuntime(object):
         """
         return self.nodenets[nodenet_uid].state
 
-    def new_nodenet(self, nodenet_name, worldadapter, owner = "", world_uid = None):
+    def new_nodenet(self, nodenet_name, worldadapter, template=None,  owner="", world_uid=None):
         """Creates a new node net manager and registers it.
 
         Arguments:
@@ -136,20 +142,26 @@ class MicroPsiRuntime(object):
         Returns
             nodenet_uid if successful,
             None if failure
-
-        TODO: I'd suggest, that this should rather return the nodenet UID?
         """
-        data = dict(
+        if template is not None and template in self.nodenet_data:
+            if template in self.nodenets:
+                data = self.nodenets[template].state.copy()
+            else:
+                data = self.nodenet_data[template].copy()
+        else:
+            data = dict(
+                nodes=dict(),
+                links=dict(),
+                step=0,
+                version=1
+            )
+        data.update(dict(
             uid=tools.generate_uid(),
             name=nodenet_name,
             worldadapter=worldadapter,
             owner=owner,
-            world=world_uid,
-            nodes=dict(),
-            links=dict(),
-            step=0,
-            version=1
-        )
+            world=world_uid
+        ))
         data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'])
         self.nodenet_data[data['uid']] = Bunch(**data)
         with open(data['filename'], 'w+') as fp:

@@ -83,6 +83,7 @@ class World(object):
         if string:
             try:
                 self.data = json.loads(string)
+                self.data.world_type = self.__class__.__name__
             except ValueError:
                 warnings.warn("Could not read world data from string")
                 return False

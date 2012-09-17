@@ -89,13 +89,15 @@ class MicroPsiRuntime(object):
 
         """
         if nodenet_uid in self.nodenet_data:
+            world = worldadapter = None
             if nodenet_uid not in self.nodenets:
                 data = self.nodenet_data[nodenet_uid]
-                world = self.worlds[data.world] or None
-                worldadapter = data.worldadapter
-                self.nodenets[nodenet_uid] = Nodenet(self, data.filename, name=data.name, worldadapter=data.worldadapter, world=world, owner=data.owner, uid=data.uid)
+                if data.get('world'):
+                    world = self.worlds[data.world] or None
+                    worldadapter = data.get('worldadapter')
+                self.nodenets[nodenet_uid] = Nodenet(self, data.filename, name=data.name, worldadapter=worldadapter, world=world, owner=data.owner, uid=data.uid)
             else:
-                world = self.nodenets[nodenet_uid].world
+                world = self.nodenets[nodenet_uid].world or None
                 worldadapter = self.nodenets[nodenet_uid].worldadapter
             if world:
                 world.register_nodenet(worldadapter, nodenet_uid)

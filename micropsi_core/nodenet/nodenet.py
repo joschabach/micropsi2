@@ -55,11 +55,14 @@ class Nodenet(object):
 
     @property
     def world(self):
-        return self.runtime.worlds.get(self.state["world"])
+        if "world" in self.state:
+            return self.runtime.worlds.get(self.state["world"])
+        return None
 
     @world.setter
     def world(self, world):
-        self.state["world"] = world.uid
+        if world:
+            self.state["world"] = world.uid
 
     @property
     def worldadapter(self):
@@ -431,10 +434,12 @@ class Node(NetEntity):
         """
         # process the slots
         if self.type == 'Sensor':
-            if self.parameters['datasource']:
+            if self.parameters['datasource'] and self.nodenet.world:
                 self.activation = self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource'])
             else:
                 self.activation = 0
+        elif self.type == "Actor" and not self.nodenet.world:
+            return
         else:
             self.activation = sum([self.slots[slot].activation for slot in self.slots])
 

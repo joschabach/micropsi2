@@ -99,48 +99,55 @@ function refreshNodenetList(){
 }
 
 function loadWorldData(nodenet_data){
-    api("get_world_properties", {world_uid: nodenet_data.world},
-        success=function(data){
-            world_data = data;
-            world_data.uid = nodenet_data.world;
-            str = '';
-            for (var i in world_data.worldadapters){
-                str += '<option>'+world_data.worldadapters[i]+'</option>';
-            }
-            $('#nodenet_worldadapter').html(str);
-            setNodenetValues(nodenet_data);
-            showDefaultForm();
-    });
+    if(nodenet_data.world){
+        api("get_world_properties", {world_uid: nodenet_data.world},
+            success=function(data){
+                world_data = data;
+                world_data.uid = nodenet_data.world;
+                str = '';
+                for (var i in world_data.worldadapters){
+                    str += '<option>'+world_data.worldadapters[i]+'</option>';
+                }
+                $('#nodenet_worldadapter').html(str);
+                setNodenetValues(nodenet_data);
+                showDefaultForm();
+        });
+    } else {
+        $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>');
+        setNodenetValues(nodenet_data);
+        showDefaultForm();
+    }
 }
 
 function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
-    var worldadapter_select = $('#nodenet_worldadapter');
-    worldadapter_select.val(data.worldadapter);
-    if(worldadapter_select.val() != data.worldadapter){
-        dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
-    }
     var str = '';
     for (var key in data.nodetypes){
         str += '<tr><td>'+key+'</td></tr>';
     }
     $('#nodenet_nodetypes').html(str);
-
-    var i;
-    str = '';
-    if (world_data.datatargets[data.worldadapter]) {
-        for (i in world_data.datatargets[data.worldadapter]){
-            str += '<tr><td>'+world_data.datatargets[data.worldadapter][i]+'</td></tr>';
+    if (!jQuery.isEmptyObject(world_data)) {
+        var worldadapter_select = $('#nodenet_worldadapter');
+        worldadapter_select.val(data.worldadapter);
+        if(worldadapter_select.val() != data.worldadapter){
+            dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
         }
-    }
-    $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
-    str = '';
-    if (world_data.datasources[data.worldadapter]){
-        for (i in world_data.datasources[data.worldadapter]){
-            str += '<tr><td>'+world_data.datasources[data.worldadapter][i]+'</td></tr>';
+        var i;
+        str = '';
+        if (world_data.datatargets[data.worldadapter]) {
+            for (i in world_data.datatargets[data.worldadapter]){
+                str += '<tr><td>'+world_data.datatargets[data.worldadapter][i]+'</td></tr>';
+            }
         }
+        $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
+        str = '';
+        if (world_data.datasources[data.worldadapter]){
+            for (i in world_data.datasources[data.worldadapter]){
+                str += '<tr><td>'+world_data.datasources[data.worldadapter][i]+'</td></tr>';
+            }
+        }
+        $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
     }
-    $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
 }
 
 function setCurrentNodenet(uid){

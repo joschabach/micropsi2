@@ -16,7 +16,8 @@ from micropsi_server import micropsi_app, user_api
 import argparse
 import os
 
-def main(host=DEFAULT_HOST, admin_port=DEFAULT_ADMIN_PORT, api_port = DEFAULT_API_PORT):
+
+def main(host=DEFAULT_HOST, admin_port=DEFAULT_ADMIN_PORT, api_port=DEFAULT_API_PORT):
     pid = os.fork()
     if pid == 0:
         micropsi_app.main(host, admin_port)
@@ -29,5 +30,4 @@ if __name__ == "__main__":
     parser.add_argument('-admin', '--adminport', type=int, default=DEFAULT_ADMIN_PORT)
     parser.add_argument('-api', '--apiport', type=int, default=DEFAULT_API_PORT)
     args = parser.parse_args()
-    main(host = args.host, admin_port = args.adminport, api_port = args.apiport)
-
+    main(host=args.host, admin_port=args.adminport, api_port=args.apiport)

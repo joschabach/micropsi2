@@ -220,8 +220,8 @@ $(function() {
 
 
 updateWorldAdapterSelector = function() {
-    var option = $("#nodenet_world option:selected");
+    var option = $("#nn_world option:selected");
     if (option) {
-        $("#nodenet_worldadapter").load("/create_worldadapter_selector/"+option.val());
+        $("#nn_worldadapter").load("/create_worldadapter_selector/"+option.val());
     }
 };

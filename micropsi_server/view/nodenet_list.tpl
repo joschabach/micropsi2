@@ -1,8 +1,9 @@
-% if len(my_nodenets) + len(other_nodenets) > 1:
+% if len(my_nodenets) + len(other_nodenets) > 0:
 <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
 % else:
 <a class="btn" href="#">
 % end
+
 % if current_nodenet in my_nodenets:
    {{my_nodenets[current_nodenet].name}}
 % elif current_nodenet in other_nodenets:
@@ -10,7 +11,8 @@
 % else:
    (no nodenet selected)
 % end
-% if len(my_nodenets) + len(other_nodenets) == 1:
+
+% if len(my_nodenets) + len(other_nodenets) == 0:
 </a>
 % else:
     <span class="caret"></span>

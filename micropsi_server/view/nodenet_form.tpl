@@ -22,9 +22,9 @@
                 %else:
                 <div class="control-group error">
                 %end
-                    <label class="control-label" for="nodenet_name">Name</label>
+                    <label class="control-label" for="nn_name">Name</label>
                     <div class="controls">
-                        <input type="text" class="input-xlarge focused" maxlength="256" id="nodenet_name" name="nodenet_name"
+                        <input type="text" class="input-xlarge focused" maxlength="256" id="nn_name" name="nn_name"
                         %if defined('nodenet_uid'):
                         value="{{nodenets[nodenet_uid].name}}"
                         %end
@@ -36,9 +36,9 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nodenet_template">Template</label>
+                    <label class="control-label" for="nn_template">Template</label>
                     <div class="controls">
-                        <select class="input-xlarge" id="nodenet_template" name="nodenet_template">
+                        <select class="input-xlarge" id="nn_template" name="nn_template">
                             <option value="None">None</option>
                             % if defined("nodenets"):
                                 % for uid in nodenets:
@@ -65,9 +65,9 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nodenet_world">World</label>
+                    <label class="control-label" for="nn_world">World</label>
                     <div class="controls">
-                        <select class="input-xlarge" id="nodenet_world" name="nodenet_world" onchange="updateWorldAdapterSelector();">
+                        <select class="input-xlarge" id="nn_world" name="nn_world" onchange="updateWorldAdapterSelector();">
                             <option value="None">None</option>
                             % for uid in worlds:
                                 % if worlds[uid].owner == user_id:
@@ -92,9 +92,9 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label" for="nodenet_worldadapter">World adapter</label>
+                    <label class="control-label" for="nn_worldadapter">World adapter</label>
                     <div class="controls">
-                        <select class="input-xlarge" id="nodenet_worldadapter" name="nodenet_worldadapter">
+                        <select class="input-xlarge" id="nn_worldadapter" name="nn_worldadapter">
                             % if not defined("nodenet") or not defined ("nodenet.world.uid") or not nodenet.world.uid in worlds:
                             <option value="None">None</option>
                             % else:
@@ -108,7 +108,7 @@
                 </div>
 
                 %if defined("nodenet"):
-                    <input type="hidden" name="nodenet_uid" value="{{nodenet.uid}}" />
+                    <input type="hidden" name="nn_uid" value="{{nodenet.uid}}" />
                 %end
 
             </fieldset>

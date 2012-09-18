@@ -119,6 +119,7 @@ class Nodenet(object):
         self.load()
 
         self.active_nodes = {}
+        self.priviliged_active_nodes = {}
 
     def load(self, string=None):
         """Load the node net from a file"""
@@ -193,24 +194,42 @@ class Nodenet(object):
         if self.state['step'] == 0 and not self.active_nodes:
             self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
         if self.active_nodes:
-            self.calculate_node_functions()
-            self.propagate_link_activation()
+            self.calculate_node_functions(self.active_nodes)
+            self.active_nodes = self.propagate_link_activation(self.active_nodes)
             self.state["step"] += 1
 
-    def propagate_link_activation(self):
-        """propagate activation through all links, taking it from the gates and summing it up in the slots"""
+    def step_priviliged(self):
+        """ performs a simulation step within the priviliged nodes"""
+        if self.priviliged_active_nodes:
+            self.calculate_node_functions(self.priviliged_active_nodes)
+            self.priviliged_active_nodes = self.propagate_link_activation(self.priviliged_active_nodes, limit_gatetypes=["cat"])
+
+    def propagate_link_activation(self, nodes, limit_gatetypes=None):
+        """ propagate activation from gates to slots via their links. returns the nodes that received activation.
+            Arguments:
+                nodes: the dict of nodes to consider
+                limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating from the given slottypes.
+            Returns:
+                new_active_nodes: the dict of nodes, that received activation through the propagation
+        """
         new_active_nodes = {}
-        for uid, node in self.active_nodes.items():
-            for type, gate in node.gates.items():
+        for uid, node in nodes.items():
+            if limit_gatetypes is not None:
+                gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
+            else:
+                gates = node.gates.items()
+            for type, gate in gates:
                 for uid, link in gate.outgoing.items():
                     link.target_slot.activation += gate.activation * link.weight
                     new_active_nodes[link.target_node.uid] = link.target_node
-        self.active_nodes = new_active_nodes
-        print self.active_nodes
+        return new_active_nodes
 
-    def calculate_node_functions(self):
-        """for all active nodes, call their node function, which in turn should update the gate functions"""
-        for uid, node in self.active_nodes.items():
+    def calculate_node_functions(self, nodes):
+        """for all given nodes, call their node function, which in turn should update the gate functions
+           Arguments:
+               nodes: the dict of nodes to consider
+        """
+        for uid, node in nodes.items():
             node.node_function()
 
 

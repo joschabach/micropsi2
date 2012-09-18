@@ -103,10 +103,9 @@ function loadWorldData(nodenet_data){
         api("get_world_properties", {world_uid: nodenet_data.world},
             success=function(data){
                 world_data = data;
-                world_data.uid = nodenet_data.world;
                 str = '';
-                for (var i in world_data.worldadapters){
-                    str += '<option>'+world_data.worldadapters[i]+'</option>';
+                for (var name in world_data.worldadapters){
+                    str += '<option>'+name+'</option>';
                 }
                 $('#nodenet_worldadapter').html(str);
                 setNodenetValues(nodenet_data);
@@ -134,16 +133,16 @@ function setNodenetValues(data){
         }
         var i;
         str = '';
-        if (world_data.datatargets[data.worldadapter]) {
-            for (i in world_data.datatargets[data.worldadapter]){
-                str += '<tr><td>'+world_data.datatargets[data.worldadapter][i]+'</td></tr>';
+        if (world_data.worldadapters[data.worldadapter].datatargets) {
+            for (i in world_data.worldadapters[data.worldadapter].datatargets){
+                str += '<tr><td>'+world_data.worldadapters[data.worldadapter].datatargets[i]+'</td></tr>';
             }
         }
         $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
         str = '';
-        if (world_data.datasources[data.worldadapter]){
-            for (i in world_data.datasources[data.worldadapter]){
-                str += '<tr><td>'+world_data.datasources[data.worldadapter][i]+'</td></tr>';
+        if (world_data.worldadapters[data.worldadapter].datasources){
+            for (i in world_data.worldadapters[data.worldadapter].datasources){
+                str += '<tr><td>'+world_data.worldadapters[data.worldadapter].datasources[i]+'</td></tr>';
             }
         }
         $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
@@ -1513,7 +1512,7 @@ function handleContextMenu(event) {
                         var source_select = $('#select_datasource_modal select');
                         source_select.html('');
                         $("#select_datasource_modal").modal("show");
-                        var sources = world_data.datasources[currentWorldadapter];
+                        var sources = world_data.worldadapters[currentWorldadapter].datasources;
                         for(var i in sources){
                             source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
                         }
@@ -1550,7 +1549,7 @@ function handleContextMenu(event) {
                     var source_select = $('#select_datasource_modal select');
                     source_select.html('');
                     $("#select_datasource_modal").modal("show");
-                    var sources = world_data.datasources[currentWorldadapter];
+                    var sources = world_data.worldadapters[currentWorldadapter].datasources;
                     for(var i in sources){
                         source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
                     }
@@ -1560,7 +1559,7 @@ function handleContextMenu(event) {
                     var target_select = $('#select_datatarget_modal select');
                     $("#select_datatarget_modal").modal("show");
                     target_select.html('');
-                    var datatargets = world_data.datatargets[currentWorldadapter];
+                    var datatargets = world_data.worldadapters[currentWorldadapter].datatargets;
                     for(var j in datatargets){
                         target_select.append($('<option>', {value:datatargets[j]}).text(datatargets[j]));
                     }
@@ -2069,14 +2068,14 @@ function getNodeParameterHTML(parameters){
             var i;
             switch(name){
                 case "datatarget":
-                    for(i in world_data.datatargets[currentWorldadapter]){
-                        input += "<option>"+world_data.datatargets[currentWorldadapter][i]+"</option>";
+                    for(i in world_data.worldadapters[currentWorldadapter].datatargets){
+                        input += "<option>"+world_data.worldadapters[currentWorldadapter].datatargets[i]+"</option>";
                     }
                     input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
                     break;
                 case "datasource":
-                    for(i in world_data.datasources[currentWorldadapter]){
-                        input += "<option>"+world_data.datasources[currentWorldadapter][i]+"</option>";
+                    for(i in world_data.worldadapters[currentWorldadapter].datasources){
+                        input += "<option>"+world_data.worldadapters[currentWorldadapter].datasources[i]+"</option>";
                     }
                     input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     break;

@@ -206,7 +206,6 @@ class Nodenet(object):
                     link.target_slot.activation += gate.activation * link.weight
                     new_active_nodes[link.target_node.uid] = link.target_node
         self.active_nodes = new_active_nodes
-        print self.active_nodes
 
     def calculate_node_functions(self):
         """for all active nodes, call their node function, which in turn should update the gate functions"""

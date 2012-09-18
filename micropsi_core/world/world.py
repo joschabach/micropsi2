@@ -14,6 +14,7 @@ from micropsi_core.tools import generate_uid
 
 WORLD_VERSION = 1.0
 
+
 class World(object):
     """The environment of MicroPsi agents. The world connects to their nodenets via world adapters."""
 
@@ -45,9 +46,9 @@ class World(object):
     def step(self):
         return self.data.get("step")
 
-    supported_worldadapters = ['Default', 'Breitenberg']
+    supported_worldadapters = ['Default', 'Braitenberg']
 
-    def __init__(self, runtime, filename, name = "", owner = "", uid = None, version=WORLD_VERSION):
+    def __init__(self, runtime, filename, name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
@@ -73,7 +74,7 @@ class World(object):
 
         self.load()
 
-    def load(self, string = None):
+    def load(self, string=None):
         """Load the world state from a file
 
         Arguments:
@@ -95,7 +96,7 @@ class World(object):
                 warnings.warn("Could not read world data")
                 return False
             except IOError:
-                warnings.warn("Could not open world file: "+ self.filename)
+                warnings.warn("Could not open world file: " + self.filename)
 
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
@@ -107,7 +108,6 @@ class World(object):
     def get_available_worldadapters(self):
         """ return the list of instantiated worldadapters """
         return self.worldadapters  # .keys()??
-
 
     def initialize_world(self):
         """Called after reading new world data.
@@ -144,7 +144,7 @@ class World(object):
         """
         del self.agents[nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, options = {}):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, options={}):
         """Creates an agent object (nodenet incarnation),
 
         Returns True, nodenet_uid if successful,
@@ -165,19 +165,19 @@ class World(object):
         """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].get_available_datasources()
-        else: return None
+        return None
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.worldadapters:
             return self.agents[nodenet_uid].get_available_datatargets()
-        else: return None
+        return None
 
     def get_datasource(self, nodenet_uid, key):
         """allows the nodenet to read a value from a datasource"""
         if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].get_datasource(key)
-        else: return None
+        return None
 
     def set_datatarget(self, nodenet_uid, key, value):
         """allows the nodenet to write a value to a datatarget"""

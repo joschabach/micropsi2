@@ -19,6 +19,7 @@ and treated as parts of the world.
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
+
 class WorldAdapter(object):
     """Transmits data between agent and environment.
 
@@ -26,14 +27,14 @@ class WorldAdapter(object):
     takes care of translating between the world and these values at each world cycle.
     """
 
-    def __init__(self, world, datasources={}, datatargets={}):
+    datasources = {}
+    datatargets = {}
+
+    def __init__(self, world, nodenet_uid):
         self.world = world
-        # data sources and data targets are dicts that match keys with activation values (floating point values)
-        self.datasources = datasources
-        self.datatargets = datatargets
+        self.nodenet_uid = nodenet_uid
 
     # agent facing methods:
-
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
         return self.datasources.keys()
@@ -44,19 +45,26 @@ class WorldAdapter(object):
 
     def get_datasource(self, key):
         """allows the agent to read a value from a datasource"""
-        if key in self.datasources: return self.datasources[key]
-        else: return None
+        if key in self.datasources:
+            return self.datasources[key]
+        return None
 
     def set_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
-        if key in self.datatargets: self.datatargets[key] = value
+        if key in self.datatargets:
+            self.datatargets[key] = value
 
     # world facing methods:
-
     def update(self):
         """called by the world to update datasources"""
         pass
 
 
+class Default(WorldAdapter):
+    datasources = {'default': 1}
+    datatargets = {'default': 0}
+
+
 class Braitenberg(WorldAdapter):
-    pass
+    datasources = {'brightness': 1.7}
+    datatargets = {}

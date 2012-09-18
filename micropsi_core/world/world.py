@@ -151,10 +151,7 @@ class World(object):
         Returns False, error_message if not successful
         """
         try:
-            if worldadapter_name == 'Default':
-                self.agents[nodenet_uid] = worldadapter.Worldadapter()
-            else:
-                self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, nodenet_uid)
+            self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, nodenet_uid)
             return True, nodenet_uid
         except AttributeError:
             if worldadapter_name in self.supported_worldadapters:

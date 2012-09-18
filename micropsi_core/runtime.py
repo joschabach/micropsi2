@@ -312,15 +312,14 @@ class MicroPsiRuntime(object):
 
         Returns:
             dictionary containing the information
-
-        TODO: simplify, decide about datatargets: worldadaper, nodenet or world?
         """
-        world = self.worlds[world_uid]
-        data = {
-            'worldadapters': world.supported_worldadapters,
-            'datatargets': {},
-            'datasources': {}
-        }
+        from micropsi_core.world import worldadapter
+        data = {'uid': world_uid, 'worldadapters': {}}
+        for name in self.worlds[world_uid].supported_worldadapters:
+            data['worldadapters'][name] = {
+                'datasources': getattr(worldadapter, name).datasources.keys(),
+                'datatargets': getattr(worldadapter, name).datatargets.keys()
+            }
         return data
 
     def get_worldadapters(self, world_uid):

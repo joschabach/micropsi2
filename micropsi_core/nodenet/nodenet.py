@@ -3,7 +3,9 @@ Nodenet definition
 """
 
 import micropsi_core.tools
-import json, os, warnings
+import json
+import os
+import warnings
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -76,7 +78,7 @@ class Nodenet(object):
     def current_step(self):
         return self.state.get("step")
 
-    def __init__(self, runtime, filename, name = "", worldadapter = "Default", world = None, owner = "", uid = None):
+    def __init__(self, runtime, filename, name="", worldadapter="Default", world=None, owner="", uid=None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -108,7 +110,7 @@ class Nodenet(object):
         self.filename = filename
         self.worldadapter = worldadapter
 
-        self.nodespaces = {"Root": Nodespace(self, None, (0,0), name="Root", entitytype="nodespaces", uid = "Root")}
+        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
 
         self.nodes = {}
         self.links = {}
@@ -118,8 +120,7 @@ class Nodenet(object):
 
         self.active_nodes = {}
 
-
-    def load(self, string = None):
+    def load(self, string=None):
         """Load the node net from a file"""
         # try to access file
         if string:
@@ -151,14 +152,14 @@ class Nodenet(object):
         Parses the nodenet state and set up the non-persistent data structures necessary for efficient
         computation of the node net
         """
-        for name, data in self.state.get('nodespaces',{}).items():
+        for name, data in self.state.get('nodespaces', {}).items():
             self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name)
         for type, data in self.state.get('nodetypes', STANDARD_NODETYPES).items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters = data.get('parameters'))
+            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters=data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -168,11 +169,11 @@ class Nodenet(object):
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
-        nodespace = self.state["nodespaces"].get(nodespace_uid)
-        nodes = {}
-        links = {}
-#        for node in nodespace.
-
+        # nodespace = self.state["nodespaces"].get(nodespace_uid)
+        # nodes = {}
+        # links = {}
+        # for node in nodespace.
+        pass
 
     # add functions for exporting and importing node nets
     def export_data(self):
@@ -190,11 +191,11 @@ class Nodenet(object):
     def step(self):
         """perform a simulation step"""
         if self.state['step'] == 0 and not self.active_nodes:
-            self.active_nodes = {uid: node for uid, node in self.nodes.items() if node.type == "Sensor"}
+            self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
         if self.active_nodes:
             self.calculate_node_functions()
             self.propagate_link_activation()
-            self.state["step"] +=1
+            self.state["step"] += 1
 
     def propagate_link_activation(self):
         """propagate activation through all links, taking it from the gates and summing it up in the slots"""
@@ -238,7 +239,7 @@ class NetEntity(object):
 
     @property
     def position(self):
-        return self.data.get("position", (0,0))
+        return self.data.get("position", (0, 0))
 
     @position.setter
     def position(self, pos):
@@ -263,7 +264,7 @@ class NetEntity(object):
                 old_parent.netentities[self.entitytype].remove(self.uid)
         self.data['parent_nodespace'] = uid
 
-    def __init__(self, nodenet, parent_nodespace, position, name = "", entitytype = "abstract_entities", uid = None):
+    def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities", uid=None):
         """create a net entity at a certain position and in a given node space"""
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
@@ -292,8 +293,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-
-    def __init__(self, nodenet, parent_nodespace, position, name = "Comment", entitytype = "comments", uid = None):
+    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
@@ -321,7 +321,8 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         by the node space itself, to obtain information about its contents."""
         pass
 
-class Link(object): # todo: adapt to new form, like net entitities
+
+class Link(object):  # todo: adapt to new form, like net entitities
     """A link between two nodes, starting from a gate and ending in a slot.
 
     Links propagate activation between nodes and thereby facilitate the function of the agent.
@@ -350,8 +351,10 @@ class Link(object): # todo: adapt to new form, like net entitities
             You may call this function to change the connections of an existing link. If the link is already
             linked, it will be unlinked first.
         """
-        if self.source_node: self.source_gate.outgoing.remove(self.uid)
-        if self.target_node: self.target_slot.incoming.remove(self.uid)
+        if self.source_node:
+            self.source_gate.outgoing.remove(self.uid)
+        if self.target_node:
+            self.target_slot.incoming.remove(self.uid)
         self.source_node = source_node
         self.target_node = target_node
         self.source_gate = source_node.get_gate(source_gate_name)
@@ -366,6 +369,7 @@ class Link(object): # todo: adapt to new form, like net entitities
         """
         del self.source_gate.outgoing[self.uid]
         del self.target_slot.incoming[self.uid]
+
 
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
@@ -403,8 +407,8 @@ class Node(NetEntity):
             self.nodetype.parameters = dictionary.keys()
         self.data["parameters"] = dictionary
 
-    def __init__(self, nodenet, parent_nodespace, position, name = "", type = "Concept", uid = None, parameters = None):
-        NetEntity.__init__(self, nodenet, parent_nodespace, position, name = name, entitytype = "nodes", uid = uid)
+    def __init__(self, nodenet, parent_nodespace, position, name="", type="Concept", uid=None, parameters=None):
+        NetEntity.__init__(self, nodenet, parent_nodespace, position, name=name, entitytype="nodes", uid=uid)
 
         self.gates = {}
         self.slots = {}
@@ -415,7 +419,7 @@ class Node(NetEntity):
 
         if type in self.nodenet.nodetypes:
             self.nodetype = self.nodenet.nodetypes[type]
-            self.parameters = {key:None for key in self.nodetype.parameters} if parameters is None else parameters
+            self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
             for gate in self.nodetype.gatetypes:
                 self.gates[gate] = Gate(gate, self)
             for slot in self.nodetype.slottypes:
@@ -446,7 +450,7 @@ class Node(NetEntity):
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
             try:
-                self.nodetype.nodefunction(nodenet = self.nodenet, node = self, **self.parameters)
+                self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
             except SyntaxError, err:
                 warnings.warn("Syntax error during node execution: %s" % err.message)
                 self.data["activation"] = "Syntax error"
@@ -460,7 +464,8 @@ class Node(NetEntity):
     def get_slot(self, slotname):
         return self.slots.get(slotname)
 
-class Gate(object): # todo: take care of gate functions at the level of nodespaces, handle gate params
+
+class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
 
     Attributes:
@@ -471,7 +476,7 @@ class Gate(object): # todo: take care of gate functions at the level of nodespac
         gate_function: called by the node function, updates the activation
         outgoing: the set of links originating at the gate
     """
-    def __init__(self, type, node, gate_function = None, parameters = None):
+    def __init__(self, type, node, gate_function=None, parameters=None):
         """create a gate.
 
         Parameters:
@@ -512,15 +517,16 @@ class Gate(object): # todo: take care of gate functions at the level of nodespac
                 return  # if the gate is closed, we don't need to execute the gate function
 
         # simple linear threshold function; you might want to use a sigmoid for neural learning
-        activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] *gate_factor
+        activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
 
         if self.parameters["decay"]:  # let activation decay gradually
             if activation < 0:
-                activation = min(activation, self.activation*(1-self.parameters["decay"]))
+                activation = min(activation, self.activation * (1 - self.parameters["decay"]))
             else:
-                activation = max(activation, self.activation*(1-self.parameters["decay"]))
+                activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
-        self.activation = min(self.parameters["maximum"],max(self.parameters["minimum"],activation))
+        self.activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+
 
 class Slot(object):
     """The entrance of activation into a node. Nodes may have many slots, in which links terminate.
@@ -547,7 +553,6 @@ class Slot(object):
         self.activation = 0
 
 
-
 STANDARD_NODETYPES = {
     "Register": {
         "name": "Register",
@@ -556,13 +561,13 @@ STANDARD_NODETYPES = {
     },
     "Sensor": {
         "name": "Sensor",
-        "parameters":["datasource"],
+        "parameters": ["datasource"],
         "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))""",
         "gatetypes": ["gen"]
     },
     "Actor": {
         "name": "Actor",
-        "parameters":["datasource", "datatarget"],
+        "parameters": ["datasource", "datatarget"],
         "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, nodenet.uid, node.activation)""",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
@@ -580,6 +585,7 @@ STANDARD_NODETYPES = {
         "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.type] = node.slots["gen"].activation"""
     }
 }
+
 
 class Nodetype(object):
     """Every node has a type, which is defined by its slot types, gate types, its node function and a list of
@@ -618,7 +624,7 @@ class Nodetype(object):
     @parameters.setter
     def parameters(self, list):
         self.data["parameters"] = list
-        self.nodefunction = self.data.get("nodefunction") # update nodefunction
+        self.nodefunction = self.data.get("nodefunction")  # update nodefunction
 
     @property
     def nodefunction_definition(self):
@@ -630,13 +636,13 @@ class Nodetype(object):
         args = ','.join(self.parameters).strip(',')
         try:
             self.nodefunction = micropsi_core.tools.create_function(string,
-                parameters = "nodenet, node, " + args)
+                parameters="nodenet, node, " + args)
         except SyntaxError, err:
-            warnings.warn("Syntax error while compiling node function.")
+            warnings.warn("Syntax error while compiling node function: %s", err.message)
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-                parameters = "nodenet, node, " + args)
+                parameters="nodenet, node, " + args)
 
-    def __init__(self, name, nodenet, slottypes = None, gatetypes = None, parameters = None, nodefunction_definition = None):
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None, nodefunction_definition=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -658,8 +664,10 @@ class Nodetype(object):
             }
         """
         self.nodenet = nodenet
-        if not "nodetypes" in nodenet.state: self.nodenet.state["nodetypes"] = {}
-        if not name in self.nodenet.state["nodetypes"]: self.nodenet.state["nodetypes"][name] = {}
+        if not "nodetypes" in nodenet.state:
+            self.nodenet.state["nodetypes"] = {}
+        if not name in self.nodenet.state["nodetypes"]:
+            self.nodenet.state["nodetypes"][name] = {}
         self.data = self.nodenet.state["nodetypes"][name]
         self.data["name"] = name
 
@@ -672,6 +680,3 @@ class Nodetype(object):
             self.nodefunction_definition = nodefunction_definition
         else:
             self.nodefunction = None
-
-
-

@@ -386,7 +386,9 @@ class MicroPsiRuntime(object):
             world_uid: the uid of the simulation world
             return_world_view: if True, return the current world state for UI purposes
         """
-        pass
+        self.worlds[world_uid].step()
+        if return_world_view:
+            return self.worlds[world_uid].data
 
     def revert_world(self, world_uid):
         """Reverts the world to the last saved state."""

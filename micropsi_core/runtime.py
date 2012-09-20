@@ -255,7 +255,7 @@ class MicroPsiRuntime(object):
         """
         return json.dumps(self.nodenets[nodenet_uid].state, sort_keys=True, indent=4)
 
-    def import_nodenet(self, nodenet_uid, string, owner=None):
+    def import_nodenet(self, string, owner=None):
         """Imports the nodenet state, instantiates the nodenet.
 
         Arguments:
@@ -263,13 +263,17 @@ class MicroPsiRuntime(object):
             string: a string that contains the nodenet state in JSON format.
         """
         nodenet_data = json.loads(string)
-        nodenet_data['owner'] = owner
+        if 'uid' not in nodenet_data:
+            nodenet_data['uid'] = tools.generate_uid()
+        if 'owner':
+            nodenet_data['owner'] = owner
         assert nodenet_data['world'] in self.worlds
-        filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid)
+        filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
+        nodenet_data['filename'] = filename
         with open(filename, 'w+') as fp:
-            fp.write(string)
+            fp.write(json.dumps(nodenet_data))
         fp.close()
-        self.nodenet_data[nodenet_uid] = parse_definition(nodenet_data, filename)
+        self.nodenet_data[nodenet_data['uid']] = parse_definition(nodenet_data, filename)
         return True
 
     def merge_nodenet(self, nodenet_uid, string):
@@ -344,7 +348,7 @@ class MicroPsiRuntime(object):
         filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
         self.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename, version=1, owner=owner)
         self.save_world(uid)
-        self.worlds[uid] = world.World(self, filename, name=world_name, world_type=world_type, owner=owner, uid=uid, version=1)
+        self.worlds[uid] = getattr(world, world_type)(self, **self.world_data[uid])
         return uid
 
     def delete_world(self, world_uid):
@@ -392,23 +396,36 @@ class MicroPsiRuntime(object):
 
     def revert_world(self, world_uid):
         """Reverts the world to the last saved state."""
-        pass
+        data = self.world_data[world_uid]
+        self.worlds[world_uid] = getattr(world, data.world_type)(self, **data)
+        return True
 
     def save_world(self, world_uid):
         """Stores the world state on the server."""
-        self.world_data[world_uid]
         with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, world_uid), 'w+') as fp:
-            fp.write(json.dumps(self.world_data[world_uid], sort_keys=True, indent=4))
+            fp.write(json.dumps(self.worlds[world_uid].data, sort_keys=True, indent=4))
         fp.close()
         return True
 
     def export_world(self, world_uid):
         """Returns a JSON string with the current state of the world."""
-        pass
+        return json.dumps(self.worlds[world_uid].data, sort_keys=True, indent=4)
 
-    def import_world(self, world_uid, worlddata):
+    def import_world(self, worlddata, owner=None):
         """Imports a JSON string with world data. May overwrite an existing world."""
-        pass
+        data = json.loads(worlddata)
+        if not 'uid' in data:
+            data['uid'] = tools.generate_uid()
+        if owner is not None:
+            data['owner'] = owner
+        filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, data['uid'])
+        data['filename'] = filename
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(data))
+        fp.close()
+        self.world_data[data['uid']] = parse_definition(data, filename)
+        self.worlds[data['uid']] = getattr(world, self.world_data[data['uid']].world_type)(self, **self.world_data[data['uid']])
+        return data['uid']
 
     # Monitor
 
@@ -739,6 +756,8 @@ def parse_definition(json, filename=None):
         if "worldadapter" in json:
             result.worldadapter = json["worldadapter"]
             result.world = json["world"]
+        if "world_type" in json:
+            result.world_type = json['world_type']
         return result
 
 

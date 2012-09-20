@@ -91,7 +91,6 @@ class World(object):
         if string:
             try:
                 self.data = json.loads(string)
-                self.data.world_type = self.__class__.__name__
             except ValueError:
                 warnings.warn("Could not read world data from string")
                 return False
@@ -104,7 +103,7 @@ class World(object):
                 return False
             except IOError:
                 warnings.warn("Could not open world file: " + self.filename)
-
+        self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
             return True

@@ -433,16 +433,13 @@ class Node(NetEntity):
         self.slots = {}
         self.data["type"] = type
         self.nodetype = None
-        if type == "Native":
-            type = self.uid
 
-        if type in self.nodenet.nodetypes:
-            self.nodetype = self.nodenet.nodetypes[type]
-            self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
-            for gate in self.nodetype.gatetypes:
-                self.gates[gate] = Gate(gate, self)
-            for slot in self.nodetype.slottypes:
-                self.slots[slot] = Slot(slot, self)
+        self.nodetype = self.nodenet.nodetypes[type]
+        self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
+        for gate in self.nodetype.gatetypes:
+            self.gates[gate] = Gate(gate, self)
+        for slot in self.nodetype.slottypes:
+            self.slots[slot] = Slot(slot, self)
 
     def node_function(self):
         """Called whenever the node is activated or active.

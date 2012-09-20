@@ -189,14 +189,35 @@ $(function() {
     });
 
     $('.navbar a.world_save').on('click', function(){
-        dialogs.notification("World state saved");
+        $.ajax({
+            url: '/rpc/save_world(world_uid="'+ currentWorld +'")',
+            success: function(){
+                dialogs.notification("World state saved");
+            },
+            error: function(){
+                dialogs.notification('Error saving world', 'error');
+            }
+        });
     });
 
     $('.navbar a.world_revert').on('click', function(){
-        dialogs.notification("World state is being reverted");
+        $.ajax({
+            url: '/rpc/save_world(world_uid="'+ currentWorld +'")',
+            success: function(){
+                dialogs.notification("World state reverted");
+                window.location.reload();
+            },
+            error: function(){
+                dialogs.notification('Error reverting world', 'error');
+                window.location.reload();
+            }
+        });
     });
 
-    $('.navbar a.world_import').on('click', remote_form);
+    $('.navbar a.world_import').on('click', function(event){
+        event.preventDefault();
+        dialogs.remote_form_dialog($(event.target).attr('href'), function(){window.location.reload();});
+    });
 
     // USER
 
@@ -216,6 +237,12 @@ $(function() {
         event.preventDefault();
         window.location.replace(event.target.href + '/' + currentNodenet);
     });
+
+    $('.world_export').on('click', function(event){
+        event.preventDefault();
+        window.location.replace(event.target.href + '/' + currentWorld);
+    });
+
 });
 
 

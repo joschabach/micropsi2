@@ -747,18 +747,18 @@ def crawl_definition_files(path, type="definition"):
 
 def parse_definition(json, filename=None):
     if "uid" in json:
-        result = Bunch(
+        result = dict(
             uid=json["uid"],
             name=json.get("name", json["uid"]),
             filename=filename or json.get("filename"),
             owner=json.get("owner")
         )
         if "worldadapter" in json:
-            result.worldadapter = json["worldadapter"]
-            result.world = json["world"]
+            result['worldadapter'] = json["worldadapter"]
+            result['world'] = json["world"]
         if "world_type" in json:
-            result.world_type = json['world_type']
-        return result
+            result['world_type'] = json['world_type']
+        return Bunch(**result)
 
 
 def main():

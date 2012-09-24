@@ -15,11 +15,16 @@ class WorldObject(object):
 
     def __init__(self, world, type, uid=None, **data):
         self.world = world
+        self.data = {}
+        if uid is None:
+            uid = generate_uid()
         if type not in self.world.data:
             self.world.data[type] = {}
-        self.data = self.world.data[type][self.uid]
-        self.data["uid"] = uid or generate_uid()
-        self.initialize_worldobject()
+        if uid not in self.world.data[type]:
+            self.world.data[type][uid] = {}
+        self.data = self.world.data[type][uid]
+        self.data["uid"] = uid
+        self.initialize_worldobject(data)
 
     def initialize_worldobject(self, data):
         """ sets the values from the data """

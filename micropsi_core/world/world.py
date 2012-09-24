@@ -53,7 +53,7 @@ class World(object):
 
     supported_worldadapters = ['Default', 'Braitenberg']
 
-    def __init__(self, runtime, filename, name="", owner="", uid=None, version=WORLD_VERSION):
+    def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:

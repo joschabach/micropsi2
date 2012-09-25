@@ -485,7 +485,7 @@ class MicroPsiRuntime(object):
          """
         return self.nodenets[nodenet_uid].nodes[node_uid]
 
-    def add_node(self, nodenet_uid, type, pos, nodespace, uid=None, name="", parameters={}):
+    def add_node(self, nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
         """Creates a new node. (Including nodespace, native module.)
 
         Arguments:
@@ -507,6 +507,8 @@ class MicroPsiRuntime(object):
         else:
             nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
+            if state:
+                nodenet.nodes[uid].state = state
         return True, uid
 
     def set_node_position(self, nodenet_uid, node_uid, pos):

@@ -193,11 +193,11 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
         }
 
         for(uid in data.nodespaces){
-            addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0));
+            addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
         }
         var link;
         for(var index in data.links){
@@ -221,11 +221,12 @@ function initializeNodeNet(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
 	this.activation = activation;
+    this.state = state;
 	this.name = name;
 	this.type = type;
 	this.symbol = "?";
@@ -1523,6 +1524,9 @@ function handleContextMenu(event) {
                 case "Create actor":
                     type = "Actor";
                     break;
+                case "Create event":
+                    type = "Event";
+                    break;
                 default:
                     type = "Register";
             }
@@ -1618,7 +1622,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
             params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
         }
     }
-    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, params));
+    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, null, params));
     view.draw();
     selectNode(uid);
     api("add_node", {
@@ -2046,6 +2050,7 @@ function showLinkForm(linkUid){
 function showNodeForm(nodeUid){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_node_form').show();
+    $('#node_state_input').val(nodes[nodeUid].state);
     $('#node_name_input').val(nodes[nodeUid].name);
     $('#node_uid_input').val(nodeUid);
     $('#node_type_input').val(nodes[nodeUid].type);

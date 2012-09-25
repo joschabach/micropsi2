@@ -145,6 +145,12 @@
                             </div>
                         </div>
                         <div class="control-group">
+                            <label class="control-label" for="node_state_input">State</label>
+                            <div class="controls">
+                                <input type="text" disabled="disabled" id="node_state_input" />
+                            </div>
+                        </div>
+                        <div class="control-group">
                             <label class="control-label" for="node_activation_input">Activation</label>
                             <div class="controls">
                                 <input type="text" disabled="disabled" id="node_activation_input">
@@ -380,6 +386,7 @@
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>
         <li><a href="#">Create actor</a></li>
+        <li><a href="#">Create event</a></li>
         <li><a href="#">Create node space</a></li>
         <li><a href="#">Create native module</a></li>
     </ul>

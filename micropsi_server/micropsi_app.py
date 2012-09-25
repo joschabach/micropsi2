@@ -710,8 +710,8 @@ def get_node(nodenet_uid, node_uid):
 
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(nodenet_uid, type, pos, nodespace, uid=None, name="", parameters={}):
-    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, uid=uid, name=name, parameters=parameters)
+def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
+    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
     if result:
         return dict(Status="OK", uid=uid)
     else:

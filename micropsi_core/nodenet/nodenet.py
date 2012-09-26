@@ -585,44 +585,40 @@ STANDARD_NODETYPES = {
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
-        "gatetypes": ["gen"],
-        "states": []
+        "gatetypes": ["gen"]
     },
     "Sensor": {
         "name": "Sensor",
         "parameters": ["datasource"],
         "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))""",
-        "gatetypes": ["gen"],
-        "states": []
+        "gatetypes": ["gen"]
     },
     "Actor": {
         "name": "Actor",
         "parameters": ["datasource", "datatarget"],
         "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, nodenet.uid, node.activation)""",
         "slottypes": ["gen"],
-        "gatetypes": ["gen"],
-        "states": []
+        "gatetypes": ["gen"]
     },
     "Concept": {
         "name": "Concept",
         "slottypes": ["gen"],
         "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "states": []
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
     },
     "Event": {
         "name": "Event",
+        "parameters": ["time"],
         "slottypes": ["gen"],
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "nodefunction_definition": """for type, gat in node.gates.items(): gate.gatefunction(node.activation)""",  # TODO: this needs to juggle the states
+        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",  # TODO: this needs to juggle the states
         "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped', 'failed', 'completed']
     },
     "Activator": {
         "name": "Activator",
         "slottypes": ["gen"],
         "parameters": ["type"],
-        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.type] = node.slots["gen"].activation""",
-        "states": []
+        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.type] = node.slots["gen"].activation"""
     }
 }
 

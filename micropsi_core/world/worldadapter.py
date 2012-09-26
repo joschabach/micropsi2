@@ -35,9 +35,11 @@ class WorldAdapter(WorldObject):
 
     def initialize_worldobject(self, data):
         for key in self.datasources:
-            self.datasources[key] = data.get('datasources', {}).get(key)
+            if key in data.get('datasources', {}):
+                self.datasources[key] = data['datasources'][key]
         for key in self.datatargets:
-            self.datasources[key] = data.get('datatargets', {}).get(key)
+            if key in data.get('datatargets', {}):
+                self.datatargets[key] = data['datatargets'][key]
 
     # agent facing methods:
     def get_available_datasources(self):

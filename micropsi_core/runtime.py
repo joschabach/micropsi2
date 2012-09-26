@@ -529,6 +529,15 @@ class MicroPsiRuntime(object):
             nodenet.nodespaces[node_uid].name = name
         return True
 
+    def set_node_state(self, nodenet_uid, node_uid, state):
+        """ Sets the state of the given node to the given state,
+            provided, the nodetype allows the given state """
+        node = self.nodenets[nodenet_uid].nodes[node_uid]
+        if state in node.nodetype.states:
+            node.state = state
+            return True
+        return False
+
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""
         nodenet = self.nodenets[nodenet_uid]

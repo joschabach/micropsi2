@@ -20,7 +20,10 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 
-class WorldAdapter(object):
+from worldobject import WorldObject
+
+
+class WorldAdapter(WorldObject):
     """Transmits data between agent and environment.
 
     The agent writes activation values into data targets, and receives it from data sources. The world adapter
@@ -30,9 +33,13 @@ class WorldAdapter(object):
     datasources = {}
     datatargets = {}
 
-    def __init__(self, world, nodenet_uid):
-        self.world = world
-        self.nodenet_uid = nodenet_uid
+    def initialize_worldobject(self, data):
+        for key in self.datasources:
+            if key in data.get('datasources', {}):
+                self.datasources[key] = data['datasources'][key]
+        for key in self.datatargets:
+            if key in data.get('datatargets', {}):
+                self.datatargets[key] = data['datatargets'][key]
 
     # agent facing methods:
     def get_available_datasources(self):

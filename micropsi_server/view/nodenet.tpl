@@ -141,13 +141,13 @@
                         <div class="control-group">
                             <label class="control-label" for="node_type_input">Type</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_type_input" />
+                                <input type="text" name="node_type" disabled="disabled" id="node_type_input" />
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="control-group state">
                             <label class="control-label" for="node_state_input">State</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_state_input" />
+                                <select type="text" name="node_state" id="node_state_input"></select>
                             </div>
                         </div>
                         <div class="control-group">

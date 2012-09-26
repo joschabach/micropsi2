@@ -1911,6 +1911,7 @@ function handleEditNode(event){
     var parameters = {};
     var fields = form.serializeArray();
     var name = null;
+    var state = null;
     for (var i in fields){
         if(nodetypes[nodes[nodeUid].type] &&
             (nodetypes[nodes[nodeUid].type].parameters || []).indexOf(fields[i].name) > -1 &&
@@ -1920,6 +1921,9 @@ function handleEditNode(event){
         if (fields[i].name == "node_name"){
             name = fields[i].value;
         }
+        if (fields[i].name == "node_state"){
+            state = fields[i].value;
+        }
     }
     if(name && nodes[nodeUid].name != name){
         renameNode(nodeUid, name);
@@ -1927,6 +1931,18 @@ function handleEditNode(event){
     if(!jQuery.isEmptyObject(parameters)){
         updateNodeParameters(nodeUid, parameters);
     }
+    if(nodes[nodeUid].state != state){
+        setNodeState(nodeUid, state);
+    }
+}
+
+function setNodeState(nodeUid, state){
+    nodes[nodeUid].state = state;
+    api('set_node_state', {
+        'nodenet_uid': currentNodenet,
+        'node_uid': nodeUid,
+        'state': state
+    });
 }
 
 function updateNodeParameters(nodeUid, parameters){
@@ -2050,7 +2066,6 @@ function showLinkForm(linkUid){
 function showNodeForm(nodeUid){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_node_form').show();
-    $('#node_state_input').val(nodes[nodeUid].state);
     $('#node_name_input').val(nodes[nodeUid].name);
     $('#node_uid_input').val(nodeUid);
     $('#node_type_input').val(nodes[nodeUid].type);
@@ -2059,6 +2074,18 @@ function showNodeForm(nodeUid){
     $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
     $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
     $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+    var states = '';
+    for(var i in nodetypes[nodes[nodeUid].type].states){
+        states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
+    }
+    var state_group = $('.control-group.state');
+    if (states){
+        states = '<option value="">None</option>' + states;
+        $('#node_state_input').html(states).val(nodes[nodeUid].state);
+        state_group.show();
+    } else {
+        state_group.hide();
+    }
 }
 
 function getNodeParameterHTML(parameters){

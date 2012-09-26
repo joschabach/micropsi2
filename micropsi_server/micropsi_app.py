@@ -559,6 +559,13 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
 
 
+@rpc("set_node_state")
+def set_node_state(nodenet_uid, node_uid, state):
+    if state == "":
+        state = None
+    return micropsi.set_node_state(nodenet_uid, node_uid, state)
+
+
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
 def start_nodenetrunner(nodenet_uid): return micropsi.start_nodenetrunner
 

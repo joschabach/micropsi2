@@ -663,6 +663,14 @@ class Nodetype(object):
         self.nodefunction = self.data.get("nodefunction")  # update nodefunction
 
     @property
+    def states(self):
+        return self.data.get("states", [])
+
+    @states.setter
+    def states(self, list):
+        self.data["states"] = list
+
+    @property
     def nodefunction_definition(self):
         return self.data.get("nodefunction_definition")
 

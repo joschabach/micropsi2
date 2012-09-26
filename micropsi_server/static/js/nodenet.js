@@ -63,7 +63,7 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-var currentWorld = 0;       // TODO: fetch from cookie
+currentWorld = 0;       // TODO: fetch from cookie
 var currentNodeSpace = 0;   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -103,6 +103,7 @@ function loadWorldData(nodenet_data){
         api("get_world_properties", {world_uid: nodenet_data.world},
             success=function(data){
                 world_data = data;
+                currentWorld = data.uid;
                 str = '';
                 for (var name in world_data.worldadapters){
                     str += '<option>'+name+'</option>';
@@ -192,11 +193,11 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
         }
 
         for(uid in data.nodespaces){
-            addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0));
+            addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
         }
         var link;
         for(var index in data.links){
@@ -220,11 +221,12 @@ function initializeNodeNet(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
 	this.activation = activation;
+    this.state = state;
 	this.name = name;
 	this.type = type;
 	this.symbol = "?";
@@ -1522,6 +1524,9 @@ function handleContextMenu(event) {
                 case "Create actor":
                     type = "Actor";
                     break;
+                case "Create event":
+                    type = "Event";
+                    break;
                 default:
                     type = "Register";
             }
@@ -1617,7 +1622,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
             params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
         }
     }
-    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, params));
+    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, null, params));
     view.draw();
     selectNode(uid);
     api("add_node", {
@@ -1906,6 +1911,7 @@ function handleEditNode(event){
     var parameters = {};
     var fields = form.serializeArray();
     var name = null;
+    var state = null;
     for (var i in fields){
         if(nodetypes[nodes[nodeUid].type] &&
             (nodetypes[nodes[nodeUid].type].parameters || []).indexOf(fields[i].name) > -1 &&
@@ -1915,6 +1921,9 @@ function handleEditNode(event){
         if (fields[i].name == "node_name"){
             name = fields[i].value;
         }
+        if (fields[i].name == "node_state"){
+            state = fields[i].value;
+        }
     }
     if(name && nodes[nodeUid].name != name){
         renameNode(nodeUid, name);
@@ -1922,6 +1931,18 @@ function handleEditNode(event){
     if(!jQuery.isEmptyObject(parameters)){
         updateNodeParameters(nodeUid, parameters);
     }
+    if(nodes[nodeUid].state != state){
+        setNodeState(nodeUid, state);
+    }
+}
+
+function setNodeState(nodeUid, state){
+    nodes[nodeUid].state = state;
+    api('set_node_state', {
+        'nodenet_uid': currentNodenet,
+        'node_uid': nodeUid,
+        'state': state
+    });
 }
 
 function updateNodeParameters(nodeUid, parameters){
@@ -2053,6 +2074,18 @@ function showNodeForm(nodeUid){
     $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
     $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
     $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+    var states = '';
+    for(var i in nodetypes[nodes[nodeUid].type].states){
+        states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
+    }
+    var state_group = $('.control-group.state');
+    if (states){
+        states = '<option value="">None</option>' + states;
+        $('#node_state_input').html(states).val(nodes[nodeUid].state);
+        state_group.show();
+    } else {
+        state_group.hide();
+    }
 }
 
 function getNodeParameterHTML(parameters){

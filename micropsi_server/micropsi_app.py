@@ -91,13 +91,13 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 return {"Error": "Insufficient permissions for remote procedure call"}
             else:
                 #kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
-                try:
-                    arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args)
-                except KeyError, err:
-                    response.status = 400
-                    return {"Error": "Missing argument in remote procedure call: %s" % err}
+                arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args if name in kwargs)
                 arguments.update(kwargs)
-                return json.dumps(func(**arguments))
+                try:
+                    return json.dumps(func(**arguments))
+                except TypeError, err:
+                    response.status = 400
+                    return {"Error": "Bad parameters in remote procedure call: %s" % err}
         return _wrapper
     return _decorator
 
@@ -395,8 +395,8 @@ def import_nodenet_form():
 @route("/nodenet/import", method="POST")
 def import_nodenet():
     user_id, p, t = get_request_data()
-    nodenet_uid = micropsi_core.tools.generate_uid()
-    micropsi.import_nodenet(nodenet_uid, request.files['file_upload'].file.read(), owner=user_id)
+    data = request.files['file_upload'].file.read()
+    nodenet_uid = micropsi.import_nodenet(data, owner=user_id)
     return dict(status='success', msg="Nodenet imported", nodenet_uid=nodenet_uid)
 
 
@@ -447,10 +447,7 @@ def write_nodenet():
 
 
 @route("/world/import")
-def import_world():
-    if 'file' in request.forms:
-        # do stuff
-        pass
+def import_world_form():
     token = request.get_cookie("token")
     return template("upload.tpl", title='World import', message='Select a file to upload and use for importing',
         action='/world/import',
@@ -459,11 +456,19 @@ def import_world():
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@route("/world/export")
-def export_world():
+@route("/world/import", method="POST")
+def import_world():
+    user_id, p, t = get_request_data()
+    data = request.files['file_upload'].file.read()
+    world_uid = micropsi.import_world(data, owner=user_id)
+    return dict(status='success', msg="World imported", world_uid=world_uid)
+
+
+@route("/world/export/<world_uid>")
+def export_world(world_uid):
     response.set_header('Content-type', 'application/json')
     response.set_header('Content-Disposition', 'attachment; filename="world.json"')
-    return "{}"
+    return micropsi.export_world(world_uid)
 
 
 @route("/world/edit")
@@ -552,6 +557,13 @@ def delete_nodenet(nodenet_uid):
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
+
+
+@rpc("set_node_state")
+def set_node_state(nodenet_uid, node_uid, state):
+    if state == "":
+        state = None
+    return micropsi.set_node_state(nodenet_uid, node_uid, state)
 
 
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
@@ -648,20 +660,30 @@ def set_worldrunner_timestep(): return micropsi.set_worldrunner_timestep
 @rpc("stop_worldrunner", permission_required="manage worlds")
 def stop_worldrunner(world_uid): return micropsi.stop_worldrunner
 
+
 @rpc("step_world", permission_required="manage worlds")
-def step_world(world_uid, return_world_view=False): return micropsi.step_world
+def step_world(world_uid, return_world_view=False):
+    return micropsi.step_world(world_uid, return_world_view)
+
 
 @rpc("revert_world", permission_required="manage worlds")
-def revert_world(world_uid): return micropsi.revert_world
+def revert_world(world_uid):
+    return micropsi.revert_world(world_uid)
+
 
 @rpc("save_world", permission_required="manage worlds")
-def save_world(world_uid): return micropsi.save_world
+def save_world(world_uid):
+    return micropsi.save_world(world_uid)
+
 
 @rpc("export_world")
-def export_world(world_uid): return micropsi.export_world
+def export_world_rpc(world_uid):
+    return micropsi.export_world(world_uid)
+
 
 @rpc("import_world", permission_required="manage worlds")
-def import_world(world_uid, worlddata): return micropsi.import_world
+def import_world_rpc(world_uid, worlddata):
+    return micropsi.import_world(world_uid, worlddata)
 
 # Monitor
 
@@ -695,8 +717,8 @@ def get_node(nodenet_uid, node_uid):
 
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(nodenet_uid, type, pos, nodespace, uid=None, name="", parameters={}):
-    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, uid=uid, name=name, parameters=parameters)
+def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
+    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
     if result:
         return dict(Status="OK", uid=uid)
     else:

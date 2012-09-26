@@ -7,6 +7,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import worldadapter
+import worldobject
 import json
 import os
 import warnings
@@ -46,9 +47,13 @@ class World(object):
     def step(self):
         return self.data.get("step")
 
+    @step.setter
+    def step(self, step):
+        self.data.step = step
+
     supported_worldadapters = ['Default', 'Braitenberg']
 
-    def __init__(self, runtime, filename, name="", owner="", uid=None, version=WORLD_VERSION):
+    def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
@@ -62,6 +67,7 @@ class World(object):
         self.data = {
             "version": WORLD_VERSION,  # used to check compatibility of the world data
             "objects": {},
+            "agents": {},
             "step": 0
         }
 
@@ -71,6 +77,7 @@ class World(object):
         self.name = name or os.path.basename(filename)
         self.filename = filename
         self.agents = {}
+        self.objects = {}
 
         self.load()
 
@@ -84,7 +91,6 @@ class World(object):
         if string:
             try:
                 self.data = json.loads(string)
-                self.data.world_type = self.__class__.__name__
             except ValueError:
                 warnings.warn("Could not read world data from string")
                 return False
@@ -97,7 +103,7 @@ class World(object):
                 return False
             except IOError:
                 warnings.warn("Could not open world file: " + self.filename)
-
+        self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
             return True
@@ -107,7 +113,7 @@ class World(object):
 
     def get_available_worldadapters(self):
         """ return the list of instantiated worldadapters """
-        return self.worldadapters  # .keys()??
+        return self.supported_worldadapters
 
     def initialize_world(self):
         """Called after reading new world data.
@@ -115,7 +121,15 @@ class World(object):
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        pass
+        for uid, world_object in self.data.get('objects', {}).items():
+            self.objects[uid] = getattr(worldobject, world_object.type)(self, 'objects', uid=uid, **self.data.objects[uid])
+        for uid, agent in self.data.get('agents', {}).items():
+            self.agents[uid] = getattr(agent, agent.type)(self, 'agents', uid=uid, **self.data.agents[uid])
+
+    def step_world(self):
+        for uid in self.objects:
+            self.objects[uid].update()
+        self.step = self.step + 1
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.
@@ -145,13 +159,13 @@ class World(object):
         del self.agents[nodenet_uid]
 
     def spawn_agent(self, worldadapter_name, nodenet_uid, options={}):
-        """Creates an agent object (nodenet incarnation),
+        """Creates an agent object,
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
         try:
-            self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, nodenet_uid)
+            self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, 'agents', uid=nodenet_uid, **options)
             return True, nodenet_uid
         except AttributeError:
             if worldadapter_name in self.supported_worldadapters:

@@ -155,12 +155,14 @@ class Nodenet(object):
         """
         for name, data in self.state.get('nodespaces', {}).items():
             self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name)
-        for type, data in self.state.get('nodetypes', STANDARD_NODETYPES).items():
+        nodetypes = self.state.get('nodetypes', {})
+        nodetypes.update(STANDARD_NODETYPES)
+        for type, data in nodetypes.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], type=data.get('type', 'Concept'), uid=uid, parameters=data.get('parameters'))
+            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, parameters=data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -426,23 +428,30 @@ class Node(NetEntity):
             self.nodetype.parameters = dictionary.keys()
         self.data["parameters"] = dictionary
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", type="Concept", uid=None, parameters=None):
+    @property
+    def state(self):
+        return self.data.get("state", None)
+
+    @state.setter
+    def state(self, state):
+        self.data['state'] = state
+
+    def __init__(self, nodenet, parent_nodespace, position, state=None, name="", type="Concept", uid=None, parameters=None):
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name=name, entitytype="nodes", uid=uid)
 
         self.gates = {}
         self.slots = {}
         self.data["type"] = type
         self.nodetype = None
-        if type == "Native":
-            type = self.uid
 
-        if type in self.nodenet.nodetypes:
-            self.nodetype = self.nodenet.nodetypes[type]
-            self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
-            for gate in self.nodetype.gatetypes:
-                self.gates[gate] = Gate(gate, self)
-            for slot in self.nodetype.slottypes:
-                self.slots[slot] = Slot(slot, self)
+        self.nodetype = self.nodenet.nodetypes[type]
+        self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
+        for gate in self.nodetype.gatetypes:
+            self.gates[gate] = Gate(gate, self)
+        for slot in self.nodetype.slottypes:
+            self.slots[slot] = Slot(slot, self)
+        if state:
+            self.state = state
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -597,6 +606,14 @@ STANDARD_NODETYPES = {
         "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
     },
+    "Event": {
+        "name": "Event",
+        "parameters": ["time"],
+        "slottypes": ["gen"],
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",  # TODO: this needs to juggle the states
+        "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped', 'failed', 'completed']
+    },
     "Activator": {
         "name": "Activator",
         "slottypes": ["gen"],
@@ -646,6 +663,14 @@ class Nodetype(object):
         self.nodefunction = self.data.get("nodefunction")  # update nodefunction
 
     @property
+    def states(self):
+        return self.data.get("states", [])
+
+    @states.setter
+    def states(self, list):
+        self.data["states"] = list
+
+    @property
     def nodefunction_definition(self):
         return self.data.get("nodefunction_definition")
 
@@ -661,7 +686,7 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node, " + args)
 
-    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None, nodefunction_definition=None):
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None, nodefunction_definition=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -690,6 +715,7 @@ class Nodetype(object):
         self.data = self.nodenet.state["nodetypes"][name]
         self.data["name"] = name
 
+        self.states = self.data.get('states') if states is None else states
         self.slottypes = self.data.get("slottypes", ["gen"]) if slottypes is None else slottypes
         self.gatetypes = self.data.get("gatetypes", ["gen"]) if gatetypes is None else gatetypes
 

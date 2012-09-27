@@ -2075,8 +2075,10 @@ function showNodeForm(nodeUid){
     $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
     $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
     var states = '';
-    for(var i in nodetypes[nodes[nodeUid].type].states){
-        states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
+    if(!jQuery.isEmptyObject(nodetypes) && nodetypes[nodes[nodeUid].type].states){
+        for(var i in nodetypes[nodes[nodeUid].type].states){
+            states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
+        }
     }
     var state_group = $('.control-group.state');
     if (states){

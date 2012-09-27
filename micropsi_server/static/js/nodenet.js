@@ -2065,28 +2065,34 @@ function showLinkForm(linkUid){
 
 function showNodeForm(nodeUid){
     $('#nodenet_forms .form-horizontal').hide();
-    $('#edit_node_form').show();
-    $('#node_name_input').val(nodes[nodeUid].name);
-    $('#node_uid_input').val(nodeUid);
-    $('#node_type_input').val(nodes[nodeUid].type);
-    $('#node_activation_input').val(nodes[nodeUid].activation);
-    $('#node_function_input').val("Todo");
-    $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
-    $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
-    $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
-    var states = '';
-    if(!jQuery.isEmptyObject(nodetypes) && nodetypes[nodes[nodeUid].type].states){
-        for(var i in nodetypes[nodes[nodeUid].type].states){
-            states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
-        }
-    }
-    var state_group = $('.control-group.state');
-    if (states){
-        states = '<option value="">None</option>' + states;
-        $('#node_state_input').html(states).val(nodes[nodeUid].state);
-        state_group.show();
+    var form = $('#edit_node_form');
+    form.show();
+    $('#node_name_input', form).val(nodes[nodeUid].name);
+    $('#node_uid_input', form).val(nodeUid);
+    $('#node_type_input', form).val(nodes[nodeUid].type);
+    if(nodes[nodeUid].type == 'Nodespace'){
+        $('.control-group.node', form).hide();
     } else {
-        state_group.hide();
+        $('.control-group.node', form).show();
+        $('#node_activation_input').val(nodes[nodeUid].activation);
+        $('#node_function_input').val("Todo");
+        $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
+        $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
+        $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+        var states = '';
+        if(!jQuery.isEmptyObject(nodetypes) && nodetypes[nodes[nodeUid].type].states){
+            for(var i in nodetypes[nodes[nodeUid].type].states){
+                states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
+            }
+        }
+        var state_group = $('.control-group.state');
+        if (states){
+            states = '<option value="">None</option>' + states;
+            $('#node_state_input').html(states).val(nodes[nodeUid].state);
+            state_group.show();
+        } else {
+            state_group.hide();
+        }
     }
 }
 

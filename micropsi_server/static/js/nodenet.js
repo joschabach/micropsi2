@@ -971,8 +971,8 @@ function createPillsWithLabels(bounds, labeltext) {
     if (!("pillshape" in prerenderLayer.children)) {
         var shape = Path.RoundRectangle(bounds, bounds.height/2);
         border = createBorder(shape, viewProperties.innerShadowDisplacement);
-        border.name = "pillshape";
         if (viewProperties.rasterize) border = border.rasterize();
+        border.name = "pillshape";
         prerenderLayer.addChild(border);
     }
     border = prerenderLayer.children["pillshape"].clone();

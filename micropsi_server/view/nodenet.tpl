@@ -144,19 +144,19 @@
                                 <input type="text" name="node_type" disabled="disabled" id="node_type_input" />
                             </div>
                         </div>
-                        <div class="control-group state">
+                        <div class="control-group node state">
                             <label class="control-label" for="node_state_input">State</label>
                             <div class="controls">
                                 <select type="text" name="node_state" id="node_state_input"></select>
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="control-group node">
                             <label class="control-label" for="node_activation_input">Activation</label>
                             <div class="controls">
                                 <input type="text" disabled="disabled" id="node_activation_input">
                             </div>
                         </div>
-                        <div class="control-group parameters">
+                        <div class="control-group node parameters">
                             <label class="control-label">Parameters</label>
                             <div class="controls">
                                 <table id="node_parameters" class="table-striped table-condensed">

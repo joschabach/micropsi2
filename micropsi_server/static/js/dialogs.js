@@ -101,7 +101,6 @@ var dialogs = {
             status - one of ['error', 'info', 'success']
     */
     notification: function(message, status){
-        if(status == 'error') status = 'warning';
         $('#notification').notify({
             message: { text: message },
             fadeOut: { enabled: true, delay: 1000 },

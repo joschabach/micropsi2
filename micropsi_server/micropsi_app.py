@@ -16,6 +16,7 @@ __date__ = '15.05.12'
 VERSION = "0.1"
 
 import micropsi_core.runtime
+from micropsi_core.runtime import AVAILABLE_WORLD_TYPES
 import micropsi_core.tools
 import usermanagement
 import bottle
@@ -476,7 +477,7 @@ def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, worldtypes=["Standard"],
+    return template("world_form.tpl", title=title, worldtypes=AVAILABLE_WORLD_TYPES,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -486,11 +487,11 @@ def edit_world_form():
 def edit_world():
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        result, uid = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
         if result:
-            return dict(status="success", msg="World created", world_uid=result)
+            return dict(status="success", msg="World created", world_uid=uid)
         else:
-            return dict(status="error", msg="Error saving nodenet: %s" % result)
+            return dict(status="error", msg=": %s" % result)
     return dict(status="error", msg="Insufficient rights to create world")
 
 
@@ -631,9 +632,19 @@ def get_worldadapters(world_uid):
     return micropsi.get_worldadapters(world_uid)
 
 
+@rpc("get_world_objects")
+def get_world_objects(world_uid):
+    return micropsi.get_world_objects(world_uid)
+
+
 @rpc("new_world", permission_required="manage worlds")
 def new_world(world_name, world_type, owner=""):
     return micropsi.new_world(world_name, world_type, owner)
+
+
+@rpc("get_available_world_types")
+def get_available_world_types():
+    return AVAILABLE_WORLD_TYPES
 
 
 @rpc("delete_world", permission_required="manage worlds")

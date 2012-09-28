@@ -63,7 +63,7 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-currentWorld = 0;       // TODO: fetch from cookie
+currentWorld = $.cookie('selected_world') || 0;       // TODO: fetch from cookie
 var currentNodeSpace = 0;   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -104,6 +104,7 @@ function loadWorldData(nodenet_data){
             success=function(data){
                 world_data = data;
                 currentWorld = data.uid;
+                $.cookie('selected_world', currentWorld, {expires:7, path: '/'});
                 str = '';
                 for (var name in world_data.worldadapters){
                     str += '<option>'+name+'</option>';
@@ -209,6 +210,7 @@ function initializeNodeNet(data){
 
     } else {
 
+        nodetypes = {'Actor': {slottypes:['gen'], gatetypes:['gen']}};
         addNode(new Node("a1", 150, 150, "Root", "Alice", "Actor", 1));
         addNode(new Node("a2", 350, 150, "Root", "Tom", "Actor", 0.3));
         addLink(new Link("a3", "a1", "gen", "a2", "gen", 1, 1));
@@ -971,8 +973,8 @@ function createPillsWithLabels(bounds, labeltext) {
     if (!("pillshape" in prerenderLayer.children)) {
         var shape = Path.RoundRectangle(bounds, bounds.height/2);
         border = createBorder(shape, viewProperties.innerShadowDisplacement);
-        border.name = "pillshape";
         if (viewProperties.rasterize) border = border.rasterize();
+        border.name = "pillshape";
         prerenderLayer.addChild(border);
     }
     border = prerenderLayer.children["pillshape"].clone();
@@ -997,7 +999,7 @@ function createPillsWithLabels(bounds, labeltext) {
 // draw the label of a compact node
 function createCompactNodeLabel(node) {
     if (node.name.length) { // only display a label for named nodes
-        var labelText = new PointText(new Point(bounds.x + node.bounds.width/2,
+        var labelText = new PointText(new Point(node.bounds.x + node.bounds.width/2,
             node.bounds.bottom+viewProperties.lineHeight));
         labelText.content = node.name ? node.name : node.uid;
         labelText.characterStyle = {
@@ -2065,26 +2067,34 @@ function showLinkForm(linkUid){
 
 function showNodeForm(nodeUid){
     $('#nodenet_forms .form-horizontal').hide();
-    $('#edit_node_form').show();
-    $('#node_name_input').val(nodes[nodeUid].name);
-    $('#node_uid_input').val(nodeUid);
-    $('#node_type_input').val(nodes[nodeUid].type);
-    $('#node_activation_input').val(nodes[nodeUid].activation);
-    $('#node_function_input').val("Todo");
-    $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
-    $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
-    $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
-    var states = '';
-    for(var i in nodetypes[nodes[nodeUid].type].states){
-        states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
-    }
-    var state_group = $('.control-group.state');
-    if (states){
-        states = '<option value="">None</option>' + states;
-        $('#node_state_input').html(states).val(nodes[nodeUid].state);
-        state_group.show();
+    var form = $('#edit_node_form');
+    form.show();
+    $('#node_name_input', form).val(nodes[nodeUid].name);
+    $('#node_uid_input', form).val(nodeUid);
+    $('#node_type_input', form).val(nodes[nodeUid].type);
+    if(nodes[nodeUid].type == 'Nodespace'){
+        $('.control-group.node', form).hide();
     } else {
-        state_group.hide();
+        $('.control-group.node', form).show();
+        $('#node_activation_input').val(nodes[nodeUid].activation);
+        $('#node_function_input').val("Todo");
+        $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
+        $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
+        $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
+        var states = '';
+        if(!jQuery.isEmptyObject(nodetypes) && nodetypes[nodes[nodeUid].type].states){
+            for(var i in nodetypes[nodes[nodeUid].type].states){
+                states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
+            }
+        }
+        var state_group = $('.control-group.state');
+        if (states){
+            states = '<option value="">None</option>' + states;
+            $('#node_state_input').html(states).val(nodes[nodeUid].state);
+            state_group.show();
+        } else {
+            state_group.hide();
+        }
     }
 }
 

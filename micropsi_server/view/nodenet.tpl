@@ -55,7 +55,7 @@
     </div>
 
 
-    <div id="nodenet_editor" class="section-margin collapse in">
+    <div id="nodenet_editor" class="section-margin collapse">
         <div class="section">
             <div class="editor_field span9">
                 <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
@@ -144,19 +144,19 @@
                                 <input type="text" name="node_type" disabled="disabled" id="node_type_input" />
                             </div>
                         </div>
-                        <div class="control-group state">
+                        <div class="control-group node state">
                             <label class="control-label" for="node_state_input">State</label>
                             <div class="controls">
                                 <select type="text" name="node_state" id="node_state_input"></select>
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="control-group node">
                             <label class="control-label" for="node_activation_input">Activation</label>
                             <div class="controls">
                                 <input type="text" disabled="disabled" id="node_activation_input">
                             </div>
                         </div>
-                        <div class="control-group parameters">
+                        <div class="control-group node parameters">
                             <label class="control-label">Parameters</label>
                             <div class="controls">
                                 <table id="node_parameters" class="table-striped table-condensed">
@@ -328,10 +328,10 @@
         </form>
     </div>
 
-    <div id="world_editor" class="section-margin collapse">
+    <div id="world_editor" class="section-margin collapse  in">
         <div class="section">
             <div class="editor_field span9">
-                <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
+                <canvas id="world" width="1445" height="900" style="background:#eeeeee"></canvas>
             </div>
             <div class="editor_field " id="world_forms">
                 <form>
@@ -486,5 +486,7 @@
 
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
+    <script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
+
 
 %rebase boilerplate title = "MicroPsi Simulator"

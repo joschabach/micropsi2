@@ -22,7 +22,9 @@ var viewProperties = {
     typeColors: {
         S: new Color('#009900'),
         U: new Color('#000099'),
-        other: new Color('#edc500')
+        Tram: new Color('#990000'),
+        Bus: new Color('#7000ff'),
+        other: new Color('#304451')
     }
 }
 
@@ -127,9 +129,10 @@ function renderObject(worldobject){
 function calculateObjectBounds(worldobject){
     var width, height;
     width = height = viewProperties.objectWidth * viewProperties.zoomFactor;
-    if (worldobject.type == 'other'){
-        width /= 2
-        height /= 2
+    if (worldobject.type == "Tram"){
+        width = height = 5
+    } else if (worldobject.type == 'other'  || worldobject.type == "Bus"){
+        width = height = 3
     }
     return new Rectangle(worldobject.x*viewProperties.zoomFactor - width/2,
         worldobject.y*viewProperties.zoomFactor - height/2, // center worldobject on origin
@@ -139,13 +142,10 @@ function calculateObjectBounds(worldobject){
 function createObjectSkeleton(worldobject){
     var bounds = worldobject.bounds;
     var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
-    if(worldobject.type == "U"){
-        shape.fillColor = viewProperties.typeColors.U;
-    }
-    else if(worldobject.type == "S" || worldobject.type == "S+U"){
+    if(worldobject.type == "S" || worldobject.type == "S+U"){
         shape.fillColor = viewProperties.typeColors.S;
     } else {
-        shape.fillColor = viewProperties.typeColors.other;
+        shape.fillColor = viewProperties.typeColors[worldobject.type];
     }
     //var border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
     //var typeLabel = createCompactObjectBodyLabel(worldobject);

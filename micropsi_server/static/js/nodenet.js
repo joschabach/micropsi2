@@ -63,7 +63,7 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-currentWorld = 0;       // TODO: fetch from cookie
+currentWorld = $.cookie('selected_world') || 0;       // TODO: fetch from cookie
 var currentNodeSpace = 0;   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -104,6 +104,7 @@ function loadWorldData(nodenet_data){
             success=function(data){
                 world_data = data;
                 currentWorld = data.uid;
+                $.cookie('selected_world', currentWorld, {expires:7, path: '/'});
                 str = '';
                 for (var name in world_data.worldadapters){
                     str += '<option>'+name+'</option>';
@@ -209,6 +210,7 @@ function initializeNodeNet(data){
 
     } else {
 
+        nodetypes = {'Actor': {slottypes:['gen'], gatetypes:['gen']}};
         addNode(new Node("a1", 150, 150, "Root", "Alice", "Actor", 1));
         addNode(new Node("a2", 350, 150, "Root", "Tom", "Actor", 0.3));
         addLink(new Link("a3", "a1", "gen", "a2", "gen", 1, 1));
@@ -997,7 +999,7 @@ function createPillsWithLabels(bounds, labeltext) {
 // draw the label of a compact node
 function createCompactNodeLabel(node) {
     if (node.name.length) { // only display a label for named nodes
-        var labelText = new PointText(new Point(bounds.x + node.bounds.width/2,
+        var labelText = new PointText(new Point(node.bounds.x + node.bounds.width/2,
             node.bounds.bottom+viewProperties.lineHeight));
         labelText.content = node.name ? node.name : node.uid;
         labelText.characterStyle = {

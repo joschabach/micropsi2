@@ -127,6 +127,10 @@ function renderObject(worldobject){
 function calculateObjectBounds(worldobject){
     var width, height;
     width = height = viewProperties.objectWidth * viewProperties.zoomFactor;
+    if (worldobject.type == 'other'){
+        width /= 2
+        height /= 2
+    }
     return new Rectangle(worldobject.x*viewProperties.zoomFactor - width/2,
         worldobject.y*viewProperties.zoomFactor - height/2, // center worldobject on origin
         width, height);

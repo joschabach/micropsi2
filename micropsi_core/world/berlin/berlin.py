@@ -32,7 +32,7 @@ class Berlin(World):
         with open(filename) as file:
             data = json.load(file)
             for key, entry in data.items():
-                type = None
+                type = "other"
                 entry.pop('line_names')
                 traintypes = entry.pop('train_types')
                 if "S" in traintypes:

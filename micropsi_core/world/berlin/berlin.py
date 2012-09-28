@@ -42,7 +42,10 @@ class Berlin(World):
                         type = "S"
                 elif "U" in traintypes:
                     type = "U"
-                # todo: TRAM, BUS
+                elif "Tram" in traintypes:
+                    type = "Tram"
+                elif "Bus" in traintypes:
+                    type = "Bus"
                 entry['stationtype'] = type
                 if 'lon' in entry and 'lat' in entry:
                     entry['pos'] = (((entry.pop('lon') - self.coords['x1']) * self.scale_x), ((entry.pop('lat') - self.coords['y1']) * self.scale_y))

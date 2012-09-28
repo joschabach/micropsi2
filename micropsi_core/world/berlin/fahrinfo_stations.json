@@ -1,4 +1,350 @@
 {
+    "8242": {
+        "name": "Brandenburg, Berliner Str.", 
+        "lon": 12.591532161406313, 
+        "line_names": [
+            "W/540", 
+            "565", 
+            "559"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.402041550139835, 
+        "IBNR": 9275510
+    }, 
+    "8311": {
+        "name": "Sch\u00f6neiche (bei Berlin), L\u00fcbecker Str.", 
+        "lon": 13.699506592089492, 
+        "line_names": [
+            "161", 
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.46607171394327, 
+        "IBNR": 9310014
+    }, 
+    "8316": {
+        "name": "Sch\u00f6neiche (bei Berlin), Dorfaue", 
+        "lon": 13.7014482620855, 
+        "line_names": [
+            "88", 
+            "420", 
+            "161"
+        ], 
+        "train_types": [
+            "Tram", 
+            "Bus"
+        ], 
+        "lat": 52.47870155813025, 
+        "IBNR": 9310021
+    }, 
+    "8346": {
+        "name": "Erkner, Berliner Str.", 
+        "lon": 13.743886336396326, 
+        "line_names": [
+            "161"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.42766979624451, 
+        "IBNR": 9310399
+    }, 
+    "8348": {
+        "name": "Sch\u00f6neiche (bei Berlin), Miethkestr.", 
+        "lon": 13.698868357970436, 
+        "line_names": [
+            "420", 
+            "161"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.47549240910907, 
+        "IBNR": 9310500
+    }, 
+    "8349": {
+        "name": "Sch\u00f6neiche (bei Berlin), W.-Dehmel-Str.", 
+        "lon": 13.698643627646824, 
+        "line_names": [
+            "420", 
+            "161"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.47060227726728, 
+        "IBNR": 9310501
+    }, 
+    "8350": {
+        "name": "Sch\u00f6neiche (bei Berlin), C.-Zetkin-Str.", 
+        "lon": 13.700090890930884, 
+        "line_names": [
+            "161", 
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.46145125848982, 
+        "IBNR": 9310502
+    }, 
+    "8351": {
+        "name": "Sch\u00f6neiche (bei Berlin), Hamburger Str.", 
+        "lon": 13.703066320415504, 
+        "line_names": [
+            "161", 
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.459626448262085, 
+        "IBNR": 9310503
+    }, 
+    "8358": {
+        "name": "Sch\u00f6neiche (bei Berlin), Waldstr.", 
+        "lon": 13.683388933280064, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.46711446264483, 
+        "IBNR": 9310510
+    }, 
+    "8359": {
+        "name": "Sch\u00f6neiche (bei Berlin), Goethepark", 
+        "lon": 13.688395924890132, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.47046743907311, 
+        "IBNR": 9310511
+    }, 
+    "8360": {
+        "name": "Sch\u00f6neiche (bei Berlin), Rahnsdorfer Str.", 
+        "lon": 13.691757890531363, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.4750339592489, 
+        "IBNR": 9310512
+    }, 
+    "8361": {
+        "name": "Sch\u00f6neiche (bei Berlin), Dorfstr.", 
+        "lon": 13.695200759089095, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.478980223731526, 
+        "IBNR": 9310513
+    }, 
+    "8362": {
+        "name": "Sch\u00f6neiche (bei Berlin), Seestr.", 
+        "lon": 13.702895525369557, 
+        "line_names": [
+            "161"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.45532061526169, 
+        "IBNR": 9310514
+    }, 
+    "8363": {
+        "name": "Sch\u00f6neiche (bei Berlin), Gr\u00e4tzwalde", 
+        "lon": 13.712837594886137, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.47438673591691, 
+        "IBNR": 9310515
+    }, 
+    "8364": {
+        "name": "Sch\u00f6neiche (bei Berlin), J\u00e4gerstr.", 
+        "lon": 13.726312425089894, 
+        "line_names": [
+            "88", 
+            "420"
+        ], 
+        "train_types": [
+            "Tram", 
+            "Bus"
+        ], 
+        "lat": 52.47235517379145, 
+        "IBNR": 9310516
+    }, 
+    "8365": {
+        "name": "Sch\u00f6neiche (bei Berlin), Kalkberger Str.", 
+        "lon": 13.738097283260089, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.472346184578505, 
+        "IBNR": 9310517
+    }, 
+    "8366": {
+        "name": "Sch\u00f6neiche (bei Berlin), Schillerstr.", 
+        "lon": 13.708801438274072, 
+        "line_names": [
+            "88"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.47749700359569, 
+        "IBNR": 9310525
+    }, 
+    "8372": {
+        "name": "Woltersdorf (LOS), Berliner Platz", 
+        "lon": 13.740371554135038, 
+        "line_names": [
+            "87"
+        ], 
+        "train_types": [
+            "Tram"
+        ], 
+        "lat": 52.45393627646824, 
+        "IBNR": 9310543
+    }, 
+    "8391": {
+        "name": "Sch\u00f6neiche (bei Berlin), Prager Str.", 
+        "lon": 13.717458050339593, 
+        "line_names": [
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.46543347982421, 
+        "IBNR": 9310574
+    }, 
+    "8567": {
+        "name": "Hangelsberg, Berliner Landstr.", 
+        "lon": 13.945487415101878, 
+        "line_names": [
+            "436"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.39039153016381, 
+        "IBNR": 9310860
+    }, 
+    "11198": {
+        "name": "Frankfurt (Oder), Berliner Chaussee", 
+        "lon": 14.52938174190971, 
+        "line_names": [
+            "969", 
+            "970", 
+            "968"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.36270475429485, 
+        "IBNR": 9360024
+    }, 
+    "8638": {
+        "name": "Neu Zittau, Berliner Str.", 
+        "lon": 13.737171394326808, 
+        "line_names": [
+            "424", 
+            "428"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.390166799840195, 
+        "IBNR": 9310949
+    }, 
+    "8693": {
+        "name": "Sch\u00f6neiche (bei Berlin), Am Goethepark", 
+        "lon": 13.68969936076708, 
+        "line_names": [
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.46988314023172, 
+        "IBNR": 9311010
+    }, 
+    "8694": {
+        "name": "Sch\u00f6neiche (bei Berlin), Kieferndamm", 
+        "lon": 13.717062524970036, 
+        "line_names": [
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.46306931681982, 
+        "IBNR": 9311012
+    }, 
+    "8695": {
+        "name": "Sch\u00f6neiche (bei Berlin), Steinstr.", 
+        "lon": 13.724685377546946, 
+        "line_names": [
+            "420"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.46422892528966, 
+        "IBNR": 9311014
+    }, 
+    "521": {
+        "name": "Berlin Busbf (ZOB) am Funkturm", 
+        "lon": 13.279899121054735, 
+        "line_names": [
+            "EV"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.50759288853376, 
+        "IBNR": 8089160
+    }, 
+    "537": {
+        "name": "Berlin Tegel Airport", 
+        "lon": 13.290029964043148, 
+        "line_names": [], 
+        "train_types": [], 
+        "lat": 52.55592788653616, 
+        "IBNR": 8099997
+    }, 
+    "538": {
+        "name": "Berlin Sch\u00f6nefeld Airport", 
+        "lon": 13.518149220934879, 
+        "line_names": [], 
+        "train_types": [], 
+        "lat": 52.387479025169796, 
+        "IBNR": 8099998
+    }, 
     "600": {
         "name": "Wiebestr./Huttenstr.", 
         "lon": 13.320251697962446, 
@@ -517,6 +863,80 @@
         ], 
         "lat": 52.52221833799441, 
         "IBNR": 9003181
+    }, 
+    "638": {
+        "name": "S+U Berlin Hauptbahnhof (tief)", 
+        "lon": 13.3693867359169, 
+        "line_names": [
+            "RE7", 
+            "Ausfl", 
+            "IC", 
+            "RB10", 
+            "RB21", 
+            "RE5", 
+            "IRE25", 
+            "RE3", 
+            "EV", 
+            "RE4"
+        ], 
+        "train_types": [
+            "RE", 
+            "SLB", 
+            "EN", 
+            "IC", 
+            "ICE", 
+            "EC", 
+            "RB", 
+            "CNL", 
+            "IRE", 
+            "Bus"
+        ], 
+        "lat": 52.525040950858966, 
+        "IBNR": 9003200
+    }, 
+    "639": {
+        "name": "S+U Berlin Hauptbahnhof", 
+        "lon": 13.368928286056732, 
+        "line_names": [
+            "123", 
+            "B", 
+            "RE7", 
+            "Ausfl", 
+            "147", 
+            "S5", 
+            "S75", 
+            "S7", 
+            "245", 
+            "RE1", 
+            "RB10", 
+            "RB14", 
+            "120", 
+            "N20", 
+            "RE2", 
+            "142", 
+            "U55", 
+            "RB66", 
+            "M41", 
+            "M85", 
+            "TXL", 
+            "N40", 
+            "B/C"
+        ], 
+        "train_types": [
+            "Bus", 
+            "RE", 
+            "SLB", 
+            "S", 
+            "EN", 
+            "CNL", 
+            "IC", 
+            "EC", 
+            "RB", 
+            "U", 
+            "ICE"
+        ], 
+        "lat": 52.52584998002397, 
+        "IBNR": 9003201
     }, 
     "640": {
         "name": "Kirchstr./Alt-Moabit", 
@@ -5965,6 +6385,22 @@
         "lat": 52.53603475829005, 
         "IBNR": 9029303
     }, 
+    "1025": {
+        "name": "Berlin, Staaken Bhf", 
+        "lon": 13.141725928885338, 
+        "line_names": [
+            "RE4", 
+            "M32", 
+            "RB13"
+        ], 
+        "train_types": [
+            "RE", 
+            "Bus", 
+            "RB"
+        ], 
+        "lat": 52.537742708749505, 
+        "IBNR": 9029305
+    }, 
     "1026": {
         "name": "Krematorium Ruhleben", 
         "lon": 13.231797842588893, 
@@ -7455,6 +7891,21 @@
         ], 
         "lat": 52.544367758689575, 
         "IBNR": 9037167
+    }, 
+    "1137": {
+        "name": "Berlin, Albrechtshof Bhf", 
+        "lon": 13.12762185377547, 
+        "line_names": [
+            "RB14", 
+            "RB10", 
+            "237"
+        ], 
+        "train_types": [
+            "RB", 
+            "Bus"
+        ], 
+        "lat": 52.54932980423492, 
+        "IBNR": 9037168
     }, 
     "1138": {
         "name": "J\u00e4nickendorfer Weg", 
@@ -38987,6 +39438,1139 @@
         "lat": 52.40507091490212, 
         "IBNR": 9196514
     }, 
+    "3438": {
+        "name": "Berlin, Volkspark Glienicke/Krughorn", 
+        "lon": 13.106434278865363, 
+        "line_names": [
+            "WT"
+        ], 
+        "train_types": [
+            "F\u00e4hre"
+        ], 
+        "lat": 52.42417299240911, 
+        "IBNR": 9199999
+    }, 
+    "3457": {
+        "name": "Hohen Neuendorf, Berliner Str.", 
+        "lon": 13.285265681182581, 
+        "line_names": [
+            "809"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.663097283260086, 
+        "IBNR": 9200024
+    }, 
+    "3467": {
+        "name": "Kreuzbruch, Berliner Chaussee", 
+        "lon": 13.40742009588494, 
+        "line_names": [
+            "805"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.836930683180185, 
+        "IBNR": 9200037
+    }, 
+    "11679": {
+        "name": "Herzberg (Elster), Berliner Str.", 
+        "lon": 13.239771274470638, 
+        "line_names": [
+            "542"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.70603375948862, 
+        "IBNR": 9415685
+    }, 
+    "3518": {
+        "name": "Oranienburg, Berliner Str./R.-Koch-Str.", 
+        "lon": 13.239285856971636, 
+        "line_names": [
+            "821", 
+            "804"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.742004594486616, 
+        "IBNR": 9203302
+    }, 
+    "3600": {
+        "name": "Borgsdorf, Berliner Str./Karl-Marx-Str.", 
+        "lon": 13.275008989212944, 
+        "line_names": [
+            "816"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.70677586895726, 
+        "IBNR": 9203436
+    }, 
+    "3610": {
+        "name": "Liebenwalde, Berliner Str.", 
+        "lon": 13.398134238913306, 
+        "line_names": [
+            "805"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.85997003595685, 
+        "IBNR": 9203447
+    }, 
+    "3618": {
+        "name": "Kremmen, Berliner Chaussee", 
+        "lon": 13.044984019176988, 
+        "line_names": [
+            "800"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.74587894526568, 
+        "IBNR": 9203457
+    }, 
+    "11530": {
+        "name": "Bad Liebenwerda, Berliner Str.", 
+        "lon": 13.397828605673192, 
+        "line_names": [
+            "575", 
+            "577", 
+            "570", 
+            "578", 
+            "560", 
+            "565", 
+            "525"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.523840391530165, 
+        "IBNR": 9415243
+    }, 
+    "11873": {
+        "name": "Gro\u00dfenhain, Berliner Bahnhof", 
+        "lon": 13.520477427087496, 
+        "line_names": [], 
+        "train_types": [], 
+        "lat": 51.29716839792249, 
+        "IBNR": 9419051
+    }, 
+    "11990": {
+        "name": "Lauchhammer West, Berliner Str.", 
+        "lon": 13.737944466640032, 
+        "line_names": [
+            "B", 
+            "614", 
+            "A", 
+            "G", 
+            "581"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.47243108270076, 
+        "IBNR": 9435136
+    }, 
+    "3908": {
+        "name": "Zehdenick, Berliner Tor", 
+        "lon": 13.327910507391131, 
+        "line_names": [
+            "842", 
+            "838", 
+            "843", 
+            "850", 
+            "833"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.977342189372756, 
+        "IBNR": 9203906
+    }, 
+    "11585": {
+        "name": "Beutersitz, Bahnhof/Berliner Str.", 
+        "lon": 13.357529964043149, 
+        "line_names": [
+            "525"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.590360567319216, 
+        "IBNR": 9415355
+    }, 
+    "4070": {
+        "name": "Kyritz, Berliner Str.", 
+        "lon": 12.405419496604077, 
+        "line_names": [
+            "707", 
+            "711", 
+            "714", 
+            "704", 
+            "927", 
+            "901"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.93965041949661, 
+        "IBNR": 9205120
+    }, 
+    "12311": {
+        "name": "Forst, Berliner Str.", 
+        "lon": 14.641917698761487, 
+        "line_names": [
+            "853", 
+            "854", 
+            "856", 
+            "850", 
+            "861", 
+            "851", 
+            "852"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.74012085497404, 
+        "IBNR": 9445013
+    }, 
+    "4125": {
+        "name": "Berlinchen, Ausbau", 
+        "lon": 12.591837794646425, 
+        "line_names": [
+            "746"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.22327806632042, 
+        "IBNR": 9205225
+    }, 
+    "4126": {
+        "name": "Berlinchen, Dorfplatz", 
+        "lon": 12.58349580503396, 
+        "line_names": [
+            "746"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.21877447063524, 
+        "IBNR": 9205226
+    }, 
+    "12568": {
+        "name": "Guben, Berliner Str.", 
+        "lon": 14.713822413104275, 
+        "line_names": [
+            "881", 
+            "858", 
+            "894", 
+            "870", 
+            "890", 
+            "877"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.95285057930484, 
+        "IBNR": 9445596
+    }, 
+    "12680": {
+        "name": "Kolkwitz, Langosa Berliner Str.", 
+        "lon": 14.258554734318817, 
+        "line_names": [
+            "37", 
+            "46", 
+            "12-14", 
+            "35-37", 
+            "607", 
+            "12"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 51.74958649620456, 
+        "IBNR": 9445891
+    }, 
+    "10326": {
+        "name": "Prenzlau, Berliner Str./B 109", 
+        "lon": 13.821732920495405, 
+        "line_names": [
+            "503", 
+            "502", 
+            "441"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.30125049940072, 
+        "IBNR": 9340810
+    }, 
+    "12942": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Bohnsdorfer Chaussee", 
+        "lon": 13.51351977626848, 
+        "line_names": [], 
+        "train_types": [
+            "SLB"
+        ], 
+        "lat": 52.39074210946864, 
+        "IBNR": 9460746
+    }, 
+    "4767": {
+        "name": "Nauen, Berliner Str.", 
+        "lon": 12.882216340391532, 
+        "line_names": [
+            "667", 
+            "663", 
+            "901", 
+            "927", 
+            "650"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.60055932880544, 
+        "IBNR": 9210216
+    }, 
+    "12967": {
+        "name": "Cottbus, Berliner Str.", 
+        "lon": 14.327564922093488, 
+        "line_names": [
+            "47", 
+            "15", 
+            "16", 
+            "19"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 51.76233320015981, 
+        "IBNR": 9470114
+    }, 
+    "11075": {
+        "name": "Wandlitz, Berliner Weg", 
+        "lon": 13.447386136636036, 
+        "line_names": [
+            "891"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.73282660807032, 
+        "IBNR": 9350743
+    }, 
+    "4992": {
+        "name": "Wustermark, Berliner Str.", 
+        "lon": 12.94456552137435, 
+        "line_names": [
+            "667", 
+            "649", 
+            "663"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.54530263683579, 
+        "IBNR": 9210590
+    }, 
+    "11356": {
+        "name": "Finsterwalde, Berliner Str.", 
+        "lon": 13.70833399920096, 
+        "line_names": [
+            "579", 
+            "599", 
+            "551", 
+            "598", 
+            "552", 
+            "595", 
+            "558", 
+            "560", 
+            "544", 
+            "546", 
+            "550", 
+            "570"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 51.63292449061127, 
+        "IBNR": 9415010
+    }, 
+    "13444": {
+        "name": "Berlin Hauptbahnhof", 
+        "lon": 13.369818218138235, 
+        "line_names": [], 
+        "train_types": [], 
+        "lat": 52.52490611266481, 
+        "IBNR": 9600001
+    }, 
+    "5278": {
+        "name": "Grabow (bei Ludwigslust), Berliner Str.", 
+        "lon": 11.560451458250101, 
+        "line_names": [
+            "930"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.27485817019577, 
+        "IBNR": 9215327
+    }, 
+    "5415": {
+        "name": "Lenzen, Berliner Str.", 
+        "lon": 11.482182381142628, 
+        "line_names": [
+            "925", 
+            "926"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.093455852976426, 
+        "IBNR": 9215554
+    }, 
+    "5495": {
+        "name": "Perleberg, Berliner Str.", 
+        "lon": 11.867855573312026, 
+        "line_names": [
+            "918", 
+            "922", 
+            "923", 
+            "935", 
+            "924", 
+            "936", 
+            "937", 
+            "927"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.07366160607271, 
+        "IBNR": 9215697
+    }, 
+    "5496": {
+        "name": "Perleberg, Berliner Weg", 
+        "lon": 11.875478425888932, 
+        "line_names": [
+            "918", 
+            "922", 
+            "923", 
+            "935", 
+            "924", 
+            "936", 
+            "937", 
+            "927"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.07097383140231, 
+        "IBNR": 9215698
+    }, 
+    "10478": {
+        "name": "Schwedt, Berliner Str.", 
+        "lon": 14.29406212544946, 
+        "line_names": [
+            "489", 
+            "486", 
+            "469", 
+            "470", 
+            "491", 
+            "481", 
+            "482"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.05887435077907, 
+        "IBNR": 9341113
+    }, 
+    "9141": {
+        "name": "Petershagen (b. Berlin), Hermannstr.", 
+        "lon": 13.79739013184179, 
+        "line_names": [
+            "933", 
+            "949"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.52695565321615, 
+        "IBNR": 9320610
+    }, 
+    "9142": {
+        "name": "Petershagen (b. Berlin), Elbestr.", 
+        "lon": 13.781676987614862, 
+        "line_names": [
+            "931"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.53347283260088, 
+        "IBNR": 9320611
+    }, 
+    "9146": {
+        "name": "Petershagen (b. Berlin), Uhlandstr.", 
+        "lon": 13.792787654814225, 
+        "line_names": [
+            "933", 
+            "931"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.54564422692769, 
+        "IBNR": 9320630
+    }, 
+    "9147": {
+        "name": "Petershagen (b. Berlin), Bruchm\u00fchler Str.", 
+        "lon": 13.781578106272473, 
+        "line_names": [
+            "933", 
+            "948"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.53891130643228, 
+        "IBNR": 9320631
+    }, 
+    "9148": {
+        "name": "Petershagen (b. Berlin), F\u00f6rsterklause", 
+        "lon": 13.777811626048742, 
+        "line_names": [
+            "933", 
+            "948", 
+            "931"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.53522572912505, 
+        "IBNR": 9320632
+    }, 
+    "9149": {
+        "name": "Petershagen (b. Berlin), Lindenstr.", 
+        "lon": 13.772265281662007, 
+        "line_names": [
+            "933"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.52549041150619, 
+        "IBNR": 9320633
+    }, 
+    "9150": {
+        "name": "Petershagen (b. Berlin), Rathaus", 
+        "lon": 13.77935777067519, 
+        "line_names": [
+            "933"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.52357570914902, 
+        "IBNR": 9320634
+    }, 
+    "9151": {
+        "name": "Petershagen (b. Berlin), Liebknechtstr.", 
+        "lon": 13.786800838993209, 
+        "line_names": [
+            "933", 
+            "948", 
+            "931"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.534102077507, 
+        "IBNR": 9320635
+    }, 
+    "9152": {
+        "name": "Petershagen (b. Berlin), Gravenhainstr.", 
+        "lon": 13.787888533759489, 
+        "line_names": [
+            "933"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.526353375948865, 
+        "IBNR": 9320636
+    }, 
+    "9153": {
+        "name": "Petershagen (b. Berlin), W.-Pieck-Str.", 
+        "lon": 13.788805433479826, 
+        "line_names": [
+            "933"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.51953056332402, 
+        "IBNR": 9320637
+    }, 
+    "5769": {
+        "name": "G\u00fcterfelde, Berliner Str.", 
+        "lon": 13.196793847383141, 
+        "line_names": [
+            "624", 
+            "627"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.36826907710747, 
+        "IBNR": 9220055
+    }, 
+    "9154": {
+        "name": "Petershagen (b. Berlin), W.-Pieck-Str./Schule", 
+        "lon": 13.772004594486617, 
+        "line_names": [
+            "933", 
+            "949"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.51986316420295, 
+        "IBNR": 9320638
+    }, 
+    "9155": {
+        "name": "Petershagen (b. Berlin), Dorfstr.", 
+        "lon": 13.769838194167, 
+        "line_names": [
+            "933", 
+            "951"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.52004294846185, 
+        "IBNR": 9320639
+    }, 
+    "9158": {
+        "name": "Petershagen (b. Berlin), C.-Zetkin-Str.", 
+        "lon": 13.786549141030763, 
+        "line_names": [
+            "949"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.519494606472236, 
+        "IBNR": 9320642
+    }, 
+    "9160": {
+        "name": "Petershagen (b. Berlin), Hubertusallee", 
+        "lon": 13.798342988413903, 
+        "line_names": [
+            "949"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.5196294446664, 
+        "IBNR": 9320645
+    }, 
+    "9161": {
+        "name": "Petershagen (b. Berlin), Lessingstr.", 
+        "lon": 13.788517778665602, 
+        "line_names": [
+            "R933"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.53524370755094, 
+        "IBNR": 9320646
+    }, 
+    "9162": {
+        "name": "Petershagen (b. Berlin), M\u00fcllerstr.", 
+        "lon": 13.792338194167, 
+        "line_names": [
+            "949"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.51940471434279, 
+        "IBNR": 9320647
+    }, 
+    "10534": {
+        "name": "Schwedt, Berliner Allee", 
+        "lon": 14.277360167798642, 
+        "line_names": [
+            "468", 
+            "491", 
+            "479", 
+            "482", 
+            "465"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.05178186176589, 
+        "IBNR": 9341174
+    }, 
+    "9183": {
+        "name": "Petershagen (b. Berlin), Rathausstr.", 
+        "lon": 13.77939372752697, 
+        "line_names": [
+            "949"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.51991709948062, 
+        "IBNR": 9320685
+    }, 
+    "9199": {
+        "name": "Buckow (M\u00e4rkische Schweiz), Berliner Str.", 
+        "lon": 14.067677786656013, 
+        "line_names": [
+            "929", 
+            "928", 
+            "926"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.55750998801438, 
+        "IBNR": 9320824
+    }, 
+    "9749": {
+        "name": "Angerm\u00fcnde, Berliner Str.", 
+        "lon": 14.001445265681184, 
+        "line_names": [
+            "457", 
+            "458", 
+            "460", 
+            "462", 
+            "463", 
+            "496", 
+            "494", 
+            "504", 
+            "450", 
+            "451"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.01904314822213, 
+        "IBNR": 9340127
+    }, 
+    "10024": {
+        "name": "Lychen, Berliner Stra\u00dfe", 
+        "lon": 13.302012584898124, 
+        "line_names": [
+            "517"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.212850579304835, 
+        "IBNR": 9340441
+    }, 
+    "6171": {
+        "name": "Derwitz, Am Berliner Ring", 
+        "lon": 12.823849380743109, 
+        "line_names": [
+            "632"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.39951558130244, 
+        "IBNR": 9220687
+    }, 
+    "6355": {
+        "name": "Damsdorf (PM), Berliner Str.", 
+        "lon": 12.763423891330403, 
+        "line_names": [
+            "550", 
+            "554", 
+            "567", 
+            "580"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.34672193367959, 
+        "IBNR": 9222055
+    }, 
+    "9253": {
+        "name": "Altlandsberg, Berliner Allee", 
+        "lon": 13.71700858969237, 
+        "line_names": [
+            "944"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.55799540551339, 
+        "IBNR": 9320903
+    }, 
+    "6482": {
+        "name": "Treuenbrietzen, Berliner Siedlung", 
+        "lon": 12.884796244506592, 
+        "line_names": [
+            "545", 
+            "546"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.10882241310428, 
+        "IBNR": 9222198
+    }, 
+    "6525": {
+        "name": "Treuenbrietzen, Berliner Dreieck", 
+        "lon": 12.880742109468638, 
+        "line_names": [
+            "545", 
+            "546"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.101154614462644, 
+        "IBNR": 9222290
+    }, 
+    "6603": {
+        "name": "Potsdam, Schiffbauergasse/Berliner Str.", 
+        "lon": 13.072913503795446, 
+        "line_names": [
+            "93", 
+            "N16"
+        ], 
+        "train_types": [
+            "Tram", 
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.405286656012784, 
+        "IBNR": 9230072
+    }, 
+    "9302": {
+        "name": "Bad Freienwalde, Berliner Str.", 
+        "lon": 14.026821813823412, 
+        "line_names": [
+            "887", 
+            "881"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.78219536556133, 
+        "IBNR": 9321026
+    }, 
+    "11138": {
+        "name": "Bernau, Berliner Str.", 
+        "lon": 13.58969436675989, 
+        "line_names": [
+            "868", 
+            "869"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.67802836596085, 
+        "IBNR": 9350861
+    }, 
+    "7054": {
+        "name": "Woltersdorf (TF), Berliner Ch.", 
+        "lon": 13.206897722732721, 
+        "line_names": [
+            "770", 
+            "750", 
+            "752"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.1140631242509, 
+        "IBNR": 9245336
+    }, 
+    "7427": {
+        "name": "S Flughafen Berlin-Sch\u00f6nefeld Bhf", 
+        "lon": 13.514319816220537, 
+        "line_names": [
+            "RB14", 
+            "S9", 
+            "164", 
+            "RE7", 
+            "734", 
+            "735", 
+            "736", 
+            "742", 
+            "163", 
+            "RE5", 
+            "N7", 
+            "171", 
+            "S45", 
+            "EV", 
+            "N60", 
+            "741", 
+            "RB22"
+        ], 
+        "train_types": [
+            "RB", 
+            "S", 
+            "SLB", 
+            "Bus", 
+            "RE"
+        ], 
+        "lat": 52.39173092289253, 
+        "IBNR": 9260005
+    }, 
+    "7430": {
+        "name": "Flughafen Berlin Brandenburg Airport", 
+        "lon": 13.514967039552538, 
+        "line_names": [
+            "X11"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.36553635637235, 
+        "IBNR": 9260009
+    }, 
+    "7442": {
+        "name": "Waltersdorf (bei Berlin), Berliner Str.", 
+        "lon": 13.559517578905314, 
+        "line_names": [
+            "735", 
+            "734", 
+            "263", 
+            "736", 
+            "741", 
+            "738"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.361221534159014, 
+        "IBNR": 9260023
+    }, 
+    "7562": {
+        "name": "Waltersdorf (bei Berlin), Bohnsdorfer Weg", 
+        "lon": 13.552335197762686, 
+        "line_names": [
+            "736", 
+            "734", 
+            "735", 
+            "263"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.36786456252497, 
+        "IBNR": 9260506
+    }, 
+    "7563": {
+        "name": "Waltersdorf (bei Berlin), Gaspumpstation", 
+        "lon": 13.565738114262885, 
+        "line_names": [
+            "263"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.37612564922094, 
+        "IBNR": 9260507
+    }, 
+    "7564": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Gartenstr.", 
+        "lon": 13.525664202956452, 
+        "line_names": [
+            "163"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.39284558529764, 
+        "IBNR": 9260508
+    }, 
+    "7565": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Seeweg", 
+        "lon": 13.534536556132641, 
+        "line_names": [
+            "163"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.394436675988814, 
+        "IBNR": 9260509
+    }, 
+    "7566": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Waltersdorfer Chaussee", 
+        "lon": 13.519191969636436, 
+        "line_names": [
+            "260", 
+            "164", 
+            "N7", 
+            "N60", 
+            "171", 
+            "742"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.39670195765082, 
+        "IBNR": 9260510
+    }, 
+    "7567": {
+        "name": "Waltersdorf (bei Berlin), Vorwerk", 
+        "lon": 13.566214542548941, 
+        "line_names": [
+            "263"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 52.37218837395126, 
+        "IBNR": 9260511
+    }, 
+    "7568": {
+        "name": "Waltersdorf (bei Berlin), Lilienthalstr.", 
+        "lon": 13.561513184178986, 
+        "line_names": [
+            "263", 
+            "738"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.36783759488614, 
+        "IBNR": 9260512
+    }, 
+    "7569": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Wehrmathen", 
+        "lon": 13.521034758290053, 
+        "line_names": [
+            "260", 
+            "N60", 
+            "164", 
+            "744"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.399021174590494, 
+        "IBNR": 9260516
+    }, 
+    "7571": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Thomas-Dachser-Allee", 
+        "lon": 13.492287255293649, 
+        "line_names": [
+            "741", 
+            "742"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.386634039153016, 
+        "IBNR": 9260518
+    }, 
+    "7572": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Schwimmhalle", 
+        "lon": 13.50213044346784, 
+        "line_names": [
+            "742", 
+            "741"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.39238713543748, 
+        "IBNR": 9260519
+    }, 
+    "7574": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Elly-Beinhorn-Ring", 
+        "lon": 13.521277467039551, 
+        "line_names": [
+            "735", 
+            "263", 
+            "736", 
+            "734"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.36868258090292, 
+        "IBNR": 9260537
+    }, 
+    "7575": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Hugo-Eckener-Allee", 
+        "lon": 13.524432680783061, 
+        "line_names": [
+            "735", 
+            "263", 
+            "734", 
+            "736"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.36550938873352, 
+        "IBNR": 9260538
+    }, 
+    "7576": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Willy-Brandt-Platz", 
+        "lon": 13.509582500998802, 
+        "line_names": [
+            "735", 
+            "736", 
+            "263", 
+            "734"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.36488913304035, 
+        "IBNR": 9260539
+    }, 
     "7602": {
         "name": "Intercamping", 
         "lon": 13.682984418697563, 
@@ -38999,5 +40583,194 @@
         ], 
         "lat": 52.37060627247304, 
         "IBNR": 9260607
+    }, 
+    "7603": {
+        "name": "Berlin, Schm\u00f6ckwitzwerder", 
+        "lon": 13.6933220135837, 
+        "line_names": [
+            "733"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.3717299240911, 
+        "IBNR": 9260608
+    }, 
+    "7649": {
+        "name": "Gro\u00dfziethen, Stadtgrenze Berlin", 
+        "lon": 13.438801438274071, 
+        "line_names": [
+            "744"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.414446664003194, 
+        "IBNR": 9260726
+    }, 
+    "7746": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Dorf", 
+        "lon": 13.505258689572514, 
+        "line_names": [
+            "742", 
+            "741"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.38726328405914, 
+        "IBNR": 9260935
+    }, 
+    "7747": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Oberschule", 
+        "lon": 13.530239712345185, 
+        "line_names": [
+            "744"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.39502996404315, 
+        "IBNR": 9260937
+    }, 
+    "7834": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Grundschule", 
+        "lon": 13.501734918098283, 
+        "line_names": [
+            "741"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.39462544946065, 
+        "IBNR": 9261106
+    }, 
+    "10082": {
+        "name": "Prenzlau, Berliner Str.", 
+        "lon": 13.823413903316021, 
+        "line_names": [
+            "503", 
+            "502", 
+            "416", 
+            "441", 
+            "427", 
+            "428", 
+            "445", 
+            "419", 
+            "421", 
+            "431", 
+            "448", 
+            "411", 
+            "435", 
+            "425"
+        ], 
+        "train_types": [
+            "Bus"
+        ], 
+        "lat": 53.30204155013983, 
+        "IBNR": 9340512
+    }, 
+    "7904": {
+        "name": "Sch\u00f6nefeld (bei Berlin), Hans-Grade-Allee", 
+        "lon": 13.499730323611667, 
+        "line_names": [
+            "741", 
+            "742"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.38955553335997, 
+        "IBNR": 9261341
+    }, 
+    "7921": {
+        "name": "Kuschkow, Berliner Str.", 
+        "lon": 13.957065521374352, 
+        "line_names": [
+            "506"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 52.05918397922493, 
+        "IBNR": 9261409
+    }, 
+    "7951": {
+        "name": "L\u00fcbben, Berliner Chaussee", 
+        "lon": 13.887453056332403, 
+        "line_names": [
+            "608", 
+            "472", 
+            "476", 
+            "500", 
+            "502", 
+            "506", 
+            "508", 
+            "509", 
+            "512", 
+            "516", 
+            "518"
+        ], 
+        "train_types": [
+            "SLB", 
+            "Bus"
+        ], 
+        "lat": 51.94505693168198, 
+        "IBNR": 9261501
+    }, 
+    "7952": {
+        "name": "L\u00fcbben, Berliner Str.", 
+        "lon": 13.89262185377547, 
+        "line_names": [
+            "476", 
+            "500", 
+            "502", 
+            "509", 
+            "472", 
+            "512", 
+            "518"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 51.94279165001998, 
+        "IBNR": 9261502
+    }, 
+    "7991": {
+        "name": "Luckau, Berliner Str.", 
+        "lon": 13.704082101478226, 
+        "line_names": [
+            "468", 
+            "469", 
+            "471", 
+            "467"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 51.856899720335605, 
+        "IBNR": 9261576
+    }, 
+    "8099": {
+        "name": "Waltersdorf (bei Berlin), Siedlung", 
+        "lon": 13.584354774270874, 
+        "line_names": [
+            "738"
+        ], 
+        "train_types": [
+            "Bus", 
+            "SLB"
+        ], 
+        "lat": 52.37893028365961, 
+        "IBNR": 9261997
     }
 }

@@ -55,7 +55,7 @@
     </div>
 
 
-    <div id="nodenet_editor" class="section-margin collapse in">
+    <div id="nodenet_editor" class="section-margin collapse">
         <div class="section">
             <div class="editor_field span9">
                 <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
@@ -328,10 +328,10 @@
         </form>
     </div>
 
-    <div id="world_editor" class="section-margin collapse">
+    <div id="world_editor" class="section-margin collapse  in">
         <div class="section">
             <div class="editor_field span9">
-                <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
+                <canvas id="world" width="1445" height="900" style="background:#eeeeee"></canvas>
             </div>
             <div class="editor_field " id="world_forms">
                 <form>
@@ -486,5 +486,7 @@
 
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
+    <script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
+
 
 %rebase boilerplate title = "MicroPsi Simulator"

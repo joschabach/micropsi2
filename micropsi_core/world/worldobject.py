@@ -21,7 +21,7 @@ class WorldObject(object):
         if type not in self.world.data:
             self.world.data[type] = {}
         if uid not in self.world.data[type]:
-            self.world.data[type][uid] = {}
+            self.world.data[type][uid] = data
         self.data = self.world.data[type][uid]
         self.data["uid"] = uid
         self.initialize_worldobject(data)

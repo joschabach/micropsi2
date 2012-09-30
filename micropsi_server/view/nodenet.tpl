@@ -55,7 +55,7 @@
     </div>
 
 
-    <div id="nodenet_editor" class="section-margin collapse">
+    <div id="nodenet_editor" class="section-margin collapse in">
         <div class="section">
             <div class="editor_field span9">
                 <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
@@ -332,7 +332,7 @@
         </form>
     </div>
 
-    <div id="world_editor" class="section-margin collapse  in">
+    <div id="world_editor" class="section-margin collapse in">
         <div class="section">
             <div class="editor_field span9">
                 <canvas id="world" width="1445" height="900" style="background:#eeeeee"></canvas>

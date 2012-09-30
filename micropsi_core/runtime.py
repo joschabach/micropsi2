@@ -344,7 +344,9 @@ class MicroPsiRuntime(object):
         return self.worlds[world_uid].supported_worldadapters
 
     def get_world_objects(self, world_uid):
-        return self.worlds[world_uid].data.get('objects', [])
+        if world_uid in self.worlds:
+            return self.worlds[world_uid].data.get('objects', [])
+        return []
 
     def new_world(self, world_name, world_type, owner=""):
         """Creates a new world manager and registers it.

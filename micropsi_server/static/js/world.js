@@ -76,12 +76,14 @@ function setCurrentWorld(uid){
 
 function load_world_info(){
     api('get_world_objects', {world_uid: currentWorld}, function(data){
+        $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
         objectLayer.removeChildren();
         objects = {};
         for(var key in data){
             addObject(new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
         }
         updateViewSize();
+        refreshWorldList();
     });
 }
 

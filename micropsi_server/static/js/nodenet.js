@@ -63,7 +63,6 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-currentWorld = $.cookie('selected_world') || 0;       // TODO: fetch from cookie
 var currentNodeSpace = 0;   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -104,7 +103,6 @@ function loadWorldData(nodenet_data){
             success=function(data){
                 world_data = data;
                 currentWorld = data.uid;
-                $.cookie('selected_world', currentWorld, {expires:7, path: '/'});
                 str = '';
                 for (var name in world_data.worldadapters){
                     str += '<option>'+name+'</option>';

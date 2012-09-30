@@ -500,10 +500,21 @@ def edit_world():
 def nodenet_list(current_nodenet=None):
     user_id, permissions, token = get_request_data()
     nodenets = micropsi.get_available_nodenets()
-    return template("nodenet_list", user_id=user_id,
-        current_nodenet=current_nodenet,
-        my_nodenets=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner == user_id),
-        other_nodenets=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner != user_id))
+    return template("nodenet_list", type="nodenet", user_id=user_id,
+        current=current_nodenet,
+        mine=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner == user_id),
+        others=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner != user_id))
+
+
+@route("/world_list/")
+@route("/world_list/<current_world>")
+def world_list(current_world=None):
+    user_id, permissions, token = get_request_data()
+    worlds = micropsi.get_available_worlds()
+    return template("nodenet_list", type="world", user_id=user_id,
+        current=current_world,
+        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == user_id),
+        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
 @rpc("select_nodenet")

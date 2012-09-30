@@ -299,8 +299,12 @@
                                 <td><span data-toggle="collapse" data-target="#world_editor"><i
                                         class="icon-chevron-right"></i></span></td>
 
-                                <td>
-                                    <input id="current_world_name" disabled="disabled" value="Context"/>
+                                 <td>
+                                    <div class="btn-group" id="world_list">
+                                        <a class="btn" href="#">
+                                            (no world selected)
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         </table>

@@ -30,12 +30,13 @@ var viewProperties = {
     },
     label: {
         x: 10,
-        y: -10,
-        width: 80
+        y: -10
     }
 };
 
 objects = {};
+
+currentWorld = $.cookie('selected_world') || null;
 
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
@@ -51,13 +52,23 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 objectLayer.addChild(selectionBox);
 
-
-currentWorld = false;
-if(!currentWorld){
-    currentWorld = $.cookie('selected_world');
+refreshWorldList();
+if (currentWorld){
+    setCurrentWorld(currentWorld);
+}
+function refreshWorldList(){
+    $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
+        $('#world_list .world_select').on('click', function(event){
+            event.preventDefault();
+            var el = $(event.target);
+            var uid = el.attr('data');
+            setCurrentWorld(uid);
+        });
+    });
 }
 
-if(currentWorld){
+function setCurrentWorld(uid){
+    currentWorld = uid;
     // todo: get url from api.
     canvas.css('background', 'url("/static/img/berlin/berlin_transit.png") no-repeat top left');
     load_world_info();
@@ -65,6 +76,8 @@ if(currentWorld){
 
 function load_world_info(){
     api('get_world_objects', {world_uid: currentWorld}, function(data){
+        objectLayer.removeChildren();
+        objects = {};
         for(var key in data){
             addObject(new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
         }

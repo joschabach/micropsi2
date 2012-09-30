@@ -54,7 +54,10 @@ class MicroPsiRuntime(object):
             uid = tools.generate_uid()
             filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
             self.world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
-            self.save_world(uid)
+            with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:
+                fp.write(json.dumps(self.world_data[uid], sort_keys=True, indent=4))
+            fp.close()
+
         for uid in self.world_data:
             if "world_type" in self.world_data[uid]:
                 try:

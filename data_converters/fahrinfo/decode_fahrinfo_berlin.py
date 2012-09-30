@@ -94,7 +94,7 @@ def parse_files():
         "train_number":i["trainNumber"],
         "train_type": train_types.get(i["trainType"]),
         "line_name":line_names.get(i["trainNumber"])}
-                    for i in planZug}
+                    for i in planZug }
 
     # sort train lines by stops
     stops = dict()
@@ -108,7 +108,7 @@ def parse_files():
     # compile a list of stations in Berlin
     berlin_stations = dict()
     for station in planB:
-        if " (Berlin)" in station["name"]:
+        if "Berlin" in station["name"]:
             coord = geo_coords.get(station["b1_id"])
             station_lines = { i: train_lines.get(i) for i in stops.get(station["b1_id"], [])}
             station_line_names = []
@@ -129,8 +129,8 @@ def parse_files():
                 "line_names": station_line_names
             }
 
-    #with open(os.path.join(os.path.dirname(__file__),"fahrinfo_stations.json"), mode='w+') as file:
-    #    json.dump(berlin_stations, file, indent = 4)
+    with open(os.path.join(os.path.dirname(__file__),"fahrinfo_stations.json"), mode='w+') as file:
+        json.dump(berlin_stations, file, indent = 4)
 
     # compile a list of trains in Berlin, with a list of lines on each, and for each line, a list of stations and times
     lines = { i["id"]:i["stops"] for i in planLauf }
@@ -152,18 +152,12 @@ def parse_files():
         "schedule_number":i["wId"]
     } for i in planZug if i["id"] in berlin_train_runs}
 
-    with open(os.path.join(os.path.dirname(__file__),"train_runs.json"), mode='w+') as file:
-        json.dump(train_runs, file, indent = 4)
-
     # sort the train runs by day indices
     train_runs_by_schedule_number = dict()
     for i in train_runs:
         if not train_runs_by_schedule_number.has_key(train_runs[i]["schedule_number"]):
             train_runs_by_schedule_number[train_runs[i]["schedule_number"]] = dict()
         train_runs_by_schedule_number[train_runs[i]["schedule_number"]][i]=train_runs[i]
-
-    with open(os.path.join(os.path.dirname(__file__),"train_runs_by_schedule_number.json"), mode='w+') as file:
-        json.dump(train_runs_by_schedule_number, file, indent = 4)
 
     # create an index of days to schedule_numbers
     day_list = [i["days"] for i in planW]
@@ -173,8 +167,6 @@ def parse_files():
         for schedule_number in range (1, len(day_list)):
             if day_list[schedule_number][day]=="l":
                 day_to_schedule_numbers[day].append(schedule_number)
-    with open(os.path.join(os.path.dirname(__file__),"day_to_schedule_numbers.json"), mode='w+') as file:
-        json.dump(day_to_schedule_numbers, file, indent = 4)
 
     # create a list of timed events for each day
 
@@ -191,31 +183,53 @@ def parse_files():
         json.dump(days_to_train_ids, file, indent = 4)
 
     # sort arrivals/departures by trains
+
     events_by_trains = dict()
     for i in movements:
-        if not events_by_trains.has_key(movements[i]["train_id"]):
-            events_by_trains[movements[i]["train_id"]] = {"arr":{}, "dep":{}}
-        if movements[i]["arr"]>=0:
-            if events_by_trains[movements[i]["train_id"]]["arr"].has_key(movements[i]["arr"]):
-                print "double ",movements[i]["arr"],": ", events_by_trains[movements[i]["train_id"]]["arr"][movements[i]["arr"]]
-                print "       ",movements[i]["arr"],": ", movements[i]["station_id"]
-
-
-
-            events_by_trains[movements[i]["train_id"]]["arr"][movements[i]["arr"]] = movements[i]["station_id"]
-        if movements[i]["dep"]>=0:
-
-            events_by_trains[movements[i]["train_id"]]["dep"][movements[i]["dep"]] = movements[i]["station_id"]
+        train_id = movements[i]["train_id"]
+        if not events_by_trains.has_key(train_id):
+            events_by_trains[train_id] = {
+                "line_name": train_runs[train_id]["line_name"],
+                "train_type": train_runs[train_id]["train_type"],
+                "stops": {},
+                "begin": 9999,
+                "end": -1
+            }
+        stops = lines[train_runs[train_id]["line_id"]]
+        station_index = stops.index(movements[i]["station_id"])
+        events_by_trains[train_id]["stops"][station_index] = {
+            "arr": movements[i]["arr"],
+            "dep": movements[i]["dep"],
+            "station_id": movements[i]["station_id"],
+        }
+        if events_by_trains[train_id]["begin"] > movements[i]["arr"] > -1:
+            events_by_trains[train_id]["begin"] = movements[i]["arr"]
+        if movements[i]["dep"] > events_by_trains[train_id]["end"]:
+            events_by_trains[train_id]["end"] = movements[i]["dep"]
 
     with open(os.path.join(os.path.dirname(__file__),"events_by_trains.json"), mode='w+') as file:
         json.dump(events_by_trains, file, indent = 4)
 
-    # train_ids to movements
 
-    # for each day, a list of events: time: arrivals: (train, station); departures: (train, station)
+    train_state = {}
+    for day in range (0, 100):
+        todays_trains = days_to_train_ids[day]
+        for minute in range (0, 60*24):
+            for i in todays_trains:
+                if minute < events_by_trains[i]["begin"] or minute > events_by_trains[i]["end"]:
+                    if train_state.has_key(i): del train_state[i]
+                else:
+                    if not train_state.has_key(i):
+                        train_state[i] = { "pos_index": 0 }
+                    #if events_by_trains[i]["stops"][train_state[i]["pos_index"]]["arr"]
 
-    # züge nach tagen sortieren
-    days_to_trains = dict()
+
+
+#for each train, mark the time interval in which it is computed (write it down, so we can test it quickly)
+#always store the index of the current station. we can get all other data from this.
+
+
+
 
     # zu den zügen die arrs und depts zuordnen, und zwar als liste von depts:{deptstation, nextstation, arrival}
 

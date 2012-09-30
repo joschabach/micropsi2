@@ -104,7 +104,7 @@ function loadWorldData(nodenet_data){
             success=function(data){
                 world_data = data;
                 currentWorld = data.uid;
-                $.cookie('current_world', currentWorld, {expires:7, path: '/'});
+                $.cookie('selected_world', currentWorld, {expires:7, path: '/'});
                 str = '';
                 for (var name in world_data.worldadapters){
                     str += '<option>'+name+'</option>';

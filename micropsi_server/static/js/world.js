@@ -47,7 +47,7 @@ objectLayer.addChild(selectionBox);
 
 currentWorld = false;
 if(!currentWorld){
-    currentWorld = $.cookie('current_world');
+    currentWorld = $.cookie('selected_world');
 }
 
 if(currentWorld){

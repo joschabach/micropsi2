@@ -325,7 +325,10 @@ def create_user_submit():
             (role == "Full" and "create full" in permissions) or
             (role == "Restricted" and "create restricted" in permissions)):
             if usermanager.create_user(userid, password, role, uid=micropsi_core.tools.generate_uid()):
-                redirect('/user_mgt')
+                if request.is_xhr:
+                    return dict(status="OK", redirect='/user_mgt')
+                else:
+                    redirect('/user_mgt')
             else:
                 return dict(status="error", msg="User creation failed for an obscure internal reason.")
         else:

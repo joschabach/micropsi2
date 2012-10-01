@@ -22,7 +22,7 @@
                                 <td style="white-space:nowrap;">
                                     <div id="nodespace_control" class="collapse in">
                                         &nbsp;&nbsp;Nodespace:
-                                        <input id="nodespace_name" class="input-large" disabled="disabled"
+                                        <input id="nodespace_name" type="text" class="input-large" disabled="disabled"
                                                value="Root"/>
                                         <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
                                     </div>
@@ -43,7 +43,7 @@
                         </span>
                                 </td>
 
-                                <td align="right"><input id="nodenet_step" disabled="disabled"
+                                <td align="right"><input id="nodenet_step" type="text" disabled="disabled"
                                                          style="text-align:right; width:60px;" value="0"/></td>
 
                             </tr>
@@ -321,7 +321,7 @@
                         </span>
                                 </td>
 
-                                <td align="right"><input id="world_step" disabled="disabled"
+                                <td align="right"><input id="world_step" type="text" disabled="disabled"
                                                          style="text-align:right; width:60px;" value="0"/></td>
 
                             </tr>

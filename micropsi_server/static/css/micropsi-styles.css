@@ -67,18 +67,6 @@
   font-size: 120%;
 }
 
-input, textarea {
-  border-width: 1px;
-  border-style: solid;
-  border-radius: 3px;
-  padding: 3px;
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-  -webkit-transition: border linear 0.2s,box-shadow linear 0.2s;
-  -moz-transition: border linear 0.2s,box-shadow linear 0.2s;
-}
-
 .section {
     min-height: 20px;
     padding: 0px;
@@ -98,6 +86,34 @@ input, textarea {
     width: 200px;
     min-width: 200px;
 }
+
+
+/** condense forms in sections **/
+.section .form-horizontal {
+  padding: 0 5px;
+}
+.section .form-horizontal .control-group {
+  margin-bottom: 2px;
+  border-bottom: 1px solid #eee;
+}
+.section .form-horizontal input,
+.section .form-horizontal select,
+.section .form-horizontal textarea {
+  padding: 1px 3px;
+  height: auto;
+  font-size: 13px;
+  line-height: 18px;
+}
+.section .form-horizontal .control-label{
+  width: 100px;
+  font-size: 13px;
+  line-height: 18px;
+  padding: 1px 3px;
+}
+.section .form-horizontal .controls{
+  margin-left: 110px;
+}
+
 
 
 /**
@@ -149,7 +165,10 @@ input, textarea {
 #nodenet_forms h4{
   padding: 1em;
   border-bottom: 1px solid #dedede;
-  margin-bottom: 2em;
+  margin-bottom: 1em;
+}
+.table-condensed tr, .table-condensed td {
+  padding: 1px 3px;
 }
 .controls .table-condensed {
   width:218px;

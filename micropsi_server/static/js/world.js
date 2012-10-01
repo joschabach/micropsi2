@@ -51,6 +51,7 @@ refreshWorldList();
 if (currentWorld){
     setCurrentWorld(currentWorld);
 }
+initializeControls();
 
 function refreshWorldList(){
     $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
@@ -251,4 +252,22 @@ function onMouseMove(event) {
         label.remove();
         label = null;
     }
+}
+
+
+// --------------------------- controls -------------------------------------------------------- //
+
+function initializeControls(){
+    $('#world_start').on('click', startWorldrunner);
+    $('#world_stop').on('click', stopWorldrunner);
+}
+
+function startWorldrunner(event){
+    event.preventDefault();
+    api('start_worldrunner', {world_uid: currentWorld});
+}
+
+function stopWorldrunner(event){
+    event.preventDefault();
+    api('stop_worldrunner', {world_uid: currentWorld});
 }

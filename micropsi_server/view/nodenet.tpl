@@ -37,9 +37,9 @@
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
-                          <a href="#" class="btn"><i class="icon-play"></i></a>
+                          <a href="#" id="nodenet_start" class="btn"><i class="icon-play"></i></a>
                           <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
-                          <a href="#" class="btn"><i class="icon-pause"></i></a>
+                          <a href="#" id="nodenet_stop" class="btn"><i class="icon-pause"></i></a>
                         </span>
                                 </td>
 
@@ -315,9 +315,9 @@
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
-                          <a href="#" class="btn"><i class="icon-play"></i></a>
-                          <a href="#" class="btn"><i class="icon-step-forward"></i></a>
-                          <a href="#" class="btn"><i class="icon-pause"></i></a>
+                          <a href="#" id="world_start" class="btn"><i class="icon-play"></i></a>
+                          <a href="#" id="world_step_forward" class="btn"><i class="icon-step-forward"></i></a>
+                          <a href="#" id="world_stop" class="btn"><i class="icon-pause"></i></a>
                         </span>
                                 </td>
 

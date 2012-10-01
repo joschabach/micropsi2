@@ -44,12 +44,12 @@ class World(object):
         self.data["owner"] = identifier
 
     @property
-    def step(self):
-        return self.data.get("step")
+    def current_step(self):
+        return self.data.get("step", 0)
 
-    @step.setter
-    def step(self, step):
-        self.data.step = step
+    @current_step.setter
+    def current_step(self, current_step):
+        self.data['step'] = current_step
 
     supported_worldadapters = ['Default', 'Braitenberg']
 
@@ -126,10 +126,10 @@ class World(object):
         for uid, agent in self.data.get('agents', {}).items():
             self.agents[uid] = getattr(agent, agent.type)(self, 'agents', uid=uid, **self.data.agents[uid])
 
-    def step_world(self):
+    def step(self):
         for uid in self.objects:
             self.objects[uid].update()
-        self.step = self.step + 1
+        self.current_step = self.current_step + 1
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.

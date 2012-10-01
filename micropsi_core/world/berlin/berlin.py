@@ -16,15 +16,17 @@ class Berlin(World):
         'x2': 13.688858,
     }
 
-    map_dimensions = {
+    representation_2d = {
+        'image': 'berlin/berlin_transit.png',
         'x': 1445,
         'y': 900
     }
 
     def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=1):
         World.__init__(self, runtime, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
-        self.scale_x = (self.map_dimensions['x'] / -(self.coords['x1'] - self.coords['x2']))
-        self.scale_y = (self.map_dimensions['y'] / -(self.coords['y1'] - self.coords['y2']))
+        self.data['representation_2d'] = self.representation_2d
+        self.scale_x = (self.representation_2d['x'] / -(self.coords['x1'] - self.coords['x2']))
+        self.scale_y = (self.representation_2d['y'] / -(self.coords['y1'] - self.coords['y2']))
         self.add_transit_stations()
 
     def add_transit_stations(self):
@@ -52,6 +54,3 @@ class Berlin(World):
                 else:
                     entry['pos'] = (0, 0)
                 self.objects[key] = worldobject.Station(self, 'objects', uid=key, **entry)
-
-    def get_2d_representation(self):
-        return 'berlin_transit.png'

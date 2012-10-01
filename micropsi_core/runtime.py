@@ -332,7 +332,8 @@ class MicroPsiRuntime(object):
             dictionary containing the information
         """
         from micropsi_core.world import worldadapter
-        data = {'uid': world_uid, 'worldadapters': {}}
+        data = self.worlds[world_uid].data
+        data['worldadapters'] = {}
         for name in self.worlds[world_uid].supported_worldadapters:
             data['worldadapters'][name] = {
                 'datasources': getattr(worldadapter, name).datasources.keys(),

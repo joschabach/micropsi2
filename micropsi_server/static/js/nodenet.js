@@ -1431,6 +1431,8 @@ function initializeMenus() {
 }
 
 function initializeControls(){
+    $('#nodenet_start').on('click', startNodenetrunner);
+    $('#nodenet_stop').on('click', stopNodenetrunner);
     $('#nodenet_step_forward').on('click', stepNodenet);
 }
 
@@ -1442,6 +1444,15 @@ function stepNodenet(event){
             setCurrentNodenet(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
         });
+}
+
+function startNodenetrunner(event){
+    event.preventDefault();
+    api('start_nodenetrunner', {nodenet_uid: currentNodenet});
+}
+function stopNodenetrunner(event){
+    event.preventDefault();
+    api('stop_nodenetrunner', {nodenet_uid: currentNodenet});
 }
 
 var clickPosition = null;

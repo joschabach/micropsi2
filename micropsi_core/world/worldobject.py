@@ -30,6 +30,6 @@ class WorldObject(object):
         """ sets the values from the data """
         pass
 
-    def update():
+    def update(self):
         """ Called by the world at each world iteration """
         pass

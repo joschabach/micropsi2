@@ -560,6 +560,10 @@ class MicroPsiRuntime(object):
             return True
         return False
 
+    def set_node_activation(self, nodenet_uid, node_uid, activation):
+        self.nodenets[nodenet_uid].nodes[node_uid].activation = activation
+        return True
+
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""
         nodenet = self.nodenets[nodenet_uid]

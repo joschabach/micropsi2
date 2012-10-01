@@ -9,6 +9,7 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
+import micropsi_core
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype
 from micropsi_core.world import world
 import os
@@ -19,6 +20,8 @@ import warnings
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
+
+AVAILABLE_WORLD_TYPES = ['World', 'berlin', 'island']  # TODO
 
 
 class Bunch(dict):
@@ -52,11 +55,14 @@ class MicroPsiRuntime(object):
             uid = tools.generate_uid()
             filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
             self.world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
-            self.save_world(uid)
+            with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:
+                fp.write(json.dumps(self.world_data[uid], sort_keys=True, indent=4))
+            fp.close()
+
         for uid in self.world_data:
             if "world_type" in self.world_data[uid]:
                 try:
-                    self.worlds[uid] = getattr(world, self.world_data[uid].world_type)(self, **self.world_data[uid])
+                    self.worlds[uid] = self._get_world_class(self.world_data[uid].world_type)(self, **self.world_data[uid])
                 except AttributeError, err:
                     warnings.warn("Unknown world_type: %s (%s)" % (self.world_data[uid].world_type, err.message))
             else:
@@ -70,10 +76,18 @@ class MicroPsiRuntime(object):
             return self.nodenet_data[nodenet_uid].world
         return None
 
+    def _get_world_class(self, world_type):
+        try:
+            return getattr(world, world_type)
+        except AttributeError:
+            # here be dragons
+            __import__("micropsi_core.world.%s" % world_type, fromlist=['micropsi_core.world'])
+            mod = __import__("micropsi_core.world.%s.%s" % (world_type, world_type), fromlist=['micropsi_core.world.%s' % world_type])
+            return getattr(mod, world_type.capitalize())
+
     # MicroPsi API
 
     # Nodenet
-
     def get_available_nodenets(self, owner=None):
         """Returns a dict of uids: Nodenet of available (running and stored) nodenets.
 
@@ -318,7 +332,8 @@ class MicroPsiRuntime(object):
             dictionary containing the information
         """
         from micropsi_core.world import worldadapter
-        data = {'uid': world_uid, 'worldadapters': {}}
+        data = self.worlds[world_uid].data
+        data['worldadapters'] = {}
         for name in self.worlds[world_uid].supported_worldadapters:
             data['worldadapters'][name] = {
                 'datasources': getattr(worldadapter, name).datasources.keys(),
@@ -328,9 +343,12 @@ class MicroPsiRuntime(object):
 
     def get_worldadapters(self, world_uid):
         """Returns the world adapters available in the given world"""
+        return self.worlds[world_uid].supported_worldadapters
+
+    def get_world_objects(self, world_uid):
         if world_uid in self.worlds:
-            return self.worlds[world_uid].supported_worldadapters
-        return None
+            return self.worlds[world_uid].data.get('objects', [])
+        return []
 
     def new_world(self, world_name, world_type, owner=""):
         """Creates a new world manager and registers it.
@@ -347,9 +365,14 @@ class MicroPsiRuntime(object):
         uid = tools.generate_uid()
         filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
         self.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename, version=1, owner=owner)
-        self.save_world(uid)
-        self.worlds[uid] = getattr(world, world_type)(self, **self.world_data[uid])
-        return uid
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(self.world_data[uid], sort_keys=True, indent=4))
+        fp.close()
+        try:
+            self.worlds[uid] = self._get_world_class(world_type)(self, **self.world_data[uid])
+        except AttributeError:
+            return False, "World type unknown"
+        return True, uid
 
     def delete_world(self, world_uid):
         """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
@@ -397,7 +420,7 @@ class MicroPsiRuntime(object):
     def revert_world(self, world_uid):
         """Reverts the world to the last saved state."""
         data = self.world_data[world_uid]
-        self.worlds[world_uid] = getattr(world, data.world_type)(self, **data)
+        self.worlds[world_uid] = self._get_world_class(data.world_type)(self, **data)
         return True
 
     def save_world(self, world_uid):
@@ -424,7 +447,7 @@ class MicroPsiRuntime(object):
             fp.write(json.dumps(data))
         fp.close()
         self.world_data[data['uid']] = parse_definition(data, filename)
-        self.worlds[data['uid']] = getattr(world, self.world_data[data['uid']].world_type)(self, **self.world_data[data['uid']])
+        self.worlds[data['uid']] = self._get_world_class(self.world_data[data['uid']].world_type)(self, **self.world_data[data['uid']])
         return data['uid']
 
     # Monitor
@@ -537,6 +560,10 @@ class MicroPsiRuntime(object):
             node.state = state
             return True
         return False
+
+    def set_node_activation(self, nodenet_uid, node_uid, activation):
+        self.nodenets[nodenet_uid].nodes[node_uid].activation = activation
+        return True
 
     def delete_node(self, nodenet_uid, node_uid):
         """Removes the node"""

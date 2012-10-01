@@ -106,6 +106,7 @@ input, textarea {
 
 .notifications {
   position: fixed;
+  z-index: 1050;
 }
 
 /* Positioning */

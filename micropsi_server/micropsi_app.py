@@ -16,6 +16,7 @@ __date__ = '15.05.12'
 VERSION = "0.1"
 
 import micropsi_core.runtime
+from micropsi_core.runtime import AVAILABLE_WORLD_TYPES
 import micropsi_core.tools
 import usermanagement
 import bottle
@@ -476,7 +477,7 @@ def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, worldtypes=["Standard"],
+    return template("world_form.tpl", title=title, worldtypes=AVAILABLE_WORLD_TYPES,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -486,11 +487,11 @@ def edit_world_form():
 def edit_world():
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        result, uid = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
         if result:
-            return dict(status="success", msg="World created", world_uid=result)
+            return dict(status="success", msg="World created", world_uid=uid)
         else:
-            return dict(status="error", msg="Error saving nodenet: %s" % result)
+            return dict(status="error", msg=": %s" % result)
     return dict(status="error", msg="Insufficient rights to create world")
 
 
@@ -499,10 +500,21 @@ def edit_world():
 def nodenet_list(current_nodenet=None):
     user_id, permissions, token = get_request_data()
     nodenets = micropsi.get_available_nodenets()
-    return template("nodenet_list", user_id=user_id,
-        current_nodenet=current_nodenet,
-        my_nodenets=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner == user_id),
-        other_nodenets=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner != user_id))
+    return template("nodenet_list", type="nodenet", user_id=user_id,
+        current=current_nodenet,
+        mine=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner == user_id),
+        others=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner != user_id))
+
+
+@route("/world_list/")
+@route("/world_list/<current_world>")
+def world_list(current_world=None):
+    user_id, permissions, token = get_request_data()
+    worlds = micropsi.get_available_worlds()
+    return template("nodenet_list", type="world", user_id=user_id,
+        current=current_world,
+        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == user_id),
+        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
 @rpc("select_nodenet")
@@ -557,6 +569,18 @@ def delete_nodenet(nodenet_uid):
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
+
+
+@rpc("set_node_state")
+def set_node_state(nodenet_uid, node_uid, state):
+    if state == "":
+        state = None
+    return micropsi.set_node_state(nodenet_uid, node_uid, state)
+
+
+@rpc("set_node_activation")
+def set_node_activation(nodenet_uid, node_uid, activation):
+    return micropsi.set_node_activation(nodenet_uid, node_uid, activation)
 
 
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
@@ -624,9 +648,19 @@ def get_worldadapters(world_uid):
     return micropsi.get_worldadapters(world_uid)
 
 
+@rpc("get_world_objects")
+def get_world_objects(world_uid):
+    return micropsi.get_world_objects(world_uid)
+
+
 @rpc("new_world", permission_required="manage worlds")
 def new_world(world_name, world_type, owner=""):
     return micropsi.new_world(world_name, world_type, owner)
+
+
+@rpc("get_available_world_types")
+def get_available_world_types():
+    return AVAILABLE_WORLD_TYPES
 
 
 @rpc("delete_world", permission_required="manage worlds")

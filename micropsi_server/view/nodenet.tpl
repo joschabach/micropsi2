@@ -141,22 +141,22 @@
                         <div class="control-group">
                             <label class="control-label" for="node_type_input">Type</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_type_input" />
+                                <input type="text" name="node_type" disabled="disabled" id="node_type_input" />
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="control-group node state">
                             <label class="control-label" for="node_state_input">State</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_state_input" />
+                                <select type="text" name="node_state" id="node_state_input"></select>
                             </div>
                         </div>
-                        <div class="control-group">
+                        <div class="control-group node">
                             <label class="control-label" for="node_activation_input">Activation</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_activation_input">
+                                <input type="text" name="node_activation" id="node_activation_input">
                             </div>
                         </div>
-                        <div class="control-group parameters">
+                        <div class="control-group node parameters">
                             <label class="control-label">Parameters</label>
                             <div class="controls">
                                 <table id="node_parameters" class="table-striped table-condensed">
@@ -299,8 +299,12 @@
                                 <td><span data-toggle="collapse" data-target="#world_editor"><i
                                         class="icon-chevron-right"></i></span></td>
 
-                                <td>
-                                    <input id="current_world_name" disabled="disabled" value="Context"/>
+                                 <td>
+                                    <div class="btn-group" id="world_list">
+                                        <a class="btn" href="#">
+                                            (no world selected)
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         </table>
@@ -328,7 +332,7 @@
         </form>
     </div>
 
-    <div id="world_editor" class="section-margin collapse">
+    <div id="world_editor" class="section-margin collapse in">
         <div class="section">
             <div class="editor_field span9">
                 <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
@@ -486,5 +490,7 @@
 
     <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
+    <script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
+
 
 %rebase boilerplate title = "MicroPsi Simulator"

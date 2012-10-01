@@ -17,7 +17,7 @@ class Berlin(World):
     }
 
     representation_2d = {
-        'image': 'berlin/berlin_transit.png',
+        'image': 'berlin/berlin_transit2.png',
         'x': 1445,
         'y': 900
     }

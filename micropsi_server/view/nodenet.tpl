@@ -153,7 +153,7 @@
                         <div class="control-group node">
                             <label class="control-label" for="node_activation_input">Activation</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_activation_input">
+                                <input type="text" name="node_activation" id="node_activation_input">
                             </div>
                         </div>
                         <div class="control-group node parameters">

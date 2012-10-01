@@ -578,6 +578,11 @@ def set_node_state(nodenet_uid, node_uid, state):
     return micropsi.set_node_state(nodenet_uid, node_uid, state)
 
 
+@rpc("set_node_activation")
+def set_node_activation(nodenet_uid, node_uid, activation):
+    return micropsi.set_node_activation(nodenet_uid, node_uid, activation)
+
+
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
 def start_nodenetrunner(nodenet_uid): return micropsi.start_nodenetrunner
 

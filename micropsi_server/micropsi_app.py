@@ -587,23 +587,28 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 
 
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
-def start_nodenetrunner(nodenet_uid): return micropsi.start_nodenetrunner
+def start_nodenetrunner(nodenet_uid):
+    return micropsi.start_nodenetrunner(nodenet_uid)
 
 
 @rpc("set_nodenetrunner_timestep", permission_required="manage nodenets")
-def set_nodenetrunner_timestep(timestep): return micropsi.set_nodenetrunner_timestep
+def set_nodenetrunner_timestep(timestep):
+    return micropsi.set_nodenetrunner_timestep(timestep)
 
 
 @rpc("get_nodenetrunner_timestep", permission_required="manage server")
-def get_nodenetrunner_timestep(): return micropsi.get_nodenetrunner_timestep
+def get_nodenetrunner_timestep():
+    return micropsi.get_nodenetrunner_timestep()
 
 
 @rpc("get_is_nodenet_running")
-def get_is_nodenet_running(nodenet_uid): return micropsi.get_is_nodenet_running
+def get_is_nodenet_running(nodenet_uid):
+    return micropsi.get_is_nodenet_running(nodenet_uid)
 
 
 @rpc("stop_nodenetrunner", permission_required="manage nodenets")
-def stop_nodenetrunner(nodenet_uid): return micropsi.stop_nodenetrunner
+def stop_nodenetrunner(nodenet_uid):
+    return micropsi.stop_nodenetrunner(nodenet_uid)
 
 
 @rpc("step_nodenet", permission_required="manage nodenets")
@@ -675,20 +680,30 @@ def get_world_view(world_uid, step): return micropsi.get_world_view
 @rpc("set_world_properties", permission_required="manage worlds")
 def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return micropsi.set_world_properties
 
+
 @rpc("start_worldrunner", permission_required="manage worlds")
-def start_worldrunner(world_uid): return micropsi.start_worldrunner
+def start_worldrunner(world_uid):
+    return micropsi.start_worldrunner(world_uid)
+
 
 @rpc("get_worldrunner_timestep")
-def get_worldrunner_timestep(): return micropsi.get_worldrunner_timestep
+def get_worldrunner_timestep():
+    return micropsi.get_worldrunner_timestep()
+
 
 @rpc("get_is_world_running")
-def get_is_world_running(world_uid): return micropsi.get_is_world_running
+def get_is_world_running(world_uid):
+    return micropsi.get_is_world_running(world_uid)
+
 
 @rpc("set_worldrunner_timestep", permission_required="manage server")
-def set_worldrunner_timestep(): return micropsi.set_worldrunner_timestep
+def set_worldrunner_timestep():
+    return micropsi.set_worldrunner_timestep()
+
 
 @rpc("stop_worldrunner", permission_required="manage worlds")
-def stop_worldrunner(world_uid): return micropsi.stop_worldrunner
+def stop_worldrunner(world_uid):
+    return micropsi.stop_worldrunner(world_uid)
 
 
 @rpc("step_world", permission_required="manage worlds")

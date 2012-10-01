@@ -153,20 +153,6 @@ function createStation(worldobject){
     return shape;
 }
 
-// draw the label of a compact worldobject
-function createObjectLabel(worldobject) {
-    var labelText = new PointText(new Point(worldobject.bounds.x + worldobject.bounds.width/2,
-            worldobject.bounds.bottom+viewProperties.lineHeight));
-    labelText.content = worldobject.name ? worldobject.name : worldobject.uid;
-    labelText.characterStyle = {
-        fontSize: viewProperties.fontSize,
-        fillColor: viewProperties.objForegroundColor
-    };
-    labelText.paragraphStyle.justification = 'left';
-    labelText.name = "labelText";
-    return labelText;
-}
-
 function api(functionname, params, success, error, method){
     var url = '/rpc/'+functionname;
     if(method != "post"){

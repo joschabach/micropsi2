@@ -191,9 +191,10 @@ function getLegend(worldobject){
     var legend = new Group();
     legend.name = 'stationLegend';
     var bounds = worldobject.bounds;
+    var height = (viewProperties.fontSize*viewProperties.zoomFactor + 2*viewProperties.padding);
     var point = new Point(
         bounds.x + (viewProperties.label.x * viewProperties.zoomFactor),
-        bounds.y + (viewProperties.label.y) * viewProperties.zoomFactor);
+        Math.max(height, bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
     var text = new PointText(point);
     text.justification = 'left';
     text.content = (worldobject.name ? worldobject.name : worldobject.uid);
@@ -201,7 +202,13 @@ function getLegend(worldobject){
         fillColor: 'black',
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
-    var container = new Path.Rectangle(new Point(point.x - viewProperties.padding, point.y + viewProperties.padding), new Size(text.bounds.width + 2*viewProperties.padding, -(viewProperties.fontSize*viewProperties.zoomFactor + 2*viewProperties.padding)));
+    if(point.x + text.bounds.width + 2*viewProperties.padding > view.viewSize.width){
+        point = new Point(
+            view.viewSize.width - (text.bounds.width + 3*viewProperties.padding),
+            point.y);
+        text.point = point;
+    }
+    var container = new Path.Rectangle(new Point(point.x - viewProperties.padding, point.y + viewProperties.padding), new Size(text.bounds.width + 2*viewProperties.padding, -height));
     container.fillColor = 'white';
     legend.addChild(container);
     legend.addChild(text);

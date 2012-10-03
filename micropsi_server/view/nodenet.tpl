@@ -22,7 +22,7 @@
                                 <td style="white-space:nowrap;">
                                     <div id="nodespace_control" class="collapse in">
                                         &nbsp;&nbsp;Nodespace:
-                                        <input id="nodespace_name" class="input-large" disabled="disabled"
+                                        <input id="nodespace_name" type="text" class="input-large" disabled="disabled"
                                                value="Root"/>
                                         <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
                                     </div>
@@ -37,13 +37,13 @@
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
-                          <a href="#" class="btn"><i class="icon-play"></i></a>
+                          <a href="#" id="nodenet_start" class="btn"><i class="icon-play"></i></a>
                           <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
-                          <a href="#" class="btn"><i class="icon-pause"></i></a>
+                          <a href="#" id="nodenet_stop" class="btn"><i class="icon-pause"></i></a>
                         </span>
                                 </td>
 
-                                <td align="right"><input id="nodenet_step" disabled="disabled"
+                                <td align="right"><input id="nodenet_step" type="text" disabled="disabled"
                                                          style="text-align:right; width:60px;" value="0"/></td>
 
                             </tr>
@@ -55,7 +55,7 @@
     </div>
 
 
-    <div id="nodenet_editor" class="section-margin collapse">
+    <div id="nodenet_editor" class="section-margin collapse in">
         <div class="section">
             <div class="editor_field span9">
                 <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
@@ -153,7 +153,7 @@
                         <div class="control-group node">
                             <label class="control-label" for="node_activation_input">Activation</label>
                             <div class="controls">
-                                <input type="text" disabled="disabled" id="node_activation_input">
+                                <input type="text" name="node_activation" id="node_activation_input">
                             </div>
                         </div>
                         <div class="control-group node parameters">
@@ -299,8 +299,12 @@
                                 <td><span data-toggle="collapse" data-target="#world_editor"><i
                                         class="icon-chevron-right"></i></span></td>
 
-                                <td>
-                                    <input id="current_world_name" disabled="disabled" value="Context"/>
+                                 <td>
+                                    <div class="btn-group" id="world_list">
+                                        <a class="btn" href="#">
+                                            (no world selected)
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         </table>
@@ -311,13 +315,13 @@
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
                           <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
-                          <a href="#" class="btn"><i class="icon-play"></i></a>
-                          <a href="#" class="btn"><i class="icon-step-forward"></i></a>
-                          <a href="#" class="btn"><i class="icon-pause"></i></a>
+                          <a href="#" id="world_start" class="btn"><i class="icon-play"></i></a>
+                          <a href="#" id="world_step_forward" class="btn"><i class="icon-step-forward"></i></a>
+                          <a href="#" id="world_stop" class="btn"><i class="icon-pause"></i></a>
                         </span>
                                 </td>
 
-                                <td align="right"><input id="world_step" disabled="disabled"
+                                <td align="right"><input id="world_step" type="text" disabled="disabled"
                                                          style="text-align:right; width:60px;" value="0"/></td>
 
                             </tr>
@@ -328,10 +332,10 @@
         </form>
     </div>
 
-    <div id="world_editor" class="section-margin collapse  in">
+    <div id="world_editor" class="section-margin collapse in">
         <div class="section">
             <div class="editor_field span9">
-                <canvas id="world" width="1445" height="900" style="background:#eeeeee"></canvas>
+                <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
             </div>
             <div class="editor_field " id="world_forms">
                 <form>

@@ -63,7 +63,6 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-currentWorld = $.cookie('selected_world') || 0;       // TODO: fetch from cookie
 var currentNodeSpace = 0;   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -104,7 +103,6 @@ function loadWorldData(nodenet_data){
             success=function(data){
                 world_data = data;
                 currentWorld = data.uid;
-                $.cookie('selected_world', currentWorld, {expires:7, path: '/'});
                 str = '';
                 for (var name in world_data.worldadapters){
                     str += '<option>'+name+'</option>';
@@ -1433,6 +1431,8 @@ function initializeMenus() {
 }
 
 function initializeControls(){
+    $('#nodenet_start').on('click', startNodenetrunner);
+    $('#nodenet_stop').on('click', stopNodenetrunner);
     $('#nodenet_step_forward').on('click', stepNodenet);
 }
 
@@ -1444,6 +1444,15 @@ function stepNodenet(event){
             setCurrentNodenet(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
         });
+}
+
+function startNodenetrunner(event){
+    event.preventDefault();
+    api('start_nodenetrunner', {nodenet_uid: currentNodenet});
+}
+function stopNodenetrunner(event){
+    event.preventDefault();
+    api('stop_nodenetrunner', {nodenet_uid: currentNodenet});
 }
 
 var clickPosition = null;
@@ -1908,23 +1917,29 @@ function moveNode(nodeUid, x, y){
 function handleEditNode(event){
     event.preventDefault();
     form = $(event.target);
-    var nodeUid = clickOriginUid;
+    var nodeUid = $('#node_uid_input').val();
     $(".modal").modal("hide");
     var parameters = {};
     var fields = form.serializeArray();
     var name = null;
     var state = null;
+    var activation = null;
     for (var i in fields){
         if(nodetypes[nodes[nodeUid].type] &&
             (nodetypes[nodes[nodeUid].type].parameters || []).indexOf(fields[i].name) > -1 &&
             nodes[nodeUid].parameters[fields[i].name] != fields[i].value){
                 parameters[fields[i].name] = fields[i].value;
         }
-        if (fields[i].name == "node_name"){
-            name = fields[i].value;
-        }
-        if (fields[i].name == "node_state"){
-            state = fields[i].value;
+        switch(fields[i].name){
+            case "node_name":
+                name = fields[i].value;
+                break;
+            case "node_state":
+                state = fields[i].value;
+                break;
+            case "node_activation":
+                activation = fields[i].value;
+                break;
         }
     }
     if(name && nodes[nodeUid].name != name){
@@ -1936,6 +1951,19 @@ function handleEditNode(event){
     if(nodes[nodeUid].state != state){
         setNodeState(nodeUid, state);
     }
+    if(nodes[nodeUid].activation != activation){
+        setNodeActivation(nodeUid, activation);
+    }
+}
+
+function setNodeActivation(nodeUid, activation){
+    nodes[nodeUid].activation = activation;
+    redrawNode(nodes[nodeUid]);
+    api('set_node_activation', {
+        'nodenet_uid': currentNodenet,
+        'node_uid': nodeUid,
+        'activation': activation
+    });
 }
 
 function setNodeState(nodeUid, state){

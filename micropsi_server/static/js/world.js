@@ -19,16 +19,24 @@ var viewProperties = {
     shadowStrokeWidth: 0,
     shadowDisplacement: new Point(0.5,1.5),
     innerShadowDisplacement: new Point(0.2,0.7),
+    hoverScale: 2,
+    padding: 3,
     typeColors: {
         S: new Color('#009900'),
         U: new Color('#000099'),
         Tram: new Color('#990000'),
         Bus: new Color('#7000ff'),
         other: new Color('#304451')
+    },
+    label: {
+        x: 10,
+        y: -10
     }
-}
+};
 
 objects = {};
+
+currentWorld = $.cookie('selected_world') || null;
 
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
@@ -37,57 +45,58 @@ objPrerenderLayer = new Layer();
 objPrerenderLayer.name = 'PrerenderLayer';
 objPrerenderLayer.visible = false;
 
-var selectionRectangle = new Rectangle(10,20,30,40);
-var selectionBox = new Path.Rectangle(selectionRectangle);
-selectionBox.strokeWidth = 0.5;
-selectionBox.strokeColor = 'black';
-selectionBox.dashArray = [4,2];
-objectLayer.addChild(selectionBox);
+var world_data = null;
 
+refreshWorldList();
+if (currentWorld){
+    setCurrentWorld(currentWorld);
+}
+initializeControls();
 
-currentWorld = false;
-if(!currentWorld){
-    currentWorld = $.cookie('current_world');
+function refreshWorldList(){
+    $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
+        $('#world_list .world_select').on('click', function(event){
+            event.preventDefault();
+            var el = $(event.target);
+            var uid = el.attr('data');
+            setCurrentWorld(uid);
+        });
+    });
 }
 
-if(currentWorld){
+function setCurrentWorld(uid){
+    currentWorld = uid;
     // todo: get url from api.
-    canvas.css('background', 'url("/static/img/berlin/berlin_transit.png") no-repeat top left');
     load_world_info();
+    load_world_objects();
 }
 
 function load_world_info(){
+    api('get_world_properties', {
+        world_uid: currentWorld
+    }, function(data){
+        world_data = data;
+        if('representation_2d' in data){
+            view.viewSize = new Size(data['representation_2d']['x'], data['representation_2d']['y']);
+            canvas.css('background', 'url("/static/img/'+ data['representation_2d']['image'] + '") no-repeat top left');
+        }
+    });
+}
+
+function load_world_objects(){
     api('get_world_objects', {world_uid: currentWorld}, function(data){
+        $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
+        objectLayer.removeChildren();
+        objects = {};
         for(var key in data){
             addObject(new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
         }
-        //updateViewSize();
+        updateViewSize();
+        refreshWorldList();
     });
 }
 
 function updateViewSize() {
-    var maxX = 0;
-    var maxY = 0;
-    var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
-    var el = view.element.parentElement;
-    prerenderLayer.removeChildren();
-    for (var obj in objectLayer.children) {
-        if (obj in objects) {
-            var obj = objects[obj];
-            // make sure no node gets lost to the top or left
-            if (obj.x < frameWidth || obj.y < frameWidth) {
-                obj.x = Math.max(obj.x, viewProperties.frameWidth);
-                obj.y = Math.max(obj.y, viewProperties.frameWidth);
-                redrawObject(obj);
-            }
-            maxX = Math.max(maxX, obj.x);
-            maxY = Math.max(maxY, obj.y);
-        }
-    }
-    view.viewSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
-        el.clientWidth),
-        Math.max((maxY+viewProperties.frameWidth)* viewProperties.zoomFactor,
-            el.clientHeight));
     view.draw(true);
 }
 
@@ -98,7 +107,7 @@ function WorldObject(uid, x, y, name, type){
     this.y = y;
     this.name = name;
     this.type = type;
-    this.bounds = null
+    this.bounds = null;
 }
 
 function addObject(worldobject){
@@ -117,29 +126,24 @@ function redrawObject(obj){
 
 function renderObject(worldobject){
     worldobject.bounds = calculateObjectBounds(worldobject);
-    var skeleton = createObjectSkeleton(worldobject);
-    //var label = createObjectLabel(worldobject);
-    //console.log(label);
-    //var objectItem = new Group([skeleton, label]);
-    //objectItem.name = worldobject.uid;
-    //console.log(objectItem);
-    objectLayer.addChild(skeleton);
+    worldobject.representation = createStation(worldobject);
+    objectLayer.addChild(worldobject.representation);
 }
 
 function calculateObjectBounds(worldobject){
     var width, height;
     width = height = viewProperties.objectWidth * viewProperties.zoomFactor;
     if (worldobject.type == "Tram"){
-        width = height = 5
+        width = height = 5;
     } else if (worldobject.type == 'other'  || worldobject.type == "Bus"){
-        width = height = 3
+        width = height = 3;
     }
     return new Rectangle(worldobject.x*viewProperties.zoomFactor - width/2,
         worldobject.y*viewProperties.zoomFactor - height/2, // center worldobject on origin
         width, height);
 }
 
-function createObjectSkeleton(worldobject){
+function createStation(worldobject){
     var bounds = worldobject.bounds;
     var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
     if(worldobject.type == "S" || worldobject.type == "S+U"){
@@ -147,62 +151,7 @@ function createObjectSkeleton(worldobject){
     } else {
         shape.fillColor = viewProperties.typeColors[worldobject.type];
     }
-    //var border = createBorder(shape, viewProperties.shadowDisplacement*viewProperties.zoomFactor);
-    //var typeLabel = createCompactObjectBodyLabel(worldobject);
-    //var skeleton = new Group([border, typeLabel]);
     return shape;
-}
-
-// draw the label of a compact worldobject
-function createObjectLabel(worldobject) {
-    var labelText = new PointText(new Point(worldobject.bounds.x + worldobject.bounds.width/2,
-            worldobject.bounds.bottom+viewProperties.lineHeight));
-    labelText.content = worldobject.name ? worldobject.name : worldobject.uid;
-    labelText.characterStyle = {
-        fontSize: viewProperties.fontSize,
-        fillColor: viewProperties.objForegroundColor
-    };
-    labelText.paragraphStyle.justification = 'center';
-    labelText.name = "labelText";
-    return labelText;
-}
-
-// render the symbol within the compact worldobject body
-function createCompactObjectBodyLabel(worldobject) {
-    var bounds = worldobject.bounds;
-    var symbolText = new PointText(new Point(bounds.x+bounds.width/2,
-        bounds.y+bounds.height/2+viewProperties.symbolSize/2*viewProperties.zoomFactor));
-    symbolText.fillColor = viewProperties.objectForegroundColor;
-    symbolText.content = worldobject.type;
-    symbolText.fontSize = viewProperties.symbolSize*viewProperties.zoomFactor;
-    symbolText.paragraphStyle.justification = 'center';
-    return symbolText;
-}
-
-function createBorder(shape, displacement) {
-    var highlight = shape.clone();
-    highlight.fillColor = viewProperties.highlightColor;
-    var highlightSubtract = highlight.clone();
-    highlightSubtract.position += displacement;
-    var highlightClipper = highlight.clone();
-    highlightClipper.position -= new Point(0.5, 0.5);
-    highlightClipper.clipMask = true;
-    var upper = new Group([highlightClipper, new CompoundPath([highlight, highlightSubtract])]);
-    upper.opacity = 0.5;
-
-    var shadowSubtract = shape;
-    shadowSubtract.fillColor = viewProperties.shadowColor;
-    var shadow = shadowSubtract.clone();
-    shadow.position += displacement;
-    var shadowClipper = shadow.clone();
-    shadowClipper.position += new Point(0.5, 0.5);
-    shadowClipper.clipMask = true;
-    var lower = new Group([shadowClipper, new CompoundPath([shadow, shadowSubtract])]);
-    lower.opacity = 0.5;
-
-    var border = new Group([lower, upper]);
-    border.setName("border");
-    return border;
 }
 
 function api(functionname, params, success, error, method){
@@ -237,3 +186,88 @@ function defaultErrorCallback(data){
     dialogs.notification("Error: " + data.Error || "serverside exception", 'error');
 }
 function EmptyCallback(){}
+
+
+function getLegend(worldobject){
+    var legend = new Group();
+    legend.name = 'stationLegend';
+    var bounds = worldobject.bounds;
+    var height = (viewProperties.fontSize*viewProperties.zoomFactor + 2*viewProperties.padding);
+    var point = new Point(
+        bounds.x + (viewProperties.label.x * viewProperties.zoomFactor),
+        Math.max(height, bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
+    var text = new PointText(point);
+    text.justification = 'left';
+    text.content = (worldobject.name ? worldobject.name : worldobject.uid);
+    text.characterStyle = {
+        fillColor: 'black',
+        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+    };
+    if(point.x + text.bounds.width + 2*viewProperties.padding > view.viewSize.width){
+        point = new Point(
+            view.viewSize.width - (text.bounds.width + 3*viewProperties.padding),
+            point.y);
+        text.point = point;
+    }
+    var container = new Path.Rectangle(new Point(point.x - viewProperties.padding, point.y + viewProperties.padding), new Size(text.bounds.width + 2*viewProperties.padding, -height));
+    container.fillColor = 'white';
+    legend.addChild(container);
+    legend.addChild(text);
+    return legend;
+}
+
+// -------------------------- mouse/ key listener --------------------------------------------//
+
+hoverUid = false;
+hoverPath = false;
+path = false;
+label = false;
+
+function onMouseMove(event) {
+    var p = event.point;
+    // hovering
+    if (hoverUid) { // unhover
+        objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
+        hoverUid = null;
+    }
+    // first, check for nodes
+    // we iterate over all bounding boxes, but should improve speed by maintaining an index
+    for (var uid in objects) {
+        var bounds = objects[uid].bounds;
+        if (bounds.contains(p) && objects[uid].representation) {
+            if (hoverUid != uid){
+                hoverUid = uid;
+                objects[uid].representation.scale(viewProperties.hoverScale);
+                if (label){
+                    label.remove();
+                    label = null;
+                }
+                label = getLegend(objects[hoverUid]);
+                objectLayer.addChild(label);
+            }
+            return;
+        }
+    }
+    if (!hoverUid && label){
+        label.remove();
+        label = null;
+    }
+}
+
+
+// --------------------------- controls -------------------------------------------------------- //
+
+function initializeControls(){
+    $('#world_start').on('click', startWorldrunner);
+    $('#world_stop').on('click', stopWorldrunner);
+}
+
+function startWorldrunner(event){
+    event.preventDefault();
+    api('start_worldrunner', {world_uid: currentWorld});
+}
+
+function stopWorldrunner(event){
+    event.preventDefault();
+    api('stop_worldrunner', {world_uid: currentWorld});
+}

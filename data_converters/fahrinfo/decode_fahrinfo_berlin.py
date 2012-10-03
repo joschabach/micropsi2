@@ -201,11 +201,31 @@ def parse_files():
             "arr": movements[i]["arr"],
             "dep": movements[i]["dep"],
             "station_id": movements[i]["station_id"],
+            "station_name": berlin_stations[movements[i]["station_id"]]["name"]
         }
-        if events_by_trains[train_id]["begin"] > movements[i]["arr"] > -1:
-            events_by_trains[train_id]["begin"] = movements[i]["arr"]
-        if movements[i]["dep"] > events_by_trains[train_id]["end"]:
-            events_by_trains[train_id]["end"] = movements[i]["dep"]
+
+    # fix stops: for some strange reason, many lines start with a broken first station: they incorrectly state
+    # an arrival time and an incorrect departure time (which should be the value of the arrival time). In those
+    # cases, the last station departure is incorrect, too. I suspect that this is due to a conversion error by merging
+    # several sources of schedule data, but who knows.
+
+    for train_id in events_by_trains:
+        first_station = events_by_trains[train_id]["stops"][0]
+        last_station = events_by_trains[train_id]["stops"][-1]
+        if first_station["arr"] > -1:
+            first_station["dep"] = first_station["arr"]
+            first_station["arr"] = -1
+            last_station["dep"] = -1
+        events_by_trains[train_id]["begin"] = max(0, first_station["dep"]-1)
+        events_by_trains[train_id]["end"] = min(1439, last_station["arr"]+1)
+
+    # fix overflows into previous and next day, split journeys that cross midnight into two
+    for day in days_to_train_ids:
+        for train_id in days_to_train_ids[day]:
+            latest = 0
+            for stop in events_by_trains[train_id]["stops"]:
+                print stop
+
 
     with open(os.path.join(os.path.dirname(__file__),"events_by_trains.json"), mode='w+') as file:
         json.dump(events_by_trains, file, indent = 4)
@@ -215,17 +235,24 @@ def parse_files():
     for day in range (0, 100):
         todays_trains = days_to_train_ids[day]
         for minute in range (0, 60*24):
+            print minute
             for i in todays_trains:
                 if minute < events_by_trains[i]["begin"] or minute > events_by_trains[i]["end"]:
                     if train_state.has_key(i): del train_state[i]
                 else:
                     if not train_state.has_key(i):
                         train_state[i] = { "pos_index": 0 }
+
+                    # did we arrive at next station already?
+                    if len(events_by_trains[i]["stops"]) > train_state[i]["pos_index"]:
+                        if events_by_trains[i]["stops"][train_state[i]["pos_index"]]["arr"] <= minute:
+                            train_state[i] += 1
                     #if events_by_trains[i]["stops"][train_state[i]["pos_index"]]["arr"]
 
 
 
-#for each train, mark the time interval in which it is computed (write it down, so we can test it quickly)
+
+                    #for each train, mark the time interval in which it is computed (write it down, so we can test it quickly)
 #always store the index of the current station. we can get all other data from this.
 
 

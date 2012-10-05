@@ -520,6 +520,11 @@ def world_list(current_world=None):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
+@rpc("runner_step")
+def runner_step():
+    micropsi.runner_iteration()
+
+
 @rpc("select_nodenet")
 def select_nodenet(nodenet_uid):
     result, msg = micropsi.load_nodenet(nodenet_uid)

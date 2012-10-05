@@ -2127,7 +2127,7 @@ function showNodeForm(nodeUid){
 }
 
 function getNodeParameterHTML(parameters){
-    var html = '<tr><td>This node type has no parameters</td></tr>';
+    var html = '<tr><td>None</td></tr>';
     var input='';
     var is_array = jQuery.isArray(parameters);
     if(parameters && !jQuery.isEmptyObject(parameters)) {

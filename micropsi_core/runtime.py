@@ -16,9 +16,6 @@ import os
 import tools
 import json
 import warnings
-import multiprocessing
-from datetime import datetime, timedelta
-import time
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 NODENET_DIRECTORY = "nodenets"
@@ -39,8 +36,10 @@ class MicroPsiRuntime(object):
     worlds = {}
     nodenets = {}
     runner = {
-        'nodenet': {'timestep': 2000, 'instances': {}},
-        'world': {'timestep': 2000, 'instances': {}}
+        'nodenet': 1000,
+        'nodenetcounter': 0,
+        'world': 5000,
+        'worldcounter': 0
     }
 
     """The central component of the MicroPsi installation.
@@ -91,6 +90,21 @@ class MicroPsiRuntime(object):
             __import__("micropsi_core.world.%s" % world_type, fromlist=['micropsi_core.world'])
             mod = __import__("micropsi_core.world.%s.%s" % (world_type, world_type), fromlist=['micropsi_core.world.%s' % world_type])
             return getattr(mod, world_type.capitalize())
+
+    def runner_iteration(self):
+        """ Called in 100msec intervals by the runner daemon. """
+        self.runner['worldcounter'] += 100
+        self.runner['nodenetcounter'] += 100
+        if self.runner['worldcounter'] >= self.runner['world']:
+            self.runner['worldcounter'] = 0
+            for uid in self.worlds:
+                if self.worlds[uid].is_running:
+                    self.worlds[uid].step()
+        if self.runner['nodenetcounter'] > self.runner['nodenet']:
+            self.runner['nodenetcounter'] = 0
+            for uid in self.nodenets:
+                if self.nodenets[uid].is_running:
+                    self.nodenets[uid].step()
 
     # MicroPsi API
 
@@ -223,12 +237,7 @@ class MicroPsiRuntime(object):
 
     def start_nodenetrunner(self, nodenet_uid):
         """Starts a thread that regularly advances the given nodenet by one step."""
-        if not self.get_is_nodenet_running(nodenet_uid):
-            self.runner['nodenet']['instances'][nodenet_uid] = multiprocessing.Process(
-                name=nodenet_uid,
-                target=runner,
-                args=(self.nodenets[nodenet_uid], self.runner['nodenet']['timestep']))
-            self.runner['nodenet']['instances'][nodenet_uid].start()
+        self.nodenets[nodenet_uid].is_running = True
         return True
 
     def set_nodenetrunner_timestep(self, timestep):
@@ -237,22 +246,20 @@ class MicroPsiRuntime(object):
         Argument:
             timestep: sets the simulation speed.
         """
-        self.runner['nodenet']['timestep'] = timestep
+        self.runner['nodenet'] = timestep
         return True
 
     def get_nodenetrunner_timestep(self):
         """Returns the speed that has been configured for the nodenet runner (in ms)."""
-        return self.runner['nodenet']['timestep']
+        return self.runner['nodenet']
 
     def get_is_nodenet_running(self, nodenet_uid):
         """Returns True if a nodenet runner is active for the given nodenet, False otherwise."""
-        return self.runner['nodenet']['instances'].get(nodenet_uid) is not None
+        return self.nodenets[nodenet_uid].is_running
 
     def stop_nodenetrunner(self, nodenet_uid):
         """Stops the thread for the given nodenet."""
-        if nodenet_uid in self.runner['nodenet']['instances']:
-            self.runner['nodenet']['instances'][nodenet_uid].terminate()
-            del self.runner['nodenet']['instances'][nodenet_uid]
+        self.nodenets[nodenet_uid].is_running = False
         return True
 
     def step_nodenet(self, nodenet_uid, nodespace=None):
@@ -405,32 +412,25 @@ class MicroPsiRuntime(object):
 
     def start_worldrunner(self, world_uid):
         """Starts a thread that regularly advances the world simulation."""
-        if not self.get_is_world_running(world_uid):
-            self.runner['world']['instances'][world_uid] = multiprocessing.Process(
-                name=world_uid,
-                target=runner,
-                args=(self.worlds[world_uid], self.runner['world']['timestep']))
-            self.runner['world']['instances'][world_uid].start()
+        self.worlds[world_uid].is_running = True
         return True
 
     def get_worldrunner_timestep(self):
         """Returns the speed that has been configured for the world runner (in ms)."""
-        return self.runner['world']['timestep']
+        return self.runner['world']
 
     def get_is_world_running(self, world_uid):
         """Returns True if an worldrunner is active for the given world, False otherwise."""
-        return self.runner['world']['instances'].get(world_uid) is not None
+        return self.worlds[world_uid].is_running
 
     def set_worldrunner_timestep(self, timestep):
         """Sets the interval of the simulation steps for the world runner (in ms)."""
-        self.runner['world']['timestep'] = timestep
+        self.runner['world'] = timestep
         return True
 
     def stop_worldrunner(self, world_uid):
         """Ends the thread of the continuous world simulation."""
-        if world_uid in self.runner['world']['instances']:
-            self.runner['world']['instances'][world_uid].terminate()
-            del self.runner['world']['instances'][world_uid]
+        self.worlds[world_uid].is_running = False
         return True
 
     def step_world(self, world_uid, return_world_view=False):
@@ -824,16 +824,6 @@ def parse_definition(json, filename=None):
         if "world_type" in json:
             result['world_type'] = json['world_type']
         return Bunch(**result)
-
-
-def runner(instance, timestep):
-    step = timedelta(milliseconds=timestep)
-    while True:
-        print "#### Runner stepping %s (uid: %s) ####" % (str(instance.__class__), instance.uid)
-        start = datetime.now()
-        instance.step()
-        left = step - (datetime.now() - start)
-        time.sleep(left.microseconds / 1000000.0)
 
 
 def main():

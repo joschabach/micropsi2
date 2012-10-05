@@ -78,6 +78,14 @@ class Nodenet(object):
     def current_step(self):
         return self.state.get("step")
 
+    @property
+    def is_running(self):
+        return self.state.get('is_running', False)
+
+    @is_running.setter
+    def is_running(self, state):
+        self.state['is_running'] = state
+
     def __init__(self, runtime, filename, name="", worldadapter="Default", world=None, owner="", uid=None):
         """Create a new MicroPsi agent.
 

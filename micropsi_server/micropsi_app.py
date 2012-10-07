@@ -125,7 +125,20 @@ def server_static(filepath):
 def index():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
+    return template("all", version=VERSION, user_id=user_id, permissions=permissions)
+
+@route("/nodenet")
+def index():
+    user_id, permissions, token = get_request_data()
+    print "received request with cookie token ", token, " from user ", user_id
     return template("nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+
+@route("/world")
+def index():
+    user_id, permissions, token = get_request_data()
+    print "received request with cookie token ", token, " from user ", user_id
+    return template("world", version=VERSION, user_id=user_id, permissions=permissions)
+
 
 
 @error(404)

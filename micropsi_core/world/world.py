@@ -51,6 +51,14 @@ class World(object):
     def current_step(self, current_step):
         self.data['step'] = current_step
 
+    @property
+    def is_active(self):
+        return self.data.get("is_active", False)
+
+    @is_active.setter
+    def is_active(self, is_active):
+        self.data['is_active'] = is_active
+
     supported_worldadapters = ['Default', 'Braitenberg']
 
     def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):

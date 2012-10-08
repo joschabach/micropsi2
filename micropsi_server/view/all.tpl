@@ -483,7 +483,7 @@
 
 
 
-    <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
+    <script src="/static/js/paper.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
     <script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
 

@@ -296,8 +296,8 @@ function objectInViewport(uid) {
     return (
         objects[uid].bounds.y > parent.scrollTop() &&
         objects[uid].bounds.x > parent.scrollLeft() &&
-        (objects[uid].bounds.y + objects[uid].bounds.height) < (parent.innerHeight() + parent.scrollTop()) &&
-        (objects[uid].bounds.x + objects[uid].bounds.width) < (parent.innerWidth() + parent.scrollLeft())
+        (objects[uid].bounds.y + objects[uid].bounds.height) < (parent.innerHeight() + parent.scrollTop() - 20) &&
+        (objects[uid].bounds.x + objects[uid].bounds.width) < (parent.innerWidth() + parent.scrollLeft() - 20)
     );
 }
 
@@ -305,9 +305,9 @@ function scrollToObject(uid){
     var parent = canvas.parent();
     var obj = objects[uid];
     if(obj.bounds.y <= parent.scrollTop()) parent.scrollTop(obj.bounds.y - 20);
-    else if(objects[uid].bounds.y >= (parent.innerHeight() + parent.scrollTop())) parent.scrollTop(objects[uid].bounds.y + 20);
+    else if(obj.bounds.y + obj.bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(obj.bounds.y + 20);
     if(obj.bounds.x <= parent.scrollLeft()) parent.scrollLeft(obj.bounds.x - 20);
-    else if (objects[uid].bounds.x >= (parent.innerWidth() + parent.scrollLeft())) parent.scrollLeft(objects[uid].bounds.x + 20);
+    else if (obj.bounds.x + obj.bounds.width >= (parent.innerWidth() + parent.scrollLeft() - 20)) parent.scrollLeft(obj.bounds.x + 20);
 }
 
 // --------------------------- controls -------------------------------------------------------- //

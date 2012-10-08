@@ -180,11 +180,17 @@ class Nodenet(object):
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
-        # nodespace = self.state["nodespaces"].get(nodespace_uid)
-        # nodes = {}
-        # links = {}
-        # for node in nodespace.
-        pass
+        nodespace = self.nodespaces[nodespace_uid]
+        data = {'nodes': {}, 'links': {}, 'nodespaces': {}}
+        linkUids = []
+        for uid in nodespace.netentities.get('nodes', []):
+            data['nodes'][uid] = self.state['nodes'][uid]
+            linkUids.extend(self.nodes[uid].get_associated_link_ids())
+        for uid in self.links:
+            data['links'][uid] = self.state['links'][uid]
+        for uid in nodespace.netentities.get('nodespaces', []):
+            data['nodespaces'][uid] = self.state['nodespaces'][uid]
+        return data
 
     # add functions for exporting and importing node nets
     def export_data(self):
@@ -289,7 +295,7 @@ class NetEntity(object):
         # tell my old parent that I move out
         if "parent_nodespace" in self.data:
             old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
-            if old_parent and self.uid in old_parent.netentities.get(self.entitytype, []):
+            if old_parent and old_parent.uid != uid and self.uid in old_parent.netentities.get(self.entitytype, []):
                 old_parent.netentities[self.entitytype].remove(self.uid)
         self.data['parent_nodespace'] = uid
 
@@ -330,7 +336,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
-        pass
+        return self.netentities
 
     def get_activator_value(self, type):
         """returns the value of the activator of the given type, or 1, if none exists"""
@@ -499,6 +505,14 @@ class Node(NetEntity):
 
     def get_slot(self, slotname):
         return self.slots.get(slotname)
+
+    def get_associated_link_ids(self):
+        links = []
+        for key in self.gates:
+            links.extend(self.gates[key].outgoing)
+        for key in self.slots:
+            links.extend(self.slots[key].incoming)
+        return links
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params

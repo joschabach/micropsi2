@@ -763,8 +763,10 @@ def get_monitor_data(nodenet_uid, step): return micropsi.get_monitor_data
 
 # Nodenet
 
+
 @rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step): return micropsi.get_nodespace
+def get_nodespace(nodenet_uid, nodespace, step):
+    return micropsi.get_nodespace(nodenet_uid, nodespace, step)
 
 
 @rpc("get_node")

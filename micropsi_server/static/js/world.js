@@ -67,11 +67,11 @@ function refreshWorldList(){
 function setCurrentWorld(uid){
     currentWorld = uid;
     // todo: get url from api.
-    load_world_info();
-    load_world_objects();
+    loadWorldInfo();
+    loadWorldObjects();
 }
 
-function load_world_info(){
+function loadWorldInfo(){
     api('get_world_properties', {
         world_uid: currentWorld
     }, function(data){
@@ -83,14 +83,20 @@ function load_world_info(){
     });
 }
 
-function load_world_objects(){
+function loadWorldObjects(){
     api('get_world_objects', {world_uid: currentWorld}, function(data){
         $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
         objectLayer.removeChildren();
         objects = {};
+        var tablerows = '';
+        var obj = null;
         for(var key in data){
-            addObject(new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
+            obj = new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype);
+            tablerows += '<tr><td><a class="link_object" data="'+obj.uid+'">'+obj.name+'</a></td></tr>';
+            addObject(obj);
         }
+        $('#world_objects').html(tablerows);
+        $('.link_object').on('click', highlightWorldobject);
         updateViewSize();
         refreshWorldList();
     });
@@ -187,7 +193,6 @@ function defaultErrorCallback(data){
 }
 function EmptyCallback(){}
 
-
 function getLegend(worldobject){
     var legend = new Group();
     legend.name = 'stationLegend';
@@ -223,6 +228,9 @@ hoverPath = false;
 path = false;
 label = false;
 
+clickLabel = false;
+clickHighlight = false;
+
 function onMouseMove(event) {
     var p = event.point;
     // hovering
@@ -237,11 +245,14 @@ function onMouseMove(event) {
         if (bounds.contains(p) && objects[uid].representation) {
             if (hoverUid != uid){
                 hoverUid = uid;
-                objects[uid].representation.scale(viewProperties.hoverScale);
                 if (label){
                     label.remove();
                     label = null;
                 }
+                if(clickHighlight){
+                    removeClickHighlight();
+                }
+                objects[uid].representation.scale(viewProperties.hoverScale);
                 label = getLegend(objects[hoverUid]);
                 objectLayer.addChild(label);
             }
@@ -254,6 +265,50 @@ function onMouseMove(event) {
     }
 }
 
+function highlightWorldobject(event){
+    var uid = $(event.target).attr('data');
+    if(clickHighlight != uid){
+        removeClickHighlight();
+        objects[uid].representation.scale(viewProperties.hoverScale);
+        clickHighlight = uid;
+        clickLabel = getLegend(objects[uid]);
+        objectLayer.addChild(clickLabel);
+        if(!objectInViewport(uid)){
+            scrollToObject(uid);
+        }
+        view.draw(true);
+    }
+}
+
+function removeClickHighlight(){
+    if(clickHighlight) {
+        objects[clickHighlight].representation.scale(1/viewProperties.hoverScale);
+        clickHighlight = null;
+    }
+    if(clickLabel){
+        clickLabel.remove();
+        clickLabel = null;
+    }
+}
+
+function objectInViewport(uid) {
+    var parent = canvas.parent();
+    return (
+        objects[uid].bounds.y > parent.scrollTop() &&
+        objects[uid].bounds.x > parent.scrollLeft() &&
+        (objects[uid].bounds.y + objects[uid].bounds.height) < (parent.innerHeight() + parent.scrollTop() - 20) &&
+        (objects[uid].bounds.x + objects[uid].bounds.width) < (parent.innerWidth() + parent.scrollLeft() - 20)
+    );
+}
+
+function scrollToObject(uid){
+    var parent = canvas.parent();
+    var obj = objects[uid];
+    if(obj.bounds.y <= parent.scrollTop()) parent.scrollTop(obj.bounds.y - 20);
+    else if(obj.bounds.y + obj.bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(obj.bounds.y + 20);
+    if(obj.bounds.x <= parent.scrollLeft()) parent.scrollLeft(obj.bounds.x - 20);
+    else if (obj.bounds.x + obj.bounds.width >= (parent.innerWidth() + parent.scrollLeft() - 20)) parent.scrollLeft(obj.bounds.x + 20);
+}
 
 // --------------------------- controls -------------------------------------------------------- //
 

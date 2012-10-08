@@ -52,12 +52,12 @@ class World(object):
         self.data['step'] = current_step
 
     @property
-    def is_running(self):
-        return self.data.get('is_running', False)
+    def is_active(self):
+        return self.data.get("is_active", False)
 
-    @is_running.setter
-    def is_running(self, state):
-        self.data['is_running'] = state
+    @is_active.setter
+    def is_active(self, is_active):
+        self.data['is_active'] = is_active
 
     supported_worldadapters = ['Default', 'Braitenberg']
 
@@ -135,7 +135,6 @@ class World(object):
             self.agents[uid] = getattr(agent, agent.type)(self, 'agents', uid=uid, **self.data.agents[uid])
 
     def step(self):
-        print "stepping world " + self.name
         for uid in self.objects:
             self.objects[uid].update()
         self.current_step = self.current_step + 1

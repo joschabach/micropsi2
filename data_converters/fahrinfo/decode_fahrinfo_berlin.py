@@ -229,38 +229,33 @@ def parse_files():
             station_list = events_by_trains[train_id]["stops"]
             for stop in station_list:
                 if -1 < stop["arr"] < latest_dep:  # we crossed the day boundary
-                    print "found a train that arrives earlier than it left: ", train_id
-                    print events_by_trains[train_id]
-                    new_train_id = "%sb" % train_id  # append a "b" to the train_id
-                    events_by_trains[new_train_id] = {
-                         "line_name": events_by_trains[train_id]["line_name"],
-                         "train_type": events_by_trains[train_id]["train_type"],
-                         "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
-                         "begin": 9999,
-                         "end": -1
-                    }
-                    if day < MAXDAYS-1:
-                        days_to_train_ids[day +1].append(new_train_id)
+#                    new_train_id = "%sb" % train_id  # append a "b" to the train_id
+#                    events_by_trains[new_train_id] = {
+#                         "line_name": events_by_trains[train_id]["line_name"],
+#                         "train_type": events_by_trains[train_id]["train_type"],
+#                         "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
+#                         "begin": 9999,
+#                         "end": -1
+#                    }
+#                    if day < MAXDAYS-1:
+#                        days_to_train_ids[day +1].append(new_train_id)
                     stop["arr"]+=1440 # add a day to allow for station calculation
                     stop["dep"]+=1440
                     events_by_trains[train_id]["stops"] = station_list[:stop_index]
-                    print events_by_trains[train_id]
-                    print events_by_trains[new_train_id]
                     break
                 if -1 < stop["dep"] < stop["arr"]:  # we crossed the day boundary
-                    print "found a train that departs earlier than it arrived: ", train_id
-                    new_train_id = "%sb" % train_id
-                    events_by_trains[new_train_id] = {
-                        "line_name": events_by_trains[train_id]["line_name"],
-                        "train_type": events_by_trains[train_id]["train_type"],
-                        "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
-                        "begin": 9999,
-                        "end": -1
-                    }
-                    print events_by_trains[new_train_id]
-                    events_by_trains[new_train_id]["stops"][0]["arr"] = 0
-                    if day < MAXDAYS-1:
-                        days_to_train_ids[day +1].append(new_train_id)
+#                    new_train_id = "%sb" % train_id
+#                    events_by_trains[new_train_id] = {
+#                        "line_name": events_by_trains[train_id]["line_name"],
+#                        "train_type": events_by_trains[train_id]["train_type"],
+#                        "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
+#                        "begin": 9999,
+#                        "end": -1
+#                    }
+#                    print events_by_trains[new_train_id]
+#                    events_by_trains[new_train_id]["stops"][0]["arr"] = 0
+#                    if day < MAXDAYS-1:
+#                        days_to_train_ids[day +1].append(new_train_id)
                     stop["dep"]+=1440
                     events_by_trains[train_id]["stops"] = station_list[:stop_index]
                     break

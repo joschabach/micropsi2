@@ -30,10 +30,10 @@ class Berlin(World):
         self.add_transit_stations()
 
     def add_transit_stations(self):
-        filename = os.path.join(os.path.dirname(__file__), 'fahrinfo_stations.json')
+        filename = os.path.join(os.path.dirname(__file__), 'fahrinfo_berlin.json')
         with open(filename) as file:
             data = json.load(file)
-            for key, entry in data.items():
+            for key, entry in data["stations"].items():
                 type = "other"
                 entry.pop('line_names')
                 traintypes = entry.pop('train_types')

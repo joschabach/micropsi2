@@ -8,7 +8,6 @@ This version of MicroPsi is meant to be deployed as a web server, and accessed t
 For local use, simply start this server and point your browser to "http://localhost:6543".
 The latter parameter is the default port and can be changed as needed.
 """
-from micropsi_core import config
 
 __author__ = 'joscha'
 __date__ = '15.05.12'
@@ -36,7 +35,6 @@ RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 
-configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
 micropsi = micropsi_core.runtime.MicroPsiRuntime(RESOURCE_PATH)
 usermanager = usermanagement.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
 

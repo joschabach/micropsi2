@@ -63,7 +63,7 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-var currentNodeSpace = 0;   // cookie
+var currentNodeSpace = 'Root';   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
@@ -84,6 +84,8 @@ if(currentNodenet){
 
 world_data = {};
 nodetypes = {};
+currentSimulationStep = 0;
+nodenet_running = false;
 
 refreshNodenetList();
 function refreshNodenetList(){
@@ -186,6 +188,7 @@ function initializeNodeNet(data){
 
     if (data){
         console.log(data);
+        nodenet_data = data;
         loadWorldData(data); // TODO: move this out once we managed world selection
         nodetypes = data.nodetypes;
         currentWorldadapter = data.worldadapter;
@@ -207,7 +210,6 @@ function initializeNodeNet(data){
         }
 
     } else {
-
         nodetypes = {'Actor': {slottypes:['gen'], gatetypes:['gen']}};
         addNode(new Node("a1", 150, 150, "Root", "Alice", "Actor", 1));
         addNode(new Node("a2", 350, 150, "Root", "Tom", "Actor", 0.3));
@@ -215,6 +217,35 @@ function initializeNodeNet(data){
 
     }
     updateViewSize();
+}
+
+function refreshNodenetView(){
+    api('get_nodespace', {
+        nodenet_uid: currentNodenet,
+        nodespace: currentNodeSpace,
+        step: currentSimulationStep
+    }, success=function(data){
+        if(jQuery.isEmptyObject(data) && nodenet_running){
+            setTimeout(refreshNodenetView, 1000);
+            return null;
+        }
+        currentSimulationStep = data.current_step;
+        $('#nodenet_step').val(currentSimulationStep);
+        for(var uid in data.nodes){
+            redrawNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
+        }
+        for(uid in data.nodespaces){
+            redrawNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
+        }
+        for(uid in data.links){
+            link = data.links[uid];
+            redrawLink(new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+        }
+        view.draw(true);
+        if(nodenet_running){
+            refreshNodenetView();
+        }
+    });
 }
 
 // data structures ----------------------------------------------------------------------
@@ -1438,20 +1469,27 @@ function initializeControls(){
 
 function stepNodenet(event){
     event.preventDefault();
+    if(nodenet_running){
+        stopNodenetrunner(event);
+    }
     api("step_nodenet",
         {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
         success=function(data){
-            setCurrentNodenet(currentNodenet);
+            refreshNodenetView(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
         });
 }
 
 function startNodenetrunner(event){
     event.preventDefault();
-    api('start_nodenetrunner', {nodenet_uid: currentNodenet});
+    nodenet_running = true;
+    api('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
+        refreshNodenetView();
+    });
 }
 function stopNodenetrunner(event){
     event.preventDefault();
+    nodenet_running = false;
     api('stop_nodenetrunner', {nodenet_uid: currentNodenet});
 }
 

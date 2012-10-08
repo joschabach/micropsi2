@@ -43,7 +43,7 @@ class MicroPsiRuntime(object):
     worlds = {}
     nodenets = {}
     runner = {
-        'nodenet': {'timestep': 5000, 'runner': None},
+        'nodenet': {'timestep': 1000, 'runner': None},
         'world': {'timestep': 20000, 'runner': None}
     }
 
@@ -94,7 +94,7 @@ class MicroPsiRuntime(object):
             start = datetime.now()
             for uid in self.nodenets:
                 if self.nodenets[uid].is_active:
-                    print "stepping nodenet " + self.nodenets[uid].name
+                    print "%s stepping nodenet %s" % (str(start), self.nodenets[uid].name)
                     self.nodenets[uid].step()
             left = step - (datetime.now() - start)
             time.sleep(left.microseconds / 1000000.0)
@@ -105,7 +105,7 @@ class MicroPsiRuntime(object):
             start = datetime.now()
             for uid in self.worlds:
                 if self.worlds[uid].is_active:
-                    print "stepping world" + self.worlds[uid].name
+                    print "%s stepping world %s" % (str(start), self.worlds[uid].name)
                     self.worlds[uid].step()
             left = step - (datetime.now() - start)
             time.sleep(left.microseconds / 1000000.0)
@@ -531,7 +531,11 @@ class MicroPsiRuntime(object):
 
     def get_nodespace(self, nodenet_uid, nodespace, step):
         """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
-        pass
+        #data = {}
+        #if step > self.nodenets[nodenet_uid].current_step:
+        data = self.nodenets[nodenet_uid].get_nodespace_data(nodespace)
+        data.update({'current_step': self.nodenets[nodenet_uid].current_step})
+        return data
 
     def get_node(self, nodenet_uid, node_uid):
         """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is

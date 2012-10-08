@@ -46,7 +46,7 @@ var viewProperties = {
     linkRadius: 30,
     arrowWidth: 6,
     arrowLength: 10,
-    rasterize: true
+    rasterize: false
 };
 
 // hashes from uids to object definitions; we import these via json

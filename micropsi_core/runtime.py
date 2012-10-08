@@ -12,6 +12,7 @@ __date__ = '10.05.12'
 import micropsi_core
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype
 from micropsi_core.world import world
+from micropsi_core import config
 import os
 import tools
 import json
@@ -20,11 +21,14 @@ from threading import Thread
 from datetime import datetime, timedelta
 import time
 
+
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
 AVAILABLE_WORLD_TYPES = ['World', 'berlin', 'island']  # TODO
+
+configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
 
 
 class Bunch(dict):
@@ -39,8 +43,8 @@ class MicroPsiRuntime(object):
     worlds = {}
     nodenets = {}
     runner = {
-        'nodenet': {'timestep': 2000, 'runner': None},
-        'world': {'timestep': 2000, 'runner': None}
+        'nodenet': {'timestep': 5000, 'runner': None},
+        'world': {'timestep': 20000, 'runner': None}
     }
 
     """The central component of the MicroPsi installation.

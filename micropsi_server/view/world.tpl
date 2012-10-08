@@ -52,15 +52,10 @@
                 <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
             </div>
             <div class="editor_field " id="world_forms">
-                <form>
-                    <div>
-                        <ul class="nav nav-list" id="object_list">
-                            <li class="nav-header">Active Context</li>
-                            <li><a href="#">Object1</a></li>
-                            <li><a href="#">Object2</a></li>
-                            <li><a href="#">Object3</a></li>
-                        </ul>
-                    </div>
+                <form class="form-horizontal">
+                    <h4>World Objects</h4>
+                    <table class="table-striped table-condensed" id="world_objects">
+                    </table>
                 </form>
             </div>
         </div>

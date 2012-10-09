@@ -685,8 +685,11 @@ def get_available_world_types():
 @rpc("delete_world", permission_required="manage worlds")
 def delete_world(world_uid): return micropsi.delete_world
 
+
 @rpc("get_world_view")
-def get_world_view(world_uid, step): return micropsi.get_world_view
+def get_world_view(world_uid, step):
+    return micropsi.get_world_view(world_uid, step)
+
 
 @rpc("set_world_properties", permission_required="manage worlds")
 def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return micropsi.set_world_properties

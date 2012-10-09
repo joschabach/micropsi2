@@ -53,6 +53,9 @@ if (currentWorld){
 }
 initializeControls();
 
+worldRunning = false;
+currentWorldSimulationStep = 0;
+
 function refreshWorldList(){
     $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
         $('#world_list .world_select').on('click', function(event){
@@ -62,6 +65,35 @@ function refreshWorldList(){
             setCurrentWorld(uid);
         });
     });
+}
+
+function refreshWorldView(){
+    api('get_world_view',
+        {world_uid: currentWorld, step: currentWorldSimulationStep},
+        function(data){
+            if(jQuery.isEmptyObject(data) && worldRunning){
+                setTimeout(refreshWorldView, 1000);
+                return null;
+            }
+            currentWorldSimulationStep = data.currentSimulationStep;
+            $('#world_step').val(currentWorldSimulationStep);
+            for(var key in data.objects){
+                if(hasObjectChanged(key, data.objects[key])){
+                    obj = new WorldObject(data.objects[key].uid, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].name, data.objects[key].stationtype);
+                    redrawObject(obj);
+                    objects[key] = obj;
+                }
+            }
+            updateViewSize();
+            if(worldRunning){
+                refreshWorldView();
+            }
+        }
+    );
+}
+
+function hasObjectChanged(uid, data){
+    return uid in objects && (objects[uid].x != data.pos[0] || objects[uid].y != data.pos[1] || objects[uid].name != data.name);
 }
 
 function setCurrentWorld(uid){
@@ -126,7 +158,7 @@ function addObject(worldobject){
 }
 
 function redrawObject(obj){
-    objectLayer.children[obj.uid].remove();
+    objects[obj.uid].representation.remove();
     renderObject(obj);
 }
 
@@ -313,16 +345,42 @@ function scrollToObject(uid){
 // --------------------------- controls -------------------------------------------------------- //
 
 function initializeControls(){
+    $('#world_reset').on('click', resetWorld);
+    $('#world_step_forward').on('click', stepWorld);
     $('#world_start').on('click', startWorldrunner);
     $('#world_stop').on('click', stopWorldrunner);
 }
 
+function resetWorld(event){
+    event.preventDefault();
+    worldRunning = false;
+    api('revert_world', {world_uid: currentWorld}, function(){
+        setCurrentWorld(currentWorld);
+    });
+}
+
+function stepWorld(event){
+    event.preventDefault();
+    api('step_world', {world_uid: currentWorld}, function(){
+        if(worldRunning){
+            stopWorldrunner(event);
+        }
+        refreshWorldView();
+    });
+}
+
 function startWorldrunner(event){
     event.preventDefault();
-    api('start_worldrunner', {world_uid: currentWorld});
+    api('start_worldrunner', {world_uid: currentWorld}, function(){
+        worldRunning = true;
+        refreshWorldView();
+    });
 }
 
 function stopWorldrunner(event){
     event.preventDefault();
-    api('stop_worldrunner', {world_uid: currentWorld});
+    worldRunning = false;
+    api('stop_worldrunner', {world_uid: currentWorld}, function(){
+        $('#world_step').val(currentWorldSimulationStep);
+    });
 }

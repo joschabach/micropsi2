@@ -179,7 +179,8 @@ class MicroPsiRuntime(object):
             Arguments:
                 nodenet_uid
         """
-        self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
+        if self.nodenets[nodenet_uid].world is not None:
+            self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
         del self.nodenets[nodenet_uid]
         return True
 

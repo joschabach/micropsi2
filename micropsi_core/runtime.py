@@ -425,7 +425,13 @@ class MicroPsiRuntime(object):
 
     def delete_world(self, world_uid):
         """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
-        pass
+        for uid in self.nodenets:
+            if self.nodenets[uid].world and self.nodenets[uid].world.uid == world_uid:
+                self.nodenets[uid].world = None
+        del self.worlds[world_uid]
+        os.remove(self.world_data[world_uid].filename)
+        del self.world_data[world_uid]
+        return True
 
     def get_world_view(self, world_uid, step):
         """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""

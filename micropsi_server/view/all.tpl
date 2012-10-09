@@ -36,7 +36,7 @@
                             <tr>
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
-                          <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
+                          <a href="#" id="nodenet_reset" class="btn"><i class="icon-fast-backward"></i></a>
                           <a href="#" id="nodenet_start" class="btn"><i class="icon-play"></i></a>
                           <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
                           <a href="#" id="nodenet_stop" class="btn"><i class="icon-pause"></i></a>

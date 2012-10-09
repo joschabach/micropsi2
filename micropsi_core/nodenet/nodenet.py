@@ -65,6 +65,8 @@ class Nodenet(object):
     def world(self, world):
         if world:
             self.state["world"] = world.uid
+        else:
+            self.state["world"] = None
 
     @property
     def worldadapter(self):

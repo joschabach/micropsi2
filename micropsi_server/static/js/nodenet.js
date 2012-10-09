@@ -85,7 +85,7 @@ if(currentNodenet){
 world_data = {};
 nodetypes = {};
 currentSimulationStep = 0;
-nodenet_running = false;
+nodenetRunning = false;
 
 refreshNodenetList();
 function refreshNodenetList(){
@@ -219,31 +219,38 @@ function initializeNodeNet(data){
     updateViewSize();
 }
 
-function refreshNodenetView(){
+function refreshNodespace(){
     api('get_nodespace', {
         nodenet_uid: currentNodenet,
         nodespace: currentNodeSpace,
         step: currentSimulationStep
     }, success=function(data){
-        if(jQuery.isEmptyObject(data) && nodenet_running){
-            setTimeout(refreshNodenetView, 1000);
+        if(jQuery.isEmptyObject(data) && nodenetRunning){
+            setTimeout(refreshNodespace, 1000);
             return null;
         }
         currentSimulationStep = data.current_step;
         $('#nodenet_step').val(currentSimulationStep);
+        var item;
         for(var uid in data.nodes){
-            redrawNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters);
+            redrawNode(item);
+            nodes[uid] = item;
         }
         for(uid in data.nodespaces){
-            redrawNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
+            item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
+            redrawNode(item);
+            nodes[uid] = item;
         }
         for(uid in data.links){
             link = data.links[uid];
-            redrawLink(new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+            item = new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty);
+            redrawLink(item);
+            links[uid] = item;
         }
         view.draw(true);
-        if(nodenet_running){
-            refreshNodenetView();
+        if(nodenetRunning){
+            refreshNodespace();
         }
     });
 }
@@ -1464,33 +1471,46 @@ function initializeMenus() {
 function initializeControls(){
     $('#nodenet_start').on('click', startNodenetrunner);
     $('#nodenet_stop').on('click', stopNodenetrunner);
+    $('#nodenet_reset').on('click', resetNodenet);
     $('#nodenet_step_forward').on('click', stepNodenet);
 }
 
 function stepNodenet(event){
     event.preventDefault();
-    if(nodenet_running){
+    if(nodenetRunning){
         stopNodenetrunner(event);
     }
     api("step_nodenet",
         {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
         success=function(data){
-            refreshNodenetView(currentNodenet);
+            refreshNodespace(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
         });
 }
 
 function startNodenetrunner(event){
     event.preventDefault();
-    nodenet_running = true;
+    nodenetRunning = true;
     api('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
-        refreshNodenetView();
+        refreshNodespace();
     });
 }
 function stopNodenetrunner(event){
     event.preventDefault();
-    nodenet_running = false;
+    nodenetRunning = false;
     api('stop_nodenetrunner', {nodenet_uid: currentNodenet});
+}
+
+function resetNodenet(event){
+    event.preventDefault();
+    nodenetRunning = false;
+    api(
+        'revert_nodenet',
+        {nodenet_uid: currentNodenet},
+        function(){
+            setCurrentNodenet(currentNodenet);
+        }
+    );
 }
 
 var clickPosition = null;

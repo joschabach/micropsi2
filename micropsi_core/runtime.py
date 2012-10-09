@@ -44,7 +44,7 @@ class MicroPsiRuntime(object):
     nodenets = {}
     runner = {
         'nodenet': {'timestep': 1000, 'runner': None},
-        'world': {'timestep': 20000, 'runner': None}
+        'world': {'timestep': 2000, 'runner': None}
     }
 
     """The central component of the MicroPsi installation.
@@ -88,7 +88,7 @@ class MicroPsiRuntime(object):
         self.runner['world']['runner'].start()
         self.runner['nodenet']['runner'].start()
 
-    def worldrunner(self):
+    def nodenetrunner(self):
         step = timedelta(milliseconds=self.runner['nodenet']['timestep'])
         while True:
             start = datetime.now()
@@ -99,8 +99,11 @@ class MicroPsiRuntime(object):
             left = step - (datetime.now() - start)
             time.sleep(left.microseconds / 1000000.0)
 
-    def nodenetrunner(self):
-        step = timedelta(milliseconds=self.runner['world']['timestep'])
+    def worldrunner(self):
+        if self.runner['world']['timestep'] > 1000:
+            step = timedelta(seconds=self.runner['world']['timestep'] / 1000)
+        else:
+            step = timedelta(milliseconds=self.runner['world']['timestep'])
         while True:
             start = datetime.now()
             for uid in self.worlds:
@@ -425,7 +428,11 @@ class MicroPsiRuntime(object):
 
     def get_world_view(self, world_uid, step):
         """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
-        pass
+        data = {}
+        if step < self.worlds[world_uid].current_step:
+            data['objects'] = self.get_world_objects(world_uid)
+            data['currentSimulationStep'] = self.worlds[world_uid].current_step
+        return data
 
     def set_world_properties(self, world_uid, world_name=None, world_type=None, owner=None):
         """Sets the supplied parameters (and only those) for the world with the given uid."""
@@ -531,10 +538,10 @@ class MicroPsiRuntime(object):
 
     def get_nodespace(self, nodenet_uid, nodespace, step):
         """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
-        #data = {}
-        #if step > self.nodenets[nodenet_uid].current_step:
-        data = self.nodenets[nodenet_uid].get_nodespace_data(nodespace)
-        data.update({'current_step': self.nodenets[nodenet_uid].current_step})
+        data = {}
+        if step < self.nodenets[nodenet_uid].current_step:
+            data = self.nodenets[nodenet_uid].get_nodespace_data(nodespace)
+            data.update({'current_step': self.nodenets[nodenet_uid].current_step})
         return data
 
     def get_node(self, nodenet_uid, node_uid):

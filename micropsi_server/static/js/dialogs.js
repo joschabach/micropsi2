@@ -183,7 +183,18 @@ $(function() {
 
     $('.navbar a.world_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this world?", function(){
-            alert('you bastard');
+            $.ajax({
+                url: '/rpc/delete_world(world_uid="'+ currentWorld +'")',
+                success: function(){
+                    $.cookie('selected_world', '', {expires: -1, path: '/'});
+                    dialogs.notification("World deleted");
+                    window.location.reload();
+                },
+                error: function(){
+                    dialogs.notification('Error deleting world', 'error');
+                    window.location.reload();
+                }
+            });
         });
     });
 

@@ -683,7 +683,8 @@ def get_available_world_types():
 
 
 @rpc("delete_world", permission_required="manage worlds")
-def delete_world(world_uid): return micropsi.delete_world
+def delete_world(world_uid):
+    return micropsi.delete_world(world_uid)
 
 
 @rpc("get_world_view")

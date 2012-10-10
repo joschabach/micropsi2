@@ -2238,12 +2238,17 @@ function showDefaultForm(){
 
 function api(functionname, params, success, error, method){
     var url = '/rpc/'+functionname;
+    var key;
     if(method != "post"){
         args = '';
-        for(var key in params){
+        for(key in params){
             args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
         }
         url += '('+args.substr(0, args.length-1) + ')';
+    } else {
+        for(key in params){
+            params[key] = JSON.stringify(params[key]);
+        }
     }
     $.ajax({
         url: url,

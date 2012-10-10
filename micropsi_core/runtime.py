@@ -10,7 +10,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import micropsi_core
-from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, STANDARD_NODETYPES
 from micropsi_core.world import world
 from micropsi_core import config
 import os
@@ -654,14 +654,17 @@ class MicroPsiRuntime(object):
                 del nodenet.state['links'][uid]
         return True
 
-    def get_available_node_types(self, nodenet_uid):
+    def get_available_node_types(self, nodenet_uid=None):
         """Returns a list of available node types. (Including native modules.)"""
-        pass
+        data = STANDARD_NODETYPES
+        if nodenet_uid:
+            data.update(self.nodenets[nodenet_uid].state.get('nodetypes', {}))
+        return data
 
-    def get_available_native_module_types(self, nodenet_uid=None):
+    def get_available_native_module_types(self, nodenet_uid):
         """Returns a list of native modules.
         If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-        pass
+        return self.nodenets[nodenet_uid].state['nodetypes']
 
     def get_nodefunction(self, nodenet_uid, node_type):
         """Returns the current node function for this node type"""
@@ -698,7 +701,7 @@ class MicroPsiRuntime(object):
             parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
         """
         nodenet = self.nodenets[nodenet_uid]
-        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, parameters, nodefunction_definition=node_function)
+        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters, nodefunction_definition=node_function)
         return True
 
     def delete_node_type(self, nodenet_uid, node_type):

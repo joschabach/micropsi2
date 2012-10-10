@@ -73,6 +73,8 @@ selectionBox.strokeWidth = 0.5;
 selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 
+nodetypes = {};
+
 initializeMenus();
 initializeControls();
 initializeSidebarForms();
@@ -83,7 +85,6 @@ if(currentNodenet){
 }
 
 world_data = {};
-nodetypes = {};
 currentSimulationStep = 0;
 nodenetRunning = false;
 
@@ -152,16 +153,21 @@ function setNodenetValues(data){
 }
 
 function setCurrentNodenet(uid){
+    console.log(nodetypes);
     api('load_nodenet_into_ui',
         {nodenet_uid: uid},
         function(data){
             showDefaultForm();
-            currentNodenet = uid;
             $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
-            initializeNodeNet(data);
+            if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
+                api('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
+                    nodetypes = nodetypedata;
+                    initializeNodeNet(data);
+                });
+            }
+            currentNodenet = uid;
             $('#nodenet_step').val(data.step);
             refreshNodenetList();
-            view.draw(true);
         },
         function(data) {
             currentNodenet = null;
@@ -190,7 +196,6 @@ function initializeNodeNet(data){
         console.log(data);
         nodenet_data = data;
         loadWorldData(data); // TODO: move this out once we managed world selection
-        nodetypes = data.nodetypes;
         currentWorldadapter = data.worldadapter;
         var uid;
         for(uid in data.nodes){

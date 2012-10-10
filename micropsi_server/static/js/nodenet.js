@@ -158,7 +158,7 @@ function setCurrentNodenet(uid){
         {nodenet_uid: uid},
         function(data){
             showDefaultForm();
-            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
                 api('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
                     nodetypes = nodetypedata;

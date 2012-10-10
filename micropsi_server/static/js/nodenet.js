@@ -124,7 +124,7 @@ function loadWorldData(nodenet_data){
 function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
     var str = '';
-    for (var key in data.nodetypes){
+    for (var key in nodetypes){
         str += '<tr><td>'+key+'</td></tr>';
     }
     $('#nodenet_nodetypes').html(str);

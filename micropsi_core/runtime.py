@@ -656,7 +656,7 @@ class MicroPsiRuntime(object):
 
     def get_available_node_types(self, nodenet_uid=None):
         """Returns a list of available node types. (Including native modules.)"""
-        data = STANDARD_NODETYPES
+        data = STANDARD_NODETYPES.copy()
         if nodenet_uid:
             data.update(self.nodenets[nodenet_uid].state.get('nodetypes', {}))
         return data
@@ -706,7 +706,11 @@ class MicroPsiRuntime(object):
 
     def delete_node_type(self, nodenet_uid, node_type):
         """Remove the node type from the current nodenet definition, if it is part of it."""
-        pass
+        try:
+            del self.nodenets[nodenet_uid].state['nodetypes'][node_type]
+            return True
+        except KeyError:
+            return False
 
     def get_slot_types(self, nodenet_uid, node_type):
         """Returns the list of slot types for the given node type."""

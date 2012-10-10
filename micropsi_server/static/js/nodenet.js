@@ -73,6 +73,7 @@ selectionBox.strokeWidth = 0.5;
 selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 
+STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event"];
 nodetypes = {};
 
 initializeMenus();
@@ -123,11 +124,7 @@ function loadWorldData(nodenet_data){
 
 function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
-    var str = '';
-    for (var key in nodetypes){
-        str += '<tr><td>'+key+'</td></tr>';
-    }
-    $('#nodenet_nodetypes').html(str);
+    setNodeTypes();
     if (!jQuery.isEmptyObject(world_data)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -258,6 +255,19 @@ function refreshNodespace(){
             refreshNodespace();
         }
     });
+}
+
+function setNodeTypes(){
+    var str = '';
+    for (var key in nodetypes){
+        if(STANDARD_NODETYPES.indexOf(key) >= 0){
+            str += '<tr><td>' + key + '</td></tr>';
+        } else {
+            str += '<tr><td>' + key + '<a class="delete_nodetype close label" data="'+key+'">x</a></td></tr>';
+        }
+    }
+    $('#nodenet_nodetypes').html(str);
+    $('.delete_nodetype').on('click', delete_nodetype);
 }
 
 // data structures ----------------------------------------------------------------------
@@ -2126,6 +2136,20 @@ function handleEditNodenet(event){
             dialogs.notification('Nodenet data saved', 'success');
             setCurrentNodenet(currentNodenet);
         });
+}
+
+function delete_nodetype(event){
+    event.preventDefault();
+    var name = $(event.target).attr('data');
+    for(var uid in nodes){
+        if(nodes[uid].type == name){
+            return dialogs.notification("There are still nodes registered to this nodetype. It can not be deleted");
+        }
+    }
+    api('delete_node_type', {'nodenet_uid': currentNodenet, 'node_type': name}, function(data){
+        delete nodetypes[name];
+        setNodeTypes();
+    });
 }
 
 function makeUuid() {

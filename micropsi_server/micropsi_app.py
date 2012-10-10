@@ -833,7 +833,8 @@ def add_node_type(nodenet_uid, node_type, slots=[], gates=[], node_function=None
 
 
 @rpc("delete_node_type", permission_required="manage nodenets")
-def delete_node_type(nodenet_uid, node_type): return micropsi.delete_node_type
+def delete_node_type(nodenet_uid, node_type):
+    return micropsi.delete_node_type(nodenet_uid, node_type)
 
 
 @rpc("get_slot_types")

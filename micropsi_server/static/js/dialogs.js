@@ -104,7 +104,7 @@ var dialogs = {
         $('#notification').notify({
             message: { text: message },
             fadeOut: { enabled: true, delay: 1000 },
-            type: status
+            type: status || "info"
         }).show();
     }
 

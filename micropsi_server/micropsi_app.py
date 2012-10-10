@@ -803,11 +803,13 @@ def delete_node(nodenet_uid, node_uid):
 
 
 @rpc("get_available_node_types")
-def get_available_node_types(nodenet_uid=None):return micropsi.get_available_node_types
+def get_available_node_types(nodenet_uid=None):
+    return micropsi.get_available_node_types(nodenet_uid)
 
 
 @rpc("get_available_native_module_types")
-def get_available_native_module_types(nodenet_uid=None): return micropsi.get_available_native_module_types
+def get_available_native_module_types(nodenet_uid):
+    return micropsi.get_available_native_module_types(nodenet_uid)
 
 
 @rpc("get_nodefunction")

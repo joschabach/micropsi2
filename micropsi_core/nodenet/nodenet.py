@@ -65,6 +65,8 @@ class Nodenet(object):
     def world(self, world):
         if world:
             self.state["world"] = world.uid
+        else:
+            self.state["world"] = None
 
     @property
     def worldadapter(self):
@@ -163,7 +165,7 @@ class Nodenet(object):
         """
         for name, data in self.state.get('nodespaces', {}).items():
             self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name)
-        nodetypes = self.state.get('nodetypes', {})
+        nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
@@ -180,11 +182,17 @@ class Nodenet(object):
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
-        # nodespace = self.state["nodespaces"].get(nodespace_uid)
-        # nodes = {}
-        # links = {}
-        # for node in nodespace.
-        pass
+        nodespace = self.nodespaces[nodespace_uid]
+        data = {'nodes': {}, 'links': {}, 'nodespaces': {}}
+        linkUids = []
+        for uid in nodespace.netentities.get('nodes', []):
+            data['nodes'][uid] = self.state['nodes'][uid]
+            linkUids.extend(self.nodes[uid].get_associated_link_ids())
+        for uid in self.links:
+            data['links'][uid] = self.state['links'][uid]
+        for uid in nodespace.netentities.get('nodespaces', []):
+            data['nodespaces'][uid] = self.state['nodespaces'][uid]
+        return data
 
     # add functions for exporting and importing node nets
     def export_data(self):
@@ -289,7 +297,7 @@ class NetEntity(object):
         # tell my old parent that I move out
         if "parent_nodespace" in self.data:
             old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
-            if old_parent and self.uid in old_parent.netentities.get(self.entitytype, []):
+            if old_parent and old_parent.uid != uid and self.uid in old_parent.netentities.get(self.entitytype, []):
                 old_parent.netentities[self.entitytype].remove(self.uid)
         self.data['parent_nodespace'] = uid
 
@@ -330,7 +338,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
-        pass
+        return self.netentities
 
     def get_activator_value(self, type):
         """returns the value of the activator of the given type, or 1, if none exists"""
@@ -499,6 +507,14 @@ class Node(NetEntity):
 
     def get_slot(self, slotname):
         return self.slots.get(slotname)
+
+    def get_associated_link_ids(self):
+        links = []
+        for key in self.gates:
+            links.extend(self.gates[key].outgoing)
+        for key in self.slots:
+            links.extend(self.slots[key].incoming)
+        return links
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
@@ -716,11 +732,14 @@ class Nodetype(object):
             }
         """
         self.nodenet = nodenet
-        if not "nodetypes" in nodenet.state:
-            self.nodenet.state["nodetypes"] = {}
-        if not name in self.nodenet.state["nodetypes"]:
-            self.nodenet.state["nodetypes"][name] = {}
-        self.data = self.nodenet.state["nodetypes"][name]
+        if name not in STANDARD_NODETYPES:
+            if not "nodetypes" in nodenet.state:
+                self.nodenet.state["nodetypes"] = {}
+            if not name in self.nodenet.state["nodetypes"]:
+                self.nodenet.state["nodetypes"][name] = {}
+            self.data = self.nodenet.state["nodetypes"][name]
+        else:
+            self.data = {}
         self.data["name"] = name
 
         self.states = self.data.get('states') if states is None else states

@@ -8,7 +8,6 @@ This version of MicroPsi is meant to be deployed as a web server, and accessed t
 For local use, simply start this server and point your browser to "http://localhost:6543".
 The latter parameter is the default port and can be changed as needed.
 """
-from micropsi_core import config
 
 __author__ = 'joscha'
 __date__ = '15.05.12'
@@ -36,7 +35,6 @@ RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 
-configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
 micropsi = micropsi_core.runtime.MicroPsiRuntime(RESOURCE_PATH)
 usermanager = usermanagement.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
 
@@ -85,7 +83,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
             elif len(request.params) > 0:
-                kwargs = dict((key.strip('[]'), val) for key, val in request.params.iteritems())
+                kwargs = dict((key.strip(), json.loads(val)) for key, val in request.params.iteritems())
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401
@@ -685,10 +683,14 @@ def get_available_world_types():
 
 
 @rpc("delete_world", permission_required="manage worlds")
-def delete_world(world_uid): return micropsi.delete_world
+def delete_world(world_uid):
+    return micropsi.delete_world(world_uid)
+
 
 @rpc("get_world_view")
-def get_world_view(world_uid, step): return micropsi.get_world_view
+def get_world_view(world_uid, step):
+    return micropsi.get_world_view(world_uid, step)
+
 
 @rpc("set_world_properties", permission_required="manage worlds")
 def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return micropsi.set_world_properties
@@ -765,8 +767,10 @@ def get_monitor_data(nodenet_uid, step): return micropsi.get_monitor_data
 
 # Nodenet
 
+
 @rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step): return micropsi.get_nodespace
+def get_nodespace(nodenet_uid, nodespace, step):
+    return micropsi.get_nodespace(nodenet_uid, nodespace, step)
 
 
 @rpc("get_node")
@@ -799,11 +803,13 @@ def delete_node(nodenet_uid, node_uid):
 
 
 @rpc("get_available_node_types")
-def get_available_node_types(nodenet_uid=None):return micropsi.get_available_node_types
+def get_available_node_types(nodenet_uid=None):
+    return micropsi.get_available_node_types(nodenet_uid)
 
 
 @rpc("get_available_native_module_types")
-def get_available_native_module_types(nodenet_uid=None): return micropsi.get_available_native_module_types
+def get_available_native_module_types(nodenet_uid):
+    return micropsi.get_available_native_module_types(nodenet_uid)
 
 
 @rpc("get_nodefunction")
@@ -827,7 +833,8 @@ def add_node_type(nodenet_uid, node_type, slots=[], gates=[], node_function=None
 
 
 @rpc("delete_node_type", permission_required="manage nodenets")
-def delete_node_type(nodenet_uid, node_type): return micropsi.delete_node_type
+def delete_node_type(nodenet_uid, node_type):
+    return micropsi.delete_node_type(nodenet_uid, node_type)
 
 
 @rpc("get_slot_types")

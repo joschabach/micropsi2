@@ -36,7 +36,7 @@
                             <tr>
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
-                          <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
+                          <a href="#" id="nodenet_reset" class="btn"><i class="icon-fast-backward"></i></a>
                           <a href="#" id="nodenet_start" class="btn"><i class="icon-play"></i></a>
                           <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
                           <a href="#" id="nodenet_stop" class="btn"><i class="icon-pause"></i></a>
@@ -314,7 +314,7 @@
                             <tr>
                                 <td style="white-space:nowrap;">
                         <span class="btn-group">
-                          <a href="#" class="btn"><i class="icon-fast-backward"></i></a>
+                          <a href="#" id="world_reset" class="btn"><i class="icon-fast-backward"></i></a>
                           <a href="#" id="world_start" class="btn"><i class="icon-play"></i></a>
                           <a href="#" id="world_step_forward" class="btn"><i class="icon-step-forward"></i></a>
                           <a href="#" id="world_stop" class="btn"><i class="icon-pause"></i></a>
@@ -338,15 +338,10 @@
                 <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
             </div>
             <div class="editor_field " id="world_forms">
-                <form>
-                    <div>
-                        <ul class="nav nav-list" id="object_list">
-                            <li class="nav-header">Active Context</li>
-                            <li><a href="#">Object1</a></li>
-                            <li><a href="#">Object2</a></li>
-                            <li><a href="#">Object3</a></li>
-                        </ul>
-                    </div>
+                <form class="form-horizontal">
+                    <h4>World Objects</h4>
+                    <table class="table-striped table-condensed" id="world_objects">
+                    </table>
                 </form>
             </div>
         </div>
@@ -488,7 +483,7 @@
 
 
 
-    <script src="/static/js/paper_nightly.js" type="text/javascript"></script>
+    <script src="/static/js/paper.js" type="text/javascript"></script>
     <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>
     <script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
 

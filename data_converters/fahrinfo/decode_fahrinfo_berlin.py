@@ -110,7 +110,7 @@ def parse_files():
     # compile a list of stations in Berlin
     berlin_stations = dict()
     for station in planB:
-        if "Berlin" in station["name"]:
+        if "(Berlin)" in station["name"] or "Berlin Hauptbahnhof" in station["name"]:
             coord = geo_coords.get(station["b1_id"])
             station_lines = { i: train_lines.get(i) for i in stops.get(station["b1_id"], [])}
             station_line_names = []
@@ -130,9 +130,6 @@ def parse_files():
                 "train_types": station_train_types,
                 "line_names": station_line_names
             }
-
-    with open(os.path.join(os.path.dirname(__file__),"fahrinfo_stations.json"), mode='w+') as file:
-        json.dump(berlin_stations, file, indent = 4)
 
     # compile a list of trains in Berlin, with a list of lines on each, and for each line, a list of stations and times
     lines = { i["id"]:i["stops"] for i in planLauf }
@@ -181,9 +178,6 @@ def parse_files():
                     train_ids.add(j)
         days_to_train_ids[day]=list(train_ids)
 
-    with open(os.path.join(os.path.dirname(__file__),"days_to_train_ids.json"), mode='w+') as file:
-        json.dump(days_to_train_ids, file, indent = 4)
-
     # sort arrivals/departures by trains
 
     events_by_trains = dict()
@@ -202,8 +196,7 @@ def parse_files():
         events_by_trains[train_id]["stops"][station_index] = {
             "arr": movements[i]["arr"],
             "dep": movements[i]["dep"],
-            "station_id": movements[i]["station_id"],
-            "station_name": berlin_stations[movements[i]["station_id"]]["name"]
+            "station_id": movements[i]["station_id"]
         }
 
 
@@ -229,38 +222,33 @@ def parse_files():
             station_list = events_by_trains[train_id]["stops"]
             for stop in station_list:
                 if -1 < stop["arr"] < latest_dep:  # we crossed the day boundary
-                    print "found a train that arrives earlier than it left: ", train_id
-                    print events_by_trains[train_id]
-                    new_train_id = "%sb" % train_id  # append a "b" to the train_id
-                    events_by_trains[new_train_id] = {
-                         "line_name": events_by_trains[train_id]["line_name"],
-                         "train_type": events_by_trains[train_id]["train_type"],
-                         "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
-                         "begin": 9999,
-                         "end": -1
-                    }
-                    if day < MAXDAYS-1:
-                        days_to_train_ids[day +1].append(new_train_id)
+#                    new_train_id = "%sb" % train_id  # append a "b" to the train_id
+#                    events_by_trains[new_train_id] = {
+#                         "line_name": events_by_trains[train_id]["line_name"],
+#                         "train_type": events_by_trains[train_id]["train_type"],
+#                         "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
+#                         "begin": 9999,
+#                         "end": -1
+#                    }
+#                    if day < MAXDAYS-1:
+#                        days_to_train_ids[day +1].append(new_train_id)
                     stop["arr"]+=1440 # add a day to allow for station calculation
                     stop["dep"]+=1440
                     events_by_trains[train_id]["stops"] = station_list[:stop_index]
-                    print events_by_trains[train_id]
-                    print events_by_trains[new_train_id]
                     break
                 if -1 < stop["dep"] < stop["arr"]:  # we crossed the day boundary
-                    print "found a train that departs earlier than it arrived: ", train_id
-                    new_train_id = "%sb" % train_id
-                    events_by_trains[new_train_id] = {
-                        "line_name": events_by_trains[train_id]["line_name"],
-                        "train_type": events_by_trains[train_id]["train_type"],
-                        "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
-                        "begin": 9999,
-                        "end": -1
-                    }
-                    print events_by_trains[new_train_id]
-                    events_by_trains[new_train_id]["stops"][0]["arr"] = 0
-                    if day < MAXDAYS-1:
-                        days_to_train_ids[day +1].append(new_train_id)
+#                    new_train_id = "%sb" % train_id
+#                    events_by_trains[new_train_id] = {
+#                        "line_name": events_by_trains[train_id]["line_name"],
+#                        "train_type": events_by_trains[train_id]["train_type"],
+#                        "stops": station_list[stop_index+1:],  # create a new station list for tomorrow,
+#                        "begin": 9999,
+#                        "end": -1
+#                    }
+#                    print events_by_trains[new_train_id]
+#                    events_by_trains[new_train_id]["stops"][0]["arr"] = 0
+#                    if day < MAXDAYS-1:
+#                        days_to_train_ids[day +1].append(new_train_id)
                     stop["dep"]+=1440
                     events_by_trains[train_id]["stops"] = station_list[:stop_index]
                     break
@@ -271,39 +259,18 @@ def parse_files():
             events_by_trains[train_id]["end"] = station_list[-1]["arr"]+1
 
 
+    # put it all together
 
-    with open(os.path.join(os.path.dirname(__file__),"events_by_trains.json"), mode='w+') as file:
-        json.dump(events_by_trains, file, indent = 4)
-
-
-    train_state = {}
-    for day in range (0, 100):
-        todays_trains = days_to_train_ids[day]
-        for minute in range (0, 60*24):
-            print minute
-            for i in todays_trains:
-                if minute < events_by_trains[i]["begin"] or minute > events_by_trains[i]["end"]:
-                    if train_state.has_key(i): del train_state[i]
-                else:
-                    if not train_state.has_key(i):
-                        train_state[i] = { "pos_index": 0 }
-
-                    # did we arrive at next station already?
-                    if len(events_by_trains[i]["stops"]) > train_state[i]["pos_index"]:
-                        if events_by_trains[i]["stops"][train_state[i]["pos_index"]]["arr"] <= minute:
-                            train_state[i] += 1
-                    #if events_by_trains[i]["stops"][train_state[i]["pos_index"]]["arr"]
+    fahrinfo_berlin = {
+        "stations": berlin_stations,
+        "trains_by_day": days_to_train_ids,
+        "stops_by_train": events_by_trains
+    }
 
 
+    with open(os.path.join(os.path.dirname(__file__),"fahrinfo_berlin.json"), mode='w+') as file:
+        json.dump(fahrinfo_berlin, file, indent = 4)
 
-
-                    #for each train, mark the time interval in which it is computed (write it down, so we can test it quickly)
-#always store the index of the current station. we can get all other data from this.
-
-
-
-
-    # zu den zügen die arrs und depts zuordnen, und zwar als liste von depts:{deptstation, nextstation, arrival}
 
 def read_json_file(filename):
     try:

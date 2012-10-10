@@ -162,7 +162,7 @@
 
 
 /** side bar / form bar **/
-#nodenet_forms h4{
+.editor_field h4{
   padding: 1em;
   border-bottom: 1px solid #dedede;
   margin-bottom: 1em;

@@ -53,6 +53,9 @@ if (currentWorld){
 }
 initializeControls();
 
+worldRunning = false;
+currentWorldSimulationStep = 0;
+
 function refreshWorldList(){
     $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
         $('#world_list .world_select').on('click', function(event){
@@ -64,14 +67,43 @@ function refreshWorldList(){
     });
 }
 
+function refreshWorldView(){
+    api('get_world_view',
+        {world_uid: currentWorld, step: currentWorldSimulationStep},
+        function(data){
+            if(jQuery.isEmptyObject(data) && worldRunning){
+                setTimeout(refreshWorldView, 1000);
+                return null;
+            }
+            currentWorldSimulationStep = data.currentSimulationStep;
+            $('#world_step').val(currentWorldSimulationStep);
+            for(var key in data.objects){
+                if(hasObjectChanged(key, data.objects[key])){
+                    obj = new WorldObject(data.objects[key].uid, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].name, data.objects[key].stationtype);
+                    redrawObject(obj);
+                    objects[key] = obj;
+                }
+            }
+            updateViewSize();
+            if(worldRunning){
+                refreshWorldView();
+            }
+        }
+    );
+}
+
+function hasObjectChanged(uid, data){
+    return uid in objects && (objects[uid].x != data.pos[0] || objects[uid].y != data.pos[1] || objects[uid].name != data.name);
+}
+
 function setCurrentWorld(uid){
     currentWorld = uid;
     // todo: get url from api.
-    load_world_info();
-    load_world_objects();
+    loadWorldInfo();
+    loadWorldObjects();
 }
 
-function load_world_info(){
+function loadWorldInfo(){
     api('get_world_properties', {
         world_uid: currentWorld
     }, function(data){
@@ -83,14 +115,20 @@ function load_world_info(){
     });
 }
 
-function load_world_objects(){
+function loadWorldObjects(){
     api('get_world_objects', {world_uid: currentWorld}, function(data){
         $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
         objectLayer.removeChildren();
         objects = {};
+        var tablerows = '';
+        var obj = null;
         for(var key in data){
-            addObject(new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
+            obj = new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype);
+            tablerows += '<tr><td><a class="link_object" data="'+obj.uid+'">'+obj.name+'</a></td></tr>';
+            addObject(obj);
         }
+        $('#world_objects').html(tablerows);
+        $('.link_object').on('click', highlightWorldobject);
         updateViewSize();
         refreshWorldList();
     });
@@ -120,7 +158,7 @@ function addObject(worldobject){
 }
 
 function redrawObject(obj){
-    objectLayer.children[obj.uid].remove();
+    objects[obj.uid].representation.remove();
     renderObject(obj);
 }
 
@@ -187,7 +225,6 @@ function defaultErrorCallback(data){
 }
 function EmptyCallback(){}
 
-
 function getLegend(worldobject){
     var legend = new Group();
     legend.name = 'stationLegend';
@@ -223,6 +260,9 @@ hoverPath = false;
 path = false;
 label = false;
 
+clickLabel = false;
+clickHighlight = false;
+
 function onMouseMove(event) {
     var p = event.point;
     // hovering
@@ -237,11 +277,14 @@ function onMouseMove(event) {
         if (bounds.contains(p) && objects[uid].representation) {
             if (hoverUid != uid){
                 hoverUid = uid;
-                objects[uid].representation.scale(viewProperties.hoverScale);
                 if (label){
                     label.remove();
                     label = null;
                 }
+                if(clickHighlight){
+                    removeClickHighlight();
+                }
+                objects[uid].representation.scale(viewProperties.hoverScale);
                 label = getLegend(objects[hoverUid]);
                 objectLayer.addChild(label);
             }
@@ -254,20 +297,90 @@ function onMouseMove(event) {
     }
 }
 
+function highlightWorldobject(event){
+    var uid = $(event.target).attr('data');
+    if(clickHighlight != uid){
+        removeClickHighlight();
+        objects[uid].representation.scale(viewProperties.hoverScale);
+        clickHighlight = uid;
+        clickLabel = getLegend(objects[uid]);
+        objectLayer.addChild(clickLabel);
+        if(!objectInViewport(uid)){
+            scrollToObject(uid);
+        }
+        view.draw(true);
+    }
+}
+
+function removeClickHighlight(){
+    if(clickHighlight) {
+        objects[clickHighlight].representation.scale(1/viewProperties.hoverScale);
+        clickHighlight = null;
+    }
+    if(clickLabel){
+        clickLabel.remove();
+        clickLabel = null;
+    }
+}
+
+function objectInViewport(uid) {
+    var parent = canvas.parent();
+    return (
+        objects[uid].bounds.y > parent.scrollTop() &&
+        objects[uid].bounds.x > parent.scrollLeft() &&
+        (objects[uid].bounds.y + objects[uid].bounds.height) < (parent.innerHeight() + parent.scrollTop() - 20) &&
+        (objects[uid].bounds.x + objects[uid].bounds.width) < (parent.innerWidth() + parent.scrollLeft() - 20)
+    );
+}
+
+function scrollToObject(uid){
+    var parent = canvas.parent();
+    var obj = objects[uid];
+    if(obj.bounds.y <= parent.scrollTop()) parent.scrollTop(obj.bounds.y - 20);
+    else if(obj.bounds.y + obj.bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(obj.bounds.y + 20);
+    if(obj.bounds.x <= parent.scrollLeft()) parent.scrollLeft(obj.bounds.x - 20);
+    else if (obj.bounds.x + obj.bounds.width >= (parent.innerWidth() + parent.scrollLeft() - 20)) parent.scrollLeft(obj.bounds.x + 20);
+}
 
 // --------------------------- controls -------------------------------------------------------- //
 
 function initializeControls(){
+    $('#world_reset').on('click', resetWorld);
+    $('#world_step_forward').on('click', stepWorld);
     $('#world_start').on('click', startWorldrunner);
     $('#world_stop').on('click', stopWorldrunner);
 }
 
+function resetWorld(event){
+    event.preventDefault();
+    worldRunning = false;
+    api('revert_world', {world_uid: currentWorld}, function(){
+        setCurrentWorld(currentWorld);
+    });
+}
+
+function stepWorld(event){
+    event.preventDefault();
+    api('step_world', {world_uid: currentWorld}, function(){
+        if(worldRunning){
+            stopWorldrunner(event);
+        }
+        refreshWorldView();
+    });
+}
+
 function startWorldrunner(event){
     event.preventDefault();
-    api('start_worldrunner', {world_uid: currentWorld});
+    api('start_worldrunner', {world_uid: currentWorld}, function(){
+        worldRunning = true;
+        refreshWorldView();
+    });
 }
 
 function stopWorldrunner(event){
     event.preventDefault();
-    api('stop_worldrunner', {world_uid: currentWorld});
+    worldRunning = false;
+    api('stop_worldrunner', {world_uid: currentWorld}, function(){
+        $('#world_step').val(currentWorldSimulationStep);
+    });
 }

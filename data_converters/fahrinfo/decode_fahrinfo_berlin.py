@@ -264,12 +264,14 @@ def parse_files():
     fahrinfo_berlin = {
         "stations": berlin_stations,
         "trains_by_day": days_to_train_ids,
-        "stops_by_train": events_by_trains
+        "train_data": events_by_trains,
+        "max_days": MAXDAYS
     }
-
 
     with open(os.path.join(os.path.dirname(__file__),"fahrinfo_berlin.json"), mode='w+') as file:
         json.dump(fahrinfo_berlin, file, indent = 4)
+
+
 
 
 def read_json_file(filename):
@@ -283,8 +285,73 @@ def read_json_file(filename):
         warnings.warn("Could not open plan data at %s" % filename)
     return False
 
+def test_schedule():
+    fahrinfo_berlin = read_json_file(os.path.join(os.path.dirname(__file__),"fahrinfo_berlin.json"))
+
+    # let us try to simulate the movement of all trains for every day...
+
+    day = 0
+    minute = 0
+    trains = {}
+
+    # step function
+    stations = fahrinfo_berlin["stations"]
+    train_data = fahrinfo_berlin["train_data"]
+    todays_trains = fahrinfo_berlin["trains_by_day"][str(day)]
+    for item in todays_trains:
+        train_id = str(item)
+        if train_data[train_id]["begin"] <= minute <= train_data[train_id]["end"]:
+            train = train_data[train_id]
+            if not train_id in trains:
+                trains[train_id] = {
+                    "type": train["train_type"],
+                    "line": train["line_name"],
+                    "station_index": 0,
+                    "moving": 0  # if 0, the train is stopping
+                }
+
+            # find current station
+            station_index = trains[train_id]["station_index"]
+            while train["stops"][station_index]["arr"] < minute and station_index < len(train["stops"])-1:
+                station_index += 1
+
+            current_station = str(train["stops"][station_index]["station_id"])
+
+            if train["stops"][station_index]["dep"] < minute:
+                if train["stops"][station_index]["dep"] < 0:
+                    # final destination
+                    trains[train_id]["lat"] = stations[current_station]["lat"]
+                    trains[train_id]["lon"] = stations[current_station]["lon"]
+                    trains[train_id]["moving"] = 0
+                else:
+                    # traveling between stations
+                    next_station = train["stops"][station_index+1]["station_id"]
+                    dep = train["stops"][station_index]["dep"]
+                    arr = train["stops"][station_index + 1]["arr"]
+                    if arr == dep:
+                        dep -= 0.1 # avoid division by zero
+                    distance = (minute-dep)/(arr-dep)
+                    clat = stations[current_station]["lat"]
+                    nlat = stations[next_station]["lat"]
+                    trains[train_id]["lat"] = clat + (nlat-clat)*distance
+                    clon = stations[current_station]["lon"]
+                    nlon = stations[next_station]["lon"]
+                    trains[train_id]["lat"] = clon + (nlon-clon)*distance
+                    trains[train_id]["moving"] = distance
+            else:
+                # stopping at station
+                trains[train_id]["lat"] = stations[current_station]["lat"]
+                trains[train_id]["lon"] = stations[current_station]["lon"]
+                trains[train_id]["moving"] = 0
+
+    print trains
+
+
+
+
 def main():
     parse_files()
+    # test_schedule()
 
 if __name__ == '__main__':
     main()

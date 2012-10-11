@@ -38,7 +38,7 @@ class ConfigurationManager(object):
 
     instances = {}
 
-    def __init__(self, config_path = "config-data.json", auto_save=True):
+    def __init__(self, config_path="config-data.json", auto_save=True):
         """initialize configuration management.
 
         If no config data are found, a new resource file is created.
@@ -83,15 +83,17 @@ class ConfigurationManager(object):
     def save_configs(self):
         """saves the config data to a file"""
         with open(self.config_file_name, mode='w+') as file:
-            json.dump(self.data, file, indent = 4)
+            json.dump(self.data, file, indent=4)
 
     def __setitem__(self, key, value):
         self.data[key] = value
-        if self.auto_save: self.save_configs()
+        if self.auto_save:
+            self.save_configs()
 
     def __delitem__(self, key):
         del self.data[key]
-        if self.auto_save: self.save_configs()
+        if self.auto_save:
+            self.save_configs()
 
     def __getitem__(self, key):
         return self.data[key]

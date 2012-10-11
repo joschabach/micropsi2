@@ -532,6 +532,28 @@ def world_list(current_world=None):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
+@route("/config/nodenet/runner")
+@route("/config/nodenet/runner", method="POST")
+def edit_nodenetrunner():
+    user_id, permissions, token = get_request_data()
+    if len(request.params) > 0:
+        micropsi.set_nodenetrunner_timestep(int(request.params['runner_timestep']))
+        return dict(status="success", msg="Timestep saved")
+    else:
+        return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=micropsi.get_nodenetrunner_timestep())
+
+
+@route("/config/world/runner")
+@route("/config/world/runner", method="POST")
+def edit_worldrunner():
+    user_id, permissions, token = get_request_data()
+    if len(request.params) > 0:
+        micropsi.set_worldrunner_timestep(int(request.params['runner_timestep']))
+        return dict(status="success", msg="Timestep saved")
+    else:
+        return template("runner_form", mode="world", action="/config/world/runner", value=micropsi.get_worldrunner_timestep())
+
+
 @rpc("select_nodenet")
 def select_nodenet(nodenet_uid):
     result, msg = micropsi.load_nodenet(nodenet_uid)

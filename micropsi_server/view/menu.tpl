@@ -58,8 +58,8 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="#">Server</a></li>
-                        <li><a href="#">Nodenet runner</a></li>
-                        <li><a href="#">World runner</a></li>
+                        <li><a href="/config/nodenet/runner" class="remote_form_dialog edit_nodenetrunner">Nodenet runner</a></li>
+                        <li><a href="/config/world/runner" class="remote_form_dialog edit_worldrunner">World runner</a></li>
                     </ul>
                 </li>
                 %end

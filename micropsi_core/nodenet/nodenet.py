@@ -65,6 +65,8 @@ class Nodenet(object):
     def world(self, world):
         if world:
             self.state["world"] = world.uid
+        else:
+            self.state["world"] = None
 
     @property
     def worldadapter(self):
@@ -163,7 +165,7 @@ class Nodenet(object):
         """
         for name, data in self.state.get('nodespaces', {}).items():
             self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name)
-        nodetypes = self.state.get('nodetypes', {})
+        nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
@@ -730,11 +732,14 @@ class Nodetype(object):
             }
         """
         self.nodenet = nodenet
-        if not "nodetypes" in nodenet.state:
-            self.nodenet.state["nodetypes"] = {}
-        if not name in self.nodenet.state["nodetypes"]:
-            self.nodenet.state["nodetypes"][name] = {}
-        self.data = self.nodenet.state["nodetypes"][name]
+        if name not in STANDARD_NODETYPES:
+            if not "nodetypes" in nodenet.state:
+                self.nodenet.state["nodetypes"] = {}
+            if not name in self.nodenet.state["nodetypes"]:
+                self.nodenet.state["nodetypes"][name] = {}
+            self.data = self.nodenet.state["nodetypes"][name]
+        else:
+            self.data = {}
         self.data["name"] = name
 
         self.states = self.data.get('states') if states is None else states

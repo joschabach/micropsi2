@@ -104,7 +104,7 @@ var dialogs = {
         $('#notification').notify({
             message: { text: message },
             fadeOut: { enabled: true, delay: 1000 },
-            type: status
+            type: status || "info"
         }).show();
     }
 
@@ -119,6 +119,8 @@ $(function() {
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
+
+    $('a.remote_form_dialog').on('click', remote_form);
 
     $('.navbar a.nodenet_new').on('click', function(event){
         event.preventDefault();
@@ -183,7 +185,18 @@ $(function() {
 
     $('.navbar a.world_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this world?", function(){
-            alert('you bastard');
+            $.ajax({
+                url: '/rpc/delete_world(world_uid="'+ currentWorld +'")',
+                success: function(){
+                    $.cookie('selected_world', '', {expires: -1, path: '/'});
+                    dialogs.notification("World deleted");
+                    window.location.reload();
+                },
+                error: function(){
+                    dialogs.notification('Error deleting world', 'error');
+                    window.location.reload();
+                }
+            });
         });
     });
 

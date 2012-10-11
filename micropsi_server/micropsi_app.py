@@ -83,7 +83,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
             elif len(request.params) > 0:
-                kwargs = dict((key.strip('[]'), val) for key, val in request.params.iteritems())
+                kwargs = dict((key.strip(), json.loads(val)) for key, val in request.params.iteritems())
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401
@@ -123,20 +123,21 @@ def server_static(filepath):
 def index():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
-    return template("all", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("viewer", mode="all", version=VERSION, user_id=user_id, permissions=permissions)
+
 
 @route("/nodenet")
-def index():
+def nodenet():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
-    return template("nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+
 
 @route("/world")
-def index():
+def world():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
-    return template("world", version=VERSION, user_id=user_id, permissions=permissions)
-
+    return template("viewer", mode="world", version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @error(404)
@@ -531,6 +532,28 @@ def world_list(current_world=None):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
+@route("/config/nodenet/runner")
+@route("/config/nodenet/runner", method="POST")
+def edit_nodenetrunner():
+    user_id, permissions, token = get_request_data()
+    if len(request.params) > 0:
+        micropsi.set_nodenetrunner_timestep(int(request.params['runner_timestep']))
+        return dict(status="success", msg="Timestep saved")
+    else:
+        return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=micropsi.get_nodenetrunner_timestep())
+
+
+@route("/config/world/runner")
+@route("/config/world/runner", method="POST")
+def edit_worldrunner():
+    user_id, permissions, token = get_request_data()
+    if len(request.params) > 0:
+        micropsi.set_worldrunner_timestep(int(request.params['runner_timestep']))
+        return dict(status="success", msg="Timestep saved")
+    else:
+        return template("runner_form", mode="world", action="/config/world/runner", value=micropsi.get_worldrunner_timestep())
+
+
 @rpc("select_nodenet")
 def select_nodenet(nodenet_uid):
     result, msg = micropsi.load_nodenet(nodenet_uid)
@@ -683,10 +706,14 @@ def get_available_world_types():
 
 
 @rpc("delete_world", permission_required="manage worlds")
-def delete_world(world_uid): return micropsi.delete_world
+def delete_world(world_uid):
+    return micropsi.delete_world(world_uid)
+
 
 @rpc("get_world_view")
-def get_world_view(world_uid, step): return micropsi.get_world_view
+def get_world_view(world_uid, step):
+    return micropsi.get_world_view(world_uid, step)
+
 
 @rpc("set_world_properties", permission_required="manage worlds")
 def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return micropsi.set_world_properties
@@ -799,11 +826,13 @@ def delete_node(nodenet_uid, node_uid):
 
 
 @rpc("get_available_node_types")
-def get_available_node_types(nodenet_uid=None):return micropsi.get_available_node_types
+def get_available_node_types(nodenet_uid=None):
+    return micropsi.get_available_node_types(nodenet_uid)
 
 
 @rpc("get_available_native_module_types")
-def get_available_native_module_types(nodenet_uid=None): return micropsi.get_available_native_module_types
+def get_available_native_module_types(nodenet_uid):
+    return micropsi.get_available_native_module_types(nodenet_uid)
 
 
 @rpc("get_nodefunction")
@@ -827,7 +856,8 @@ def add_node_type(nodenet_uid, node_type, slots=[], gates=[], node_function=None
 
 
 @rpc("delete_node_type", permission_required="manage nodenets")
-def delete_node_type(nodenet_uid, node_type): return micropsi.delete_node_type
+def delete_node_type(nodenet_uid, node_type):
+    return micropsi.delete_node_type(nodenet_uid, node_type)
 
 
 @rpc("get_slot_types")

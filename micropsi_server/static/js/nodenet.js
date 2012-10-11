@@ -73,6 +73,9 @@ selectionBox.strokeWidth = 0.5;
 selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 
+STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event"];
+nodetypes = {};
+
 initializeMenus();
 initializeControls();
 initializeSidebarForms();
@@ -83,9 +86,8 @@ if(currentNodenet){
 }
 
 world_data = {};
-nodetypes = {};
 currentSimulationStep = 0;
-nodenet_running = false;
+nodenetRunning = false;
 
 refreshNodenetList();
 function refreshNodenetList(){
@@ -122,11 +124,7 @@ function loadWorldData(nodenet_data){
 
 function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
-    var str = '';
-    for (var key in data.nodetypes){
-        str += '<tr><td>'+key+'</td></tr>';
-    }
-    $('#nodenet_nodetypes').html(str);
+    setNodeTypes();
     if (!jQuery.isEmptyObject(world_data)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -152,16 +150,21 @@ function setNodenetValues(data){
 }
 
 function setCurrentNodenet(uid){
+    console.log(nodetypes);
     api('load_nodenet_into_ui',
         {nodenet_uid: uid},
         function(data){
             showDefaultForm();
+            $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
+            if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
+                api('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
+                    nodetypes = nodetypedata;
+                    initializeNodeNet(data);
+                });
+            }
             currentNodenet = uid;
-            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
-            initializeNodeNet(data);
             $('#nodenet_step').val(data.step);
             refreshNodenetList();
-            view.draw(true);
         },
         function(data) {
             currentNodenet = null;
@@ -190,7 +193,6 @@ function initializeNodeNet(data){
         console.log(data);
         nodenet_data = data;
         loadWorldData(data); // TODO: move this out once we managed world selection
-        nodetypes = data.nodetypes;
         currentWorldadapter = data.worldadapter;
         var uid;
         for(uid in data.nodes){
@@ -219,33 +221,53 @@ function initializeNodeNet(data){
     updateViewSize();
 }
 
-function refreshNodenetView(){
+function refreshNodespace(){
     api('get_nodespace', {
         nodenet_uid: currentNodenet,
         nodespace: currentNodeSpace,
         step: currentSimulationStep
     }, success=function(data){
-        if(jQuery.isEmptyObject(data) && nodenet_running){
-            setTimeout(refreshNodenetView, 1000);
+        if(jQuery.isEmptyObject(data) && nodenetRunning){
+            setTimeout(refreshNodespace, 1000);
             return null;
         }
         currentSimulationStep = data.current_step;
         $('#nodenet_step').val(currentSimulationStep);
+        var item;
         for(var uid in data.nodes){
-            redrawNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters);
+            redrawNode(item);
+            nodes[uid] = item;
         }
         for(uid in data.nodespaces){
-            redrawNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
+            item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
+            redrawNode(item);
+            nodes[uid] = item;
         }
         for(uid in data.links){
             link = data.links[uid];
-            redrawLink(new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+            item = new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty);
+            redrawLink(item);
+            links[uid] = item;
         }
         view.draw(true);
-        if(nodenet_running){
-            refreshNodenetView();
+        if(nodenetRunning){
+            refreshNodespace();
         }
     });
+}
+
+function setNodeTypes(){
+    var str = '';
+    for (var key in nodetypes){
+        if(STANDARD_NODETYPES.indexOf(key) >= 0){
+            str += '<tr><td>' + key + '</td></tr>';
+        } else {
+            str += '<tr><td>' + key + '<a class="delete_nodetype close label" data="'+key+'">x</a></td></tr>';
+        }
+    }
+    $('#nodenet_nodetypes').html(str);
+    $('.delete_nodetype').on('click', delete_nodetype);
 }
 
 // data structures ----------------------------------------------------------------------
@@ -1464,33 +1486,46 @@ function initializeMenus() {
 function initializeControls(){
     $('#nodenet_start').on('click', startNodenetrunner);
     $('#nodenet_stop').on('click', stopNodenetrunner);
+    $('#nodenet_reset').on('click', resetNodenet);
     $('#nodenet_step_forward').on('click', stepNodenet);
 }
 
 function stepNodenet(event){
     event.preventDefault();
-    if(nodenet_running){
+    if(nodenetRunning){
         stopNodenetrunner(event);
     }
     api("step_nodenet",
         {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
         success=function(data){
-            refreshNodenetView(currentNodenet);
+            refreshNodespace(currentNodenet);
             dialogs.notification("Nodenet stepped", "success");
         });
 }
 
 function startNodenetrunner(event){
     event.preventDefault();
-    nodenet_running = true;
+    nodenetRunning = true;
     api('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
-        refreshNodenetView();
+        refreshNodespace();
     });
 }
 function stopNodenetrunner(event){
     event.preventDefault();
-    nodenet_running = false;
+    nodenetRunning = false;
     api('stop_nodenetrunner', {nodenet_uid: currentNodenet});
+}
+
+function resetNodenet(event){
+    event.preventDefault();
+    nodenetRunning = false;
+    api(
+        'revert_nodenet',
+        {nodenet_uid: currentNodenet},
+        function(){
+            setCurrentNodenet(currentNodenet);
+        }
+    );
 }
 
 var clickPosition = null;
@@ -2103,6 +2138,20 @@ function handleEditNodenet(event){
         });
 }
 
+function delete_nodetype(event){
+    event.preventDefault();
+    var name = $(event.target).attr('data');
+    for(var uid in nodes){
+        if(nodes[uid].type == name){
+            return dialogs.notification("There are still nodes registered to this nodetype. It can not be deleted");
+        }
+    }
+    api('delete_node_type', {'nodenet_uid': currentNodenet, 'node_type': name}, function(data){
+        delete nodetypes[name];
+        setNodeTypes();
+    });
+}
+
 function makeUuid() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
@@ -2213,12 +2262,17 @@ function showDefaultForm(){
 
 function api(functionname, params, success, error, method){
     var url = '/rpc/'+functionname;
+    var key;
     if(method != "post"){
         args = '';
-        for(var key in params){
+        for(key in params){
             args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
         }
         url += '('+args.substr(0, args.length-1) + ')';
+    } else {
+        for(key in params){
+            params[key] = JSON.stringify(params[key]);
+        }
     }
     $.ajax({
         url: url,

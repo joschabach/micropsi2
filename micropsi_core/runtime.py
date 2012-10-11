@@ -10,7 +10,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import micropsi_core
-from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, STANDARD_NODETYPES
 from micropsi_core.world import world
 from micropsi_core import config
 import os
@@ -44,7 +44,7 @@ class MicroPsiRuntime(object):
     nodenets = {}
     runner = {
         'nodenet': {'timestep': 1000, 'runner': None},
-        'world': {'timestep': 20000, 'runner': None}
+        'world': {'timestep': 5000, 'runner': None}
     }
 
     """The central component of the MicroPsi installation.
@@ -81,6 +81,10 @@ class MicroPsiRuntime(object):
         self.init_runners()
 
     def init_runners(self):
+        if 'worldrunner_timestep' not in configs:
+            configs['worldrunner_timestep'] = 5000
+            configs['nodenetrunner_timestep'] = 1000
+            configs.save_configs()
         self.runner['world']['runner'] = Thread(target=self.worldrunner)
         self.runner['world']['runner'].daemon = True
         self.runner['nodenet']['runner'] = Thread(target=self.nodenetrunner)
@@ -88,27 +92,30 @@ class MicroPsiRuntime(object):
         self.runner['world']['runner'].start()
         self.runner['nodenet']['runner'].start()
 
-    def worldrunner(self):
-        step = timedelta(milliseconds=self.runner['nodenet']['timestep'])
+    def nodenetrunner(self):
         while True:
+            step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
             start = datetime.now()
             for uid in self.nodenets:
                 if self.nodenets[uid].is_active:
                     print "%s stepping nodenet %s" % (str(start), self.nodenets[uid].name)
                     self.nodenets[uid].step()
             left = step - (datetime.now() - start)
-            time.sleep(left.microseconds / 1000000.0)
+            time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
 
-    def nodenetrunner(self):
-        step = timedelta(milliseconds=self.runner['world']['timestep'])
+    def worldrunner(self):
         while True:
+            if configs['worldrunner_timestep'] > 1000:
+                step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
+            else:
+                step = timedelta(milliseconds=configs['worldrunner_timestep'])
             start = datetime.now()
             for uid in self.worlds:
                 if self.worlds[uid].is_active:
                     print "%s stepping world %s" % (str(start), self.worlds[uid].name)
                     self.worlds[uid].step()
             left = step - (datetime.now() - start)
-            time.sleep(left.microseconds / 1000000.0)
+            time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
 
     def _get_world_uid_for_nodenet_uid(self, nodenet_uid):
         """ Temporary method to get the world uid to a given nodenet uid.
@@ -176,7 +183,8 @@ class MicroPsiRuntime(object):
             Arguments:
                 nodenet_uid
         """
-        self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
+        if self.nodenets[nodenet_uid].world is not None:
+            self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
         del self.nodenets[nodenet_uid]
         return True
 
@@ -267,12 +275,13 @@ class MicroPsiRuntime(object):
         Argument:
             timestep: sets the simulation speed.
         """
+        configs['nodenetrunner_timestep'] = timestep
         self.runner['nodenet']['timestep'] = timestep
         return True
 
     def get_nodenetrunner_timestep(self):
         """Returns the speed that has been configured for the nodenet runner (in ms)."""
-        return self.runner['nodenet']['timestep']
+        return configs['nodenetrunner_timestep']
 
     def get_is_nodenet_running(self, nodenet_uid):
         """Returns True if a nodenet runner is active for the given nodenet, False otherwise."""
@@ -421,11 +430,21 @@ class MicroPsiRuntime(object):
 
     def delete_world(self, world_uid):
         """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
-        pass
+        for uid in self.nodenets:
+            if self.nodenets[uid].world and self.nodenets[uid].world.uid == world_uid:
+                self.nodenets[uid].world = None
+        del self.worlds[world_uid]
+        os.remove(self.world_data[world_uid].filename)
+        del self.world_data[world_uid]
+        return True
 
     def get_world_view(self, world_uid, step):
         """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
-        pass
+        data = {}
+        if step < self.worlds[world_uid].current_step:
+            data['objects'] = self.get_world_objects(world_uid)
+            data['currentSimulationStep'] = self.worlds[world_uid].current_step
+        return data
 
     def set_world_properties(self, world_uid, world_name=None, world_type=None, owner=None):
         """Sets the supplied parameters (and only those) for the world with the given uid."""
@@ -438,7 +457,7 @@ class MicroPsiRuntime(object):
 
     def get_worldrunner_timestep(self):
         """Returns the speed that has been configured for the world runner (in ms)."""
-        return self.runner['world']['timestep']
+        return configs['worldrunner_timestep']
 
     def get_is_world_running(self, world_uid):
         """Returns True if an worldrunner is active for the given world, False otherwise."""
@@ -446,7 +465,7 @@ class MicroPsiRuntime(object):
 
     def set_worldrunner_timestep(self, timestep):
         """Sets the interval of the simulation steps for the world runner (in ms)."""
-        self.runner['world']['timestep'] = timestep
+        configs['worldrunner_timestep'] = timestep
         return True
 
     def stop_worldrunner(self, world_uid):
@@ -531,10 +550,10 @@ class MicroPsiRuntime(object):
 
     def get_nodespace(self, nodenet_uid, nodespace, step):
         """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
-        #data = {}
-        #if step > self.nodenets[nodenet_uid].current_step:
-        data = self.nodenets[nodenet_uid].get_nodespace_data(nodespace)
-        data.update({'current_step': self.nodenets[nodenet_uid].current_step})
+        data = {}
+        if step < self.nodenets[nodenet_uid].current_step:
+            data = self.nodenets[nodenet_uid].get_nodespace_data(nodespace)
+            data.update({'current_step': self.nodenets[nodenet_uid].current_step})
         return data
 
     def get_node(self, nodenet_uid, node_uid):
@@ -640,14 +659,17 @@ class MicroPsiRuntime(object):
                 del nodenet.state['links'][uid]
         return True
 
-    def get_available_node_types(self, nodenet_uid):
+    def get_available_node_types(self, nodenet_uid=None):
         """Returns a list of available node types. (Including native modules.)"""
-        pass
+        data = STANDARD_NODETYPES.copy()
+        if nodenet_uid:
+            data.update(self.nodenets[nodenet_uid].state.get('nodetypes', {}))
+        return data
 
-    def get_available_native_module_types(self, nodenet_uid=None):
+    def get_available_native_module_types(self, nodenet_uid):
         """Returns a list of native modules.
         If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-        pass
+        return self.nodenets[nodenet_uid].state['nodetypes']
 
     def get_nodefunction(self, nodenet_uid, node_type):
         """Returns the current node function for this node type"""
@@ -684,12 +706,16 @@ class MicroPsiRuntime(object):
             parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
         """
         nodenet = self.nodenets[nodenet_uid]
-        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, parameters, nodefunction_definition=node_function)
+        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters, nodefunction_definition=node_function)
         return True
 
     def delete_node_type(self, nodenet_uid, node_type):
         """Remove the node type from the current nodenet definition, if it is part of it."""
-        pass
+        try:
+            del self.nodenets[nodenet_uid].state['nodetypes'][node_type]
+            return True
+        except KeyError:
+            return False
 
     def get_slot_types(self, nodenet_uid, node_type):
         """Returns the list of slot types for the given node type."""

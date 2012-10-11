@@ -44,7 +44,7 @@ class MicroPsiRuntime(object):
     nodenets = {}
     runner = {
         'nodenet': {'timestep': 1000, 'runner': None},
-        'world': {'timestep': 2000, 'runner': None}
+        'world': {'timestep': 5000, 'runner': None}
     }
 
     """The central component of the MicroPsi installation.
@@ -81,6 +81,10 @@ class MicroPsiRuntime(object):
         self.init_runners()
 
     def init_runners(self):
+        if 'worldrunner_timestep' not in configs:
+            configs['worldrunner_timestep'] = 5000
+            configs['nodenetrunner_timestep'] = 1000
+            configs.save_configs()
         self.runner['world']['runner'] = Thread(target=self.worldrunner)
         self.runner['world']['runner'].daemon = True
         self.runner['nodenet']['runner'] = Thread(target=self.nodenetrunner)
@@ -89,29 +93,29 @@ class MicroPsiRuntime(object):
         self.runner['nodenet']['runner'].start()
 
     def nodenetrunner(self):
-        step = timedelta(milliseconds=self.runner['nodenet']['timestep'])
         while True:
+            step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
             start = datetime.now()
             for uid in self.nodenets:
                 if self.nodenets[uid].is_active:
                     print "%s stepping nodenet %s" % (str(start), self.nodenets[uid].name)
                     self.nodenets[uid].step()
             left = step - (datetime.now() - start)
-            time.sleep(left.microseconds / 1000000.0)
+            time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
 
     def worldrunner(self):
-        if self.runner['world']['timestep'] > 1000:
-            step = timedelta(seconds=self.runner['world']['timestep'] / 1000)
-        else:
-            step = timedelta(milliseconds=self.runner['world']['timestep'])
         while True:
+            if configs['worldrunner_timestep'] > 1000:
+                step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
+            else:
+                step = timedelta(milliseconds=configs['worldrunner_timestep'])
             start = datetime.now()
             for uid in self.worlds:
                 if self.worlds[uid].is_active:
                     print "%s stepping world %s" % (str(start), self.worlds[uid].name)
                     self.worlds[uid].step()
             left = step - (datetime.now() - start)
-            time.sleep(left.microseconds / 1000000.0)
+            time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
 
     def _get_world_uid_for_nodenet_uid(self, nodenet_uid):
         """ Temporary method to get the world uid to a given nodenet uid.
@@ -271,12 +275,13 @@ class MicroPsiRuntime(object):
         Argument:
             timestep: sets the simulation speed.
         """
+        configs['nodenetrunner_timestep'] = timestep
         self.runner['nodenet']['timestep'] = timestep
         return True
 
     def get_nodenetrunner_timestep(self):
         """Returns the speed that has been configured for the nodenet runner (in ms)."""
-        return self.runner['nodenet']['timestep']
+        return configs['nodenetrunner_timestep']
 
     def get_is_nodenet_running(self, nodenet_uid):
         """Returns True if a nodenet runner is active for the given nodenet, False otherwise."""
@@ -452,7 +457,7 @@ class MicroPsiRuntime(object):
 
     def get_worldrunner_timestep(self):
         """Returns the speed that has been configured for the world runner (in ms)."""
-        return self.runner['world']['timestep']
+        return configs['worldrunner_timestep']
 
     def get_is_world_running(self, world_uid):
         """Returns True if an worldrunner is active for the given world, False otherwise."""
@@ -460,7 +465,7 @@ class MicroPsiRuntime(object):
 
     def set_worldrunner_timestep(self, timestep):
         """Sets the interval of the simulation steps for the world runner (in ms)."""
-        self.runner['world']['timestep'] = timestep
+        configs['worldrunner_timestep'] = timestep
         return True
 
     def stop_worldrunner(self, world_uid):

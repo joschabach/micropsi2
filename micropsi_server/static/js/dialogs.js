@@ -120,6 +120,8 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
 
+    $('a.remote_form_dialog').on('click', remote_form);
+
     $('.navbar a.nodenet_new').on('click', function(event){
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){

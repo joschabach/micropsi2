@@ -1611,13 +1611,18 @@ function handleContextMenu(event) {
                 case "Create event":
                     type = "Event";
                     break;
-                default:
+                case "Create register":
                     type = "Register";
+                    break;
+                default:
+                    type = "Autoalign";
             }
-            if(type == "Native"){
-                createNativeModuleHandler();
+            if(type == "Autoalign"){
+                autoalignmentHandler(currentNodeSpace);
             } else {
-                createNodeHandler(clickPosition.x/viewProperties.zoomFactor, clickPosition.y/viewProperties.zoomFactor,
+                if (type == "Native") createNativeModuleHandler();
+                else createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
+                    clickPosition.y/viewProperties.zoomFactor,
                     currentNodeSpace, "", type, null, callback);
             }
             break;
@@ -1694,6 +1699,17 @@ function handleContextMenu(event) {
             }
     }
     view.draw();
+}
+
+// rearrange nodes in the current nodespace
+function autoalignmentHandler(currentNodespace) {
+    api("align_nodes", {
+            nodenet_uid: currentNodenet,
+            nodespace: currentNodespace
+        },
+        success = function(data){
+            setCurrentNodenet(currentNodenet);
+        });
 }
 
 // let user create a new node
@@ -2300,27 +2316,10 @@ function EmptyCallback(){}
 
 /* todo:
 
- - multi-select by dragging a frame
-
  - links into invisible nodespaces
-
- - communicate with server
- - get nodes in viewport
- - get links from visible nodes
- - get individual nodes and links (standard communication should make sure that we get a maximum number of nodes,
- after this restrict it to the visible nodes, but include the linked nodes outside the view)
  - get diffs
- - sent updates of editor to server
- - start and stop simulations
  - handle connection problems
-
- - editor ui elements
  - multiple viewports
- - creation of agents
- - switching between agents
- - exporting and importing
-
- - handle double click on node spaces
- - handle data sources and data targets
- - handle native modules
+ - exporting and importing with own dialogs
+ - edit native modules
  */

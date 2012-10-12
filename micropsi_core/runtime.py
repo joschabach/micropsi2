@@ -838,6 +838,11 @@ class MicroPsiRuntime(object):
         del nodenet.state['links'][link_uid]
         return True
 
+    def align_nodes(self, nodenet_uid, nodespace):
+        """Perform auto-alignment of nodes in the current nodespace"""
+        print "autoalign!"
+        return True
+
 
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,

@@ -459,8 +459,10 @@ class Node(NetEntity):
     def state(self, state):
         self.data['state'] = state
 
-    def __init__(self, nodenet, parent_nodespace, position, state=None, name="", type="Concept", uid=None, index=None, parameters=None):
-        NetEntity.__init__(self, nodenet, parent_nodespace, position, name=name, entitytype="nodes", uid=uid, index=index)
+    def __init__(self, nodenet, parent_nodespace, position, state=None,
+                 name="", type="Concept", uid=None, index=None, parameters=None):
+        NetEntity.__init__(self, nodenet, parent_nodespace, position,
+            name=name, entitytype="nodes", uid=uid, index=index)
 
         self.gates = {}
         self.slots = {}

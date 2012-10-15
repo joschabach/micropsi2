@@ -70,6 +70,19 @@ function refreshWorldList(){
     });
 }
 
+wasRunning = false;
+$(window).focus(function() {
+    worldRunning = wasRunning;
+    if(wasRunning){
+        refreshWorldView();
+    }
+})
+.blur(function() {
+    wasRunning = worldRunning;
+    worldRunning = false;
+});
+
+
 function refreshWorldView(){
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},

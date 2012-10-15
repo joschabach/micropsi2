@@ -115,7 +115,8 @@ class MicroPsiRuntime(object):
                     print "%s stepping world %s" % (str(start), self.worlds[uid].name)
                     self.worlds[uid].step()
             left = step - (datetime.now() - start)
-            time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
+            if left.total_seconds() > 0:
+                time.sleep(left.total_seconds())
 
     def _get_world_uid_for_nodenet_uid(self, nodenet_uid):
         """ Temporary method to get the world uid to a given nodenet uid.
@@ -399,10 +400,10 @@ class MicroPsiRuntime(object):
         """Returns the world adapters available in the given world"""
         return self.worlds[world_uid].supported_worldadapters
 
-    def get_world_objects(self, world_uid):
+    def get_world_objects(self, world_uid, type=None):
         if world_uid in self.worlds:
-            return self.worlds[world_uid].data.get('objects', [])
-        return []
+            return self.worlds[world_uid].get_world_objects(type)
+        return False
 
     def new_world(self, world_name, world_type, owner=""):
         """Creates a new world manager and registers it.
@@ -482,7 +483,8 @@ class MicroPsiRuntime(object):
         """
         self.worlds[world_uid].step()
         if return_world_view:
-            return self.worlds[world_uid].data
+            return self.get_world_view(world_uid)
+        return True
 
     def revert_world(self, world_uid):
         """Reverts the world to the last saved state."""

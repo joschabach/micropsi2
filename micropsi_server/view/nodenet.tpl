@@ -326,6 +326,7 @@
         <li><a href="#">Create event</a></li>
         <li><a href="#">Create node space</a></li>
         <li><a href="#">Create native module</a></li>
+        <li><a href="#">Align nodes</a></li>
     </ul>
 </div>
 

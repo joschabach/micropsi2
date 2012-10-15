@@ -1707,8 +1707,9 @@ function autoalignmentHandler(currentNodespace) {
             nodenet_uid: currentNodenet,
             nodespace: currentNodespace
         },
-        success = function(data){
+        function(data){
             setCurrentNodenet(currentNodenet);
+            refreshNodespace();
         });
 }
 

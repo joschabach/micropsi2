@@ -11,6 +11,7 @@ __date__ = '10.05.12'
 
 import micropsi_core
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet import node_alignment
 from micropsi_core.world import world
 from micropsi_core import config
 import os
@@ -840,9 +841,7 @@ class MicroPsiRuntime(object):
 
     def align_nodes(self, nodenet_uid, nodespace):
         """Perform auto-alignment of nodes in the current nodespace"""
-        print "autoalign!"
-        return True
-
+        return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
 
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,

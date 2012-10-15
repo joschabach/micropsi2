@@ -691,8 +691,8 @@ def get_worldadapters(world_uid):
 
 
 @rpc("get_world_objects")
-def get_world_objects(world_uid):
-    return micropsi.get_world_objects(world_uid)
+def get_world_objects(world_uid, type=None):
+    return micropsi.get_world_objects(world_uid, type)
 
 
 @rpc("new_world", permission_required="manage worlds")

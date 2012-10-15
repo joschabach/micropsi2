@@ -139,6 +139,12 @@ class World(object):
             self.objects[uid].update()
         self.current_step = self.current_step + 1
 
+    def get_world_objects(self, type=None):
+        if type is not None:
+            return self.data.get(type, {})
+        else:
+            return self.data.get('objects', {})
+
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.
 

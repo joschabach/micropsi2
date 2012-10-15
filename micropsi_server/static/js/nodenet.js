@@ -154,6 +154,7 @@ function setCurrentNodenet(uid){
         {nodenet_uid: uid},
         function(data){
             showDefaultForm();
+            currentSimulationStep = data.step;
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
                 currentNodenet = uid;

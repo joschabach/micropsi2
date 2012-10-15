@@ -71,7 +71,7 @@ function refreshWorldList(){
 }
 
 function refreshWorldView(){
-    api('get_world_view',
+    api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
         function(data){
             if(jQuery.isEmptyObject(data)){
@@ -131,7 +131,7 @@ function setCurrentWorld(uid){
 }
 
 function loadWorldInfo(){
-    api('get_world_properties', {
+    api.call('get_world_properties', {
         world_uid: currentWorld
     }, function(data){
         world_data = data;
@@ -144,7 +144,7 @@ function loadWorldInfo(){
 }
 
 function loadWorldObjects(){
-    api('get_world_objects', {world_uid: currentWorld, type: 'trains'}, function(data){
+    api.call('get_world_objects', {world_uid: currentWorld, type: 'trains'}, function(data){
         objectLayer.removeChildren();
         objects = {};
         var tablerows = '';
@@ -219,39 +219,6 @@ function createStation(worldobject, idx){
     }
     return shape;
 }
-
-function api(functionname, params, success, error, method){
-    var url = '/rpc/'+functionname;
-    if(method != "post"){
-        args = '';
-        for(var key in params){
-            args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
-        }
-        url += '('+args.substr(0, args.length-1) + ')';
-    }
-    $.ajax({
-        url: url,
-        data: ((method == "post") ? params : null),
-        type: method || "get",
-        success: function(data){
-            if(data.Error){
-                if(error) error(data);
-                else defaultErrorCallback(data);
-            } else{
-                if(success) success(data);
-                else defaultSuccessCallback(data);
-            }
-        },
-        error: error || defaultErrorCallback
-    });
-}
-function defaultSuccessCallback(data){
-    dialogs.notification("Changes saved", 'success');
-}
-function defaultErrorCallback(data){
-    dialogs.notification("Error: " + data.Error || "serverside exception", 'error');
-}
-function EmptyCallback(){}
 
 function getLegend(worldobject){
     var legend = new Group();
@@ -382,14 +349,14 @@ function initializeControls(){
 function resetWorld(event){
     event.preventDefault();
     worldRunning = false;
-    api('revert_world', {world_uid: currentWorld}, function(){
+    api.call('revert_world', {world_uid: currentWorld}, function(){
         setCurrentWorld(currentWorld);
     });
 }
 
 function stepWorld(event){
     event.preventDefault();
-    api('step_world', {world_uid: currentWorld}, function(){
+    api.call('step_world', {world_uid: currentWorld}, function(){
         if(worldRunning){
             stopWorldrunner(event);
         }
@@ -399,7 +366,7 @@ function stepWorld(event){
 
 function startWorldrunner(event){
     event.preventDefault();
-    api('start_worldrunner', {world_uid: currentWorld}, function(){
+    api.call('start_worldrunner', {world_uid: currentWorld}, function(){
         worldRunning = true;
         refreshWorldView();
     });
@@ -408,7 +375,7 @@ function startWorldrunner(event){
 function stopWorldrunner(event){
     event.preventDefault();
     worldRunning = false;
-    api('stop_worldrunner', {world_uid: currentWorld}, function(){
+    api.call('stop_worldrunner', {world_uid: currentWorld}, function(){
         $('#world_step').val(currentWorldSimulationStep);
     });
 }

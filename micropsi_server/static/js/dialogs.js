@@ -1,5 +1,6 @@
 
 
+
 var dialogs = {
 
     /**
@@ -110,6 +111,44 @@ var dialogs = {
 
 };
 
+var api = {
+
+    call: function(functionname, params, success, error, method){
+        var url = '/rpc/'+functionname;
+        if(method != "post"){
+            args = '';
+            for(var key in params){
+                args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
+            }
+            url += '('+args.substr(0, args.length-1) + ')';
+        }
+        $.ajax({
+            url: url,
+            data: ((method == "post") ? params : null),
+            type: method || "get",
+            success: function(data){
+                if(data.Error){
+                    if(error) error(data);
+                    else api.defaultErrorCallback(data);
+                } else{
+                    if(success) success(data);
+                    else api.defaultSuccessCallback(data);
+                }
+            },
+            error: error || api.defaultErrorCallback
+        });
+    },
+    defaultSuccessCallback: function (data){
+        dialogs.notification("Changes saved", 'success');
+    },
+    defaultErrorCallback: function (data){
+        var msg = data.Error || data.statusText;
+        dialogs.notification("Error: " + msg || "serverside exception", 'error');
+    },
+    EmptyCallback: function (){}
+};
+
+
 $(function() {
 
     // Bind Menubar links
@@ -135,7 +174,7 @@ $(function() {
 
     $('.navbar a.nodenet_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this nodenet?", function(){
-            $.get('/rpc/delete_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+            api.call('delete_nodenet', {nodenet_uid: currentNodenet}, function(data){
                 currentNodenet=null;
                 // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
                 $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
@@ -147,14 +186,12 @@ $(function() {
 
     $('.navbar a.nodenet_save').on('click', function(){
         event.preventDefault();
-        $.get('/rpc/save_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
-            dialogs.notification("nodenet state saved", 'success');
-        });
+        api.call('save_nodenet', {nodenet_uid: currentNodenet});
     });
 
     $('.navbar a.nodenet_revert').on('click', function(event){
         event.preventDefault();
-        $.get('/rpc/revert_nodenet(nodenet_uid="'+currentNodenet+'")', function(data){
+        api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(data){
             dialogs.notification("nodenet reverted");
             //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
             window.location.reload();
@@ -185,45 +222,31 @@ $(function() {
 
     $('.navbar a.world_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this world?", function(){
-            $.ajax({
-                url: '/rpc/delete_world(world_uid="'+ currentWorld +'")',
-                success: function(){
+            api.call('delete_world',
+                {world_uid: currentWorld},
+                function(){
                     $.cookie('selected_world', '', {expires: -1, path: '/'});
                     dialogs.notification("World deleted");
                     window.location.reload();
-                },
-                error: function(){
-                    dialogs.notification('Error deleting world', 'error');
-                    window.location.reload();
                 }
-            });
+            );
         });
     });
 
     $('.navbar a.world_save').on('click', function(){
-        $.ajax({
-            url: '/rpc/save_world(world_uid="'+ currentWorld +'")',
-            success: function(){
-                dialogs.notification("World state saved");
-            },
-            error: function(){
-                dialogs.notification('Error saving world', 'error');
-            }
-        });
+        api.call('save_world', {world_uid: currentWorld});
     });
 
     $('.navbar a.world_revert').on('click', function(){
-        $.ajax({
-            url: '/rpc/save_world(world_uid="'+ currentWorld +'")',
-            success: function(){
+        api.call('revert_world', {world_uid: currentWorld},
+            function(){
                 dialogs.notification("World state reverted");
                 window.location.reload();
-            },
-            error: function(){
+            }, function(){
                 dialogs.notification('Error reverting world', 'error');
                 window.location.reload();
             }
-        });
+        );
     });
 
     $('.navbar a.world_import').on('click', function(event){

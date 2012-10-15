@@ -76,7 +76,7 @@ function refreshWorldView(){
         function(data){
             if(jQuery.isEmptyObject(data)){
                 if(worldRunning){
-                    setTimeout(refreshWorldView, 800);
+                    setTimeout(refreshWorldView, 100);
                 }
                 return null;
             }
@@ -91,9 +91,15 @@ function refreshWorldView(){
                     }
                 } else {
                     if(data.objects[key].pos && data.objects[key].pos.length == 2){
-                        obj = new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].line, data.objects[key].traintype);
-                        redrawObject(obj);
-                        objects[key] = obj;
+                        objects[key].x = data.objects[key].pos[0];
+                        objects[key].y = data.objects[key].pos[1];
+                        objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                        objects[key].bounds = objects[key].representation.bounds;
+                        // obj = new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].line, data.objects[key].traintype);
+                        // redrawObject(obj);
+                        // objects[key] = obj;
+                    } else {
+                        console.log('obj has no pos: ' + key);
                     }
                 }
                 delete data.objects[key];
@@ -356,10 +362,10 @@ function resetWorld(event){
 
 function stepWorld(event){
     event.preventDefault();
+    if(worldRunning){
+        stopWorldrunner(event);
+    }
     api.call('step_world', {world_uid: currentWorld}, function(){
-        if(worldRunning){
-            stopWorldrunner(event);
-        }
         refreshWorldView();
     });
 }

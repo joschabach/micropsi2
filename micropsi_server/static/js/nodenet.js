@@ -150,21 +150,24 @@ function setNodenetValues(data){
 }
 
 function setCurrentNodenet(uid){
-    console.log(nodetypes);
     api('load_nodenet_into_ui',
         {nodenet_uid: uid},
         function(data){
             showDefaultForm();
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
+                currentNodenet = uid;
                 api('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
                     nodetypes = nodetypedata;
                     initializeNodeNet(data);
                 });
+            } else {
+                currentNodenet = uid;
+                initializeNodeNet(data);
             }
-            currentNodenet = uid;
             $('#nodenet_step').val(data.step);
             refreshNodenetList();
+
         },
         function(data) {
             currentNodenet = null;

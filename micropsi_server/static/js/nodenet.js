@@ -103,7 +103,7 @@ function refreshNodenetList(){
 
 function loadWorldData(nodenet_data){
     if(nodenet_data.world){
-        api("get_world_properties", {world_uid: nodenet_data.world},
+        api.call("get_world_properties", {world_uid: nodenet_data.world},
             success=function(data){
                 world_data = data;
                 currentWorld = data.uid;
@@ -150,7 +150,7 @@ function setNodenetValues(data){
 }
 
 function setCurrentNodenet(uid){
-    api('load_nodenet_into_ui',
+    api.call('load_nodenet_into_ui',
         {nodenet_uid: uid},
         function(data){
             showDefaultForm();
@@ -158,7 +158,7 @@ function setCurrentNodenet(uid){
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
                 currentNodenet = uid;
-                api('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
+                api.call('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
                     nodetypes = nodetypedata;
                     initializeNodeNet(data);
                 });
@@ -226,7 +226,7 @@ function initializeNodeNet(data){
 }
 
 function refreshNodespace(){
-    api('get_nodespace', {
+    api.call('get_nodespace', {
         nodenet_uid: currentNodenet,
         nodespace: currentNodeSpace,
         step: currentSimulationStep
@@ -1499,7 +1499,7 @@ function stepNodenet(event){
     if(nodenetRunning){
         stopNodenetrunner(event);
     }
-    api("step_nodenet",
+    api.call("step_nodenet",
         {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
         success=function(data){
             refreshNodespace(currentNodenet);
@@ -1510,20 +1510,20 @@ function stepNodenet(event){
 function startNodenetrunner(event){
     event.preventDefault();
     nodenetRunning = true;
-    api('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
+    api.call('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
         refreshNodespace();
     });
 }
 function stopNodenetrunner(event){
     event.preventDefault();
     nodenetRunning = false;
-    api('stop_nodenetrunner', {nodenet_uid: currentNodenet});
+    api.call('stop_nodenetrunner', {nodenet_uid: currentNodenet});
 }
 
 function resetNodenet(event){
     event.preventDefault();
     nodenetRunning = false;
-    api(
+    api.call(
         'revert_nodenet',
         {nodenet_uid: currentNodenet},
         function(){
@@ -1707,7 +1707,7 @@ function handleContextMenu(event) {
 
 // rearrange nodes in the current nodespace
 function autoalignmentHandler(currentNodespace) {
-    api("align_nodes", {
+    api.call("align_nodes", {
             nodenet_uid: currentNodenet,
             nodespace: currentNodespace
         },
@@ -1729,7 +1729,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
     addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, null, params));
     view.draw();
     selectNode(uid);
-    api("add_node", {
+    api.call("add_node", {
         nodenet_uid: currentNodenet,
         type: type,
         pos: [x,y],
@@ -1807,7 +1807,7 @@ function createNativeModuleHandler(event){
                     nodefunction_definition: nodefunction,
                     name: nodetype
                 };
-                api('add_node_type', {
+                api.call('add_node_type', {
                     nodenet_uid: currentNodenet,
                     node_type: nodetype,
                     slots: relations.slot,
@@ -1824,7 +1824,7 @@ function createNativeModuleHandler(event){
                             nodetype,
                             parameters);
                     },
-                    defaultErrorCallback,
+                    api.defaultErrorCallback,
                     "post"
                 );
             } else {
@@ -1852,7 +1852,7 @@ function createNativeModuleHandler(event){
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
     function deleteNodeOnServer(node_uid){
-        api("delete_node",
+        api.call("delete_node",
             {nodenet_uid:currentNodenet, node_uid: node_uid},
             success=function(data){
                 dialogs.notification('node deleted', 'success');
@@ -1881,7 +1881,7 @@ function deleteNodeHandler(nodeUid) {
 // let user delete the current link, or all selected links
 function deleteLinkHandler(linkUid) {
     function removeLinkOnServer(linkUid){
-        api("delete_link",
+        api.call("delete_link",
             {nodenet_uid:currentNodenet, link_uid:linkUid},
             success= function(data){
                 dialogs.notification('Link removed', 'success');
@@ -1911,7 +1911,7 @@ function handleEditLink(event){
     links[linkUid].certainty = certainty;
     redrawLink(links[linkUid], true);
     view.draw();
-    api("set_link_weight", {
+    api.call("set_link_weight", {
         nodenet_uid:currentNodenet,
         link_uid: linkUid,
         weight: weight,
@@ -1981,7 +1981,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 addLink(new Link(uuid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
         // TODO: also write backwards link??
-        api("add_link", {
+        api.call("add_link", {
             nodenet_uid: currentNodenet,
             source_node_uid: sourceUid,
             gate_type: nodes[sourceUid].gateIndexes[gateIndex],
@@ -2001,7 +2001,7 @@ function cancelLinkCreationHandler() {
 }
 
 function moveNode(nodeUid, x, y){
-    api("set_node_position", {
+    api.call("set_node_position", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         pos: [x,y]});
@@ -2052,7 +2052,7 @@ function handleEditNode(event){
 function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
     redrawNode(nodes[nodeUid]);
-    api('set_node_activation', {
+    api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
         'node_uid': nodeUid,
         'activation': activation
@@ -2061,7 +2061,7 @@ function setNodeActivation(nodeUid, activation){
 
 function setNodeState(nodeUid, state){
     nodes[nodeUid].state = state;
-    api('set_node_state', {
+    api.call('set_node_state', {
         'nodenet_uid': currentNodenet,
         'node_uid': nodeUid,
         'state': state
@@ -2075,7 +2075,7 @@ function updateNodeParameters(nodeUid, parameters){
         }
     }
     nodes[nodeUid].parameters = parameters;
-    api("set_node_parameters", {
+    api.call("set_node_parameters", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         parameters: parameters
@@ -2087,7 +2087,7 @@ function renameNode(nodeUid, name) {
     nodes[nodeUid].name = name;
     redrawNode(nodes[nodeUid]);
     view.draw();
-    api("set_node_name", {
+    api.call("set_node_name", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         name: name
@@ -2100,7 +2100,7 @@ function handleSelectDatasourceModal(event){
     $("#select_datasource_modal").modal("hide");
     nodes[clickOriginUid].parameters['datasource'] = value;
     showNodeForm(nodeUid);
-    api("bind_datasource_to_sensor", {
+    api.call("bind_datasource_to_sensor", {
         nodenet_uid: currentNodenet,
         sensor_uid: nodeUid,
         datasource: value
@@ -2113,7 +2113,7 @@ function handleSelectDatatargetModal(event){
     $("#select_datatarget_modal").modal("hide");
     nodes[clickOriginUid].parameters['datatargets'] = value;
     showNodeForm(nodeUid);
-    api("bind_datasource_to_sensor", {
+    api.call("bind_datasource_to_sensor", {
         nodenet_uid: currentNodenet,
         actor_uid: nodeUid,
         datatarget: value
@@ -2146,7 +2146,7 @@ function handleNodespaceUp() {
 function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
-    api("set_nodenet_properties", {
+    api.call("set_nodenet_properties", {
         nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val(),
         worldadapter: $('#nodenet_worldadapter', form).val(),
@@ -2166,7 +2166,7 @@ function delete_nodetype(event){
             return dialogs.notification("There are still nodes registered to this nodetype. It can not be deleted");
         }
     }
-    api('delete_node_type', {'nodenet_uid': currentNodenet, 'node_type': name}, function(data){
+    api.call('delete_node_type', {'nodenet_uid': currentNodenet, 'node_type': name}, function(data){
         delete nodetypes[name];
         setNodeTypes();
     });
@@ -2279,44 +2279,6 @@ function showDefaultForm(){
     $('#edit_nodenet_form').show();
 }
 
-
-function api(functionname, params, success, error, method){
-    var url = '/rpc/'+functionname;
-    var key;
-    if(method != "post"){
-        args = '';
-        for(key in params){
-            args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
-        }
-        url += '('+args.substr(0, args.length-1) + ')';
-    } else {
-        for(key in params){
-            params[key] = JSON.stringify(params[key]);
-        }
-    }
-    $.ajax({
-        url: url,
-        data: ((method == "post") ? params : null),
-        type: method || "get",
-        success: function(data){
-            if(data.Error){
-                if(error) error(data);
-                else defaultErrorCallback(data);
-            } else{
-                if(success) success(data);
-                else defaultSuccessCallback(data);
-            }
-        },
-        error: error || defaultErrorCallback
-    });
-}
-function defaultSuccessCallback(data){
-    dialogs.notification("Changes saved", 'success');
-}
-function defaultErrorCallback(data){
-    dialogs.notification("Error: " + data.Error || "serverside exception", 'error');
-}
-function EmptyCallback(){}
 
 /* todo:
 

@@ -69,7 +69,6 @@ class Berlin(World):
 
         minute = (self.current_step / 8.0) % 1440
         day = (self.current_step / 8) / 1440
-        print "day %s, minute %s ( %s:%s )" % (str(day), str(minute), str(int(minute) / 60), str(int(minute) % 60).zfill(2))
 
         lines = {}
         trains = {}
@@ -81,7 +80,7 @@ class Berlin(World):
         moving = 0
         for item in todays_trains:
             train_id = str(item)
-            if train_data[train_id]["begin"] <= minute <= train_data[train_id]["end"] and train_data[train_id]["train_type"] in ["U", "S", "Tram"]:  # and train_data[train_id]['train_type'] == "Tram":
+            if train_data[train_id]["begin"] <= minute <= train_data[train_id]["end"]:  # and train_data[train_id]['train_type'] == "Tram":
                 train = train_data[train_id]
                 if not train_id in trains:
                     trains[train_id] = {
@@ -146,7 +145,6 @@ class Berlin(World):
                     del trains[train_id]
         self.trains = trains
         self.data['trains'] = self.trains
-        print "got %s trains, %s moving, %s errors" % (str(len(self.trains)), str(moving), str(err))
 
     def step(self):
         ret = super(Berlin, self).step()

@@ -7,7 +7,7 @@ var canvas = $('#world');
 var viewProperties = {
     frameWidth: 1445,
     zoomFactor: 1,
-    objectWidth: 8,
+    objectWidth: 12,
     lineHeight: 15,
     objectLabelColor: new Color ("#94c2f5"),
     objectForegroundColor: new Color ("#000000"),
@@ -22,11 +22,14 @@ var viewProperties = {
     hoverScale: 2,
     padding: 3,
     typeColors: {
-        S: new Color('#009900'),
+        S: new Color('#006600'),
         U: new Color('#000099'),
         Tram: new Color('#990000'),
         Bus: new Color('#7000ff'),
-        other: new Color('#304451')
+        NE: new Color('#7000ff'),
+        other: new Color('#304451'),
+        RE: new Color('#ff0000'),
+        RB: new Color('#ff0000')
     },
     label: {
         x: 10,
@@ -44,6 +47,7 @@ objectLayer.name = 'ObjectLayer';
 objPrerenderLayer = new Layer();
 objPrerenderLayer.name = 'PrerenderLayer';
 objPrerenderLayer.visible = false;
+currentWorldSimulationStep = -1;
 
 var world_data = null;
 
@@ -54,7 +58,6 @@ if (currentWorld){
 initializeControls();
 
 worldRunning = false;
-currentWorldSimulationStep = 0;
 
 function refreshWorldList(){
     $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
@@ -67,23 +70,64 @@ function refreshWorldList(){
     });
 }
 
+wasRunning = false;
+$(window).focus(function() {
+    worldRunning = wasRunning;
+    if(wasRunning){
+        refreshWorldView();
+    }
+})
+.blur(function() {
+    wasRunning = worldRunning;
+    worldRunning = false;
+});
+
+
 function refreshWorldView(){
-    api('get_world_view',
+    api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
         function(data){
-            if(jQuery.isEmptyObject(data) && worldRunning){
-                setTimeout(refreshWorldView, 1000);
+            if(jQuery.isEmptyObject(data)){
+                if(worldRunning){
+                    setTimeout(refreshWorldView, 100);
+                }
                 return null;
             }
             currentWorldSimulationStep = data.currentSimulationStep;
             $('#world_step').val(currentWorldSimulationStep);
-            for(var key in data.objects){
-                if(hasObjectChanged(key, data.objects[key])){
-                    obj = new WorldObject(data.objects[key].uid, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].name, data.objects[key].stationtype);
-                    redrawObject(obj);
-                    objects[key] = obj;
+            //var tablerows = '';
+            for(var key in objects){
+                if(!(key in data.objects)){
+                    if(objects[key].representation){
+                        objects[key].representation.remove();
+                        delete objects[key];
+                    }
+                } else {
+                    if(data.objects[key].pos && data.objects[key].pos.length == 2){
+                        objects[key].x = data.objects[key].pos[0];
+                        objects[key].y = data.objects[key].pos[1];
+                        objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                        objects[key].bounds = objects[key].representation.bounds;
+                        // obj = new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].line, data.objects[key].traintype);
+                        // redrawObject(obj);
+                        // objects[key] = obj;
+                    } else {
+                        console.log('obj has no pos: ' + key);
+                    }
+                }
+                delete data.objects[key];
+            }
+            for(key in data.objects){
+                if(data.objects[key].pos && data.objects[key].pos.length == 2){
+                    addObject(new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].line, data.objects[key].traintype));
+                } else {
+                    console.log('obj has no pos ' + key);
                 }
             }
+            //tablerows += '<tr><td><a class="link_object" data="'+obj.uid+'">'+obj.name+'</a></td></tr>';
+            //$('#world_objects').html(tablerows);
+            //$('.link_object').on('click', highlightWorldobject);
+
             updateViewSize();
             if(worldRunning){
                 refreshWorldView();
@@ -98,16 +142,19 @@ function hasObjectChanged(uid, data){
 
 function setCurrentWorld(uid){
     currentWorld = uid;
-    // todo: get url from api.
+    $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
+    refreshWorldList();
     loadWorldInfo();
-    loadWorldObjects();
+    // loadWorldObjects();
+    refreshWorldView();
 }
 
 function loadWorldInfo(){
-    api('get_world_properties', {
+    api.call('get_world_properties', {
         world_uid: currentWorld
     }, function(data){
         world_data = data;
+        currentWorldSimulationStep = data.step;
         if('representation_2d' in data){
             view.viewSize = new Size(data['representation_2d']['x'], data['representation_2d']['y']);
             canvas.css('background', 'url("/static/img/'+ data['representation_2d']['image'] + '") no-repeat top left');
@@ -116,21 +163,19 @@ function loadWorldInfo(){
 }
 
 function loadWorldObjects(){
-    api('get_world_objects', {world_uid: currentWorld}, function(data){
-        $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
+    api.call('get_world_objects', {world_uid: currentWorld, type: 'trains'}, function(data){
         objectLayer.removeChildren();
         objects = {};
         var tablerows = '';
         var obj = null;
         for(var key in data){
-            obj = new WorldObject(data[key].uid, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype);
+            obj = new WorldObject(key, data[key].pos[0], data[key].pos[1], data[key].line, data[key].traintype);
             tablerows += '<tr><td><a class="link_object" data="'+obj.uid+'">'+obj.name+'</a></td></tr>';
             addObject(obj);
         }
         $('#world_objects').html(tablerows);
         $('.link_object').on('click', highlightWorldobject);
         updateViewSize();
-        refreshWorldList();
     });
 }
 
@@ -143,14 +188,13 @@ function WorldObject(uid, x, y, name, type){
     this.uid = uid;
     this.x = x;
     this.y = y;
-    this.name = name;
+    this.name = type + ' ' + name;
     this.type = type;
     this.bounds = null;
 }
 
 function addObject(worldobject){
     if(! (worldobject.uid in objects)) {
-        console.log('adding obejct: ' + worldobject.name);
         renderObject(worldobject);
         objects[worldobject.uid] = worldobject;
     }
@@ -158,13 +202,16 @@ function addObject(worldobject){
 }
 
 function redrawObject(obj){
-    objects[obj.uid].representation.remove();
+    if(objects[obj.uid].representation){
+        objects[obj.uid].representation.remove();
+    }
     renderObject(obj);
 }
 
 function renderObject(worldobject){
     worldobject.bounds = calculateObjectBounds(worldobject);
     worldobject.representation = createStation(worldobject);
+    //worldobject.representation.name = worldobject.uid;
     objectLayer.addChild(worldobject.representation);
 }
 
@@ -172,58 +219,25 @@ function calculateObjectBounds(worldobject){
     var width, height;
     width = height = viewProperties.objectWidth * viewProperties.zoomFactor;
     if (worldobject.type == "Tram"){
+        width = height = 8;
+    } else if (['S', 'U', 'RE', 'RB'].indexOf(worldobject.type) < 0){
         width = height = 5;
-    } else if (worldobject.type == 'other'  || worldobject.type == "Bus"){
-        width = height = 3;
     }
     return new Rectangle(worldobject.x*viewProperties.zoomFactor - width/2,
         worldobject.y*viewProperties.zoomFactor - height/2, // center worldobject on origin
         width, height);
 }
 
-function createStation(worldobject){
+function createStation(worldobject, idx){
     var bounds = worldobject.bounds;
     var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
-    if(worldobject.type == "S" || worldobject.type == "S+U"){
-        shape.fillColor = viewProperties.typeColors.S;
-    } else {
+    if (worldobject.type in viewProperties.typeColors){
         shape.fillColor = viewProperties.typeColors[worldobject.type];
+    } else {
+        shape.fillColor = viewProperties.typeColors['other'];
     }
     return shape;
 }
-
-function api(functionname, params, success, error, method){
-    var url = '/rpc/'+functionname;
-    if(method != "post"){
-        args = '';
-        for(var key in params){
-            args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
-        }
-        url += '('+args.substr(0, args.length-1) + ')';
-    }
-    $.ajax({
-        url: url,
-        data: ((method == "post") ? params : null),
-        type: method || "get",
-        success: function(data){
-            if(data.Error){
-                if(error) error(data);
-                else defaultErrorCallback(data);
-            } else{
-                if(success) success(data);
-                else defaultSuccessCallback(data);
-            }
-        },
-        error: error || defaultErrorCallback
-    });
-}
-function defaultSuccessCallback(data){
-    dialogs.notification("Changes saved", 'success');
-}
-function defaultErrorCallback(data){
-    dialogs.notification("Error: " + data.Error || "serverside exception", 'error');
-}
-function EmptyCallback(){}
 
 function getLegend(worldobject){
     var legend = new Group();
@@ -354,24 +368,24 @@ function initializeControls(){
 function resetWorld(event){
     event.preventDefault();
     worldRunning = false;
-    api('revert_world', {world_uid: currentWorld}, function(){
+    api.call('revert_world', {world_uid: currentWorld}, function(){
         setCurrentWorld(currentWorld);
     });
 }
 
 function stepWorld(event){
     event.preventDefault();
-    api('step_world', {world_uid: currentWorld}, function(){
-        if(worldRunning){
-            stopWorldrunner(event);
-        }
+    if(worldRunning){
+        stopWorldrunner(event);
+    }
+    api.call('step_world', {world_uid: currentWorld}, function(){
         refreshWorldView();
     });
 }
 
 function startWorldrunner(event){
     event.preventDefault();
-    api('start_worldrunner', {world_uid: currentWorld}, function(){
+    api.call('start_worldrunner', {world_uid: currentWorld}, function(){
         worldRunning = true;
         refreshWorldView();
     });
@@ -380,7 +394,7 @@ function startWorldrunner(event){
 function stopWorldrunner(event){
     event.preventDefault();
     worldRunning = false;
-    api('stop_worldrunner', {world_uid: currentWorld}, function(){
+    api.call('stop_worldrunner', {world_uid: currentWorld}, function(){
         $('#world_step').val(currentWorldSimulationStep);
     });
 }

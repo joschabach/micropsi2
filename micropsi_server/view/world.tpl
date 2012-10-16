@@ -50,6 +50,10 @@
         </div>
         <div class="editor_field " id="world_forms">
             <form class="form-horizontal">
+                <h4>World Status</h4>
+                <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
+            </form>
+            <form class="form-horizontal">
                 <h4>World Objects</h4>
                 <table class="table-striped table-condensed" id="world_objects">
                 </table>

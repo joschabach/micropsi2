@@ -442,11 +442,9 @@ class MicroPsiRuntime(object):
 
     def get_world_view(self, world_uid, step):
         """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
-        data = {}
         if step < self.worlds[world_uid].current_step:
-            data['objects'] = self.get_world_objects(world_uid)
-            data['currentSimulationStep'] = self.worlds[world_uid].current_step
-        return data
+            return self.worlds[world_uid].get_world_view(step)
+        return {}
 
     def set_world_properties(self, world_uid, world_name=None, world_type=None, owner=None):
         """Sets the supplied parameters (and only those) for the world with the given uid."""

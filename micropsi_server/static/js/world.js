@@ -423,8 +423,8 @@ function highlightWorldobject(event){
         obj = objects[uid];
         obj.representation.scale(viewProperties.hoverScale);
         clickHighlight = uid;
-        clickLabel = getLegend(obj);
-        objectLayer.addChild(clickLabel);
+        label = getLegend(obj);
+        objectLayer.addChild(label);
     }
     if(!objectInViewport(obj)){
         scrollToObject(obj);
@@ -441,9 +441,9 @@ function removeClickHighlight(){
         stationmarker.remove();
         stationmarker = null;
     }
-    if(clickLabel){
-        clickLabel.remove();
-        clickLabel = null;
+    if(label){
+        label.remove();
+        label = null;
     }
 }
 

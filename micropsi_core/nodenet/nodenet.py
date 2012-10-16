@@ -165,7 +165,7 @@ class Nodenet(object):
         computation of the node net
         """
         for name, data in self.state.get('nodespaces', {}).items():
-            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index = data.get('index'))
+            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
@@ -173,7 +173,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, index = data.get('index'), parameters=data.get('parameters'))
+            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, index=data.get('index'), parameters=data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -252,7 +252,6 @@ class Nodenet(object):
             node.node_function()
 
 
-
 class NetEntity(object):
     """The basic building blocks of node nets.
 
@@ -318,7 +317,7 @@ class NetEntity(object):
             nodenet.state[entitytype][uid] = {}
         self.data = nodenet.state[entitytype][uid]
         self.data["uid"] = uid
-        self.data["index"] = index or len(nodenet.state["nodes"]) + len(nodenet.state["nodespaces"])
+        self.data["index"] = index or len(nodenet.state.get("nodes", [])) + len(nodenet.state.get("nodespaces", []))
         self.entitytype = entitytype
         self.name = name
         self.position = position

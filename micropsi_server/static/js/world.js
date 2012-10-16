@@ -407,6 +407,7 @@ function onMouseMove(event) {
 }
 
 function highlightWorldobject(event){
+    event.preventDefault();
     var link = $(event.target);
     var uid = link.attr('data');
     removeClickHighlight();
@@ -426,7 +427,7 @@ function highlightWorldobject(event){
         objectLayer.addChild(clickLabel);
     }
     if(!objectInViewport(obj)){
-        scrollToObject(uid);
+        scrollToObject(obj);
     }
     view.draw(true);
 }
@@ -457,9 +458,9 @@ function objectInViewport(obj) {
     );
 }
 
-function scrollToObject(uid){
+function scrollToObject(obj){
     var parent = canvas.parent();
-    var bounds = objects[uid].representation.bounds;
+    var bounds = obj.representation.bounds;
     if(bounds.y <= parent.scrollTop()) parent.scrollTop(bounds.y - 20);
     else if(bounds.y + bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(bounds.y + 20);
     if(bounds.x <= parent.scrollLeft()) parent.scrollLeft(bounds.x - 20);

@@ -216,10 +216,10 @@ function initializeNodeNet(data){
         }
 
     } else {
-        nodetypes = {'Actor': {slottypes:['gen'], gatetypes:['gen']}};
-        addNode(new Node("a1", 150, 150, "Root", "Alice", "Actor", 1));
-        addNode(new Node("a2", 350, 150, "Root", "Tom", "Actor", 0.3));
-        addLink(new Link("a3", "a1", "gen", "a2", "gen", 1, 1));
+        splash = new PointText(new Point(50, 50));
+        splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
+        splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
+        nodeLayer.addChild(splash);
 
     }
     updateViewSize();

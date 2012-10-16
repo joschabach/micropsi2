@@ -40,7 +40,7 @@ var viewProperties = {
 objects = {};
 symbols = {};
 stations = {};
-currentWorld = $.cookie('selected_world') || null;
+currentWorld = null;
 
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
@@ -138,7 +138,6 @@ function hasObjectChanged(uid, data){
 
 function setCurrentWorld(uid){
     currentWorld = uid;
-    $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
     refreshWorldList();
     loadWorldInfo();
     loadWorldObjects();

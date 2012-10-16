@@ -92,8 +92,9 @@ function refreshWorldView(){
                 }
                 return null;
             }
-            currentWorldSimulationStep = data.currentSimulationStep;
+            currentWorldSimulationStep = data.current_step;
             $('#world_step').val(currentWorldSimulationStep);
+            $('#world_status').val(data.status_message);
             //var tablerows = '';
             for(var key in objects){
                 if(!(key in data.objects)){

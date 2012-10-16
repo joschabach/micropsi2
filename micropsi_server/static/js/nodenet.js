@@ -1540,7 +1540,7 @@ function openContextMenu(menu_id, event) {
     $(menu_id).css({
         position: "absolute",
         zIndex: 500,
-        marginLeft: 0, marginTop: 0,
+        marginLeft: -5, marginTop: -5,
         top: event.pageY, left: event.pageX });
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
 }
@@ -1711,7 +1711,7 @@ function autoalignmentHandler(currentNodespace) {
             nodenet_uid: currentNodenet,
             nodespace: currentNodespace
         },
-        success = function(data){
+        function(data){
             setCurrentNodenet(currentNodenet);
         });
 }

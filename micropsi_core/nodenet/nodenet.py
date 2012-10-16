@@ -6,6 +6,7 @@ import micropsi_core.tools
 import json
 import os
 import warnings
+import math
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -164,7 +165,7 @@ class Nodenet(object):
         computation of the node net
         """
         for name, data in self.state.get('nodespaces', {}).items():
-            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name)
+            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index = data.get('index'))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
@@ -172,7 +173,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, parameters=data.get('parameters'))
+            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, index = data.get('index'), parameters=data.get('parameters'))
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -216,8 +217,8 @@ class Nodenet(object):
             self.active_nodes = self.propagate_link_activation(self.active_nodes)
             self.state["step"] += 1
 
-    def step_priviliged(self):
-        """ performs a simulation step within the priviliged nodes"""
+    def step_privileged(self):
+        """ performs a simulation step within the privileged nodes"""
         if self.priviliged_active_nodes:
             self.calculate_node_functions(self.priviliged_active_nodes)
             self.priviliged_active_nodes = self.propagate_link_activation(self.priviliged_active_nodes, limit_gatetypes=["cat"])
@@ -251,11 +252,13 @@ class Nodenet(object):
             node.node_function()
 
 
+
 class NetEntity(object):
     """The basic building blocks of node nets.
 
     Attributes:
         uid: the unique identifier of the net entity
+        index: an attempt at creating an ordering criterion for net entities
         name: a human readable name (optional)
         position: a pair of coordinates on the screen
         nodenet: the node net in which the entity resides
@@ -265,6 +268,10 @@ class NetEntity(object):
     @property
     def uid(self):
         return self.data.get("uid")
+
+    @property
+    def index(self):
+        return self.data.get("index")
 
     @property
     def name(self):
@@ -301,7 +308,7 @@ class NetEntity(object):
                 old_parent.netentities[self.entitytype].remove(self.uid)
         self.data['parent_nodespace'] = uid
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities", uid=None):
+    def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities", uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
@@ -311,8 +318,8 @@ class NetEntity(object):
             nodenet.state[entitytype][uid] = {}
         self.data = nodenet.state[entitytype][uid]
         self.data["uid"] = uid
+        self.data["index"] = index or len(nodenet.state["nodes"]) + len(nodenet.state["nodespaces"])
         self.entitytype = entitytype
-
         self.name = name
         self.position = position
         if parent_nodespace:
@@ -330,11 +337,11 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None):
+    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None, index=None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
-        NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid)
+        NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid, index)
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
@@ -452,8 +459,10 @@ class Node(NetEntity):
     def state(self, state):
         self.data['state'] = state
 
-    def __init__(self, nodenet, parent_nodespace, position, state=None, name="", type="Concept", uid=None, parameters=None):
-        NetEntity.__init__(self, nodenet, parent_nodespace, position, name=name, entitytype="nodes", uid=uid)
+    def __init__(self, nodenet, parent_nodespace, position, state=None,
+                 name="", type="Concept", uid=None, index=None, parameters=None):
+        NetEntity.__init__(self, nodenet, parent_nodespace, position,
+            name=name, entitytype="nodes", uid=uid, index=index)
 
         self.gates = {}
         self.slots = {}

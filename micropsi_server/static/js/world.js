@@ -19,7 +19,7 @@ var viewProperties = {
     shadowStrokeWidth: 0,
     shadowDisplacement: new Point(0.5,1.5),
     innerShadowDisplacement: new Point(0.2,0.7),
-    hoverScale: 2,
+    hoverScale: 1.5,
     padding: 3,
     typeColors: {
         S: new Color('#006600'),
@@ -38,15 +38,15 @@ var viewProperties = {
 };
 
 objects = {};
-
+symbols = {};
+stations = {};
 currentWorld = $.cookie('selected_world') || null;
 
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
+stationLayer = new Layer();
+stationLayer.name = 'StationLayer';
 
-objPrerenderLayer = new Layer();
-objPrerenderLayer.name = 'PrerenderLayer';
-objPrerenderLayer.visible = false;
 currentWorldSimulationStep = -1;
 
 var world_data = null;
@@ -70,18 +70,31 @@ function refreshWorldList(){
     });
 }
 
+wasRunning = false;
+$(window).focus(function() {
+    worldRunning = wasRunning;
+    if(wasRunning){
+        refreshWorldView();
+    }
+})
+.blur(function() {
+    wasRunning = worldRunning;
+    worldRunning = false;
+});
+
 function refreshWorldView(){
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
         function(data){
             if(jQuery.isEmptyObject(data)){
                 if(worldRunning){
-                    setTimeout(refreshWorldView, 800);
+                    setTimeout(refreshWorldView, 100);
                 }
                 return null;
             }
-            currentWorldSimulationStep = data.currentSimulationStep;
+            currentWorldSimulationStep = data.current_step;
             $('#world_step').val(currentWorldSimulationStep);
+            $('#world_status').val(data.status_message);
             //var tablerows = '';
             for(var key in objects){
                 if(!(key in data.objects)){
@@ -91,16 +104,18 @@ function refreshWorldView(){
                     }
                 } else {
                     if(data.objects[key].pos && data.objects[key].pos.length == 2){
-                        obj = new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].line, data.objects[key].traintype);
-                        redrawObject(obj);
-                        objects[key] = obj;
+                        objects[key].x = data.objects[key].pos[0];
+                        objects[key].y = data.objects[key].pos[1];
+                        objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                    } else {
+                        console.log('obj has no pos: ' + key);
                     }
                 }
                 delete data.objects[key];
             }
             for(key in data.objects){
                 if(data.objects[key].pos && data.objects[key].pos.length == 2){
-                    addObject(new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].line, data.objects[key].traintype));
+                    addObject(new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].traintype + ' ' + data.objects[key].line, data.objects[key].traintype));
                 } else {
                     console.log('obj has no pos ' + key);
                 }
@@ -126,7 +141,7 @@ function setCurrentWorld(uid){
     $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
     refreshWorldList();
     loadWorldInfo();
-    // loadWorldObjects();
+    loadWorldObjects();
     refreshWorldView();
 }
 
@@ -135,6 +150,7 @@ function loadWorldInfo(){
         world_uid: currentWorld
     }, function(data){
         world_data = data;
+        worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
         if('representation_2d' in data){
             view.viewSize = new Size(data['representation_2d']['x'], data['representation_2d']['y']);
@@ -144,18 +160,12 @@ function loadWorldInfo(){
 }
 
 function loadWorldObjects(){
-    api.call('get_world_objects', {world_uid: currentWorld, type: 'trains'}, function(data){
-        objectLayer.removeChildren();
-        objects = {};
-        var tablerows = '';
-        var obj = null;
-        for(var key in data){
-            obj = new WorldObject(key, data[key].pos[0], data[key].pos[1], data[key].line, data[key].traintype);
-            tablerows += '<tr><td><a class="link_object" data="'+obj.uid+'">'+obj.name+'</a></td></tr>';
-            addObject(obj);
+    api.call('get_world_objects', {world_uid: currentWorld, type: 'stations'}, function(data){
+        stationLayer.removeChildren();
+        stations = {};
+        for (var key in data){
+            addStation(new WorldObject(key, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
         }
-        $('#world_objects').html(tablerows);
-        $('.link_object').on('click', highlightWorldobject);
         updateViewSize();
     });
 }
@@ -169,9 +179,8 @@ function WorldObject(uid, x, y, name, type){
     this.uid = uid;
     this.x = x;
     this.y = y;
-    this.name = type + ' ' + name;
+    this.name = name;
     this.type = type;
-    this.bounds = null;
 }
 
 function addObject(worldobject){
@@ -182,6 +191,14 @@ function addObject(worldobject){
     return worldobject;
 }
 
+function addStation(station){
+    if(!(station.uid in stations)){
+        renderStation(station);
+        stations[station.uid] = station;
+    }
+    return station;
+}
+
 function redrawObject(obj){
     if(objects[obj.uid].representation){
         objects[obj.uid].representation.remove();
@@ -189,28 +206,66 @@ function redrawObject(obj){
     renderObject(obj);
 }
 
+function renderStation(station){
+    if(!('station_'+station.type in symbols)){
+        var bounds = calculateStationBounds(station);
+        var path = new Path.Rectangle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
+        path.style = {
+            fillColor: '#999999'
+        };
+        symbols['station_'+station.type] = new Symbol(path);
+        //objectLayer.addChild(symbols[worldobject.type]);
+    }
+    station.representation = symbols['station_'+station.type].place();
+    station.representation.position = new Point(station.x, station.y);
+    stationLayer.addChild(station.representation);
+}
+
 function renderObject(worldobject){
-    worldobject.bounds = calculateObjectBounds(worldobject);
-    worldobject.representation = createStation(worldobject);
-    //worldobject.representation.name = worldobject.uid;
+    if(!(worldobject.type in symbols)){
+        var bounds = calculateObjectBounds(worldobject);
+        var path = createTrain(worldobject, bounds);
+        symbols[worldobject.type] = new Symbol(path);
+        //objectLayer.addChild(symbols[worldobject.type]);
+    }
+    worldobject.representation = symbols[worldobject.type].place();
+    worldobject.representation.position = new Point(worldobject.x, worldobject.y);
     objectLayer.addChild(worldobject.representation);
 }
 
-function calculateObjectBounds(worldobject){
-    var width, height;
-    width = height = viewProperties.objectWidth * viewProperties.zoomFactor;
-    if (worldobject.type == "Tram"){
-        width = height = 8;
-    } else if (['S', 'U', 'RE', 'RB'].indexOf(worldobject.type) < 0){
-        width = height = 5;
+function calculateStationBounds(station){
+    var size;
+    switch(station.type){
+        case "Bus":
+        case "Tram": size = 5; break;
+        case "S":
+        case "S+U":
+        case "U": size = 10;
     }
-    return new Rectangle(worldobject.x*viewProperties.zoomFactor - width/2,
-        worldobject.y*viewProperties.zoomFactor - height/2, // center worldobject on origin
-        width, height);
+    return {
+        x: station.x*viewProperties.zoomFactor - size/2,
+        y: station.y*viewProperties.zoomFactor - size/2,
+        width: size,
+        height: size
+    };
 }
 
-function createStation(worldobject, idx){
-    var bounds = worldobject.bounds;
+function calculateObjectBounds(worldobject){
+    var size = viewProperties.objectWidth * viewProperties.zoomFactor;
+    if (worldobject.type == "Tram"){
+        size = 8;
+    } else if (['S', 'U', 'RE', 'RB', 'ICE'].indexOf(worldobject.type) < 0){
+        size = 5;
+    }
+    return {
+        x: worldobject.x*viewProperties.zoomFactor - size/2,
+        y: worldobject.y*viewProperties.zoomFactor - size/2,
+        width: size,
+        height: size
+    };
+}
+
+function createTrain(worldobject, bounds){
     var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
     if (worldobject.type in viewProperties.typeColors){
         shape.fillColor = viewProperties.typeColors[worldobject.type];
@@ -223,7 +278,7 @@ function createStation(worldobject, idx){
 function getLegend(worldobject){
     var legend = new Group();
     legend.name = 'stationLegend';
-    var bounds = worldobject.bounds;
+    var bounds = worldobject.representation.bounds;
     var height = (viewProperties.fontSize*viewProperties.zoomFactor + 2*viewProperties.padding);
     var point = new Point(
         bounds.x + (viewProperties.label.x * viewProperties.zoomFactor),
@@ -251,9 +306,9 @@ function getLegend(worldobject){
 // -------------------------- mouse/ key listener --------------------------------------------//
 
 hoverUid = false;
-hoverPath = false;
-path = false;
 label = false;
+stationmarker = false;
+
 
 clickLabel = false;
 clickHighlight = false;
@@ -262,28 +317,57 @@ function onMouseMove(event) {
     var p = event.point;
     // hovering
     if (hoverUid) { // unhover
-        objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
+        if(hoverUid in objects){
+            objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
+        }
+        if(hoverUid in stations && stationmarker){
+            stationmarker.remove();
+            stationmarker = null;
+        }
         hoverUid = null;
     }
-    // first, check for nodes
-    // we iterate over all bounding boxes, but should improve speed by maintaining an index
-    for (var uid in objects) {
-        var bounds = objects[uid].bounds;
-        if (bounds.contains(p) && objects[uid].representation) {
+    for (var uid in stations){
+        if(stations[uid].representation.bounds.contains(p)){
             if (hoverUid != uid){
                 hoverUid = uid;
-                if (label){
+                if(label){
                     label.remove();
-                    label = null;
+                }
+                if(stationmarker){
+                    stationmarker.remove();
                 }
                 if(clickHighlight){
                     removeClickHighlight();
                 }
-                objects[uid].representation.scale(viewProperties.hoverScale);
-                label = getLegend(objects[hoverUid]);
-                objectLayer.addChild(label);
+                stationmarker = new Path.Rectangle(stations[uid].representation.bounds);
+                stationmarker.fillColor='black';
+                label = getLegend(stations[uid]);
+                stationLayer.addChild(label);
+                stationLayer.addChild(stationmarker);
             }
             return;
+        }
+    }
+    // first, check for nodes
+    // we iterate over all bounding boxes, but should improve speed by maintaining an index
+    for (uid in objects) {
+        if(objects[uid].representation){
+            var bounds = objects[uid].representation.bounds;
+            if (bounds.contains(p)) {
+                if (hoverUid != uid){
+                    hoverUid = uid;
+                    if (label){
+                        label.remove();
+                    }
+                    if(clickHighlight){
+                        removeClickHighlight();
+                    }
+                    objects[uid].representation.scale(viewProperties.hoverScale);
+                    label = getLegend(objects[hoverUid]);
+                    stationLayer.addChild(label);
+                }
+                return;
+            }
         }
     }
     if (!hoverUid && label){
@@ -320,21 +404,22 @@ function removeClickHighlight(){
 
 function objectInViewport(uid) {
     var parent = canvas.parent();
+    var bounds = objects[uid].representation.bounds;
     return (
-        objects[uid].bounds.y > parent.scrollTop() &&
-        objects[uid].bounds.x > parent.scrollLeft() &&
-        (objects[uid].bounds.y + objects[uid].bounds.height) < (parent.innerHeight() + parent.scrollTop() - 20) &&
-        (objects[uid].bounds.x + objects[uid].bounds.width) < (parent.innerWidth() + parent.scrollLeft() - 20)
+        bounds.y > parent.scrollTop() &&
+        bounds.x > parent.scrollLeft() &&
+        (bounds.y + bounds.height) < (parent.innerHeight() + parent.scrollTop() - 20) &&
+        (bounds.x + bounds.width) < (parent.innerWidth() + parent.scrollLeft() - 20)
     );
 }
 
 function scrollToObject(uid){
     var parent = canvas.parent();
-    var obj = objects[uid];
-    if(obj.bounds.y <= parent.scrollTop()) parent.scrollTop(obj.bounds.y - 20);
-    else if(obj.bounds.y + obj.bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(obj.bounds.y + 20);
-    if(obj.bounds.x <= parent.scrollLeft()) parent.scrollLeft(obj.bounds.x - 20);
-    else if (obj.bounds.x + obj.bounds.width >= (parent.innerWidth() + parent.scrollLeft() - 20)) parent.scrollLeft(obj.bounds.x + 20);
+    var bounds = objects[uid].representation.bounds;
+    if(bounds.y <= parent.scrollTop()) parent.scrollTop(bounds.y - 20);
+    else if(bounds.y + bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(bounds.y + 20);
+    if(bounds.x <= parent.scrollLeft()) parent.scrollLeft(bounds.x - 20);
+    else if (bounds.x + bounds.width >= (parent.innerWidth() + parent.scrollLeft() - 20)) parent.scrollLeft(bounds.x + 20);
 }
 
 // --------------------------- controls -------------------------------------------------------- //
@@ -356,10 +441,10 @@ function resetWorld(event){
 
 function stepWorld(event){
     event.preventDefault();
+    if(worldRunning){
+        stopWorldrunner(event);
+    }
     api.call('step_world', {world_uid: currentWorld}, function(){
-        if(worldRunning){
-            stopWorldrunner(event);
-        }
         refreshWorldView();
     });
 }

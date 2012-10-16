@@ -11,6 +11,7 @@ __date__ = '10.05.12'
 
 import micropsi_core
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet import node_alignment
 from micropsi_core.world import world
 from micropsi_core import config
 import os
@@ -441,11 +442,9 @@ class MicroPsiRuntime(object):
 
     def get_world_view(self, world_uid, step):
         """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
-        data = {}
         if step < self.worlds[world_uid].current_step:
-            data['objects'] = self.get_world_objects(world_uid)
-            data['currentSimulationStep'] = self.worlds[world_uid].current_step
-        return data
+            return self.worlds[world_uid].get_world_view(step)
+        return {}
 
     def set_world_properties(self, world_uid, world_name=None, world_type=None, owner=None):
         """Sets the supplied parameters (and only those) for the world with the given uid."""
@@ -842,9 +841,7 @@ class MicroPsiRuntime(object):
 
     def align_nodes(self, nodenet_uid, nodespace):
         """Perform auto-alignment of nodes in the current nodespace"""
-        print "autoalign!"
-        return True
-
+        return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
 
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,

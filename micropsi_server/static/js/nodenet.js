@@ -62,7 +62,7 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
-currentNodenet = null;
+currentNodenet = $.cookie('selected_nodenet') || null;
 var currentNodeSpace = 'Root';   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -155,6 +155,7 @@ function setCurrentNodenet(uid){
         function(data){
             showDefaultForm();
             currentSimulationStep = data.step;
+            $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
                 currentNodenet = uid;
                 nodenetRunning = data.is_active;
@@ -173,6 +174,7 @@ function setCurrentNodenet(uid){
         },
         function(data) {
             currentNodenet = null;
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
             dialogs.notification(data.Error, "error");
         });
 }
@@ -216,10 +218,10 @@ function initializeNodeNet(data){
         }
 
     } else {
-        nodetypes = {'Actor': {slottypes:['gen'], gatetypes:['gen']}};
-        addNode(new Node("a1", 150, 150, "Root", "Alice", "Actor", 1));
-        addNode(new Node("a2", 350, 150, "Root", "Tom", "Actor", 0.3));
-        addLink(new Link("a3", "a1", "gen", "a2", "gen", 1, 1));
+        splash = new PointText(new Point(50, 50));
+        splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
+        splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
+        nodeLayer.addChild(splash);
 
     }
     updateViewSize();

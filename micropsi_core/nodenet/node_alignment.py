@@ -20,8 +20,8 @@ def align(nodenet, nodespace):
     """
     if not nodespace in nodenet.nodespaces: return False
 
-    unsorted_nodespaces = sorted(nodenet.nodespaces[nodespace].netentities["nodespaces"], key=lambda i:nodenet.nodespaces[i].index)
-    unsorted_nodes = sorted(nodenet.nodespaces[nodespace].netentities["nodes"], key = lambda i: nodenet.nodes[i].index)
+    unaligned_nodespaces = sorted(nodenet.nodespaces[nodespace].netentities["nodespaces"], key=lambda i:nodenet.nodespaces[i].index)
+    unaligned_nodes = sorted(nodenet.nodespaces[nodespace].netentities["nodes"], key = lambda i: nodenet.nodes[i].index)
 
     BORDER = 50
     GRID = 150
@@ -29,7 +29,7 @@ def align(nodenet, nodespace):
 
     # position nodespaces
 
-    for i, id in enumerate(unsorted_nodespaces):
+    for i, id in enumerate(unaligned_nodespaces):
         nodenet.nodespaces[id].position = (
             BORDER + (i%PREFERRED_WIDTH+1)*GRID - GRID/2,
             BORDER + int(i/PREFERRED_WIDTH+1)*GRID - GRID/2,
@@ -37,19 +37,15 @@ def align(nodenet, nodespace):
 
     start_position = (BORDER + GRID/2, BORDER + (1.5+int(len(nodenet.nodespaces)/PREFERRED_WIDTH))*GRID)
 
-    while unsorted_nodes:
+    # simplify linkage
+    print "starting alignment"
+    structure = unify_links(nodenet, unaligned_nodes)
+    print "nodes unified"
+    horizontal_groups = group_horizontal_links(structure)
+    print "horizontal grouping done"
+    print horizontal_groups
 
-        region = { "head_node": unsorted_nodes.pop(0) }
-
-        # build a tree of nodes
-
-        # check downward links
-        set_regions(region, nodenet, unsorted_nodes[:], ordering = OrderedDict([("sub", "s")]))
-
-        # check backward links
-
-        # check undirected links
-
+    # arrange nodes in a grid
         # arrange node tree
 
 
@@ -57,19 +53,64 @@ def align(nodenet, nodespace):
     print "ok"
     return True
 
-def set_regions(region, nodenet, unsorted_nodes, ordering):
-    """Helper function that sorts connected nodes recursively into regions, according to their link type"""
+def unify_links(nodenet, nodes):
+    """create a proxy representation of the node space to simplify bi-directional links."""
 
-    current_node = nodenet.nodes[region["head_node"]]
-    for gate_type in ordering:
-        if gate_type in current_node.gates:
-            links = current_node.gates[gate_type].outgoing
-            for link in links:
-                target_node = nodenet.links[link].target_node
-                if target_node in unsorted_nodes:
-                    del unsorted_nodes[target_node]
-                    direction = ordering[gate_type]
-                    if not direction in region: region[direction]=[]
-                    print target_node," is in field ", direction, " of node ", current_node
-                    region[direction].append(set_regions({"head_node": target_node}, nodenet, unsorted_nodes, ordering))
-    return region
+    structure = OrderedDict([(i, {}) for i in nodes])
+    for node_id in nodes:
+        node = nodenet.nodes[node_id]
+        for gate_type in node.gates:
+            direction = {"sub": "s", "ret": "e", "cat": "sw", "sym":"se"}.get(gate_type)
+            if direction:
+                # inverse link, will be represented as inverted forward link
+                links = node.gates[gate_type].outgoing
+                for link in links:
+                    target_node_id = nodenet.links[link].target_node.uid
+                    if target_node_id in structure:
+                        if not direction in structure[target_node_id]: structure[target_node_id][direction]=[]
+                        if not node_id in structure[target_node_id][direction]:
+                            structure[target_node_id][direction].append(node_id)
+            else:
+                direction = {"sur": "n", "por": "e", "exp": "sw", "ref":"se", "gen": "b"}.get(gate_type, "o")
+                if direction:
+                    # forward link, "o" is for unknown gate types
+                    links = node.gates[gate_type].outgoing
+                    for link in links:
+                        target_node_id = nodenet.links[link].target_node.uid
+                        if target_node_id in structure:
+                            if not direction in structure[node_id]: structure[node_id][direction]=[]
+                            structure[node_id][direction].append(target_node_id)
+    # finally, let us sort all nodes in the direction groups
+    for node_id in structure:
+        for direction in structure[node_id]:
+            structure[node_id][direction].sort(key = lambda i: nodenet.nodes[i].index)
+
+    return structure
+
+def group_horizontal_links(structure):
+    """group direct horizontal links (por)"""
+    h_groups = []
+    ungrouped_nodes = structure.keys()
+    while ungrouped_nodes:
+        current_node_id = ungrouped_nodes[0]
+        h_groups.append(add_nodes_horizontally(current_node_id, structure, ungrouped_nodes))
+    return h_groups
+
+def add_nodes_horizontally(current_node_id, structure, ungrouped_nodes):
+    """recursive helper function for adding horizontally linked nodes to a group"""
+    current_node = structure[current_node_id]
+    del ungrouped_nodes[current_node_id]
+    current_group = {"groups": [current_node_id], "n":current_node.get("n", [None])[0], "type": "h"}
+    subgroup = {"groups":[], "type": "v"}
+    for node in current_node("e"):  # handle branching horizontal links with vertical sub-groups
+        subgroup["groups"].append(add_nodes_horizontally(node, structure, ungrouped_nodes))
+    # inherit parenthood if no parent is known
+    current_group["n"] = current_group["n"] or subgroup["n"]
+    if len(subgroup["groups"]) == 1:
+        # only one element in sub-group means that there are no branches and we can extract the element directly
+        current_group["groups"].append(subgroup["groups"][0])
+    else:
+        current_group["groups"].append(subgroup)
+    return current_group
+
+

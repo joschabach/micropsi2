@@ -108,7 +108,7 @@ class Berlin(World):
                     trains[train_id]["lon"] = self.stations[current_station]["lon"]
                     trains[train_id]["moving"] = 0
                 else:
-                    if train["stops"][station_index]["dep"] < 0 or station_index == len(train["stops"]) - 1:
+                    if train["stops"][station_index]["arr"] <= minute and (train["stops"][station_index]["dep"] < 0 or station_index == len(train["stops"]) - 1):
                         # final destination
                         trains[train_id]["lat"] = self.stations[current_station]["lat"]
                         trains[train_id]["lon"] = self.stations[current_station]["lon"]
@@ -118,6 +118,7 @@ class Berlin(World):
                         moving += 1
                         if minute < train["stops"][station_index]["arr"]:
                             station_index -= 1
+                            current_station = str(train["stops"][station_index]["station_id"])
                         try:
                             next_station = str(train["stops"][station_index + 1]["station_id"])
                         except IndexError:

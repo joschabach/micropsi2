@@ -13,16 +13,15 @@ DEFAULT_API_PORT = 8080
 DEFAULT_HOST = "localhost"
 
 from micropsi_server import micropsi_app, user_api
+from threading import Thread
 import argparse
-import os
 
 
 def main(host=DEFAULT_HOST, admin_port=DEFAULT_ADMIN_PORT, api_port=DEFAULT_API_PORT):
-    pid = os.fork()
-    if pid == 0:
-        micropsi_app.main(host, admin_port)
-    else:
-        user_api.main(host, api_port)
+    adminapp = Thread(target=micropsi_app.main, args=(host, admin_port))
+    adminapp.daemon = True
+    adminapp.start()
+    user_api.main(host, api_port)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the MicroPsi server.")

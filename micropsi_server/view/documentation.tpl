@@ -59,6 +59,9 @@
 <li><code>merge_blueprint(user, blueprint1_uid, blueprint2_uid)</code>
     <pre class="description">Returns the current state of the domain for UI purposes, if current state is newer than the supplied one.</pre></li>
 
+<li><code>get_blueprint_suggesation(user, searchphrase)</code>
+    <pre class="description">Returns a suggested blueprint/stencil with a max depth of 3 for the given searchphrase</pre></li>
+
 <li><code>get_suggestions(user, blueprint_uid, nodes = None, searchphrase = "", depth = 1)</code>
     <pre class="description">Amend the given blueprint with suggested blueprint fragments.
     

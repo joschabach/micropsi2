@@ -154,10 +154,6 @@ function refreshWorldView(){
     );
 }
 
-function hasObjectChanged(uid, data){
-    return uid in objects && (objects[uid].x != data.pos[0] || objects[uid].y != data.pos[1] || objects[uid].name != data.name);
-}
-
 function setCurrentWorld(uid){
     currentWorld = uid;
     $.cookie('selected_world', currentWorld, {expires:7, path:'/'});

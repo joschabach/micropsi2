@@ -10,7 +10,7 @@
 
 var viewProperties = {
     zoomFactor: 1,
-    frameWidth: 100,
+    frameWidth: 50,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
     selectionColor: new Color("#0099ff"),
@@ -46,7 +46,7 @@ var viewProperties = {
     linkRadius: 30,
     arrowWidth: 6,
     arrowLength: 10,
-    rasterize: false
+    rasterize: true
 };
 
 // hashes from uids to object definitions; we import these via json

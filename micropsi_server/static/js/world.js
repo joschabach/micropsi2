@@ -40,7 +40,7 @@ var viewProperties = {
 objects = {};
 symbols = {};
 stations = {};
-currentWorld = null;
+currentWorld = $.cookie('selected_world') || null;
 
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
@@ -58,6 +58,25 @@ if (currentWorld){
 initializeControls();
 
 worldRunning = false;
+
+$('#world_objects').html('<div id="berlinStations"><strong>Stations</strong><table class="table-striped table-condensed"></table></div>');
+
+// accordion for trains and stations, commented for performance reasons
+// $('#world_objects').html(
+//     '<div class="accordion" id="worldobject_accordion">
+//         <div class="accordion-group">
+//             <div class="accordion-header"><a class="accordion-toggle" data-toggle="collapse" data-parent="#worldobject_accordion" href="#berlinStations"><i class="icon-chevron-right"></i>Stations</a></div>
+//             <div id="berlinStations" class="accordion-body collapse">
+//                 <table class="table-striped table-condensed"></table>
+//             </div>
+//         </div>
+//         <div class="accordion-group">
+//             <div class="accordion-header"><a class="accordion-toggle" data-toggle="collapse" data-parent="#worldobject_accordion" href="#berlinTrains"><i class="icon-chevron-right"></i>Trains</a></div>
+//             <div id="berlinTrains" class="accordion-body collapse">
+//                 <table class="table-striped table-condensed"></table>
+//             </div>
+//         </div>
+//     </div>');
 
 function refreshWorldList(){
     $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
@@ -95,7 +114,6 @@ function refreshWorldView(){
             currentWorldSimulationStep = data.current_step;
             $('#world_step').val(currentWorldSimulationStep);
             $('#world_status').val(data.status_message);
-            //var tablerows = '';
             for(var key in objects){
                 if(!(key in data.objects)){
                     if(objects[key].representation){
@@ -120,9 +138,13 @@ function refreshWorldView(){
                     console.log('obj has no pos ' + key);
                 }
             }
-            //tablerows += '<tr><td><a class="link_object" data="'+obj.uid+'">'+obj.name+'</a></td></tr>';
-            //$('#world_objects').html(tablerows);
-            //$('.link_object').on('click', highlightWorldobject);
+            // fill accordion with list of trains. see above.
+            // var list_trains_html = '';
+            // for(key in objects){
+            //     list_trains_html += '<tr><td><a href="#" class="highlight_train">' + objects[key].name + '</a></td></tr>';
+            // }
+            // $('#berlinTrains table').html(list_trains_html);
+            // $('.hightlight_train').on('click', highlightWorldobject);
 
             updateViewSize();
             if(worldRunning){
@@ -138,6 +160,7 @@ function hasObjectChanged(uid, data){
 
 function setCurrentWorld(uid){
     currentWorld = uid;
+    $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
     refreshWorldList();
     loadWorldInfo();
     loadWorldObjects();
@@ -162,9 +185,13 @@ function loadWorldObjects(){
     api.call('get_world_objects', {world_uid: currentWorld, type: 'stations'}, function(data){
         stationLayer.removeChildren();
         stations = {};
+        var list_stations_html = '';
         for (var key in data){
             addStation(new WorldObject(key, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
+            list_stations_html += '<tr><td><a href="#" data="' + key + '"class="highlight_station">' + data[key].name + '</a></td></tr>';
         }
+        $('#berlinStations table').html(list_stations_html);
+        $('.highlight_station').on('click', highlightWorldobject);
         updateViewSize();
     });
 }
@@ -373,21 +400,36 @@ function onMouseMove(event) {
         label.remove();
         label = null;
     }
+    if(!hoverUid && stationmarker){
+        stationmarker.remove();
+        stationmarker = null;
+    }
 }
 
 function highlightWorldobject(event){
-    var uid = $(event.target).attr('data');
-    if(clickHighlight != uid){
-        removeClickHighlight();
-        objects[uid].representation.scale(viewProperties.hoverScale);
+    event.preventDefault();
+    var link = $(event.target);
+    var uid = link.attr('data');
+    removeClickHighlight();
+    var obj;
+    if(link.hasClass('highlight_station')){
+        obj = stations[uid];
+        stationmarker = new Path.Rectangle(obj.representation.bounds);
+        stationmarker.fillColor='black';
+        label = getLegend(obj);
+        stationLayer.addChild(label);
+        stationLayer.addChild(stationmarker);
+    } else {
+        obj = objects[uid];
+        obj.representation.scale(viewProperties.hoverScale);
         clickHighlight = uid;
-        clickLabel = getLegend(objects[uid]);
-        objectLayer.addChild(clickLabel);
-        if(!objectInViewport(uid)){
-            scrollToObject(uid);
-        }
-        view.draw(true);
+        label = getLegend(obj);
+        objectLayer.addChild(label);
     }
+    if(!objectInViewport(obj)){
+        scrollToObject(obj);
+    }
+    view.draw(true);
 }
 
 function removeClickHighlight(){
@@ -395,15 +437,19 @@ function removeClickHighlight(){
         objects[clickHighlight].representation.scale(1/viewProperties.hoverScale);
         clickHighlight = null;
     }
-    if(clickLabel){
-        clickLabel.remove();
-        clickLabel = null;
+    if(stationmarker){
+        stationmarker.remove();
+        stationmarker = null;
+    }
+    if(label){
+        label.remove();
+        label = null;
     }
 }
 
-function objectInViewport(uid) {
+function objectInViewport(obj) {
     var parent = canvas.parent();
-    var bounds = objects[uid].representation.bounds;
+    var bounds = obj.representation.bounds;
     return (
         bounds.y > parent.scrollTop() &&
         bounds.x > parent.scrollLeft() &&
@@ -412,9 +458,9 @@ function objectInViewport(uid) {
     );
 }
 
-function scrollToObject(uid){
+function scrollToObject(obj){
     var parent = canvas.parent();
-    var bounds = objects[uid].representation.bounds;
+    var bounds = obj.representation.bounds;
     if(bounds.y <= parent.scrollTop()) parent.scrollTop(bounds.y - 20);
     else if(bounds.y + bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(bounds.y + 20);
     if(bounds.x <= parent.scrollLeft()) parent.scrollLeft(bounds.x - 20);

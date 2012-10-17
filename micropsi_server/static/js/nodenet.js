@@ -62,7 +62,7 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
-currentNodenet = null;
+currentNodenet = $.cookie('selected_nodenet') || null;
 var currentNodeSpace = 'Root';   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -155,6 +155,7 @@ function setCurrentNodenet(uid){
         function(data){
             showDefaultForm();
             currentSimulationStep = data.step;
+            $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
                 currentNodenet = uid;
                 nodenetRunning = data.is_active;
@@ -173,6 +174,7 @@ function setCurrentNodenet(uid){
         },
         function(data) {
             currentNodenet = null;
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
             dialogs.notification(data.Error, "error");
         });
 }

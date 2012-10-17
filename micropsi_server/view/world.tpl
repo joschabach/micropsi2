@@ -55,8 +55,8 @@
             </form>
             <form class="form-horizontal">
                 <h4>World Objects</h4>
-                <table class="table-striped table-condensed" id="world_objects">
-                </table>
+                <div id="world_objects">
+                </div>
             </form>
         </div>
     </div>

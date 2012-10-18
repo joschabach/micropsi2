@@ -85,7 +85,7 @@ if(currentNodenet){
     initializeNodeNet();
 }
 
-world_data = {};
+worldadapters = {};
 currentSimulationStep = 0;
 nodenetRunning = false;
 
@@ -101,14 +101,14 @@ function refreshNodenetList(){
     });
 }
 
-function loadWorldData(nodenet_data){
+function get_available_worldadapters(nodenet_data){
     if(nodenet_data.world){
-        api.call("get_world_properties", {world_uid: nodenet_data.world},
+        api.call("get_worldadapters", {world_uid: nodenet_data.world},
             success=function(data){
-                world_data = data;
-                currentWorld = data.uid;
+                worldadapters = data;
+                currentWorld = nodenet_data.world;
                 str = '';
-                for (var name in world_data.worldadapters){
+                for (var name in worldadapters){
                     str += '<option>'+name+'</option>';
                 }
                 $('#nodenet_worldadapter').html(str);
@@ -125,27 +125,13 @@ function loadWorldData(nodenet_data){
 function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
     setNodeTypes();
-    if (!jQuery.isEmptyObject(world_data)) {
+    if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
         if(worldadapter_select.val() != data.worldadapter){
             dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
         }
-        var i;
-        str = '';
-        if (world_data.worldadapters[data.worldadapter].datatargets) {
-            for (i in world_data.worldadapters[data.worldadapter].datatargets){
-                str += '<tr><td>'+world_data.worldadapters[data.worldadapter].datatargets[i]+'</td></tr>';
-            }
-        }
-        $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
-        str = '';
-        if (world_data.worldadapters[data.worldadapter].datasources){
-            for (i in world_data.worldadapters[data.worldadapter].datasources){
-                str += '<tr><td>'+world_data.worldadapters[data.worldadapter].datasources[i]+'</td></tr>';
-            }
-        }
-        $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
+        showDataSourcesTargetsForWorldadapter(data.worldadapter);
     }
 }
 
@@ -198,7 +184,7 @@ function initializeNodeNet(data){
     if (data){
         console.log(data);
         nodenet_data = data;
-        loadWorldData(data); // TODO: move this out once we managed world selection
+        get_available_worldadapters(data);
         currentWorldadapter = data.worldadapter;
         var uid;
         for(uid in data.nodes){
@@ -1604,7 +1590,7 @@ function handleContextMenu(event) {
                         var source_select = $('#select_datasource_modal select');
                         source_select.html('');
                         $("#select_datasource_modal").modal("show");
-                        var sources = world_data.worldadapters[currentWorldadapter].datasources;
+                        var sources = worldadapters[currentWorldadapter].datasources;
                         for(var i in sources){
                             source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
                         }
@@ -1649,7 +1635,7 @@ function handleContextMenu(event) {
                     var source_select = $('#select_datasource_modal select');
                     source_select.html('');
                     $("#select_datasource_modal").modal("show");
-                    var sources = world_data.worldadapters[currentWorldadapter].datasources;
+                    var sources = worldadapters[currentWorldadapter].datasources;
                     for(var i in sources){
                         source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
                     }
@@ -1659,7 +1645,7 @@ function handleContextMenu(event) {
                     var target_select = $('#select_datatarget_modal select');
                     $("#select_datatarget_modal").modal("show");
                     target_select.html('');
-                    var datatargets = world_data.worldadapters[currentWorldadapter].datatargets;
+                    var datatargets = worldadapters[currentWorldadapter].datatargets;
                     for(var j in datatargets){
                         target_select.append($('<option>', {value:datatargets[j]}).text(datatargets[j]));
                     }
@@ -2152,7 +2138,7 @@ function handleEditNodenet(event){
         nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val(),
         worldadapter: $('#nodenet_worldadapter', form).val(),
-        world_uid: world_data.uid,
+        world_uid: nodenet_data.world,
         owner: ""},
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
@@ -2193,6 +2179,28 @@ function initializeSidebarForms(){
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
+    var worldadapter_selector = $('#nodenet_worldadapter');
+    worldadapter_selector.on('change', function(){
+        showDataSourcesTargetsForWorldadapter(worldadapter_selector.val());
+    });
+}
+
+function showDataSourcesTargetsForWorldadapter(worldadapter){
+    var i;
+    str = '';
+    if (worldadapters[worldadapter].datatargets) {
+        for (i in worldadapters[worldadapter].datatargets){
+            str += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';
+        }
+    }
+    $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
+    str = '';
+    if (worldadapters[worldadapter].datasources){
+        for (i in worldadapters[worldadapter].datasources){
+            str += '<tr><td>'+worldadapters[worldadapter].datasources[i]+'</td></tr>';
+        }
+    }
+    $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
 }
 
 function showLinkForm(linkUid){
@@ -2248,14 +2256,14 @@ function getNodeParameterHTML(parameters){
             var i;
             switch(name){
                 case "datatarget":
-                    for(i in world_data.worldadapters[currentWorldadapter].datatargets){
-                        input += "<option>"+world_data.worldadapters[currentWorldadapter].datatargets[i]+"</option>";
+                    for(i in worldadapters[currentWorldadapter].datatargets){
+                        input += "<option>"+worldadapters[currentWorldadapter].datatargets[i]+"</option>";
                     }
                     input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
                     break;
                 case "datasource":
-                    for(i in world_data.worldadapters[currentWorldadapter].datasources){
-                        input += "<option>"+world_data.worldadapters[currentWorldadapter].datasources[i]+"</option>";
+                    for(i in worldadapters[currentWorldadapter].datasources){
+                        input += "<option>"+worldadapters[currentWorldadapter].datasources[i]+"</option>";
                     }
                     input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     break;

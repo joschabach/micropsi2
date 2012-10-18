@@ -682,7 +682,10 @@ def get_available_worlds():
 
 @rpc("get_world_properties")
 def get_world_properties(world_uid):
-    return micropsi.get_world_properties(world_uid)
+    try:
+        return micropsi.get_world_properties(world_uid)
+    except KeyError:
+        return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("get_worldadapters")
@@ -692,7 +695,10 @@ def get_worldadapters(world_uid):
 
 @rpc("get_world_objects")
 def get_world_objects(world_uid, type=None):
-    return micropsi.get_world_objects(world_uid, type)
+    try:
+        return micropsi.get_world_objects(world_uid, type)
+    except KeyError:
+        return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("new_world", permission_required="manage worlds")
@@ -712,7 +718,10 @@ def delete_world(world_uid):
 
 @rpc("get_world_view")
 def get_world_view(world_uid, step):
-    return micropsi.get_world_view(world_uid, step)
+    try:
+        return micropsi.get_world_view(world_uid, step)
+    except KeyError:
+        return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("set_world_properties", permission_required="manage worlds")

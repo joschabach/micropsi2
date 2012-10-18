@@ -150,12 +150,11 @@ function refreshWorldView(){
             if(worldRunning){
                 refreshWorldView();
             }
+        }, error=function(data){
+            $.cookie('selected_world', '', {expires:-1, path:'/'});
+            dialogs.notification(data.Error, 'error');
         }
     );
-}
-
-function hasObjectChanged(uid, data){
-    return uid in objects && (objects[uid].x != data.pos[0] || objects[uid].y != data.pos[1] || objects[uid].name != data.name);
 }
 
 function setCurrentWorld(uid){
@@ -170,7 +169,7 @@ function setCurrentWorld(uid){
 function loadWorldInfo(){
     api.call('get_world_properties', {
         world_uid: currentWorld
-    }, function(data){
+    }, success=function(data){
         world_data = data;
         worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
@@ -178,11 +177,14 @@ function loadWorldInfo(){
             view.viewSize = new Size(data['representation_2d']['x'], data['representation_2d']['y']);
             canvas.css('background', 'url("/static/img/'+ data['representation_2d']['image'] + '") no-repeat top left');
         }
+    }, error=function(data){
+        $.cookie('selected_world', '', {expires:-1, path:'/'});
+        dialogs.notification(data.Error, 'error');
     });
 }
 
 function loadWorldObjects(){
-    api.call('get_world_objects', {world_uid: currentWorld, type: 'stations'}, function(data){
+    api.call('get_world_objects', {world_uid: currentWorld, type: 'stations'}, success=function(data){
         stationLayer.removeChildren();
         stations = {};
         var list_stations_html = '';
@@ -193,6 +195,9 @@ function loadWorldObjects(){
         $('#berlinStations table').html(list_stations_html);
         $('.highlight_station').on('click', highlightWorldobject);
         updateViewSize();
+    }, error=function(data){
+        $.cookie('selected_world', '', {expires:-1, path:'/'});
+        dialogs.notification(data.Error, 'error');
     });
 }
 

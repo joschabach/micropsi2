@@ -399,7 +399,14 @@ class MicroPsiRuntime(object):
 
     def get_worldadapters(self, world_uid):
         """Returns the world adapters available in the given world"""
-        return self.worlds[world_uid].supported_worldadapters
+        from micropsi_core.world import worldadapter
+        data = {}
+        for name in self.worlds[world_uid].supported_worldadapters:
+            data[name] = {
+                'datasources': getattr(worldadapter, name).datasources.keys(),
+                'datatargets': getattr(worldadapter, name).datatargets.keys()
+            }
+        return data
 
     def get_world_objects(self, world_uid, type=None):
         if world_uid in self.worlds:

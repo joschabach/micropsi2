@@ -6,7 +6,6 @@ import micropsi_core.tools
 import json
 import os
 import warnings
-import math
 
 __author__ = 'joscha'
 __date__ = '09.05.12'

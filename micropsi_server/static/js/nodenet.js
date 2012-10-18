@@ -275,54 +275,32 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	this.name = name;
 	this.type = type;
 	this.symbol = "?";
-	this.slots={};
-	this.gates={};
+	this.slots = {};
+    this.gates = {};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
     this.parameters = parameters || {};
     this.bounds = null; // current bounding box (after scaling)
-	switch (type) {
-        case "Nodespace":
-            this.symbol = "NS";
-            break;
-        case "Sensor":
-            this.symbol = "S";
-            this.gates.gen = new Gate("gen");
-            break;
-        case "Actor":
-            this.symbol = "A";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-            break;
-        case "Register":
-			this.symbol = "R";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-			break;
-		case "Concept":
-			this.symbol = "C";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-			this.gates.por = new Gate("por");
-			this.gates.ret = new Gate("ret");
-			this.gates.sub = new Gate("sub");
-			this.gates.sur = new Gate("sur");
-			this.gates.cat = new Gate("cat");
-			this.gates.exp = new Gate("exp");
-			break;
-        default: // native code node (completely custom)
+    this.slotIndexes = [];
+    this.gateIndexes = [];
+	if(type == "Nodespace") {
+        this.symbol = "NS";
+    } else {
+        if (type in STANDARD_NODETYPES){
+            this.symbol = type.substr(0,1);
+        } else {
             this.symbol = "Na";
-            var i;
-            for (i in nodetypes[type].slottypes){
-                this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
-            }
-            for (i in nodetypes[type].gatetypes){
-                this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i]);
-            }
-            break;
-	}
-    this.slotIndexes = Object.keys(this.slots);
-    this.gateIndexes = Object.keys(this.gates);
+        }
+        var i;
+        for(i in nodetypes[type].slottypes){
+            this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
+        }
+        for(i in nodetypes[type].gatetypes){
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i]);
+        }
+        this.slotIndexes = Object.keys(this.slots);
+        this.gateIndexes = Object.keys(this.gates);
+    }
 }
 
 // target for links, part of a net entity

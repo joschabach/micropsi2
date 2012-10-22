@@ -30,13 +30,12 @@ DEFAULT_PORT = 6543
 DEFAULT_HOST = "localhost"
 
 APP_PATH = os.path.dirname(__file__)
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 
-micropsi = micropsi_core.runtime.MicroPsiRuntime(RESOURCE_PATH)
-usermanager = usermanagement.UserManager(os.path.join(RESOURCE_PATH, "user-db.json"))
+from micropsi_server.dispatcher import usermanager
+from micropsi_server.dispatcher import micropsi
 
 
 def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):

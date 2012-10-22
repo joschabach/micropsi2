@@ -542,6 +542,7 @@ function redrawNodeLinks(node) {
     }
 }
 
+sourceBounds = {};
 // determine the point where link leaves the node
 function calculateLinkStart(sourceNode, targetNode, gateName) {
     var startPointIsPreliminary = false;
@@ -549,7 +550,7 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
     // This depends on the node type and the link type.
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
-    var sourceBounds = sourceNode.bounds;
+    sourceBounds = sourceNode.bounds;
     if(isOutsideNodespace(sourceNode)){
         if(targetNode && targetNode.linksFromOutside.length > viewProperties.groupOutsideLinksThreshold){
             redrawNodePlaceholder(targetNode, 'in');

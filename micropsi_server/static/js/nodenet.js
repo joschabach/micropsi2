@@ -31,6 +31,10 @@ var viewProperties = {
     lineHeight: 15,
     compactNodes: false,
     compactModules: false,
+    outsideDummyDistance: 70,
+    outsideDummySize: 15,
+    outsideDummyColor: new Color("#cccccc"),
+    groupOutsideLinksThreshold: 0,
     forceCompactBelowZoomFactor: 0.9,
     strokeWidth: 0.3,
     outlineColor: null,
@@ -192,16 +196,24 @@ function initializeNodeNet(data){
             console.log('adding node:' + uid);
             addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
         }
-
         for(uid in data.nodespaces){
             addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
         }
         var link;
+        var outsideLinks = [];
         for(var index in data.links){
-            link = data.links[index];
-            // TODO: Decide whether to use gate/slot INDEX or gate/slot NAME
-            console.log('adding link: ' + link.sourceNode + ' -> ' + link.targetNode);
-            addLink(new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+            console.log('adding link: ' + data.links[index].sourceNode + ' -> ' + data.links[index].targetNode);
+            link = new Link(data.links[index].uid, data.links[index].sourceNode, data.links[index].sourceGate, data.links[index].targetNode, data.links[index].targetSlot, data.links[index].weight, data.links[index].certainty);
+            if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
+                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                outsideLinks.push(link);
+            } else {
+                addLink(link);
+            }
+        }
+        for(index in outsideLinks){
+            addLink(outsideLinks[index]);
         }
 
     } else {
@@ -237,11 +249,23 @@ function refreshNodespace(){
             redrawNode(item);
             nodes[uid] = item;
         }
+        var outsideLinks = [];
         for(uid in data.links){
-            link = data.links[uid];
-            item = new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty);
-            redrawLink(item);
-            links[uid] = item;
+            link = new Link(uid, data.links[uid].sourceNode, data.links[uid].sourceGate, data.links[uid].targetNode, data.links[uid].targetSlot, data.links[uid].weight, data.links[uid].certainty);
+            if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
+                if(nodes[link.targetNodeUid].linksFromOutside.indexOf(link.uid) < 0)
+                    nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                if(nodes[link.sourceNodeUid].linksToOutside.indexOf(link.uid) < 0)
+                    nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                outsideLinks.push(link);
+            } else {
+                redrawLink(link);
+                links[uid] = link;
+            }
+        }
+        for(var index in outsideLinks){
+            redrawLink(outsideLinks[index]);
+            links[uid] = outsideLinks[index];
         }
         view.draw(true);
         if(nodenetRunning){
@@ -278,6 +302,9 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	this.symbol = "?";
 	this.slots = {};
     this.gates = {};
+    this.linksFromOutside = [];
+    this.linksToOutside = [];
+    this.placeholder = {};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
     this.parameters = parameters || {};
@@ -343,8 +370,8 @@ function addLink(link) {
             nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
             nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             // check if link is visible
-            if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
-                nodes[link.targetNodeUid].parent == currentNodeSpace) {
+            if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
+                isOutsideNodespace(nodes[link.targetNodeUid]))) {
                 renderLink(link);
             }
             links[link.uid] = link;
@@ -449,7 +476,7 @@ function redrawNodeNet() {
     linkLayer.removeChildren();
     var i;
     for (i in nodes) {
-        if (nodes[i].parent == currentNodeSpace) renderNode(nodes[i]);
+        if (!isOutsideNodespace(nodes[i])) renderNode(nodes[i]);
     }
     for (i in links) {
         var sourceNode = nodes[links[i].sourceNodeUid];
@@ -476,7 +503,7 @@ function redrawNodeNet() {
             continue;
         }
         // check if the link is visible
-        if (sourceNode.parent == currentNodeSpace || targetNode.parent == currentNodeSpace) {
+        if (!(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode))) {
             renderLink(links[i]);
         }
     }
@@ -508,16 +535,26 @@ function redrawNodeLinks(node) {
 }
 
 // determine the point where link leaves the node
-function calculateLinkStart(sourceNode, gateName) {
+function calculateLinkStart(sourceNode, targetNode, gateName) {
     var startPointIsPreliminary = false;
-    var gate = sourceNode.gates[gateName];
     // Depending on whether the node is drawn in compact or full shape, links may originate at odd positions.
     // This depends on the node type and the link type.
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
+    var sourceBounds = sourceNode.bounds;
+    if(isOutsideNodespace(sourceNode)){
+        if(targetNode.linksFromOutside.length > viewProperties.groupOutsideLinksThreshold){
+            if(!targetNode.placeholder['in']){
+                targetNode.placeholder['in'] = createPlaceholder(targetNode, 'IN', calculatePlaceHolderPosition(targetNode, 'IN', 0));
+            } else {
+                targetNode.placeholder['in'].position = calculatePlaceHolderPosition(targetNode, 'IN', 0);
+            }
+            nodeLayer.addChild(targetNode.placeholder['in']);
+            sourceBounds = targetNode.placeholder['in'].bounds;
+        }
+    }
     var sourcePoints, startPoint, startAngle;
     if (isCompact(sourceNode)) {
-        sourceBounds = sourceNode.bounds;
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
             if (sourceNode.type == "Sensor")
                 startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
@@ -527,7 +564,7 @@ function calculateLinkStart(sourceNode, gateName) {
                     sourceBounds.y);
             startAngle = 270;
         } else {
-            switch (gate.name){
+            switch (gateName){
                 case "por":
                     startPoint = new Point(sourceBounds.x + sourceBounds.width,
                         sourceBounds.y + sourceBounds.height*0.4);
@@ -555,10 +592,14 @@ function calculateLinkStart(sourceNode, gateName) {
             }
         }
     } else {
-        var index = sourceNode.gateIndexes.indexOf(gateName);
-        sourceBounds = sourceNode.bounds;
-        startPoint = new Point(sourceBounds.x+sourceBounds.width,
-            sourceBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
+        if(isOutsideNodespace(sourceNode)){
+            startPoint = new Point(sourceBounds.x + viewProperties.outsideDummySize,
+                sourceBounds.y+viewProperties.outsideDummySize/2);
+        } else {
+            var index = sourceNode.gateIndexes.indexOf(gateName);
+            startPoint = new Point(sourceBounds.x+sourceBounds.width,
+                sourceBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
+        }
         startAngle = 0;
     }
     return {
@@ -569,12 +610,23 @@ function calculateLinkStart(sourceNode, gateName) {
 }
 
 // determine the point where a link enters the node
-function calculateLinkEnd(targetNode, slotName, linkType) {
+function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
     var endPointIsPreliminary = false;
-    var slot = targetNode.slots[slotName];
-    var targetBounds, endPoint, endAngle;
+    var endPoint, endAngle;
+    var targetBounds = targetNode.bounds;
+    if(isOutsideNodespace(targetNode)){
+        if(sourceNode.linksToOutside.length > viewProperties.groupOutsideLinksThreshold){
+            if(!sourceNode.placeholder.out){
+                sourceNode.placeholder.out = createPlaceholder(sourceNode, 'OUT', calculatePlaceHolderPosition(sourceNode, 'OUT', 0));
+            } else {
+                sourceNode.placeholder.out.position = calculatePlaceHolderPosition(sourceNode, 'OUT', 0);
+            }
+            nodeLayer.addChild(sourceNode.placeholder.out);
+            targetBounds = sourceNode.placeholder.out.bounds;
+        }
+    }
+
     if (isCompact(targetNode)) {
-        targetBounds = targetNode.bounds;
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
@@ -608,17 +660,60 @@ function calculateLinkEnd(targetNode, slotName, linkType) {
             }
         }
     } else {
-        var index = targetNode.slotIndexes.indexOf(slotName);
-        targetBounds = targetNode.bounds;
+        if(isOutsideNodespace(targetNode)){
+            endPoint = new Point(targetBounds.x,
+                targetBounds.y+viewProperties.outsideDummySize/2);
+        } else {
+            var index = targetNode.slotIndexes.indexOf(slotName);
+            endPoint = new Point(targetBounds.x,
+                targetBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
+        }
         endAngle = 180;
-        endPoint = new Point(targetBounds.x,
-            targetBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
     }
     return {
         "point": endPoint,
         "angle": endAngle,
         "isPreliminary": endPointIsPreliminary
     };
+}
+
+function calculatePlaceHolderPosition(node, direction, index){
+    var point;
+    if(direction == 'IN'){
+        point = new Point(node.bounds.x - viewProperties.outsideDummyDistance,
+            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
+    } else if(direction == 'OUT') {
+        point = new Point(node.bounds.x + node.bounds.width + viewProperties.outsideDummyDistance,
+            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
+    } else {
+        console.warn('unknown direction for placeholder: '+direction);
+    }
+    return point;
+}
+
+function createPlaceholder(node, direction, point){
+    var count;
+    if(direction == 'IN'){
+        count = node.linksFromOutside.length;
+    } else if(direction == 'OUT') {
+        count = node.linksToOutside.length;
+    } else {
+        console.warn('unknown direction for placeholder: '+direction);
+    }
+    var shape = new Path.Circle(point, viewProperties.outsideDummySize/2 * viewProperties.zoomFactor);
+    shape.fillColor = viewProperties.outsideDummyColor;
+    if(count > viewProperties.groupOutsideLinksThreshold){
+        point.y += 3;
+        var labelText = new PointText(new Point(point));
+        labelText.content = count;
+        labelText.characterStyle = {
+            fontSize: viewProperties.fontSize,
+            fillColor: viewProperties.nodeFontColor
+        };
+        labelText.paragraphStyle.justification = 'center';
+        shape = new Group([shape, labelText]);
+    }
+    return shape;
 }
 
 // draw link
@@ -628,8 +723,8 @@ function renderLink(link) {
 
     var gate = sourceNode.gates[link.gateName];
 
-    var linkStart = calculateLinkStart(sourceNode, link.gateName);
-    var linkEnd = calculateLinkEnd(targetNode, link.slotName, link.gateName);
+    var linkStart = calculateLinkStart(sourceNode, targetNode, link.gateName);
+    var linkEnd = calculateLinkEnd(sourceNode, targetNode, link.slotName, link.gateName);
 
     var correctionVector;
     if (linkStart.isPreliminary) { // start from boundary of a compact node
@@ -1116,6 +1211,10 @@ function isCompact(node) {
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
+}
+
+function isOutsideNodespace(node) {
+    return (node.parent != currentNodeSpace);
 }
 
 // calculate the bounding rectangle of the slot with the given index

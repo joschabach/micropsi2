@@ -102,6 +102,7 @@ function refreshNodenetList(){
 }
 
 function get_available_worldadapters(nodenet_data){
+    worldadapters = {};
     if(nodenet_data.world){
         api.call("get_worldadapters", {world_uid: nodenet_data.world},
             success=function(data){

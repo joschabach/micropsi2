@@ -397,10 +397,18 @@ function redrawLink(link, forceRedraw){
 
 // delete a link from the array, and from the screen
 function removeLink(link) {
+    sourceNode = nodes[link.sourceNodeUid];
+    targetNode = nodes[link.targetNodeUid];
+    if(sourceNode.parent != targetNode.parent){
+        sourceNode.linksToOutside.splice(sourceNode.linksToOutside.indexOf(link.uid), 1);
+        targetNode.linksFromOutside.splice(targetNode.linksFromOutside.indexOf(link.uid), 1);
+        redrawNodePlaceholder(sourceNode, 'out');
+        redrawNodePlaceholder(targetNode, 'in');
+    }
     delete links[link.uid];
     if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
-    delete nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid];
-    delete nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid];
+    delete sourceNode.gates[link.gateName].outgoing[link.uid];
+    delete targetNode.slots[link.slotName].incoming[link.uid];
 }
 
 // add or update node, should usually be called from the JSON parser
@@ -543,13 +551,8 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
     var sourceBounds = sourceNode.bounds;
     if(isOutsideNodespace(sourceNode)){
-        if(targetNode.linksFromOutside.length > viewProperties.groupOutsideLinksThreshold){
-            if(!targetNode.placeholder['in']){
-                targetNode.placeholder['in'] = createPlaceholder(targetNode, 'IN', calculatePlaceHolderPosition(targetNode, 'IN', 0));
-            } else {
-                targetNode.placeholder['in'].position = calculatePlaceHolderPosition(targetNode, 'IN', 0);
-            }
-            nodeLayer.addChild(targetNode.placeholder['in']);
+        if(targetNode && targetNode.linksFromOutside.length > viewProperties.groupOutsideLinksThreshold){
+            redrawNodePlaceholder(targetNode, 'in');
             sourceBounds = targetNode.placeholder['in'].bounds;
         }
     }
@@ -616,12 +619,7 @@ function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
     var targetBounds = targetNode.bounds;
     if(isOutsideNodespace(targetNode)){
         if(sourceNode.linksToOutside.length > viewProperties.groupOutsideLinksThreshold){
-            if(!sourceNode.placeholder.out){
-                sourceNode.placeholder.out = createPlaceholder(sourceNode, 'OUT', calculatePlaceHolderPosition(sourceNode, 'OUT', 0));
-            } else {
-                sourceNode.placeholder.out.position = calculatePlaceHolderPosition(sourceNode, 'OUT', 0);
-            }
-            nodeLayer.addChild(sourceNode.placeholder.out);
+            redrawNodePlaceholder(sourceNode, 'out');
             targetBounds = sourceNode.placeholder.out.bounds;
         }
     }
@@ -677,12 +675,22 @@ function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
     };
 }
 
+function redrawNodePlaceholder(node, direction){
+    if(node.placeholder[direction]){
+        node.placeholder[direction].remove();
+    }
+    if(node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0)){
+        node.placeholder[direction] = createPlaceholder(node, direction, calculatePlaceHolderPosition(node, direction, 0));
+        nodeLayer.addChild(node.placeholder[direction]);
+    }
+}
+
 function calculatePlaceHolderPosition(node, direction, index){
     var point;
-    if(direction == 'IN'){
+    if(direction == 'in'){
         point = new Point(node.bounds.x - viewProperties.outsideDummyDistance,
             node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
-    } else if(direction == 'OUT') {
+    } else if(direction == 'out') {
         point = new Point(node.bounds.x + node.bounds.width + viewProperties.outsideDummyDistance,
             node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
     } else {
@@ -693,9 +701,9 @@ function calculatePlaceHolderPosition(node, direction, index){
 
 function createPlaceholder(node, direction, point){
     var count;
-    if(direction == 'IN'){
+    if(direction == 'in'){
         count = node.linksFromOutside.length;
-    } else if(direction == 'OUT') {
+    } else if(direction == 'out') {
         count = node.linksToOutside.length;
     } else {
         console.warn('unknown direction for placeholder: '+direction);
@@ -788,7 +796,7 @@ function renderLinkDuringCreation(endPoint) {
     var sourceNode = linkCreationStart.sourceNode;
     var gateIndex = linkCreationStart.gateIndex;
 
-    var linkStart = calculateLinkStart(sourceNode, sourceNode.gateIndexes[gateIndex]);
+    var linkStart = calculateLinkStart(sourceNode, null, sourceNode.gateIndexes[gateIndex]);
 
     var correctionVector;
     if (linkStart.isPreliminary) { // start from boundary of a compact node
@@ -2027,6 +2035,10 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
         var uuid = makeUuid();
+        if(nodes[sourceUid].parent != currentNodeSpace){
+            nodes[targetUid].linksFromOutside.push(uuid);
+            nodes[sourceUid].linksToOutside.push(uuid);
+        }
         switch (linkCreationStart.creationType) {
             case "por/ret":
                 addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));

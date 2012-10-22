@@ -362,6 +362,7 @@ class MicroPsiRuntime(object):
         self.save_nodenet(nodenet_uid)
         self.unload_nodenet(nodenet_uid)
         self.load_nodenet(nodenet_uid)
+        return True
 
     # World
     def get_available_worlds(self, owner=None):

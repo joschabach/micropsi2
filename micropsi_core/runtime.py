@@ -751,7 +751,8 @@ class MicroPsiRuntime(object):
 
     def set_gate_parameters(self, nodenet_uid, node_uid, gate_type, parameters=None):
         """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
-        pass
+        self.nodenets[nodenet_uid].nodes[node_uid].set_gate_parameters(gate_type, parameters)
+        return True
 
     def get_available_datasources(self, nodenet_uid):
         """Returns a list of available datasource types for the given nodenet."""

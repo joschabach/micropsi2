@@ -57,6 +57,7 @@ var viewProperties = {
 nodes = {};
 links = {};
 selection = {};
+gatefunctions = {};
 
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
@@ -197,6 +198,7 @@ function initializeNodeNet(data){
             addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters));
         }
         for(uid in data.nodespaces){
+            gatefunctions[uid] = data.nodespaces[uid]['gatefunctions'];
             addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
         }
         var link;
@@ -2181,6 +2183,20 @@ function handleEditGate(event){
             params[data[i].name] = data[i].value;
         }
     }
+    if(!(node.type in gatefunctions[currentNodeSpace]) ||
+        gatefunctions[currentNodeSpace][node.type][gate.name] != gatefunction){
+        if(!(node.type in gatefunctions[currentNodeSpace])){
+            gatefunctions[currentNodeSpace][node.type] = {};
+        }
+        gatefunctions[currentNodeSpace][node.type][gate.name] = gatefunction;
+        api.call('set_gate_function', {
+            nodenet_uid: currentNodenet,
+            nodespace: currentNodeSpace,
+            node_type: node.type,
+            gate_type: gate.name,
+            gate_function: gatefunction
+        }, method="POST");
+    }
     api.call('set_gate_parameters', {
         nodenet_uid: currentNodenet,
         node_uid: node.uid,
@@ -2445,9 +2461,15 @@ function showDefaultForm(){
 function showGateForm(node, gate){
     $('#nodenet_forms .form-horizontal').hide();
     var form = $('#edit_gate_form');
+    $('.gate_gatetype', form).html('<strong>"'+ gate.name +'"</strong>');
     $.each($('input, select, textarea', form), function(index, el){
+        el.value = '';
         if(el.name in gate.parameters){
             el.value = gate.parameters[el.name];
+        } else if(el.name == 'gatefunction'){
+            if(node.type in gatefunctions[currentNodeSpace]){
+                el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
+            }
         }
     });
     form.show();

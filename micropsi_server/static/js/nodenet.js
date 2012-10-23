@@ -194,7 +194,7 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters));
         }
         for(uid in data.nodespaces){
             addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
@@ -232,15 +232,15 @@ function refreshNodespace(){
         nodespace: currentNodeSpace,
         step: currentSimulationStep
     }, success=function(data){
-        if(jQuery.isEmptyObject(data) && nodenetRunning){
-            setTimeout(refreshNodespace, 100);
+        if(jQuery.isEmptyObject(data)){
+            if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;
         }
         currentSimulationStep = data.current_step;
         $('#nodenet_step').val(currentSimulationStep);
         var item;
         for(var uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
             redrawNode(item);
             nodes[uid] = item;
         }
@@ -291,7 +291,7 @@ function setNodeTypes(){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -311,6 +311,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
     this.bounds = null; // current bounding box (after scaling)
     this.slotIndexes = [];
     this.gateIndexes = [];
+    this.gate_parameters = gate_parameters || {};
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
@@ -324,7 +325,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
             this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
         }
         for(i in nodetypes[type].gatetypes){
-            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i]);
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, this.gate_parameters[nodetypes[type].gatetypes[i]]);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -339,10 +340,23 @@ function Slot(name) {
 }
 
 // source for links, part of a net entity
-function Gate(name) {
+function Gate(name, index, parameters) {
 	this.name = name;
+    this.index = index;
 	this.outgoing = {};
 	this.activation = 0;
+    if(parameters){
+        this.parameters = parameters;
+    } else {
+        this.parameters = {
+            "minimum": -1,
+            "maximum": 1,
+            "certainty": 1,
+            "amplification": 1,
+            "threshold": 0,
+            "decay": 0
+        };
+    }
 }
 
 // link, connects two nodes, from a gate to a slot
@@ -682,7 +696,7 @@ function redrawNodePlaceholder(node, direction){
     }
     if(node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0)){
         node.placeholder[direction] = createPlaceholder(node, direction, calculatePlaceHolderPosition(node, direction, 0));
-        nodeLayer.addChild(node.placeholder[direction]);
+        linkLayer.addChild(node.placeholder[direction]);
     }
 }
 
@@ -1206,11 +1220,29 @@ function deselectLink(linkUid) {
     }
 }
 
+// mark gate as selected
+function selectGate(node, gate){
+    var shape = nodeLayer.children[node.uid].children["activation"].children["gates"].children[gate.index];
+    selection['gate'] = shape;
+    shape.strokeColor = viewProperties.selectionColor;
+    shape.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
+}
+
+function deselectGate(){
+    if('gate' in selection){
+        var shape = selection['gate'];
+        shape.strokeColor = null;
+        shape.strokeWidth = 0;
+        delete selection['gate'];
+    }
+}
+
 // deselect all nodes and links
 function deselectAll() {
     for (var uid in selection){
         if (uid in nodes) deselectNode(uid);
         if (uid in links) deselectLink(uid);
+        if (uid == 'gate') deselectGate();
     }
 }
 
@@ -1317,6 +1349,10 @@ function onMouseDown(event) {
                     console.log("clicked gate #" + i);
                     clickType = "gate";
                     clickIndex = i;
+                    var gate = node.gates[node.gateIndexes[i]];
+                    deselectGate();
+                    selectGate(node, gate);
+                    showGateForm(node, gate);
                     if (event.modifiers.control || event.event.button == 2) openContextMenu("#gate_menu", event.event);
                     return;
                 }
@@ -2128,6 +2164,31 @@ function handleEditNode(event){
     }
 }
 
+function handleEditGate(event){
+    event.preventDefault();
+    var node, gate;
+    if(clickType == 'gate'){
+        node = nodes[clickOriginUid];
+        gate = node.gates[node.gateIndexes[clickIndex]];
+    }
+    var data = $(event.target).serializeArray();
+    var params = {};
+    var gatefunction = null;
+    for(var i in data){
+        if(data[i].name == 'gatefunction'){
+            gatefunction = data[i].value;
+        } else {
+            params[data[i].name] = data[i].value;
+        }
+    }
+    api.call('set_gate_parameters', {
+        nodenet_uid: currentNodenet,
+        node_uid: node.uid,
+        gate_type: gate.name,
+        parameters: params
+    });
+}
+
 function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
     redrawNode(nodes[nodeUid]);
@@ -2265,6 +2326,7 @@ function makeUuid() {
 function initializeSidebarForms(){
     $('#edit_link_form').submit(handleEditLink);
     $('#edit_node_form').submit(handleEditNode);
+    $('#edit_gate_form').submit(handleEditGate);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#native_module_form').submit(createNativeModuleHandler);
     $('#native_add_param').click(function(){
@@ -2378,6 +2440,17 @@ function showNativeModuleForm(nodeUid){
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_nodenet_form').show();
+}
+
+function showGateForm(node, gate){
+    $('#nodenet_forms .form-horizontal').hide();
+    var form = $('#edit_gate_form');
+    $.each($('input, select, textarea', form), function(index, el){
+        if(el.name in gate.parameters){
+            el.value = gate.parameters[el.name];
+        }
+    });
+    form.show();
 }
 
 

@@ -120,6 +120,61 @@
                 </div>
             </form>
 
+            <form class="form-horizontal hide" id="edit_gate_form">
+                <h4>Gate <span id="edit_gate_name"></span></h4>
+                <fieldset>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_minimum">Minimum</label>
+                        <div class="controls">
+                            <input type="text" class="" name="minimum" id="gate_minimum">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_maxmimum">Maximum</label>
+                        <div class="controls">
+                            <input type="text" class="" name="maximum" id="gate_maximum">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_certainty">Certainty</label>
+                        <div class="controls">
+                            <input type="text" class="" name="certainty" id="gate_certainty">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_amplification">Amplification</label>
+                        <div class="controls">
+                            <input type="text" class="" name="amplification" id="gate_amplification">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_threshold">Threshold</label>
+                        <div class="controls">
+                            <input type="text" class="" name="threshold" id="gate_threshold">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_decay">Decay</label>
+                        <div class="controls">
+                            <input type="text" class="" name="decay" id="gate_decay">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_gatefunction">Gatefunction</label>
+                        <div class="controls dropdown">
+                            <code>def gatefunction(nodenet, node
+                                <span id="params"></span>
+                                ):
+                            </code>
+                           <textarea name="gatefunction" id="gate_gatefunction"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="controls">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+
             <form class="form-horizontal hide" id="edit_node_form">
                 <h4>Node</h4>
                 <fieldset>

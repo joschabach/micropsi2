@@ -172,7 +172,7 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, index=data.get('index'), parameters=data.get('parameters'))
+            self.nodes[uid] = Node(self, **data)
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -458,7 +458,7 @@ class Node(NetEntity):
         self.data['state'] = state
 
     def __init__(self, nodenet, parent_nodespace, position, state=None,
-                 name="", type="Concept", uid=None, index=None, parameters=None):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters={}, **_):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
@@ -470,7 +470,7 @@ class Node(NetEntity):
         self.nodetype = self.nodenet.nodetypes[type]
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
-            self.gates[gate] = Gate(gate, self)
+            self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate))
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:
@@ -522,6 +522,12 @@ class Node(NetEntity):
         for key in self.slots:
             links.extend(self.slots[key].incoming)
         return links
+
+    def set_gate_parameters(self, gate_type, parameters):
+        if 'gate_parameters' not in self.data:
+            self.data['gate_parameters'] = {}
+        self.data['gate_parameters'][gate_type] = parameters
+        self.gates[gate_type].parameters = parameters
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params

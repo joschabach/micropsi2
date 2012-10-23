@@ -91,11 +91,10 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 #kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args if name in kwargs)
                 arguments.update(kwargs)
-                try:
-                    return json.dumps(func(**arguments))
-                except TypeError, err:
-                    response.status = 400
-                    return {"Error": "Bad parameters in remote procedure call: %s" % err}
+                return json.dumps(func(**arguments))
+                # except TypeError, err:
+                #     response.status = 400
+                #     return {"Error": "Bad parameters in remote procedure call: %s" % err}
         return _wrapper
     return _decorator
 
@@ -887,8 +886,10 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type): return micr
 @rpc("set_gate_function", permission_required="manage nodenets")
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None): return micropsi.set_gate_function
 
+
 @rpc("set_gate_parameters", permission_required="manage nodenets")
-def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters=None): return micropsi.set_gate_parameters
+def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
+    return micropsi.set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters)
 
 
 @rpc("get_available_datasources")

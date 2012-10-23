@@ -851,6 +851,7 @@ class MicroPsiRuntime(object):
         """Perform auto-alignment of nodes in the current nodespace"""
         return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
 
+
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.

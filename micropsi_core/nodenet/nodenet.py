@@ -120,11 +120,10 @@ class Nodenet(object):
         self.filename = filename
         self.worldadapter = worldadapter
 
-        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
-
         self.nodes = {}
         self.links = {}
         self.nodetypes = {}
+        self.nodespaces = {}
 
         self.load()
 
@@ -163,8 +162,11 @@ class Nodenet(object):
         Parses the nodenet state and set up the non-persistent data structures necessary for efficient
         computation of the node net
         """
+
+        if 'Root' not in self.state.get('nodespaces', {}):
+            self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
         for name, data in self.state.get('nodespaces', {}).items():
-            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'))
+            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions'))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
@@ -322,6 +324,8 @@ class NetEntity(object):
         self.position = position
         if parent_nodespace:
             self.parent_nodespace = parent_nodespace
+        else:
+            self.data['parent_nodespace'] = None
 
 
 class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
@@ -335,11 +339,15 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None, index=None):
+    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None, index=None, gatefunctions={}):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid, index)
+        self.gatefunctions = {}
+        for nodetype in gatefunctions:
+            for gatetype in gatefunctions[nodetype]:
+                self.set_gate_function(nodetype, gatetype, gatefunctions[nodetype][gatetype])
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
@@ -362,6 +370,23 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         Data sources are either handed down by the node net manager (to read from the environment), or
         by the node space itself, to obtain information about its contents."""
         pass
+
+    def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
+        """Sets the gatefunction for a given node- and gatetype within this nodespace"""
+        if nodetype not in self.data['gatefunctions']:
+            self.data['gatefunctions'][nodetype] = {}
+        self.data['gatefunctions'][nodetype][gatetype] = gatefunction
+        if nodetype not in self.gatefunctions:
+            self.gatefunctions[nodetype] = {}
+        self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(
+            """gate.activation = 'Syntax error'""",
+            parameters="params"
+        )
+
+    def get_gatefunction(self, nodetype, gatetype):
+        """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
+        if nodetype in self.data['gatefunctions'] and gatetype in self.data['gatefunctions'][nodetype]:
+            return self.data['gatefunctions'][nodetype][gatetype]
 
 
 class Link(object):  # todo: adapt to new form, like net entitities
@@ -582,7 +607,11 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 return  # if the gate is closed, we don't need to execute the gate function
 
         # simple linear threshold function; you might want to use a sigmoid for neural learning
-        activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
+        gatefunction = self.node.parent_nodespace.get_gatefunction(self.node.type, self.type)
+        if gatefunction:
+            activation = gatefunction(self.parameters)
+        else:
+            activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
 
         if self.parameters["decay"]:  # let activation decay gradually
             if activation < 0:

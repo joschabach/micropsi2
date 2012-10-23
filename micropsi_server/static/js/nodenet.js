@@ -232,8 +232,8 @@ function refreshNodespace(){
         nodespace: currentNodeSpace,
         step: currentSimulationStep
     }, success=function(data){
-        if(jQuery.isEmptyObject(data) && nodenetRunning){
-            setTimeout(refreshNodespace, 100);
+        if(jQuery.isEmptyObject(data)){
+            if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;
         }
         currentSimulationStep = data.current_step;
@@ -682,7 +682,7 @@ function redrawNodePlaceholder(node, direction){
     }
     if(node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0)){
         node.placeholder[direction] = createPlaceholder(node, direction, calculatePlaceHolderPosition(node, direction, 0));
-        nodeLayer.addChild(node.placeholder[direction]);
+        linkLayer.addChild(node.placeholder[direction]);
     }
 }
 

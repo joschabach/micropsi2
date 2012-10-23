@@ -882,10 +882,19 @@ def get_gate_types(nodenet_uid, node_type):
 
 
 @rpc("get_gate_function")
-def get_gate_function(nodenet_uid, nodespace, node_type, gate_type): return micropsi.get_gate_function
+def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
+    try:
+        return micropsi.get_gate_function(nodenet_uid, nodespace, node_type, gate_type)
+    except KeyError:
+        return dict(status='error', msg='Unknown nodenet or nodespace')
+
 
 @rpc("set_gate_function", permission_required="manage nodenets")
-def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None): return micropsi.set_gate_function
+def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
+    try:
+        micropsi.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
+    except KeyError:
+        return dict(status='error', msg='Unknown nodenet or nodespace')
 
 
 @rpc("set_gate_parameters", permission_required="manage nodenets")

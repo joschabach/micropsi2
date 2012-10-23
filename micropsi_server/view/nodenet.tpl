@@ -121,7 +121,7 @@
             </form>
 
             <form class="form-horizontal hide" id="edit_gate_form">
-                <h4>Gate <span id="edit_gate_name"></span></h4>
+                <h4>Gate <span class="gate_gatetype"></span></h4>
                 <fieldset>
                     <div class="control-group">
                         <label class="control-label" for="gate_minimum">Minimum</label>
@@ -160,11 +160,9 @@
                         </div>
                     </div>
                     <div class="control-group">
-                        <label class="control-label" for="gate_gatefunction">Gatefunction</label>
+                        <label class="control-label" for="gate_gatefunction">Gatefunction (valid for all gates of type <span class="gate_gatetype"></span> in this nodespace)</label>
                         <div class="controls dropdown">
-                            <code>def gatefunction(nodenet, node
-                                <span id="params"></span>
-                                ):
+                            <code>def gatefunction(<span id="params"></span>):
                             </code>
                            <textarea name="gatefunction" id="gate_gatefunction"></textarea>
                         </div>

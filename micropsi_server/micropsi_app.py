@@ -832,9 +832,11 @@ def set_node_name(nodenet_uid, node_uid, name):
 def delete_node(nodenet_uid, node_uid):
     return micropsi.delete_node(nodenet_uid, node_uid)
 
+
 @rpc("align_nodes", permission_required="manage nodenets")
 def align_nodes(nodenet_uid, nodespace):
     return micropsi.align_nodes(nodenet_uid, nodespace)
+
 
 @rpc("get_available_node_types")
 def get_available_node_types(nodenet_uid=None):

@@ -10,7 +10,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import micropsi_core
-from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, Monitor, STANDARD_NODETYPES
 from micropsi_core.nodenet import node_alignment
 from micropsi_core.world import world
 from micropsi_core import config
@@ -528,27 +528,36 @@ class MicroPsiRuntime(object):
 
     # Monitor
 
-    def add_gate_monitor(self, nodenet_uid, node_uid, gate_index):
+    def add_gate_monitor(self, nodenet_uid, node_uid, gate):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every simulation step."""
-        pass
+        nodenet = self.nodenets[nodenet_uid]
+        monitor = Monitor(nodenet, node_uid, 'gate', gate)
+        nodenet.monitors[monitor.uid] = monitor
+        return monitor.data
 
-    def add_slot_monitor(self, nodenet_uid, node_uid, slot_index):
+    def add_slot_monitor(self, nodenet_uid, node_uid, slot):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every simulation step."""
-        pass
+        nodenet = self.nodenets[nodenet_uid]
+        monitor = Monitor(nodenet, node_uid, 'slot', slot)
+        nodenet.monitors[monitor.uid] = monitor
+        return monitor.data
 
-    def remove_monitor(self, monitor_uid):
+    def remove_monitor(self, nodenet_uid, monitor_uid):
         """Deletes an activation monitor."""
-        pass
+        del self.nodenets[nodenet_uid].data['monitors'][monitor_uid]
+        del self.nodenets[nodenet_uid].monitors[monitor_uid]
+        return True
 
-    def clear_monitor(self, monitor_uid):
+    def clear_monitor(self, nodenet_uid, monitor_uid):
         """Leaves the monitor intact, but deletes the current list of stored values."""
-        pass
+        self.nodenets[nodenet_uid].monitors(monitor_uid).clear()
+        return True
 
     def export_monitor_data(self, nodenet_uid):
         """Returns a string with all currently stored monitor data for the given nodenet."""
-        pass
+        return self.nodenets[nodenet_uid].data['monitors']
 
     def get_monitor_data(self, nodenet_uid, step):
         """Returns a dictionary of monitor_uid: [node_name/node_uid, slot_type/gate_type, activation_value] for
@@ -804,6 +813,7 @@ class MicroPsiRuntime(object):
             weight=weight,
             certainty=certainty,
             uid=uid)
+        # TODO: let the link itself do the next step.
         nodenet.state['links'][link.uid] = dict(
             sourceNode=source_node_uid,
             sourceGate=gate_type,

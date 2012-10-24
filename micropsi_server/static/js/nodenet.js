@@ -58,6 +58,7 @@ nodes = {};
 links = {};
 selection = {};
 gatefunctions = {};
+monitors = {};
 
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
@@ -214,6 +215,10 @@ function initializeNodeNet(data){
                 addLink(link);
             }
         }
+        if(data.monitors){
+            monitors = data.monitors;
+        }
+        updateMonitorList();
         for(index in outsideLinks){
             addLink(outsideLinks[index]);
         }
@@ -1690,6 +1695,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 
 // universal handler for all context menu events. You can get the origin path from the variable clickTarget.
 function handleContextMenu(event) {
+    event.preventDefault();
     var menuText = event.target.text;
     switch (clickType) {
         case null: // create nodes
@@ -1786,7 +1792,7 @@ function handleContextMenu(event) {
         case "slot":
             switch (menuText) {
                 case "Add monitor to slot":
-                    // todo: add monitor to slot
+                    addSlotMonitor(nodes[clickOriginUid], clickIndex);
                     break;
             }
             break;
@@ -1796,7 +1802,7 @@ function handleContextMenu(event) {
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":
-                    // todo: add monitor to gate
+                    addGateMonitor(nodes[clickOriginUid], clickIndex);
                     break;
             }
             break;
@@ -2314,6 +2320,28 @@ function handleEditNodenet(event){
         });
 }
 
+function addSlotMonitor(node, index){
+    api.call('add_slot_monitor', {
+        nodenet_uid: currentNodenet,
+        node_uid: node.uid,
+        slot: node.slotIndexes[index]
+    }, function(data){
+        monitors[data.uid] = data;
+        updateMonitorList();
+    });
+}
+
+function addGateMonitor(node, index){
+    api.call('add_gate_monitor', {
+        nodenet_uid: currentNodenet,
+        node_uid: node.uid,
+        gate: node.gateIndexes[index]
+    }, function(data){
+        monitors[data.uid] = data;
+        updateMonitorList();
+    });
+}
+
 function delete_nodetype(event){
     event.preventDefault();
     var name = $(event.target).attr('data');
@@ -2473,6 +2501,18 @@ function showGateForm(node, gate){
         }
     });
     form.show();
+}
+
+function updateMonitorList(){
+    var el = $('#monitor_list');
+    var html = '<table class="table-striped table-condensed">';
+    for(var uid in monitors){
+        html += '<tr><td><a href="#" class="gate_link" data="'+uid+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</a></td></tr>';
+    }
+    html += '</table>';
+    el.html(html);
+    console.log($('.gate_link', el));
+    $('.gate_link', el).on('click', dialogs.showMonitorGraph);
 }
 
 

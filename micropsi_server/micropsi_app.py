@@ -778,23 +778,43 @@ def import_world_rpc(world_uid, worlddata):
 
 # Monitor
 
+
 @rpc("add_gate_monitor")
-def add_gate_monitor(nodenet_uid, node_uid, gate_index): return micropsi.add_gate_monitor
+def add_gate_monitor(nodenet_uid, node_uid, gate):
+    return micropsi.add_gate_monitor(nodenet_uid, node_uid, gate)
+
 
 @rpc("add_slot_monitor")
-def add_slot_monitor(nodenet_uid, node_uid, slot_index): return micropsi.add_slot_monitor
+def add_slot_monitor(nodenet_uid, node_uid, slot):
+    return micropsi.add_slot_monitor(nodenet_uid, node_uid, slot)
+
 
 @rpc("remove_monitor")
-def remove_monitor(monitor_uid): return micropsi.remove_monitor
+def remove_monitor(nodenet_uid, monitor_uid):
+    try:
+        micropsi.remove_monitor(nodenet_uid, monitor_uid)
+        return dict(status='success')
+    except KeyError:
+        return dict(status='error', msg='unknown nodenet or monitor')
+
 
 @rpc("clear_monitor")
-def clear_monitor(monitor_uid): return micropsi.clear_monitor
+def clear_monitor(nodenet_uid, monitor_uid):
+    try:
+        micropsi.clear_monitor(nodenet_uid, monitor_uid)
+        return dict(status='success')
+    except KeyError:
+        return dict(status='error', msg='unknown nodenet or monitor')
+
 
 @rpc("export_monitor_data")
-def export_monitor_data(nodenet_uid): return micropsi.export_monitor_data
+def export_monitor_data(nodenet_uid):
+    return micropsi.export_monitor_data(nodenet_uid)
+
 
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step): return micropsi.get_monitor_data
+def get_monitor_data(nodenet_uid, step):
+    return micropsi.get_monitor_data(nodenet_uid, step)
 
 # Nodenet
 
@@ -813,9 +833,9 @@ def get_node(nodenet_uid, node_uid):
 def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
     result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
     if result:
-        return dict(Status="OK", uid=uid)
+        return dict(status="success", uid=uid)
     else:
-        return dict(Error=uid)
+        return dict(status="error", msg=uid)
 
 
 @rpc("set_node_position", permission_required="manage nodenets")

@@ -124,6 +124,7 @@ class Nodenet(object):
         self.links = {}
         self.nodetypes = {}
         self.nodespaces = {}
+        self.monitors = {}
 
         self.load()
 
@@ -179,6 +180,8 @@ class Nodenet(object):
         for uid in self.state['links']:
             data = self.state['links'][uid]
             self.links[uid] = Link(self.nodes[data['sourceNode']], data['sourceGate'], self.nodes[data['targetNode']], data['targetSlot'], weight=data['weight'], uid=uid)
+        for uid in self.state.get('monitors', {}):
+            self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 
         # TODO: check if data sources and data targets match
 
@@ -217,6 +220,8 @@ class Nodenet(object):
             self.calculate_node_functions(self.active_nodes)
             self.active_nodes = self.propagate_link_activation(self.active_nodes)
             self.state["step"] += 1
+        for uid in self.monitors:
+            self.monitors[uid].step(self.state["step"])
 
     def step_privileged(self):
         """ performs a simulation step within the privileged nodes"""
@@ -588,6 +593,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 "threshold": 0,
                 "decay": 0
             }
+        self.monitor = None
 
     def gate_function(self, input_activation):
         """This function sets the activation of the gate.
@@ -794,3 +800,32 @@ class Nodetype(object):
             self.nodefunction_definition = nodefunction_definition
         else:
             self.nodefunction = None
+
+
+class Monitor(object):
+    """A gate or slot monitor watching the activation of the given slot or gate over time
+
+    Attributes:
+        nodenet: the parent Nodenet
+        node: the parent Node
+        type: either "slot" or "gate"
+        target: the name of the observerd Slot or Gate
+    """
+
+    def __init__(self, nodenet, node_uid, type, target, uid=None, **_):
+        if 'monitors' not in nodenet.state:
+            nodenet.state['monitors'] = {}
+        self.uid = uid or micropsi_core.tools.generate_uid()
+        self.data = {'uid': self.uid}
+        self.nodenet = nodenet
+        nodenet.state['monitors'][self.uid] = self.data
+        self.data['values'] = self.values = {}
+        self.data['node_uid'] = self.node_uid = node_uid
+        self.data['type'] = self.type = type
+        self.data['target'] = self.target = target
+
+    def step(self, step):
+        self.values[step] = getattr(self.nodenet.nodes[self.node_uid], type + 's')[self.target].activation
+
+    def clear(self):
+        self.data['values'] = {}

@@ -317,21 +317,15 @@
     </form>
 </div>
 
-<div id="monitor" class="section-margin collapse">
+<div id="monitor" class="section-margin collapse in">
     <div class="section">
         <div class="monitor_field span9">
-            <canvas id="nodenet_monitor" width="700" height="500" style="background:#eeeeee"></canvas>
+            <canvas id="nodenet_monitor" width="700" height="300" style="background:#eeeeee"></canvas>
         </div>
-        <div class="monitor_field " id="monitor_legend">
-            <form>
-                <div>
-                    <ul class="nav nav-list" id="monitor_list">
-                        <li class="nav-header">Current monitors</li>
-                        <li class="active"><a href="#">Monitor1</a></li>
-                        <li><a href="#">Monitor2</a></li>
-                        <li><a href="#">Monitor3</a></li>
-                        <li><a href="#">Monitor4</a></li>
-                    </ul>
+        <div class="editor_field monitor_field " id="monitor_legend">
+            <form class="form-horizontal">
+                <h4>Current Monitors</h4>
+                <div id="monitor_list">
                 </div>
             </form>
         </div>
@@ -473,4 +467,5 @@
     </div>
 </div>
 
+<script src="/static/js/monitor.js" type="text/paperscript" canvas="nodenet_monitor"></script>
 <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>

@@ -2186,7 +2186,7 @@ function handleEditGate(event){
         if(data[i].name == 'gatefunction'){
             gatefunction = data[i].value;
         } else {
-            params[data[i].name] = data[i].value;
+            params[data[i].name] = parseFloat(data[i].value);
         }
     }
     if(!(node.type in gatefunctions[currentNodeSpace]) ||

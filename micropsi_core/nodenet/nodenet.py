@@ -378,19 +378,24 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
 
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""
-        if(gatefunction):
+        if gatefunction:
             if nodetype not in self.data['gatefunctions']:
                 self.data['gatefunctions'][nodetype] = {}
             self.data['gatefunctions'][nodetype][gatetype] = gatefunction
             if nodetype not in self.gatefunctions:
                 self.gatefunctions[nodetype] = {}
             try:
-                self.nodefunction = micropsi_core.tools.create_function(gatefunction,
+                self.gatefunctions[nodetype] = micropsi_core.tools.create_function(gatefunction,
                     parameters="gate, params")
             except SyntaxError, err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))
                 self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
                     parameters="gate, params")
+        else:
+            if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+                del self.gatefunctions[nodetype][gatetype]
+            if nodetype in self.data['gatefunctions'] and gatetype in self.data['gatefunctions'][nodetype]:
+                del self.data['gatefunctions'][nodetype][gatetype]
 
     def get_gatefunction(self, nodetype, gatetype):
         """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""

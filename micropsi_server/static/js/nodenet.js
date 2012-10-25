@@ -244,6 +244,7 @@ function refreshNodespace(){
             return null;
         }
         currentSimulationStep = data.current_step;
+        monitor.updateMonitorGraph();
         $('#nodenet_step').val(currentSimulationStep);
         var item;
         for(var uid in data.nodes){
@@ -2511,8 +2512,7 @@ function updateMonitorList(){
     }
     html += '</table>';
     el.html(html);
-    console.log($('.gate_link', el));
-    $('.gate_link', el).on('click', dialogs.showMonitorGraph);
+    $('.gate_link', el).on('click', monitor.showMonitorGraph);
 }
 
 

@@ -555,9 +555,12 @@ class MicroPsiRuntime(object):
         self.nodenets[nodenet_uid].monitors(monitor_uid).clear()
         return True
 
-    def export_monitor_data(self, nodenet_uid):
+    def export_monitor_data(self, nodenet_uid, monitor_uid=None):
         """Returns a string with all currently stored monitor data for the given nodenet."""
-        return self.nodenets[nodenet_uid].data['monitors']
+        if monitor_uid is not None:
+            return self.nodenets[nodenet_uid].state['monitors'][monitor_uid]
+        else:
+            return self.nodenets[nodenet_uid].state['monitors']
 
     def get_monitor_data(self, nodenet_uid, step):
         """Returns a dictionary of monitor_uid: [node_name/node_uid, slot_type/gate_type, activation_value] for

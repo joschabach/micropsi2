@@ -320,7 +320,7 @@
 <div id="monitor" class="section-margin collapse in">
     <div class="section">
         <div class="monitor_field span9">
-            <canvas id="nodenet_monitor" width="700" height="300" style="background:#eeeeee"></canvas>
+            <div id="graph"></div>
         </div>
         <div class="editor_field monitor_field " id="monitor_legend">
             <form class="form-horizontal">
@@ -467,5 +467,6 @@
     </div>
 </div>
 
-<script src="/static/js/monitor.js" type="text/paperscript" canvas="nodenet_monitor"></script>
+<script src="/static/js/d3.v2.min.js" type="text/javascript"></script>
+<script src="/static/js/monitor.js" type="text/javascript"></script>
 <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>

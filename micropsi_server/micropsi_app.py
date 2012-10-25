@@ -96,6 +96,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     return json.dumps(func(**arguments))
                 except TypeError, err:
                     response.status = 400
+                    print err
                     return {"Error": "Bad parameters in remote procedure call: %s" % err}
         return _wrapper
     return _decorator

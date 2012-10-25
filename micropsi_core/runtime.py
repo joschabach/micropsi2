@@ -651,6 +651,9 @@ class MicroPsiRuntime(object):
             for uid, node in nodenet.nodes.items():
                 if node.parent_nodespace == node_uid:
                     self.delete_node(nodenet_uid, uid)
+            parent_nodespace = nodenet.nodespaces.get(nodenet.nodespaces[node_uid].parent_nodespace)
+            if parent_nodespace:
+                parent_nodespace.netentities["nodespaces"].remove(node_uid)
             del nodenet.nodespaces[node_uid]
             del nodenet.state['nodespaces'][node_uid]
         else:
@@ -659,6 +662,8 @@ class MicroPsiRuntime(object):
                 link_uids.extend(gate.outgoing.keys())
             for key, slot in nodenet.nodes[node_uid].slots.items():
                 link_uids.extend(slot.incoming.keys())
+            parent_nodespace = nodenet.nodespaces.get(nodenet.nodes[node_uid].parent_nodespace)
+            parent_nodespace.netentities["nodes"].remove(node_uid)
             del nodenet.nodes[node_uid]
             del nodenet.state['nodes'][node_uid]
             for uid in link_uids:

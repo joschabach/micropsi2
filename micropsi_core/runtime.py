@@ -618,8 +618,12 @@ class MicroPsiRuntime(object):
         """
         nodenet = self.nodenets[nodenet_uid]
         if type == "Nodespace":
-            nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
+            nodespace = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
+            uid = nodespace.uid
+            nodenet.nodespaces[uid] = nodespace
         else:
+            node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
+            uid = node.uid
             nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
             if state:

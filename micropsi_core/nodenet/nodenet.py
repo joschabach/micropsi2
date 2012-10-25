@@ -120,11 +120,11 @@ class Nodenet(object):
         self.filename = filename
         self.worldadapter = worldadapter
 
-        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
-
         self.nodes = {}
         self.links = {}
         self.nodetypes = {}
+        self.nodespaces = {}
+        self.monitors = {}
 
         self.load()
 
@@ -163,8 +163,11 @@ class Nodenet(object):
         Parses the nodenet state and set up the non-persistent data structures necessary for efficient
         computation of the node net
         """
+
+        if 'Root' not in self.state.get('nodespaces', {}):
+            self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
         for name, data in self.state.get('nodespaces', {}).items():
-            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'))
+            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
@@ -172,11 +175,13 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, data.get('parent_nodespace', "Root"), data['position'], name=data['name'], state=data.get('state'), type=data.get('type', 'Concept'), uid=uid, index=data.get('index'), parameters=data.get('parameters'))
+            self.nodes[uid] = Node(self, **data)
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
             self.links[uid] = Link(self.nodes[data['sourceNode']], data['sourceGate'], self.nodes[data['targetNode']], data['targetSlot'], weight=data['weight'], uid=uid)
+        for uid in self.state.get('monitors', {}):
+            self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 
         # TODO: check if data sources and data targets match
 
@@ -215,6 +220,8 @@ class Nodenet(object):
             self.calculate_node_functions(self.active_nodes)
             self.active_nodes = self.propagate_link_activation(self.active_nodes)
             self.state["step"] += 1
+        for uid in self.monitors:
+            self.monitors[uid].step(self.state["step"])
 
     def step_privileged(self):
         """ performs a simulation step within the privileged nodes"""
@@ -322,6 +329,8 @@ class NetEntity(object):
         self.position = position
         if parent_nodespace:
             self.parent_nodespace = parent_nodespace
+        else:
+            self.data['parent_nodespace'] = None
 
 
 class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
@@ -335,11 +344,15 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None, index=None):
+    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None, index=None, gatefunctions={}):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid, index)
+        self.gatefunctions = {}
+        for nodetype in gatefunctions:
+            for gatetype in gatefunctions[nodetype]:
+                self.set_gate_function(nodetype, gatetype, gatefunctions[nodetype][gatetype])
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
@@ -362,6 +375,32 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         Data sources are either handed down by the node net manager (to read from the environment), or
         by the node space itself, to obtain information about its contents."""
         pass
+
+    def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
+        """Sets the gatefunction for a given node- and gatetype within this nodespace"""
+        if gatefunction:
+            if nodetype not in self.data['gatefunctions']:
+                self.data['gatefunctions'][nodetype] = {}
+            self.data['gatefunctions'][nodetype][gatetype] = gatefunction
+            if nodetype not in self.gatefunctions:
+                self.gatefunctions[nodetype] = {}
+            try:
+                self.gatefunctions[nodetype] = micropsi_core.tools.create_function(gatefunction,
+                    parameters="gate, params")
+            except SyntaxError, err:
+                warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))
+                self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
+                    parameters="gate, params")
+        else:
+            if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+                del self.gatefunctions[nodetype][gatetype]
+            if nodetype in self.data['gatefunctions'] and gatetype in self.data['gatefunctions'][nodetype]:
+                del self.data['gatefunctions'][nodetype][gatetype]
+
+    def get_gatefunction(self, nodetype, gatetype):
+        """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
+        if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+            return self.gatefunctions[nodetype][gatetype]
 
 
 class Link(object):  # todo: adapt to new form, like net entitities
@@ -458,7 +497,7 @@ class Node(NetEntity):
         self.data['state'] = state
 
     def __init__(self, nodenet, parent_nodespace, position, state=None,
-                 name="", type="Concept", uid=None, index=None, parameters=None):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters={}, **_):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
@@ -470,7 +509,7 @@ class Node(NetEntity):
         self.nodetype = self.nodenet.nodetypes[type]
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
-            self.gates[gate] = Gate(gate, self)
+            self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate))
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:
@@ -523,6 +562,12 @@ class Node(NetEntity):
             links.extend(self.slots[key].incoming)
         return links
 
+    def set_gate_parameters(self, gate_type, parameters):
+        if 'gate_parameters' not in self.data:
+            self.data['gate_parameters'] = {}
+        self.data['gate_parameters'][gate_type] = parameters
+        self.gates[gate_type].parameters = parameters
+
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -549,7 +594,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.activation = 0
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
-        self.parameters = parameters or {
+        self.parameters = {
                 "minimum": -1,
                 "maximum": 1,
                 "certainty": 1,
@@ -557,6 +602,13 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 "threshold": 0,
                 "decay": 0
             }
+        if parameters is not None:
+            for key in parameters:
+                if key in self.parameters:
+                    self.parameters[key] = float(parameters[key])
+                else:
+                    self.parameters[key] = parameters[key]
+        self.monitor = None
 
     def gate_function(self, input_activation):
         """This function sets the activation of the gate.
@@ -574,9 +626,12 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             if gate_factor == 0.0:
                 self.activation = 0
                 return  # if the gate is closed, we don't need to execute the gate function
-
         # simple linear threshold function; you might want to use a sigmoid for neural learning
-        activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
+        gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type, self.type)
+        if gatefunction:
+            activation = gatefunction(self, self.parameters)
+        else:
+            activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
 
         if self.parameters["decay"]:  # let activation decay gradually
             if activation < 0:
@@ -759,3 +814,32 @@ class Nodetype(object):
             self.nodefunction_definition = nodefunction_definition
         else:
             self.nodefunction = None
+
+
+class Monitor(object):
+    """A gate or slot monitor watching the activation of the given slot or gate over time
+
+    Attributes:
+        nodenet: the parent Nodenet
+        node: the parent Node
+        type: either "slot" or "gate"
+        target: the name of the observerd Slot or Gate
+    """
+
+    def __init__(self, nodenet, node_uid, type, target, uid=None, **_):
+        if 'monitors' not in nodenet.state:
+            nodenet.state['monitors'] = {}
+        self.uid = uid or micropsi_core.tools.generate_uid()
+        self.data = {'uid': self.uid}
+        self.nodenet = nodenet
+        nodenet.state['monitors'][self.uid] = self.data
+        self.data['values'] = self.values = {}
+        self.data['node_uid'] = self.node_uid = node_uid
+        self.data['type'] = self.type = type
+        self.data['target'] = self.target = target
+
+    def step(self, step):
+        self.values[step] = getattr(self.nodenet.nodes[self.node_uid], self.type + 's')[self.target].activation
+
+    def clear(self):
+        self.data['values'] = {}

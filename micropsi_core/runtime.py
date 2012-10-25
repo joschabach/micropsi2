@@ -64,7 +64,7 @@ class MicroPsiRuntime(object):
         self.world_data = crawl_definition_files(path=os.path.join(resource_path, WORLD_DIRECTORY), type="world")
         if not self.world_data:
             # create a default world for convenience.
-            uid = tools.generate_uid()
+            uid = 'default'
             filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
             self.world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
             with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:

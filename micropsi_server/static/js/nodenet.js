@@ -1102,7 +1102,7 @@ function deselectNode(nodeUid) {
 function selectLink(linkUid) {
     selection[linkUid] = links[linkUid];
     var linkShape = linkLayer.children[linkUid].children["link"];
-    var oldHoverColor = viewProperties.selectionColor;
+    oldHoverColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
     linkShape.children["arrow"].fillColor = viewProperties.selectionColor;

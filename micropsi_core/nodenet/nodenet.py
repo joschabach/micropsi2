@@ -378,20 +378,24 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
 
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""
-        if nodetype not in self.data['gatefunctions']:
-            self.data['gatefunctions'][nodetype] = {}
-        self.data['gatefunctions'][nodetype][gatetype] = gatefunction
-        if nodetype not in self.gatefunctions:
-            self.gatefunctions[nodetype] = {}
-        self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(
-            """gate.activation = 'Syntax error'""",
-            parameters="params"
-        )
+        if(gatefunction):
+            if nodetype not in self.data['gatefunctions']:
+                self.data['gatefunctions'][nodetype] = {}
+            self.data['gatefunctions'][nodetype][gatetype] = gatefunction
+            if nodetype not in self.gatefunctions:
+                self.gatefunctions[nodetype] = {}
+            try:
+                self.nodefunction = micropsi_core.tools.create_function(gatefunction,
+                    parameters="gate, params")
+            except SyntaxError, err:
+                warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))
+                self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
+                    parameters="gate, params")
 
     def get_gatefunction(self, nodetype, gatetype):
         """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
-        if nodetype in self.data['gatefunctions'] and gatetype in self.data['gatefunctions'][nodetype]:
-            return self.data['gatefunctions'][nodetype][gatetype]
+        if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+            return self.gatefunctions[nodetype][gatetype]
 
 
 class Link(object):  # todo: adapt to new form, like net entitities
@@ -585,7 +589,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.activation = 0
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
-        self.parameters = parameters or {
+        self.parameters = {
                 "minimum": -1,
                 "maximum": 1,
                 "certainty": 1,
@@ -593,6 +597,12 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 "threshold": 0,
                 "decay": 0
             }
+        if parameters is not None:
+            for key in parameters:
+                if key in self.parameters:
+                    self.parameters[key] = float(parameters[key])
+                else:
+                    self.parameters[key] = parameters[key]
         self.monitor = None
 
     def gate_function(self, input_activation):
@@ -611,11 +621,10 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             if gate_factor == 0.0:
                 self.activation = 0
                 return  # if the gate is closed, we don't need to execute the gate function
-
         # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = self.node.parent_nodespace.get_gatefunction(self.node.type, self.type)
+        gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type, self.type)
         if gatefunction:
-            activation = gatefunction(self.parameters)
+            activation = gatefunction(self, self.parameters)
         else:
             activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
 
@@ -825,7 +834,7 @@ class Monitor(object):
         self.data['target'] = self.target = target
 
     def step(self, step):
-        self.values[step] = getattr(self.nodenet.nodes[self.node_uid], type + 's')[self.target].activation
+        self.values[step] = getattr(self.nodenet.nodes[self.node_uid], self.type + 's')[self.target].activation
 
     def clear(self):
         self.data['values'] = {}

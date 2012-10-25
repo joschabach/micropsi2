@@ -8,7 +8,7 @@
 }
 
 .monitor_field {
-    height: 200px;
+    height: 330px;
     overflow: scroll;
 }
 
@@ -184,3 +184,23 @@ input.inplace, select.inplace{
   display: none;  /** hide submit buttons in modal (modal footer bears the buttons) **/
 }
 
+
+/**
+graphs
+**/
+#graph {
+  width: 100%;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}

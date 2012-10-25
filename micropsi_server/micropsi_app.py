@@ -807,8 +807,8 @@ def clear_monitor(nodenet_uid, monitor_uid):
 
 
 @rpc("export_monitor_data")
-def export_monitor_data(nodenet_uid):
-    return micropsi.export_monitor_data(nodenet_uid)
+def export_monitor_data(nodenet_uid, monitor_uid=None):
+    return micropsi.export_monitor_data(nodenet_uid, monitor_uid)
 
 
 @rpc("get_monitor_data")

@@ -10,7 +10,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 import micropsi_core
-from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, Monitor, STANDARD_NODETYPES
 from micropsi_core.nodenet import node_alignment
 from micropsi_core.world import world
 from micropsi_core import config
@@ -362,6 +362,7 @@ class MicroPsiRuntime(object):
         self.save_nodenet(nodenet_uid)
         self.unload_nodenet(nodenet_uid)
         self.load_nodenet(nodenet_uid)
+        return True
 
     # World
     def get_available_worlds(self, owner=None):
@@ -527,27 +528,39 @@ class MicroPsiRuntime(object):
 
     # Monitor
 
-    def add_gate_monitor(self, nodenet_uid, node_uid, gate_index):
+    def add_gate_monitor(self, nodenet_uid, node_uid, gate):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
         value in every simulation step."""
-        pass
+        nodenet = self.nodenets[nodenet_uid]
+        monitor = Monitor(nodenet, node_uid, 'gate', gate)
+        nodenet.monitors[monitor.uid] = monitor
+        return monitor.data
 
-    def add_slot_monitor(self, nodenet_uid, node_uid, slot_index):
+    def add_slot_monitor(self, nodenet_uid, node_uid, slot):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
         value in every simulation step."""
-        pass
+        nodenet = self.nodenets[nodenet_uid]
+        monitor = Monitor(nodenet, node_uid, 'slot', slot)
+        nodenet.monitors[monitor.uid] = monitor
+        return monitor.data
 
-    def remove_monitor(self, monitor_uid):
+    def remove_monitor(self, nodenet_uid, monitor_uid):
         """Deletes an activation monitor."""
-        pass
+        del self.nodenets[nodenet_uid].data['monitors'][monitor_uid]
+        del self.nodenets[nodenet_uid].monitors[monitor_uid]
+        return True
 
-    def clear_monitor(self, monitor_uid):
+    def clear_monitor(self, nodenet_uid, monitor_uid):
         """Leaves the monitor intact, but deletes the current list of stored values."""
-        pass
+        self.nodenets[nodenet_uid].monitors(monitor_uid).clear()
+        return True
 
-    def export_monitor_data(self, nodenet_uid):
+    def export_monitor_data(self, nodenet_uid, monitor_uid=None):
         """Returns a string with all currently stored monitor data for the given nodenet."""
-        pass
+        if monitor_uid is not None:
+            return self.nodenets[nodenet_uid].state['monitors'][monitor_uid]
+        else:
+            return self.nodenets[nodenet_uid].state['monitors']
 
     def get_monitor_data(self, nodenet_uid, step):
         """Returns a dictionary of monitor_uid: [node_name/node_uid, slot_type/gate_type, activation_value] for
@@ -605,8 +618,12 @@ class MicroPsiRuntime(object):
         """
         nodenet = self.nodenets[nodenet_uid]
         if type == "Nodespace":
-            nodenet.nodespaces[uid] = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
+            nodespace = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
+            uid = nodespace.uid
+            nodenet.nodespaces[uid] = nodespace
         else:
+            node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
+            uid = node.uid
             nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
             if state:
@@ -742,7 +759,7 @@ class MicroPsiRuntime(object):
         """Returns a string with the gate function of the given node and gate within the current nodespace.
         Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
         """
-        pass
+        return self.nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(gate_type)
 
     def set_gate_function(self, nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
         """Sets the gate function of the given node and gate within the current nodespace.
@@ -751,11 +768,13 @@ class MicroPsiRuntime(object):
         None reverts the custom gate function of the given node and gate within the current nodespace to the default.
         Parameters is a list of keys for values of the gate function.
         """
-        pass
+        self.nodenets[nodenet_uid].nodespaces[nodespace].set_gate_function(node_type, gate_type, gate_function, parameters)
+        return True
 
     def set_gate_parameters(self, nodenet_uid, node_uid, gate_type, parameters=None):
         """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
-        pass
+        self.nodenets[nodenet_uid].nodes[node_uid].set_gate_parameters(gate_type, parameters)
+        return True
 
     def get_available_datasources(self, nodenet_uid):
         """Returns a list of available datasource types for the given nodenet."""
@@ -806,6 +825,7 @@ class MicroPsiRuntime(object):
             weight=weight,
             certainty=certainty,
             uid=uid)
+        # TODO: let the link itself do the next step.
         nodenet.state['links'][link.uid] = dict(
             sourceNode=source_node_uid,
             sourceGate=gate_type,
@@ -854,6 +874,7 @@ class MicroPsiRuntime(object):
     def align_nodes(self, nodenet_uid, nodespace):
         """Perform auto-alignment of nodes in the current nodespace"""
         return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+
 
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,

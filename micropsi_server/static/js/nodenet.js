@@ -31,6 +31,10 @@ var viewProperties = {
     lineHeight: 15,
     compactNodes: false,
     compactModules: false,
+    outsideDummyDistance: 70,
+    outsideDummySize: 15,
+    outsideDummyColor: new Color("#cccccc"),
+    groupOutsideLinksThreshold: 0,
     forceCompactBelowZoomFactor: 0.9,
     strokeWidth: 0.3,
     outlineColor: null,
@@ -53,6 +57,8 @@ var viewProperties = {
 nodes = {};
 links = {};
 selection = {};
+gatefunctions = {};
+monitors = {};
 
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
@@ -102,6 +108,7 @@ function refreshNodenetList(){
 }
 
 function get_available_worldadapters(nodenet_data){
+    worldadapters = {};
     if(nodenet_data.world){
         api.call("get_worldadapters", {world_uid: nodenet_data.world},
             success=function(data){
@@ -189,18 +196,31 @@ function initializeNodeNet(data){
         var uid;
         for(uid in data.nodes){
             console.log('adding node:' + uid);
-            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters));
+            addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters));
         }
-
         for(uid in data.nodespaces){
+            gatefunctions[uid] = data.nodespaces[uid]['gatefunctions'];
             addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
         }
         var link;
+        var outsideLinks = [];
         for(var index in data.links){
-            link = data.links[index];
-            // TODO: Decide whether to use gate/slot INDEX or gate/slot NAME
-            console.log('adding link: ' + link.sourceNode + ' -> ' + link.targetNode);
-            addLink(new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty));
+            console.log('adding link: ' + data.links[index].sourceNode + ' -> ' + data.links[index].targetNode);
+            link = new Link(data.links[index].uid, data.links[index].sourceNode, data.links[index].sourceGate, data.links[index].targetNode, data.links[index].targetSlot, data.links[index].weight, data.links[index].certainty);
+            if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
+                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                outsideLinks.push(link);
+            } else {
+                addLink(link);
+            }
+        }
+        if(data.monitors){
+            monitors = data.monitors;
+        }
+        updateMonitorList();
+        for(index in outsideLinks){
+            addLink(outsideLinks[index]);
         }
 
     } else {
@@ -219,15 +239,16 @@ function refreshNodespace(){
         nodespace: currentNodeSpace,
         step: currentSimulationStep
     }, success=function(data){
-        if(jQuery.isEmptyObject(data) && nodenetRunning){
-            setTimeout(refreshNodespace, 100);
+        if(jQuery.isEmptyObject(data)){
+            if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;
         }
         currentSimulationStep = data.current_step;
+        monitor.updateMonitorGraph();
         $('#nodenet_step').val(currentSimulationStep);
         var item;
         for(var uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
             redrawNode(item);
             nodes[uid] = item;
         }
@@ -236,11 +257,23 @@ function refreshNodespace(){
             redrawNode(item);
             nodes[uid] = item;
         }
+        var outsideLinks = [];
         for(uid in data.links){
-            link = data.links[uid];
-            item = new Link(link.uid, link.sourceNode, link.sourceGate, link.targetNode, link.targetSlot, link.weight, link.certainty);
-            redrawLink(item);
-            links[uid] = item;
+            link = new Link(uid, data.links[uid].sourceNode, data.links[uid].sourceGate, data.links[uid].targetNode, data.links[uid].targetSlot, data.links[uid].weight, data.links[uid].certainty);
+            if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
+                if(nodes[link.targetNodeUid].linksFromOutside.indexOf(link.uid) < 0)
+                    nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                if(nodes[link.sourceNodeUid].linksToOutside.indexOf(link.uid) < 0)
+                    nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                outsideLinks.push(link);
+            } else {
+                redrawLink(link);
+                links[uid] = link;
+            }
+        }
+        for(var index in outsideLinks){
+            redrawLink(outsideLinks[index]);
+            links[uid] = outsideLinks[index];
         }
         view.draw(true);
         if(nodenetRunning){
@@ -266,7 +299,7 @@ function setNodeTypes(){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -275,54 +308,36 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	this.name = name;
 	this.type = type;
 	this.symbol = "?";
-	this.slots={};
-	this.gates={};
+	this.slots = {};
+    this.gates = {};
+    this.linksFromOutside = [];
+    this.linksToOutside = [];
+    this.placeholder = {};
     this.parent = nodeSpaceUid; // parent nodespace, default is root
     this.fillColor = null;
     this.parameters = parameters || {};
     this.bounds = null; // current bounding box (after scaling)
-	switch (type) {
-        case "Nodespace":
-            this.symbol = "NS";
-            break;
-        case "Sensor":
-            this.symbol = "S";
-            this.gates.gen = new Gate("gen");
-            break;
-        case "Actor":
-            this.symbol = "A";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-            break;
-        case "Register":
-			this.symbol = "R";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-			break;
-		case "Concept":
-			this.symbol = "C";
-            this.slots.gen = new Slot("gen");
-            this.gates.gen = new Gate("gen");
-			this.gates.por = new Gate("por");
-			this.gates.ret = new Gate("ret");
-			this.gates.sub = new Gate("sub");
-			this.gates.sur = new Gate("sur");
-			this.gates.cat = new Gate("cat");
-			this.gates.exp = new Gate("exp");
-			break;
-        default: // native code node (completely custom)
+    this.slotIndexes = [];
+    this.gateIndexes = [];
+    this.gate_parameters = gate_parameters || {};
+	if(type == "Nodespace") {
+        this.symbol = "NS";
+    } else {
+        if (type in STANDARD_NODETYPES){
+            this.symbol = type.substr(0,1);
+        } else {
             this.symbol = "Na";
-            var i;
-            for (i in nodetypes[type].slottypes){
-                this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
-            }
-            for (i in nodetypes[type].gatetypes){
-                this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i]);
-            }
-            break;
-	}
-    this.slotIndexes = Object.keys(this.slots);
-    this.gateIndexes = Object.keys(this.gates);
+        }
+        var i;
+        for(i in nodetypes[type].slottypes){
+            this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
+        }
+        for(i in nodetypes[type].gatetypes){
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, this.gate_parameters[nodetypes[type].gatetypes[i]]);
+        }
+        this.slotIndexes = Object.keys(this.slots);
+        this.gateIndexes = Object.keys(this.gates);
+    }
 }
 
 // target for links, part of a net entity
@@ -333,10 +348,23 @@ function Slot(name) {
 }
 
 // source for links, part of a net entity
-function Gate(name) {
+function Gate(name, index, parameters) {
 	this.name = name;
+    this.index = index;
 	this.outgoing = {};
 	this.activation = 0;
+    if(parameters){
+        this.parameters = parameters;
+    } else {
+        this.parameters = {
+            "minimum": -1,
+            "maximum": 1,
+            "certainty": 1,
+            "amplification": 1,
+            "threshold": 0,
+            "decay": 0
+        };
+    }
 }
 
 // link, connects two nodes, from a gate to a slot
@@ -364,8 +392,8 @@ function addLink(link) {
             nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
             nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             // check if link is visible
-            if (nodes[link.sourceNodeUid].parent == currentNodeSpace ||
-                nodes[link.targetNodeUid].parent == currentNodeSpace) {
+            if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
+                isOutsideNodespace(nodes[link.targetNodeUid]))) {
                 renderLink(link);
             }
             links[link.uid] = link;
@@ -391,10 +419,18 @@ function redrawLink(link, forceRedraw){
 
 // delete a link from the array, and from the screen
 function removeLink(link) {
+    sourceNode = nodes[link.sourceNodeUid];
+    targetNode = nodes[link.targetNodeUid];
+    if(sourceNode.parent != targetNode.parent){
+        sourceNode.linksToOutside.splice(sourceNode.linksToOutside.indexOf(link.uid), 1);
+        targetNode.linksFromOutside.splice(targetNode.linksFromOutside.indexOf(link.uid), 1);
+        redrawNodePlaceholder(sourceNode, 'out');
+        redrawNodePlaceholder(targetNode, 'in');
+    }
     delete links[link.uid];
     if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
-    delete nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid];
-    delete nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid];
+    delete sourceNode.gates[link.gateName].outgoing[link.uid];
+    delete targetNode.slots[link.slotName].incoming[link.uid];
 }
 
 // add or update node, should usually be called from the JSON parser
@@ -470,7 +506,7 @@ function redrawNodeNet() {
     linkLayer.removeChildren();
     var i;
     for (i in nodes) {
-        if (nodes[i].parent == currentNodeSpace) renderNode(nodes[i]);
+        if (!isOutsideNodespace(nodes[i])) renderNode(nodes[i]);
     }
     for (i in links) {
         var sourceNode = nodes[links[i].sourceNodeUid];
@@ -497,7 +533,7 @@ function redrawNodeNet() {
             continue;
         }
         // check if the link is visible
-        if (sourceNode.parent == currentNodeSpace || targetNode.parent == currentNodeSpace) {
+        if (!(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode))) {
             renderLink(links[i]);
         }
     }
@@ -528,17 +564,23 @@ function redrawNodeLinks(node) {
     }
 }
 
+sourceBounds = {};
 // determine the point where link leaves the node
-function calculateLinkStart(sourceNode, gateName) {
+function calculateLinkStart(sourceNode, targetNode, gateName) {
     var startPointIsPreliminary = false;
-    var gate = sourceNode.gates[gateName];
     // Depending on whether the node is drawn in compact or full shape, links may originate at odd positions.
     // This depends on the node type and the link type.
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
+    sourceBounds = sourceNode.bounds;
+    if(isOutsideNodespace(sourceNode)){
+        if(targetNode && targetNode.linksFromOutside.length > viewProperties.groupOutsideLinksThreshold){
+            redrawNodePlaceholder(targetNode, 'in');
+            sourceBounds = targetNode.placeholder['in'].bounds;
+        }
+    }
     var sourcePoints, startPoint, startAngle;
     if (isCompact(sourceNode)) {
-        sourceBounds = sourceNode.bounds;
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
             if (sourceNode.type == "Sensor")
                 startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
@@ -548,7 +590,7 @@ function calculateLinkStart(sourceNode, gateName) {
                     sourceBounds.y);
             startAngle = 270;
         } else {
-            switch (gate.name){
+            switch (gateName){
                 case "por":
                     startPoint = new Point(sourceBounds.x + sourceBounds.width,
                         sourceBounds.y + sourceBounds.height*0.4);
@@ -576,10 +618,14 @@ function calculateLinkStart(sourceNode, gateName) {
             }
         }
     } else {
-        var index = sourceNode.gateIndexes.indexOf(gateName);
-        sourceBounds = sourceNode.bounds;
-        startPoint = new Point(sourceBounds.x+sourceBounds.width,
-            sourceBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
+        if(isOutsideNodespace(sourceNode)){
+            startPoint = new Point(sourceBounds.x + viewProperties.outsideDummySize,
+                sourceBounds.y+viewProperties.outsideDummySize/2);
+        } else {
+            var index = sourceNode.gateIndexes.indexOf(gateName);
+            startPoint = new Point(sourceBounds.x+sourceBounds.width,
+                sourceBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
+        }
         startAngle = 0;
     }
     return {
@@ -590,12 +636,18 @@ function calculateLinkStart(sourceNode, gateName) {
 }
 
 // determine the point where a link enters the node
-function calculateLinkEnd(targetNode, slotName, linkType) {
+function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
     var endPointIsPreliminary = false;
-    var slot = targetNode.slots[slotName];
-    var targetBounds, endPoint, endAngle;
+    var endPoint, endAngle;
+    var targetBounds = targetNode.bounds;
+    if(isOutsideNodespace(targetNode)){
+        if(sourceNode.linksToOutside.length > viewProperties.groupOutsideLinksThreshold){
+            redrawNodePlaceholder(sourceNode, 'out');
+            targetBounds = sourceNode.placeholder.out.bounds;
+        }
+    }
+
     if (isCompact(targetNode)) {
-        targetBounds = targetNode.bounds;
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
@@ -629,17 +681,70 @@ function calculateLinkEnd(targetNode, slotName, linkType) {
             }
         }
     } else {
-        var index = targetNode.slotIndexes.indexOf(slotName);
-        targetBounds = targetNode.bounds;
+        if(isOutsideNodespace(targetNode)){
+            endPoint = new Point(targetBounds.x,
+                targetBounds.y+viewProperties.outsideDummySize/2);
+        } else {
+            var index = targetNode.slotIndexes.indexOf(slotName);
+            endPoint = new Point(targetBounds.x,
+                targetBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
+        }
         endAngle = 180;
-        endPoint = new Point(targetBounds.x,
-            targetBounds.y+viewProperties.lineHeight*(index+2.5)*viewProperties.zoomFactor);
     }
     return {
         "point": endPoint,
         "angle": endAngle,
         "isPreliminary": endPointIsPreliminary
     };
+}
+
+function redrawNodePlaceholder(node, direction){
+    if(node.placeholder[direction]){
+        node.placeholder[direction].remove();
+    }
+    if(node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0)){
+        node.placeholder[direction] = createPlaceholder(node, direction, calculatePlaceHolderPosition(node, direction, 0));
+        linkLayer.addChild(node.placeholder[direction]);
+    }
+}
+
+function calculatePlaceHolderPosition(node, direction, index){
+    var point;
+    if(direction == 'in'){
+        point = new Point(node.bounds.x - viewProperties.outsideDummyDistance,
+            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
+    } else if(direction == 'out') {
+        point = new Point(node.bounds.x + node.bounds.width + viewProperties.outsideDummyDistance,
+            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
+    } else {
+        console.warn('unknown direction for placeholder: '+direction);
+    }
+    return point;
+}
+
+function createPlaceholder(node, direction, point){
+    var count;
+    if(direction == 'in'){
+        count = node.linksFromOutside.length;
+    } else if(direction == 'out') {
+        count = node.linksToOutside.length;
+    } else {
+        console.warn('unknown direction for placeholder: '+direction);
+    }
+    var shape = new Path.Circle(point, viewProperties.outsideDummySize/2 * viewProperties.zoomFactor);
+    shape.fillColor = viewProperties.outsideDummyColor;
+    if(count > viewProperties.groupOutsideLinksThreshold){
+        point.y += 3;
+        var labelText = new PointText(new Point(point));
+        labelText.content = count;
+        labelText.characterStyle = {
+            fontSize: viewProperties.fontSize,
+            fillColor: viewProperties.nodeFontColor
+        };
+        labelText.paragraphStyle.justification = 'center';
+        shape = new Group([shape, labelText]);
+    }
+    return shape;
 }
 
 // draw link
@@ -649,8 +754,8 @@ function renderLink(link) {
 
     var gate = sourceNode.gates[link.gateName];
 
-    var linkStart = calculateLinkStart(sourceNode, link.gateName);
-    var linkEnd = calculateLinkEnd(targetNode, link.slotName, link.gateName);
+    var linkStart = calculateLinkStart(sourceNode, targetNode, link.gateName);
+    var linkEnd = calculateLinkEnd(sourceNode, targetNode, link.slotName, link.gateName);
 
     var correctionVector;
     if (linkStart.isPreliminary) { // start from boundary of a compact node
@@ -714,7 +819,7 @@ function renderLinkDuringCreation(endPoint) {
     var sourceNode = linkCreationStart.sourceNode;
     var gateIndex = linkCreationStart.gateIndex;
 
-    var linkStart = calculateLinkStart(sourceNode, sourceNode.gateIndexes[gateIndex]);
+    var linkStart = calculateLinkStart(sourceNode, null, sourceNode.gateIndexes[gateIndex]);
 
     var correctionVector;
     if (linkStart.isPreliminary) { // start from boundary of a compact node
@@ -1123,11 +1228,29 @@ function deselectLink(linkUid) {
     }
 }
 
+// mark gate as selected
+function selectGate(node, gate){
+    var shape = nodeLayer.children[node.uid].children["activation"].children["gates"].children[gate.index];
+    selection['gate'] = shape;
+    shape.strokeColor = viewProperties.selectionColor;
+    shape.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
+}
+
+function deselectGate(){
+    if('gate' in selection){
+        var shape = selection['gate'];
+        shape.strokeColor = null;
+        shape.strokeWidth = 0;
+        delete selection['gate'];
+    }
+}
+
 // deselect all nodes and links
 function deselectAll() {
     for (var uid in selection){
         if (uid in nodes) deselectNode(uid);
         if (uid in links) deselectLink(uid);
+        if (uid == 'gate') deselectGate();
     }
 }
 
@@ -1137,6 +1260,10 @@ function isCompact(node) {
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
+}
+
+function isOutsideNodespace(node) {
+    return (node.parent != currentNodeSpace);
 }
 
 // calculate the bounding rectangle of the slot with the given index
@@ -1230,6 +1357,10 @@ function onMouseDown(event) {
                     console.log("clicked gate #" + i);
                     clickType = "gate";
                     clickIndex = i;
+                    var gate = node.gates[node.gateIndexes[i]];
+                    deselectGate();
+                    selectGate(node, gate);
+                    showGateForm(node, gate);
                     if (event.modifiers.control || event.event.button == 2) openContextMenu("#gate_menu", event.event);
                     return;
                 }
@@ -1565,6 +1696,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 
 // universal handler for all context menu events. You can get the origin path from the variable clickTarget.
 function handleContextMenu(event) {
+    event.preventDefault();
     var menuText = event.target.text;
     switch (clickType) {
         case null: // create nodes
@@ -1661,7 +1793,7 @@ function handleContextMenu(event) {
         case "slot":
             switch (menuText) {
                 case "Add monitor to slot":
-                    // todo: add monitor to slot
+                    addSlotMonitor(nodes[clickOriginUid], clickIndex);
                     break;
             }
             break;
@@ -1671,7 +1803,7 @@ function handleContextMenu(event) {
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":
-                    // todo: add monitor to gate
+                    addGateMonitor(nodes[clickOriginUid], clickIndex);
                     break;
             }
             break;
@@ -1949,6 +2081,10 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
         var uuid = makeUuid();
+        if(nodes[sourceUid].parent != currentNodeSpace){
+            nodes[targetUid].linksFromOutside.push(uuid);
+            nodes[sourceUid].linksToOutside.push(uuid);
+        }
         switch (linkCreationStart.creationType) {
             case "por/ret":
                 addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));
@@ -2035,6 +2171,45 @@ function handleEditNode(event){
     if(nodes[nodeUid].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
+}
+
+function handleEditGate(event){
+    event.preventDefault();
+    var node, gate;
+    if(clickType == 'gate'){
+        node = nodes[clickOriginUid];
+        gate = node.gates[node.gateIndexes[clickIndex]];
+    }
+    var data = $(event.target).serializeArray();
+    var params = {};
+    var gatefunction = null;
+    for(var i in data){
+        if(data[i].name == 'gatefunction'){
+            gatefunction = data[i].value;
+        } else {
+            params[data[i].name] = parseFloat(data[i].value);
+        }
+    }
+    if(!(node.type in gatefunctions[currentNodeSpace]) ||
+        gatefunctions[currentNodeSpace][node.type][gate.name] != gatefunction){
+        if(!(node.type in gatefunctions[currentNodeSpace])){
+            gatefunctions[currentNodeSpace][node.type] = {};
+        }
+        gatefunctions[currentNodeSpace][node.type][gate.name] = gatefunction;
+        api.call('set_gate_function', {
+            nodenet_uid: currentNodenet,
+            nodespace: currentNodeSpace,
+            node_type: node.type,
+            gate_type: gate.name,
+            gate_function: gatefunction
+        }, method="POST");
+    }
+    api.call('set_gate_parameters', {
+        nodenet_uid: currentNodenet,
+        node_uid: node.uid,
+        gate_type: gate.name,
+        parameters: params
+    });
 }
 
 function setNodeActivation(nodeUid, activation){
@@ -2146,6 +2321,28 @@ function handleEditNodenet(event){
         });
 }
 
+function addSlotMonitor(node, index){
+    api.call('add_slot_monitor', {
+        nodenet_uid: currentNodenet,
+        node_uid: node.uid,
+        slot: node.slotIndexes[index]
+    }, function(data){
+        monitors[data.uid] = data;
+        updateMonitorList();
+    });
+}
+
+function addGateMonitor(node, index){
+    api.call('add_gate_monitor', {
+        nodenet_uid: currentNodenet,
+        node_uid: node.uid,
+        gate: node.gateIndexes[index]
+    }, function(data){
+        monitors[data.uid] = data;
+        updateMonitorList();
+    });
+}
+
 function delete_nodetype(event){
     event.preventDefault();
     var name = $(event.target).attr('data');
@@ -2174,6 +2371,7 @@ function makeUuid() {
 function initializeSidebarForms(){
     $('#edit_link_form').submit(handleEditLink);
     $('#edit_node_form').submit(handleEditNode);
+    $('#edit_gate_form').submit(handleEditGate);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#native_module_form').submit(createNativeModuleHandler);
     $('#native_add_param').click(function(){
@@ -2287,6 +2485,34 @@ function showNativeModuleForm(nodeUid){
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
     $('#edit_nodenet_form').show();
+}
+
+function showGateForm(node, gate){
+    $('#nodenet_forms .form-horizontal').hide();
+    var form = $('#edit_gate_form');
+    $('.gate_gatetype', form).html('<strong>"'+ gate.name +'"</strong>');
+    $.each($('input, select, textarea', form), function(index, el){
+        el.value = '';
+        if(el.name in gate.parameters){
+            el.value = gate.parameters[el.name];
+        } else if(el.name == 'gatefunction'){
+            if(node.type in gatefunctions[currentNodeSpace]){
+                el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
+            }
+        }
+    });
+    form.show();
+}
+
+function updateMonitorList(){
+    var el = $('#monitor_list');
+    var html = '<table class="table-striped table-condensed">';
+    for(var uid in monitors){
+        html += '<tr><td><a href="#" class="gate_link" data="'+uid+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</a></td></tr>';
+    }
+    html += '</table>';
+    el.html(html);
+    $('.gate_link', el).on('click', monitor.showMonitorGraph);
 }
 
 

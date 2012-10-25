@@ -120,6 +120,59 @@
                 </div>
             </form>
 
+            <form class="form-horizontal hide" id="edit_gate_form">
+                <h4>Gate <span class="gate_gatetype"></span></h4>
+                <fieldset>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_minimum">Minimum</label>
+                        <div class="controls">
+                            <input type="text" class="" name="minimum" id="gate_minimum">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_maxmimum">Maximum</label>
+                        <div class="controls">
+                            <input type="text" class="" name="maximum" id="gate_maximum">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_certainty">Certainty</label>
+                        <div class="controls">
+                            <input type="text" class="" name="certainty" id="gate_certainty">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_amplification">Amplification</label>
+                        <div class="controls">
+                            <input type="text" class="" name="amplification" id="gate_amplification">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_threshold">Threshold</label>
+                        <div class="controls">
+                            <input type="text" class="" name="threshold" id="gate_threshold">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_decay">Decay</label>
+                        <div class="controls">
+                            <input type="text" class="" name="decay" id="gate_decay">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label" for="gate_gatefunction">Gatefunction (valid for all gates of type <span class="gate_gatetype"></span> in this nodespace)</label>
+                        <div class="controls dropdown">
+                            <code>def gatefunction(<span id="params"></span>):
+                            </code>
+                           <textarea name="gatefunction" id="gate_gatefunction"></textarea>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="controls">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+
             <form class="form-horizontal hide" id="edit_node_form">
                 <h4>Node</h4>
                 <fieldset>
@@ -264,21 +317,15 @@
     </form>
 </div>
 
-<div id="monitor" class="section-margin collapse">
+<div id="monitor" class="section-margin collapse in">
     <div class="section">
         <div class="monitor_field span9">
-            <canvas id="nodenet_monitor" width="700" height="500" style="background:#eeeeee"></canvas>
+            <div id="graph"></div>
         </div>
-        <div class="monitor_field " id="monitor_legend">
-            <form>
-                <div>
-                    <ul class="nav nav-list" id="monitor_list">
-                        <li class="nav-header">Current monitors</li>
-                        <li class="active"><a href="#">Monitor1</a></li>
-                        <li><a href="#">Monitor2</a></li>
-                        <li><a href="#">Monitor3</a></li>
-                        <li><a href="#">Monitor4</a></li>
-                    </ul>
+        <div class="editor_field monitor_field " id="monitor_legend">
+            <form class="form-horizontal">
+                <h4>Current Monitors</h4>
+                <div id="monitor_list">
                 </div>
             </form>
         </div>
@@ -420,4 +467,6 @@
     </div>
 </div>
 
+<script src="/static/js/d3.v2.min.js" type="text/javascript"></script>
+<script src="/static/js/monitor.js" type="text/javascript"></script>
 <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>

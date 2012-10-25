@@ -777,43 +777,23 @@ def import_world_rpc(world_uid, worlddata):
 
 # Monitor
 
-
 @rpc("add_gate_monitor")
-def add_gate_monitor(nodenet_uid, node_uid, gate):
-    return micropsi.add_gate_monitor(nodenet_uid, node_uid, gate)
-
+def add_gate_monitor(nodenet_uid, node_uid, gate_index): return micropsi.add_gate_monitor
 
 @rpc("add_slot_monitor")
-def add_slot_monitor(nodenet_uid, node_uid, slot):
-    return micropsi.add_slot_monitor(nodenet_uid, node_uid, slot)
-
+def add_slot_monitor(nodenet_uid, node_uid, slot_index): return micropsi.add_slot_monitor
 
 @rpc("remove_monitor")
-def remove_monitor(nodenet_uid, monitor_uid):
-    try:
-        micropsi.remove_monitor(nodenet_uid, monitor_uid)
-        return dict(status='success')
-    except KeyError:
-        return dict(status='error', msg='unknown nodenet or monitor')
-
+def remove_monitor(monitor_uid): return micropsi.remove_monitor
 
 @rpc("clear_monitor")
-def clear_monitor(nodenet_uid, monitor_uid):
-    try:
-        micropsi.clear_monitor(nodenet_uid, monitor_uid)
-        return dict(status='success')
-    except KeyError:
-        return dict(status='error', msg='unknown nodenet or monitor')
-
+def clear_monitor(monitor_uid): return micropsi.clear_monitor
 
 @rpc("export_monitor_data")
-def export_monitor_data(nodenet_uid, monitor_uid=None):
-    return micropsi.export_monitor_data(nodenet_uid, monitor_uid)
-
+def export_monitor_data(nodenet_uid): return micropsi.export_monitor_data
 
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step):
-    return micropsi.get_monitor_data(nodenet_uid, step)
+def get_monitor_data(nodenet_uid, step): return micropsi.get_monitor_data
 
 # Nodenet
 
@@ -832,9 +812,9 @@ def get_node(nodenet_uid, node_uid):
 def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
     result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
     if result:
-        return dict(status="success", uid=uid)
+        return dict(Status="OK", uid=uid)
     else:
-        return dict(status="error", msg=uid)
+        return dict(Error=uid)
 
 
 @rpc("set_node_position", permission_required="manage nodenets")
@@ -851,11 +831,9 @@ def set_node_name(nodenet_uid, node_uid, name):
 def delete_node(nodenet_uid, node_uid):
     return micropsi.delete_node(nodenet_uid, node_uid)
 
-
 @rpc("align_nodes", permission_required="manage nodenets")
 def align_nodes(nodenet_uid, nodespace):
     return micropsi.align_nodes(nodenet_uid, nodespace)
-
 
 @rpc("get_available_node_types")
 def get_available_node_types(nodenet_uid=None):
@@ -903,24 +881,13 @@ def get_gate_types(nodenet_uid, node_type):
 
 
 @rpc("get_gate_function")
-def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
-    try:
-        return micropsi.get_gate_function(nodenet_uid, nodespace, node_type, gate_type)
-    except KeyError:
-        return dict(status='error', msg='Unknown nodenet or nodespace')
-
+def get_gate_function(nodenet_uid, nodespace, node_type, gate_type): return micropsi.get_gate_function
 
 @rpc("set_gate_function", permission_required="manage nodenets")
-def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
-    try:
-        micropsi.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
-    except KeyError:
-        return dict(status='error', msg='Unknown nodenet or nodespace')
-
+def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None): return micropsi.set_gate_function
 
 @rpc("set_gate_parameters", permission_required="manage nodenets")
-def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
-    return micropsi.set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters)
+def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters=None): return micropsi.set_gate_parameters
 
 
 @rpc("get_available_datasources")

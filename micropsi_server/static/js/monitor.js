@@ -5,44 +5,47 @@ var viewProperties = {
 };
 
 var container = $('#graph');
-var currentMonitor = null;
 var svg = null;
+var currentMonitors = [];
 
-var monitor = {
-  showMonitorGraph: function (event){
-    event.preventDefault();
-    var link = $(event.target);
-    currentMonitor = monitors[link.attr('data')];
-    monitor.drawGraph(currentMonitor);
-  },
-
-  updateMonitorGraph: function (){
-    if(currentMonitor){
+function updateMonitorGraphs(){
+    if(currentMonitors.length){
       api.call('export_monitor_data', {
-        nodenet_uid: currentNodenet,
-        monitor_uid: currentMonitor.uid
+        nodenet_uid: currentNodenet
       }, function(data){
-          monitors[monitor.uid] = data;
-          currentMonitor = monitors[monitor.uid];
-          monitor.drawGraph(currentMonitor);
+          var m = {};
+          for(var uid in data){
+            if(currentMonitors.indexOf(uid) >= 0){
+              m[uid] = data[uid];
+            }
+          }
+          drawGraph(m);
       });
+    } else {
+      container.html('');
     }
-  },
+}
 
-  drawGraph: function(selectedMonitor){
+function updateMonitorSelection(){
+    currentMonitors = [];
+    $.each($('.monitor_checkbox'), function(idx, el){
+      if(el.checked){
+        currentMonitors.push(el.value);
+      }
+    });
+    updateMonitorGraphs();
+}
+
+function drawGraph(currentMonitors){
 
     container.html(''); // TODO: come up with a way to redraw
-
     var margin = {top: 20, right: 20, bottom: 30, left: 50},
         width = container.width() - margin.left - margin.right - viewProperties.padding,
         height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
-    data = [];
-    for(var xvalue in selectedMonitor.values){
-        data.push([parseInt(xvalue, 10), parseFloat(selectedMonitor.values[xvalue])]);
-    }
+    var xmax = Math.max(50, currentSimulationStep);
     var x = d3.scale.linear()
-        .domain([0, d3.max(data, function(d) { return d[0]; })])
+        .domain([xmax-50, xmax])
         .range([0, width]);
 
     var y = d3.scale.linear().range([height, 0]);
@@ -54,10 +57,6 @@ var monitor = {
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left");
-
-    var line = d3.svg.line()
-        .x(function(d) { return x(d[0]); })
-        .y(function(d) { return y(d[1]); });
 
     svg = d3.select("#graph").append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -84,10 +83,19 @@ var monitor = {
       .style("text-anchor", "end")
       .text("Activation");
 
-    svg.append("path")
-      .datum(data)
-      .attr("class", "line")
-      .attr("d", line);
-
+    for(var uid in currentMonitors){
+      var line = d3.svg.line()
+          .x(function(d) { return x(d[0]); })
+          .y(function(d) { return y(d[1]); });
+      var data = [];
+      for(var step in currentMonitors[uid].values){
+        data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
+      }
+      var color = '#' + uid.substr(2,6);
+      svg.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .attr("stroke", color)
+        .attr("d", line);
+    }
   }
-};

@@ -244,7 +244,7 @@ function refreshNodespace(){
             return null;
         }
         currentSimulationStep = data.current_step;
-        monitor.updateMonitorGraph();
+        updateMonitorGraphs();
         $('#nodenet_step').val(currentSimulationStep);
         var item;
         for(var uid in data.nodes){
@@ -1207,7 +1207,7 @@ function deselectNode(nodeUid) {
 function selectLink(linkUid) {
     selection[linkUid] = links[linkUid];
     var linkShape = linkLayer.children[linkUid].children["link"];
-    var oldHoverColor = viewProperties.selectionColor;
+    oldHoverColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
     linkShape.children["arrow"].fillColor = viewProperties.selectionColor;
@@ -2508,11 +2508,11 @@ function updateMonitorList(){
     var el = $('#monitor_list');
     var html = '<table class="table-striped table-condensed">';
     for(var uid in monitors){
-        html += '<tr><td><a href="#" class="gate_link" data="'+uid+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</a></td></tr>';
+        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'" /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
     }
     html += '</table>';
     el.html(html);
-    $('.gate_link', el).on('click', monitor.showMonitorGraph);
+    $('.monitor_checkbox', el).on('change', updateMonitorSelection);
 }
 
 

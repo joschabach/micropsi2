@@ -2497,7 +2497,7 @@ function showGateForm(node, gate){
         if(el.name in gate.parameters){
             el.value = gate.parameters[el.name];
         } else if(el.name == 'gatefunction'){
-            if(node.type in gatefunctions[currentNodeSpace]){
+            if(gatefunctions[currentNodeSpace] && node.type in gatefunctions[currentNodeSpace]){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
         }

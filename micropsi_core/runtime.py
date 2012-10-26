@@ -560,7 +560,7 @@ class MicroPsiRuntime(object):
         if monitor_uid is not None:
             return self.nodenets[nodenet_uid].state['monitors'][monitor_uid]
         else:
-            return self.nodenets[nodenet_uid].state['monitors']
+            return self.nodenets[nodenet_uid].state.get('monitors', {})
 
     def get_monitor_data(self, nodenet_uid, step):
         """Returns a dictionary of monitor_uid: [node_name/node_uid, slot_type/gate_type, activation_value] for
@@ -652,7 +652,7 @@ class MicroPsiRuntime(object):
         """ Sets the state of the given node to the given state,
             provided, the nodetype allows the given state """
         node = self.nodenets[nodenet_uid].nodes[node_uid]
-        if state in node.nodetype.states:
+        if state and state in node.nodetype.states:
             node.state = state
             return True
         return False

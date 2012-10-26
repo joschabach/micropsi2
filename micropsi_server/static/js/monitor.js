@@ -1,7 +1,8 @@
 
 var viewProperties = {
     height: 300,
-    padding: 20
+    padding: 20,
+    xvalues: 100
 };
 
 var container = $('#graph');
@@ -43,9 +44,9 @@ function drawGraph(currentMonitors){
         width = container.width() - margin.left - margin.right - viewProperties.padding,
         height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
-    var xmax = Math.max(50, currentSimulationStep);
+    var xmax = Math.max(viewProperties.xvalues, currentSimulationStep);
     var x = d3.scale.linear()
-        .domain([xmax-50, xmax])
+        .domain([xmax-viewProperties.xvalues, xmax])
         .range([0, width]);
 
     var y = d3.scale.linear().range([height, 0]);
@@ -91,6 +92,8 @@ function drawGraph(currentMonitors){
       for(var step in currentMonitors[uid].values){
         data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
       }
+      var len = data.length;
+      data.splice(0, len-viewProperties.xvalues-1);
       var color = '#' + uid.substr(2,6);
       svg.append("path")
         .datum(data)

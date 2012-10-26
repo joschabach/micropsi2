@@ -911,6 +911,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
 
 
 @rpc("set_gate_function", permission_required="manage nodenets")
+@rpc("set_gate_function", permission_required="manage nodenets", method="POST")
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
     try:
         micropsi.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)

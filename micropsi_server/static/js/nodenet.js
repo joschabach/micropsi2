@@ -219,6 +219,7 @@ function initializeNodeNet(data){
             monitors = data.monitors;
         }
         updateMonitorList();
+        updateMonitorGraphs();
         for(index in outsideLinks){
             addLink(outsideLinks[index]);
         }

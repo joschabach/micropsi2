@@ -827,10 +827,10 @@ class MicroPsiRuntime(object):
             uid=uid)
         # TODO: let the link itself do the next step.
         nodenet.state['links'][link.uid] = dict(
-            sourceNode=source_node_uid,
-            sourceGate=gate_type,
-            targetNode=target_node_uid,
-            targetSlot=slot_type,
+            source_node=source_node_uid,
+            source_gate_name=gate_type,
+            target_node=target_node_uid,
+            target_slot_name=slot_type,
             weight=weight,
             certainty=certainty,
             uid=link.uid

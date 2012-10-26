@@ -199,7 +199,7 @@ function initializeNodeNet(data){
             addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters));
         }
         for(uid in data.nodespaces){
-            gatefunctions[uid] = data.nodespaces[uid]['gatefunctions'];
+            gatefunctions[uid] = data.nodespaces[uid]['gatefunctions'] || {};
             addNode(new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state));
         }
         var link;
@@ -2203,7 +2203,7 @@ function handleEditGate(event){
             node_type: node.type,
             gate_type: gate.name,
             gate_function: gatefunction
-        }, method="POST");
+        }, api.defaultSuccessCallback, api.defaultErrorCallback, method="POST");
     }
     api.call('set_gate_parameters', {
         nodenet_uid: currentNodenet,

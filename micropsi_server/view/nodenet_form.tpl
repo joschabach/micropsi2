@@ -39,7 +39,7 @@
                     <label class="control-label" for="nn_template">Template</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_template" name="nn_template">
-                            <option value="None">None</option>
+                            <option value="">None</option>
                             % if defined("nodenets"):
                                 % for uid in nodenets:
                                     %if nodenets[uid].owner == user_id:
@@ -68,7 +68,7 @@
                     <label class="control-label" for="nn_world">World</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_world" name="nn_world" onchange="updateWorldAdapterSelector();">
-                            <option value="None">None</option>
+                            <option value="">None</option>
                             % for uid in worlds:
                                 % if worlds[uid].owner == user_id:
                                     % if defined("nodenet") and uid == nodenet.world.uid:
@@ -96,7 +96,7 @@
                     <div class="controls">
                         <select class="input-xlarge" id="nn_worldadapter" name="nn_worldadapter">
                             % if not defined("nodenet") or not defined ("nodenet.world.uid") or not nodenet.world.uid in worlds:
-                            <option value="None">None</option>
+                            <option value="">None</option>
                             % else:
                                 %for worldadapter in worlds[nodenet.world.uid].worldadapters:
                                     <!-- TODO -->

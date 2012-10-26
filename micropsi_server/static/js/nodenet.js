@@ -205,8 +205,8 @@ function initializeNodeNet(data){
         var link;
         var outsideLinks = [];
         for(var index in data.links){
-            console.log('adding link: ' + data.links[index].sourceNode + ' -> ' + data.links[index].targetNode);
-            link = new Link(data.links[index].uid, data.links[index].sourceNode, data.links[index].sourceGate, data.links[index].targetNode, data.links[index].targetSlot, data.links[index].weight, data.links[index].certainty);
+            console.log('adding link: ' + data.links[index].source_node + ' -> ' + data.links[index].target_node);
+            link = new Link(data.links[index].uid, data.links[index].source_node, data.links[index].source_gate_name, data.links[index].target_node, data.links[index].target_slot_name, data.links[index].weight, data.links[index].certainty);
             if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
                 nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
                 nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
@@ -260,7 +260,7 @@ function refreshNodespace(){
         }
         var outsideLinks = [];
         for(uid in data.links){
-            link = new Link(uid, data.links[uid].sourceNode, data.links[uid].sourceGate, data.links[uid].targetNode, data.links[uid].targetSlot, data.links[uid].weight, data.links[uid].certainty);
+            link = new Link(uid, data.links[uid].source_node, data.links[uid].source_gate_name, data.links[uid].target_node, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
             if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
                 if(nodes[link.targetNodeUid].linksFromOutside.indexOf(link.uid) < 0)
                     nodes[link.targetNodeUid].linksFromOutside.push(link.uid);

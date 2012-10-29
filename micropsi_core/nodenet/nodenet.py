@@ -690,7 +690,13 @@ STANDARD_NODETYPES = {
         "name": "Concept",
         "slottypes": ["gen"],
         "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"]
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
+    },
+    "Label": {
+        "name": "Label",
+        "slottypes": ["gen"],
+        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "gatetypes": ["sym", "ref"]
     },
     "Event": {
         "name": "Event",

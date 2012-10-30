@@ -706,7 +706,7 @@ class MicroPsiRuntime(object):
         return self.nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition
 
     def set_nodefunction(self, nodenet_uid, node_type, nodefunction=None):
-        """Sets a new node fuction for this node type. This amounts to a program that is executed every time the
+        """Sets a new node function for this node type. This amounts to a program that is executed every time the
         node becomes active. Parameters of the function are the node itself (and thus, its slots, gates and
         parent nodespace), the nodenet, and the parameter dict of this node).
         Setting the node_function to None will return it to its default state (passing the slot activations to

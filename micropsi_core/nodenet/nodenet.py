@@ -164,10 +164,10 @@ class Nodenet(object):
         computation of the node net
         """
 
-        if 'Root' not in self.state.get('nodespaces', {}):
-            self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
+        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
         for name, data in self.state.get('nodespaces', {}).items():
-            self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
+            if name != "Root":
+                self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():

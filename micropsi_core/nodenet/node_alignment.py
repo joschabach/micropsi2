@@ -28,7 +28,7 @@ def align(nodenet, nodespace):
     """
     if not nodespace in nodenet.nodespaces: return False
 
-    unaligned_nodespaces = sorted(nodenet.nodespaces[nodespace].netentities["nodespaces"],
+    unaligned_nodespaces = sorted(nodenet.nodespaces[nodespace].netentities.get("nodespaces", {}),
         key=lambda i:nodenet.nodespaces[i].index)
     unaligned_nodes = sorted(nodenet.nodespaces[nodespace].netentities["nodes"],
         key = lambda i: nodenet.nodes[i].index)

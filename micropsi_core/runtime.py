@@ -166,6 +166,10 @@ class MicroPsiRuntime(object):
             world = worldadapter = None
             if nodenet_uid not in self.nodenets:
                 data = self.nodenet_data[nodenet_uid]
+                for uid in self.nodenets:
+                    if self.nodenets[uid].owner == data.owner:
+                        self.unload_nodenet(uid)
+                        break
                 if data.get('world'):
                     world = self.worlds[data.world] or None
                     worldadapter = data.get('worldadapter')

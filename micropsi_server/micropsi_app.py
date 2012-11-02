@@ -562,8 +562,8 @@ def select_nodenet(nodenet_uid):
         return dict(Error=msg)
 
 
-@rpc("load_nodenet_into_ui")
-def load_nodenet_into_ui(nodenet_uid, **coordinates):
+@rpc("load_nodenet")
+def load_nodenet(nodenet_uid, **coordinates):
     result, uid = micropsi.load_nodenet(nodenet_uid)
     if not result:
         return dict(Error=uid)
@@ -820,8 +820,8 @@ def get_monitor_data(nodenet_uid, step):
 
 
 @rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step):
-    return micropsi.get_nodespace(nodenet_uid, nodespace, step)
+def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
+    return micropsi.get_nodespace(nodenet_uid, nodespace, step, **coordinates)
 
 
 @rpc("get_node")

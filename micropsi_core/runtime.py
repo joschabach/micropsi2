@@ -166,6 +166,10 @@ class MicroPsiRuntime(object):
             world = worldadapter = None
             if nodenet_uid not in self.nodenets:
                 data = self.nodenet_data[nodenet_uid]
+                for uid in self.nodenets:
+                    if self.nodenets[uid].owner == data.owner:
+                        self.unload_nodenet(uid)
+                        break
                 if data.get('world'):
                     world = self.worlds[data.world] or None
                     worldadapter = data.get('worldadapter')
@@ -624,7 +628,7 @@ class MicroPsiRuntime(object):
         else:
             node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             uid = node.uid
-            nodenet.nodes[uid] = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
+            nodenet.nodes[uid] = node
             nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
             if state:
                 nodenet.nodes[uid].state = state

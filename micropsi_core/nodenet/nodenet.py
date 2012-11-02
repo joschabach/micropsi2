@@ -106,6 +106,7 @@ class Nodenet(object):
             "uid": uid,
             "nodes": {},
             "links": {},
+            "monitors": {},
             "nodespaces": {'Root': {}},
             "nodetypes": STANDARD_NODETYPES,
             "activatortypes": STANDARD_NODETYPES.keys(),
@@ -125,6 +126,8 @@ class Nodenet(object):
         self.nodetypes = {}
         self.nodespaces = {}
         self.monitors = {}
+        self.nodes_by_coords = {}
+        self.max_coords = {'x': 0, 'y': 0}
 
         self.load()
 
@@ -176,6 +179,18 @@ class Nodenet(object):
         for uid in self.state['nodes']:
             data = self.state['nodes'][uid]
             self.nodes[uid] = Node(self, **data)
+            pos = self.nodes[uid].position
+            xpos = int(pos[0] - pos[0] % 100)
+            ypos = int(pos[1] - pos[1] % 100)
+            if xpos not in self.nodes_by_coords:
+                self.nodes_by_coords[xpos] = {}
+                if xpos > self.max_coords['x']:
+                    self.max_coords['x'] = xpos
+            if ypos not in self.nodes_by_coords[xpos]:
+                self.nodes_by_coords[xpos][ypos] = []
+                if ypos > self.max_coords['y']:
+                    self.max_coords['y'] = ypos
+            self.nodes_by_coords[xpos][ypos].append(uid)
         # set up links
         for uid in self.state['links']:
             data = self.state['links'][uid]
@@ -184,6 +199,45 @@ class Nodenet(object):
             self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 
         # TODO: check if data sources and data targets match
+
+    def get_nodespace_area(self, nodespace, x1, x2, y1, y2):
+        x_range = (x1 - x1 % 100, 100 + x2 - x2 % 100, 100)
+        y_range = (y1 - y1 % 100, 100 + y2 - y2 % 100, 100)
+        data = {
+            'links': {},
+            'nodes': {}
+        }
+        links = []
+        followupnodes = []
+        for x in range(*x_range):
+            if x in self.nodes_by_coords:
+                for y in range(*y_range):
+                    if y in self.nodes_by_coords[x]:
+                        for uid in self.nodes_by_coords[x][y]:
+                            if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort hash directly by nodespace??
+                                data['nodes'][uid] = self.state['nodes'][uid]
+                                links.extend(self.nodes[uid].get_associated_link_ids())
+                                followupnodes.extend(self.nodes[uid].get_associated_node_ids())
+        for uid in links:
+            data['links'] = self.state['links'][uid]
+        for uid in followupnodes:
+            if uid not in data['nodes']:
+                data['nodes'][uid] = self.state['nodes'][uid]
+        data['max_coords'] = self.max_coords
+        return data
+
+    def update_node_positions(self):
+        """ recalculates the position hash """
+        self.nodes_by_coords = {}
+        for uid in self.nodes:
+            pos = self.nodes[uid].position
+            xpos = int(pos[0] - pos[0] % 100)
+            ypos = int(pos[1] - pos[1] % 100)
+            if xpos not in self.nodes_by_coords:
+                self.nodes_by_coords[xpos] = {}
+            if ypos not in self.nodes_by_coords[xpos]:
+                self.nodes_by_coords[xpos][ypos] = []
+            self.nodes_by_coords[xpos][ypos].append(uid)
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
@@ -561,6 +615,15 @@ class Node(NetEntity):
         for key in self.slots:
             links.extend(self.slots[key].incoming)
         return links
+
+    def get_associated_node_ids(self):
+        nodes = []
+        for link in self.get_associated_link_ids():
+            if self.nodenet.links[link].source_node.uid != self.uid:
+                nodes.append(self.nodenet.links[link].source_node.uid)
+            if self.nodenet.links[link].source_node.uid != self.uid:
+                nodes.append(self.nodenet.links[link].source_node.uid)
+        return nodes
 
     def set_gate_parameters(self, gate_type, parameters):
         if 'gate_parameters' not in self.data:

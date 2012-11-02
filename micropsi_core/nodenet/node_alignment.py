@@ -235,8 +235,9 @@ def group_with_same_parent(all_groups):
     for c in candidates:
         h_group = HorizontalGroup()
         for g in candidates[c]:
-            for e in g:
-                h_group.append(e)
+            if hasattr(g, "uid"): h_group.append(g)
+            else:
+                for e in g: h_group.append(e)
             all_groups.remove(g)
         parent_group = c.parent
         v_group = VerticalGroup([c, h_group])

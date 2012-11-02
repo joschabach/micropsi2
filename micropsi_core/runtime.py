@@ -269,11 +269,11 @@ class MicroPsiRuntime(object):
     def set_nodenet_properties(self, nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
         """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
         nodenet = self.nodenets[nodenet_uid]
-        if world_uid is not None or worldadapter is not None:
-            if world_uid is None:
-                world_uid = nodenet.world
-            if worldadapter is None:
-                worldadapter = nodenet.worldadapter
+        if world_uid is None:
+            world_uid = nodenet.world
+        if worldadapter is None:
+            worldadapter = nodenet.worldadapter
+        if world_uid is not None and worldadapter is not None:
             assert worldadapter in self.worlds[world_uid].supported_worldadapters
             nodenet.world = self.worlds[world_uid]
             nodenet.worldadapter = worldadapter

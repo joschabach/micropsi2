@@ -52,7 +52,7 @@ def align(nodenet, nodespace):
     # connect all nodes that have por- and ret-links
     por_groups = group_horizontal_links(group)
     # connect native modules
-    group_other_links(por_groups)
+    # group_other_links(por_groups)
     # group nodes that share a sur-linked parent below that parent
     group_with_same_parent(por_groups)
     # put sensors and actors below

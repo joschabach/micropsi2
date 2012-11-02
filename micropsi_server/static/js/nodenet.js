@@ -553,8 +553,9 @@ function updateViewSize() {
             }
         }
     }
-    var newSize = new Size(Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
-        el.width()),
+    var newSize = new Size(
+        Math.min(viewProperties.xMax, Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
+        el.width())),
         Math.min(viewProperties.yMax, Math.max(el.height(), maxY)));
     if(newSize.height && newSize.width){
         view.viewSize = newSize;

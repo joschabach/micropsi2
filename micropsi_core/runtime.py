@@ -194,12 +194,27 @@ class MicroPsiRuntime(object):
         del self.nodenets[nodenet_uid]
         return True
 
-    def get_nodenet_area(self, nodenet_uid, x1=0, x2=-1, y1=0, y2=-1):
+    def get_nodenet_area(self, nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         """ return all nodes and links within the given area of the nodenet
             for representation in the UI
             TODO
         """
-        return self.nodenets[nodenet_uid].state
+        if x2 < 0 or y2 < 0:
+            data = {}
+            for key in self.nodenets[nodenet_uid].state:
+                if key in ['uid', 'links', 'nodespaces', 'monitors']:
+                    data[key] = self.nodenets[nodenet_uid].state[key]
+                elif key == "nodes":
+                    i = 0
+                    data[key] = {}
+                    for id in self.nodenets[nodenet_uid].state[key]:
+                        i += 1
+                        data[key][id] = self.nodenets[nodenet_uid].state[key][id]
+                        if i > 500:
+                            break
+            return data
+        else:
+            return self.nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
 
     def new_nodenet(self, nodenet_name, worldadapter, template=None,  owner="", world_uid=None):
         """Creates a new node net manager and registers it.
@@ -254,11 +269,11 @@ class MicroPsiRuntime(object):
     def set_nodenet_properties(self, nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
         """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
         nodenet = self.nodenets[nodenet_uid]
-        if world_uid is not None or worldadapter is not None:
-            if world_uid is None:
-                world_uid = nodenet.world
-            if worldadapter is None:
-                worldadapter = nodenet.worldadapter
+        if world_uid is None:
+            world_uid = nodenet.world
+        if worldadapter is None:
+            worldadapter = nodenet.worldadapter
+        if world_uid is not None and worldadapter is not None:
             assert worldadapter in self.worlds[world_uid].supported_worldadapters
             nodenet.world = self.worlds[world_uid]
             nodenet.worldadapter = worldadapter
@@ -573,11 +588,11 @@ class MicroPsiRuntime(object):
 
     # Node operations
 
-    def get_nodespace(self, nodenet_uid, nodespace, step):
+    def get_nodespace(self, nodenet_uid, nodespace, step, **coordinates):
         """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
         data = {}
         if step < self.nodenets[nodenet_uid].current_step:
-            data = self.nodenets[nodenet_uid].get_nodespace_data(nodespace)
+            data = self.get_nodenet_area(nodenet_uid, nodespace, **coordinates)
             data.update({'current_step': self.nodenets[nodenet_uid].current_step})
         return data
 

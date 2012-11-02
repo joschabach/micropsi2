@@ -2398,16 +2398,23 @@ function handleNodespaceUp() {
 function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
-    api.call("set_nodenet_properties", {
+    var params = {
         nodenet_uid: currentNodenet,
-        nodenet_name: $('#nodenet_name', form).val(),
-        worldadapter: $('#nodenet_worldadapter', form).val(),
-        world_uid: nodenet_data.world,
-        owner: ""},
+        nodenet_name: $('#nodenet_name', form).val()
+    };
+    if(nodenet_data.world){
+        params.world_uid = nodenet_data.world;
+    }
+    var worldadapter = $('#nodenet_worldadapter', form).val();
+    if(worldadapter){
+        params.worldadapter = worldadapter;
+    }
+    api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
             setCurrentNodenet(currentNodenet);
-        });
+        }
+    );
 }
 
 function addSlotMonitor(node, index){

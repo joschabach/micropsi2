@@ -639,14 +639,9 @@ class MicroPsiRuntime(object):
         if type == "Nodespace":
             nodespace = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
             uid = nodespace.uid
-            nodenet.nodespaces[uid] = nodespace
         else:
             node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             uid = node.uid
-            nodenet.nodes[uid] = node
-            nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
-            if state:
-                nodenet.nodes[uid].state = state
         return True, uid
 
     def set_node_position(self, nodenet_uid, node_uid, pos):

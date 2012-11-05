@@ -219,7 +219,7 @@ class Nodenet(object):
                                 links.extend(self.nodes[uid].get_associated_link_ids())
                                 followupnodes.extend(self.nodes[uid].get_associated_node_ids())
         for uid in links:
-            data['links'] = self.state['links'][uid]
+            data['links'][uid] = self.state['links'][uid]
         for uid in followupnodes:
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.state['nodes'][uid]
@@ -403,6 +403,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         self.activators = {}
         self.netentities = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid, index)
+        nodenet.nodespaces[uid] = self
         self.gatefunctions = {}
         for nodetype in gatefunctions:
             for gatetype in gatefunctions[nodetype]:
@@ -551,7 +552,8 @@ class Node(NetEntity):
         self.data['state'] = state
 
     def __init__(self, nodenet, parent_nodespace, position, state=None,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters={}, **_):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, **_):
+        if not gate_parameters: gate_parameters = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
@@ -568,6 +570,9 @@ class Node(NetEntity):
             self.slots[slot] = Slot(slot, self)
         if state:
             self.state = state
+            # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
+        nodenet.nodes[uid] = self
+        nodenet.nodes[uid].activation = 0  # TODO: should this be persisted?
 
     def node_function(self):
         """Called whenever the node is activated or active.

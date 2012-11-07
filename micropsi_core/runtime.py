@@ -9,11 +9,11 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-import micropsi_core
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, Monitor, STANDARD_NODETYPES
 from micropsi_core.nodenet import node_alignment
 from micropsi_core.world import world
 from micropsi_core import config
+from micropsi_core.tools import Bunch
 import os
 import tools
 import json
@@ -30,13 +30,6 @@ WORLD_DIRECTORY = "worlds"
 AVAILABLE_WORLD_TYPES = ['World', 'berlin', 'island']  # TODO
 
 configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
-
-
-class Bunch(dict):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        for i in kwargs:
-            self[i] = kwargs[i]
 
 
 class MicroPsiRuntime(object):
@@ -82,6 +75,7 @@ class MicroPsiRuntime(object):
         self.init_runners()
 
     def init_runners(self):
+        """Initialize the threads for the continuous simulation of nodenets and worlds"""
         if 'worldrunner_timestep' not in configs:
             configs['worldrunner_timestep'] = 5000
             configs['nodenetrunner_timestep'] = 1000
@@ -94,6 +88,7 @@ class MicroPsiRuntime(object):
         self.runner['nodenet']['runner'].start()
 
     def nodenetrunner(self):
+        """Looping thread to simulate node nets continously"""
         while True:
             step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
             start = datetime.now()
@@ -105,6 +100,7 @@ class MicroPsiRuntime(object):
             time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
 
     def worldrunner(self):
+        """Looping thread to simulate worlds continously"""
         while True:
             if configs['worldrunner_timestep'] > 1000:
                 step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
@@ -189,10 +185,12 @@ class MicroPsiRuntime(object):
             Arguments:
                 nodenet_uid
         """
-        if self.nodenets[nodenet_uid].world is not None:
+        if not nodenet_uid in self.nodenets: return False
+        if self.nodenets[nodenet_uid].world:
             self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
         del self.nodenets[nodenet_uid]
         return True
+
 
     def get_nodenet_area(self, nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         """ return all nodes and links within the given area of the nodenet

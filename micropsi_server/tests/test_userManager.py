@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-
+Overly verbose and clumsy attempt at testing with py.test
 """
-import datetime
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -12,6 +11,7 @@ __date__ = '29.10.12'
 import os
 import tempfile
 import pytest
+import datetime
 from micropsi_server import usermanagement
 
 @pytest.fixture(scope="session")
@@ -22,8 +22,6 @@ def path():
 def user_mgr():
     return usermanagement.UserManager(path())
 
-# user_mgr = usermanagement.UserManager()
-
 def test_create_user(user_mgr):
     user_mgr.delete_user("eliza")
     assert "eliza" not in user_mgr.users
@@ -31,7 +29,9 @@ def test_create_user(user_mgr):
     assert "eliza" in user_mgr.users
 
 def test_save_users(user_mgr):
-    os.remove(path())
+    try:
+        os.remove(path())
+    except: pass
     assert not os.path.exists(path())
     user_mgr.save_users()
     assert os.path.exists(path())

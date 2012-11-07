@@ -4,7 +4,6 @@
 """
 
 """
-from unittest import TestCase
 import micropsi_core.tools
 
 __author__ = 'joscha'
@@ -17,3 +16,4 @@ def test_generate_uid():
     assert len(u1)
     assert len(u2)
     assert u1 != u2
+

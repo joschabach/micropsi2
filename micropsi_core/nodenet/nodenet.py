@@ -170,13 +170,15 @@ class Nodenet(object):
         self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
         for name, data in self.state.get('nodespaces', {}).items():
             if name != "Root":
-                self.nodespaces[name] = Nodespace(self, data['parent_nodespace'], data['position'], name=data['name'], entitytype='nodespaces', uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
+                self.nodespaces[name] = Nodespace(self, data['parent_nodespace'],
+                    data['position'], name=data['name'], entitytype='nodespaces',
+                    uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
         # set up nodes
-        for uid in self.state['nodes']:
+        for uid in self.state.get('nodes', {}):
             data = self.state['nodes'][uid]
             self.nodes[uid] = Node(self, **data)
             pos = self.nodes[uid].position
@@ -192,9 +194,13 @@ class Nodenet(object):
                     self.max_coords['y'] = ypos
             self.nodes_by_coords[xpos][ypos].append(uid)
         # set up links
-        for uid in self.state['links']:
+        for uid in self.state.get('links', {}):
             data = self.state['links'][uid]
-            self.links[uid] = Link(self.nodes[data['source_node']], data['source_gate_name'], self.nodes[data['target_node']], data['target_slot_name'], weight=data['weight'], certainty=data['certainty'], uid=uid)
+            self.links[uid] = Link(
+                self.nodes[data['source_node']], data['source_gate_name'],
+                self.nodes[data['target_node']], data['target_slot_name'],
+                weight=data['weight'], certainty=data['certainty'],
+                uid=uid)
         for uid in self.state.get('monitors', {}):
             self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 
@@ -281,13 +287,15 @@ class Nodenet(object):
         """ performs a simulation step within the privileged nodes"""
         if self.priviliged_active_nodes:
             self.calculate_node_functions(self.priviliged_active_nodes)
-            self.priviliged_active_nodes = self.propagate_link_activation(self.priviliged_active_nodes, limit_gatetypes=["cat"])
+            self.priviliged_active_nodes = self.propagate_link_activation(self.priviliged_active_nodes,
+                limit_gatetypes=["cat"])
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ propagate activation from gates to slots via their links. returns the nodes that received activation.
             Arguments:
                 nodes: the dict of nodes to consider
-                limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating from the given slottypes.
+                limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating
+                    from the given slottypes.
             Returns:
                 new_active_nodes: the dict of nodes, that received activation through the propagation
         """
@@ -367,7 +375,8 @@ class NetEntity(object):
                 old_parent.netentities[self.entitytype].remove(self.uid)
         self.data['parent_nodespace'] = uid
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities", uid=None, index=None):
+    def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities",
+                 uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
@@ -398,7 +407,8 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None, index=None, gatefunctions={}):
+    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None,
+                 index=None, gatefunctions={}):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
@@ -458,7 +468,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
             return self.gatefunctions[nodetype][gatetype]
 
 
-class Link(object):  # todo: adapt to new form, like net entitities
+class Link(object):
     """A link between two nodes, starting from a gate and ending in a slot.
 
     Links propagate activation between nodes and thereby facilitate the function of the agent.
@@ -468,34 +478,92 @@ class Link(object):  # todo: adapt to new form, like net entitities
     You may retrieve links either from the global dictionary (by uid), or from the gates of nodes themselves.
     """
 
+    @property
+    def uid(self):
+        return self.data.get("uid")
+
+    @property
+    def weight(self):
+        return self.data.get("weight")
+
+    @weight.setter
+    def weight(self, value):
+        self.data["weight"] = value
+
+    @property
+    def certainty(self):
+        return self.data.get("certainty")
+
+    @certainty.setter
+    def certainty(self, value):
+        self.data["certainty"] = value
+
+    @property
+    def source_node(self):
+        return self.nodenet.nodes.get(self.data.get("source_node"))
+
+    @source_node.setter
+    def source_node(self, node):
+        self.data["source_node"] = node.uid
+
+    @property
+    def source_gate(self):
+        return self.source_node.gates.get(self.data.get("source_gate_name"))
+
+    @source_gate.setter
+    def source_gate(self, gate):
+        self.data["source_gate_name"] = gate.type
+
+    @property
+    def target_node(self):
+        return self.nodenet.nodes.get(self.data.get("target_node"))
+
+    @target_node.setter
+    def target_node(self, node):
+        self.data["target_node"] = node.uid
+
+    @property
+    def target_slot(self):
+        return self.target_node.slots.get(self.data.get("target_slot_name"))
+
+    @target_slot.setter
+    def target_slot(self, slot):
+        self.data["target_slot_name"] = slot.type
+
     def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1, uid=None):
-        """create a link between the source_node and the target_node, from the source_gate to the target_slot
+        """create a link between the source_node and the target_node, from the source_gate to the target_slot.
+        Note: you should make sure that no link between source and gate exists.
 
         Attributes:
             weight (optional): the weight of the link (default is 1)
         """
-        self.uid = uid or  micropsi_core.tools.generate_uid()
-        self.source_node = None
-        self.target_node = None
-        self.link(source_node, source_gate_name, target_node, target_slot_name)
-        self.weight = weight
-        self.certainty = 1
 
-    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1):
+        uid = uid or micropsi_core.tools.generate_uid()
+        self.nodenet = source_node.nodenet
+        if not uid in self.nodenet.state["links"]:
+            self.nodenet.state["links"][uid] = {}
+        self.data = source_node.nodenet.state["links"][uid]
+        self.data["uid"] = uid
+        self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
+
+    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty = 1):
         """link between source and target nodes, from a gate to a slot.
 
             You may call this function to change the connections of an existing link. If the link is already
             linked, it will be unlinked first.
         """
         if self.source_node:
-            self.source_gate.outgoing.remove(self.uid)
+            if self.source_node != source_node and self.source_gate.type != source_gate_name:
+                del self.source_gate.outgoing[self.uid]
         if self.target_node:
-            self.target_slot.incoming.remove(self.uid)
+            if self.target_node != target_node and self.target_slot.type != target_slot_name:
+                del self.target_slot.incoming[self.uid]
         self.source_node = source_node
         self.target_node = target_node
         self.source_gate = source_node.get_gate(source_gate_name)
         self.target_slot = target_node.get_slot(target_slot_name)
         self.weight = weight
+        self.certainty = certainty
         self.source_gate.outgoing[self.uid] = self
         self.target_slot.incoming[self.uid] = self
 
@@ -506,6 +574,23 @@ class Link(object):  # todo: adapt to new form, like net entitities
         del self.source_gate.outgoing[self.uid]
         del self.target_slot.incoming[self.uid]
 
+
+def get_link_uid(source_node, source_gate_name, target_node, target_slot_name):
+    """links are uniquely identified by their origin and targets; this function checks if a link already exists.
+
+    Arguments:
+        source_node: actual node from which the link originates
+        source_gate_name: type of the gate of origin
+        target_node: node that the link ends at
+        target_slot_name: type of the terminating slot
+
+    Returns the link uid, or None if it does not exist"""
+    outgoing_candidates = set(source_node.get_gate(source_gate_name).outgoing.keys())
+    incoming_candidates = set(target_node.get_slot(target_slot_name).incoming.keys())
+    try:
+        return (outgoing_candidates & incoming_candidates).pop()
+    except KeyError:
+        return None
 
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
@@ -695,7 +780,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 self.activation = 0
                 return  # if the gate is closed, we don't need to execute the gate function
         # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type, self.type)
+        gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
+            self.type)
         if gatefunction:
             activation = gatefunction(self, self.parameters)
         else:

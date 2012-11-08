@@ -656,8 +656,8 @@ class Node(NetEntity):
         if state:
             self.state = state
             # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
-        nodenet.nodes[uid] = self
-        nodenet.nodes[uid].activation = 0  # TODO: should this be persisted?
+        nodenet.nodes[self.uid] = self
+        nodenet.nodes[self.uid].activation = 0  # TODO: should this be persisted?
 
     def node_function(self):
         """Called whenever the node is activated or active.

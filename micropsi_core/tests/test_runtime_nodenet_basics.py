@@ -44,9 +44,6 @@ def test_nodenetrunner(micropsi, test_nodenet):
 def test__get_world_uid_for_nodenet_uid(micropsi, test_nodenet):
     assert 0
 
-def test_load_nodenet(micropsi, test_nodenet):
-    assert 0
-
 def test_unload_nodenet(micropsi, test_nodenet):
     assert 0
 
@@ -72,9 +69,6 @@ def test_step_nodenet(micropsi, test_nodenet):
     assert 0
 
 def test_revert_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_save_nodenet(micropsi, test_nodenet):
     assert 0
 
 def test_export_nodenet(micropsi, test_nodenet):

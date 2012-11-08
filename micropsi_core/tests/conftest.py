@@ -44,4 +44,4 @@ def test_nodenet(micropsi):
             micropsi.delete_nodenet(nn_uid)
     return nn_uid
 
-test_nodenet(micropsi())
+#test_nodenet(micropsi())

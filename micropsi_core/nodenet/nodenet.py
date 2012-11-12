@@ -132,7 +132,7 @@ class Nodenet(object):
         self.load()
 
         self.active_nodes = {}
-        self.priviliged_active_nodes = {}
+        self.privileged_active_nodes = {}
 
     def load(self, string=None):
         """Load the node net from a file"""
@@ -167,11 +167,11 @@ class Nodenet(object):
         computation of the node net
         """
 
-        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", entitytype="nodespaces", uid="Root")}
+        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", uid="Root")}
         for name, data in self.state.get('nodespaces', {}).items():
             if name != "Root":
                 self.nodespaces[name] = Nodespace(self, data['parent_nodespace'],
-                    data['position'], name=data['name'], entitytype='nodespaces',
+                    data['position'], name=data['name'],
                     uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
@@ -211,7 +211,9 @@ class Nodenet(object):
         y_range = (y1 - y1 % 100, 100 + y2 - y2 % 100, 100)
         data = {
             'links': {},
-            'nodes': {}
+            'nodes': {},
+            'nodespaces': { i:self.state['nodespaces'][i] for i in self.state['nodespaces']
+                            if self.state['nodespaces'][i]["parent_nodespace"]==nodespace}
         }
         links = []
         followupnodes = []
@@ -220,7 +222,7 @@ class Nodenet(object):
                 for y in range(*y_range):
                     if y in self.nodes_by_coords[x]:
                         for uid in self.nodes_by_coords[x][y]:
-                            if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort hash directly by nodespace??
+                            if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                                 data['nodes'][uid] = self.state['nodes'][uid]
                                 links.extend(self.nodes[uid].get_associated_link_ids())
                                 followupnodes.extend(self.nodes[uid].get_associated_node_ids())
@@ -272,6 +274,28 @@ class Nodenet(object):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
         pass
 
+    def copy_nodes(self, nodes, target_nodespace = None, copy_associated_links=True):
+        """takes a dictionary of nodes and merges them into the current nodenet.
+        Links between these nodes will be copied, too.
+        If the source nodes are within the current nodenet, it is also possible to retain the associated links.
+        If the source nodes originate within a different nodespace (either because they come from a different
+        nodenet, or because they are copied into a different nodespace), the associated links (i.e. those that
+        link the copied nodes to elements that are themselves not being copied), can be retained, too.
+        Nodes and links may need to receive new UIDs to avoid conflicts.
+
+        Arguments:
+            nodes: a dictionary of node_uids with nodes
+            target_nodespace: if none is given, we copy into the same nodespace of the originating nodes
+            copy_associated_links: if True, also copy connections to not copied nodes
+        """
+        pass
+
+    def move_nodes(self, nodes, target_nodespace = "Root"):
+        """moves the nodes into a new nodespace or nodenet, and deletes them at their original position.
+        Links will be retained within the same nodenet.
+        When moving into a different nodenet, nodes and links may receive new UIDs to avoid conflicts."""
+        pass
+
     def step(self):
         """perform a simulation step"""
         if self.state['step'] == 0 and not self.active_nodes:
@@ -285,9 +309,9 @@ class Nodenet(object):
 
     def step_privileged(self):
         """ performs a simulation step within the privileged nodes"""
-        if self.priviliged_active_nodes:
-            self.calculate_node_functions(self.priviliged_active_nodes)
-            self.priviliged_active_nodes = self.propagate_link_activation(self.priviliged_active_nodes,
+        if self.privileged_active_nodes:
+            self.calculate_node_functions(self.privileged_active_nodes)
+            self.privileged_active_nodes = self.propagate_link_activation(self.privileged_active_nodes,
                 limit_gatetypes=["cat"])
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
@@ -407,14 +431,15 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    def __init__(self, nodenet, parent_nodespace, position, name="Comment", entitytype="comments", uid=None,
-                 index=None, gatefunctions={}):
+    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None,
+                 index=None, gatefunctions=None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
-        NetEntity.__init__(self, nodenet, parent_nodespace, position, name, entitytype, uid, index)
+        NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet.nodespaces[uid] = self
-        self.gatefunctions = {}
+        if not gatefunctions: gatefunctions = dict()
+        self.gatefunctions = gatefunctions
         for nodetype in gatefunctions:
             for gatetype in gatefunctions[nodetype]:
                 self.set_gate_function(nodetype, gatetype, gatefunctions[nodetype][gatetype])
@@ -785,7 +810,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         if gatefunction:
             activation = gatefunction(self, self.parameters)
         else:
-            activation = max(input_activation, self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
+            activation = max(input_activation,
+                self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
 
         if self.parameters["decay"]:  # let activation decay gradually
             if activation < 0:
@@ -932,7 +958,8 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node, " + args)
 
-    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None, nodefunction_definition=None):
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
+                 nodefunction_definition=None):
         """Initializes or creates a nodetype.
 
         Arguments:

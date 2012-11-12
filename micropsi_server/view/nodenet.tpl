@@ -63,6 +63,12 @@
                 <h4>Nodenet</h4>
                 <fieldset>
                     <div class="control-group">
+                        <label class="control-label" for="nodenet_uid">UID</label>
+                        <div class="controls">
+                            <input type="text" name="nodenet_uid" disabled="disabled" id="nodenet_uid">
+                        </div>
+                    </div>
+                    <div class="control-group">
                         <label class="control-label" for="nodenet_name">Name</label>
                         <div class="controls">
                             <input type="text" name="nodenet_name" id="nodenet_name">
@@ -93,7 +99,7 @@
                         </div>
                     </div>
                     <div class="controls">
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn btn-primary">Apply</button>
                     </div>
                 </fieldset>
 
@@ -116,7 +122,7 @@
                     </div>
                 </fieldset>
                 <div class="controls">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
             </form>
 
@@ -130,7 +136,7 @@
                         </div>
                     </div>
                     <div class="control-group">
-                        <label class="control-label" for="gate_maxmimum">Maximum</label>
+                        <label class="control-label" for="gate_maximum">Maximum</label>
                         <div class="controls">
                             <input type="text" class="" name="maximum" id="gate_maximum">
                         </div>
@@ -169,7 +175,7 @@
                     </div>
                 </fieldset>
                 <div class="controls">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
             </form>
 
@@ -215,7 +221,7 @@
                     </div>
                 </fieldset>
                 <div class="controls">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
             </form>
 
@@ -292,7 +298,7 @@
                     </div>
                 </fieldset>
                 <div class="controls buttons">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
             </form>
 
@@ -397,7 +403,7 @@
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Save changes</a>
+        <a href="#" class="btn btn-primary">Apply changes</a>
     </div>
 </div>
 
@@ -422,7 +428,7 @@
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Save</a>
+        <a href="#" class="btn btn-primary">Apply</a>
     </div>
 </div>
 <div class="modal hide" id="select_datatarget_modal">
@@ -445,7 +451,7 @@
     </div>
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Save</a>
+        <a href="#" class="btn btn-primary">Apply</a>
     </div>
 </div>
 
@@ -463,7 +469,7 @@
     </div>
     <div class="modal-footer footer-save native-details hide">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary native-save">Save</a>
+        <a href="#" class="btn btn-primary native-save">Apply</a>
     </div>
 </div>
 

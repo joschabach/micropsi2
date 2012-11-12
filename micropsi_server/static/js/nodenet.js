@@ -141,6 +141,9 @@ function get_available_worldadapters(nodenet_data){
 }
 
 function setNodenetValues(data){
+    console.log("here")
+    console.log(data)
+    $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     setNodeTypes();
     if (!jQuery.isEmptyObject(worldadapters)) {
@@ -2400,7 +2403,6 @@ function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
     var params = {
-        nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val()
     };
     if(nodenet_data.world){
@@ -2615,7 +2617,6 @@ function updateMonitorList(){
 
 /* todo:
 
- - links into invisible nodespaces
  - get diffs
  - handle connection problems
  - multiple viewports

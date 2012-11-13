@@ -385,6 +385,35 @@ class MicroPsiRuntime(object):
         self.load_nodenet(nodenet_uid)
         return True
 
+    def copy_nodes(self, node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespace_uid = "Root",
+                   copy_associated_links = True):
+        """Copies a set of netentities, either between nodenets or within a nodenet. If a target nodespace
+        is supplied, all nodes will be inserted below that target nodespace, otherwise below "Root".
+        If parent nodespaces are included in the set of node_uids, the contained nodes will remain in
+        these parent nodespaces.
+        Only explicitly listed nodes and nodespaces will be copied.
+        UIDs will be kept if possible, but renamed in case of conflicts.
+
+        Arguments:
+            node_uids: a list of uids of nodes and nodespaces
+            source_nodenet_uid
+            target_nodenet_uid
+            target_nodespace_uid: the uid of the nodespace into which the nodes will be copied
+            copy_associated_links: if True, links to not-copied nodes will be copied, too (of course, this works
+                only within the same nodenet)
+        """
+        source_nodenet = self.nodenets[source_nodenet_uid]
+        target_nodenet = self.nodenets[target_nodenet_uid]
+        nodes = {}
+        nodespaces = {}
+        for node_uid in node_uids:
+            if node_uid in source_nodenet.nodes:
+                nodes[node_uid] = source_nodenet.nodes[node_uid]
+            elif node_uid in source_nodenet.nodespaces:
+                nodespaces[node_uid] = source_nodenet.nodespaces[node_uid]
+        target_nodenet.copy_nodes(nodes, nodespaces, target_nodespace_uid, copy_associated_links)
+        return True
+
     # World
     def get_available_worlds(self, owner=None):
         """Returns a dict of uids: World of (running and stored) worlds.

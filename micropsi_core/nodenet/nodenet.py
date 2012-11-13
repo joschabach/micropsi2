@@ -1,6 +1,7 @@
 """
 Nodenet definition
 """
+from copy import deepcopy
 
 import micropsi_core.tools
 import json
@@ -274,7 +275,7 @@ class Nodenet(object):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
         pass
 
-    def copy_nodes(self, nodes, target_nodespace = None, copy_associated_links=True):
+    def copy_nodes(self, nodes, nodespaces, target_nodespace = None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.
         Links between these nodes will be copied, too.
         If the source nodes are within the current nodenet, it is also possible to retain the associated links.
@@ -288,9 +289,83 @@ class Nodenet(object):
             target_nodespace: if none is given, we copy into the same nodespace of the originating nodes
             copy_associated_links: if True, also copy connections to not copied nodes
         """
-        pass
+        rename_nodes = {}
+        rename_nodespaces = {}
+        if not target_nodespace:
+            target_nodespace = "Root"
+        # first, check for nodespace naming conflicts
+        for nodespace_uid in nodespaces:
+            if nodespace_uid in self.nodespaces:
+                rename_nodespaces[nodespace_uid] = micropsi_core.tools.generate_uid()
+        # create the nodespaces
+        for nodespace_uid in nodespaces:
+            original = nodespaces[nodespace_uid]
+            uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
 
-    def move_nodes(self, nodes, target_nodespace = "Root"):
+            Nodespace(self, target_nodespace,
+                position = original.position,
+                name = original.name,
+                gatefunctions = deepcopy(original.gatefunctions),
+                uid = uid)
+
+        # set the parents (needs to happen in seperate loop to ensure nodespaces are already created
+        for nodespace_uid in nodespaces:
+            if nodespaces[nodespace_uid].parent_nodespace in nodespaces:
+                uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
+                target_nodespace = rename_nodespaces.get(nodespaces[nodespace_uid].parent_nodespace)
+                self.nodespaces[uid].parent_nodespace = target_nodespace
+
+        # copy the nodes
+        for node_uid in nodes:
+            if node_uid in self.nodes:
+                rename_nodes[node_uid] = micropsi_core.tools.generate_uid()
+                uid = rename_nodes[node_uid]
+            else:
+                uid = node_uid
+
+            original = nodes[node_uid]
+            target = original.parent_nodespace if original.parent_nodespace in nodespaces else target_nodespace
+            target = rename_nodespaces.get(target, target)
+
+            Node(self, target,
+                position = original.position,
+                name = original.name,
+                type = original.type,
+                uid = uid,
+                parameters = deepcopy(original.parameters),
+                gate_parameters = original.get_gate_parameters()
+                )
+
+        # copy the links
+        if len(nodes):
+            links = {}
+            origin_links = nodes[nodes.keys()[0]].nodenet.links
+            for node_uid in nodes:
+                node = nodes[node_uid]
+                for slot in node.slots:
+                    for l in node.slots[slot].incoming:
+                        link = origin_links[l]
+                        if link.source_node.uid in nodes or (copy_associated_links
+                                                             and link.source_node.uid in self.nodes):
+                            if not l in links:
+                                links[l] = link
+                for gate in node.gates:
+                    for l in node.gates[gate].outgoing:
+                        link = origin_links[l]
+                        if link.target_node.uid in nodes or (copy_associated_links
+                                                             and link.target_node.uid in self.nodes):
+                            if not l in links:
+                                links[l] = link
+            for l in links:
+                uid = l if not l in self.links else micropsi_core.tools.generate_uid()
+                link = links[l]
+                source_node = self.nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
+                target_node = self.nodes[rename_nodes.get(link.target_node.uid, link.target_node.uid)]
+
+                Link(source_node, link.source_gate.type, target_node, link.target_slot.type,
+                    link.weight, link.certainty, uid)
+
+    def move_nodes(self, nodes, nodespaces, target_nodespace = None):
         """moves the nodes into a new nodespace or nodenet, and deletes them at their original position.
         Links will be retained within the same nodenet.
         When moving into a different nodenet, nodes and links may receive new UIDs to avoid conflicts."""
@@ -683,6 +758,15 @@ class Node(NetEntity):
             # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
         nodenet.nodes[self.uid] = self
         nodenet.nodes[self.uid].activation = 0  # TODO: should this be persisted?
+
+    def get_gate_parameters(self):
+        """Looks into the gates and returns gate parameters if these are defined"""
+        gate_parameters = {}
+        for gate in self.gates:
+            if self.gates[gate].parameters:
+                gate_parameters[gate] = self.gates[gate].parameters
+        if len(gate_parameters): return gate_parameters
+        else: return None
 
     def node_function(self):
         """Called whenever the node is activated or active.

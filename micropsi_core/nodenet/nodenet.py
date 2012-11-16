@@ -103,7 +103,7 @@ class Nodenet(object):
         uid = uid or micropsi_core.tools.generate_uid()
 
         self.state = {
-            "version": NODENET_VERSION,  # used to check compatibility of the node net data
+            "version": NODENET_VERSION, # used to check compatibility of the node net data
             "uid": uid,
             "nodes": {},
             "links": {},
@@ -168,16 +168,34 @@ class Nodenet(object):
         computation of the node net
         """
 
-        self.nodespaces = {"Root": Nodespace(self, None, (0, 0), name="Root", uid="Root")}
-        for name, data in self.state.get('nodespaces', {}).items():
-            if name != "Root":
-                self.nodespaces[name] = Nodespace(self, data['parent_nodespace'],
-                    data['position'], name=data['name'],
-                    uid=name, index=data.get('index'), gatefunctions=data.get('gatefunctions', {}))
         nodetypes = self.state.get('nodetypes', {}).copy()
         nodetypes.update(STANDARD_NODETYPES)
         for type, data in nodetypes.items():
             self.nodetypes[type] = Nodetype(nodenet=self, **data)
+
+        # set up nodespaces; make sure that parent nodespaces exist before children are initialized
+        self.nodespaces = {}
+
+        nodespaces_to_initialize = set(self.state.get('nodespaces', {}).keys())
+        while len(nodespaces_to_initialize):
+            next_nodespace = iter(nodespaces_to_initialize).next()
+            # move up the nodespace tree until we find an existing parent or hit root
+            while self.state["nodespaces"][next_nodespace].get(
+                'parent_nodespace') not in self.nodespaces and next_nodespace != "Root":
+                next_nodespace = self.state["nodespaces"][next_nodespace]['parent_nodespace']
+            data = self.state["nodespaces"][next_nodespace]
+            self.nodespaces[next_nodespace] = Nodespace(self,
+                data['parent_nodespace'],
+                data['position'],
+                name=data['name'],
+                uid=next_nodespace,
+                index=data.get('index'),
+                gatefunctions=data.get('gatefunctions', {}))
+            nodespaces_to_initialize.remove(next_nodespace)
+
+        if not self.nodespaces:
+            self.nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
+
         # set up nodes
         for uid in self.state.get('nodes', {}):
             data = self.state['nodes'][uid]
@@ -194,7 +212,7 @@ class Nodenet(object):
                 if ypos > self.max_coords['y']:
                     self.max_coords['y'] = ypos
             self.nodes_by_coords[xpos][ypos].append(uid)
-        # set up links
+            # set up links
         for uid in self.state.get('links', {}):
             data = self.state['links'][uid]
             self.links[uid] = Link(
@@ -205,7 +223,7 @@ class Nodenet(object):
         for uid in self.state.get('monitors', {}):
             self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 
-        # TODO: check if data sources and data targets match
+            # TODO: check if data sources and data targets match
 
     def get_nodespace_area(self, nodespace, x1, x2, y1, y2):
         x_range = (x1 - x1 % 100, 100 + x2 - x2 % 100, 100)
@@ -213,8 +231,8 @@ class Nodenet(object):
         data = {
             'links': {},
             'nodes': {},
-            'nodespaces': { i:self.state['nodespaces'][i] for i in self.state['nodespaces']
-                            if self.state['nodespaces'][i]["parent_nodespace"]==nodespace}
+            'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
+                           if self.state['nodespaces'][i]["parent_nodespace"] == nodespace}
         }
         links = []
         followupnodes = []
@@ -275,7 +293,7 @@ class Nodenet(object):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
         pass
 
-    def copy_nodes(self, nodes, nodespaces, target_nodespace = None, copy_associated_links=True):
+    def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.
         Links between these nodes will be copied, too.
         If the source nodes are within the current nodenet, it is also possible to retain the associated links.
@@ -293,20 +311,20 @@ class Nodenet(object):
         rename_nodespaces = {}
         if not target_nodespace:
             target_nodespace = "Root"
-        # first, check for nodespace naming conflicts
+            # first, check for nodespace naming conflicts
         for nodespace_uid in nodespaces:
             if nodespace_uid in self.nodespaces:
                 rename_nodespaces[nodespace_uid] = micropsi_core.tools.generate_uid()
-        # create the nodespaces
+            # create the nodespaces
         for nodespace_uid in nodespaces:
             original = nodespaces[nodespace_uid]
             uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
 
             Nodespace(self, target_nodespace,
-                position = original.position,
-                name = original.name,
-                gatefunctions = deepcopy(original.gatefunctions),
-                uid = uid)
+                position=original.position,
+                name=original.name,
+                gatefunctions=deepcopy(original.gatefunctions),
+                uid=uid)
 
         # set the parents (needs to happen in seperate loop to ensure nodespaces are already created
         for nodespace_uid in nodespaces:
@@ -328,13 +346,13 @@ class Nodenet(object):
             target = rename_nodespaces.get(target, target)
 
             Node(self, target,
-                position = original.position,
-                name = original.name,
-                type = original.type,
-                uid = uid,
-                parameters = deepcopy(original.parameters),
-                gate_parameters = original.get_gate_parameters()
-                )
+                position=original.position,
+                name=original.name,
+                type=original.type,
+                uid=uid,
+                parameters=deepcopy(original.parameters),
+                gate_parameters=original.get_gate_parameters()
+            )
 
         # copy the links
         if len(nodes):
@@ -365,7 +383,7 @@ class Nodenet(object):
                 Link(source_node, link.source_gate.type, target_node, link.target_slot.type,
                     link.weight, link.certainty, uid)
 
-    def move_nodes(self, nodes, nodespaces, target_nodespace = None):
+    def move_nodes(self, nodes, nodespaces, target_nodespace=None):
         """moves the nodes into a new nodespace or nodenet, and deletes them at their original position.
         Links will be retained within the same nodenet.
         When moving into a different nodenet, nodes and links may receive new UIDs to avoid conflicts."""
@@ -646,7 +664,7 @@ class Link(object):
         self.data["uid"] = uid
         self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
 
-    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty = 1):
+    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
         """link between source and target nodes, from a gate to a slot.
 
             You may call this function to change the connections of an existing link. If the link is already
@@ -691,6 +709,7 @@ def get_link_uid(source_node, source_gate_name, target_node, target_slot_name):
         return (outgoing_candidates & incoming_candidates).pop()
     except KeyError:
         return None
+
 
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
@@ -842,6 +861,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         gate_function: called by the node function, updates the activation
         outgoing: the set of links originating at the gate
     """
+
     def __init__(self, type, node, gate_function=None, parameters=None):
         """create a gate.
 
@@ -857,13 +877,13 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {
-                "minimum": -1,
-                "maximum": 1,
-                "certainty": 1,
-                "amplification": 1,
-                "threshold": 0,
-                "decay": 0
-            }
+            "minimum": -1,
+            "maximum": 1,
+            "certainty": 1,
+            "amplification": 1,
+            "threshold": 0,
+            "decay": 0
+        }
         if parameters is not None:
             for key in parameters:
                 if key in self.parameters:
@@ -888,7 +908,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             if gate_factor == 0.0:
                 self.activation = 0
                 return  # if the gate is closed, we don't need to execute the gate function
-        # simple linear threshold function; you might want to use a sigmoid for neural learning
+            # simple linear threshold function; you might want to use a sigmoid for neural learning
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
             self.type)
         if gatefunction:
@@ -967,8 +987,10 @@ STANDARD_NODETYPES = {
         "parameters": ["time"],
         "slottypes": ["gen"],
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",  # TODO: this needs to juggle the states
-        "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped', 'failed', 'completed']
+        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        # TODO: this needs to juggle the states
+        "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped',
+                   'failed', 'completed']
     },
     "Activator": {
         "name": "Activator",

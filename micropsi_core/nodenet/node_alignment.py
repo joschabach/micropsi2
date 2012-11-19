@@ -40,10 +40,7 @@ def align(nodenet, nodespace):
     # position nodespaces
 
     for i, id in enumerate(unaligned_nodespaces):
-        nodenet.nodespaces[id].position = (
-            BORDER + (i%PREFERRED_WIDTH+1)*GRID - GRID/2,
-            BORDER + int(i/PREFERRED_WIDTH+1)*GRID - GRID/2,
-            )
+        nodenet.nodespaces[id].position = calculate_grid_position(i)
 
     start_position = (BORDER + GRID/2, BORDER + (0.5+math.ceil(len(unaligned_nodespaces)/PREFERRED_WIDTH))*GRID)
 
@@ -369,3 +366,11 @@ class VerticalGroup(UnorderedGroup):
         for i in self:
             i.arrange(nodenet, (x, y))
             y += i.height()*GRID
+
+
+def calculate_grid_position(index, start_position = (0, 0)):
+    """Determines the position of an item in a simple grid, based on default values defined here"""
+    return (
+        BORDER + (index % PREFERRED_WIDTH + 1) * GRID - GRID / 2,
+        BORDER + int(index / PREFERRED_WIDTH + 1) * GRID - GRID / 2,
+    )

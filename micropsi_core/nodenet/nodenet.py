@@ -986,7 +986,7 @@ STANDARD_NODETYPES = {
         "name": "Event",
         "parameters": ["time"],
         "slottypes": ["gen"],
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym"],
         "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
         # TODO: this needs to juggle the states
         "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped',

@@ -74,12 +74,12 @@ def test_copy_nodes(micropsi):
     # we should also test for parentage and link connectivity
 
 
-    # now test copying within the same nodenet
+    # TODO now test copying within the same nodenet
 
     micropsi.copy_nodes( ["n1", "n2", "n3", "n5", "ns1", "confl"], nodenet_uid1, nodenet_uid1, target_nodespace_uid="ns2" )
     micropsi.save_nodenet(nodenet_uid1)
     # delete_nodenets
-    #micropsi.delete_nodenet(nodenet_uid1)
-    #micropsi.delete_nodenet(nodenet_uid2)
+    micropsi.delete_nodenet(nodenet_uid1)
+    micropsi.delete_nodenet(nodenet_uid2)
 
 

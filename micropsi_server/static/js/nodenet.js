@@ -1606,8 +1606,8 @@ function onMouseUp(event) {
             // update position on server
             path.nodeMoved = false;
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            updateViewSize();
         }
-        updateViewSize();
     }
     if(selectionStart){
         selectionStart = null;

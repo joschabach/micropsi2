@@ -381,7 +381,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
-        if (type in STANDARD_NODETYPES){
+        if (STANDARD_NODETYPES.indexOf(type) >= 0){
             this.symbol = type.substr(0,1);
         } else {
             this.symbol = "Na";

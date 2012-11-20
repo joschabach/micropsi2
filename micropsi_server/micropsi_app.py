@@ -440,8 +440,11 @@ def export_nodenet(nodenet_uid):
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
     id = request.params.get('id', None)
+    # nodenet_uid = request.params.get('nodenet_uid', None) @TODO to get this to work, we need to use rpc or another way of transferring the nodenet uid as a parameter; at the moment, this route is a static link
     title = 'Edit Nodenet' if id is not None else 'New Nodenet'
+    print id
     return template("nodenet_form.tpl", title=title,
+        # nodenet_uid=nodenet_uid,
         nodenets=micropsi.get_available_nodenets(),
         templates=micropsi.get_available_nodenets(),
         worlds=micropsi.get_available_worlds(),

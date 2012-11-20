@@ -36,7 +36,7 @@ class ConfigurationManager(object):
         user_file: the handle for the user data file
     """
 
-    instances = {}
+    instances = []
 
     def __init__(self, config_path="config-data.json", auto_save=True):
         """initialize configuration management.
@@ -53,7 +53,8 @@ class ConfigurationManager(object):
         if absolute_path in ConfigurationManager.instances:
             raise RuntimeError("A configuration manager with this resource path already exists!")
 
-        ConfigurationManager.instances[absolute_path] = self
+        ConfigurationManager.instances.append(absolute_path)
+        self.key = absolute_path
 
         # set up persistence
         micropsi_core.tools.mkdir(os.path.dirname(config_path))
@@ -65,8 +66,8 @@ class ConfigurationManager(object):
 
     def __del__(self):
         """shut down user management"""
-        self.save_configs()
-        del ConfigurationManager.instances[os.path.abspath(self.config_file_name)]
+        if hasattr(self, "key"):
+            ConfigurationManager.instances.remove(self.key)
 
     def load_configs(self):
         """load configuration data"""

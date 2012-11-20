@@ -538,6 +538,7 @@ function updateViewSize() {
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
     var el = canvas_container;
     if(max_coordinates.x){
+        prerenderLayer.removeChildren();
         maxX = (max_coordinates.x + 50) * viewProperties.zoomFactor;
         maxY = (max_coordinates.y + 200) * viewProperties.zoomFactor;
     } else {

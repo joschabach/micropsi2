@@ -1122,6 +1122,7 @@ class MicroPsiRuntime(object):
                 nodetable[l["source_node"]] = {}
             nodetable[l["source_node"]][l_uid] = l
 
+        # find headnode
         headnode = None
         headnode_uid = None
         for uid, ls in nodetable.items():
@@ -1171,6 +1172,18 @@ class MicroPsiRuntime(object):
             self.add_label(master_nodenet_uid, headnode["name"], headnode_uid, language, weight = 0.5)
         for label in secondary_labels:
             self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=0.1)
+
+        return True
+
+    def turn_nodenet_into_stencil(self, nodenet_uid, language="en", master_nodenet_uid="default_domain"):
+        """Helper method to import existing blueprints into stencils, which are held in a master nodenet.
+        It is recommended to create a master nodenet for every language and knowledge domain."""
+
+        if not nodenet_uid in self.nodenets:
+            self.load_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
+        return self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name], language, master_nodenet_uid)
+
 
 
 def crawl_definition_files(path, type="definition"):

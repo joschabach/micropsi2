@@ -482,19 +482,23 @@ class NetEntity(object):
         nodespace = self.nodenet.nodespaces[uid]
         if self.entitytype not in nodespace.netentities:
             nodespace.netentities[self.entitytype] = []
-        nodespace.netentities[self.entitytype].append(self.uid)
-        #if uid in self.nodenet.state["nodespaces"][uid][self.entitytype]:
-        #    self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
-        # tell my old parent that I move out
-        if "parent_nodespace" in self.data:
-            old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
-            if old_parent and old_parent.uid != uid and self.uid in old_parent.netentities.get(self.entitytype, []):
-                old_parent.netentities[self.entitytype].remove(self.uid)
+        if self.uid not in nodespace.netentities[self.entitytype]:
+            nodespace.netentities[self.entitytype].append(self.uid)
+            #if uid in self.nodenet.state["nodespaces"][uid][self.entitytype]:
+            #    self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
+            # tell my old parent that I move out
+            if "parent_nodespace" in self.data:
+                old_parent = self.nodenet.nodespaces.get(self.data["parent_nodespace"])
+                if old_parent and old_parent.uid != uid and self.uid in old_parent.netentities.get(self.entitytype, []):
+                    old_parent.netentities[self.entitytype].remove(self.uid)
         self.data['parent_nodespace'] = uid
 
     def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities",
                  uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
+        if uid in nodenet.state.get("entitytype", []):
+            raise KeyError, "Netentity already exists"
+
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
         if not entitytype in nodenet.state:
@@ -758,6 +762,10 @@ class Node(NetEntity):
     def __init__(self, nodenet, parent_nodespace, position, state=None,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, **_):
         if not gate_parameters: gate_parameters = {}
+
+        if uid in nodenet.nodes:
+            raise KeyError, "Node already exists"
+
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 

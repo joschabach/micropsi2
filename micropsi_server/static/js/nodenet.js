@@ -381,7 +381,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
-        if (type in STANDARD_NODETYPES){
+        if (STANDARD_NODETYPES.indexOf(type) >= 0){
             this.symbol = type.substr(0,1);
         } else {
             this.symbol = "Na";
@@ -538,8 +538,9 @@ function updateViewSize() {
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
     var el = canvas_container;
     if(max_coordinates.x){
-        maxX = max_coordinates.x;
-        maxY = max_coordinates.y;
+        prerenderLayer.removeChildren();
+        maxX = (max_coordinates.x + 50) * viewProperties.zoomFactor;
+        maxY = (max_coordinates.y + 200) * viewProperties.zoomFactor;
     } else {
         prerenderLayer.removeChildren();
         for (var nodeUid in nodeLayer.children) {
@@ -1605,8 +1606,8 @@ function onMouseUp(event) {
             // update position on server
             path.nodeMoved = false;
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            updateViewSize();
         }
-        updateViewSize();
     }
     if(selectionStart){
         selectionStart = null;

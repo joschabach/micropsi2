@@ -1186,7 +1186,7 @@ class MicroPsiRuntime(object):
             language, master_nodenet_uid)
         if result:
             self.save_nodenet(nodenet_uid)
-        return {"nodenet":{"nodes":nodenet.state["nodes"]}}
+        return {"status":"test"}
 
 
 

@@ -1147,8 +1147,7 @@ class MicroPsiRuntime(object):
             if uid != headnode_uid:
                 if node.get("name"):
                     secondary_labels.append(node["name"])
-        print "labels: primary: "+str(primary_labels)
-        print "  secondary: "+str(secondary_labels)
+
         # add stencil to domain nodenet
         for uid, node in nodes.items():
             if not uid in self.nodenets[master_nodenet_uid].nodes:
@@ -1167,24 +1166,19 @@ class MicroPsiRuntime(object):
                 weight = link.get("weight", 1.0),
                 certainty = link.get("certainty", 1.0)
             )
-            print "adding link"
         for label in primary_labels:
             self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=1)
-            print "adding label "+ label
         if headnode.get("name"):
             self.add_label(master_nodenet_uid, headnode["name"], headnode_uid, language, weight = 0.5)
-            print "adding label "+ headnode["name"]
 
         for label in secondary_labels:
             self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=0.1)
-            print "adding label " + label
 
         return True
 
     def turn_nodenet_into_stencil(self, nodenet_uid, language="en", master_nodenet_uid="default_domain"):
         """Helper method to import existing blueprints into stencils, which are held in a master nodenet.
         It is recommended to create a master nodenet for every language and knowledge domain."""
-        print "turn nodenet into stencil "+nodenet_uid
         if not nodenet_uid in self.nodenets:
             self.load_nodenet(nodenet_uid)
         nodenet = self.nodenets[nodenet_uid]
@@ -1192,7 +1186,7 @@ class MicroPsiRuntime(object):
             language, master_nodenet_uid)
         if result:
             self.save_nodenet(nodenet_uid)
-        return result
+        return {"nodenet":{"nodes":nodenet.state["nodes"]}}
 
 
 

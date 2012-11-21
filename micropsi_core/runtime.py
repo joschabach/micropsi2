@@ -362,7 +362,7 @@ class MicroPsiRuntime(object):
             nodenet_data['uid'] = tools.generate_uid()
         if 'owner':
             nodenet_data['owner'] = owner
-        assert nodenet_data['world'] in self.worlds
+        # assert nodenet_data['world'] in self.worlds
         filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
         nodenet_data['filename'] = filename
         with open(filename, 'w+') as fp:

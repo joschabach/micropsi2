@@ -362,7 +362,7 @@ class MicroPsiRuntime(object):
             nodenet_data['uid'] = tools.generate_uid()
         if 'owner':
             nodenet_data['owner'] = owner
-        assert nodenet_data['world'] in self.worlds
+        # assert nodenet_data['world'] in self.worlds
         filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
         nodenet_data['filename'] = filename
         with open(filename, 'w+') as fp:
@@ -972,11 +972,11 @@ class MicroPsiRuntime(object):
             node = nodenet.nodes[node_uid]
             for sym_link in labelnode.slots["gen"].incoming:
                 if nodenet.links[sym_link].source_node.uid == node.uid:
-                    self.delete_link(sym_link)
+                    self.delete_link(nodenet_uid, sym_link)
                     break
             for ref_link in labelnode.gates["ref"].outgoing:
                 if nodenet.links[ref_link].target_node.uid == node.uid:
-                    self.delete_link(ref_link)
+                    self.delete_link(nodenet_uid, ref_link)
                     break
         else:
             self.delete_node(nodenet_uid, labelnode.uid)
@@ -986,8 +986,11 @@ class MicroPsiRuntime(object):
         """Returns a list of all available labels for a given nodenet"""
 
         nodenet = self.nodenets[nodenet_uid]
-        nodespace = nodenet.nodespaces.get("Labels " + language, {})
-        labels = [node.name for node in nodespace].sort()
+        labels = None
+        if language in nodenet.nodespaces:
+            nodespace = nodenet.nodespaces.get(language)
+            label_nodes = nodespace.netentities.get("nodes",{})
+            labels = sorted([nodenet.nodes[uid].name for uid in label_nodes])
         return labels or []
 
     def get_nodes_from_labels(self, nodenet_uid, label_text_list, language="en", max_nodes=10):
@@ -1008,14 +1011,14 @@ class MicroPsiRuntime(object):
 
         label_set = set()
         for i in label_text_list:
-            label_uid = language + " " + i
+            label_uid = language +" "+ i
             if label_uid in nodenet.nodes:
                 label_set.add(label_uid)
 
         linked_nodes = {}
         for j in label_set:
-            for ref_link in nodenet.nodes[j].gates["ref"].outgoing:
-                linked_nodes[ref_link.target_node_uid] = max(linked_nodes.get(ref_link.target_node_uid, 0),
+            for ref_link in nodenet.nodes[j].gates["ref"].outgoing.values():
+                linked_nodes[ref_link.target_node] = max(linked_nodes.get(ref_link.target_node, 0),
                     ref_link.weight)
                 if len(linked_nodes) > MAX_NUMBER_OF_CHECKED_NODES: break
             if len(linked_nodes) > MAX_NUMBER_OF_CHECKED_NODES: break
@@ -1037,13 +1040,13 @@ class MicroPsiRuntime(object):
             nodes[node.uid] = node
             if "por" in node.gates:
                 outgoing = node.gates["por"].outgoing
-                for l, link in outgoing:
+                for l, link in outgoing.items():
                     links[l] = link
-                    connected_node = nodenet.nodes[outgoing[l].target_node_uid]
+                    connected_node = outgoing[l].target_node
                     # try to add the inverse link
                     if "ret" in connected_node.gates:
-                        for r, i_link in connected_node.gates["ret"]:
-                            if i_link.target_node_uid == node_uid:
+                        for r, i_link in connected_node.gates["ret"].outgoing.items():
+                            if i_link.target_node == nodenet.nodes[node_uid]:
                                 links[r] = i_link
                                 break
                     if not connected_node.uid in nodes:
@@ -1052,22 +1055,25 @@ class MicroPsiRuntime(object):
 
             if "sub" in node.gates and depth > 0:
                 outgoing = node.gates["sub"].outgoing
-                for l, link in outgoing:
+                for l, link in outgoing.items():
                     links[l] = link
-                    connected_node = nodenet.nodes[outgoing[l].target_node_uid]
+                    connected_node = outgoing[l].target_node
                     # try to add the inverse link
                     if "sur" in connected_node.gates:
-                        for r, i_link in connected_node.gates["sur"]:
-                            if i_link.target_node_uid == node_uid:
+                        for r, i_link in connected_node.gates["sur"].outgoing.items():
+                            if i_link.target_node == nodenet.nodes[node_uid]:
                                 links[r] = i_link
                                 break
                     if not connected_node.uid in nodes:
                         _get_blueprint_from_node(connected_node.uid, nodes, links, depth - 1)
 
         _get_blueprint_from_node(node_uid, nodes, links, depth)
-        return {"nodes": nodes, "links": links}
+        return {
+            "nodes": { uid: nodenet.state["nodes"][uid] for uid in nodes },
+            "links": { l_uid: nodenet.state["links"][l_uid] for l_uid in links }}
 
-    def get_stencils(self, label_list, master_nodenet_uid="default_domain", max_stencils=5):
+
+    def get_stencils(self, label_list, language = "en", master_nodenet_uid="default_domain", max_stencils=5):
         """Ad hoc method for delivering suggestions from master nodenet
 
         Arguments:
@@ -1081,8 +1087,9 @@ class MicroPsiRuntime(object):
         if master_nodenet_uid not in self.nodenets: # we do not have suggestions for this domain
             return None
 
-        headnodes = self.get_nodes_from_labels(master_nodenet_uid, label_list, max_stencils)
-        return [self.get_blueprint_from_node(master_nodenet_uid, headnode) for headnode in headnodes]
+        headnodes = self.get_nodes_from_labels(master_nodenet_uid, label_list, language, max_nodes = max_stencils)
+        return [self.get_blueprint_from_node(master_nodenet_uid, headnode.uid) for headnode in headnodes]
+
 
     def add_stencil(self, nodes, links, labels=None, language="en", master_nodenet_uid="default_domain"):
         """Store a blueprint as a stencil in the master nodenet, and associate it with labels.
@@ -1115,6 +1122,7 @@ class MicroPsiRuntime(object):
                 nodetable[l["source_node"]] = {}
             nodetable[l["source_node"]][l_uid] = l
 
+        # find headnode
         headnode = None
         headnode_uid = None
         for uid, ls in nodetable.items():
@@ -1127,7 +1135,11 @@ class MicroPsiRuntime(object):
                 headnode = nodes[headnode_uid]
                 break
         if not headnode:
-            raise KeyError, "No head node found in stencil"
+            if len(nodes) == 1:
+                headnode_uid = nodes.keys()[0]
+                headnode = nodes[headnode_uid]
+            else:
+                raise KeyError, "No head node found in stencil"
 
         primary_labels = labels or []
         secondary_labels = []
@@ -1138,12 +1150,13 @@ class MicroPsiRuntime(object):
 
         # add stencil to domain nodenet
         for uid, node in nodes.items():
-            self.add_node(master_nodenet_uid,
-                node.get("type", "Concept"),
-                node.get("pos", (0,0)),
-                "Root",
-                uid = uid,
-                name = node.get("name", ""))
+            if not uid in self.nodenets[master_nodenet_uid].nodes:
+                self.add_node(master_nodenet_uid,
+                    node.get("type", "Concept"),
+                    node.get("pos", (0,0)),
+                    "Root",
+                    uid = uid,
+                    name = node.get("name", ""))
         for l_uid, link in links.items():
             self.add_link(master_nodenet_uid,
                 link["source_node"],
@@ -1157,8 +1170,24 @@ class MicroPsiRuntime(object):
             self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=1)
         if headnode.get("name"):
             self.add_label(master_nodenet_uid, headnode["name"], headnode_uid, language, weight = 0.5)
+
         for label in secondary_labels:
             self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=0.1)
+
+        return True
+
+    def turn_nodenet_into_stencil(self, nodenet_uid, language="en", master_nodenet_uid="default_domain"):
+        """Helper method to import existing blueprints into stencils, which are held in a master nodenet.
+        It is recommended to create a master nodenet for every language and knowledge domain."""
+        if not nodenet_uid in self.nodenets:
+            self.load_nodenet(nodenet_uid)
+        nodenet = self.nodenets[nodenet_uid]
+        result = self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name],
+            language, master_nodenet_uid)
+        if result:
+            self.save_nodenet(master_nodenet_uid)
+        return result
+
 
 
 def crawl_definition_files(path, type="definition"):

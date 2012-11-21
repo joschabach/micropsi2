@@ -1182,7 +1182,11 @@ class MicroPsiRuntime(object):
         if not nodenet_uid in self.nodenets:
             self.load_nodenet(nodenet_uid)
         nodenet = self.nodenets[nodenet_uid]
-        return self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name], language, master_nodenet_uid)
+        result = self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name],
+            language, master_nodenet_uid)
+        if result:
+            nodenet.save()
+        return result
 
 
 

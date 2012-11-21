@@ -1185,8 +1185,8 @@ class MicroPsiRuntime(object):
         result = self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name],
             language, master_nodenet_uid)
         if result:
-            self.save_nodenet(nodenet_uid)
-        return {"status":"test"}
+            self.save_nodenet(master_nodenet_uid)
+        return result
 
 
 

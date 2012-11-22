@@ -727,19 +727,7 @@ class MicroPsiRuntime(object):
             del nodenet.nodespaces[node_uid]
             del nodenet.state['nodespaces'][node_uid]
         else:
-            link_uids = []
-            for key, gate in nodenet.nodes[node_uid].gates.items():
-                link_uids.extend(gate.outgoing.keys())
-            for key, slot in nodenet.nodes[node_uid].slots.items():
-                link_uids.extend(slot.incoming.keys())
-            for uid in link_uids:
-                nodenet.links[uid].remove()
-                del nodenet.links[uid]
-                del nodenet.state['links'][uid]
-            parent_nodespace = nodenet.nodespaces.get(nodenet.nodes[node_uid].parent_nodespace)
-            parent_nodespace.netentities["nodes"].remove(node_uid)
-            del nodenet.nodes[node_uid]
-            del nodenet.state['nodes'][node_uid]
+            nodenet.delete_node(node_uid)
         return True
 
     def get_available_node_types(self, nodenet_uid=None):

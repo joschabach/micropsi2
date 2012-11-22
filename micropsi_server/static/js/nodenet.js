@@ -575,27 +575,6 @@ function redrawNodeNet() {
     for (i in links) {
         var sourceNode = nodes[links[i].sourceNodeUid];
         var targetNode = nodes[links[i].targetNodeUid];
-        // check for source and target nodes, slots and gates
-        if (!sourceNode) {
-            console.log("Did not find source Node for link from " +
-                nodes[links[i].sourceNodeUid] + " to " +
-                nodes[links[i].targetNodeUid]);
-            continue;
-        }
-        if (!(links[i].gateName in sourceNode.gates)) {
-            console.log("Node "+sourceNode.uid+ "does not have a gate with name "+links[i].gateName);
-            continue;
-        }
-        if (!targetNode) {
-            console.log("Did not find target Node for link from " +
-                nodes[links[i].sourceNodeUid] + " to " +
-                nodes[links[i].targetNodeUid]);
-            continue;
-        }
-        if (!(links[i].slotName in targetNode.slots)) {
-            console.log("Node "+targetNode.uid+ " does not have a slot with name "+links[i].slotName);
-            continue;
-        }
         // check if the link is visible
         if (!(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode))) {
             renderLink(links[i]);

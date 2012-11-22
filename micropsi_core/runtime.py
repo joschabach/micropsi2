@@ -1033,7 +1033,7 @@ class MicroPsiRuntime(object):
 
         return {k: v for k, v in result_list}
 
-    def get_blueprint_from_node(self, nodenet_uid, node_uid, depth=3):
+    def get_blueprint_from_node(self, nodenet_uid, node_uid, depth=4):
         """Returns a nodenet fragment made up of nodes, and links of the types por, ret, sub, sur,
             starting from the given node and extending sub-ward from there"""
 

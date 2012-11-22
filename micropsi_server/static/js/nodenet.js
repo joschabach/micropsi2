@@ -599,14 +599,18 @@ function redrawNodeLinks(node) {
     var linkUid;
     for (var gateName in node.gates) {
         for (linkUid in node.gates[gateName].outgoing) {
-            linkLayer.children[linkUid].remove();
-            renderLink(links[linkUid]);
+            if(linkUid in linkLayer) {
+                linkLayer.children[linkUid].remove();
+                renderLink(links[linkUid]);
+            }
         }
     }
     for (var slotName in node.slots) {
         for (linkUid in node.slots[slotName].incoming) {
-            linkLayer.children[linkUid].remove();
-            renderLink(links[linkUid]);
+            if(linkUid in linkLayer) {
+                linkLayer.children[linkUid].remove();
+                renderLink(links[linkUid]);
+            }
         }
     }
 }

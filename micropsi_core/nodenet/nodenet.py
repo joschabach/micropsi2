@@ -231,6 +231,9 @@ class Nodenet(object):
         data = {
             'links': {},
             'nodes': {},
+            'max_coords': self.max_coords,
+            'is_active': self.is_active,
+            'step': self.current_step,
             'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
                            if self.state['nodespaces'][i]["parent_nodespace"] == nodespace}
         }
@@ -250,7 +253,6 @@ class Nodenet(object):
         for uid in followupnodes:
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.state['nodes'][uid]
-        data['max_coords'] = self.max_coords
         return data
 
     def update_node_positions(self):

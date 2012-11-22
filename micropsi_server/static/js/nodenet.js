@@ -765,11 +765,11 @@ function redrawNodePlaceholder(node, direction){
 function calculatePlaceHolderPosition(node, direction, index){
     var point;
     if(direction == 'in'){
-        point = new Point(node.bounds.x - viewProperties.outsideDummyDistance,
-            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
+        point = new Point(node.bounds.x - viewProperties.outsideDummyDistance * viewProperties.zoomFactor,
+            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize * viewProperties.zoomFactor));
     } else if(direction == 'out') {
-        point = new Point(node.bounds.x + node.bounds.width + viewProperties.outsideDummyDistance,
-            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize));
+        point = new Point(node.bounds.x + node.bounds.width + viewProperties.outsideDummyDistance * viewProperties.zoomFactor,
+            node.bounds.y + ((index*2 + 1) * viewProperties.outsideDummySize * viewProperties.zoomFactor));
     } else {
         console.warn('unknown direction for placeholder: '+direction);
     }
@@ -792,7 +792,7 @@ function createPlaceholder(node, direction, point){
         var labelText = new PointText(new Point(point));
         labelText.content = count;
         labelText.characterStyle = {
-            fontSize: viewProperties.fontSize,
+            fontSize: viewProperties.fontSize * viewProperties.zoomFactor,
             fillColor: viewProperties.nodeFontColor
         };
         labelText.paragraphStyle.justification = 'center';

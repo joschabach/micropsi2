@@ -231,6 +231,9 @@ class Nodenet(object):
         data = {
             'links': {},
             'nodes': {},
+            'max_coords': self.max_coords,
+            'is_active': self.is_active,
+            'step': self.current_step,
             'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
                            if self.state['nodespaces'][i]["parent_nodespace"] == nodespace}
         }
@@ -250,7 +253,6 @@ class Nodenet(object):
         for uid in followupnodes:
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.state['nodes'][uid]
-        data['max_coords'] = self.max_coords
         return data
 
     def update_node_positions(self):
@@ -265,6 +267,22 @@ class Nodenet(object):
             if ypos not in self.nodes_by_coords[xpos]:
                 self.nodes_by_coords[xpos][ypos] = []
             self.nodes_by_coords[xpos][ypos].append(uid)
+
+    def delete_node(self, node_uid):
+        link_uids = []
+        for key, gate in self.nodes[node_uid].gates.items():
+            link_uids.extend(gate.outgoing.keys())
+        for key, slot in self.nodes[node_uid].slots.items():
+            link_uids.extend(slot.incoming.keys())
+        for uid in link_uids:
+            self.links[uid].remove()
+            del self.links[uid]
+            del self.state['links'][uid]
+        parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
+        parent_nodespace.netentities["nodes"].remove(node_uid)
+        del self.nodes[node_uid]
+        del self.state['nodes'][node_uid]
+        self.update_node_positions()
 
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""

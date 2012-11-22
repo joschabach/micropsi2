@@ -266,6 +266,22 @@ class Nodenet(object):
                 self.nodes_by_coords[xpos][ypos] = []
             self.nodes_by_coords[xpos][ypos].append(uid)
 
+    def delete_node(self, node_uid):
+        link_uids = []
+        for key, gate in self.nodes[node_uid].gates.items():
+            link_uids.extend(gate.outgoing.keys())
+        for key, slot in self.nodes[node_uid].slots.items():
+            link_uids.extend(slot.incoming.keys())
+        for uid in link_uids:
+            self.links[uid].remove()
+            del self.links[uid]
+            del self.state['links'][uid]
+        parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
+        parent_nodespace.netentities["nodes"].remove(node_uid)
+        del self.nodes[node_uid]
+        del self.state['nodes'][node_uid]
+        self.update_node_positions()
+
     def get_nodespace_data(self, nodespace_uid):
         """returns the nodes and links in a given nodespace"""
         nodespace = self.nodespaces[nodespace_uid]

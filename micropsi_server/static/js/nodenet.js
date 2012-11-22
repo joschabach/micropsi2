@@ -144,8 +144,6 @@ function get_available_worldadapters(world_uid){
 }
 
 function setNodenetValues(data){
-    console.log("here")
-    console.log(data)
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     setNodeTypes();
@@ -234,30 +232,31 @@ function setNodespaceData(data){
                 addNode(item);
             }
         }
-        var link;
+        var link, sourceId, targetId;
         var outsideLinks = [];
         for(uid in data.links){
-            if (data.links[uid]['source_node'] in nodes && data.links[uid]['target_node'] in nodes){
-                link = new Link(uid, data.links[uid].source_node, data.links[uid].source_gate_name, data.links[uid].target_node, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                if(nodes[link.targetNodeUid].parent != nodes[link.sourceNodeUid].parent){
-                    if(nodes[link.targetNodeUid].linksFromOutside.indexOf(link.uid) < 0)
-                        nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                    if(nodes[link.sourceNodeUid].linksToOutside.indexOf(link.uid) < 0)
-                        nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
-                    outsideLinks.push(link);
+            sourceId = data.links[uid]['source_node'];
+            targetId = data.links[uid]['target_node'];
+            if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
+                link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
+                if(uid in links){
+                    redrawLink(link);
+                    links[uid] = link;
                 } else {
-                    if(uid in links){
-                        redrawLink(link);
-                        links[uid] = link;
-                    } else {
-                        addLink(link);
-                    }
+                    addLink(link);
                 }
+            } else if(sourceId in nodes || targetId in nodes){
+                link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
+                if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
+                    nodes[targetId].linksFromOutside.push(link.uid);
+                if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
+                    nodes[sourceId].linksToOutside.push(link.uid);
+                outsideLinks.push(link);
             }
         }
         for(var index in outsideLinks){
             if(outsideLinks[index].uid in links){
-                redrawLink(outsideLinks[index]);
+                redrawLink(outsideLinks[index], true);
                 links[uid] = outsideLinks[index];
             } else {
                 addLink(outsideLinks[index]);
@@ -296,6 +295,7 @@ function refreshNodespace(nodespace, coordinates, step){
     api.call('get_nodespace', params , success=function(data){
         if(nodespace != currentNodeSpace){
             currentNodeSpace = nodespace;
+            $("#nodespace_name").val(nodespace in nodes && nodes[nodespace].name ? nodes[nodespace].name : nodespace);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
@@ -435,9 +435,11 @@ function addLink(link) {
     //check if link already exists
     if (!(link.uid in links)) {
         // add link to source node and target node
-        if (nodes[link.sourceNodeUid] && nodes[link.targetNodeUid]) {
-            nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
-            nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+        var sourceNode = nodes[link.sourceNodeUid] || {};
+        var targetNode = nodes[link.targetNodeUid] || {};
+        if (sourceNode.uid || targetNode.uid) {
+            if(sourceNode.uid) nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
+            if(targetNode.uid) nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             // check if link is visible
             if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
                 isOutsideNodespace(nodes[link.targetNodeUid]))) {
@@ -459,7 +461,9 @@ function redrawLink(link, forceRedraw){
         oldLink.certainty != link.certainty ||
         nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
-        linkLayer.children[link.uid].remove();
+        if(link.uid in linkLayer.children){
+            linkLayer.children[link.uid].remove();
+        }
         renderLink(link);
     }
 }
@@ -636,8 +640,9 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
     // This depends on the node type and the link type.
     // If a link does not have a preferred direction on a compact node, it will point directly from the source
     // node to the target node. However, this requires to know both points, so there must be a preliminary step.
-    sourceBounds = sourceNode.bounds;
-    if(isOutsideNodespace(sourceNode)){
+    if(!isOutsideNodespace(sourceNode)){
+        sourceBounds = sourceNode.bounds;
+    } else {
         if(targetNode && targetNode.linksFromOutside.length > viewProperties.groupOutsideLinksThreshold){
             redrawNodePlaceholder(targetNode, 'in');
             sourceBounds = targetNode.placeholder['in'].bounds;
@@ -703,15 +708,17 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
 function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
     var endPointIsPreliminary = false;
     var endPoint, endAngle;
-    var targetBounds = targetNode.bounds;
-    if(isOutsideNodespace(targetNode)){
+    var targetBounds;
+    if(!isOutsideNodespace(targetNode)){
+        targetBounds = targetNode.bounds;
+    } else {
         if(sourceNode.linksToOutside.length > viewProperties.groupOutsideLinksThreshold){
             redrawNodePlaceholder(sourceNode, 'out');
             targetBounds = sourceNode.placeholder.out.bounds;
         }
     }
 
-    if (isCompact(targetNode)) {
+    if (!isOutsideNodespace(targetNode) && isCompact(targetNode)) {
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
             endAngle = 270;
@@ -1328,7 +1335,7 @@ function isCompact(node) {
 }
 
 function isOutsideNodespace(node) {
-    return (node.parent != currentNodeSpace);
+    return !(node && node.uid && node.uid in nodes && node.parent == currentNodeSpace);
 }
 
 // calculate the bounding rectangle of the slot with the given index
@@ -2356,7 +2363,6 @@ function handleEnterNodespace(nodespaceUid) {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
         });
-        $("#nodespace_name").val(nodes[currentNodeSpace].name ? nodes[currentNodeSpace].name : nodes[currentNodeSpace].uid);
     }
 }
 
@@ -2364,10 +2370,10 @@ function handleEnterNodespace(nodespaceUid) {
 function handleNodespaceUp() {
     deselectAll();
     if (nodes[currentNodeSpace].parent) { // not yet root nodespace
-        currentNodeSpace = nodes[currentNodeSpace].parent;
-        var c = currentNodeSpace;
-        $("#nodespace_name").val(nodes[c].name ? nodes[c].name : nodes[c].uid);
-        redrawNodeNet();
+        refreshNodespace(nodes[currentNodeSpace].parent, {
+            x: [0, canvas_container.width() * 2],
+            y: [0, canvas_container.height() * 2]
+        });
     }
 }
 

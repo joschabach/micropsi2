@@ -321,7 +321,7 @@ function refreshViewPortData(){
         left + width > loaded_coordinates.x[1] ||
         top < loaded_coordinates.y[0] ||
         left < loaded_coordinates.x[0]) {
-        refreshNodespace({
+        refreshNodespace(currentNodeSpace, {
             x:[Math.max(0, left - width), left + 2*width],
             y:[Math.max(0, top-height), top + 2*height]
         });

@@ -151,6 +151,17 @@ class MicroPsiRuntime(object):
         else:
             return self.nodenet_data
 
+    def get_nodenet(self, nodenet_uid):
+        """Returns the nodenet with the given uid, and loads into memory if necessary.
+        Returns None if nodenet does not exist"""
+
+        if nodenet_uid not in self.nodenets:
+            if nodenet_uid in self.get_available_nodenets():
+                self.load_nodenet(nodenet_uid)
+            else:
+                return None
+        return self.nodenets[nodenet_uid]
+
     def load_nodenet(self, nodenet_uid):
         """ Load the nodenet with the given uid into memeory
             TODO: how do we know in which world we want to load the nodenet?
@@ -658,7 +669,7 @@ class MicroPsiRuntime(object):
          """
         return self.nodenets[nodenet_uid].nodes[node_uid]
 
-    def add_node(self, nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters=None):
+    def add_node(self, nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
         """Creates a new node. (Including nodespace, native module.)
 
         Arguments:
@@ -674,7 +685,7 @@ class MicroPsiRuntime(object):
             node_uid if successful,
             None if failure.
         """
-        nodenet = self.nodenets[nodenet_uid]
+        nodenet = self.get_nodenet(nodenet_uid)
         if type == "Nodespace":
             nodespace = Nodespace(nodenet, nodespace, pos, name=name, uid=uid)
             uid = nodespace.uid
@@ -727,19 +738,7 @@ class MicroPsiRuntime(object):
             del nodenet.nodespaces[node_uid]
             del nodenet.state['nodespaces'][node_uid]
         else:
-            link_uids = []
-            for key, gate in nodenet.nodes[node_uid].gates.items():
-                link_uids.extend(gate.outgoing.keys())
-            for key, slot in nodenet.nodes[node_uid].slots.items():
-                link_uids.extend(slot.incoming.keys())
-            for uid in link_uids:
-                nodenet.links[uid].remove()
-                del nodenet.links[uid]
-                del nodenet.state['links'][uid]
-            parent_nodespace = nodenet.nodespaces.get(nodenet.nodes[node_uid].parent_nodespace)
-            parent_nodespace.netentities["nodes"].remove(node_uid)
-            del nodenet.nodes[node_uid]
-            del nodenet.state['nodes'][node_uid]
+            nodenet.delete_node(node_uid)
         return True
 
     def get_available_node_types(self, nodenet_uid=None):
@@ -958,6 +957,12 @@ class MicroPsiRuntime(object):
                 uid=label_uid
             )
 
+        # check if link already exists
+        candidate = get_link_uid(labelnode, "ref", node, "gen")
+        if candidate:
+            weight = max(weight, nodenet.links[candidate].weight)
+            certainty = max(weight, nodenet.links[candidate].certainty)
+
         # create/update links
         self.add_link(nodenet_uid, labelnode.uid, "ref", node.uid, "gen", weight, certainty)
         self.add_link(nodenet_uid, node.uid, "sym", labelnode.uid, "gen", weight, certainty)
@@ -967,7 +972,8 @@ class MicroPsiRuntime(object):
         """Removes a label, either completely or from an individual node"""
 
         nodenet = self.nodenets[nodenet_uid]
-        labelnode = nodenet.nodes[language + " " + label_text]
+        label_uid = language + " " + label_text
+        labelnode = nodenet.nodes[label_uid]
         if node_uid:
             node = nodenet.nodes[node_uid]
             for sym_link in labelnode.slots["gen"].incoming:
@@ -1007,7 +1013,7 @@ class MicroPsiRuntime(object):
 
         MAX_NUMBER_OF_CHECKED_NODES = 10000 # make sure that memory demands are not excessive
 
-        nodenet = self.nodenets[nodenet_uid]
+        nodenet = self.get_nodenet(nodenet_uid)
 
         label_set = set()
         for i in label_text_list:
@@ -1027,7 +1033,7 @@ class MicroPsiRuntime(object):
 
         return {k: v for k, v in result_list}
 
-    def get_blueprint_from_node(self, nodenet_uid, node_uid, depth=3):
+    def get_blueprint_from_node(self, nodenet_uid, node_uid, depth=4):
         """Returns a nodenet fragment made up of nodes, and links of the types por, ret, sub, sur,
             starting from the given node and extending sub-ward from there"""
 
@@ -1087,11 +1093,13 @@ class MicroPsiRuntime(object):
         if master_nodenet_uid not in self.nodenets: # we do not have suggestions for this domain
             return None
 
-        headnodes = self.get_nodes_from_labels(master_nodenet_uid, label_list, language, max_nodes = max_stencils)
+        labels = [ label.lower().strip() for label in label_list ]
+
+        headnodes = self.get_nodes_from_labels(master_nodenet_uid, labels, language, max_nodes = max_stencils)
         return [self.get_blueprint_from_node(master_nodenet_uid, headnode.uid) for headnode in headnodes]
 
 
-    def add_stencil(self, nodes, links, labels=None, language="en", master_nodenet_uid="default_domain"):
+    def add_stencil(self, nodes, links, labels=None, language="en", master_nodenet_uid="default_domain", user=None):
         """Store a blueprint as a stencil in the master nodenet, and associate it with labels.
         Labels are extracted from the names of nodes, or used directly from the supplied list.
 
@@ -1104,12 +1112,9 @@ class MicroPsiRuntime(object):
         """
 
         # check if master nodenet exists
-        if master_nodenet_uid not in self.nodenets:
-            if master_nodenet_uid in self.get_available_nodenets():
-                self.load_nodenet(master_nodenet_uid)
-            else:
-                self.new_nodenet(master_nodenet_uid, "Default", uid = master_nodenet_uid)
-                self.load_nodenet(master_nodenet_uid)
+        if not self.get_nodenet(master_nodenet_uid):
+            self.new_nodenet(master_nodenet_uid, "Default", uid = master_nodenet_uid)
+            self.load_nodenet(master_nodenet_uid)
         nodenet = self.nodenets[master_nodenet_uid]
 
         # check consistency before we drop this into the master nodenet
@@ -1167,23 +1172,61 @@ class MicroPsiRuntime(object):
                 certainty = link.get("certainty", 1.0)
             )
         for label in primary_labels:
-            self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=1)
+            self.add_label(master_nodenet_uid, label.lower(), headnode_uid, language, weight=1)
         if headnode.get("name"):
-            self.add_label(master_nodenet_uid, headnode["name"], headnode_uid, language, weight = 0.5)
+            self.add_label(master_nodenet_uid, headnode["name"].lower(), headnode_uid, language, weight = 0.5)
 
         for label in secondary_labels:
-            self.add_label(master_nodenet_uid, label, headnode_uid, language, weight=0.1)
+            self.add_label(master_nodenet_uid, label.lower(), headnode_uid, language, weight=0.1)
+
+        if user:
+            self.add_label(master_nodenet_uid, user, headnode_uid, "users")
+
+        return headnode_uid
+
+    def delete_stencil_by_headnode(self, headnode_uid, master_nodenet_uid="default_domain"):
+        """Deletes a stencil from an existing nodenet, by identifying the nodes below the headnode and
+        removing them."""
+
+        nodenet = self.get_nodenet(master_nodenet_uid)
+        nodes = set()
+
+        def _retrieve_stencil_nodes(node_uid, nodes):
+            if not node_uid in nodes:
+                nodes.add(node_uid)
+                por_gates = nodenet.nodes[node_uid].gates.get("por")
+                sub_gates = nodenet.nodes[node_uid].gates.get("sub")
+
+                if por_gates:
+                    for link in por_gates.outgoing.values():
+                        _retrieve_stencil_nodes(link.target_node.uid, nodes)
+                if sub_gates:
+                    for link in sub_gates.outgoing.values():
+                        _retrieve_stencil_nodes(link.target_node.uid, nodes)
+
+        _retrieve_stencil_nodes(headnode_uid, nodes)
+        for node_uid in nodes:
+            self.delete_node(master_nodenet_uid, node_uid)
 
         return True
 
-    def turn_nodenet_into_stencil(self, nodenet_uid, language="en", master_nodenet_uid="default_domain"):
+    def delete_all_stencils_of_user(self, user, master_nodenet_uid="default_domain"):
+        """Deletes all stencils associated with a given user"""
+
+        headnodes = self.get_nodes_from_labels(master_nodenet_uid, [user], "users", max_nodes = 9999999999)
+        for node in headnodes:
+            self.delete_stencil_by_headnode(node.uid, master_nodenet_uid)
+        self.delete_label(master_nodenet_uid, user, language = "users")
+        return True
+
+
+    def turn_nodenet_into_stencil(self, nodenet_uid, language="en", master_nodenet_uid="default_domain", user = None):
         """Helper method to import existing blueprints into stencils, which are held in a master nodenet.
         It is recommended to create a master nodenet for every language and knowledge domain."""
-        if not nodenet_uid in self.nodenets:
-            self.load_nodenet(nodenet_uid)
-        nodenet = self.nodenets[nodenet_uid]
+
+        nodenet = self.get_nodenet(nodenet_uid)
         result = self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name],
-            language, master_nodenet_uid)
+            language, master_nodenet_uid, user)
         if result:
             self.save_nodenet(master_nodenet_uid)
         return result

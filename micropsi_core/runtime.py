@@ -692,6 +692,7 @@ class MicroPsiRuntime(object):
         else:
             node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             uid = node.uid
+            nodenet.update_node_positions()
         return True, uid
 
     def set_node_position(self, nodenet_uid, node_uid, pos):
@@ -701,6 +702,7 @@ class MicroPsiRuntime(object):
             nodenet.nodes[node_uid].position = pos
         elif node_uid in nodenet.nodespaces:
             nodenet.nodespaces[node_uid].position = pos
+        nodenet.update_node_positions()
         return True
 
     def set_node_name(self, nodenet_uid, node_uid, name):

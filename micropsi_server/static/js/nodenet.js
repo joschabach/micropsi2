@@ -215,11 +215,11 @@ function setNodespaceData(data){
 
         var uid;
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
             if(uid in nodes){
+                nodes[uid].update(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 redrawNode(item);
-                nodes[uid] = item;
             } else{
+                item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 addNode(item);
             }
         }
@@ -257,7 +257,7 @@ function setNodespaceData(data){
         for(var index in outsideLinks){
             if(outsideLinks[index].uid in links){
                 redrawLink(outsideLinks[index], true);
-                links[uid] = outsideLinks[index];
+                links[outsideLinks[index].uid] = outsideLinks[index];
             } else {
                 addLink(outsideLinks[index]);
             }
@@ -385,6 +385,18 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
     }
+
+    this.update = function(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_parameters){
+        this.uid = uid;
+        this.x = x;
+        this.y = y;
+        this.parent = nodeSpaceUid;
+        this.name = name;
+        this.activation = activation;
+        this.state = state;
+        this.parameters = parameters || {};
+        this.gate_parameters = gate_parameters || {};
+    };
 }
 
 // target for links, part of a net entity
@@ -457,7 +469,7 @@ function addLink(link) {
 
 function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
-    if (forceRedraw || (oldLink.weight != link.weight ||
+    if (forceRedraw || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
         nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
@@ -599,18 +611,18 @@ function redrawNodeLinks(node) {
     var linkUid;
     for (var gateName in node.gates) {
         for (linkUid in node.gates[gateName].outgoing) {
-            if(linkUid in linkLayer) {
+            if(linkUid in linkLayer.children) {
                 linkLayer.children[linkUid].remove();
-                renderLink(links[linkUid]);
             }
+            renderLink(links[linkUid]);
         }
     }
     for (var slotName in node.slots) {
         for (linkUid in node.slots[slotName].incoming) {
-            if(linkUid in linkLayer) {
+            if(linkUid in linkLayer.children) {
                 linkLayer.children[linkUid].remove();
-                renderLink(links[linkUid]);
             }
+            renderLink(links[linkUid]);
         }
     }
 }
@@ -632,7 +644,7 @@ function calculateLinkStart(sourceNode, targetNode, gateName) {
         }
     }
     var sourcePoints, startPoint, startAngle;
-    if (isCompact(sourceNode)) {
+    if (!isOutsideNodespace(sourceNode) && isCompact(sourceNode)) {
         if (sourceNode.type=="Sensor" || sourceNode.type == "Actor") {
             if (sourceNode.type == "Sensor")
                 startPoint = new Point(sourceBounds.x+sourceBounds.width*0.5,
@@ -695,12 +707,11 @@ function calculateLinkEnd(sourceNode, targetNode, slotName, linkType) {
     if(!isOutsideNodespace(targetNode)){
         targetBounds = targetNode.bounds;
     } else {
-        if(sourceNode.linksToOutside.length > viewProperties.groupOutsideLinksThreshold){
+        if(sourceNode && sourceNode.linksToOutside.length > viewProperties.groupOutsideLinksThreshold){
             redrawNodePlaceholder(sourceNode, 'out');
-            targetBounds = sourceNode.placeholder.out.bounds;
+            targetBounds = sourceNode.placeholder['out'].bounds;
         }
     }
-
     if (!isOutsideNodespace(targetNode) && isCompact(targetNode)) {
         if (targetNode.type=="Sensor" || targetNode.type == "Actor") {
             endPoint = new Point(targetBounds.x + targetBounds.width*0.6, targetBounds.y);
@@ -805,8 +816,15 @@ function createPlaceholder(node, direction, point){
 function renderLink(link) {
     var sourceNode = nodes[link.sourceNodeUid];
     var targetNode = nodes[link.targetNodeUid];
-
-    var gate = sourceNode.gates[link.gateName];
+    var gate;
+    if(sourceNode){
+        gate = sourceNode.gates[link.gateName];
+    } else {
+        gate = {
+            activation: link.weight,
+            name: link.gateName
+        };
+    }
 
     var linkStart = calculateLinkStart(sourceNode, targetNode, link.gateName);
     var linkEnd = calculateLinkEnd(sourceNode, targetNode, link.slotName, link.gateName);

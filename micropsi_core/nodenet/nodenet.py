@@ -258,14 +258,19 @@ class Nodenet(object):
     def update_node_positions(self):
         """ recalculates the position hash """
         self.nodes_by_coords = {}
+        self.max_coords = {'x': 0, 'y': 0}
         for uid in self.nodes:
             pos = self.nodes[uid].position
             xpos = int(pos[0] - pos[0] % 100)
             ypos = int(pos[1] - pos[1] % 100)
             if xpos not in self.nodes_by_coords:
                 self.nodes_by_coords[xpos] = {}
+                if xpos > self.max_coords['x']:
+                    self.max_coords['x'] = xpos
             if ypos not in self.nodes_by_coords[xpos]:
                 self.nodes_by_coords[xpos][ypos] = []
+                if ypos > self.max_coords['y']:
+                    self.max_coords['y'] = ypos
             self.nodes_by_coords[xpos][ypos].append(uid)
 
     def delete_node(self, node_uid):

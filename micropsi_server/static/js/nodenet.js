@@ -157,10 +157,13 @@ function setNodenetValues(data){
     }
 }
 
-function setCurrentNodenet(uid){
+function setCurrentNodenet(uid, nodespace){
+    if(!nodespace){
+        nodespace = "Root";
+    }
     api.call('load_nodenet',
         {nodenet_uid: uid,
-            nodespace: "Root",
+            nodespace: nodespace,
             x1: loaded_coordinates.x[0],
             x2: loaded_coordinates.x[1],
             y1: loaded_coordinates.y[0],
@@ -172,7 +175,7 @@ function setCurrentNodenet(uid){
             showDefaultForm();
             $('#nodenet_step').val(data.step);
 
-            currentNodeSpace = "Root";
+            currentNodeSpace = nodespace;
             currentNodenet = uid;
 
             nodes = {};
@@ -1905,7 +1908,7 @@ function autoalignmentHandler(currentNodespace) {
             nodespace: currentNodespace
         },
         function(data){
-            setCurrentNodenet(currentNodenet);
+            setCurrentNodenet(currentNodenet, currentNodespace);
         });
 }
 

@@ -316,10 +316,10 @@ function refreshNodespace(nodespace, coordinates, step){
 
 
 function refreshViewPortData(){
-    var top = canvas_container.scrollTop();
-    var left = canvas_container.scrollLeft();
-    var width = canvas_container.width();
-    var height = canvas_container.height();
+    var top = parseInt(canvas_container.scrollTop() / viewProperties.zoomFactor);
+    var left = parseInt(canvas_container.scrollLeft() / viewProperties.zoomFactor);
+    var width = parseInt(canvas_container.width() / viewProperties.zoomFactor);
+    var height = parseInt(canvas_container.height() / viewProperties.zoomFactor);
     if(top + height > loaded_coordinates.y[1] ||
         left + width > loaded_coordinates.x[1] ||
         top < loaded_coordinates.y[0] ||

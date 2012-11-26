@@ -1221,7 +1221,11 @@ class MicroPsiRuntime(object):
         headnodes = self.get_nodes_from_labels(master_nodenet_uid, [user], "users", max_nodes = 9999999999)
         for node in headnodes:
             self.delete_stencil_by_headnode(node.uid, master_nodenet_uid)
-        self.delete_label(master_nodenet_uid, user, language = "users")
+        try:
+            self.delete_label(master_nodenet_uid, user, language = "users")
+        except KeyError:
+            # user has no stencils. never mind.
+            pass
         return True
 
 

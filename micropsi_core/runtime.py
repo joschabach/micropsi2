@@ -931,7 +931,10 @@ class MicroPsiRuntime(object):
 
     def align_nodes(self, nodenet_uid, nodespace):
         """Perform auto-alignment of nodes in the current nodespace"""
-        return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+        result = node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+        if result:
+            self.nodenets[nodenet_uid].update_node_positions()
+        return result
 
     def add_label(self, nodenet_uid, label_text, node_uid, language="en", weight=1, certainty=1):
         """Adds a label to a node within a given nodenet"""

@@ -692,6 +692,7 @@ class MicroPsiRuntime(object):
         else:
             node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             uid = node.uid
+            nodenet.update_node_positions()
         return True, uid
 
     def set_node_position(self, nodenet_uid, node_uid, pos):
@@ -701,6 +702,7 @@ class MicroPsiRuntime(object):
             nodenet.nodes[node_uid].position = pos
         elif node_uid in nodenet.nodespaces:
             nodenet.nodespaces[node_uid].position = pos
+        nodenet.update_node_positions()
         return True
 
     def set_node_name(self, nodenet_uid, node_uid, name):
@@ -929,7 +931,10 @@ class MicroPsiRuntime(object):
 
     def align_nodes(self, nodenet_uid, nodespace):
         """Perform auto-alignment of nodes in the current nodespace"""
-        return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+        result = node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+        if result:
+            self.nodenets[nodenet_uid].update_node_positions()
+        return result
 
     def add_label(self, nodenet_uid, label_text, node_uid, language="en", weight=1, certainty=1):
         """Adds a label to a node within a given nodenet"""
@@ -1216,7 +1221,11 @@ class MicroPsiRuntime(object):
         headnodes = self.get_nodes_from_labels(master_nodenet_uid, [user], "users", max_nodes = 9999999999)
         for node in headnodes:
             self.delete_stencil_by_headnode(node.uid, master_nodenet_uid)
-        self.delete_label(master_nodenet_uid, user, language = "users")
+        try:
+            self.delete_label(master_nodenet_uid, user, language = "users")
+        except KeyError:
+            # user has no stencils. never mind.
+            pass
         return True
 
 

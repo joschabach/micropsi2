@@ -201,8 +201,8 @@ class Nodenet(object):
             data = self.state['nodes'][uid]
             self.nodes[uid] = Node(self, **data)
             pos = self.nodes[uid].position
-            xpos = int(pos[0] - pos[0] % 100)
-            ypos = int(pos[1] - pos[1] % 100)
+            xpos = int(pos[0] - (pos[0] % 100))
+            ypos = int(pos[1] - (pos[1] % 100))
             if xpos not in self.nodes_by_coords:
                 self.nodes_by_coords[xpos] = {}
                 if xpos > self.max_coords['x']:
@@ -226,8 +226,8 @@ class Nodenet(object):
             # TODO: check if data sources and data targets match
 
     def get_nodespace_area(self, nodespace, x1, x2, y1, y2):
-        x_range = (x1 - x1 % 100, 100 + x2 - x2 % 100, 100)
-        y_range = (y1 - y1 % 100, 100 + y2 - y2 % 100, 100)
+        x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
+        y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
         data = {
             'links': {},
             'nodes': {},
@@ -258,14 +258,19 @@ class Nodenet(object):
     def update_node_positions(self):
         """ recalculates the position hash """
         self.nodes_by_coords = {}
+        self.max_coords = {'x': 0, 'y': 0}
         for uid in self.nodes:
             pos = self.nodes[uid].position
-            xpos = int(pos[0] - pos[0] % 100)
-            ypos = int(pos[1] - pos[1] % 100)
+            xpos = int(pos[0] - (pos[0] % 100))
+            ypos = int(pos[1] - (pos[1] % 100))
             if xpos not in self.nodes_by_coords:
                 self.nodes_by_coords[xpos] = {}
+                if xpos > self.max_coords['x']:
+                    self.max_coords['x'] = xpos
             if ypos not in self.nodes_by_coords[xpos]:
                 self.nodes_by_coords[xpos][ypos] = []
+                if ypos > self.max_coords['y']:
+                    self.max_coords['y'] = ypos
             self.nodes_by_coords[xpos][ypos].append(uid)
 
     def delete_node(self, node_uid):

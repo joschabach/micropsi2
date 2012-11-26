@@ -64,7 +64,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
     def _decorator(func):
         @route(route_prefix + command, "POST")
         @route(route_prefix + command + "()", method)
-        @route(route_prefix + command + "(<argument>)", method)
+        @route(route_prefix + command + "(:argument#.+#)", method)
         def _wrapper(argument=None):
             response.content_type = 'application/json; charset=utf8'
             kwargs = {}

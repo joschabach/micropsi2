@@ -323,7 +323,7 @@
     </form>
 </div>
 
-<div id="monitor" class="section-margin collapse in">
+<div id="monitor" class="section-margin collapse">
     <div class="section">
         <div class="monitor_field span9">
             <div id="graph"></div>

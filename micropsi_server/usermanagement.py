@@ -57,7 +57,7 @@ TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should 
 USER_ROLES = {  # sets of strings; each represents a permission.
     "Administrator": {"manage users","manage worlds","manage nodenets", "manage server",
                       "create admin", "create restricted", "create full"},
-    "Full": {"manage worlds","manage nodenets", "manage server" "create full", "create restricted"},
+    "Full": {"manage worlds","manage nodenets", "manage server", "create full", "create restricted"},
     "Restricted": {"manage nodenets", "create restricted"},
     "Guest": {"create restricted"}
 }
@@ -252,24 +252,25 @@ class UserManager(object):
 
     def end_all_sessions(self):
         """useful during a reset of the runtime, because all open user sessions will persist during shutdown"""
-        for session_token in self.sessions: self.end_session(session_token)
+        for session_token in self.sessions.keys(): self.end_session(session_token)
 
     def refresh_session(self, session_token):
         """resets the idle time until a currently active session expires to some point in the future"""
         if session_token in self.sessions:
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
-                self.users[user_id]["session_expires"] = datetime.datetime.now() + datetime.timedelta(
-                    seconds=IDLE_TIME_BEFORE_SESSION_EXPIRES)
+                self.users[user_id]["session_expires"] = (datetime.datetime.now() + datetime.timedelta(
+                    seconds=IDLE_TIME_BEFORE_SESSION_EXPIRES)).isoformat()
 
     def check_for_expired_user_sessions(self):
         """removes all user sessions that have been idle for too long"""
 
         change_flag = False
-        for session_token in self.sessions:
+        now = datetime.datetime.now().isoformat()
+        for session_token in self.sessions.keys():
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
-                if self.users[user_id]["session_expires"] < datetime.datetime.now():
+                if self.users[user_id]["session_expires"] < now:
                     self.end_session(session_token)
                     change_flag = True
         if change_flag:

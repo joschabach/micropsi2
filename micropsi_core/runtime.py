@@ -5,15 +5,17 @@
 MicroPsi runtime component;
 maintains a set of users, worlds (up to one per user), and nodenets, and provides an interface to external clients
 """
+import operator
 
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-import micropsi_core
-from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, Monitor, STANDARD_NODETYPES
+from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, Monitor, \
+    STANDARD_NODETYPES, get_link_uid
 from micropsi_core.nodenet import node_alignment
 from micropsi_core.world import world
 from micropsi_core import config
+from micropsi_core.tools import Bunch
 import os
 import tools
 import json
@@ -32,15 +34,7 @@ AVAILABLE_WORLD_TYPES = ['World', 'berlin', 'island']  # TODO
 configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
 
 
-class Bunch(dict):
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        for i in kwargs:
-            self[i] = kwargs[i]
-
-
 class MicroPsiRuntime(object):
-
     worlds = {}
     nodenets = {}
     runner = {
@@ -53,6 +47,7 @@ class MicroPsiRuntime(object):
     The runtime instantiates nodenets and worlds and coordinates the interaction
     between them. It should be a singleton, otherwise competing instances might conflict over the resource files.
     """
+
     def __init__(self, resource_path):
         """Set up the MicroPsi runtime
 
@@ -74,7 +69,8 @@ class MicroPsiRuntime(object):
         for uid in self.world_data:
             if "world_type" in self.world_data[uid]:
                 try:
-                    self.worlds[uid] = self._get_world_class(self.world_data[uid].world_type)(self, **self.world_data[uid])
+                    self.worlds[uid] = self._get_world_class(self.world_data[uid].world_type)(self,
+                        **self.world_data[uid])
                 except AttributeError, err:
                     warnings.warn("Unknown world_type: %s (%s)" % (self.world_data[uid].world_type, err.message))
             else:
@@ -82,6 +78,7 @@ class MicroPsiRuntime(object):
         self.init_runners()
 
     def init_runners(self):
+        """Initialize the threads for the continuous simulation of nodenets and worlds"""
         if 'worldrunner_timestep' not in configs:
             configs['worldrunner_timestep'] = 5000
             configs['nodenetrunner_timestep'] = 1000
@@ -94,6 +91,7 @@ class MicroPsiRuntime(object):
         self.runner['nodenet']['runner'].start()
 
     def nodenetrunner(self):
+        """Looping thread to simulate node nets continously"""
         while True:
             step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
             start = datetime.now()
@@ -105,6 +103,7 @@ class MicroPsiRuntime(object):
             time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
 
     def worldrunner(self):
+        """Looping thread to simulate worlds continously"""
         while True:
             if configs['worldrunner_timestep'] > 1000:
                 step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
@@ -133,7 +132,8 @@ class MicroPsiRuntime(object):
         except AttributeError:
             # here be dragons
             __import__("micropsi_core.world.%s" % world_type, fromlist=['micropsi_core.world'])
-            mod = __import__("micropsi_core.world.%s.%s" % (world_type, world_type), fromlist=['micropsi_core.world.%s' % world_type])
+            mod = __import__("micropsi_core.world.%s.%s" % (world_type, world_type),
+                fromlist=['micropsi_core.world.%s' % world_type])
             return getattr(mod, world_type.capitalize())
 
     # MicroPsi API
@@ -146,9 +146,21 @@ class MicroPsiRuntime(object):
             owner (optional): when submitted, the list is filtered by this owner
         """
         if owner:
-            return dict((uid, self.nodenet_data[uid]) for uid in self.nodenet_data if self.nodenet_data[uid].owner == owner)
+            return dict(
+                (uid, self.nodenet_data[uid]) for uid in self.nodenet_data if self.nodenet_data[uid].owner == owner)
         else:
             return self.nodenet_data
+
+    def get_nodenet(self, nodenet_uid):
+        """Returns the nodenet with the given uid, and loads into memory if necessary.
+        Returns None if nodenet does not exist"""
+
+        if nodenet_uid not in self.nodenets:
+            if nodenet_uid in self.get_available_nodenets():
+                self.load_nodenet(nodenet_uid)
+            else:
+                return None
+        return self.nodenets[nodenet_uid]
 
     def load_nodenet(self, nodenet_uid):
         """ Load the nodenet with the given uid into memeory
@@ -166,14 +178,15 @@ class MicroPsiRuntime(object):
             world = worldadapter = None
             if nodenet_uid not in self.nodenets:
                 data = self.nodenet_data[nodenet_uid]
-                for uid in self.nodenets:
-                    if self.nodenets[uid].owner == data.owner:
-                        self.unload_nodenet(uid)
-                        break
+                # for uid in self.nodenets: # TODO @Doik why are the nodenets unloaded here?
+                #    if self.nodenets[uid].owner == data.owner:
+                #        self.unload_nodenet(uid)
+                #        break
                 if data.get('world'):
                     world = self.worlds[data.world] or None
                     worldadapter = data.get('worldadapter')
-                self.nodenets[nodenet_uid] = Nodenet(self, data.filename, name=data.name, worldadapter=worldadapter, world=world, owner=data.owner, uid=data.uid)
+                self.nodenets[nodenet_uid] = Nodenet(self, data.filename, name=data.name, worldadapter=worldadapter,
+                    world=world, owner=data.owner, uid=data.uid)
             else:
                 world = self.nodenets[nodenet_uid].world or None
                 worldadapter = self.nodenets[nodenet_uid].worldadapter
@@ -189,10 +202,12 @@ class MicroPsiRuntime(object):
             Arguments:
                 nodenet_uid
         """
-        if self.nodenets[nodenet_uid].world is not None:
+        if not nodenet_uid in self.nodenets: return False
+        if self.nodenets[nodenet_uid].world:
             self.nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
         del self.nodenets[nodenet_uid]
         return True
+
 
     def get_nodenet_area(self, nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         """ return all nodes and links within the given area of the nodenet
@@ -216,7 +231,7 @@ class MicroPsiRuntime(object):
         else:
             return self.nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
 
-    def new_nodenet(self, nodenet_name, worldadapter, template=None,  owner="", world_uid=None):
+    def new_nodenet(self, nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):
         """Creates a new node net manager and registers it.
 
         Arguments:
@@ -224,6 +239,7 @@ class MicroPsiRuntime(object):
                 gate types supported for directional activation spreading of this nodenet, and the initial node types
             owner (optional): the creator of this nodenet
             world_uid (optional): if submitted, attempts to bind the nodenet to this world
+            uid (optional): if submitted, this is used as the UID for the nodenet (normally, this is generated)
 
         Returns
             nodenet_uid if successful,
@@ -241,8 +257,9 @@ class MicroPsiRuntime(object):
                 step=0,
                 version=1
             )
+        if not uid: uid = tools.generate_uid()
         data.update(dict(
-            uid=tools.generate_uid(),
+            uid=uid,
             name=nodenet_name,
             worldadapter=worldadapter,
             owner=owner,
@@ -356,7 +373,7 @@ class MicroPsiRuntime(object):
             nodenet_data['uid'] = tools.generate_uid()
         if 'owner':
             nodenet_data['owner'] = owner
-        assert nodenet_data['world'] in self.worlds
+        # assert nodenet_data['world'] in self.worlds
         filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
         nodenet_data['filename'] = filename
         with open(filename, 'w+') as fp:
@@ -381,6 +398,35 @@ class MicroPsiRuntime(object):
         self.save_nodenet(nodenet_uid)
         self.unload_nodenet(nodenet_uid)
         self.load_nodenet(nodenet_uid)
+        return True
+
+    def copy_nodes(self, node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespace_uid="Root",
+                   copy_associated_links=True):
+        """Copies a set of netentities, either between nodenets or within a nodenet. If a target nodespace
+        is supplied, all nodes will be inserted below that target nodespace, otherwise below "Root".
+        If parent nodespaces are included in the set of node_uids, the contained nodes will remain in
+        these parent nodespaces.
+        Only explicitly listed nodes and nodespaces will be copied.
+        UIDs will be kept if possible, but renamed in case of conflicts.
+
+        Arguments:
+            node_uids: a list of uids of nodes and nodespaces
+            source_nodenet_uid
+            target_nodenet_uid
+            target_nodespace_uid: the uid of the nodespace into which the nodes will be copied
+            copy_associated_links: if True, links to not-copied nodes will be copied, too (of course, this works
+                only within the same nodenet)
+        """
+        source_nodenet = self.nodenets[source_nodenet_uid]
+        target_nodenet = self.nodenets[target_nodenet_uid]
+        nodes = {}
+        nodespaces = {}
+        for node_uid in node_uids:
+            if node_uid in source_nodenet.nodes:
+                nodes[node_uid] = source_nodenet.nodes[node_uid]
+            elif node_uid in source_nodenet.nodespaces:
+                nodespaces[node_uid] = source_nodenet.nodespaces[node_uid]
+        target_nodenet.copy_nodes(nodes, nodespaces, target_nodespace_uid, copy_associated_links)
         return True
 
     # World
@@ -408,6 +454,7 @@ class MicroPsiRuntime(object):
             dictionary containing the information
         """
         from micropsi_core.world import worldadapter
+
         data = self.worlds[world_uid].data
         data['worldadapters'] = {}
         for name in self.worlds[world_uid].supported_worldadapters:
@@ -420,6 +467,7 @@ class MicroPsiRuntime(object):
     def get_worldadapters(self, world_uid):
         """Returns the world adapters available in the given world"""
         from micropsi_core.world import worldadapter
+
         data = {}
         for name in self.worlds[world_uid].supported_worldadapters:
             data[name] = {
@@ -447,7 +495,8 @@ class MicroPsiRuntime(object):
         """
         uid = tools.generate_uid()
         filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
-        self.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename, version=1, owner=owner)
+        self.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename, version=1,
+            owner=owner)
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(self.world_data[uid], sort_keys=True, indent=4))
         fp.close()
@@ -542,7 +591,8 @@ class MicroPsiRuntime(object):
             fp.write(json.dumps(data))
         fp.close()
         self.world_data[data['uid']] = parse_definition(data, filename)
-        self.worlds[data['uid']] = self._get_world_class(self.world_data[data['uid']].world_type)(self, **self.world_data[data['uid']])
+        self.worlds[data['uid']] = self._get_world_class(self.world_data[data['uid']].world_type)(self,
+            **self.world_data[data['uid']])
         return data['uid']
 
     # Monitor
@@ -619,7 +669,7 @@ class MicroPsiRuntime(object):
          """
         return self.nodenets[nodenet_uid].nodes[node_uid]
 
-    def add_node(self, nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
+    def add_node(self, nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
         """Creates a new node. (Including nodespace, native module.)
 
         Arguments:
@@ -635,18 +685,14 @@ class MicroPsiRuntime(object):
             node_uid if successful,
             None if failure.
         """
-        nodenet = self.nodenets[nodenet_uid]
+        nodenet = self.get_nodenet(nodenet_uid)
         if type == "Nodespace":
-            nodespace = Nodespace(nodenet, nodespace, pos, name=name, entitytype='nodespaces', uid=uid)
+            nodespace = Nodespace(nodenet, nodespace, pos, name=name, uid=uid)
             uid = nodespace.uid
-            nodenet.nodespaces[uid] = nodespace
         else:
             node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
             uid = node.uid
-            nodenet.nodes[uid] = node
-            nodenet.nodes[uid].activation = 0  # TODO: shoudl this be persisted?
-            if state:
-                nodenet.nodes[uid].state = state
+            nodenet.update_node_positions()
         return True, uid
 
     def set_node_position(self, nodenet_uid, node_uid, pos):
@@ -656,6 +702,7 @@ class MicroPsiRuntime(object):
             nodenet.nodes[node_uid].position = pos
         elif node_uid in nodenet.nodespaces:
             nodenet.nodespaces[node_uid].position = pos
+        nodenet.update_node_positions()
         return True
 
     def set_node_name(self, nodenet_uid, node_uid, name):
@@ -693,19 +740,7 @@ class MicroPsiRuntime(object):
             del nodenet.nodespaces[node_uid]
             del nodenet.state['nodespaces'][node_uid]
         else:
-            link_uids = []
-            for key, gate in nodenet.nodes[node_uid].gates.items():
-                link_uids.extend(gate.outgoing.keys())
-            for key, slot in nodenet.nodes[node_uid].slots.items():
-                link_uids.extend(slot.incoming.keys())
-            parent_nodespace = nodenet.nodespaces.get(nodenet.nodes[node_uid].parent_nodespace)
-            parent_nodespace.netentities["nodes"].remove(node_uid)
-            del nodenet.nodes[node_uid]
-            del nodenet.state['nodes'][node_uid]
-            for uid in link_uids:
-                nodenet.links[uid].remove()
-                del nodenet.links[uid]
-                del nodenet.state['links'][uid]
+            nodenet.delete_node(node_uid)
         return True
 
     def get_available_node_types(self, nodenet_uid=None):
@@ -755,7 +790,8 @@ class MicroPsiRuntime(object):
             parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
         """
         nodenet = self.nodenets[nodenet_uid]
-        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters, nodefunction_definition=node_function)
+        nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
+            nodefunction_definition=node_function)
         return True
 
     def delete_node_type(self, nodenet_uid, node_type):
@@ -778,7 +814,8 @@ class MicroPsiRuntime(object):
         """Returns a string with the gate function of the given node and gate within the current nodespace.
         Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
         """
-        return self.nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(gate_type)
+        return self.nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(
+            gate_type)
 
     def set_gate_function(self, nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
         """Sets the gate function of the given node and gate within the current nodespace.
@@ -787,7 +824,8 @@ class MicroPsiRuntime(object):
         None reverts the custom gate function of the given node and gate within the current nodespace to the default.
         Parameters is a list of keys for values of the gate function.
         """
-        self.nodenets[nodenet_uid].nodespaces[nodespace].set_gate_function(node_type, gate_type, gate_function, parameters)
+        self.nodenets[nodenet_uid].nodespaces[nodespace].set_gate_function(node_type, gate_type, gate_function,
+            parameters)
         return True
 
     def set_gate_parameters(self, nodenet_uid, node_uid, gate_type, parameters=None):
@@ -819,7 +857,8 @@ class MicroPsiRuntime(object):
             return True
         return False
 
-    def add_link(self, nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1, uid=None):
+    def add_link(self, nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1,
+                 uid=None):
         """Creates a new link.
 
         Arguments.
@@ -836,25 +875,25 @@ class MicroPsiRuntime(object):
             None if failure
         """
         nodenet = self.nodenets[nodenet_uid]
-        link = Link(
-            nodenet.nodes[source_node_uid],
-            gate_type,
-            nodenet.nodes[target_node_uid],
-            slot_type,
-            weight=weight,
-            certainty=certainty,
-            uid=uid)
-        # TODO: let the link itself do the next step.
-        nodenet.state['links'][link.uid] = dict(
-            source_node=source_node_uid,
-            source_gate_name=gate_type,
-            target_node=target_node_uid,
-            target_slot_name=slot_type,
-            weight=weight,
-            certainty=certainty,
-            uid=link.uid
-        )
-        nodenet.links[link.uid] = link
+
+        # check if link already exists
+        existing_uid = get_link_uid(
+            nodenet.nodes[source_node_uid], gate_type,
+            nodenet.nodes[target_node_uid], slot_type)
+        if existing_uid:
+            link = nodenet.links[existing_uid]
+            link.weight = weight
+            link.certainty = certainty
+        else:
+            link = Link(
+                nodenet.nodes[source_node_uid],
+                gate_type,
+                nodenet.nodes[target_node_uid],
+                slot_type,
+                weight=weight,
+                certainty=certainty,
+                uid=uid)
+            nodenet.links[link.uid] = link
         return True, link.uid
 
     def set_link_weight(self, nodenet_uid, link_uid, weight, certainty=1):
@@ -892,7 +931,315 @@ class MicroPsiRuntime(object):
 
     def align_nodes(self, nodenet_uid, nodespace):
         """Perform auto-alignment of nodes in the current nodespace"""
-        return node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+        result = node_alignment.align(self.nodenets[nodenet_uid], nodespace)
+        if result:
+            self.nodenets[nodenet_uid].update_node_positions()
+        return result
+
+    def add_label(self, nodenet_uid, label_text, node_uid, language="en", weight=1, certainty=1):
+        """Adds a label to a node within a given nodenet"""
+
+        nodenet = self.nodenets[nodenet_uid]
+        if not isinstance(language, basestring) or not language:
+            raise ValueError, "Illegal language code supplied"
+
+        node = nodenet.nodes[node_uid]
+
+        # test if nodespace with the given language already exists
+        nodespace = nodenet.nodespaces.get(language)
+        if nodespace is None:
+            nodespace = Nodespace(nodenet, "Root", (100, 100), name="Labels " + language, uid=language)
+
+        # test if label already exists
+        label_uid = language + " " + label_text
+        labelnode = nodenet.nodes.get(label_uid)
+        if labelnode is None:
+            index = len(nodespace.netentities.get("nodes",[]))
+            labelnode = Node(nodenet, nodespace.uid,
+                type="Label",
+                position=node_alignment.calculate_grid_position(index),
+                name=label_text,
+                uid=label_uid
+            )
+
+        # check if link already exists
+        candidate = get_link_uid(labelnode, "ref", node, "gen")
+        if candidate:
+            weight = max(weight, nodenet.links[candidate].weight)
+            certainty = max(weight, nodenet.links[candidate].certainty)
+
+        # create/update links
+        self.add_link(nodenet_uid, labelnode.uid, "ref", node.uid, "gen", weight, certainty)
+        self.add_link(nodenet_uid, node.uid, "sym", labelnode.uid, "gen", weight, certainty)
+        return True
+
+    def delete_label(self, nodenet_uid, label_text, node_uid=None, language="en"):
+        """Removes a label, either completely or from an individual node"""
+
+        nodenet = self.nodenets[nodenet_uid]
+        label_uid = language + " " + label_text
+        labelnode = nodenet.nodes[label_uid]
+        if node_uid:
+            node = nodenet.nodes[node_uid]
+            for sym_link in labelnode.slots["gen"].incoming:
+                if nodenet.links[sym_link].source_node.uid == node.uid:
+                    self.delete_link(nodenet_uid, sym_link)
+                    break
+            for ref_link in labelnode.gates["ref"].outgoing:
+                if nodenet.links[ref_link].target_node.uid == node.uid:
+                    self.delete_link(nodenet_uid, ref_link)
+                    break
+        else:
+            self.delete_node(nodenet_uid, labelnode.uid)
+        return True
+
+    def get_available_labels(self, nodenet_uid, language="en"):
+        """Returns a list of all available labels for a given nodenet"""
+
+        nodenet = self.nodenets[nodenet_uid]
+        labels = None
+        if language in nodenet.nodespaces:
+            nodespace = nodenet.nodespaces.get(language)
+            label_nodes = nodespace.netentities.get("nodes",{})
+            labels = sorted([nodenet.nodes[uid].name for uid in label_nodes])
+        return labels or []
+
+    def get_nodes_from_labels(self, nodenet_uid, label_text_list, language="en", max_nodes=10):
+        """Returns a dictionary of node uids, together with the weight of their connections to the labels
+
+        Arguments:
+            nodenet_uid: the nodenet in which we operate
+            label_text_list: a list of strings where each is treated as a textual label
+            language: the locale (default is 'en')
+            max_nodes: the number of associated nodes that are maximally returned
+        """
+
+        # TODO make this work with spreading activation instead of link weight comparison
+
+        MAX_NUMBER_OF_CHECKED_NODES = 10000 # make sure that memory demands are not excessive
+
+        nodenet = self.get_nodenet(nodenet_uid)
+
+        label_set = set()
+        for i in label_text_list:
+            label_uid = language +" "+ i
+            if label_uid in nodenet.nodes:
+                label_set.add(label_uid)
+
+        linked_nodes = {}
+        for j in label_set:
+            for ref_link in nodenet.nodes[j].gates["ref"].outgoing.values():
+                linked_nodes[ref_link.target_node] = max(linked_nodes.get(ref_link.target_node, 0),
+                    ref_link.weight)
+                if len(linked_nodes) > MAX_NUMBER_OF_CHECKED_NODES: break
+            if len(linked_nodes) > MAX_NUMBER_OF_CHECKED_NODES: break
+
+        result_list = sorted(linked_nodes.iteritems(), key=operator.itemgetter(1))[:max_nodes]
+
+        return {k: v for k, v in result_list}
+
+    def get_blueprint_from_node(self, nodenet_uid, node_uid, depth=4):
+        """Returns a nodenet fragment made up of nodes, and links of the types por, ret, sub, sur,
+            starting from the given node and extending sub-ward from there"""
+
+        nodenet = self.nodenets[nodenet_uid]
+        nodes = {}
+        links = {}
+
+        def _get_blueprint_from_node(node_uid, nodes, links, depth):
+            node = nodenet.nodes[node_uid]
+            nodes[node.uid] = node
+            if "por" in node.gates:
+                outgoing = node.gates["por"].outgoing
+                for l, link in outgoing.items():
+                    links[l] = link
+                    connected_node = outgoing[l].target_node
+                    # try to add the inverse link
+                    if "ret" in connected_node.gates:
+                        for r, i_link in connected_node.gates["ret"].outgoing.items():
+                            if i_link.target_node == nodenet.nodes[node_uid]:
+                                links[r] = i_link
+                                break
+                    if not connected_node.uid in nodes:
+                        _get_blueprint_from_node(connected_node.uid, nodes, links, depth)
+                        # perhaps only choose the strongest link
+
+            if "sub" in node.gates and depth > 0:
+                outgoing = node.gates["sub"].outgoing
+                for l, link in outgoing.items():
+                    links[l] = link
+                    connected_node = outgoing[l].target_node
+                    # try to add the inverse link
+                    if "sur" in connected_node.gates:
+                        for r, i_link in connected_node.gates["sur"].outgoing.items():
+                            if i_link.target_node == nodenet.nodes[node_uid]:
+                                links[r] = i_link
+                                break
+                    if not connected_node.uid in nodes:
+                        _get_blueprint_from_node(connected_node.uid, nodes, links, depth - 1)
+
+        _get_blueprint_from_node(node_uid, nodes, links, depth)
+        return {
+            "nodes": { uid: nodenet.state["nodes"][uid] for uid in nodes },
+            "links": { l_uid: nodenet.state["links"][l_uid] for l_uid in links }}
+
+
+    def get_stencils(self, label_list, language = "en", master_nodenet_uid="default_domain", max_stencils=5):
+        """Ad hoc method for delivering suggestions from master nodenet
+
+        Arguments:
+            label_list: a list of strings that are used as search terms for retrieval
+            master_nodenet_uid: the uid of the nodenet containing the stencils
+        """
+        if master_nodenet_uid not in self.nodenets:
+            if master_nodenet_uid in self.get_available_nodenets():
+                self.load_nodenet(master_nodenet_uid)
+
+        if master_nodenet_uid not in self.nodenets: # we do not have suggestions for this domain
+            return None
+
+        labels = [ label.lower().strip() for label in label_list ]
+
+        headnodes = self.get_nodes_from_labels(master_nodenet_uid, labels, language, max_nodes = max_stencils)
+        return [self.get_blueprint_from_node(master_nodenet_uid, headnode.uid) for headnode in headnodes]
+
+
+    def add_stencil(self, nodes, links, labels=None, language="en", master_nodenet_uid="default_domain", user=None):
+        """Store a blueprint as a stencil in the master nodenet, and associate it with labels.
+        Labels are extracted from the names of nodes, or used directly from the supplied list.
+
+        Arguments:
+            nodes: a dict of nodes, with types and names,
+            links: a dict of links connecting these nodes (por/ret and sub/sur)
+            labels: (optional) a list of strings that act as search terms later on
+            language: (optional) the locale of the label(s)
+            master_nodenet_uid: (optional) the uid of the nodenet of the domain
+        """
+
+        # check if master nodenet exists
+        if not self.get_nodenet(master_nodenet_uid):
+            self.new_nodenet(master_nodenet_uid, "Default", uid = master_nodenet_uid)
+            self.load_nodenet(master_nodenet_uid)
+        nodenet = self.nodenets[master_nodenet_uid]
+
+        # check consistency before we drop this into the master nodenet
+        nodetable = {}
+        for l_uid, l in links.items():
+            if (not l["source_node"] in nodes and not l["source_node"] in nodenet) or (
+                not l["target_node"] in nodes and not l["target_node"] in nodenet):
+                raise KeyError, "node_uid referenced in link %s not found in nodes" %l_uid
+            if not l["source_node"] in nodetable:
+                nodetable[l["source_node"]] = {}
+            nodetable[l["source_node"]][l_uid] = l
+
+        # find headnode
+        headnode = None
+        headnode_uid = None
+        for uid, ls in nodetable.items():
+            headnode_uid = uid
+            for l_uid, link in ls.items():
+                if link["source_gate_name"] in ("sur", "ret", "por"):
+                    headnode_uid = None
+                    break
+            if headnode_uid:
+                headnode = nodes[headnode_uid]
+                break
+        if not headnode:
+            if len(nodes) == 1:
+                headnode_uid = nodes.keys()[0]
+                headnode = nodes[headnode_uid]
+            else:
+                raise KeyError, "No head node found in stencil"
+
+        primary_labels = labels or []
+        secondary_labels = []
+        for uid, node in nodes.items():
+            if uid != headnode_uid:
+                if node.get("name"):
+                    secondary_labels.append(node["name"])
+
+        # add stencil to domain nodenet
+        for uid, node in nodes.items():
+            if not uid in self.nodenets[master_nodenet_uid].nodes:
+                self.add_node(master_nodenet_uid,
+                    node.get("type", "Concept"),
+                    node.get("pos", (0,0)),
+                    "Root",
+                    uid = uid,
+                    name = node.get("name", ""))
+        for l_uid, link in links.items():
+            self.add_link(master_nodenet_uid,
+                link["source_node"],
+                link["source_gate_name"],
+                link["target_node"],
+                link["target_slot_name"],
+                weight = link.get("weight", 1.0),
+                certainty = link.get("certainty", 1.0)
+            )
+        for label in primary_labels:
+            self.add_label(master_nodenet_uid, label.lower(), headnode_uid, language, weight=1)
+        if headnode.get("name"):
+            self.add_label(master_nodenet_uid, headnode["name"].lower(), headnode_uid, language, weight = 0.5)
+
+        for label in secondary_labels:
+            self.add_label(master_nodenet_uid, label.lower(), headnode_uid, language, weight=0.1)
+
+        if user:
+            self.add_label(master_nodenet_uid, user, headnode_uid, "users")
+
+        return headnode_uid
+
+    def delete_stencil_by_headnode(self, headnode_uid, master_nodenet_uid="default_domain"):
+        """Deletes a stencil from an existing nodenet, by identifying the nodes below the headnode and
+        removing them."""
+
+        nodenet = self.get_nodenet(master_nodenet_uid)
+        nodes = set()
+
+        def _retrieve_stencil_nodes(node_uid, nodes):
+            if not node_uid in nodes:
+                nodes.add(node_uid)
+                por_gates = nodenet.nodes[node_uid].gates.get("por")
+                sub_gates = nodenet.nodes[node_uid].gates.get("sub")
+
+                if por_gates:
+                    for link in por_gates.outgoing.values():
+                        _retrieve_stencil_nodes(link.target_node.uid, nodes)
+                if sub_gates:
+                    for link in sub_gates.outgoing.values():
+                        _retrieve_stencil_nodes(link.target_node.uid, nodes)
+
+        _retrieve_stencil_nodes(headnode_uid, nodes)
+        for node_uid in nodes:
+            self.delete_node(master_nodenet_uid, node_uid)
+
+        return True
+
+    def delete_all_stencils_of_user(self, user, master_nodenet_uid="default_domain"):
+        """Deletes all stencils associated with a given user"""
+
+        headnodes = self.get_nodes_from_labels(master_nodenet_uid, [user], "users", max_nodes = 9999999999)
+        for node in headnodes:
+            self.delete_stencil_by_headnode(node.uid, master_nodenet_uid)
+        try:
+            self.delete_label(master_nodenet_uid, user, language = "users")
+        except KeyError:
+            # user has no stencils. never mind.
+            pass
+        return True
+
+
+    def turn_nodenet_into_stencil(self, nodenet_uid, language="en", master_nodenet_uid="default_domain", user = None):
+        """Helper method to import existing blueprints into stencils, which are held in a master nodenet.
+        It is recommended to create a master nodenet for every language and knowledge domain."""
+
+        nodenet = self.get_nodenet(nodenet_uid)
+        result = self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name],
+            language, master_nodenet_uid, user)
+        if result:
+            self.save_nodenet(master_nodenet_uid)
+        return result
+
 
 
 def crawl_definition_files(path, type="definition"):
@@ -936,5 +1283,5 @@ def parse_definition(json, filename=None):
 def main():
     MicroPsiRuntime(RESOURCE_PATH)
 
-if __name__ == '__main__':
-    main()
+    if __name__ == '__main__':
+        main()

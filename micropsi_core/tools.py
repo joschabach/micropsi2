@@ -153,6 +153,12 @@ def create_function(source_string, parameters = "", additional_symbols = None):
     return fct
 
 
+class Bunch(dict):
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+        for i in kwargs:
+            self[i] = kwargs[i]
+
 import collections
 
 class OrderedSet(collections.OrderedDict, collections.MutableSet):

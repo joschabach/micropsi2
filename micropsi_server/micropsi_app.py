@@ -24,6 +24,7 @@ import argparse
 import os
 import json
 import inspect
+import minidoc
 
 
 DEFAULT_PORT = 6543
@@ -130,6 +131,13 @@ def nodenet():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
     return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+
+
+@route('/minidoc/<filepath:path>')
+def document(filepath):
+    return template("minidoc",
+        navi=minidoc.get_navigation(),
+        content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
 
 @route("/world")

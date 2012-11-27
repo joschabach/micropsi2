@@ -5,6 +5,7 @@
 MicroPsi runtime component;
 maintains a set of users, worlds (up to one per user), and nodenets, and provides an interface to external clients
 """
+import difflib
 import operator
 
 __author__ = 'joscha'
@@ -1004,7 +1005,7 @@ class MicroPsiRuntime(object):
             labels = sorted([nodenet.nodes[uid].name for uid in label_nodes])
         return labels or []
 
-    def get_nodes_from_labels(self, nodenet_uid, label_text_list, language="en", max_nodes=10):
+    def get_nodes_from_labels(self, nodenet_uid, label_text_list, language="en", max_nodes=10, fuzzy_search=True):
         """Returns a dictionary of node uids, together with the weight of their connections to the labels
 
         Arguments:
@@ -1019,18 +1020,28 @@ class MicroPsiRuntime(object):
         MAX_NUMBER_OF_CHECKED_NODES = 10000 # make sure that memory demands are not excessive
 
         nodenet = self.get_nodenet(nodenet_uid)
+        if fuzzy_search:
+            vocabulary = self.get_available_labels(nodenet_uid, language)
 
-        label_set = set()
+        labels = {}
         for i in label_text_list:
             label_uid = language +" "+ i
             if label_uid in nodenet.nodes:
-                label_set.add(label_uid)
+                labels[i] = { "uid": label_uid, "weight" : 1.0 }
+            if fuzzy_search:
+                more_labels = difflib.get_close_matches(i, vocabulary)
+                for j in more_labels:
+                    label_uid = language + " " + j
+                    if label_uid in nodenet.nodes:
+                        weight = difflib.SequenceMatcher(None, i, j).ratio()
+                        if j not in labels or labels[j]["weight"] < weight:
+                            labels[j] = { "uid": label_uid, "weight" : weight }
 
         linked_nodes = {}
-        for j in label_set:
-            for ref_link in nodenet.nodes[j].gates["ref"].outgoing.values():
+        for k in labels.values():
+            for ref_link in nodenet.nodes[k["uid"]].gates["ref"].outgoing.values():
                 linked_nodes[ref_link.target_node] = max(linked_nodes.get(ref_link.target_node, 0),
-                    ref_link.weight)
+                    ref_link.weight*k["weight"])
                 if len(linked_nodes) > MAX_NUMBER_OF_CHECKED_NODES: break
             if len(linked_nodes) > MAX_NUMBER_OF_CHECKED_NODES: break
 
@@ -1097,6 +1108,8 @@ class MicroPsiRuntime(object):
 
         if master_nodenet_uid not in self.nodenets: # we do not have suggestions for this domain
             return None
+
+
 
         labels = [ label.lower().strip() for label in label_list ]
 

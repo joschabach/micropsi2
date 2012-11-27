@@ -219,8 +219,9 @@ function setNodespaceData(data){
         var uid;
         for(uid in data.nodes){
             if(uid in nodes){
-                nodes[uid].update(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
+                item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 redrawNode(item);
+                nodes[uid].update(item);
             } else{
                 item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 addNode(item);
@@ -230,7 +231,7 @@ function setNodespaceData(data){
             item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
             if(uid in nodes){
                 redrawNode(item);
-                nodes[uid] = item;
+                nodes[uid].update(item);
             } else{
                 addNode(item);
             }
@@ -316,10 +317,10 @@ function refreshNodespace(nodespace, coordinates, step){
 
 
 function refreshViewPortData(){
-    var top = canvas_container.scrollTop();
-    var left = canvas_container.scrollLeft();
-    var width = canvas_container.width();
-    var height = canvas_container.height();
+    var top = parseInt(canvas_container.scrollTop() / viewProperties.zoomFactor);
+    var left = parseInt(canvas_container.scrollLeft() / viewProperties.zoomFactor);
+    var width = parseInt(canvas_container.width() / viewProperties.zoomFactor);
+    var height = parseInt(canvas_container.height() / viewProperties.zoomFactor);
     if(top + height > loaded_coordinates.y[1] ||
         left + width > loaded_coordinates.x[1] ||
         top < loaded_coordinates.y[0] ||
@@ -389,16 +390,16 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.gateIndexes = Object.keys(this.gates);
     }
 
-    this.update = function(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_parameters){
-        this.uid = uid;
-        this.x = x;
-        this.y = y;
-        this.parent = nodeSpaceUid;
-        this.name = name;
-        this.activation = activation;
-        this.state = state;
-        this.parameters = parameters || {};
-        this.gate_parameters = gate_parameters || {};
+    this.update = function(item){
+        this.uid = item.uid;
+        this.x = item.x;
+        this.y = item.y;
+        this.parent = item.parent;
+        this.name = item.name;
+        this.activation = item.activation;
+        this.state = item.state;
+        this.parameters = item.parameters;
+        this.gate_parameters = item.gate_parameters;
     };
 }
 
@@ -600,13 +601,31 @@ function redrawNodeNet() {
 
 // like activation change, only put the node elsewhere and redraw the links
 function redrawNode(node) {
+    if(nodeRedrawNeeded(node)){
+        if(node.uid in nodeLayer.children){
+            nodeLayer.children[node.uid].remove();
+        }
+        if(node.parent == currentNodeSpace){
+            renderNode(node);
+            redrawNodeLinks(node);
+        }
+    } else {
+        if(node.parent != currentNodeSpace){
+            nodeLayer.children[node.uid].remove();
+        }
+    }
+}
+
+function nodeRedrawNeeded(node){
     if(node.uid in nodeLayer.children){
-        nodeLayer.children[node.uid].remove();
+        if(node.x == nodes[node.uid].x &&
+            node.y == nodes[node.uid].y &&
+            node.activation == nodes[node.uid].activation &&
+            viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
+            return false;
+        }
     }
-    if(node.parent == currentNodeSpace){
-        renderNode(node);
-        redrawNodeLinks(node);
-    }
+    return true;
 }
 
 // redraw only the links that are connected to the given node
@@ -919,10 +938,11 @@ function renderLinkDuringCreation(endPoint) {
 
 // draw net entity
 function renderNode(node) {
-    console.log("rendering node. parent: " + node.parent);
+    console.log("rendering node "+(node.name || node.uid)+". parent: " + node.parent);
     if (isCompact(node)) renderCompactNode(node);
     else renderFullNode(node);
     setActivation(node);
+    node.zoomFactor = viewProperties.zoomFactor;
 }
 
 // draw net entity with slots and gates

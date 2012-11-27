@@ -609,6 +609,10 @@ function redrawNode(node) {
             renderNode(node);
             redrawNodeLinks(node);
         }
+    } else {
+        if(node.parent != currentNodeSpace){
+            nodeLayer.children[node.uid].remove();
+        }
     }
 }
 

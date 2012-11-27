@@ -83,6 +83,7 @@ selectionBox.dashArray = [4,2];
 
 STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event"];
 nodetypes = {};
+available_gatetypes = [];
 
 initializeMenus();
 initializeControls();
@@ -189,6 +190,12 @@ function setCurrentNodenet(uid, nodespace){
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
                 api.call('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
                     nodetypes = nodetypedata;
+                    available_gatetypes = [];
+                    for(var key in nodetypes){
+                        if(nodetypes[key].gatetypes && nodetypes[key].gatetypes.length > available_gatetypes.length){
+                            available_gatetypes = nodetypes[key].gatetypes;
+                        }
+                    }
                     get_available_worldadapters(data.world_id);
                     setNodespaceData(data);
                 });
@@ -1610,6 +1617,7 @@ function onMouseUp(event) {
             // update position on server
             path.nodeMoved = false;
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            movePath = false;
             updateViewSize();
         }
     }
@@ -1866,6 +1874,11 @@ function handleContextMenu(event) {
                 default:
                     // link creation
                     if (menuText.substring(0, 6) == "Create" && menuText.indexOf(" link")>0) {
+                        var linktype = menuText.substring(7, menuText.indexOf(" link"));
+                        if(linktype.indexOf('/')){
+                            linktype = linktype.split('/')[0];
+                        }
+                        clickIndex = available_gatetypes.indexOf(linktype);
                         createLinkHandler(clickOriginUid, clickIndex, menuText.substring(7, menuText.indexOf(" link")));
                     }
             }

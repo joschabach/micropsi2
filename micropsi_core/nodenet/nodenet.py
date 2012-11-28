@@ -870,8 +870,8 @@ class Node(NetEntity):
         for link in self.get_associated_link_ids():
             if self.nodenet.links[link].source_node.uid != self.uid:
                 nodes.append(self.nodenet.links[link].source_node.uid)
-            if self.nodenet.links[link].source_node.uid != self.uid:
-                nodes.append(self.nodenet.links[link].source_node.uid)
+            if self.nodenet.links[link].target_node.uid != self.uid:
+                nodes.append(self.nodenet.links[link].target_node.uid)
         return nodes
 
     def set_gate_parameters(self, gate_type, parameters):

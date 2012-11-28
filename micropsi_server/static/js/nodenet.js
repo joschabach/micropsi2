@@ -80,6 +80,7 @@ var selectionBox = new Path.Rectangle(selectionRectangle);
 selectionBox.strokeWidth = 0.5;
 selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
+selectionBox.name = "selectionBox";
 
 STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event"];
 nodetypes = {};
@@ -184,7 +185,6 @@ function setCurrentNodenet(uid, nodespace){
             nodeLayer.removeChildren();
             addNode(rootNode);
             linkLayer.removeChildren();
-            nodeLayer.addChild(selectionBox);
 
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
@@ -299,6 +299,9 @@ function refreshNodespace(nodespace, coordinates, step){
             $("#nodespace_name").val(nodespace in nodes && nodes[nodespace].name ? nodes[nodespace].name : nodespace);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
+        }
+        if(!('selectionBox' in nodeLayer)){
+            nodeLayer.addChild(selectionBox);
         }
         loaded_coordinates = coordinates;
         if(jQuery.isEmptyObject(data)){
@@ -574,6 +577,7 @@ function updateViewSize() {
 function redrawNodeNet() {
     console.log("redrawNodeNet");
     nodeLayer.removeChildren();
+    nodeLayer.addChild(selectionBox);
     linkLayer.removeChildren();
     var i;
     for (i in nodes) {
@@ -1668,10 +1672,12 @@ function updateSelection(event){
         selectionRectangle.height = Math.abs(event.point.y - selectionStart.y);
         selectionBox.setBounds(selectionRectangle);
         for(var uid in nodes){
-            if(selectionRectangle.contains(nodes[uid])){
-                selectNode(uid);
-            } else {
-                deselectNode(uid);
+            if(uid in nodeLayer.children){
+                if(selectionRectangle.contains(nodes[uid])){
+                    selectNode(uid);
+                } else {
+                    deselectNode(uid);
+                }
             }
         }
     }

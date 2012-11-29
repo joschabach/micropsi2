@@ -155,8 +155,8 @@ function setNodenetValues(data){
         if(worldadapter_select.val() != data.worldadapter){
             dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
         }
-        showDataSourcesTargetsForWorldadapter(data.worldadapter);
     }
+    showDataSourcesTargetsForWorldadapter(data.worldadapter);
 }
 
 function setCurrentNodenet(uid, nodespace){
@@ -2536,20 +2536,21 @@ function initializeSidebarForms(){
 
 function showDataSourcesTargetsForWorldadapter(worldadapter){
     var i;
-    str = '';
-    if (worldadapters[worldadapter].datatargets) {
-        for (i in worldadapters[worldadapter].datatargets){
-            str += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';
+    var datatargets, datasources = '';
+    if(worldadapter){
+        if (worldadapters[worldadapter].datatargets) {
+            for (i in worldadapters[worldadapter].datatargets){
+                datatargets += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';
+            }
+        }
+        if (worldadapters[worldadapter].datasources){
+            for (i in worldadapters[worldadapter].datasources){
+                datasources += '<tr><td>'+worldadapters[worldadapter].datasources[i]+'</td></tr>';
+            }
         }
     }
-    $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
-    str = '';
-    if (worldadapters[worldadapter].datasources){
-        for (i in worldadapters[worldadapter].datasources){
-            str += '<tr><td>'+worldadapters[worldadapter].datasources[i]+'</td></tr>';
-        }
-    }
-    $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
+    $('#nodenet_datatargets').html(datatargets || '<tr><td>No datatargets defined</td></tr>');
+    $('#nodenet_datasources').html(datasources || '<tr><td>No datasources defined</td></tr>');
 }
 
 function showLinkForm(linkUid){
@@ -2668,7 +2669,8 @@ function showDefaultForm(){
 function showGateForm(node, gate){
     $('#nodenet_forms .form-horizontal').hide();
     var form = $('#edit_gate_form');
-    $('.gate_gatetype', form).html('<strong>"'+ gate.name +'"</strong>');
+    $('.gate_nodetype', form).html('<strong>'+ node.type +'</strong>');
+    $('.gate_gatetype', form).html('<strong>'+ gate.name +'</strong>');
     $.each($('input, select, textarea', form), function(index, el){
         el.value = '';
         if(el.name in gate.parameters){

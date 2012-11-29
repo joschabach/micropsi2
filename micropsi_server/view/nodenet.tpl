@@ -61,66 +61,62 @@
 
             <form class="form-horizontal hide" id="edit_nodenet_form">
                 <h4>Nodenet</h4>
-                <fieldset>
-                    <div class="control-group">
-                        <label class="control-label" for="nodenet_uid">UID</label>
-                        <div class="controls">
-                            <input type="text" name="nodenet_uid" disabled="disabled" id="nodenet_uid">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="nodenet_name">Name</label>
-                        <div class="controls">
-                            <input type="text" name="nodenet_name" id="nodenet_name">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="nodenet_worldadapter">Worldadapter</label>
-                        <div class="controls">
-                            <select name="nodenet_worldadapter" id="nodenet_worldadapter"></select>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">Nodetypes</label>
-                        <div class="controls">
+                <table>
+                    <tr>
+                        <td><label for="nodenet_uid">UID</label></td>
+                        <td><input type="text" name="nodenet_uid" disabled="disabled" id="nodenet_uid"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="nodenet_name">Name</label></td>
+                        <td><input type="text" name="nodenet_name" id="nodenet_name"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="nodenet_worldadapter">Worldadapter</label></td>
+                        <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
+                    </tr>
+                    <tr>
+                        <td><label>Nodetypes</label></td>
+                        <td>
                             <table id="nodenet_nodetypes" class="table-striped table-condensed"></table>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">Datasources</label>
-                        <div class="controls">
-                            <table id="nodenet_datasources" class="table-striped table-condensed"></table>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label">Datatargets</label>
-                        <div class="controls">
-                            <table id="nodenet_datatargets" class="table-striped table-condensed"></table>
-                        </div>
-                    </div>
-                    <div class="controls">
-                        <button type="submit" class="btn btn-primary">Apply</button>
-                    </div>
-                </fieldset>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>Datasources</label></td>
+                        <td><table id="nodenet_datasources" class="table-striped table-condensed"></table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>Datatargets</label></td>
+                        <td><table id="nodenet_datatargets" class="table-striped table-condensed"></table>
+                        </td>
+                    </tr>
+                </table>
+                <div class="controls">
+                    <button type="submit" class="btn btn-primary">Apply</button>
+                </div>
 
             </form>
 
             <form class="form-horizontal hide" id="edit_link_form">
                 <h4>Link</h4>
-                <fieldset>
-                    <div class="control-group">
-                        <label class="control-label" for="link_weight_input">Weight</label>
-                        <div class="controls">
-                            <input type="text" class="" name="link_weight" id="link_weight_input">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="link_certainty_input">Certainty</label>
-                        <div class="controls">
-                            <input type="text" class="" name="link_certainty" id="link_certainty_input">
-                        </div>
-                    </div>
-                </fieldset>
+                <table class="table-condensed">
+                    <tr>
+                        <td><label for="link_weight_input">Weight</label></td>
+                        <td><input type="text" class="" name="link_weight" id="link_weight_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="link_certainty_input">Certainty</label></td>
+                        <td><input type="text" class="" name="link_certainty" id="link_certainty_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Source</label></td>
+                        <td class="link_source_node"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Target</label></td>
+                        <td class="link_target_node"></td>
+                    </tr>
+                </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
@@ -128,52 +124,44 @@
 
             <form class="form-horizontal hide" id="edit_gate_form">
                 <h4>Gate <span class="gate_gatetype"></span></h4>
-                <fieldset>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_minimum">Minimum</label>
-                        <div class="controls">
-                            <input type="text" class="" name="minimum" id="gate_minimum">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_maximum">Maximum</label>
-                        <div class="controls">
-                            <input type="text" class="" name="maximum" id="gate_maximum">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_certainty">Certainty</label>
-                        <div class="controls">
-                            <input type="text" class="" name="certainty" id="gate_certainty">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_amplification">Amplification</label>
-                        <div class="controls">
-                            <input type="text" class="" name="amplification" id="gate_amplification">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_threshold">Threshold</label>
-                        <div class="controls">
-                            <input type="text" class="" name="threshold" id="gate_threshold">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_decay">Decay</label>
-                        <div class="controls">
-                            <input type="text" class="" name="decay" id="gate_decay">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="gate_gatefunction">Gatefunction (valid for all gates of type <span class="gate_gatetype"></span> in this nodespace)</label>
-                        <div class="controls dropdown">
+                <table>
+                    <tr>
+                        <td><label for="gate_minimum">Minimum</label></td>
+                        <td><input type="text" class="" name="minimum" id="gate_minimum"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gate_maximum">Maximum</label></td>
+                        <td><input type="text" class="" name="maximum" id="gate_maximum"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gate_certainty">Certainty</label></td>
+                        <td><input type="text" class="" name="certainty" id="gate_certainty"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gate_amplification">Amplification</label></td>
+                        <td><input type="text" class="" name="amplification" id="gate_amplification"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gate_threshold">Threshold</label></td>
+                        <td><input type="text" class="" name="threshold" id="gate_threshold"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gate_decay">Decay</label></td>
+                        <td><input type="text" class="" name="decay" id="gate_decay"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="gate_gatefunction">Gatefunction</label></td>
+                        <td>
                             <code>def gatefunction(<span id="params"></span>):
-                            </code>
+                            </code><br/>
                            <textarea name="gatefunction" id="gate_gatefunction"></textarea>
-                        </div>
-                    </div>
-                </fieldset>
+                           <br/>
+                           <span class="helptext">
+                            (the gatefunction is valid for all gates of type <br/><span class="gate_nodetype"></span>.<span class="gate_gatetype"></span> in this nodespace)
+                            </span>
+                        </td>
+                    </tr>
+                </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
@@ -181,45 +169,46 @@
 
             <form class="form-horizontal hide" id="edit_node_form">
                 <h4>Node</h4>
-                <fieldset>
-                    <div class="control-group">
-                        <label class="control-label" for="node_uid_input">UID</label>
-                        <div class="controls">
-                            <input type="text" disabled="disabled" id="node_uid_input" />
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="node_name_input">Name</label>
-                        <div class="controls">
-                            <input type="text" name="node_name" id="node_name_input">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="node_type_input">Type</label>
-                        <div class="controls">
-                            <input type="text" name="node_type" disabled="disabled" id="node_type_input" />
-                        </div>
-                    </div>
-                    <div class="control-group node state">
-                        <label class="control-label" for="node_state_input">State</label>
-                        <div class="controls">
-                            <select type="text" name="node_state" id="node_state_input"></select>
-                        </div>
-                    </div>
-                    <div class="control-group node">
-                        <label class="control-label" for="node_activation_input">Activation</label>
-                        <div class="controls">
-                            <input type="text" name="node_activation" id="node_activation_input">
-                        </div>
-                    </div>
-                    <div class="control-group node parameters">
-                        <label class="control-label">Parameters</label>
-                        <div class="controls">
-                            <table id="node_parameters" class="table-striped table-condensed">
+                <table class="table-condensed">
+                    <tr>
+                        <td><label for="node_uid_input">UID</label></td>
+                        <td><input type="text" disabled="disabled" id="node_uid_input" /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_name_input">Name</label></td>
+                        <td><input type="text" name="node_name" id="node_name_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_type_input">Type</label></td>
+                        <td><input type="text" name="node_type" disabled="disabled" id="node_type_input" /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_state_input">State</label></td>
+                        <td><select type="text" name="node_state" id="node_state_input"></select></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_activation_input">Activation</label></td>
+                        <td><input type="text" name="node_activation" id="node_activation_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Parameters</label></td>
+                        <td><table id="node_parameters" class="table-striped table-condensed">
                             </table>
-                        </div>
-                    </div>
-                </fieldset>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>in links</label></td>
+                        <td><table id="node_slots" class="table-striped table-condensed">
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>out links</label></td>
+                        <td><table id="node_gates" class="table-striped table-condensed">
+                            </table>
+                        </td>
+                    </tr>
+                </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>

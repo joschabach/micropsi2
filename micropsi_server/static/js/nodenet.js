@@ -1290,9 +1290,11 @@ function selectNode(nodeUid) {
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
-        var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
-        outline.strokeColor = viewProperties.outlineColor;
-        outline.strokeWidth = viewProperties.outlineWidth;
+        if(nodeUid in nodeLayer.children){
+            var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+            outline.strokeColor = viewProperties.outlineColor;
+            outline.strokeWidth = viewProperties.outlineWidth;
+        }
     }
 }
 
@@ -2578,17 +2580,32 @@ function showNodeForm(nodeUid){
         $('a.follownode').on('click', function(event){
             event.preventDefault();
             var id = $(event.target).attr('data');
+            var width = canvas_container.width();
+            var height = canvas_container.height();
+            var x = Math.max(0, nodes[id].x-width/2);
+            var y = Math.max(0, nodes[id].y-height/2);
             if(isOutsideNodespace(nodes[id])){
                 refreshNodespace(nodes[id].parent, {
-                    x: [0, canvas_container.width() * 2],
-                    y: [0, canvas_container.height() * 2]
+                    x: [x-canvas_container.width(), canvas_container.width() * 2],
+                    y: [y, canvas_container.height() * 2]
                 }, null, function(){
+                    deselectAll();
+                    canvas_container.scrollTop(y);
+                    canvas_container.scrollLeft(x);
                     selectNode(id);
+                    view.draw();
                     showNodeForm(id);
                 });
             } else {
                 deselectAll();
                 selectNode(id);
+                if(nodes[id].y < canvas_container.scrollTop() ||
+                    nodes[id].y > canvas_container.scrollTop() + height ||
+                    nodes[id].x < canvas_container.scrollLeft() ||
+                    nodes[id].x > canvas_container.scrollLeft() + width) {
+                    canvas_container.scrollTop(y);
+                    canvas_container.scrollLeft(x);
+                }
                 view.draw();
                 showNodeForm(id);
             }

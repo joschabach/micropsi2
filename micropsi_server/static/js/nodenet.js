@@ -76,7 +76,7 @@ currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
 var selectionRectangle = new Rectangle(1,1,1,1);
-var selectionBox = new Path.Rectangle(selectionRectangle);
+selectionBox = new Path.Rectangle(selectionRectangle);
 selectionBox.strokeWidth = 0.5;
 selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
@@ -222,7 +222,9 @@ function setNodespaceData(data){
         if('max_coords' in data){
             max_coordinates = data['max_coords'];
         }
-
+        if(!('selectionBox' in nodeLayer)){
+            nodeLayer.addChild(selectionBox);
+        }
         var uid;
         for(uid in data.nodes){
             if(uid in nodes){
@@ -299,9 +301,6 @@ function refreshNodespace(nodespace, coordinates, step){
             $("#nodespace_name").val(nodespace in nodes && nodes[nodespace].name ? nodes[nodespace].name : nodespace);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
-        }
-        if(!('selectionBox' in nodeLayer)){
-            nodeLayer.addChild(selectionBox);
         }
         loaded_coordinates = coordinates;
         if(jQuery.isEmptyObject(data)){
@@ -1671,9 +1670,10 @@ function updateSelection(event){
         selectionRectangle.width = Math.abs(event.point.x - selectionStart.x);
         selectionRectangle.height = Math.abs(event.point.y - selectionStart.y);
         selectionBox.setBounds(selectionRectangle);
+        var scaledRectangle = new Rectangle(selectionRectangle.x/viewProperties.zoomFactor,selectionRectangle.y/viewProperties.zoomFactor, selectionRectangle.width/viewProperties.zoomFactor, selectionRectangle.height / viewProperties.zoomFactor);
         for(var uid in nodes){
             if(uid in nodeLayer.children){
-                if(selectionRectangle.contains(nodes[uid])){
+                if(scaledRectangle.contains(nodes[uid])){
                     selectNode(uid);
                 } else {
                     deselectNode(uid);

@@ -227,12 +227,11 @@ function setNodespaceData(data){
         }
         var uid;
         for(uid in data.nodes){
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
             if(uid in nodes){
-                item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 redrawNode(item);
                 nodes[uid].update(item);
             } else{
-                item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 addNode(item);
             }
         }
@@ -391,6 +390,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 
     this.update = function(item){
         this.uid = item.uid;
+        if(item.bounds) this.bounds = item.bounds;
         this.x = item.x;
         this.y = item.y;
         this.parent = item.parent;

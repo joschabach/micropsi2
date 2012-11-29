@@ -2474,6 +2474,48 @@ function makeUuid() {
 }
 
 
+function followlink(event){
+    event.preventDefault();
+    var id = $(event.target).attr('data');
+    deselectAll();
+    selectLink(id);
+    view.draw();
+    showLinkForm(id);
+}
+
+function follownode(event){
+    event.preventDefault();
+    var id = $(event.target).attr('data');
+    var width = canvas_container.width();
+    var height = canvas_container.height();
+    var x = Math.max(0, nodes[id].x*viewProperties.zoomFactor-width/2);
+    var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
+    if(isOutsideNodespace(nodes[id])){
+        refreshNodespace(nodes[id].parent, {
+            x: [x-canvas_container.width(), canvas_container.width() * 2],
+            y: [y, canvas_container.height() * 2]
+        }, null, function(){
+            deselectAll();
+            canvas_container.scrollTop(y);
+            canvas_container.scrollLeft(x);
+            selectNode(id);
+            view.draw();
+            showNodeForm(id);
+        });
+    } else {
+        deselectAll();
+        selectNode(id);
+        if(nodes[id].y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
+            nodes[id].y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
+            nodes[id].x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
+            nodes[id].x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
+            canvas_container.scrollTop(y);
+            canvas_container.scrollLeft(x);
+        }
+        view.draw();
+        showNodeForm(id);
+    }
+}
 
 // sidebar editor forms ---------------------------------------------------------------
 
@@ -2515,6 +2557,9 @@ function showLinkForm(linkUid){
     $('#edit_link_form').show();
     $('#link_weight_input').val(links[linkUid].weight);
     $('#link_certainty_input').val(links[linkUid].certainty);
+    $('.link_source_node').html('<a href="#follownode" class="follownode" data="'+links[linkUid].sourceNodeUid+'">'+(nodes[links[linkUid].sourceNodeUid].name || nodes[links[linkUid].sourceNodeUid].uid.substr(0,8))+'</a>');
+    $('.link_target_node').html('<a href="#follownode" class="follownode" data="'+links[linkUid].targetNodeUid+'">'+(nodes[links[linkUid].targetNodeUid].name || nodes[links[linkUid].targetNodeUid].uid.substr(0,8))+'</a>');
+    $('a.follownode').on('click', follownode);
 }
 
 function showNodeForm(nodeUid){
@@ -2569,47 +2614,8 @@ function showNodeForm(nodeUid){
             if(link_list !== "") content += "<tr><td>"+name+"</td><td><ul>"+link_list+"<ul></td></tr>";
         }
         $('#node_gates').html(content || "<tr><td>None</td></tr>");
-        $('a.followlink').on('click', function(event){
-            event.preventDefault();
-            var id = $(event.target).attr('data');
-            deselectAll();
-            selectLink(id);
-            view.draw();
-            showLinkForm(id);
-        });
-        $('a.follownode').on('click', function(event){
-            event.preventDefault();
-            var id = $(event.target).attr('data');
-            var width = canvas_container.width();
-            var height = canvas_container.height();
-            var x = Math.max(0, nodes[id].x*viewProperties.zoomFactor-width/2);
-            var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
-            if(isOutsideNodespace(nodes[id])){
-                refreshNodespace(nodes[id].parent, {
-                    x: [x-canvas_container.width(), canvas_container.width() * 2],
-                    y: [y, canvas_container.height() * 2]
-                }, null, function(){
-                    deselectAll();
-                    canvas_container.scrollTop(y);
-                    canvas_container.scrollLeft(x);
-                    selectNode(id);
-                    view.draw();
-                    showNodeForm(id);
-                });
-            } else {
-                deselectAll();
-                selectNode(id);
-                if(nodes[id].y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
-                    nodes[id].y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
-                    nodes[id].x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
-                    nodes[id].x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
-                    canvas_container.scrollTop(y);
-                    canvas_container.scrollLeft(x);
-                }
-                view.draw();
-                showNodeForm(id);
-            }
-        });
+        $('a.followlink').on('click', followlink);
+        $('a.follownode').on('click', follownode);
     }
 }
 

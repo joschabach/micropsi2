@@ -107,20 +107,24 @@
 
             <form class="form-horizontal hide" id="edit_link_form">
                 <h4>Link</h4>
-                <fieldset>
-                    <div class="control-group">
-                        <label class="control-label" for="link_weight_input">Weight</label>
-                        <div class="controls">
-                            <input type="text" class="" name="link_weight" id="link_weight_input">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="link_certainty_input">Certainty</label>
-                        <div class="controls">
-                            <input type="text" class="" name="link_certainty" id="link_certainty_input">
-                        </div>
-                    </div>
-                </fieldset>
+                <table class="table-condensed">
+                    <tr>
+                        <td><label for="link_weight_input">Weight</label></td>
+                        <td><input type="text" class="" name="link_weight" id="link_weight_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="link_certainty_input">Certainty</label></td>
+                        <td><input type="text" class="" name="link_certainty" id="link_certainty_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Source</label></td>
+                        <td class="link_source_node"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Target</label></td>
+                        <td class="link_target_node"></td>
+                    </tr>
+                </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>

@@ -274,7 +274,7 @@ function setNodespaceData(data){
     updateViewSize();
 }
 
-function refreshNodespace(nodespace, coordinates, step){
+function refreshNodespace(nodespace, coordinates, step, callback){
     method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {
@@ -307,6 +307,9 @@ function refreshNodespace(nodespace, coordinates, step){
             return null;
         }
         setNodespaceData(data);
+        if(callback){
+            callback(data);
+        }
         if(nodenetRunning){
             refreshNodespace();
         }
@@ -2542,6 +2545,54 @@ function showNodeForm(nodeUid){
         } else {
             state_group.hide();
         }
+        var content = "", gates="", id, name;
+        var link_list = "";
+        var inlink_types = {};
+        for(id in nodes[nodeUid].slots["gen"].incoming){
+            if(!(links[id].gateName in inlink_types)) inlink_types[links[id].gateName] = [];
+            inlink_types[links[id].gateName].push('<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> <- <a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>');
+        }
+        for(var j in available_gatetypes){
+            if(available_gatetypes[j] in inlink_types){
+                link_list += "<tr><td>"+available_gatetypes[j]+"</td><td><ul>"+inlink_types[available_gatetypes[j]].join(' ')+"</ul></td></tr>";
+            }
+        }
+        $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
+        content = "";
+        for(name in nodes[nodeUid].gates){
+            link_list = "";
+            for(id in nodes[nodeUid].gates[name].outgoing){
+                link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> -> <a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
+            }
+            if(link_list !== "") content += "<tr><td>"+name+"</td><td><ul>"+link_list+"<ul></td></tr>";
+        }
+        $('#node_gates').html(content || "<tr><td>None</td></tr>");
+        $('a.followlink').on('click', function(event){
+            event.preventDefault();
+            var id = $(event.target).attr('data');
+            deselectAll();
+            selectLink(id);
+            view.draw();
+            showLinkForm(id);
+        });
+        $('a.follownode').on('click', function(event){
+            event.preventDefault();
+            var id = $(event.target).attr('data');
+            if(isOutsideNodespace(nodes[id])){
+                refreshNodespace(nodes[id].parent, {
+                    x: [0, canvas_container.width() * 2],
+                    y: [0, canvas_container.height() * 2]
+                }, null, function(){
+                    selectNode(id);
+                    showNodeForm(id);
+                });
+            } else {
+                deselectAll();
+                selectNode(id);
+                view.draw();
+                showNodeForm(id);
+            }
+        });
     }
 }
 
@@ -2550,7 +2601,7 @@ function getNodeParameterHTML(parameters){
     var input='';
     var is_array = jQuery.isArray(parameters);
     if(parameters && !jQuery.isEmptyObject(parameters)) {
-        html = '<tr><th>Key</th><th>Value</th></tr>';
+        html = '';
         for(var param in parameters){
             input = '';
             var name = (is_array) ? parameters[param] : param;

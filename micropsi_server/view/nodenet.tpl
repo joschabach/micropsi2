@@ -181,45 +181,46 @@
 
             <form class="form-horizontal hide" id="edit_node_form">
                 <h4>Node</h4>
-                <fieldset>
-                    <div class="control-group">
-                        <label class="control-label" for="node_uid_input">UID</label>
-                        <div class="controls">
-                            <input type="text" disabled="disabled" id="node_uid_input" />
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="node_name_input">Name</label>
-                        <div class="controls">
-                            <input type="text" name="node_name" id="node_name_input">
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label class="control-label" for="node_type_input">Type</label>
-                        <div class="controls">
-                            <input type="text" name="node_type" disabled="disabled" id="node_type_input" />
-                        </div>
-                    </div>
-                    <div class="control-group node state">
-                        <label class="control-label" for="node_state_input">State</label>
-                        <div class="controls">
-                            <select type="text" name="node_state" id="node_state_input"></select>
-                        </div>
-                    </div>
-                    <div class="control-group node">
-                        <label class="control-label" for="node_activation_input">Activation</label>
-                        <div class="controls">
-                            <input type="text" name="node_activation" id="node_activation_input">
-                        </div>
-                    </div>
-                    <div class="control-group node parameters">
-                        <label class="control-label">Parameters</label>
-                        <div class="controls">
-                            <table id="node_parameters" class="table-striped table-condensed">
+                <table class="table-condensed">
+                    <tr>
+                        <td><label for="node_uid_input">UID</label></td>
+                        <td><input type="text" disabled="disabled" id="node_uid_input" /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_name_input">Name</label></td>
+                        <td><input type="text" name="node_name" id="node_name_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_type_input">Type</label></td>
+                        <td><input type="text" name="node_type" disabled="disabled" id="node_type_input" /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_state_input">State</label></td>
+                        <td><select type="text" name="node_state" id="node_state_input"></select></td>
+                    </tr>
+                    <tr>
+                        <td><label for="node_activation_input">Activation</label></td>
+                        <td><input type="text" name="node_activation" id="node_activation_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Parameters</label></td>
+                        <td><table id="node_parameters" class="table-striped table-condensed">
                             </table>
-                        </div>
-                    </div>
-                </fieldset>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>in links</label></td>
+                        <td><table id="node_slots" class="table-striped table-condensed">
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label>out links</label></td>
+                        <td><table id="node_gates" class="table-striped table-condensed">
+                            </table>
+                        </td>
+                    </tr>
+                </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>

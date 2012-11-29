@@ -91,30 +91,34 @@
 /** condense forms in sections **/
 .section .form-horizontal {
   padding: 0 5px;
+  margin-right: 0;
 }
-.section .form-horizontal .control-group {
-  margin-bottom: 2px;
-  border-bottom: 1px solid #eee;
+.section .form-horizontal .table-condensed{
+  width: 90%;
+}
+.section .form-horizontal .helptext{
+  font-size: 11px;
+}
+.table-condensed td{
+  vertical-align: top;
+}
+.section .form-horizontal label {
+  font-size: 11px;
+  font-weight: bold;
+  line-height: 1em;
 }
 .section .form-horizontal input,
 .section .form-horizontal select,
 .section .form-horizontal textarea {
-  padding: 1px 3px;
+  padding: 1px 2px;
   height: auto;
   font-size: 13px;
-  line-height: 18px;
-}
-.section .form-horizontal .control-label{
-  width: 100px;
-  font-size: 13px;
-  line-height: 18px;
-  padding: 1px 3px;
-}
-.section .form-horizontal .controls{
-  margin-left: 110px;
+  border-width: 1px;
 }
 
-
+#node_slots ul, #node_gates ul {
+  margin: 0 0 0 15px;
+}
 
 /**
   bootstrap notifications

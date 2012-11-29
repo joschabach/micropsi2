@@ -76,7 +76,7 @@ currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
 var selectionRectangle = new Rectangle(1,1,1,1);
-var selectionBox = new Path.Rectangle(selectionRectangle);
+selectionBox = new Path.Rectangle(selectionRectangle);
 selectionBox.strokeWidth = 0.5;
 selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
@@ -155,8 +155,8 @@ function setNodenetValues(data){
         if(worldadapter_select.val() != data.worldadapter){
             dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
         }
-        showDataSourcesTargetsForWorldadapter(data.worldadapter);
     }
+    showDataSourcesTargetsForWorldadapter(data.worldadapter);
 }
 
 function setCurrentNodenet(uid, nodespace){
@@ -222,15 +222,16 @@ function setNodespaceData(data){
         if('max_coords' in data){
             max_coordinates = data['max_coords'];
         }
-
+        if(!('selectionBox' in nodeLayer)){
+            nodeLayer.addChild(selectionBox);
+        }
         var uid;
         for(uid in data.nodes){
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
             if(uid in nodes){
-                item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 redrawNode(item);
                 nodes[uid].update(item);
             } else{
-                item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
                 addNode(item);
             }
         }
@@ -273,7 +274,7 @@ function setNodespaceData(data){
     updateViewSize();
 }
 
-function refreshNodespace(nodespace, coordinates, step){
+function refreshNodespace(nodespace, coordinates, step, callback){
     method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {
@@ -300,15 +301,15 @@ function refreshNodespace(nodespace, coordinates, step){
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
-        if(!('selectionBox' in nodeLayer)){
-            nodeLayer.addChild(selectionBox);
-        }
         loaded_coordinates = coordinates;
         if(jQuery.isEmptyObject(data)){
             if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;
         }
         setNodespaceData(data);
+        if(callback){
+            callback(data);
+        }
         if(nodenetRunning){
             refreshNodespace();
         }
@@ -392,6 +393,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 
     this.update = function(item){
         this.uid = item.uid;
+        if(item.bounds) this.bounds = item.bounds;
         this.x = item.x;
         this.y = item.y;
         this.parent = item.parent;
@@ -1288,9 +1290,11 @@ function selectNode(nodeUid) {
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
-        var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
-        outline.strokeColor = viewProperties.outlineColor;
-        outline.strokeWidth = viewProperties.outlineWidth;
+        if(nodeUid in nodeLayer.children){
+            var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+            outline.strokeColor = viewProperties.outlineColor;
+            outline.strokeWidth = viewProperties.outlineWidth;
+        }
     }
 }
 
@@ -1671,9 +1675,10 @@ function updateSelection(event){
         selectionRectangle.width = Math.abs(event.point.x - selectionStart.x);
         selectionRectangle.height = Math.abs(event.point.y - selectionStart.y);
         selectionBox.setBounds(selectionRectangle);
+        var scaledRectangle = new Rectangle(selectionRectangle.x/viewProperties.zoomFactor,selectionRectangle.y/viewProperties.zoomFactor, selectionRectangle.width/viewProperties.zoomFactor, selectionRectangle.height / viewProperties.zoomFactor);
         for(var uid in nodes){
             if(uid in nodeLayer.children){
-                if(selectionRectangle.contains(nodes[uid])){
+                if(scaledRectangle.contains(nodes[uid])){
                     selectNode(uid);
                 } else {
                     deselectNode(uid);
@@ -2469,6 +2474,48 @@ function makeUuid() {
 }
 
 
+function followlink(event){
+    event.preventDefault();
+    var id = $(event.target).attr('data');
+    deselectAll();
+    selectLink(id);
+    view.draw();
+    showLinkForm(id);
+}
+
+function follownode(event){
+    event.preventDefault();
+    var id = $(event.target).attr('data');
+    var width = canvas_container.width();
+    var height = canvas_container.height();
+    var x = Math.max(0, nodes[id].x*viewProperties.zoomFactor-width/2);
+    var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
+    if(isOutsideNodespace(nodes[id])){
+        refreshNodespace(nodes[id].parent, {
+            x: [x-canvas_container.width(), canvas_container.width() * 2],
+            y: [y, canvas_container.height() * 2]
+        }, null, function(){
+            deselectAll();
+            canvas_container.scrollTop(y);
+            canvas_container.scrollLeft(x);
+            selectNode(id);
+            view.draw();
+            showNodeForm(id);
+        });
+    } else {
+        deselectAll();
+        selectNode(id);
+        if(nodes[id].y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
+            nodes[id].y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
+            nodes[id].x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
+            nodes[id].x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
+            canvas_container.scrollTop(y);
+            canvas_container.scrollLeft(x);
+        }
+        view.draw();
+        showNodeForm(id);
+    }
+}
 
 // sidebar editor forms ---------------------------------------------------------------
 
@@ -2489,20 +2536,21 @@ function initializeSidebarForms(){
 
 function showDataSourcesTargetsForWorldadapter(worldadapter){
     var i;
-    str = '';
-    if (worldadapters[worldadapter].datatargets) {
-        for (i in worldadapters[worldadapter].datatargets){
-            str += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';
+    var datatargets, datasources = '';
+    if(worldadapter){
+        if (worldadapters[worldadapter].datatargets) {
+            for (i in worldadapters[worldadapter].datatargets){
+                datatargets += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';
+            }
+        }
+        if (worldadapters[worldadapter].datasources){
+            for (i in worldadapters[worldadapter].datasources){
+                datasources += '<tr><td>'+worldadapters[worldadapter].datasources[i]+'</td></tr>';
+            }
         }
     }
-    $('#nodenet_datatargets').html(str || '<tr><td>No datatargets defined</td></tr>');
-    str = '';
-    if (worldadapters[worldadapter].datasources){
-        for (i in worldadapters[worldadapter].datasources){
-            str += '<tr><td>'+worldadapters[worldadapter].datasources[i]+'</td></tr>';
-        }
-    }
-    $('#nodenet_datasources').html(str || '<tr><td>No datasources defined</td></tr>');
+    $('#nodenet_datatargets').html(datatargets || '<tr><td>No datatargets defined</td></tr>');
+    $('#nodenet_datasources').html(datasources || '<tr><td>No datasources defined</td></tr>');
 }
 
 function showLinkForm(linkUid){
@@ -2510,6 +2558,9 @@ function showLinkForm(linkUid){
     $('#edit_link_form').show();
     $('#link_weight_input').val(links[linkUid].weight);
     $('#link_certainty_input').val(links[linkUid].certainty);
+    $('.link_source_node').html('<a href="#follownode" class="follownode" data="'+links[linkUid].sourceNodeUid+'">'+(nodes[links[linkUid].sourceNodeUid].name || nodes[links[linkUid].sourceNodeUid].uid.substr(0,8))+'</a>');
+    $('.link_target_node').html('<a href="#follownode" class="follownode" data="'+links[linkUid].targetNodeUid+'">'+(nodes[links[linkUid].targetNodeUid].name || nodes[links[linkUid].targetNodeUid].uid.substr(0,8))+'</a>');
+    $('a.follownode').on('click', follownode);
 }
 
 function showNodeForm(nodeUid){
@@ -2542,6 +2593,30 @@ function showNodeForm(nodeUid){
         } else {
             state_group.hide();
         }
+        var content = "", gates="", id, name;
+        var link_list = "";
+        var inlink_types = {};
+        for(id in nodes[nodeUid].slots["gen"].incoming){
+            if(!(links[id].gateName in inlink_types)) inlink_types[links[id].gateName] = [];
+            inlink_types[links[id].gateName].push('<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> <- <a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>');
+        }
+        for(var j in available_gatetypes){
+            if(available_gatetypes[j] in inlink_types){
+                link_list += "<tr><td>"+available_gatetypes[j]+"</td><td><ul>"+inlink_types[available_gatetypes[j]].join(' ')+"</ul></td></tr>";
+            }
+        }
+        $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
+        content = "";
+        for(name in nodes[nodeUid].gates){
+            link_list = "";
+            for(id in nodes[nodeUid].gates[name].outgoing){
+                link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> -> <a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
+            }
+            if(link_list !== "") content += "<tr><td>"+name+"</td><td><ul>"+link_list+"<ul></td></tr>";
+        }
+        $('#node_gates').html(content || "<tr><td>None</td></tr>");
+        $('a.followlink').on('click', followlink);
+        $('a.follownode').on('click', follownode);
     }
 }
 
@@ -2550,7 +2625,7 @@ function getNodeParameterHTML(parameters){
     var input='';
     var is_array = jQuery.isArray(parameters);
     if(parameters && !jQuery.isEmptyObject(parameters)) {
-        html = '<tr><th>Key</th><th>Value</th></tr>';
+        html = '';
         for(var param in parameters){
             input = '';
             var name = (is_array) ? parameters[param] : param;
@@ -2594,7 +2669,8 @@ function showDefaultForm(){
 function showGateForm(node, gate){
     $('#nodenet_forms .form-horizontal').hide();
     var form = $('#edit_gate_form');
-    $('.gate_gatetype', form).html('<strong>"'+ gate.name +'"</strong>');
+    $('.gate_nodetype', form).html('<strong>'+ node.type +'</strong>');
+    $('.gate_gatetype', form).html('<strong>'+ gate.name +'</strong>');
     $.each($('input, select, textarea', form), function(index, el){
         el.value = '';
         if(el.name in gate.parameters){

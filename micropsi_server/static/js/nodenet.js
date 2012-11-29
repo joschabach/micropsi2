@@ -2582,8 +2582,8 @@ function showNodeForm(nodeUid){
             var id = $(event.target).attr('data');
             var width = canvas_container.width();
             var height = canvas_container.height();
-            var x = Math.max(0, nodes[id].x-width/2);
-            var y = Math.max(0, nodes[id].y-height/2);
+            var x = Math.max(0, nodes[id].x*viewProperties.zoomFactor-width/2);
+            var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
             if(isOutsideNodespace(nodes[id])){
                 refreshNodespace(nodes[id].parent, {
                     x: [x-canvas_container.width(), canvas_container.width() * 2],
@@ -2599,10 +2599,10 @@ function showNodeForm(nodeUid){
             } else {
                 deselectAll();
                 selectNode(id);
-                if(nodes[id].y < canvas_container.scrollTop() ||
-                    nodes[id].y > canvas_container.scrollTop() + height ||
-                    nodes[id].x < canvas_container.scrollLeft() ||
-                    nodes[id].x > canvas_container.scrollLeft() + width) {
+                if(nodes[id].y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
+                    nodes[id].y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
+                    nodes[id].x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
+                    nodes[id].x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
                     canvas_container.scrollTop(y);
                     canvas_container.scrollLeft(x);
                 }

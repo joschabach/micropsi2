@@ -223,23 +223,27 @@ def group_with_same_parent(all_groups):
     """group horizontal groups that share the same super-node"""
     # find groups with same super-node
     candidates = OrderedDict()
-    for i in all_groups:
-        if i.directions.get("n"):
-            key = list(i.directions["n"])[0]
-            if not candidates.get(key): candidates[key] = []
-            candidates[key].append(i)
+    for g in all_groups:
+        if "n" in g.directions:
+            super_node = list(g.directions["n"])[0] # there can be multiple super-nodes, but we only take the 1st
+            if super_node not in candidates: candidates[super_node] = []
+            candidates[super_node].append(g)
     # build vertical groups
-    for c in candidates:
+    for super_node in candidates:
         h_group = HorizontalGroup()
-        for g in candidates[c]:
-            if hasattr(g, "uid"): h_group.append(g)
-            else:
-                for e in g: h_group.append(e)
+        for g in candidates[super_node]:
             all_groups.remove(g)
-        parent_group = c.parent
-        v_group = VerticalGroup([c, h_group])
-        index = parent_group.index(c)
-        parent_group[index] = v_group
+            if isinstance(g, HorizontalGroup):
+                for e in g: h_group.append(e)
+            else:
+                h_group.append(g)
+
+        parent_group = super_node.parent
+        v_group = VerticalGroup([super_node, h_group])
+        parent_group[parent_group.index(super_node)] = v_group
+        for clist in candidates.values():
+            if super_node in clist:
+                clist[clist.index(super_node)] = v_group
 
     #_fix_link_inheritance(all_groups, OrderedSet())
     return all_groups

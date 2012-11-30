@@ -274,6 +274,22 @@ class MicroPsiRuntime(object):
         #self.load_nodenet(data['uid'])
         return True, data['uid']
 
+    def clear_nodenet(self, nodenet_uid):
+        """Deletes all contents of a nodenet"""
+
+        nodenet = self.get_nodenet(nodenet_uid)
+        nodenet.nodes = {}
+        nodenet.links = {}
+        nodenet.active_nodes = {}
+        nodenet.privileged_active_nodes = {}
+        nodenet.monitors = {}
+
+        nodenet.nodes_by_coords = {}
+        nodenet.max_coords = {'x': 0, 'y': 0}
+
+        nodenet.nodespaces = {}
+        Nodespace(nodenet, None, (0,0), "Root", "Root")
+
     def delete_nodenet(self, nodenet_uid):
         """Unloads the given nodenet from memory and deletes it from the storage.
 

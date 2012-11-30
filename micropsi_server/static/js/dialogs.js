@@ -124,8 +124,10 @@ var api = {
         }
         $.ajax({
             url: url,
-            data: ((method == "post") ? params : null),
+            data: ((method == "post") ? JSON.stringify(params) : null),
             type: method || "get",
+            processData: (method == "get"),
+            contentType: "application/json",
             success: function(data){
                 if(data.Error){
                     if(error) error(data);

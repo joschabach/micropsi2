@@ -290,10 +290,10 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             params.step = step;
         }
     }
-    params.x1 = coordinates.x[0];
-    params.x2 = coordinates.x[1];
-    params.y1 = coordinates.y[0];
-    params.y2 = coordinates.y[1];
+    params.x1 = parseInt(coordinates.x[0]);
+    params.x2 = parseInt(coordinates.x[1]);
+    params.y1 = parseInt(coordinates.y[0]);
+    params.y2 = parseInt(coordinates.y[1]);
     api.call('get_nodespace', params , success=function(data){
         if(nodespace != currentNodeSpace){
             currentNodeSpace = nodespace;

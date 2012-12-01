@@ -233,9 +233,9 @@ class DocVisitor(ast.NodeVisitor):
                         except AttributeError:
                             pass
                 else:
-                    endline = startline
+                    endline = startline + 1
                 self._docs[node.lineno] = {
-                    "lines": (startline, endline),
+                    "lines": (startline, max(startline+1, endline)),
                     "description": ast.get_docstring(node)
                     }
         ast.NodeVisitor.generic_visit(self, node)

@@ -135,17 +135,20 @@ class World(object):
             self.agents[uid] = getattr(agent, agent.type)(self, 'agents', uid=uid, **self.data.agents[uid])
 
     def step(self):
+        """ advance the simluation """
         for uid in self.objects:
             self.objects[uid].update()
         self.current_step = self.current_step + 1
 
     def get_world_view(self, step):
+        """ returns a list of world objects, and the current step of the simulation """
         return {
             'objects': self.get_world_objects(),
             'current_step': self.current_step,
         }
 
     def get_world_objects(self, type=None):
+        """ returns a dictionary of world objects. """
         if type is not None:
             return self.data.get(type, {})
         else:

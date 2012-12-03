@@ -1,12 +1,13 @@
-
 from micropsi_core.world.world import World
 
 import json
 import os
 import png
 
+
 class Island(World):
 
+    """ mandatory: list of world adapters that are supported"""
     supported_worldadapters = ['Braitenberg']
 
     groundmap = {
@@ -15,10 +16,14 @@ class Island(World):
         'scaling': (500, 500)
     }
 
+    assets = {
+        'background': "island/background.jpg",
+        'js': "island/island.js"
+    }
+
     def __init__(self, runtime, filename, world_type="Island", name="", owner="", uid=None, version=1):
         World.__init__(self, runtime, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.load_groundmap()
-
         self.current_step = 0
         self.load_json_data()
 
@@ -51,5 +56,6 @@ class Island(World):
         return self.ground_data[_y][_x]
 
     def step(self):
+        """ overwrite world.step """
         ret = super(Island, self).step()
         return ret

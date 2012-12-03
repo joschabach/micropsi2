@@ -8,11 +8,11 @@
     %include nodenet
 % end
 %if mode == "world":
-    %include world
+    %include world  mine=mine,others=others,current=current,world_js=world_js
 % end
 %if mode == "all":
     %include nodenet
-    %include world
+    %include world  mine=mine,others=others,current=current,world_js=world_js
 % end
 </div>
 

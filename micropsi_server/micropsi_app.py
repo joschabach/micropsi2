@@ -112,6 +112,21 @@ def get_request_data():
 
 # ----------------------------------------------------------------------------------
 
+
+def _add_world_list(template_name, **params):
+    worlds = micropsi.get_available_worlds()
+    if request.query.get('select_world') and request.query.get('select_world') in worlds:
+        current_world = request.query.get('select_world')
+        response.set_cookie('selected_world', current_world)
+    else:
+        current_world = request.get_cookie('selected_world')
+    world_js = worlds[current_world].assets['js'] if current_world and worlds[current_world].assets else None
+    return template(template_name, current=current_world,
+        mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
+        others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
+        world_js=world_js, **params)
+
+
 @route('/static/<filepath:path>')
 def server_static(filepath):
     return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
@@ -121,7 +136,7 @@ def server_static(filepath):
 def index():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
-    return template("viewer", mode="all", version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="all", version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @route("/nodenet")
@@ -142,7 +157,7 @@ def document(filepath):
 def world():
     user_id, permissions, token = get_request_data()
     print "received request with cookie token ", token, " from user ", user_id
-    return template("viewer", mode="world", version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="world", version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @error(404)

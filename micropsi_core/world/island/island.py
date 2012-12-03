@@ -15,6 +15,11 @@ class Island(World):
         'scaling': (500, 500)
     }
 
+    assets = {
+        'background': "island/background.jpg",
+        'js': "island/island.js"
+    }
+
     def __init__(self, runtime, filename, world_type="Island", name="", owner="", uid=None, version=1):
         World.__init__(self, runtime, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.data['groundmap'] = self.groundmap

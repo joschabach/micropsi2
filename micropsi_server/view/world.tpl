@@ -12,9 +12,7 @@
 
                              <td>
                                 <div class="btn-group" id="world_list">
-                                    <a class="btn" href="#">
-                                        (no world selected)
-                                    </a>
+                                    %include nodenet_list type="world",mine=mine,others=others,current=current
                                 </div>
                             </td>
                         </tr>
@@ -62,6 +60,5 @@
     </div>
 </div>
 
-<script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
-
-
+%if world_js:
+    <script src="/static/{{world_js}}" type="text/paperscript" canvas="world"></script>

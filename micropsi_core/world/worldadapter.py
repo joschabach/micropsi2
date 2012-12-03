@@ -73,5 +73,5 @@ class Default(WorldAdapter):
 
 
 class Braitenberg(WorldAdapter):
-    datasources = {'brightness': 1.7}
-    datatargets = {}
+    datasources = {'brightness_l': 1.7, 'brightness_r': 1.7}
+    datatargets = {'engine_l':0, 'engine_r': 0}

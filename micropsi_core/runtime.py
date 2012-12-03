@@ -48,7 +48,7 @@ class MicroPsiRuntime(object):
     between them. It should be a singleton, otherwise competing instances might conflict over the resource files.
     """
 
-    def __init__(self, resource_path):
+    def __init__(self, resource_path = RESOURCE_PATH):
         """Set up the MicroPsi runtime
 
         Arguments:

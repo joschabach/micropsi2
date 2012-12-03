@@ -48,6 +48,7 @@ import time
 import uuid
 import warnings
 import micropsi_core.tools
+from configuration import USERMANAGER_PATH
 
 ADMIN_USER = "admin"  # default name of the admin user
 DEFAULT_ROLE = "Restricted"  # new users can create and edit nodenets, but not create worlds
@@ -77,7 +78,7 @@ class UserManager(object):
     users = None
     sessions = {}
 
-    def __init__(self, userfile_path = "users.json"):
+    def __init__(self, userfile_path = USERMANAGER_PATH):
         """initialize user management.
 
         If no user data are found, a new resource file is created.

@@ -8,9 +8,7 @@ Startup script for the MicroPsi service.
 __author__ = 'joscha'
 __date__ = '06.07.12'
 
-DEFAULT_PORT = 6543
-DEFAULT_HOST = "localhost"
-
+from configuration import DEFAULT_PORT, DEFAULT_HOST
 import micropsi_server.micropsi_app
 import argparse
 

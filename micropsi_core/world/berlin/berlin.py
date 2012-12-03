@@ -6,6 +6,7 @@ import os
 
 class Berlin(World):
 
+    """ mandatory: list of world adapters that are supported"""
     supported_worldadapters = ['Default']
 
     coords = {
@@ -33,6 +34,7 @@ class Berlin(World):
         self.load_json_data()
 
     def load_json_data(self):
+        """ loads the train and station data from the json file"""
         filename = os.path.join(os.path.dirname(__file__), 'fahrinfo_berlin.json')
         with open(filename) as file:
             self.fahrinfo_berlin = json.load(file)
@@ -40,17 +42,20 @@ class Berlin(World):
         self.load_trains_for_current_timestep()
 
     def get_world_objects(self, type=None):
+        """ overwrite world.get_world_objects"""
         if type == 'stations':
             return self.stations
         else:
             return self.trains
 
     def get_world_view(self, step):
+        """ overwrite.world.get_world_view to add a status message """
         data = super(Berlin, self).get_world_view(step)
         data['status_message'] = "Day %s, at %s:%s:%s" % (str(self.day), str(int(self.minute) / 60), str(int(self.minute) % 60).zfill(2), str(int((self.minute - int(self.minute)) * 60)).zfill(2))
         return data
 
     def load_stations(self):
+        """ load the stations and their coordinates into self.stations """
         self.stations = self.fahrinfo_berlin["stations"]
         for key in self.stations:
             type = "other"
@@ -72,7 +77,7 @@ class Berlin(World):
                 self.stations[key]['pos'] = (0, 0)
 
     def load_trains_for_current_timestep(self):
-
+        """ load the list of all trains at the current step / timestamp into self.trains and self.data"""
         self.minute = (self.current_step / 8.0) % 1440
         self.day = (self.current_step / 8) / 1440
 
@@ -154,6 +159,7 @@ class Berlin(World):
         self.data['trains'] = self.trains
 
     def step(self):
+        """ overwrite world.step """
         ret = super(Berlin, self).step()
         self.load_trains_for_current_timestep()
         return ret

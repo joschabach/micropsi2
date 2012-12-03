@@ -7,6 +7,7 @@ import png
 
 class Island(World):
 
+    """ mandatory: list of world adapters that are supported"""
     supported_worldadapters = ['Braitenberg']
 
     groundmap = {
@@ -37,12 +38,14 @@ class Island(World):
         self.load_trains_for_current_timestep()
 
     def get_world_objects(self, type=None):
+        """ overwrite world.get_world_objects"""
         if type == 'stations':
             return self.stations
         else:
             return self.trains
 
     def get_world_view(self, step):
+        """ overwrite.world.get_world_view to add a status message """
         data = super(Island, self).get_world_view(step)
         data['status_message'] = "Day %s, at %s:%s:%s" % (str(self.day), str(int(self.minute) / 60), str(int(self.minute) % 60).zfill(2), str(int((self.minute - int(self.minute)) * 60)).zfill(2))
         return data
@@ -151,6 +154,7 @@ class Island(World):
         self.data['trains'] = self.trains
 
     def step(self):
+        """ overwrite world.step """
         ret = super(Island, self).step()
         self.load_trains_for_current_timestep()
         return ret

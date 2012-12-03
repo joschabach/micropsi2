@@ -39,19 +39,16 @@ var viewProperties = {
 
 objects = {};
 symbols = {};
-stations = {};
+
 currentWorld = $.cookie('selected_world') || null;
 
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
-stationLayer = new Layer();
-stationLayer.name = 'StationLayer';
 
 currentWorldSimulationStep = -1;
 
 var world_data = null;
 
-refreshWorldList();
 if (currentWorld){
     setCurrentWorld(currentWorld);
 }
@@ -59,10 +56,12 @@ initializeControls();
 
 worldRunning = false;
 
-$('#world_objects').html('<div id="berlinStations"><strong>Stations</strong><table class="table-striped table-condensed"></table></div>');
+$('#world_objects').html(
+    '<div><a href="#" id="add_object_link" class="add_link">add Object</a></div>' +
+    '<div id="island_objects"><strong>Objects</strong><table class="table-striped table-condensed"></table></div>');
 
 // accordion for trains and stations, commented for performance reasons
-// $('#world_objects').html(
+// $('#island_objects').html(
 //     '<div class="accordion" id="worldobject_accordion">
 //         <div class="accordion-group">
 //             <div class="accordion-header"><a class="accordion-toggle" data-toggle="collapse" data-parent="#worldobject_accordion" href="#berlinStations"><i class="icon-chevron-right"></i>Stations</a></div>
@@ -77,17 +76,6 @@ $('#world_objects').html('<div id="berlinStations"><strong>Stations</strong><tab
 //             </div>
 //         </div>
 //     </div>');
-
-function refreshWorldList(){
-    $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
-        $('#world_list .world_select').on('click', function(event){
-            event.preventDefault();
-            var el = $(event.target);
-            var uid = el.attr('data');
-            setCurrentWorld(uid);
-        });
-    });
-}
 
 wasRunning = false;
 $(window).focus(function() {
@@ -160,7 +148,6 @@ function refreshWorldView(){
 function setCurrentWorld(uid){
     currentWorld = uid;
     $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
-    refreshWorldList();
     loadWorldInfo();
     loadWorldObjects();
     refreshWorldView();
@@ -185,14 +172,14 @@ function loadWorldInfo(){
 
 function loadWorldObjects(){
     api.call('get_world_objects', {world_uid: currentWorld, type: 'stations'}, success=function(data){
-        stationLayer.removeChildren();
+        objectLayer.removeChildren();
         stations = {};
         var list_stations_html = '';
         for (var key in data){
             addStation(new WorldObject(key, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
             list_stations_html += '<tr><td><a href="#" data="' + key + '"class="highlight_station">' + data[key].name + '</a></td></tr>';
         }
-        $('#berlinStations table').html(list_stations_html);
+        $('#island_objects table').html(list_stations_html);
         $('.highlight_station').on('click', highlightWorldobject);
         updateViewSize();
     }, error=function(data){
@@ -249,7 +236,7 @@ function renderStation(station){
     }
     station.representation = symbols['station_'+station.type].place();
     station.representation.position = new Point(station.x, station.y);
-    stationLayer.addChild(station.representation);
+    objectLayer.addChild(station.representation);
 }
 
 function renderObject(worldobject){
@@ -357,31 +344,9 @@ function onMouseMove(event) {
         }
         hoverUid = null;
     }
-    for (var uid in stations){
-        if(stations[uid].representation.bounds.contains(p)){
-            if (hoverUid != uid){
-                hoverUid = uid;
-                if(label){
-                    label.remove();
-                }
-                if(stationmarker){
-                    stationmarker.remove();
-                }
-                if(clickHighlight){
-                    removeClickHighlight();
-                }
-                stationmarker = new Path.Rectangle(stations[uid].representation.bounds);
-                stationmarker.fillColor='black';
-                label = getLegend(stations[uid]);
-                stationLayer.addChild(label);
-                stationLayer.addChild(stationmarker);
-            }
-            return;
-        }
-    }
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
-    for (uid in objects) {
+    for (var uid in objects) {
         if(objects[uid].representation){
             var bounds = objects[uid].representation.bounds;
             if (bounds.contains(p)) {
@@ -395,7 +360,7 @@ function onMouseMove(event) {
                     }
                     objects[uid].representation.scale(viewProperties.hoverScale);
                     label = getLegend(objects[hoverUid]);
-                    stationLayer.addChild(label);
+                    objectLayer.addChild(label);
                 }
                 return;
             }
@@ -422,8 +387,8 @@ function highlightWorldobject(event){
         stationmarker = new Path.Rectangle(obj.representation.bounds);
         stationmarker.fillColor='black';
         label = getLegend(obj);
-        stationLayer.addChild(label);
-        stationLayer.addChild(stationmarker);
+        objectLayer.addChild(label);
+        objectLayer.addChild(stationmarker);
     } else {
         obj = objects[uid];
         obj.representation.scale(viewProperties.hoverScale);

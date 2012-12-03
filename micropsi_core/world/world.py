@@ -138,7 +138,7 @@ class World(object):
         """ advance the simluation """
         for uid in self.objects:
             self.objects[uid].update()
-        self.current_step = self.current_step + 1
+        self.current_step += 1
 
     def get_world_view(self, step):
         """ returns a list of world objects, and the current step of the simulation """
@@ -148,11 +148,11 @@ class World(object):
         }
 
     def get_world_objects(self, type=None):
-        """ returns a dictionary of world objects. """
+        """ returns a dictionary of world objects and agents. """
         if type is not None:
             return self.data.get(type, {})
         else:
-            return self.data.get('objects', {})
+            return dict(self.data.get('objects', {}).items() + self.data.get('agents', {}).items())
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.

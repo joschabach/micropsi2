@@ -59,3 +59,12 @@ class Island(World):
         """ overwrite world.step """
         ret = super(Island, self).step()
         return ret
+
+    def add_object(self, type, position, orientation = 0.0, name = "", parameters = None, uid = None ):
+        pass
+
+    def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
+        pass
+
+    def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
+        pass

@@ -24,9 +24,8 @@ import warnings
 from threading import Thread
 from datetime import datetime, timedelta
 import time
+from configuration import RESOURCE_PATH
 
-
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 

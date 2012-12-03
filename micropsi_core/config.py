@@ -24,7 +24,6 @@ import os
 import micropsi_core.tools
 import warnings
 
-
 class ConfigurationManager(object):
     """The configuration manager creates, deletes and persists configuration data.
 

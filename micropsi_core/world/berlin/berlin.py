@@ -15,17 +15,18 @@ class Berlin(World):
         'x2': 13.688858,
     }
 
-    representation_2d = {
-        'image': 'berlin/berlin_transit2.png',
+    assets = {
+        'background': 'berlin/berlin_transit2.png',
+        'js': 'berlin/berlin.js',
         'x': 1445,
         'y': 900
     }
 
     def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=1):
         World.__init__(self, runtime, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
-        self.data['representation_2d'] = self.representation_2d
-        self.scale_x = (self.representation_2d['x'] / -(self.coords['x1'] - self.coords['x2']))
-        self.scale_y = (self.representation_2d['y'] / -(self.coords['y1'] - self.coords['y2']))
+        self.data['assets'] = self.assets
+        self.scale_x = (self.assets['x'] / -(self.coords['x1'] - self.coords['x2']))
+        self.scale_y = (self.assets['y'] / -(self.coords['y1'] - self.coords['y2']))
         self.stations = {}
         self.fahrinfo_berlin = {}
         self.current_step = 123

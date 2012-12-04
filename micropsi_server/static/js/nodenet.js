@@ -510,8 +510,8 @@ function addNode(node) {
         // if node only updates position or activation, we may save some time
         // import all properties individually; check if we really need to redraw
     }
-    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth)*viewProperties.zoomFactor);
-    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth)*viewProperties.zoomFactor);
+    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth));
+    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth));
     return node;
 }
 
@@ -563,7 +563,7 @@ function updateViewSize() {
         }
     }
     var newSize = new Size(
-        Math.min(viewProperties.xMax, Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
+        Math.min(viewProperties.xMax, Math.max((maxX+viewProperties.frameWidth),
         el.width())),
         Math.min(viewProperties.yMax, Math.max(el.height(), maxY)));
     if(newSize.height && newSize.width){

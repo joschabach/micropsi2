@@ -135,14 +135,12 @@ def server_static(filepath):
 @route("/")
 def index():
     user_id, permissions, token = get_request_data()
-    print "received request with cookie token ", token, " from user ", user_id
     return _add_world_list("viewer", mode="all", version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @route("/nodenet")
 def nodenet():
     user_id, permissions, token = get_request_data()
-    print "received request with cookie token ", token, " from user ", user_id
     return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
 
 
@@ -156,7 +154,6 @@ def document(filepath):
 @route("/world")
 def world():
     user_id, permissions, token = get_request_data()
-    print "received request with cookie token ", token, " from user ", user_id
     return _add_world_list("viewer", mode="world", version=VERSION, user_id=user_id, permissions=permissions)
 
 
@@ -419,6 +416,45 @@ def login_as_user(userid):
     return template("error", msg="Insufficient rights to access user console")
 
 
+@route("/nodenet_mgt")
+def nodenet_mgt():
+    user_id, permissions, token = get_request_data()
+    if "manage nodenets" in permissions:
+        return template("nodenet_mgt", version=VERSION, permissions=permissions,
+            user_id=user_id,
+            nodenet_list=micropsi.get_available_nodenets())
+    return template("error", msg="Insufficient rights to access nodenet console")
+
+@route("/select_nodenet_from_console/<nodenet_uid>")
+def select_nodenet(nodenet_uid):
+    user_id, permissions, token = get_request_data()
+    result, uid = micropsi.load_nodenet(nodenet_uid)
+    if not result:
+        return template("error", msg="Could not select nodenet")
+    response.set_cookie("selected_nodenet", nodenet_uid, path = "/")
+    redirect("/")
+
+@route("/delete_nodenet_from_console/<nodenet_uid>")
+def delete_nodenet(nodenet_uid):
+    user_id, permissions, token = get_request_data()
+    if "manage nodenets" in permissions:
+        micropsi.delete_nodenet(nodenet_uid)
+        return template("nodenet_mgt", version=VERSION, permissions=permissions,
+            user_id=user_id,
+            nodenet_list=micropsi.get_available_nodenets())
+    return template("error", msg="Insufficient rights to access nodenet console")
+
+@route("/save_all_nodenets")
+def save_all_nodenets():
+    user_id, permissions, token = get_request_data()
+    if "manage nodenets" in permissions:
+        for uid in micropsi.nodenets:
+            micropsi.save_nodenet(uid)
+        return template("nodenet_mgt", version=VERSION, permissions=permissions,
+                user_id=user_id,
+                nodenet_list=micropsi.get_available_nodenets())
+    return template("error", msg="Insufficient rights to access nodenet console")
+
 @route("/nodenet/import")
 def import_nodenet_form():
     token = request.get_cookie("token")
@@ -439,7 +475,8 @@ def import_nodenet():
 @route("/nodenet/merge/<nodenet_uid>")
 def merge_nodenet_form(nodenet_uid):
     token = request.get_cookie("token")
-    return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging', action='/nodenet/merge/%s' % nodenet_uid,
+    return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging',
+        action='/nodenet/merge/%s' % nodenet_uid,
         version=VERSION,
         userid=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))

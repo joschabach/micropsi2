@@ -172,7 +172,6 @@ $(function() {
             window.location.reload();
         });
     });
-    $('.navbar a.nodenet_edit').on('click', remote_form);
 
     $('.navbar a.nodenet_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this nodenet?", function(){

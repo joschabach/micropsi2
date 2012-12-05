@@ -6,7 +6,7 @@
     </p>
 
     <div class="row-fluid">
-        <table class="table table-bordered table-striped">
+        <table class="table table-bordered table-striped" id="nodenet_mgr">
             <thead>
             <tr>
                 <th>Nodenet UID</th>

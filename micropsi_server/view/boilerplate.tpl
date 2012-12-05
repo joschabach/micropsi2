@@ -20,6 +20,7 @@
         }
     </style>
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="/static/css/datatables-bootstrap.css" rel="stylesheet">
     <link href="/static/css/micropsi-styles.css" rel="stylesheet">
 
     <!-- HTML5 shim, for IE6-8 -->
@@ -29,6 +30,8 @@
 
     <script src="/static/js/jquery.min.js" type="text/javascript"></script>
     <script src="/static/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="/static/js/jquery.dataTables.min.js" type="text/javascript"></script>
+    <script src="/static/js/paging.js" type="text/javascript"></script>
     <script src="/static/js/dialogs.js" type="text/javascript"></script>
     <script src="/static/js/jquery.plugins.js" type="text/javascript"></script>
 

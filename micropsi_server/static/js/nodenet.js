@@ -247,8 +247,8 @@ function setNodespaceData(data){
         var link, sourceId, targetId;
         var outsideLinks = [];
         for(uid in data.links){
-            sourceId = data.links[uid]['source_node'];
-            targetId = data.links[uid]['target_node'];
+            sourceId = data.links[uid]['source_node_uid'];
+            targetId = data.links[uid]['target_node_uid'];
             if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
                 addLink(link);

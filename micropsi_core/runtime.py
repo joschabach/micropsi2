@@ -1146,19 +1146,21 @@ class MicroPsiRuntime(object):
 
         # check if master nodenet exists
         if not self.get_nodenet(master_nodenet_uid):
-            self.new_nodenet(master_nodenet_uid, "Default", uid = master_nodenet_uid)
+            self.new_nodenet(master_nodenet_uid, "Default", uid=master_nodenet_uid)
             self.load_nodenet(master_nodenet_uid)
         nodenet = self.nodenets[master_nodenet_uid]
 
         # check consistency before we drop this into the master nodenet
         nodetable = {}
         for l_uid, l in links.items():
-            if (not l["source_node"] in nodes and not l["source_node"] in nodenet) or (
-                not l["target_node"] in nodes and not l["target_node"] in nodenet):
-                raise KeyError, "node_uid referenced in link %s not found in nodes" %l_uid
-            if not l["source_node"] in nodetable:
-                nodetable[l["source_node"]] = {}
-            nodetable[l["source_node"]][l_uid] = l
+            source_node_id = l.get("source_node_uid", l.get("source_node"))  # fixme
+            target_node_id = l.get("target_node_uid", l.get("target_node"))  # fixme
+            if (not source_node_id in nodes and not source_node_id in nodenet) or (
+                not target_node_id in nodes and not target_node_id in nodenet):
+                raise KeyError, "node_uid referenced in link %s not found in nodes" % l_uid
+            if not source_node_id in nodetable:
+                nodetable[source_node_id] = {}
+            nodetable[source_node_id][l_uid] = l
 
         # find headnode
         headnode = None
@@ -1196,10 +1198,12 @@ class MicroPsiRuntime(object):
                     uid = uid,
                     name = node.get("name", ""))
         for l_uid, link in links.items():
+            source_node_id = l.get("source_node_uid", l.get("source_node"))  # fixme
+            target_node_id = l.get("target_node_uid", l.get("target_node"))  # fixme
             self.add_link(master_nodenet_uid,
-                link["source_node"],
+                source_node_id,
                 link["source_gate_name"],
-                link["target_node"],
+                target_node_id,
                 link["target_slot_name"],
                 weight = link.get("weight", 1.0),
                 certainty = link.get("certainty", 1.0)

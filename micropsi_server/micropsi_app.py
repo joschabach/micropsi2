@@ -455,6 +455,11 @@ def save_all_nodenets():
                 nodenet_list=micropsi.get_available_nodenets())
     return template("error", msg="Insufficient rights to access nodenet console")
 
+
+
+
+
+
 @route("/nodenet/import")
 def import_nodenet_form():
     token = request.get_cookie("token")

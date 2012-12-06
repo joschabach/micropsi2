@@ -1235,7 +1235,7 @@ class MicroPsiRuntime(object):
         removing them."""
 
         nodenet = self.get_nodenet(master_nodenet_uid)
-        if headnode_uid not in nodenet:
+        if headnode_uid not in nodenet.nodes:
             return False
 
         nodes = set()

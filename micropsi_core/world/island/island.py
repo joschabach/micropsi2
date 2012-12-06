@@ -26,6 +26,7 @@ class Island(World):
         self.load_groundmap()
         self.current_step = 0
         self.load_json_data()
+        self.data['assets'] = self.assets
 
     def load_json_data(self):
         filename = os.path.join(os.path.dirname(__file__), 'resources', 'island.json')

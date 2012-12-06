@@ -47,18 +47,42 @@
             <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
         </div>
         <div class="editor_field " id="world_forms">
-            <form class="form-horizontal">
+            <form class="form-horizontal" id="world_status">
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
-            <form class="form-horizontal">
+            <form class="form-horizontal" id="world_objects">
                 <h4>World Objects</h4>
                 <div id="world_objects">
                 </div>
             </form>
+
+            <form class="form-horizontal hide" id="edit_worldobject">
+                <h4>World Object</h4>
+                <table class="table-condensed">
+                    <tr>
+                        <td><label for="wo_name_input">Name</label></td>
+                        <td><input type="text" class="" name="wo_name" id="wo_name_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label for="wo_type">Type</label></td>
+                        <td><input type="text" class="" name="wo_type" id="wo_type_input"></td>
+                    </tr>
+                    <tr>
+                        <td><label>Parameters</label></td>
+                        <td class="wo_parameters"><table id="wo_parameter_list"></td>
+                    </tr>
+                </table>
+                <div class="controls">
+                    <button type="submit" class="btn btn-primary">Apply</button>
+                </div>
+            </form>
+
         </div>
     </div>
 </div>
+
+
 
 %if world_js:
     <script src="/static/{{world_js}}" type="text/paperscript" canvas="world"></script>

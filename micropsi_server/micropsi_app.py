@@ -420,10 +420,15 @@ def login_as_user(userid):
 def nodenet_mgt():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
+        notification = None
+        if request.get_cookie('notification'):
+            notification = json.loads(request.get_cookie('notification'))
+            response.set_cookie('notification', '', path='/')
         return template("nodenet_mgt", version=VERSION, permissions=permissions,
             user_id=user_id,
-            nodenet_list=micropsi.get_available_nodenets())
+            nodenet_list=micropsi.get_available_nodenets(), notification=notification)
     return template("error", msg="Insufficient rights to access nodenet console")
+
 
 @route("/select_nodenet_from_console/<nodenet_uid>")
 def select_nodenet(nodenet_uid):
@@ -431,18 +436,19 @@ def select_nodenet(nodenet_uid):
     result, uid = micropsi.load_nodenet(nodenet_uid)
     if not result:
         return template("error", msg="Could not select nodenet")
-    response.set_cookie("selected_nodenet", nodenet_uid, path = "/")
+    response.set_cookie("selected_nodenet", nodenet_uid, path="/")
     redirect("/")
+
 
 @route("/delete_nodenet_from_console/<nodenet_uid>")
 def delete_nodenet(nodenet_uid):
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
         micropsi.delete_nodenet(nodenet_uid)
-        return template("nodenet_mgt", version=VERSION, permissions=permissions,
-            user_id=user_id,
-            nodenet_list=micropsi.get_available_nodenets())
+        response.set_cookie('notification', '{"msg":"Nodenet deleted", "status":"success"}', path='/')
+        redirect('/nodenet_mgt')
     return template("error", msg="Insufficient rights to access nodenet console")
+
 
 @route("/save_all_nodenets")
 def save_all_nodenets():
@@ -450,9 +456,8 @@ def save_all_nodenets():
     if "manage nodenets" in permissions:
         for uid in micropsi.nodenets:
             micropsi.save_nodenet(uid)
-        return template("nodenet_mgt", version=VERSION, permissions=permissions,
-                user_id=user_id,
-                nodenet_list=micropsi.get_available_nodenets())
+        response.set_cookie('notification', '{"msg":"All nodenets saved", "status":"success"}', path='/')
+        redirect('/nodenet_mgt')
     return template("error", msg="Insufficient rights to access nodenet console")
 
 

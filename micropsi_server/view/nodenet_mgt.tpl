@@ -5,6 +5,13 @@
     <h2>Nodenet Console</h2>
     </p>
 
+    %if notification:
+    <div class="alert alert-{{notification['status']}}">
+        <button type="button" class="close" data-dismiss="alert">×</button>
+        {{notification['msg']}}
+    </div>
+    %end
+
     <div class="row-fluid">
         <table class="table table-bordered table-striped" id="nodenet_mgr">
             <thead>

@@ -1235,6 +1235,9 @@ class MicroPsiRuntime(object):
         removing them."""
 
         nodenet = self.get_nodenet(master_nodenet_uid)
+        if headnode_uid not in nodenet:
+            return False
+
         nodes = set()
 
         def _retrieve_stencil_nodes(node_uid, nodes):

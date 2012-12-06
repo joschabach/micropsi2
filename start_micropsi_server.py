@@ -8,12 +8,10 @@ Startup script for the MicroPsi service.
 __author__ = 'joscha'
 __date__ = '06.07.12'
 
-DEFAULT_ADMIN_PORT = 6543
-DEFAULT_API_PORT = 8080
-DEFAULT_HOST = "localhost"
-
 from micropsi_server import micropsi_app, user_api
 from threading import Thread
+
+from configuration import DEFAULT_API_PORT, DEFAULT_HOST, DEFAULT_ADMIN_PORT
 import argparse
 
 

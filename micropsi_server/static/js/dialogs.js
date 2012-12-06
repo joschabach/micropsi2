@@ -172,7 +172,6 @@ $(function() {
             window.location.reload();
         });
     });
-    $('.navbar a.nodenet_edit').on('click', remote_form);
 
     $('.navbar a.nodenet_delete').on('click', function(){
         dialogs.confirm("Do you really want to delete this nodenet?", function(){
@@ -294,3 +293,17 @@ updateWorldAdapterSelector = function() {
         $("#nn_worldadapter").load("/create_worldadapter_selector/"+option.val());
     }
 };
+
+// data tables
+
+
+$.extend( $.fn.dataTableExt.oStdClasses, {
+    "sWrapper": "dataTables_wrapper form-inline"
+} );
+
+$(document).ready(function() {
+    $('#nodenet_mgr').dataTable( {
+        "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap"
+    } );
+} );

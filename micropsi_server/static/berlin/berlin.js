@@ -51,7 +51,6 @@ currentWorldSimulationStep = -1;
 
 var world_data = null;
 
-refreshWorldList();
 if (currentWorld){
     setCurrentWorld(currentWorld);
 }
@@ -78,16 +77,6 @@ $('#world_objects').html('<div id="berlinStations"><strong>Stations</strong><tab
 //         </div>
 //     </div>');
 
-function refreshWorldList(){
-    $("#world_list").load("/world_list/"+(currentWorld || ''), function(data){
-        $('#world_list .world_select').on('click', function(event){
-            event.preventDefault();
-            var el = $(event.target);
-            var uid = el.attr('data');
-            setCurrentWorld(uid);
-        });
-    });
-}
 
 wasRunning = false;
 $(window).focus(function() {
@@ -160,7 +149,6 @@ function refreshWorldView(){
 function setCurrentWorld(uid){
     currentWorld = uid;
     $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
-    refreshWorldList();
     loadWorldInfo();
     loadWorldObjects();
     refreshWorldView();
@@ -173,9 +161,10 @@ function loadWorldInfo(){
         world_data = data;
         worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
-        if('representation_2d' in data){
-            view.viewSize = new Size(data['representation_2d']['x'], data['representation_2d']['y']);
-            canvas.css('background', 'url("/static/img/'+ data['representation_2d']['image'] + '") no-repeat top left');
+        if('assets' in data){
+            console.log(data.assets);
+            view.viewSize = new Size(data.assets.x, data.assets.y);
+            canvas.css('background', 'url("/static/'+ data.assets.background + '") no-repeat top left');
         }
     }, error=function(data){
         $.cookie('selected_world', '', {expires:-1, path:'/'});

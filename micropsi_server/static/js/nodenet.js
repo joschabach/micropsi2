@@ -82,7 +82,7 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
-STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event"];
+STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
 available_gatetypes = [];
 
@@ -510,8 +510,8 @@ function addNode(node) {
         // if node only updates position or activation, we may save some time
         // import all properties individually; check if we really need to redraw
     }
-    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth)*viewProperties.zoomFactor);
-    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth)*viewProperties.zoomFactor);
+    view.viewSize.x = Math.max (view.viewSize.x, (node.x + viewProperties.frameWidth));
+    view.viewSize.y = Math.max (view.viewSize.y, (node.y + viewProperties.frameWidth));
     return node;
 }
 
@@ -563,7 +563,7 @@ function updateViewSize() {
         }
     }
     var newSize = new Size(
-        Math.min(viewProperties.xMax, Math.max((maxX+viewProperties.frameWidth)*viewProperties.zoomFactor,
+        Math.min(viewProperties.xMax, Math.max((maxX+viewProperties.frameWidth),
         el.width())),
         Math.min(viewProperties.yMax, Math.max(el.height(), maxY)));
     if(newSize.height && newSize.width){
@@ -577,7 +577,6 @@ function updateViewSize() {
 
 // complete redraw of the current node space
 function redrawNodeNet() {
-    console.log("redrawNodeNet");
     nodeLayer.removeChildren();
     nodeLayer.addChild(selectionBox);
     linkLayer.removeChildren();
@@ -935,7 +934,6 @@ function renderLinkDuringCreation(endPoint) {
 
 // draw net entity
 function renderNode(node) {
-    console.log("rendering node "+(node.name || node.uid)+". parent: " + node.parent);
     if (isCompact(node)) renderCompactNode(node);
     else renderFullNode(node);
     setActivation(node);
@@ -1438,18 +1436,15 @@ function onMouseDown(event) {
                         showNodeForm(nodeUid);
                     }
                 }
-                console.log ("clicked node "+nodeUid);
                 // check for slots and gates
                 var i;
                 if ((i = testSlots(node, p)) >-1) {
-                    console.log("clicked slot #" + i);
                     clickType = "slot";
                     clickIndex = i;
                     if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
                     else if (linkCreationStart) finalizeLinkHandler(nodeUid, clickIndex); // was slotIndex TODO: clickIndex?? linkcreationstart.gateIndex???
                     return;
                 } else if ((i = testGates(node, p)) > -1) {
-                    console.log("clicked gate #" + i);
                     clickType = "gate";
                     clickIndex = i;
                     var gate = node.gates[node.gateIndexes[i]];
@@ -1501,7 +1496,6 @@ function onMouseDown(event) {
                 if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
-                console.log("clicked link " + path.name);
                 clickType = "link";
                 clickOriginUid = path.name;
                 if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
@@ -1662,7 +1656,6 @@ function onKeyDown(event) {
 }
 
 function onResize(event) {
-    console.log("resize");
     refreshViewPortData();
     updateViewSize();
 }

@@ -24,9 +24,8 @@ import warnings
 from threading import Thread
 from datetime import datetime, timedelta
 import time
+from configuration import RESOURCE_PATH
 
-
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "..", "resources")
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
@@ -49,7 +48,7 @@ class MicroPsiRuntime(object):
     between them. It should be a singleton, otherwise competing instances might conflict over the resource files.
     """
 
-    def __init__(self, resource_path):
+    def __init__(self, resource_path = RESOURCE_PATH):
         """Set up the MicroPsi runtime
 
         Arguments:
@@ -1152,33 +1151,16 @@ class MicroPsiRuntime(object):
         nodenet = self.nodenets[master_nodenet_uid]
 
         # check consistency before we drop this into the master nodenet
-        nodetable = {}
         for l_uid, l in links.items():
             if (not l["source_node"] in nodes and not l["source_node"] in nodenet) or (
                 not l["target_node"] in nodes and not l["target_node"] in nodenet):
                 raise KeyError, "node_uid referenced in link %s not found in nodes" %l_uid
-            if not l["source_node"] in nodetable:
-                nodetable[l["source_node"]] = {}
-            nodetable[l["source_node"]][l_uid] = l
 
-        # find headnode
-        headnode = None
-        headnode_uid = None
-        for uid, ls in nodetable.items():
-            headnode_uid = uid
-            for l_uid, link in ls.items():
-                if link["source_gate_name"] in ("sur", "ret", "por"):
-                    headnode_uid = None
-                    break
-            if headnode_uid:
-                headnode = nodes[headnode_uid]
-                break
-        if not headnode:
-            if len(nodes) == 1:
-                headnode_uid = nodes.keys()[0]
-                headnode = nodes[headnode_uid]
-            else:
-                raise KeyError, "No head node found in stencil"
+        headnode_uid = self._find_headnode(nodes, links)
+        if not headnode_uid:
+            raise KeyError, "No head node found in stencil"
+
+        headnode = nodes[headnode_uid]
 
         primary_labels = labels or []
         secondary_labels = []
@@ -1218,11 +1200,44 @@ class MicroPsiRuntime(object):
 
         return headnode_uid
 
+    def _find_headnode(self, node_dict, link_dict):
+        """Helper function to identify a possible head node for a stencil, based on the supplied dictionaries of
+        nodes and links.
+        Returns the uid of the headnode, or raises a KeyError if none is found"""
+
+        nodetable = {}
+        for l_uid, l in link_dict.items():
+            if not l["source_node"] in nodetable:
+                nodetable[l["source_node"]] = {}
+            nodetable[l["source_node"]][l_uid] = l
+
+        # find headnode
+        headnode = None
+        headnode_uid = None
+        for uid, ls in nodetable.items():
+            headnode_uid = uid
+            for l_uid, link in ls.items():
+                if link["source_gate_name"] in ("sur", "ret", "por"):
+                    headnode_uid = None
+                    break
+            if headnode_uid:
+                return headnode_uid
+
+        if not headnode:
+            if len(node_dict) == 1:
+                headnode_uid = node_dict.keys()[0]
+                return headnode_uid
+            else:
+                return None
+
     def delete_stencil_by_headnode(self, headnode_uid, master_nodenet_uid="default_domain"):
         """Deletes a stencil from an existing nodenet, by identifying the nodes below the headnode and
         removing them."""
 
         nodenet = self.get_nodenet(master_nodenet_uid)
+        if headnode_uid not in nodenet.nodes:
+            return False
+
         nodes = set()
 
         def _retrieve_stencil_nodes(node_uid, nodes):
@@ -1265,6 +1280,18 @@ class MicroPsiRuntime(object):
         nodenet = self.get_nodenet(nodenet_uid)
         result = self.add_stencil(nodenet.state["nodes"], nodenet.state["links"], [nodenet.name],
             language, master_nodenet_uid, user)
+        if result:
+            self.save_nodenet(master_nodenet_uid)
+        return result
+
+
+    def delete_stencil_by_nodenet(self, nodenet_uid, master_nodenet_uid="default_domain"):
+        """Helper method to delete stencils from blueprints, based on a nodenet that was used to create it"""
+
+        nodenet = self.get_nodenet(nodenet_uid)
+        headnode_uid = self._find_headnode(nodenet.state["nodes"], nodenet.state["links"])
+
+        result = self.delete_stencil_by_headnode(headnode_uid, master_nodenet_uid)
         if result:
             self.save_nodenet(master_nodenet_uid)
         return result

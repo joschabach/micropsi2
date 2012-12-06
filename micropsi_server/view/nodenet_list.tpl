@@ -20,15 +20,22 @@
 <ul class="dropdown-menu">
 % for uid in mine:
     % if uid != current:
-<li><a href="/rpc/select_{{type}}" data="{{uid}}" class="{{type}}_select">{{mine[uid].name}}</a></li>
+      % if type=="world":
+        <li><a href="?select_world={{uid}}" class="{{type}}_select">{{mine[uid].name}}</a></li>
+      % else:
+        <li><a href="/rpc/select_{{type}}" data="{{uid}}" class="{{type}}_select">{{mine[uid].name}}</a></li>
+      % end
     % end
 % end
 
 % for uid in others:
     % if uid != current:
-<li><a href="/rpc/select_{{type}}" data="{{uid}}" class="{{type}}_select">{{others[uid].name}} ({{others[uid].owner}})</a></li>
+      % if type=="world":
+        <li><a href="?select_world={{uid}}" class="{{type}}_select">{{others[uid].name}} ({{others[uid].owner}})</a></li>
+      % else:
+        <li><a href="/rpc/select_{{type}}" data="{{uid}}" class="{{type}}_select">{{others[uid].name}} ({{others[uid].owner}})</a></li>
+      % end
     % end
 % end
 </ul>
 %end
-

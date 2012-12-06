@@ -19,18 +19,7 @@ var viewProperties = {
     shadowStrokeWidth: 0,
     shadowDisplacement: new Point(0.5,1.5),
     innerShadowDisplacement: new Point(0.2,0.7),
-    hoverScale: 1.5,
     padding: 3,
-    typeColors: {
-        S: new Color('#006600'),
-        U: new Color('#000099'),
-        Tram: new Color('#990000'),
-        Bus: new Color('#7000ff'),
-        NE: new Color('#7000ff'),
-        other: new Color('#304451'),
-        RE: new Color('#ff0000'),
-        RB: new Color('#ff0000')
-    },
     label: {
         x: 10,
         y: -10
@@ -59,23 +48,6 @@ worldRunning = false;
 $('#world_objects').html(
     '<div><a href="#" id="add_object_link" class="add_link">add Object</a></div>' +
     '<div id="island_objects"><strong>Objects</strong><table class="table-striped table-condensed"></table></div>');
-
-// accordion for trains and stations, commented for performance reasons
-// $('#island_objects').html(
-//     '<div class="accordion" id="worldobject_accordion">
-//         <div class="accordion-group">
-//             <div class="accordion-header"><a class="accordion-toggle" data-toggle="collapse" data-parent="#worldobject_accordion" href="#berlinStations"><i class="icon-chevron-right"></i>Stations</a></div>
-//             <div id="berlinStations" class="accordion-body collapse">
-//                 <table class="table-striped table-condensed"></table>
-//             </div>
-//         </div>
-//         <div class="accordion-group">
-//             <div class="accordion-header"><a class="accordion-toggle" data-toggle="collapse" data-parent="#worldobject_accordion" href="#berlinTrains"><i class="icon-chevron-right"></i>Trains</a></div>
-//             <div id="berlinTrains" class="accordion-body collapse">
-//                 <table class="table-striped table-condensed"></table>
-//             </div>
-//         </div>
-//     </div>');
 
 wasRunning = false;
 $(window).focus(function() {
@@ -112,6 +84,8 @@ function refreshWorldView(){
                     if(data.objects[key].pos && data.objects[key].pos.length == 2){
                         objects[key].x = data.objects[key].pos[0];
                         objects[key].y = data.objects[key].pos[1];
+                        objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
+                        objects[key].orientation = data.objects[key].orientation;
                         objects[key].representation.position = new Point(objects[key].x, objects[key].y);
                     } else {
                         console.log('obj has no pos: ' + key);
@@ -121,18 +95,11 @@ function refreshWorldView(){
             }
             for(key in data.objects){
                 if(data.objects[key].pos && data.objects[key].pos.length == 2){
-                    addObject(new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].traintype + ' ' + data.objects[key].line, data.objects[key].traintype));
+                    addObject(new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
                 } else {
                     console.log('obj has no pos ' + key);
                 }
             }
-            // fill accordion with list of trains. see above.
-            // var list_trains_html = '';
-            // for(key in objects){
-            //     list_trains_html += '<tr><td><a href="#" class="highlight_train">' + objects[key].name + '</a></td></tr>';
-            // }
-            // $('#berlinTrains table').html(list_trains_html);
-            // $('.hightlight_train').on('click', highlightWorldobject);
 
             updateViewSize();
             if(worldRunning){
@@ -153,6 +120,10 @@ function setCurrentWorld(uid){
     refreshWorldView();
 }
 
+function loadWorldObjects(){
+
+}
+
 function loadWorldInfo(){
     api.call('get_world_properties', {
         world_uid: currentWorld
@@ -160,28 +131,13 @@ function loadWorldInfo(){
         world_data = data;
         worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
-        if('representation_2d' in data){
-            view.viewSize = new Size(data['representation_2d']['x'], data['representation_2d']['y']);
-            canvas.css('background', 'url("/static/img/'+ data['representation_2d']['image'] + '") no-repeat top left');
+        console.log(data);
+        if('assets' in data){
+            if(data.assets.x && data.assets.y){
+                view.viewSize = new Size(data.assets.x, data.assets.y);
+            }
+            canvas.css('background', 'url("/static/'+ data.assets.background + '") no-repeat top left');
         }
-    }, error=function(data){
-        $.cookie('selected_world', '', {expires:-1, path:'/'});
-        dialogs.notification(data.Error, 'error');
-    });
-}
-
-function loadWorldObjects(){
-    api.call('get_world_objects', {world_uid: currentWorld, type: 'stations'}, success=function(data){
-        objectLayer.removeChildren();
-        stations = {};
-        var list_stations_html = '';
-        for (var key in data){
-            addStation(new WorldObject(key, data[key].pos[0], data[key].pos[1], data[key].name, data[key].stationtype));
-            list_stations_html += '<tr><td><a href="#" data="' + key + '"class="highlight_station">' + data[key].name + '</a></td></tr>';
-        }
-        $('#island_objects table').html(list_stations_html);
-        $('.highlight_station').on('click', highlightWorldobject);
-        updateViewSize();
     }, error=function(data){
         $.cookie('selected_world', '', {expires:-1, path:'/'});
         dialogs.notification(data.Error, 'error');
@@ -193,12 +149,13 @@ function updateViewSize() {
 }
 
 
-function WorldObject(uid, x, y, name, type){
+function WorldObject(uid, x, y, orientation, name, type){
     this.uid = uid;
     this.x = x;
     this.y = y;
-    this.name = name;
-    this.type = type;
+    this.orientation = orientation || 0;
+    this.name = name || "";
+    this.type = type || "";
 }
 
 function addObject(worldobject){
@@ -209,34 +166,11 @@ function addObject(worldobject){
     return worldobject;
 }
 
-function addStation(station){
-    if(!(station.uid in stations)){
-        renderStation(station);
-        stations[station.uid] = station;
-    }
-    return station;
-}
-
 function redrawObject(obj){
     if(objects[obj.uid].representation){
         objects[obj.uid].representation.remove();
     }
     renderObject(obj);
-}
-
-function renderStation(station){
-    if(!('station_'+station.type in symbols)){
-        var bounds = calculateStationBounds(station);
-        var path = new Path.Rectangle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
-        path.style = {
-            fillColor: '#999999'
-        };
-        symbols['station_'+station.type] = new Symbol(path);
-        //objectLayer.addChild(symbols[worldobject.type]);
-    }
-    station.representation = symbols['station_'+station.type].place();
-    station.representation.position = new Point(station.x, station.y);
-    objectLayer.addChild(station.representation);
 }
 
 function renderObject(worldobject){
@@ -251,30 +185,8 @@ function renderObject(worldobject){
     objectLayer.addChild(worldobject.representation);
 }
 
-function calculateStationBounds(station){
-    var size;
-    switch(station.type){
-        case "Bus":
-        case "Tram": size = 5; break;
-        case "S":
-        case "S+U":
-        case "U": size = 10;
-    }
-    return {
-        x: station.x*viewProperties.zoomFactor - size/2,
-        y: station.y*viewProperties.zoomFactor - size/2,
-        width: size,
-        height: size
-    };
-}
-
 function calculateObjectBounds(worldobject){
     var size = viewProperties.objectWidth * viewProperties.zoomFactor;
-    if (worldobject.type == "Tram"){
-        size = 8;
-    } else if (['S', 'U', 'RE', 'RB', 'ICE'].indexOf(worldobject.type) < 0){
-        size = 5;
-    }
     return {
         x: worldobject.x*viewProperties.zoomFactor - size/2,
         y: worldobject.y*viewProperties.zoomFactor - size/2,
@@ -283,19 +195,9 @@ function calculateObjectBounds(worldobject){
     };
 }
 
-function createTrain(worldobject, bounds){
-    var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
-    if (worldobject.type in viewProperties.typeColors){
-        shape.fillColor = viewProperties.typeColors[worldobject.type];
-    } else {
-        shape.fillColor = viewProperties.typeColors['other'];
-    }
-    return shape;
-}
-
 function getLegend(worldobject){
     var legend = new Group();
-    legend.name = 'stationLegend';
+    legend.name = 'objectLegend';
     var bounds = worldobject.representation.bounds;
     var height = (viewProperties.fontSize*viewProperties.zoomFactor + 2*viewProperties.padding);
     var point = new Point(
@@ -325,8 +227,6 @@ function getLegend(worldobject){
 
 hoverUid = false;
 label = false;
-stationmarker = false;
-
 
 clickLabel = false;
 clickHighlight = false;
@@ -337,10 +237,6 @@ function onMouseMove(event) {
     if (hoverUid) { // unhover
         if(hoverUid in objects){
             objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
-        }
-        if(hoverUid in stations && stationmarker){
-            stationmarker.remove();
-            stationmarker = null;
         }
         hoverUid = null;
     }
@@ -370,10 +266,6 @@ function onMouseMove(event) {
         label.remove();
         label = null;
     }
-    if(!hoverUid && stationmarker){
-        stationmarker.remove();
-        stationmarker = null;
-    }
 }
 
 function highlightWorldobject(event){
@@ -381,21 +273,11 @@ function highlightWorldobject(event){
     var link = $(event.target);
     var uid = link.attr('data');
     removeClickHighlight();
-    var obj;
-    if(link.hasClass('highlight_station')){
-        obj = stations[uid];
-        stationmarker = new Path.Rectangle(obj.representation.bounds);
-        stationmarker.fillColor='black';
-        label = getLegend(obj);
-        objectLayer.addChild(label);
-        objectLayer.addChild(stationmarker);
-    } else {
-        obj = objects[uid];
-        obj.representation.scale(viewProperties.hoverScale);
-        clickHighlight = uid;
-        label = getLegend(obj);
-        objectLayer.addChild(label);
-    }
+    var obj = objects[uid];
+    obj.representation.scale(viewProperties.hoverScale);
+    clickHighlight = uid;
+    label = getLegend(obj);
+    objectLayer.addChild(label);
     if(!objectInViewport(obj)){
         scrollToObject(obj);
     }
@@ -406,10 +288,6 @@ function removeClickHighlight(){
     if(clickHighlight) {
         objects[clickHighlight].representation.scale(1/viewProperties.hoverScale);
         clickHighlight = null;
-    }
-    if(stationmarker){
-        stationmarker.remove();
-        stationmarker = null;
     }
     if(label){
         label.remove();
@@ -444,6 +322,11 @@ function initializeControls(){
     $('#world_step_forward').on('click', stepWorld);
     $('#world_start').on('click', startWorldrunner);
     $('#world_stop').on('click', stopWorldrunner);
+
+    $('#add_object_link').on('click', function(event){
+        event.preventDefault();
+        
+    });
 }
 
 function resetWorld(event){

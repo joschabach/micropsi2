@@ -120,7 +120,10 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
-    world_js = worlds[current_world].assets['js'] if current_world and worlds[current_world].assets else None
+    if current_world in worlds and getattr(worlds[current_world], 'assets', None):
+        world_js = worlds[current_world].assets['js']
+    else:
+        world_js = ''
     return template(template_name, current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),

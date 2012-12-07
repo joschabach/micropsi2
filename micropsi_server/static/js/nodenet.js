@@ -2588,9 +2588,11 @@ function showNodeForm(nodeUid){
         var content = "", gates="", id, name;
         var link_list = "";
         var inlink_types = {};
-        for(id in nodes[nodeUid].slots["gen"].incoming){
-            if(!(links[id].gateName in inlink_types)) inlink_types[links[id].gateName] = [];
-            inlink_types[links[id].gateName].push('<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> <- <a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>');
+        if(nodes[nodeUid].slots["gen"]){
+            for(id in nodes[nodeUid].slots["gen"].incoming){
+                if(!(links[id].gateName in inlink_types)) inlink_types[links[id].gateName] = [];
+                inlink_types[links[id].gateName].push('<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> <- <a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>');
+            }
         }
         for(var j in available_gatetypes){
             if(available_gatetypes[j] in inlink_types){
@@ -2625,16 +2627,20 @@ function getNodeParameterHTML(parameters){
             var i;
             switch(name){
                 case "datatarget":
-                    for(i in worldadapters[currentWorldadapter].datatargets){
-                        input += "<option>"+worldadapters[currentWorldadapter].datatargets[i]+"</option>";
+                    if(currentWorldadapter in worldadapters){
+                        for(i in worldadapters[currentWorldadapter].datatargets){
+                            input += "<option>"+worldadapters[currentWorldadapter].datatargets[i]+"</option>";
+                        }
+                        input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
                     }
-                    input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
                     break;
                 case "datasource":
-                    for(i in worldadapters[currentWorldadapter].datasources){
-                        input += "<option>"+worldadapters[currentWorldadapter].datasources[i]+"</option>";
+                    if(currentWorldadapter in worldadapters){
+                        for(i in worldadapters[currentWorldadapter].datasources){
+                            input += "<option>"+worldadapters[currentWorldadapter].datasources[i]+"</option>";
+                        }
+                        input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     }
-                    input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     break;
                 default:
                     input = "<input name=\""+name+"\" class=\"inplace\" value=\""+value+"\"/>";

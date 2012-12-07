@@ -5,8 +5,15 @@
     <h2>Nodenet Console</h2>
     </p>
 
+    %if notification:
+    <div class="alert alert-{{notification['status']}}">
+        <button type="button" class="close" data-dismiss="alert">×</button>
+        {{notification['msg']}}
+    </div>
+    %end
+
     <div class="row-fluid">
-        <table class="table table-bordered table-striped">
+        <table class="table table-bordered table-striped" id="nodenet_mgr">
             <thead>
             <tr>
                 <th>Nodenet UID</th>
@@ -24,8 +31,10 @@
                 <td>{{nodenet_list[nodenet_uid]["owner"]}}
                 </td>
                 <td>
-                    <a href="/select_nodenet_from_console/{{nodenet_uid}}" class="btn">Select nodenet</a>
-                    <a href="/delete_nodenet_from_console/{{nodenet_uid}}" class="btn">Delete nodenet</a>
+                    <a href="/select_nodenet_from_console/{{nodenet_uid}}" class="btn">View</a>
+                    <a href="/delete_nodenet_from_console/{{nodenet_uid}}" class="btn">Delete</a>
+                    <a href="/stencil_from_console/{{nodenet_uid}}" class="btn">Make stencil</a>
+                    <a href="/delete_stencil_from_console/{{nodenet_uid}}" class="btn">Delete stencil</a>
                 </td>
             </tr>
             %end

@@ -1,7 +1,11 @@
+import math
+import micropsi_core
 from micropsi_core.world.world import World
 
 import json
 import os
+from micropsi_core.world.worldadapter import WorldAdapter
+from micropsi_core.world.worldobject import WorldObject
 import png
 
 
@@ -26,6 +30,7 @@ class Island(World):
         self.load_groundmap()
         self.current_step = 0
         self.load_json_data()
+        self.data['assets'] = self.assets
 
     def load_json_data(self):
         filename = os.path.join(os.path.dirname(__file__), 'resources', 'island.json')
@@ -57,14 +62,119 @@ class Island(World):
 
     def step(self):
         """ overwrite world.step """
+        #for o in o
         ret = super(Island, self).step()
         return ret
 
     def add_object(self, type, position, orientation = 0.0, name = "", parameters = None, uid = None ):
-        pass
+        """
+        Add a new object to the current world.
+
+        Arguments:
+            type: the type of the object (currently, only "light_source" is supported
+            position: a (x, y) tuple with the coordinates
+            orientation (optional): an angle, usually between 0 and 2*pi
+            name (optional): a readable name for that object
+            uid (optional): if omitted, a uid will be generated
+        """
+        if not uid: uid = micropsi_core.tools.generate_uid()
+        self.objects[uid] = {
+            "uid":uid,
+            "type":type,
+            "position":position,
+            "orientation":orientation,
+            "parameters":parameters
+        }
 
     def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
         pass
 
     def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         pass
+
+
+class Lightsource(WorldObject):
+
+    @property
+    def pos(self):
+        return self.data.get('pos', 0)
+
+    @pos.setter
+    def pos(self, pos):
+        self.data['pos'] = pos
+
+    @property
+    def diameter(self):
+        return self.data.get('diameter', 0.0)
+
+    @diameter.setter
+    def diameter(self, diameter):
+        self.data['diameter'] = diameter
+
+    @property
+    def intensity(self):
+        return self.data.get('intensity', 0.0)
+
+    @intensity.setter
+    def intensity(self, intensity):
+        self.data['intensity'] = intensity
+
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, "light_source", uid=uid, **data)
+        self.intensity = data.get('intensity', 1.0)
+        self.diameter = data.get('diameter' ,0.1)
+
+    def initialize_worldobject(self, data):
+        self.data = data
+
+    def get_intensity(self, distance):
+        """returns the strength of the light, depending on the distance"""
+        return self.intensity*self.diameter*self.diameter/distance/distance
+
+class Braitenberg(WorldAdapter):
+    """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines
+    """
+
+    datasources = {'brightness_l': 1.7, 'brightness_r': 1.7}
+    datatargets = {'engine_l':0, 'engine_r': 0}
+
+    # positions of sensors, relative to origin of agent center
+    brightness_l_pos = (-0.25, 0.25)
+    brightness_r_pos = (0.25, 0.25)
+
+    # positions of engines, relative to origin of agent center
+    engine_l_pos = (-0.3, 0)
+    engine_r_pos = (0.3, 0)
+
+    # agent diameter
+    diameter = 0.3
+
+    @property
+    def pos(self):
+        return self.data.get('pos', 0)
+
+    @pos.setter
+    def pos(self, pos):
+        self.data['pos'] = pos
+
+    @property
+    def direction(self):
+        return self.data.get('direction', 0)
+
+    @direction.setter
+    def direction(self, direction):
+        self.data['direction'] = direction % (2.0*math.pi)
+
+    def initialize_worldobject(self, data):
+        self.data = data
+        if not "pos" in data:
+            self.pos = self.world.groundmap.startpos
+
+    def update(self):
+        """called on every world simulation step to advance the life of the agent"""
+        for o in self.world.objects:
+            if hasattr(o, "get_intensity"):
+                pass
+
+
+

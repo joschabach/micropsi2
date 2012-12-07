@@ -293,3 +293,17 @@ updateWorldAdapterSelector = function() {
         $("#nn_worldadapter").load("/create_worldadapter_selector/"+option.val());
     }
 };
+
+// data tables
+
+
+$.extend( $.fn.dataTableExt.oStdClasses, {
+    "sWrapper": "dataTables_wrapper form-inline"
+} );
+
+$(document).ready(function() {
+    $('#nodenet_mgr').dataTable( {
+        "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+        "sPaginationType": "bootstrap"
+    } );
+} );

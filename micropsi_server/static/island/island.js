@@ -26,6 +26,8 @@ var viewProperties = {
     }
 };
 
+var available_object_types = ['Lightsource'];
+
 objects = {};
 symbols = {};
 
@@ -41,13 +43,14 @@ var world_data = null;
 if (currentWorld){
     setCurrentWorld(currentWorld);
 }
-initializeControls();
 
 worldRunning = false;
 
-$('#world_objects').html(
+$('#world_objects_list').html(
     '<div><a href="#" id="add_object_link" class="add_link">add Object</a></div>' +
     '<div id="island_objects"><strong>Objects</strong><table class="table-striped table-condensed"></table></div>');
+
+initializeControls();
 
 wasRunning = false;
 $(window).focus(function() {
@@ -81,9 +84,9 @@ function refreshWorldView(){
                         delete objects[key];
                     }
                 } else {
-                    if(data.objects[key].pos && data.objects[key].pos.length == 2){
-                        objects[key].x = data.objects[key].pos[0];
-                        objects[key].y = data.objects[key].pos[1];
+                    if(data.objects[key].position && data.objects[key].position.length == 2){
+                        objects[key].x = data.objects[key].position[0];
+                        objects[key].y = data.objects[key].position[1];
                         objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
                         objects[key].orientation = data.objects[key].orientation;
                         objects[key].representation.position = new Point(objects[key].x, objects[key].y);
@@ -94,8 +97,9 @@ function refreshWorldView(){
                 delete data.objects[key];
             }
             for(key in data.objects){
-                if(data.objects[key].pos && data.objects[key].pos.length == 2){
-                    addObject(new WorldObject(key, data.objects[key].pos[0], data.objects[key].pos[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                if(data.objects[key].position && data.objects[key].position.length == 2){
+                    console.log(data.objects[key].position);
+                    addObject(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
                 } else {
                     console.log('obj has no pos ' + key);
                 }
@@ -116,23 +120,23 @@ function setCurrentWorld(uid){
     currentWorld = uid;
     $.cookie('selected_world', currentWorld, {expires:7, path:'/'});
     loadWorldInfo();
-    loadWorldObjects();
-    refreshWorldView();
 }
 
-function loadWorldObjects(){
-
-}
 
 function loadWorldInfo(){
     api.call('get_world_properties', {
         world_uid: currentWorld
     }, success=function(data){
+        refreshWorldView();
         world_data = data;
         worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
-        console.log(data);
         if('assets' in data){
+            var iconhtml = '';
+            for(key in data.assets.icons){
+                iconhtml += '<img src="/static/'+data.assets.icons[key]+'" id="icon_' + key + '" /> '
+            }
+            $('#world_objects_icons').html(iconhtml);
             if(data.assets.x && data.assets.y){
                 view.viewSize = new Size(data.assets.x, data.assets.y);
             }
@@ -149,19 +153,22 @@ function updateViewSize() {
 }
 
 
-function WorldObject(uid, x, y, orientation, name, type){
+function WorldObject(uid, x, y, orientation, name, type, parameters){
     this.uid = uid;
     this.x = x;
     this.y = y;
     this.orientation = orientation || 0;
     this.name = name || "";
     this.type = type || "";
+    this.parameters = parameters;
 }
 
 function addObject(worldobject){
     if(! (worldobject.uid in objects)) {
         renderObject(worldobject);
         objects[worldobject.uid] = worldobject;
+    } else {
+        redrawObject(objects[worldobject.uid])
     }
     return worldobject;
 }
@@ -176,13 +183,33 @@ function redrawObject(obj){
 function renderObject(worldobject){
     if(!(worldobject.type in symbols)){
         var bounds = calculateObjectBounds(worldobject);
-        var path = createTrain(worldobject, bounds);
+        var path = createObjectShape(worldobject, bounds);
         symbols[worldobject.type] = new Symbol(path);
         //objectLayer.addChild(symbols[worldobject.type]);
     }
     worldobject.representation = symbols[worldobject.type].place();
     worldobject.representation.position = new Point(worldobject.x, worldobject.y);
+    worldobject.representation.name = worldobject.uid;
     objectLayer.addChild(worldobject.representation);
+}
+
+function createObjectShape(worldobject, bounds){
+    switch(worldobject.type){
+        case "Lightsource":
+            var raster = new Raster('icon_Lightsource');
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster
+
+        default:
+            var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
+            if (worldobject.type in viewProperties.typeColors){
+                shape.fillColor = viewProperties.typeColors[worldobject.type];
+            } else {
+                shape.fillColor = viewProperties.typeColors['other'];
+            }
+        return shape;
+    }
 }
 
 function calculateObjectBounds(worldobject){
@@ -228,15 +255,22 @@ function getLegend(worldobject){
 hoverUid = false;
 label = false;
 
+movePath = false;
+path = null;
+
 clickLabel = false;
 clickHighlight = false;
+
+function onMouseDown(event){
+    showDefaultForm();
+}
 
 function onMouseMove(event) {
     var p = event.point;
     // hovering
     if (hoverUid) { // unhover
         if(hoverUid in objects){
-            objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
+            //objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
         }
         hoverUid = null;
     }
@@ -254,10 +288,12 @@ function onMouseMove(event) {
                     if(clickHighlight){
                         removeClickHighlight();
                     }
-                    objects[uid].representation.scale(viewProperties.hoverScale);
+                    //objects[uid].representation.scale(viewProperties.hoverScale);
                     label = getLegend(objects[hoverUid]);
                     objectLayer.addChild(label);
                 }
+                path = objectLayer.children[uid];
+                movePath = true;
                 return;
             }
         }
@@ -265,6 +301,36 @@ function onMouseMove(event) {
     if (!hoverUid && label){
         label.remove();
         label = null;
+        movePath = null;
+    }
+}
+
+function onMouseDrag(event) {
+    if (movePath) {
+        path.objectMoved = true;
+        path.position += event.delta;
+        var obj = objects[path.name];
+        obj.x += event.delta.x/viewProperties.zoomFactor;
+        obj.y += event.delta.y/viewProperties.zoomFactor;
+        obj.bounds = calculateObjectBounds(obj);
+        if(label){
+            var height = (viewProperties.fontSize*viewProperties.zoomFactor + 2*viewProperties.padding);
+            label.position = new Point(
+                obj.bounds.x + (viewProperties.label.x * viewProperties.zoomFactor),
+                Math.max(height, obj.bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
+        }
+    }
+}
+
+function onMouseUp(event) {
+    if (movePath) {
+        if(path.objectMoved && objects[path.name]){
+            // update position on server
+            path.objectMoved = false;
+            setObjectProperties(objects[path.name], objects[path.name].x, objects[path.name].y);
+            movePath = false;
+            updateViewSize();
+        }
     }
 }
 
@@ -325,8 +391,18 @@ function initializeControls(){
 
     $('#add_object_link').on('click', function(event){
         event.preventDefault();
-        
+        showObjectForm();
     });
+
+    $('#add_object_param').on('click', function(event){
+        event.preventDefault();
+        var param_table = $('#wo_parameter_list');
+        var html = param_table.html();
+        html += '<tr><td><input type="text" name="param_key" class="param_key inplace" /></td><td><input type="text" name="new_param_val" class="param_val inplace" /></td></tr>';
+        param_table.html(html);
+    });
+    $('#wo_type_input').html('<option>' + available_object_types.join('</option><option>')+'</option>');
+    $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
 }
 
 function resetWorld(event){
@@ -362,3 +438,81 @@ function stopWorldrunner(event){
         $('#world_step').val(currentWorldSimulationStep);
     });
 }
+
+
+// ------------------------ side bar form stuff --------------------------------------------- //
+
+function showDefaultForm(){
+    $('#world_forms .form-horizontal').hide();
+    $('#world_status').show();
+    $('#world_objects').show();
+}
+
+function showObjectForm(worldobject){
+    if(!worldobject) worldobject = {};
+    $('#world_forms .form-horizontal').hide();
+    $('#wo_uid_input').val(worldobject.uid);
+    $('#wo_name_input').val(worldobject.name);
+    $('#wo_type_input').val(worldobject.type);
+    var param_table = $('#wo_parameter_list');
+    var param_html = '';
+    for(var key in worldobject.parameters){
+        param_html += "<tr><td><input type=\"text\" class=\"param_name inplace\" name=\"param_name\" value=\""+key+"\" /></td><td><input type=\"text\" class=\"inplace\" name=\"param_"+key+"\" val=\""+worldobject.params[key]+"\" /></td></tr>";
+    }
+    param_table.html(param_html);
+    $('#edit_worldobject').show();
+}
+
+
+// ------------------------ API Communication --------------------------------------------------- //
+
+function handleSubmitWorldobject(event){
+    event.preventDefault();
+    var uid = $('#wo_uid_input').val();
+    data = {
+        'world_uid': currentWorld,
+        'name': $('#wo_name_input').val(),
+        'type': $('#wo_type_input').val(),
+        'position': [10, 10],
+        'parameters': {}
+    };
+    var param_fields = $('input[name^="param_"]', $('#edit_worldobject'));
+    for(var i in param_fields){
+        if(param_fields[i].name == "param_name"){
+            data.parameters[param_fields[i].value] = param_fields[++i].value;
+        }
+    }
+    if(uid){
+        setObjectProperties(objects[uid], null, null, data.name, null, data.parameters);
+    } else {
+        api.call('add_worldobject', data, function(result){
+            if(result.status =='success'){
+                addObject(new WorldObject(result.uid, 10, 10, 0, data.name, data.type, data.parameters));
+            }
+            updateViewSize();
+        }, api.defaultErrorCallback);
+    }
+}
+
+function setObjectProperties(worldobject, x, y, name, orientation, parameters){
+    if(x) worldobject.x = x;
+    if(y) worldobject.y = y;
+    if(name) worldobject.name = name;
+    if(orientation) worldobject.orientation = orientation;
+    if(parameters) worldobject.parameters = parameters;
+    data = {
+        world_uid: currentWorld,
+        uid: worldobject.uid,
+        position: [worldobject.x, worldobject.y],
+        name: worldobject.name,
+        orientation: worldobject.orientation,
+        parameters: worldobject.parameters || {}
+    };
+    api.call('set_worldobject_properties', data, function(result){
+        if(result.status =='success'){
+            redrawObject(worldobject);
+        }
+    }, api.defaultErrorCallback);
+
+}
+

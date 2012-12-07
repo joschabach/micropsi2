@@ -51,26 +51,32 @@
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
-            <form class="form-horizontal" id="world_objects">
+            <form class="form-horizontal">
                 <h4>World Objects</h4>
-                <div id="world_objects">
+                <div id="world_objects_list">
                 </div>
+                <div id="world_objects_icons"></div>
             </form>
 
             <form class="form-horizontal hide" id="edit_worldobject">
                 <h4>World Object</h4>
                 <table class="table-condensed">
                     <tr>
+                        <td><label for="wo_uid_input">Uid</label></td>
+                        <td><input type="text" class="" name="wo_uid" id="wo_uid_input" /></td>
+                    </tr>
+                    <tr>
                         <td><label for="wo_name_input">Name</label></td>
-                        <td><input type="text" class="" name="wo_name" id="wo_name_input"></td>
+                        <td><input type="text" class="" name="wo_name" id="wo_name_input" /></td>
                     </tr>
                     <tr>
                         <td><label for="wo_type">Type</label></td>
-                        <td><input type="text" class="" name="wo_type" id="wo_type_input"></td>
+                        <td><select type="text" class="" name="wo_type" id="wo_type_input"></select></td>
                     </tr>
                     <tr>
                         <td><label>Parameters</label></td>
-                        <td class="wo_parameters"><table id="wo_parameter_list"></td>
+                        <td class="wo_parameters"><table id="wo_parameter_list"></table>
+                            <button id="add_object_param">Add parameter</button></td>
                     </tr>
                 </table>
                 <div class="controls">
@@ -81,8 +87,6 @@
         </div>
     </div>
 </div>
-
-
 
 %if world_js:
     <script src="/static/{{world_js}}" type="text/paperscript" canvas="world"></script>

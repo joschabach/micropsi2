@@ -11,9 +11,11 @@ import worldobject
 import json
 import os
 import warnings
+from micropsi_core import tools
 from micropsi_core.tools import generate_uid
 
 WORLD_VERSION = 1.0
+
 
 
 class World(object):
@@ -59,8 +61,6 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
-    supported_worldadapters = ['Default', 'Braitenberg']
-
     def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
@@ -78,6 +78,8 @@ class World(object):
             "agents": {},
             "step": 0
         }
+
+        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
 
         self.runtime = runtime
         self.uid = uid or generate_uid()
@@ -144,15 +146,17 @@ class World(object):
         """ returns a list of world objects, and the current step of the simulation """
         return {
             'objects': self.get_world_objects(),
+            'agents': self.get_agents(),
             'current_step': self.current_step,
         }
 
-    def get_world_objects(self, type=None):
-        """ returns a dictionary of world objects and agents. """
-        if type is not None:
-            return self.data.get(type, {})
-        else:
-            return dict(self.data.get('objects', {}).items() + self.data.get('agents', {}).items())
+    def get_world_objects(self):
+        """ returns a dictionary of world objects. """
+        return self.data.get('objects', {})
+
+    def get_agents(self):
+        """ returns a dictionary of agents. """
+        return self.data.get('agents', {})
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.

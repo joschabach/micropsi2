@@ -773,6 +773,24 @@ def get_world_objects(world_uid, type=None):
         return {'Error': 'World %s not found' % world_uid}
 
 
+@rpc("add_worldobject")
+def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
+    result, uid = runtime.add_worldobject(world_uid, type, position, orientation=orientation, name=name, parameters=parameters, uid=uid)
+    if result:
+        return dict(status="success", uid=uid)
+    else:
+        return dict(status="error", msg=uid)
+
+
+@rpc("set_worldobject_properties")
+def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
+    try:
+        runtime.set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters)
+        return dict(status="success")
+    except KeyError:
+        return dict(status="error", msg="unknown world or world object")
+
+
 @rpc("new_world", permission_required="manage worlds")
 def new_world(world_name, world_type, owner=""):
     return runtime.new_world(world_name, world_type, owner)

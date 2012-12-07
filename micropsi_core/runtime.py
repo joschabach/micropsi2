@@ -131,9 +131,9 @@ class MicroPsiRuntime(object):
             return getattr(world, world_type)
         except AttributeError:
             # here be dragons
-            __import__("micropsi_core.world.%s" % world_type, fromlist=['micropsi_core.world'])
-            mod = __import__("micropsi_core.world.%s.%s" % (world_type, world_type),
-                fromlist=['micropsi_core.world.%s' % world_type])
+            __import__("micropsi_core.world.%s" % world_type.lower(), fromlist=['micropsi_core.world'])
+            mod = __import__("micropsi_core.world.%s.%s" % (world_type.lower(), world_type.lower()),
+                fromlist=['micropsi_core.world.%s' % world_type.lower()])
             return getattr(mod, world_type.capitalize())
 
     # MicroPsi API
@@ -489,6 +489,12 @@ class MicroPsiRuntime(object):
         if world_uid in self.worlds:
             return self.worlds[world_uid].get_world_objects(type)
         return False
+
+    def add_worldobject(self, world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
+        return self.worlds[world_uid].add_object(type, position, orientation=orientation, name=name, parameters=parameters, uid=uid)
+
+    def set_worldobject_properties(self, world_uid, uid, type, position, orientation, name, parameters):
+        return self.worlds[world_uid].set_object_properties(uid, type, position, orientation, name, parameters)
 
     def new_world(self, world_name, world_type, owner=""):
         """Creates a new world manager and registers it.

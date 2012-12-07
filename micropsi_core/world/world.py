@@ -170,7 +170,10 @@ class World(object):
 
     def get_world_objects(self):
         """ returns a dictionary of world objects. """
-        return self.data.get('objects', {})
+        objects = {}
+        for key in self.supported_worldobjects:
+            objects.update(self.data.get(key, {}))
+        return objects
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.

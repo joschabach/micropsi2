@@ -163,10 +163,14 @@ class World(object):
     def get_world_view(self, step):
         """ returns a list of world objects, and the current step of the simulation """
         return {
-            'objects': self.objects,
+            'objects': self.get_world_objects(),
             'agents': self.agents,
             'current_step': self.current_step,
         }
+
+    def get_world_objects(self):
+        """ returns a dictionary of world objects. """
+        return self.data.get('objects', {})
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.

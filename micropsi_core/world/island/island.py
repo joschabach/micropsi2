@@ -15,13 +15,16 @@ class Island(World):
 
     groundmap = {
         'image': "psi_1.png",
-        'startpos': (100, 100),
+        'start_position': (100, 100),
         'scaling': (200, 200)
     }
 
     assets = {
         'background': "island/background.jpg",
-        'js': "island/island.js"
+        'js': "island/island.js",
+        'x': 1500,
+        'y': 1033,
+        'icons': {'Lightsource': 'island/lamp.png'}
     }
 
     def __init__(self, runtime, filename, world_type="Island", name="", owner="", uid=None, version=1):
@@ -46,8 +49,8 @@ class Island(World):
             png_reader = png.Reader(file)
             x, y, image_array, image_params = png_reader.read()
             self.ground_data = list(image_array)
-            self.x_max = x-1
-            self.y_max = y-1
+            self.x_max = x - 1
+            self.y_max = y - 1
             self.scale_x = float(x) / self.groundmap["scaling"][0]
             self.scale_y = float(y) / self.groundmap["scaling"][1]
 
@@ -55,8 +58,8 @@ class Island(World):
         """
         returns the ground type (an integer) at the given position
         """
-        _x = min(self.x_max, max(0, round(x*self.scale_x)))
-        _y = min(self.y_max, max(0, round(y*self.scale_y)))
+        _x = min(self.x_max, max(0, round(x * self.scale_x)))
+        _y = min(self.y_max, max(0, round(y * self.scale_y)))
         return self.ground_data[_y][_x]
 
     def step(self):
@@ -65,7 +68,7 @@ class Island(World):
             agent.update()
         self.current_step +=1
 
-    def add_object(self, type, position, orientation = 0.0, name = "", parameters = None, uid = None ):
+    def add_object(self, type, position, orientation=0.0, name="", parameters=None, uid=None):
         """
         Add a new object to the current world.
 
@@ -75,22 +78,31 @@ class Island(World):
             orientation (optional): an angle, usually between 0 and 2*pi
             name (optional): a readable name for that object
             uid (optional): if omitted, a uid will be generated
+
+        Returns:
+            True, uid if successful
+            False, errormessage if not
         """
-        if not uid: uid = micropsi_core.tools.generate_uid()
-        self.objects[uid] = {
-            "uid":uid,
-            "type":type,
-            "position":position,
-            "orientation":orientation,
-            "parameters":parameters
-        }
+        if not uid:
+            uid = micropsi_core.tools.generate_uid()
+        if type in self.supported_worldobjects:
+            self.objects[uid] = self.supported_worldobjects[type](self, uid, position=position, orientation=orientation, name=name, parameters=parameters)
+            # self.objects[uid] = {
+            #     "uid": uid,
+            #     "type": type,
+            #     "position": position,
+            #     "orientation": orientation,
+            #     "parameters": parameters
+            # }
+            return True, uid
+        return False, "type not supported"
 
     def get_brightness_at(self, position):
         """calculate the brightness of the world at the given position; used by sensors of agents"""
         brightness = 0
         for world_object in self.objects:
             if hasattr(world_object, "get_intensity"):
-                brightness += world_object.get_intensity(_2d_distance_squared(world_object.pos, position))
+                brightness += world_object.get_intensity(_2d_distance_squared(world_object.position, position))
         return brightness
 
     def get_movement_result(self, start_position, effort_vector, diameter = 0):
@@ -108,7 +120,7 @@ class Island(World):
             target_position = _2d_translate(start_position, movement_vector)
 
             for i in self.objects:
-                if _2d_distance_squared(target_position, i.pos) < (diameter + i.diameter)/2:
+                if _2d_distance_squared(target_position, i.position) < (diameter + i.diameter)/2:
                     movement_vector = (movement_vector[0] * 0.5, movement_vector[1] * 0.5) # should be collision point
                     target_position = None
                     break
@@ -119,15 +131,27 @@ class Island(World):
 
     def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
         """set attributes of the world object 'uid'; only supplied attributes will be changed.
+
+       Arguments:
+           uid: the uid of the worldobject. Mandatory.
+           type: a new type for the object. Optional
+           position: a new position for the object. Optional
+           orientation: a new orientation for the object. Optional
+           name: a new name for the object. Optional
+           parameters: a new dict of parameters for the object. optional.
+
         Returns True if object exists, otherwise False"""
+
         if uid in self.objects:
             if type: self.objects[uid].type = type
-            if position: self.objects[uid].pos = position
-            if orientation: self.objects[uid].direction = orientation
+            if position: self.objects[uid].position = position
+            if orientation: self.objects[uid].orientation = orientation
             if name: self.objects[uid].name = name
             if parameters: self.objects[uid].parameters = parameters
             return True
         return False
+
+
 
 
     def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
@@ -136,8 +160,8 @@ class Island(World):
 
         if uid in self.agents:
             if type: self.agents[uid].type = type
-            if position: self.agents[uid].pos = position
-            if orientation: self.agents[uid].direction = orientation
+            if position: self.agents[uid].position = position
+            if orientation: self.agents[uid].orientation = orientation
             if name: self.agents[uid].name = name
             if parameters: self.agents[uid].parameters = parameters
             return True
@@ -146,12 +170,12 @@ class Island(World):
 class Lightsource(WorldObject):
     """A pretty inert and boring light source, with a square falloff"""
     @property
-    def pos(self):
-        return self.data.get('pos', 0)
+    def position(self):
+        return self.data.get('position', 0)
 
-    @pos.setter
-    def pos(self, pos):
-        self.data['pos'] = pos
+    @position.setter
+    def position(self, position):
+        self.data['position'] = position
 
     @property
     def diameter(self):
@@ -170,10 +194,11 @@ class Lightsource(WorldObject):
         self.data['intensity'] = intensity
 
     def __init__(self, world, uid=None, **data):
-        WorldObject.__init__(self, world, "light_source", uid=uid, **data)
+        WorldObject.__init__(self, world, "Lightsource", uid=uid, **data)
         self.intensity = data.get('intensity', 1.0)
         self.diameter = data.get('diameter' ,0.1)
-        self.data['direction'] = 0
+        self.data['orientation'] = 0
+        self.data['type'] = "Lightsource"
 
     def initialize_worldobject(self, data):
         self.data = data
@@ -187,7 +212,7 @@ class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
     datasources = {'brightness_l': 1.7, 'brightness_r': 1.7}
-    datatargets = {'engine_l':0, 'engine_r': 0}
+    datatargets = {'engine_l': 0, 'engine_r': 0}
 
     # positions of sensors, relative to origin of agent center
     brightness_l_offset = (-0.25, 0.25)
@@ -204,28 +229,30 @@ class Braitenberg(WorldAdapter):
     speed_limit = 1.5
 
     @property
-    def pos(self):
-        return self.data.get('pos', 0)
+    def position(self):
+        return self.data.get('position', 0)
 
-    @pos.setter
-    def pos(self, pos):
-        self.data['pos'] = pos
+    @position.setter
+    def position(self, position):
+        self.data['position'] = position
 
     @property
-    def direction(self):
-        return self.data.get('direction', 0)
+    def orientation(self):
+        return self.data.get('orientation', 0)
 
-    @direction.setter
-    def direction(self, direction):
-        self.data['direction'] = direction % 360
+    @orientation.setter
+    def orientation(self, orientation):
+
+        self.data['orientation'] = orientation % 360
 
     def initialize_worldobject(self, data):
         self.data = data
-        if not "pos" in data:
-            self.pos = self.world.groundmap.startpos
+        if not "position" in data:
+            self.position = self.world.groundmap['start_position']
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
+
 
         # drive engines
         l_wheel_speed = self.get_datasource("engine_l")
@@ -239,17 +266,17 @@ class Braitenberg(WorldAdapter):
 
         rotation = math.degrees((l_wheel_speed - r_wheel_speed) / (self.diameter))
         translation = _2d_rotate((0, (r_wheel_speed + l_wheel_speed)/2), rotation)
-        self.direction += rotation
+        self.orientation += rotation
         # you may decide how far you want to go, but it is up the world to decide how far you make it
-        self.pos = self.world.get_movement_result(self.pos, translation)
+        self.position = self.world.get_movement_result(self.position, translation)
 
         # sense light sources
 
-        brightness_l_pos = _2d_translate(_2d_rotate(self.brightness_l_offset, self.direction), self.pos)
-        brightness_r_pos = _2d_translate(_2d_rotate(self.brightness_r_offset, self.direction), self.pos)
+        brightness_l_position = _2d_translate(_2d_rotate(self.brightness_l_offset, self.orientation), self.position)
+        brightness_r_position = _2d_translate(_2d_rotate(self.brightness_r_offset, self.orientation), self.position)
 
-        brightness_l = self.world.get_brightness_at(brightness_l_pos)
-        brightness_r = self.world.get_brightness_at(brightness_r_pos)
+        brightness_l = self.world.get_brightness_at(brightness_l_position)
+        brightness_r = self.world.get_brightness_at(brightness_r_position)
 
         self.set_datatarget('brightness_l', brightness_l)
         self.set_datatarget('brightness_r', brightness_r)

@@ -97,6 +97,8 @@ class World(object):
 
         self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
 
+        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject) if cls not in self.supported_worldadapters}
+
         self.runtime = runtime
         self.uid = uid or generate_uid()
         self.owner = owner

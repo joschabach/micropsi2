@@ -18,7 +18,7 @@ class WorldObject(object):
         self.data = {}
         if uid is None:
             uid = generate_uid()
-        if type not in self.world.data:
+        if 'type' not in self.world.data:
             self.world.data[type] = {}
         if uid not in self.world.data[type]:
             self.world.data[type][uid] = data

@@ -47,8 +47,8 @@ class Island(World):
             png_reader = png.Reader(file)
             x, y, image_array, image_params = png_reader.read()
             self.ground_data = list(image_array)
-            self.x_max = x-1
-            self.y_max = y-1
+            self.x_max = x - 1
+            self.y_max = y - 1
             self.scale_x = float(x) / self.groundmap["scaling"][0]
             self.scale_y = float(y) / self.groundmap["scaling"][1]
 
@@ -56,8 +56,8 @@ class Island(World):
         """
         returns the ground type (an integer) at the given position
         """
-        _x = min(self.x_max, max(0, round(x*self.scale_x)))
-        _y = min(self.y_max, max(0, round(y*self.scale_y)))
+        _x = min(self.x_max, max(0, round(x * self.scale_x)))
+        _y = min(self.y_max, max(0, round(y * self.scale_y)))
         return self.ground_data[_y][_x]
 
     def step(self):
@@ -66,7 +66,7 @@ class Island(World):
         ret = super(Island, self).step()
         return ret
 
-    def add_object(self, type, position, orientation = 0.0, name = "", parameters = None, uid = None ):
+    def add_object(self, type, position, orientation=0.0, name="", parameters=None, uid=None):
         """
         Add a new object to the current world.
 
@@ -77,13 +77,14 @@ class Island(World):
             name (optional): a readable name for that object
             uid (optional): if omitted, a uid will be generated
         """
-        if not uid: uid = micropsi_core.tools.generate_uid()
+        if not uid:
+            uid = micropsi_core.tools.generate_uid()
         self.objects[uid] = {
-            "uid":uid,
-            "type":type,
-            "position":position,
-            "orientation":orientation,
-            "parameters":parameters
+            "uid": uid,
+            "type": type,
+            "position": position,
+            "orientation": orientation,
+            "parameters": parameters
         }
 
     def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
@@ -122,21 +123,22 @@ class Lightsource(WorldObject):
     def __init__(self, world, uid=None, **data):
         WorldObject.__init__(self, world, "light_source", uid=uid, **data)
         self.intensity = data.get('intensity', 1.0)
-        self.diameter = data.get('diameter' ,0.1)
+        self.diameter = data.get('diameter', 0.1)
 
     def initialize_worldobject(self, data):
         self.data = data
 
     def get_intensity(self, distance):
         """returns the strength of the light, depending on the distance"""
-        return self.intensity*self.diameter*self.diameter/distance/distance
+        return self.intensity * self.diameter * self.diameter / distance / distance
+
 
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines
     """
 
     datasources = {'brightness_l': 1.7, 'brightness_r': 1.7}
-    datatargets = {'engine_l':0, 'engine_r': 0}
+    datatargets = {'engine_l': 0, 'engine_r': 0}
 
     # positions of sensors, relative to origin of agent center
     brightness_l_pos = (-0.25, 0.25)
@@ -163,7 +165,7 @@ class Braitenberg(WorldAdapter):
 
     @direction.setter
     def direction(self, direction):
-        self.data['direction'] = direction % (2.0*math.pi)
+        self.data['direction'] = direction % (2.0 * math.pi)
 
     def initialize_worldobject(self, data):
         self.data = data
@@ -175,6 +177,3 @@ class Braitenberg(WorldAdapter):
         for o in self.world.objects:
             if hasattr(o, "get_intensity"):
                 pass
-
-
-

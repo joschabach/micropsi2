@@ -58,10 +58,10 @@ initializeControls();
 
 worldRunning = false;
 
-$('#world_objects').html('<div id="berlinStations"><strong>Stations</strong><table class="table-striped table-condensed"></table></div>');
+$('#world_objects_list').html('<div id="berlinStations"><strong>Stations</strong><table class="table-striped table-condensed"></table></div>');
 
 // accordion for trains and stations, commented for performance reasons
-// $('#world_objects').html(
+// $('#world_objects_list').html(
 //     '<div class="accordion" id="worldobject_accordion">
 //         <div class="accordion-group">
 //             <div class="accordion-header"><a class="accordion-toggle" data-toggle="collapse" data-parent="#worldobject_accordion" href="#berlinStations"><i class="icon-chevron-right"></i>Stations</a></div>

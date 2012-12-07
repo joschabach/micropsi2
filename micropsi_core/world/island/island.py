@@ -22,7 +22,10 @@ class Island(World):
 
     assets = {
         'background': "island/background.jpg",
-        'js': "island/island.js"
+        'js': "island/island.js",
+        'x': 1500,
+        'y': 1033,
+        'icons': {'Lightsource': 'island/lamp.png'}
     }
 
     def __init__(self, runtime, filename, world_type="Island", name="", owner="", uid=None, version=1):
@@ -76,19 +79,48 @@ class Island(World):
             orientation (optional): an angle, usually between 0 and 2*pi
             name (optional): a readable name for that object
             uid (optional): if omitted, a uid will be generated
+
+        Returns:
+            True, uid if successful
+            False, errormessage if not
         """
         if not uid:
             uid = micropsi_core.tools.generate_uid()
-        self.objects[uid] = {
-            "uid": uid,
-            "type": type,
-            "position": position,
-            "orientation": orientation,
-            "parameters": parameters
-        }
+        if type in self.supported_worldobjects:
+            self.objects[uid] = self.supported_worldobjects[type](self, uid, position=position, orientation=orientation, name=name, parameters=parameters)
+            # self.objects[uid] = {
+            #     "uid": uid,
+            #     "type": type,
+            #     "position": position,
+            #     "orientation": orientation,
+            #     "parameters": parameters
+            # }
+            return True, uid
+        return False, "type not supported"
 
     def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
-        pass
+        """
+        Sets the properties of a worldobject
+
+        Arguments:
+            uid: the uid of the worldobject. Mandatory.
+            type: a new type for the object. Optional
+            position: a new position for the object. Optional
+            orientation: a new orientation for the object. Optional
+            name: a new name for the object. Optional
+            parameters: a new dict of parameters for the object. optional.
+        """
+        if type:
+            self.objects[uid].type = type
+        if position:
+            self.objects[uid].position = position
+        if orientation:
+            self.objects[uid].orientation = orientation
+        if name:
+            self.objects[uid].name = name
+        if parameters:
+            self.objects[uid].parameters = parameters
+        return True
 
     def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         pass
@@ -97,12 +129,12 @@ class Island(World):
 class Lightsource(WorldObject):
 
     @property
-    def pos(self):
-        return self.data.get('pos', 0)
+    def position(self):
+        return self.data.get('position', 0)
 
-    @pos.setter
-    def pos(self, pos):
-        self.data['pos'] = pos
+    @position.setter
+    def position(self, pos):
+        self.data['position'] = pos
 
     @property
     def diameter(self):
@@ -121,12 +153,13 @@ class Lightsource(WorldObject):
         self.data['intensity'] = intensity
 
     def __init__(self, world, uid=None, **data):
-        WorldObject.__init__(self, world, "light_source", uid=uid, **data)
+        WorldObject.__init__(self, world, "Lightsource", uid=uid, **data)
         self.intensity = data.get('intensity', 1.0)
         self.diameter = data.get('diameter', 0.1)
 
     def initialize_worldobject(self, data):
         self.data = data
+        self.data['type'] = "Lightsource"
 
     def get_intensity(self, distance):
         """returns the strength of the light, depending on the distance"""

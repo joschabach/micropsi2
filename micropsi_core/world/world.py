@@ -81,6 +81,8 @@ class World(object):
 
         self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
 
+        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject) if cls not in self.supported_worldadapters}
+
         self.runtime = runtime
         self.uid = uid or generate_uid()
         self.owner = owner
@@ -152,7 +154,10 @@ class World(object):
 
     def get_world_objects(self):
         """ returns a dictionary of world objects. """
-        return self.data.get('objects', {})
+        objects = {}
+        for key in self.supported_worldobjects:
+            objects.update(self.data.get(key, {}))
+        return objects
 
     def get_agents(self):
         """ returns a dictionary of agents. """

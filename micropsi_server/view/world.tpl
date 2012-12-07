@@ -62,15 +62,15 @@
                 <table class="table-condensed">
                     <tr>
                         <td><label for="wo_name_input">Name</label></td>
-                        <td><input type="text" class="" name="wo_name" id="wo_name_input"></td>
+                        <td><input type="text" class="" name="wo_name" id="wo_name_input" /></td>
                     </tr>
                     <tr>
                         <td><label for="wo_type">Type</label></td>
-                        <td><input type="text" class="" name="wo_type" id="wo_type_input"></td>
+                        <td><input type="text" class="" name="wo_type" id="wo_type_input" /></td>
                     </tr>
                     <tr>
                         <td><label>Parameters</label></td>
-                        <td class="wo_parameters"><table id="wo_parameter_list"></td>
+                        <td class="wo_parameters"><table id="wo_parameter_list"></table></td>
                     </tr>
                 </table>
                 <div class="controls">
@@ -81,6 +81,7 @@
         </div>
     </div>
 </div>
+
 
 
 

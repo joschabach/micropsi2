@@ -472,12 +472,7 @@ class MicroPsiRuntime(object):
         from micropsi_core.world import worldadapter
 
         data = self.worlds[world_uid].data
-        data['worldadapters'] = {}
-        for name in self.worlds[world_uid].supported_worldadapters:
-            data['worldadapters'][name] = {
-                'datasources': getattr(worldadapter, name).datasources.keys(),
-                'datatargets': getattr(worldadapter, name).datatargets.keys()
-            }
+        data['worldadapters'] = self.get_worldadapters(world_uid)
         return data
 
     def get_worldadapters(self, world_uid):
@@ -485,10 +480,10 @@ class MicroPsiRuntime(object):
         from micropsi_core.world import worldadapter
 
         data = {}
-        for name in self.worlds[world_uid].supported_worldadapters:
+        for name, worldadapter in self.worlds[world_uid].supported_worldadapters.items():
             data[name] = {
-                'datasources': getattr(worldadapter, name).datasources.keys(),
-                'datatargets': getattr(worldadapter, name).datatargets.keys()
+                'datasources': worldadapter.datasources.keys(),
+                'datatargets': worldadapter.datatargets.keys()
             }
         return data
 

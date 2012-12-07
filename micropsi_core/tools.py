@@ -204,3 +204,27 @@ class OrderedSet(collections.OrderedDict, collections.MutableSet):
     symmetric_difference = property(lambda self: self.__xor__)
     symmetric_difference_update = property(lambda self: self.__ixor__)
     union = property(lambda self: self.__or__)
+
+def itersubclasses(cls, _seen=None):
+    """
+    Generator over all subclasses of a given class, in depth first order.
+
+    Example usage:
+        for cls in itersubclasses(A):
+            print(cls.__name__)
+    """
+
+    if not isinstance(cls, type):
+        raise TypeError('itersubclasses must be called with '
+                        'new-style classes, not %.100r' % cls)
+    if _seen is None: _seen = set()
+    try:
+        subs = cls.__subclasses__()
+    except TypeError: # fails only when cls is type
+        subs = cls.__subclasses__(cls)
+    for sub in subs:
+        if sub not in _seen:
+            _seen.add(sub)
+            yield sub
+            for sub in itersubclasses(sub, _seen):
+                yield sub

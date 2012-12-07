@@ -1145,10 +1145,10 @@ class MicroPsiRuntime(object):
 
         # check consistency before we drop this into the master nodenet
         for l_uid, l in links.items():
-            source_node_id = l.get("source_node_uid", l.get("source_node"))  # fixme
-            target_node_id = l.get("target_node_uid", l.get("target_node"))  # fixme
-            if (not source_node_id in nodes and not source_node_id in nodenet) or (
-                not target_node_id in nodes and not target_node_id in nodenet):
+            source_node_uid = l.get("source_node_uid", l.get("source_node"))  # fixme
+            target_node_uid = l.get("target_node_uid", l.get("target_node"))  # fixme
+            if (not source_node_uid in nodes and not source_node_uid in nodenet.nodes) or (
+                not target_node_uid in nodes and not target_node_uid in nodenet.nodes):
                 raise KeyError, "node_uid referenced in link %s not found in nodes" % l_uid
 
         headnode_uid = self._find_headnode(nodes, links)
@@ -1174,12 +1174,12 @@ class MicroPsiRuntime(object):
                     uid = uid,
                     name = node.get("name", ""))
         for l_uid, link in links.items():
-            source_node_id = l.get("source_node_uid", l.get("source_node"))  # fixme
-            target_node_id = l.get("target_node_uid", l.get("target_node"))  # fixme
+            source_node_uid = link.get("source_node_uid", link.get("source_node"))  # fixme
+            target_node_uid = link.get("target_node_uid", link.get("target_node"))  # fixme
             self.add_link(master_nodenet_uid,
-                source_node_id,
+                source_node_uid,
                 link["source_gate_name"],
-                target_node_id,
+                target_node_uid,
                 link["target_slot_name"],
                 weight = link.get("weight", 1.0),
                 certainty = link.get("certainty", 1.0)

@@ -12,7 +12,6 @@ The latter parameter is the default port and can be changed as needed.
 __author__ = 'joscha'
 __date__ = '15.05.12'
 
-VERSION = "0.1"
 
 import micropsi_core.runtime
 from micropsi_core.runtime import AVAILABLE_WORLD_TYPES
@@ -25,14 +24,14 @@ import os
 import json
 import inspect
 import minidoc
-from configuration import RESOURCE_PATH, DEFAULT_HOST, DEFAULT_PORT
+from configuration import RESOURCE_PATH, DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
 APP_PATH = os.path.dirname(__file__)
 
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 
-micropsi = micropsi_core.runtime.MicroPsiRuntime()
+runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
 
 
@@ -114,13 +113,16 @@ def get_request_data():
 
 
 def _add_world_list(template_name, **params):
-    worlds = micropsi.get_available_worlds()
+    worlds = runtime.get_available_worlds()
     if request.query.get('select_world') and request.query.get('select_world') in worlds:
         current_world = request.query.get('select_world')
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
-    world_js = worlds[current_world].assets['js'] if current_world and worlds[current_world].assets else None
+    if current_world in worlds and getattr(worlds[current_world], 'assets', None):
+        world_js = worlds[current_world].assets['js']
+    else:
+        world_js = ''
     return template(template_name, current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
@@ -200,10 +202,10 @@ def logout():
 def login():
     if not usermanager.users:  # create first user
         return template("signup", version=VERSION, first_user=True, userid="admin",
-            title="Create the administrator for the MicroPsi server")
+            title="Create the administrator for the %s server" % APPTITLE)
 
     return template("login",
-        title="Log in to the MicroPsi server",
+        title="Log in to the %s server" % APPTITLE,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(None),
         permissions=usermanager.get_permissions_for_session_token(None))
@@ -224,14 +226,14 @@ def login_submit():
         # login failed, retry
         if user_id in usermanager.users:
             return template("login", version=VERSION, userid=user_id, password=password,
-                title="Log in to the MicroPsi server",
+                title="Log in to the %s server" % APPTITLE,
                 password_error="Re-enter the password",
                 login_error="User name and password do not match",
                 cookie_warning=(token is None),
                 permissions=usermanager.get_permissions_for_session_token(token))
         else:
             return template("login", version=VERSION, userid=user_id, password=password,
-                title="Log in to the MicroPsi server",
+                title="Log in to the %s server" % APPTITLE,
                 userid_error="Re-enter the user name",
                 login_error="User unknown",
                 cookie_warning=(token is None),
@@ -247,11 +249,11 @@ def signup():
 
     if not usermanager.users:  # create first user
         return template("signup", version=VERSION,
-            title="Create the administrator for the MicroPsi server",
+            title="Create the administrator for the %s server" % APPTITLE,
             first_user=True, cookie_warning=(token is None))
 
     return template("signup", version=VERSION,
-        title="Create a new user for the MicroPsi server",
+        title="Create a new user for the %s server" % APPTITLE,
         permissions=usermanager.get_permissions_for_session_token(token),
         cookie_warning=(token is None))
 
@@ -281,7 +283,7 @@ def signup_submit():
     else:
         # something wrong with the user id, retry
         return template("signup", version=VERSION, userid=userid, password=password, userid_error=result,
-            title="Create a new user for the MicroPsi server",
+            title="Create a new user for the %s server" % APPTITLE,
             user_id=user_id, permissions=permissions, cookie_warning=(token is None))
 
 
@@ -365,7 +367,7 @@ def create_user_submit():
     else:
         # something wrong with the user id, retry
         return template("create_user", version=VERSION, user_id=user_id,
-            title="Create a user for the MicroPsi server",
+            title="Create a user for the %s server" % APPTITLE,
             permissions=permissions, userid_error=result)
     return dict(status="error", msg="Insufficient rights to access user console")
 
@@ -420,40 +422,50 @@ def login_as_user(userid):
 def nodenet_mgt():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
+        notification = None
+        if request.get_cookie('notification'):
+            notification = json.loads(request.get_cookie('notification'))
+            response.set_cookie('notification', '', path='/')
         return template("nodenet_mgt", version=VERSION, permissions=permissions,
             user_id=user_id,
-            nodenet_list=micropsi.get_available_nodenets())
+            nodenet_list=runtime.get_available_nodenets(), notification=notification)
     return template("error", msg="Insufficient rights to access nodenet console")
+
 
 @route("/select_nodenet_from_console/<nodenet_uid>")
 def select_nodenet(nodenet_uid):
     user_id, permissions, token = get_request_data()
-    result, uid = micropsi.load_nodenet(nodenet_uid)
+    result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return template("error", msg="Could not select nodenet")
-    response.set_cookie("selected_nodenet", nodenet_uid, path = "/")
+    response.set_cookie("selected_nodenet", nodenet_uid, path="/")
     redirect("/")
+
 
 @route("/delete_nodenet_from_console/<nodenet_uid>")
 def delete_nodenet(nodenet_uid):
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
-        micropsi.delete_nodenet(nodenet_uid)
-        return template("nodenet_mgt", version=VERSION, permissions=permissions,
-            user_id=user_id,
-            nodenet_list=micropsi.get_available_nodenets())
+        runtime.delete_nodenet(nodenet_uid)
+        response.set_cookie('notification', '{"msg":"Nodenet deleted", "status":"success"}', path='/')
+        redirect('/nodenet_mgt')
     return template("error", msg="Insufficient rights to access nodenet console")
+
 
 @route("/save_all_nodenets")
 def save_all_nodenets():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
-        for uid in micropsi.nodenets:
-            micropsi.save_nodenet(uid)
-        return template("nodenet_mgt", version=VERSION, permissions=permissions,
-                user_id=user_id,
-                nodenet_list=micropsi.get_available_nodenets())
+        for uid in runtime.nodenets:
+            runtime.save_nodenet(uid)
+        response.set_cookie('notification', '{"msg":"All nodenets saved", "status":"success"}', path='/')
+        redirect('/nodenet_mgt')
     return template("error", msg="Insufficient rights to access nodenet console")
+
+
+
+
+
 
 @route("/nodenet/import")
 def import_nodenet_form():
@@ -468,7 +480,7 @@ def import_nodenet_form():
 def import_nodenet():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
-    nodenet_uid = micropsi.import_nodenet(data, owner=user_id)
+    nodenet_uid = runtime.import_nodenet(data, owner=user_id)
     return dict(status='success', msg="Nodenet imported", nodenet_uid=nodenet_uid)
 
 
@@ -484,7 +496,7 @@ def merge_nodenet_form(nodenet_uid):
 
 @route("/nodenet/merge/<nodenet_uid>", method="POST")
 def merge_nodenet(nodenet_uid):
-    micropsi.merge_nodenet(nodenet_uid, request.files['file_upload'].file.read())
+    runtime.merge_nodenet(nodenet_uid, request.files['file_upload'].file.read())
     return dict(status='success', msg="Nodenet merged")
 
 
@@ -492,7 +504,7 @@ def merge_nodenet(nodenet_uid):
 def export_nodenet(nodenet_uid):
     response.set_header('Content-type', 'application/json')
     response.set_header('Content-Disposition', 'attachment; filename="nodenet.json"')
-    return micropsi.export_nodenet(nodenet_uid)
+    return runtime.export_nodenet(nodenet_uid)
 
 
 @route("/nodenet/edit")
@@ -504,9 +516,9 @@ def edit_nodenet():
     print id
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
-        nodenets=micropsi.get_available_nodenets(),
-        templates=micropsi.get_available_nodenets(),
-        worlds=micropsi.get_available_worlds(),
+        nodenets=runtime.get_available_nodenets(),
+        templates=runtime.get_available_nodenets(),
+        worlds=runtime.get_available_worlds(),
         version=VERSION, user_id=user_id, permissions=permissions)
 
 
@@ -514,7 +526,7 @@ def edit_nodenet():
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
-        result, nodenet_uid = micropsi.new_nodenet(request.params['nn_name'], request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -536,7 +548,7 @@ def import_world_form():
 def import_world():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
-    world_uid = micropsi.import_world(data, owner=user_id)
+    world_uid = runtime.import_world(data, owner=user_id)
     return dict(status='success', msg="World imported", world_uid=world_uid)
 
 
@@ -544,7 +556,7 @@ def import_world():
 def export_world(world_uid):
     response.set_header('Content-type', 'application/json')
     response.set_header('Content-Disposition', 'attachment; filename="world.json"')
-    return micropsi.export_world(world_uid)
+    return runtime.export_world(world_uid)
 
 
 @route("/world/edit")
@@ -562,7 +574,7 @@ def edit_world_form():
 def edit_world():
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = micropsi.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        result, uid = runtime.new_world(request.params['world_name'], request.params['world_type'], user_id)
         if result:
             return dict(status="success", msg="World created", world_uid=uid)
         else:
@@ -574,7 +586,7 @@ def edit_world():
 @route("/nodenet_list/<current_nodenet>")
 def nodenet_list(current_nodenet=None):
     user_id, permissions, token = get_request_data()
-    nodenets = micropsi.get_available_nodenets()
+    nodenets = runtime.get_available_nodenets()
     return template("nodenet_list", type="nodenet", user_id=user_id,
         current=current_nodenet,
         mine=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner == user_id),
@@ -585,7 +597,7 @@ def nodenet_list(current_nodenet=None):
 @route("/world_list/<current_world>")
 def world_list(current_world=None):
     user_id, permissions, token = get_request_data()
-    worlds = micropsi.get_available_worlds()
+    worlds = runtime.get_available_worlds()
     return template("nodenet_list", type="world", user_id=user_id,
         current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == user_id),
@@ -597,10 +609,10 @@ def world_list(current_world=None):
 def edit_nodenetrunner():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        micropsi.set_nodenetrunner_timestep(int(request.params['runner_timestep']))
+        runtime.set_nodenetrunner_timestep(int(request.params['runner_timestep']))
         return dict(status="success", msg="Timestep saved")
     else:
-        return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=micropsi.get_nodenetrunner_timestep())
+        return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=runtime.get_nodenetrunner_timestep())
 
 
 @route("/config/world/runner")
@@ -608,15 +620,15 @@ def edit_nodenetrunner():
 def edit_worldrunner():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        micropsi.set_worldrunner_timestep(int(request.params['runner_timestep']))
+        runtime.set_worldrunner_timestep(int(request.params['runner_timestep']))
         return dict(status="success", msg="Timestep saved")
     else:
-        return template("runner_form", mode="world", action="/config/world/runner", value=micropsi.get_worldrunner_timestep())
+        return template("runner_form", mode="world", action="/config/world/runner", value=runtime.get_worldrunner_timestep())
 
 
 @rpc("select_nodenet")
 def select_nodenet(nodenet_uid):
-    result, msg = micropsi.load_nodenet(nodenet_uid)
+    result, msg = runtime.load_nodenet(nodenet_uid)
     if result:
         return dict(Status="OK")
     else:
@@ -625,10 +637,10 @@ def select_nodenet(nodenet_uid):
 
 @rpc("load_nodenet")
 def load_nodenet(nodenet_uid, **coordinates):
-    result, uid = micropsi.load_nodenet(nodenet_uid)
+    result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return dict(Error=uid)
-    return micropsi.get_nodenet_area(nodenet_uid, **coordinates)
+    return runtime.get_nodenet_area(nodenet_uid, **coordinates)
 
 
 @rpc("generate_uid")
@@ -638,132 +650,132 @@ def generate_uid():
 
 @rpc("get_available_nodenets")
 def get_available_nodenets(user_id):
-    return micropsi.get_available_nodenets(user_id)
+    return runtime.get_available_nodenets(user_id)
 
 
 @route("/create_new_nodenet_form")
 def create_new_nodenet_form():
     user_id, permissions, token = get_request_data()
-    nodenets = micropsi.get_available_nodenets()
-    worlds = micropsi.get_available_worlds()
+    nodenets = runtime.get_available_nodenets()
+    worlds = runtime.get_available_worlds()
     return template("nodenet_form", user_id=user_id, template="None",
         nodenets=nodenets, worlds=worlds)
 
 
 @route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
-    nodenets = micropsi.get_available_nodenets()
-    worlds = micropsi.get_available_worlds()
+    nodenets = runtime.get_available_nodenets()
+    worlds = runtime.get_available_worlds()
     return template("worldadapter_selector", world_uid=world_uid,
         nodenets=nodenets, worlds=worlds)
 
 
 @rpc("delete_nodenet", permission_required="manage nodenets")
 def delete_nodenet(nodenet_uid):
-    return micropsi.delete_nodenet(nodenet_uid)
+    return runtime.delete_nodenet(nodenet_uid)
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
-    return micropsi.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
 
 
 @rpc("set_node_state")
 def set_node_state(nodenet_uid, node_uid, state):
     if state == "":
         state = None
-    return micropsi.set_node_state(nodenet_uid, node_uid, state)
+    return runtime.set_node_state(nodenet_uid, node_uid, state)
 
 
 @rpc("set_node_activation")
 def set_node_activation(nodenet_uid, node_uid, activation):
-    return micropsi.set_node_activation(nodenet_uid, node_uid, activation)
+    return runtime.set_node_activation(nodenet_uid, node_uid, activation)
 
 
 @rpc("start_nodenetrunner", permission_required="manage nodenets")
 def start_nodenetrunner(nodenet_uid):
-    return micropsi.start_nodenetrunner(nodenet_uid)
+    return runtime.start_nodenetrunner(nodenet_uid)
 
 
 @rpc("set_nodenetrunner_timestep", permission_required="manage nodenets")
 def set_nodenetrunner_timestep(timestep):
-    return micropsi.set_nodenetrunner_timestep(timestep)
+    return runtime.set_nodenetrunner_timestep(timestep)
 
 
 @rpc("get_nodenetrunner_timestep", permission_required="manage server")
 def get_nodenetrunner_timestep():
-    return micropsi.get_nodenetrunner_timestep()
+    return runtime.get_nodenetrunner_timestep()
 
 
 @rpc("get_is_nodenet_running")
 def get_is_nodenet_running(nodenet_uid):
-    return micropsi.get_is_nodenet_running(nodenet_uid)
+    return runtime.get_is_nodenet_running(nodenet_uid)
 
 
 @rpc("stop_nodenetrunner", permission_required="manage nodenets")
 def stop_nodenetrunner(nodenet_uid):
-    return micropsi.stop_nodenetrunner(nodenet_uid)
+    return runtime.stop_nodenetrunner(nodenet_uid)
 
 
 @rpc("step_nodenet", permission_required="manage nodenets")
 def step_nodenet(nodenet_uid, nodespace=None):
-    return micropsi.step_nodenet(nodenet_uid, nodespace)
+    return runtime.step_nodenet(nodenet_uid, nodespace)
 
 
 @rpc("revert_nodenet", permission_required="manage nodenets")
 def revert_nodenet(nodenet_uid):
-    return micropsi.revert_nodenet(nodenet_uid)
+    return runtime.revert_nodenet(nodenet_uid)
 
 
 @rpc("save_nodenet", permission_required="manage nodenets")
 def save_nodenet(nodenet_uid):
-    return micropsi.save_nodenet(nodenet_uid)
+    return runtime.save_nodenet(nodenet_uid)
 
 
 @rpc("export_nodenet")
 def export_nodenet_rpc(nodenet_uid):
-    return micropsi.export_nodenet(nodenet_uid)
+    return runtime.export_nodenet(nodenet_uid)
 
 
 @rpc("import_nodenet", permission_required="manage nodenets")
-def import_nodenet(nodenet_uid, nodenet): return micropsi.import_nodenet
+def import_nodenet(nodenet_uid, nodenet): return runtime.import_nodenet
 
 
 @rpc("merge_nodenet", permission_required="manage nodenets")
-def merge_nodenet(nodenet_uid, nodenet): return micropsi.merge_nodenet
+def merge_nodenet(nodenet_uid, nodenet): return runtime.merge_nodenet
 
 
 # World
 @rpc("get_available_worlds")
 def get_available_worlds():
     user_id, p, t = get_request_data()
-    return micropsi.get_available_worlds(user_id)
+    return runtime.get_available_worlds(user_id)
 
 
 @rpc("get_world_properties")
 def get_world_properties(world_uid):
     try:
-        return micropsi.get_world_properties(world_uid)
+        return runtime.get_world_properties(world_uid)
     except KeyError:
         return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("get_worldadapters")
 def get_worldadapters(world_uid):
-    return micropsi.get_worldadapters(world_uid)
+    return runtime.get_worldadapters(world_uid)
 
 
 @rpc("get_world_objects")
 def get_world_objects(world_uid, type=None):
     try:
-        return micropsi.get_world_objects(world_uid, type)
+        return runtime.get_world_objects(world_uid, type)
     except KeyError:
         return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("new_world", permission_required="manage worlds")
 def new_world(world_name, world_type, owner=""):
-    return micropsi.new_world(world_name, world_type, owner)
+    return runtime.new_world(world_name, world_type, owner)
 
 
 @rpc("get_available_world_types")
@@ -773,87 +785,87 @@ def get_available_world_types():
 
 @rpc("delete_world", permission_required="manage worlds")
 def delete_world(world_uid):
-    return micropsi.delete_world(world_uid)
+    return runtime.delete_world(world_uid)
 
 
 @rpc("get_world_view")
 def get_world_view(world_uid, step):
     try:
-        return micropsi.get_world_view(world_uid, step)
+        return runtime.get_world_view(world_uid, step)
     except KeyError:
         return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("set_world_properties", permission_required="manage worlds")
-def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return micropsi.set_world_properties
+def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return runtime.set_world_properties
 
 
 @rpc("start_worldrunner", permission_required="manage worlds")
 def start_worldrunner(world_uid):
-    return micropsi.start_worldrunner(world_uid)
+    return runtime.start_worldrunner(world_uid)
 
 
 @rpc("get_worldrunner_timestep")
 def get_worldrunner_timestep():
-    return micropsi.get_worldrunner_timestep()
+    return runtime.get_worldrunner_timestep()
 
 
 @rpc("get_is_world_running")
 def get_is_world_running(world_uid):
-    return micropsi.get_is_world_running(world_uid)
+    return runtime.get_is_world_running(world_uid)
 
 
 @rpc("set_worldrunner_timestep", permission_required="manage server")
 def set_worldrunner_timestep():
-    return micropsi.set_worldrunner_timestep()
+    return runtime.set_worldrunner_timestep()
 
 
 @rpc("stop_worldrunner", permission_required="manage worlds")
 def stop_worldrunner(world_uid):
-    return micropsi.stop_worldrunner(world_uid)
+    return runtime.stop_worldrunner(world_uid)
 
 
 @rpc("step_world", permission_required="manage worlds")
 def step_world(world_uid, return_world_view=False):
-    return micropsi.step_world(world_uid, return_world_view)
+    return runtime.step_world(world_uid, return_world_view)
 
 
 @rpc("revert_world", permission_required="manage worlds")
 def revert_world(world_uid):
-    return micropsi.revert_world(world_uid)
+    return runtime.revert_world(world_uid)
 
 
 @rpc("save_world", permission_required="manage worlds")
 def save_world(world_uid):
-    return micropsi.save_world(world_uid)
+    return runtime.save_world(world_uid)
 
 
 @rpc("export_world")
 def export_world_rpc(world_uid):
-    return micropsi.export_world(world_uid)
+    return runtime.export_world(world_uid)
 
 
 @rpc("import_world", permission_required="manage worlds")
 def import_world_rpc(world_uid, worlddata):
-    return micropsi.import_world(world_uid, worlddata)
+    return runtime.import_world(world_uid, worlddata)
 
 
 # Monitor
 
 @rpc("add_gate_monitor")
 def add_gate_monitor(nodenet_uid, node_uid, gate):
-    return micropsi.add_gate_monitor(nodenet_uid, node_uid, gate)
+    return runtime.add_gate_monitor(nodenet_uid, node_uid, gate)
 
 
 @rpc("add_slot_monitor")
 def add_slot_monitor(nodenet_uid, node_uid, slot):
-    return micropsi.add_slot_monitor(nodenet_uid, node_uid, slot)
+    return runtime.add_slot_monitor(nodenet_uid, node_uid, slot)
 
 
 @rpc("remove_monitor")
 def remove_monitor(nodenet_uid, monitor_uid):
     try:
-        micropsi.remove_monitor(nodenet_uid, monitor_uid)
+        runtime.remove_monitor(nodenet_uid, monitor_uid)
         return dict(status='success')
     except KeyError:
         return dict(status='error', msg='unknown nodenet or monitor')
@@ -862,7 +874,7 @@ def remove_monitor(nodenet_uid, monitor_uid):
 @rpc("clear_monitor")
 def clear_monitor(nodenet_uid, monitor_uid):
     try:
-        micropsi.clear_monitor(nodenet_uid, monitor_uid)
+        runtime.clear_monitor(nodenet_uid, monitor_uid)
         return dict(status='success')
     except KeyError:
         return dict(status='error', msg='unknown nodenet or monitor')
@@ -870,29 +882,29 @@ def clear_monitor(nodenet_uid, monitor_uid):
 
 @rpc("export_monitor_data")
 def export_monitor_data(nodenet_uid, monitor_uid=None):
-    return micropsi.export_monitor_data(nodenet_uid, monitor_uid)
+    return runtime.export_monitor_data(nodenet_uid, monitor_uid)
 
 
 @rpc("get_monitor_data")
 def get_monitor_data(nodenet_uid, step):
-    return micropsi.get_monitor_data(nodenet_uid, step)
+    return runtime.get_monitor_data(nodenet_uid, step)
 
 # Nodenet
 
 
 @rpc("get_nodespace")
 def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
-    return micropsi.get_nodespace(nodenet_uid, nodespace, step, **coordinates)
+    return runtime.get_nodespace(nodenet_uid, nodespace, step, **coordinates)
 
 
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
-    return micropsi.get_node(nodenet_uid, node_uid)
+    return runtime.get_node(nodenet_uid, node_uid)
 
 
 @rpc("add_node", permission_required="manage nodenets")
 def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
-    result, uid = micropsi.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
+    result, uid = runtime.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
     if result:
         return dict(status="success", uid=uid)
     else:
@@ -901,73 +913,73 @@ def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", p
 
 @rpc("set_node_position", permission_required="manage nodenets")
 def set_node_position(nodenet_uid, node_uid, pos):
-    return micropsi.set_node_position(nodenet_uid, node_uid, pos)
+    return runtime.set_node_position(nodenet_uid, node_uid, pos)
 
 
 @rpc("set_node_name", permission_required="manage nodenets")
 def set_node_name(nodenet_uid, node_uid, name):
-    return micropsi.set_node_name(nodenet_uid, node_uid, name)
+    return runtime.set_node_name(nodenet_uid, node_uid, name)
 
 
 @rpc("delete_node", permission_required="manage nodenets")
 def delete_node(nodenet_uid, node_uid):
-    return micropsi.delete_node(nodenet_uid, node_uid)
+    return runtime.delete_node(nodenet_uid, node_uid)
 
 
 @rpc("align_nodes", permission_required="manage nodenets")
 def align_nodes(nodenet_uid, nodespace):
-    return micropsi.align_nodes(nodenet_uid, nodespace)
+    return runtime.align_nodes(nodenet_uid, nodespace)
 
 
 @rpc("get_available_node_types")
 def get_available_node_types(nodenet_uid=None):
-    return micropsi.get_available_node_types(nodenet_uid)
+    return runtime.get_available_node_types(nodenet_uid)
 
 
 @rpc("get_available_native_module_types")
 def get_available_native_module_types(nodenet_uid):
-    return micropsi.get_available_native_module_types(nodenet_uid)
+    return runtime.get_available_native_module_types(nodenet_uid)
 
 
 @rpc("get_nodefunction")
 def get_nodefunction(nodenet_uid, node_type):
-    return micropsi.get_nodefunction(nodenet_uid, node_type)
+    return runtime.get_nodefunction(nodenet_uid, node_type)
 
 
 @rpc("set_nodefunction", permission_required="manage nodenets")
 def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
-    return micropsi.set_nodefunction(nodenet_uid, node_type, nodefunction)
+    return runtime.set_nodefunction(nodenet_uid, node_type, nodefunction)
 
 
 @rpc("set_node_parameters", permission_required="manage nodenets")
 def set_node_parameters(nodenet_uid, node_uid, parameters):
-    return micropsi.set_node_parameters(nodenet_uid, node_uid, parameters)
+    return runtime.set_node_parameters(nodenet_uid, node_uid, parameters)
 
 
 @rpc("add_node_type", permission_required="manage nodenets")
 def add_node_type(nodenet_uid, node_type, slots=[], gates=[], node_function=None, parameters=[]):
-    return micropsi.add_node_type(nodenet_uid, node_type, slots, gates, node_function, parameters)
+    return runtime.add_node_type(nodenet_uid, node_type, slots, gates, node_function, parameters)
 
 
 @rpc("delete_node_type", permission_required="manage nodenets")
 def delete_node_type(nodenet_uid, node_type):
-    return micropsi.delete_node_type(nodenet_uid, node_type)
+    return runtime.delete_node_type(nodenet_uid, node_type)
 
 
 @rpc("get_slot_types")
 def get_slot_types(nodenet_uid, node_type):
-    return micropsi.get_slot_types(nodenet_uid, node_type)
+    return runtime.get_slot_types(nodenet_uid, node_type)
 
 
 @rpc("get_gate_types")
 def get_gate_types(nodenet_uid, node_type):
-    return micropsi.get_gate_types(nodenet_uid, node_type)
+    return runtime.get_gate_types(nodenet_uid, node_type)
 
 
 @rpc("get_gate_function")
 def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     try:
-        return micropsi.get_gate_function(nodenet_uid, nodespace, node_type, gate_type)
+        return runtime.get_gate_function(nodenet_uid, nodespace, node_type, gate_type)
     except KeyError:
         return dict(status='error', msg='Unknown nodenet or nodespace')
 
@@ -976,54 +988,54 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
 @rpc("set_gate_function", permission_required="manage nodenets", method="POST")
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
     try:
-        micropsi.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
+        runtime.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
     except KeyError:
         return dict(status='error', msg='Unknown nodenet or nodespace')
 
 
 @rpc("set_gate_parameters", permission_required="manage nodenets")
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
-    return micropsi.set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters)
+    return runtime.set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters)
 
 
 @rpc("get_available_datasources")
 def get_available_datasources(nodenet_uid):
-    return micropsi.get_available_datasources(nodenet_uid)
+    return runtime.get_available_datasources(nodenet_uid)
 
 
 @rpc("get_available_datatargets")
 def get_available_datatargets(nodenet_uid):
-    return micropsi.get_available_datatargets(nodenet_uid)
+    return runtime.get_available_datatargets(nodenet_uid)
 
 
 @rpc("bind_datasource_to_sensor", permission_required="manage nodenets")
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
-    return micropsi.bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource)
+    return runtime.bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource)
 
 
 @rpc("bind_datatarget_to_actor", permission_required="manage nodenets")
 def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
-    return micropsi.bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget)
+    return runtime.bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget)
 
 
 @rpc("add_link", permission_required="manage nodenets")
 def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, uid):
-    return micropsi.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid)
+    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid)
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
-    return micropsi.set_link_weight(nodenet_uid, link_uid, weight, certainty)
+    return runtime.set_link_weight(nodenet_uid, link_uid, weight, certainty)
 
 
 @rpc("get_link")
 def get_link(nodenet_uid, link_uid):
-    return micropsi.get_link(nodenet_uid, link_uid)
+    return runtime.get_link(nodenet_uid, link_uid)
 
 
 @rpc("delete_link", permission_required="manage nodenets")
 def delete_link(nodenet_uid, link_uid):
-    return micropsi.delete_link(nodenet_uid, link_uid)
+    return runtime.delete_link(nodenet_uid, link_uid)
 
 
 @rpc("get_example_nodenet")
@@ -1039,7 +1051,7 @@ def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     run(host=host, port=port)  # devV
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Start the MicroPsi server.")
+    parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)
     parser.add_argument('-d', '--host', type=str, default=DEFAULT_HOST)
     parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT)
     args = parser.parse_args()

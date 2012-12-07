@@ -577,7 +577,6 @@ function updateViewSize() {
 
 // complete redraw of the current node space
 function redrawNodeNet() {
-    console.log("redrawNodeNet");
     nodeLayer.removeChildren();
     nodeLayer.addChild(selectionBox);
     linkLayer.removeChildren();
@@ -597,8 +596,8 @@ function redrawNodeNet() {
 }
 
 // like activation change, only put the node elsewhere and redraw the links
-function redrawNode(node) {
-    if(nodeRedrawNeeded(node)){
+function redrawNode(node, forceRedraw) {
+    if(nodeRedrawNeeded(node) || forceRedraw){
         if(node.uid in nodeLayer.children){
             nodeLayer.children[node.uid].remove();
         }
@@ -935,7 +934,6 @@ function renderLinkDuringCreation(endPoint) {
 
 // draw net entity
 function renderNode(node) {
-    console.log("rendering node "+(node.name || node.uid)+". parent: " + node.parent);
     if (isCompact(node)) renderCompactNode(node);
     else renderFullNode(node);
     setActivation(node);
@@ -1438,18 +1436,15 @@ function onMouseDown(event) {
                         showNodeForm(nodeUid);
                     }
                 }
-                console.log ("clicked node "+nodeUid);
                 // check for slots and gates
                 var i;
                 if ((i = testSlots(node, p)) >-1) {
-                    console.log("clicked slot #" + i);
                     clickType = "slot";
                     clickIndex = i;
                     if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
                     else if (linkCreationStart) finalizeLinkHandler(nodeUid, clickIndex); // was slotIndex TODO: clickIndex?? linkcreationstart.gateIndex???
                     return;
                 } else if ((i = testGates(node, p)) > -1) {
-                    console.log("clicked gate #" + i);
                     clickType = "gate";
                     clickIndex = i;
                     var gate = node.gates[node.gateIndexes[i]];
@@ -1501,7 +1496,6 @@ function onMouseDown(event) {
                 if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
-                console.log("clicked link " + path.name);
                 clickType = "link";
                 clickOriginUid = path.name;
                 if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
@@ -1662,7 +1656,6 @@ function onKeyDown(event) {
 }
 
 function onResize(event) {
-    console.log("resize");
     refreshViewPortData();
     updateViewSize();
 }
@@ -2275,6 +2268,8 @@ function handleEditNode(event){
     if(nodes[nodeUid].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
+    redrawNode(nodes[nodeUid], true);
+    view.draw(true);
 }
 
 function handleEditGate(event){
@@ -2318,7 +2313,6 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
-    redrawNode(nodes[nodeUid]);
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
         'node_uid': nodeUid,
@@ -2352,8 +2346,6 @@ function updateNodeParameters(nodeUid, parameters){
 // handler for renaming the node
 function renameNode(nodeUid, name) {
     nodes[nodeUid].name = name;
-    redrawNode(nodes[nodeUid]);
-    view.draw();
     api.call("set_node_name", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,

@@ -10,6 +10,10 @@ __date__ = '03.12.12'
 
 import os
 
+VERSION = "0.2"
+
+APPTITLE = "PSI Cortex"
+
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "resources")
 USERMANAGER_PATH = os.path.join(RESOURCE_PATH, "user-db.json")
 

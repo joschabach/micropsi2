@@ -51,7 +51,7 @@
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
-            <form class="form-horizontal">
+            <form class="form-horizontal" id="world_objects">
                 <h4>World Objects</h4>
                 <div id="world_objects_list">
                 </div>

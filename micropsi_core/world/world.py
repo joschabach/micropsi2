@@ -61,6 +61,22 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
+    @property
+    def agents(self):
+        return self.data.get('agents', {})
+
+    @agents.setter
+    def agents(self, agents):
+        self.data['agents'] = agents
+
+    @property
+    def objects(self):
+        return self.data.get('objects', {})
+
+    @objects.setter
+    def objects(self, objects):
+        self.data['objects'] = objects
+
     def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
@@ -145,18 +161,10 @@ class World(object):
     def get_world_view(self, step):
         """ returns a list of world objects, and the current step of the simulation """
         return {
-            'objects': self.get_world_objects(),
-            'agents': self.get_agents(),
+            'objects': self.objects,
+            'agents': self.agents,
             'current_step': self.current_step,
         }
-
-    def get_world_objects(self):
-        """ returns a dictionary of world objects. """
-        return self.data.get('objects', {})
-
-    def get_agents(self):
-        """ returns a dictionary of agents. """
-        return self.data.get('agents', {})
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.

@@ -338,7 +338,7 @@ def create_user():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
         return template("create_user", version=VERSION, user_id=user_id,
-            title="Create a user for the MicroPsi server", permissions=permissions)
+            title="Create a user for the %s server" % APP_PATH, permissions=permissions)
     return template("error", msg="Insufficient rights to access user console")
 
 

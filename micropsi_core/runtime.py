@@ -1204,9 +1204,9 @@ class MicroPsiRuntime(object):
 
         nodetable = {}
         for l_uid, l in link_dict.items():
-            if not l["source_node"] in nodetable:
-                nodetable[l["source_node"]] = {}
-            nodetable[l["source_node"]][l_uid] = l
+            if not l.get('source_node_uid', l.get("source_node")) in nodetable:  # fixme
+                nodetable[l["source_node_uid"]] = {}
+            nodetable[l["source_node_uid"]][l_uid] = l
 
         # find headnode
         headnode = None

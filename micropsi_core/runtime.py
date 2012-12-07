@@ -469,7 +469,6 @@ class MicroPsiRuntime(object):
         Returns:
             dictionary containing the information
         """
-        from micropsi_core.world import worldadapter
 
         data = self.worlds[world_uid].data
         data['worldadapters'] = self.get_worldadapters(world_uid)
@@ -477,7 +476,6 @@ class MicroPsiRuntime(object):
 
     def get_worldadapters(self, world_uid):
         """Returns the world adapters available in the given world"""
-        from micropsi_core.world import worldadapter
 
         data = {}
         for name, worldadapter in self.worlds[world_uid].supported_worldadapters.items():

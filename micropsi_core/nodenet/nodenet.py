@@ -216,8 +216,8 @@ class Nodenet(object):
         for uid in self.state.get('links', {}):
             data = self.state['links'][uid]
             self.links[uid] = Link(
-                self.nodes[data['source_node']], data['source_gate_name'],
-                self.nodes[data['target_node']], data['target_slot_name'],
+                self.nodes[data.get('source_node_uid', data.get('source_node'))], data['source_gate_name'],  # fixme
+                self.nodes[data.get('target_node_uid', data.get('target_node'))], data['target_slot_name'],  # fixme
                 weight=data['weight'], certainty=data['certainty'],
                 uid=uid)
         for uid in self.state.get('monitors', {}):
@@ -645,11 +645,11 @@ class Link(object):
 
     @property
     def source_node(self):
-        return self.nodenet.nodes.get(self.data.get("source_node"))
+        return self.nodenet.nodes.get(self.data.get('source_node_uid', self.data.get('source_node')))  # fixme
 
     @source_node.setter
     def source_node(self, node):
-        self.data["source_node"] = node.uid
+        self.data["source_node_uid"] = node.uid
 
     @property
     def source_gate(self):
@@ -661,11 +661,11 @@ class Link(object):
 
     @property
     def target_node(self):
-        return self.nodenet.nodes.get(self.data.get("target_node"))
+        return self.nodenet.nodes.get(self.data.get('target_node_uid', self.data.get('target_node')))  # fixme
 
     @target_node.setter
     def target_node(self, node):
-        self.data["target_node"] = node.uid
+        self.data["target_node_uid"] = node.uid
 
     @property
     def target_slot(self):
@@ -689,6 +689,8 @@ class Link(object):
             self.nodenet.state["links"][uid] = {}
         self.data = source_node.nodenet.state["links"][uid]
         self.data["uid"] = uid
+        self.data["source_node"] = self.data["source_node_uid"] = source_node.uid  # fixme
+        self.data["target_node"] = self.data["target_node_uid"] = target_node.uid  # fixme
         self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
 
     def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):

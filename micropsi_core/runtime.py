@@ -469,26 +469,19 @@ class MicroPsiRuntime(object):
         Returns:
             dictionary containing the information
         """
-        from micropsi_core.world import worldadapter
 
         data = self.worlds[world_uid].data
-        data['worldadapters'] = {}
-        for name in self.worlds[world_uid].supported_worldadapters:
-            data['worldadapters'][name] = {
-                'datasources': getattr(worldadapter, name).datasources.keys(),
-                'datatargets': getattr(worldadapter, name).datatargets.keys()
-            }
+        data['worldadapters'] = self.get_worldadapters(world_uid)
         return data
 
     def get_worldadapters(self, world_uid):
         """Returns the world adapters available in the given world"""
-        from micropsi_core.world import worldadapter
 
         data = {}
-        for name in self.worlds[world_uid].supported_worldadapters:
+        for name, worldadapter in self.worlds[world_uid].supported_worldadapters.items():
             data[name] = {
-                'datasources': getattr(worldadapter, name).datasources.keys(),
-                'datatargets': getattr(worldadapter, name).datatargets.keys()
+                'datasources': worldadapter.datasources.keys(),
+                'datatargets': worldadapter.datatargets.keys()
             }
         return data
 
@@ -1146,15 +1139,17 @@ class MicroPsiRuntime(object):
 
         # check if master nodenet exists
         if not self.get_nodenet(master_nodenet_uid):
-            self.new_nodenet(master_nodenet_uid, "Default", uid = master_nodenet_uid)
+            self.new_nodenet(master_nodenet_uid, "Default", uid=master_nodenet_uid)
             self.load_nodenet(master_nodenet_uid)
         nodenet = self.nodenets[master_nodenet_uid]
 
         # check consistency before we drop this into the master nodenet
         for l_uid, l in links.items():
-            if (not l["source_node"] in nodes and not l["source_node"] in nodenet) or (
-                not l["target_node"] in nodes and not l["target_node"] in nodenet):
-                raise KeyError, "node_uid referenced in link %s not found in nodes" %l_uid
+            source_node_uid = l.get("source_node_uid", l.get("source_node"))  # fixme
+            target_node_uid = l.get("target_node_uid", l.get("target_node"))  # fixme
+            if (not source_node_uid in nodes and not source_node_uid in nodenet.nodes) or (
+                not target_node_uid in nodes and not target_node_uid in nodenet.nodes):
+                raise KeyError, "node_uid referenced in link %s not found in nodes" % l_uid
 
         headnode_uid = self._find_headnode(nodes, links)
         if not headnode_uid:
@@ -1179,10 +1174,12 @@ class MicroPsiRuntime(object):
                     uid = uid,
                     name = node.get("name", ""))
         for l_uid, link in links.items():
+            source_node_uid = link.get("source_node_uid", link.get("source_node"))  # fixme
+            target_node_uid = link.get("target_node_uid", link.get("target_node"))  # fixme
             self.add_link(master_nodenet_uid,
-                link["source_node"],
+                source_node_uid,
                 link["source_gate_name"],
-                link["target_node"],
+                target_node_uid,
                 link["target_slot_name"],
                 weight = link.get("weight", 1.0),
                 certainty = link.get("certainty", 1.0)
@@ -1207,9 +1204,9 @@ class MicroPsiRuntime(object):
 
         nodetable = {}
         for l_uid, l in link_dict.items():
-            if not l["source_node"] in nodetable:
-                nodetable[l["source_node"]] = {}
-            nodetable[l["source_node"]][l_uid] = l
+            if not l.get('source_node_uid', l.get("source_node")) in nodetable:  # fixme
+                nodetable[l["source_node_uid"]] = {}
+            nodetable[l["source_node_uid"]][l_uid] = l
 
         # find headnode
         headnode = None

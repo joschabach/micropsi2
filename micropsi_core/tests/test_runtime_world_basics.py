@@ -14,7 +14,8 @@ def test_new_world(resourcepath, micropsi, test_world):
     success, world_uid = micropsi.new_world("Waterworld", "World", owner = "tester")
     assert success
     assert world_uid != test_world
-    assert micropsi.get_world_properties(world_uid)["name"] == "Waterworld"
+    world_properties = micropsi.get_world_properties(world_uid)
+    assert world_properties["name"] == "Waterworld"
     w_path = os.path.join(resourcepath, runtime.WORLD_DIRECTORY, world_uid)
     assert os.path.exists(w_path)
 

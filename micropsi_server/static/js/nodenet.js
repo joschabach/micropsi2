@@ -247,8 +247,8 @@ function setNodespaceData(data){
         var link, sourceId, targetId;
         var outsideLinks = [];
         for(uid in data.links){
-            sourceId = data.links[uid]['source_node'];
-            targetId = data.links[uid]['target_node'];
+            sourceId = data.links[uid]['source_node_uid'];
+            targetId = data.links[uid]['target_node_uid'];
             if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
                 addLink(link);
@@ -596,8 +596,8 @@ function redrawNodeNet() {
 }
 
 // like activation change, only put the node elsewhere and redraw the links
-function redrawNode(node) {
-    if(nodeRedrawNeeded(node)){
+function redrawNode(node, forceRedraw) {
+    if(nodeRedrawNeeded(node) || forceRedraw){
         if(node.uid in nodeLayer.children){
             nodeLayer.children[node.uid].remove();
         }
@@ -2268,6 +2268,8 @@ function handleEditNode(event){
     if(nodes[nodeUid].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
+    redrawNode(nodes[nodeUid], true);
+    view.draw(true);
 }
 
 function handleEditGate(event){
@@ -2311,7 +2313,6 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
-    redrawNode(nodes[nodeUid]);
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
         'node_uid': nodeUid,
@@ -2345,8 +2346,6 @@ function updateNodeParameters(nodeUid, parameters){
 // handler for renaming the node
 function renameNode(nodeUid, name) {
     nodes[nodeUid].name = name;
-    redrawNode(nodes[nodeUid]);
-    view.draw();
     api.call("set_node_name", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,

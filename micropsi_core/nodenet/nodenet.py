@@ -59,7 +59,8 @@ class Nodenet(object):
     @property
     def world(self):
         if "world" in self.state:
-            return self.runtime.worlds.get(self.state["world"])
+            from micropsi_core.runtime import worlds
+            return worlds.get(self.state["world"])
         return None
 
     @world.setter
@@ -89,7 +90,7 @@ class Nodenet(object):
     def is_active(self, is_active):
         self.state['is_active'] = is_active
 
-    def __init__(self, runtime, filename, name="", worldadapter="Default", world=None, owner="", uid=None):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -116,7 +117,6 @@ class Nodenet(object):
         }
 
         self.world = world
-        self.runtime = runtime
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename

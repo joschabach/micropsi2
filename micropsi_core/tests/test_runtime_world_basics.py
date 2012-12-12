@@ -6,17 +6,18 @@
 """
 import os
 from micropsi_core import runtime
+from micropsi_core import runtime as micropsi
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
 
-def test_new_world(resourcepath, micropsi, test_world):
+def test_new_world(resourcepath, test_world):
     success, world_uid = micropsi.new_world("Waterworld", "World", owner = "tester")
     assert success
     assert world_uid != test_world
     world_properties = micropsi.get_world_properties(world_uid)
     assert world_properties["name"] == "Waterworld"
-    w_path = os.path.join(resourcepath, runtime.WORLD_DIRECTORY, world_uid)
+    w_path = os.path.join(resourcepath, runtime.WORLD_DIRECTORY, world_uid+".json")
     assert os.path.exists(w_path)
 
     # get_available_worlds
@@ -32,12 +33,12 @@ def test_new_world(resourcepath, micropsi, test_world):
     assert world_uid not in micropsi.get_available_worlds()
     assert not os.path.exists(w_path)
 
-def test_get_world_properties(micropsi, test_world):
+def test_get_world_properties(test_world):
     wp = micropsi.get_world_properties(test_world)
     assert "World" == wp["world_type"]
     assert test_world == wp["uid"]
 
-def test_get_worldadapters(micropsi, test_world):
+def test_get_worldadapters(test_world):
     wa = micropsi.get_worldadapters(test_world)
     assert 'Default' in wa
     assert "datasources" in wa["Default"]

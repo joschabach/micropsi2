@@ -1,6 +1,8 @@
 """
 The World superclass.
 A simple world simulator for MicroPsi nodenet agents
+
+Individual world classes must not only inherit from this one, but also be imported here.
 """
 
 __author__ = 'joscha'
@@ -13,6 +15,7 @@ import os
 import warnings
 from micropsi_core import tools
 from micropsi_core.tools import generate_uid
+
 
 WORLD_VERSION = 1.0
 
@@ -77,7 +80,7 @@ class World(object):
     def objects(self, objects):
         self.data['objects'] = objects
 
-    def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
+    def __init__(self, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
@@ -97,9 +100,9 @@ class World(object):
 
         self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
 
-        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject) if cls not in self.supported_worldadapters}
+        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject)
+                                        if cls not in self.supported_worldadapters}
 
-        self.runtime = runtime
         self.uid = uid or generate_uid()
         self.owner = owner
         self.name = name or os.path.basename(filename)
@@ -238,3 +241,8 @@ class World(object):
         """allows the nodenet to write a value to a datatarget"""
         if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].set_datatarget(key, value)
+
+
+# imports of individual world types:
+import island.island
+import berlin.berlin

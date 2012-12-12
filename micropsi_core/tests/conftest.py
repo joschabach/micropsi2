@@ -3,7 +3,7 @@ Central initialization of fixtures for Runtime etc.
 """
 import os
 import pytest
-from micropsi_core import runtime
+from micropsi_core import runtime as micropsi
 
 DELETE_TEST_FILES_ON_EXIT = False
 
@@ -14,12 +14,9 @@ nn_uid = None
 def resourcepath():
     return os.path.join(os.path.dirname(__file__), "..", "..", "resources")
 
-@pytest.fixture(scope="session")
-def micropsi():
-    return runtime.MicroPsiRuntime(resourcepath())
 
 @pytest.fixture(scope="session")
-def test_world(micropsi):
+def test_world():
     global world_uid
     worlds = micropsi.get_available_worlds("Pytest User")
     if worlds:
@@ -32,7 +29,7 @@ def test_world(micropsi):
     return world_uid
 
 @pytest.fixture(scope="session")
-def test_nodenet(micropsi):
+def test_nodenet():
     global nn_uid
     nodenets = micropsi.get_available_nodenets("Pytest User")
     if nodenets:

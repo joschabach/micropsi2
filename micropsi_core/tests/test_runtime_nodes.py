@@ -6,11 +6,12 @@
 """
 import os
 from micropsi_core import runtime
+from micropsi_core import runtime as micropsi
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
 
-def test_add_node(micropsi, test_nodenet):
+def test_add_node(test_nodenet):
     micropsi.load_nodenet(test_nodenet)
     # make sure nodenet is empty
     nodespace = micropsi.get_nodespace(test_nodenet, "Root", -1)
@@ -33,14 +34,14 @@ def test_add_node(micropsi, test_nodenet):
     micropsi.add_node(test_nodenet, "Concept", (300, 150), "Root", state=None, uid="node_c", name="C")
     micropsi.add_node(test_nodenet, "Sensor", (200, 450), "Root", state=None, uid="node_s", name="S")
 
-def test_get_nodespace(micropsi, test_nodenet):
+def test_get_nodespace(test_nodenet):
     nodespace = micropsi.get_nodespace(test_nodenet, "Root", -1)
     assert len(nodespace["nodes"]) == 4
     node1 = nodespace["nodes"]["node_a"]
     assert node1["name"] == "A"
     assert node1["position"] == (200, 250)
 
-def test_add_link(micropsi, test_nodenet):
+def test_add_link(test_nodenet):
     micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1, "por_ab")
     micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 1, 0.1, "por_ab2")
     micropsi.add_link(test_nodenet, "node_c", "ret", "node_b", "gen", 1, 1, "ret_cb")
@@ -62,13 +63,13 @@ def test_add_link(micropsi, test_nodenet):
     assert link2["source_gate_name"] == "ret"
     assert link2["target_slot_name"] == "gen"
 
-def test_delete_link(micropsi, test_nodenet):
+def test_delete_link(test_nodenet):
     micropsi.delete_link(test_nodenet, "ret_cb")
     nodespace = micropsi.get_nodespace(test_nodenet, "Root", -1)
     assert len(nodespace["links"])==1
     assert "ret_cb" not in nodespace["links"]
 
-def test_save_nodenet(micropsi, test_nodenet):
+def test_save_nodenet(test_nodenet):
     # save_nodenet
     micropsi.save_nodenet(test_nodenet)
     # unload_nodenet

@@ -9,6 +9,7 @@ import tempfile
 import pytest
 from micropsi_core.config import ConfigurationManager
 
+
 __author__ = 'joscha'
 __date__ = '29.10.12'
 

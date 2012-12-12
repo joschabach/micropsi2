@@ -13,8 +13,8 @@ __author__ = 'joscha'
 __date__ = '15.05.12'
 
 
-import micropsi_core.runtime
-from micropsi_core.runtime import AVAILABLE_WORLD_TYPES
+from micropsi_core import runtime
+
 import micropsi_core.tools
 import usermanagement
 import bottle
@@ -31,7 +31,7 @@ APP_PATH = os.path.dirname(__file__)
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 
-runtime = micropsi_core.runtime.MicroPsiRuntime()
+# runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
 
 
@@ -564,7 +564,7 @@ def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, worldtypes=AVAILABLE_WORLD_TYPES,
+    return template("world_form.tpl", title=title, worldtypes=runtime.get_available_world_types(),
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -798,7 +798,7 @@ def new_world(world_name, world_type, owner=""):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return AVAILABLE_WORLD_TYPES
+    return runtime.get_available_worldtypes()
 
 
 @rpc("delete_world", permission_required="manage worlds")

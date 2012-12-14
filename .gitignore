@@ -4,6 +4,8 @@
 /eggs/
 /etc/
 /parts/
-/resources/
+/resources/nodenets
+/resources/worlds
+/resources/user-db.json
 /.installed.cfg
 *.pyc

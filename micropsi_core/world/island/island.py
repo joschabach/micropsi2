@@ -1,8 +1,8 @@
 import math
 import micropsi_core
-from micropsi_core.world.world import World
 import json
 import os
+from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 import png
@@ -20,15 +20,15 @@ class Island(World):
     }
 
     assets = {
-        'background': "island/background.jpg",
+        'background': "island/psi_1.png",
         'js': "island/island.js",
-        'x': 1500,
-        'y': 1033,
+        'x': 2048,
+        'y': 2048,
         'icons': {'Lightsource': 'island/lamp.png'}
     }
 
-    def __init__(self, runtime, filename, world_type="Island", name="", owner="", uid=None, version=1):
-        World.__init__(self, runtime, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
+    def __init__(self, filename, world_type="Island", name="", owner="", uid=None, version=1):
+        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.load_groundmap()
         self.current_step = 0
         self.load_json_data()

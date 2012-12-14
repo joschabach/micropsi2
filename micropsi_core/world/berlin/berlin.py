@@ -23,8 +23,8 @@ class Berlin(World):
         'y': 900
     }
 
-    def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=1):
-        World.__init__(self, runtime, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
+    def __init__(self, filename, world_type="", name="", owner="", uid=None, version=1):
+        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.data['assets'] = self.assets
         self.scale_x = (self.assets['x'] / -(self.coords['x1'] - self.coords['x2']))
         self.scale_y = (self.assets['y'] / -(self.coords['y1'] - self.coords['y2']))

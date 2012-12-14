@@ -29,7 +29,7 @@ parser.add_argument('-r', '--relfile', type=str, default="en_wordnet_relations.t
 parser.add_argument('-n', '--nodenet', type=str, default="freebase wordnet")
 args = parser.parse_args()
 
-from micropsi_server.dispatcher import micropsi
+from micropsi_server.dispatcher import runtime as micropsi
 
 
 def add_concept(name, id=None):

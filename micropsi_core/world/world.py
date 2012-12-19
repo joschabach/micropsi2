@@ -1,6 +1,8 @@
 """
 The World superclass.
 A simple world simulator for MicroPsi nodenet agents
+
+Individual world classes must not only inherit from this one, but also be imported here.
 """
 
 __author__ = 'joscha'
@@ -13,6 +15,7 @@ import os
 import warnings
 from micropsi_core import tools
 from micropsi_core.tools import generate_uid
+
 
 WORLD_VERSION = 1.0
 
@@ -61,7 +64,23 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
-    def __init__(self, runtime, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
+    @property
+    def agents(self):
+        return self.data.get('agents', {})
+
+    @agents.setter
+    def agents(self, agents):
+        self.data['agents'] = agents
+
+    @property
+    def objects(self):
+        return self.data.get('objects', {})
+
+    @objects.setter
+    def objects(self, objects):
+        self.data['objects'] = objects
+
+    def __init__(self, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
@@ -81,7 +100,9 @@ class World(object):
 
         self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
 
-        self.runtime = runtime
+        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject)
+                                        if cls not in self.supported_worldadapters}
+
         self.uid = uid or generate_uid()
         self.owner = owner
         self.name = name or os.path.basename(filename)
@@ -146,17 +167,16 @@ class World(object):
         """ returns a list of world objects, and the current step of the simulation """
         return {
             'objects': self.get_world_objects(),
-            'agents': self.get_agents(),
+            'agents': self.agents,
             'current_step': self.current_step,
         }
 
     def get_world_objects(self):
         """ returns a dictionary of world objects. """
-        return self.data.get('objects', {})
-
-    def get_agents(self):
-        """ returns a dictionary of agents. """
-        return self.data.get('agents', {})
+        objects = {}
+        for key in self.supported_worldobjects:
+            objects.update(self.data.get(key, {}))
+        return objects
 
     def register_nodenet(self, worldadapter, nodenet_uid):
         """Attempts to register a nodenet at this world.
@@ -221,3 +241,8 @@ class World(object):
         """allows the nodenet to write a value to a datatarget"""
         if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].set_datatarget(key, value)
+
+
+# imports of individual world types:
+import island.island
+import berlin.berlin

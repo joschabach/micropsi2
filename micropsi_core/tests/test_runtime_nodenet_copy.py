@@ -6,11 +6,12 @@
 """
 import os
 from micropsi_core.nodenet.nodenet import Nodespace, Node, Link
+from micropsi_core import runtime as micropsi
 
 __author__ = 'joscha'
 __date__ = '12.11.12'
 
-def test_copy_nodes(micropsi):
+def test_copy_nodes():
     success, nodenet_uid1 = micropsi.new_nodenet("Origin_Nodenet", "Default", owner="tester")
     success, nodenet_uid2 = micropsi.new_nodenet("Target_Nodenet", "Default", owner="tester")
 

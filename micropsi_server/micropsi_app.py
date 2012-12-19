@@ -13,8 +13,8 @@ __author__ = 'joscha'
 __date__ = '15.05.12'
 
 
-import micropsi_core.runtime
-from micropsi_core.runtime import AVAILABLE_WORLD_TYPES
+from micropsi_core import runtime
+
 import micropsi_core.tools
 import usermanagement
 import bottle
@@ -31,8 +31,8 @@ APP_PATH = os.path.dirname(__file__)
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 
-from micropsi_server.dispatcher import usermanager
-from micropsi_server.dispatcher import runtime
+# runtime = micropsi_core.runtime.MicroPsiRuntime()
+usermanager = usermanagement.UserManager()
 
 
 def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
@@ -338,7 +338,7 @@ def create_user():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
         return template("create_user", version=VERSION, user_id=user_id,
-            title="Create a user for the MicroPsi server", permissions=permissions)
+            title="Create a user for the %s server" % APP_PATH, permissions=permissions)
     return template("error", msg="Insufficient rights to access user console")
 
 
@@ -564,7 +564,7 @@ def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, worldtypes=AVAILABLE_WORLD_TYPES,
+    return template("world_form.tpl", title=title, worldtypes=runtime.get_available_world_types(),
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -773,6 +773,24 @@ def get_world_objects(world_uid, type=None):
         return {'Error': 'World %s not found' % world_uid}
 
 
+@rpc("add_worldobject")
+def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
+    result, uid = runtime.add_worldobject(world_uid, type, position, orientation=orientation, name=name, parameters=parameters, uid=uid)
+    if result:
+        return dict(status="success", uid=uid)
+    else:
+        return dict(status="error", msg=uid)
+
+
+@rpc("set_worldobject_properties")
+def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
+    try:
+        runtime.set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters)
+        return dict(status="success")
+    except KeyError:
+        return dict(status="error", msg="unknown world or world object")
+
+
 @rpc("new_world", permission_required="manage worlds")
 def new_world(world_name, world_type, owner=""):
     return runtime.new_world(world_name, world_type, owner)
@@ -780,7 +798,7 @@ def new_world(world_name, world_type, owner=""):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return AVAILABLE_WORLD_TYPES
+    return runtime.get_available_worldtypes()
 
 
 @rpc("delete_world", permission_required="manage worlds")

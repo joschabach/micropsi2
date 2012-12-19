@@ -1,5 +1,5 @@
 import usermanagement
-from micropsi_core import runtime as runtime_module
+#from micropsi_core import runtime as runtime_module
 
-runtime = runtime_module.MicroPsiRuntime()
+#runtime = runtime_module.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()

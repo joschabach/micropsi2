@@ -51,8 +51,8 @@ var viewProperties = {
     arrowWidth: 6,
     arrowLength: 10,
     rasterize: true,
-    yMax: 16000,
-    xMax: 16000
+    yMax: 15000,
+    xMax: 15000
 };
 
 // hashes from uids to object definitions; we import these via json

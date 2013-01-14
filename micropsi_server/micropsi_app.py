@@ -24,7 +24,7 @@ import os
 import json
 import inspect
 import minidoc
-from configuration import RESOURCE_PATH, DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
+from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
 APP_PATH = os.path.dirname(__file__)
 

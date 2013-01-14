@@ -7,5 +7,9 @@
 /resources/nodenets
 /resources/worlds
 /resources/user-db.json
+/resources/server-config.json
 /.installed.cfg
 *.pyc
+/bootstrap.py
+/buildout.cfg
+

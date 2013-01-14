@@ -15,6 +15,7 @@ VERSION = "0.2"
 APPTITLE = "PSI Cortex"
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "resources")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "var")
 USERMANAGER_PATH = os.path.join(RESOURCE_PATH, "user-db.json")
 
 DEFAULT_PORT = 6543

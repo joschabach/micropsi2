@@ -13,7 +13,6 @@ from _runtime_api_monitors import *
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import RESOURCE_PATH
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, \
     STANDARD_NODETYPES, get_link_uid
 from micropsi_core.nodenet import node_alignment
@@ -26,11 +25,12 @@ import warnings
 from threading import Thread
 from datetime import datetime, timedelta
 import time
+from configuration import DATA_PATH
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
+configs = config.ConfigurationManager(os.path.join(DATA_PATH, "server-config.json"))
 
 worlds = {}
 nodenets = {}
@@ -209,7 +209,7 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
         owner=owner,
         world=world_uid
     ))
-    data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid']+".json")
+    data['filename'] = os.path.join(DATA_PATH, NODENET_DIRECTORY, data['uid']+".json")
     nodenet_data[data['uid']] = Bunch(**data)
     with open(data['filename'], 'w+') as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
@@ -309,7 +309,7 @@ def revert_nodenet(nodenet_uid):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
+    with open(os.path.join(DATA_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
         fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
     fp.close()
     return True
@@ -334,7 +334,7 @@ def import_nodenet(string, owner=None):
     if 'owner':
         nodenet_data['owner'] = owner
     # assert nodenet_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
+    filename = os.path.join(DATA_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
     nodenet_data['filename'] = filename
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(nodenet_data))
@@ -733,14 +733,14 @@ def parse_definition(json, filename=None):
 
 # Set up the MicroPsi runtime
 
-nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
-world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
+nodenet_data = crawl_definition_files(path=os.path.join(DATA_PATH, NODENET_DIRECTORY), type="nodenet")
+world_data = crawl_definition_files(path=os.path.join(DATA_PATH, WORLD_DIRECTORY), type="world")
 if not world_data:
     # create a default world for convenience.
     uid = tools.generate_uid()
-    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
+    filename = os.path.join(DATA_PATH, WORLD_DIRECTORY, uid)
     world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
-    with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:
+    with open(os.path.join(DATA_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:
         fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     fp.close()
 

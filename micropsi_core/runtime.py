@@ -13,7 +13,6 @@ from _runtime_api_monitors import *
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import DATA_PATH
 from micropsi_core.nodenet.nodenet import Nodenet, Node, Link, Nodespace, Nodetype, \
     STANDARD_NODETYPES, get_link_uid
 from micropsi_core.nodenet import node_alignment
@@ -26,6 +25,7 @@ import warnings
 from threading import Thread
 from datetime import datetime, timedelta
 import time
+from configuration import DATA_PATH
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"

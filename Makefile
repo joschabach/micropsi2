@@ -1,16 +1,14 @@
 # convenience makefile to boostrap & run buildout
 
 config = development.cfg
-makes = https://raw.github.com/pyfidelity/makes/master/
 
 all: tests
 
-
-
 app: .installed.cfg
+	bin/buildout -c $(config)
 
 .installed.cfg:
-	curl -s $(makes)/buildout | $(MAKE) -f- bootstrap_options=-d config=$(config)
+	python bootstrap -c $(config)
 
 tests: app
 	bin/test

@@ -8,7 +8,7 @@ app: .installed.cfg
 	bin/buildout -c $(config)
 
 .installed.cfg:
-	python bootstrap.py -c $(config)
+	python bootstrap.py -d -c $(config)
 
 tests: app
 	bin/test

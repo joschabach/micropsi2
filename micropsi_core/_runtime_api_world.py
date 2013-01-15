@@ -80,7 +80,7 @@ def new_world(world_name, world_type, owner=""):
         None if failure
     """
     uid = tools.generate_uid()
-    filename = os.path.join(runtime.RESOURCE_PATH, runtime.WORLD_DIRECTORY, uid+".json")
+    filename = os.path.join(runtime.DATA_PATH, runtime.WORLD_DIRECTORY, uid+".json")
     runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename, version=1,
         owner=owner)
     with open(filename, 'w+') as fp:
@@ -156,7 +156,7 @@ def revert_world(world_uid):
 
 def save_world(world_uid):
     """Stores the world state on the server."""
-    with open(os.path.join(runtime.RESOURCE_PATH, runtime.WORLD_DIRECTORY, world_uid), 'w+') as fp:
+    with open(os.path.join(runtime.DATA_PATH, runtime.WORLD_DIRECTORY, world_uid), 'w+') as fp:
         fp.write(json.dumps(runtime.worlds[world_uid].data, sort_keys=True, indent=4))
     fp.close()
     return True
@@ -172,7 +172,7 @@ def import_world(worlddata, owner=None):
         data['uid'] = tools.generate_uid()
     if owner is not None:
         data['owner'] = owner
-    filename = os.path.join(runtime.RESOURCE_PATH, runtime.WORLD_DIRECTORY, data['uid'])
+    filename = os.path.join(runtime.DATA_PATH, runtime.WORLD_DIRECTORY, data['uid'])
     data['filename'] = filename
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(data))

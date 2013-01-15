@@ -9,7 +9,7 @@
         </div>
     </div>
     <div class="span8">
-        <h4>Documentation browser</h4>
+        <h4>Psi Cortex Version {{version}}</h4>
         {{!content}}
     </div>
 

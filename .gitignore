@@ -12,3 +12,4 @@
 *.pyc
 /buildout.cfg
 /var
+/.idea

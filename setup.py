@@ -1,6 +1,6 @@
 from setuptools import setup
 
-version = '1.2'
+version = '1.3-dev'
 
 setup(
     name='psi_cortex',

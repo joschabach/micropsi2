@@ -24,7 +24,7 @@ then start supervisord::
 History
 =======
 
-0.1 - Unreleased
+1.2 - 2013-01-17
 ================
 
  * First public release on EC2

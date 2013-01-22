@@ -203,7 +203,8 @@ class World(object):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
         agent object
         """
-        del self.agents[nodenet_uid]
+        if nodenet_uid in self.agents:
+            del self.agents[nodenet_uid]
 
     def spawn_agent(self, worldadapter_name, nodenet_uid, options={}):
         """Creates an agent object,

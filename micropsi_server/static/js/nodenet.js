@@ -1824,6 +1824,9 @@ function handleContextMenu(event) {
                 case "Create actor":
                     type = "Actor";
                     break;
+                case "Create activator":
+                    type = "Activator";
+                    break;
                 case "Create event":
                     type = "Event";
                     break;
@@ -1988,7 +1991,7 @@ function createNativeModuleHandler(event){
             form.data = nodetype;
             if(nodetypes[nodetype]){
                 $('.native-custom').hide();
-                $('#native_parameters').html(getNodeParameterHTML(nodetypes[type.val()].parameters));
+                $('#native_parameters').html(getNodeParameterHTML(nodetypes[type.val()].parameters, nodetypes[type.val()].parameter_values));
             }
         } else if (event.target.className.indexOf('native-save') >= 0){
             var parameters;
@@ -2568,7 +2571,7 @@ function showNodeForm(nodeUid){
         $('tr.node', form).show();
         $('#node_activation_input').val(nodes[nodeUid].activation);
         $('#node_function_input').val("Todo");
-        $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
+        $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
         $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
         var states = '';
@@ -2614,7 +2617,7 @@ function showNodeForm(nodeUid){
     }
 }
 
-function getNodeParameterHTML(parameters){
+function getNodeParameterHTML(parameters, parameter_values){
     var html = '<tr><td>None</td></tr>';
     var input='';
     var is_array = jQuery.isArray(parameters);
@@ -2629,7 +2632,7 @@ function getNodeParameterHTML(parameters){
                 case "datatarget":
                     if(currentWorldadapter in worldadapters){
                         for(i in worldadapters[currentWorldadapter].datatargets){
-                            input += "<option>"+worldadapters[currentWorldadapter].datatargets[i]+"</option>";
+                            input += "<option"+ (value == worldadapters[currentWorldadapter].datatargets[i] ? " selected=selected" : "") +">"+worldadapters[currentWorldadapter].datatargets[i]+"</option>";
                         }
                         input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
                     }
@@ -2637,13 +2640,20 @@ function getNodeParameterHTML(parameters){
                 case "datasource":
                     if(currentWorldadapter in worldadapters){
                         for(i in worldadapters[currentWorldadapter].datasources){
-                            input += "<option>"+worldadapters[currentWorldadapter].datasources[i]+"</option>";
+                            input += "<option"+ (value == worldadapters[currentWorldadapter].datasources[i] ? " selected=selected" : "") +">"+worldadapters[currentWorldadapter].datasources[i]+"</option>";
                         }
                         input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
                     }
                     break;
                 default:
-                    input = "<input name=\""+name+"\" class=\"inplace\" value=\""+value+"\"/>";
+                    if(parameter_values && parameter_values[name]){
+                        for(i in parameter_values[name]){
+                            input += "<option"+ (value == parameter_values[name][i] ? " selected=selected" : "") +">"+parameter_values[name][i]+"</option>";
+                        }
+                        input = "<select name=\""+name+"\" class=\"inplace\" id=\"node_"+name+"\">"+input+"</select>";
+                    } else {
+                        input = "<input name=\""+name+"\" class=\"inplace\" value=\""+value+"\"/>";
+                    }
             }
             html += "<tr><td>"+name+"</td><td>"+input+"</td></tr>";
         }

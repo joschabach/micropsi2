@@ -1029,6 +1029,7 @@ STANDARD_NODETYPES = {
         "name": "Activator",
         "slottypes": ["gen"],
         "parameters": ["type"],
+        "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
         "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.type] = node.slots["gen"].activation"""
     }
 }
@@ -1098,7 +1099,7 @@ class Nodetype(object):
                 parameters="nodenet, node, " + args)
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
-                 nodefunction_definition=None):
+                 nodefunction_definition=None, parameter_values=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -1135,6 +1136,7 @@ class Nodetype(object):
         self.gatetypes = self.data.get("gatetypes", ["gen"]) if gatetypes is None else gatetypes
 
         self.parameters = self.data.get("parameters", []) if parameters is None else parameters
+        self.parameter_values = self.data.get("parameter_values", []) if parameter_values is None else parameter_values
 
         if nodefunction_definition:
             self.nodefunction_definition = nodefunction_definition

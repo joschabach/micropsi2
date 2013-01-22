@@ -148,7 +148,8 @@ def unload_nodenet(nodenet_uid):
         Arguments:
             nodenet_uid
     """
-    if not nodenet_uid in nodenets: return False
+    if not nodenet_uid in nodenets:
+        return False
     if nodenets[nodenet_uid].world:
         nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
     del nodenets[nodenet_uid]

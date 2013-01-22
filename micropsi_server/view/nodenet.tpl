@@ -182,27 +182,27 @@
                         <td><label for="node_type_input">Type</label></td>
                         <td><input type="text" name="node_type" disabled="disabled" id="node_type_input" /></td>
                     </tr>
-                    <tr>
+                    <tr class="state node">
                         <td><label for="node_state_input">State</label></td>
                         <td><select type="text" name="node_state" id="node_state_input"></select></td>
                     </tr>
-                    <tr>
+                    <tr class="node">
                         <td><label for="node_activation_input">Activation</label></td>
                         <td><input type="text" name="node_activation" id="node_activation_input"></td>
                     </tr>
-                    <tr>
+                    <tr class="node">
                         <td><label>Parameters</label></td>
                         <td><table id="node_parameters" class="table-striped table-condensed">
                             </table>
                         </td>
                     </tr>
-                    <tr>
+                    <tr class="node">
                         <td><label>in links</label></td>
                         <td><table id="node_slots" class="table-striped table-condensed">
                             </table>
                         </td>
                     </tr>
-                    <tr>
+                    <tr class="node">
                         <td><label>out links</label></td>
                         <td><table id="node_gates" class="table-striped table-condensed">
                             </table>

@@ -2563,9 +2563,9 @@ function showNodeForm(nodeUid){
     $('#node_uid_input', form).val(nodeUid);
     $('#node_type_input', form).val(nodes[nodeUid].type);
     if(nodes[nodeUid].type == 'Nodespace'){
-        $('.control-group.node', form).hide();
+        $('tr.node', form).hide();
     } else {
-        $('.control-group.node', form).show();
+        $('tr.node', form).show();
         $('#node_activation_input').val(nodes[nodeUid].activation);
         $('#node_function_input').val("Todo");
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters));
@@ -2577,7 +2577,7 @@ function showNodeForm(nodeUid){
                 states += '<option>'+nodetypes[nodes[nodeUid].type].states[i]+'</option>';
             }
         }
-        var state_group = $('.control-group.state');
+        var state_group = $('tr.state');
         if (states){
             states = '<option value="">None</option>' + states;
             $('#node_state_input').html(states).val(nodes[nodeUid].state);

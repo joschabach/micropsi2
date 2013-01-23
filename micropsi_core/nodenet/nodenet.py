@@ -1068,7 +1068,7 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "parameters": ["type"],
         "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
-        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.type] = node.slots["gen"].activation"""
+        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.parameters[type]] = node.slots["gen"].activation"""
     }
 }
 

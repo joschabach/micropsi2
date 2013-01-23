@@ -23,22 +23,35 @@ def test_world():
         world_uid = worlds.keys()[0]
     else:
         success, world_uid = micropsi.new_world("World of Pain", "World", "Pytest User")
+
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_world(world_uid)
     return world_uid
 
+
 @pytest.fixture(scope="session")
 def test_nodenet():
     global nn_uid
-    nodenets = micropsi.get_available_nodenets("Pytest User")
-    if nodenets:
-        nn_uid = nodenets.keys()[0]
+    nodenets = micropsi.get_available_nodenets("Pytest User") or {}
+    for uid, nn in nodenets.items():
+        if(nn.name == 'Testnet'):
+            nn_uid = nodenets.keys()[0]
     else:
         success, nn_uid = micropsi.new_nodenet("Testnet", "Default", owner="Pytest User", world_uid=world_uid)
+
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_nodenet(nn_uid)
     return nn_uid
+
+
+@pytest.fixture(scope="function")
+def fixed_nodenet(test_world):
+    from micropsi_core.tests.nodenet_data import fixed_nodenet_data
+    success, uid = micropsi.new_nodenet("Fixednet", "Default", owner="Pytest User", world_uid=test_world)
+    micropsi.get_nodenet(uid)
+    micropsi.merge_nodenet(uid, fixed_nodenet_data)
+    return uid
 
 #test_nodenet(micropsi())

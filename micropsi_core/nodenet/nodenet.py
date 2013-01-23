@@ -449,6 +449,25 @@ class Nodenet(object):
             self.privileged_active_nodes = self.propagate_link_activation(self.privileged_active_nodes,
                 limit_gatetypes=["cat"])
 
+    def step_nodespace(self, nodespace):
+        """ perform a simulation step limited to the given nodespace"""
+        active_nodes = self.get_active_nodes(nodespace)
+        for key in active_nodes:
+            del self.active_nodes[key]
+        self.calculate_node_functions(active_nodes)
+        self.active_nodes = self.active_nodes.update(active_nodes)
+
+    def get_active_nodes(self, nodespace=None):
+        """ returns a list of active nodes, ordered by activation.
+        If you give a nodespace, the list will be filtered to return only active nodes from the
+        given nodespace
+        """
+        if nodespace is not None:
+            nodes = self.active_nodes.values()
+        else:
+            nodes = [node for node in self.active_nodes.values() if node.parent_nodespace == nodespace]
+        return sorted(nodes, key=lambda n: n.activation, reverse=True)
+
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ propagate activation from gates to slots via their links. returns the nodes that received activation.
             Arguments:

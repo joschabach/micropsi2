@@ -39,7 +39,6 @@ runner = {
     'world': {'timestep': 5000, 'runner': None}
 }
 
-      
 
 def nodenetrunner():
     """Looping thread to simulate node nets continously"""
@@ -52,6 +51,7 @@ def nodenetrunner():
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
         time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
+
 
 def worldrunner():
     """Looping thread to simulate worlds continously"""
@@ -68,6 +68,7 @@ def worldrunner():
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())
+
 
 def _get_world_uid_for_nodenet_uid(nodenet_uid):
     """ Temporary method to get the world uid to a given nodenet uid.
@@ -100,6 +101,7 @@ def get_available_nodenets(owner=None):
     else:
         return nodenet_data
 
+
 def get_nodenet(nodenet_uid):
     """Returns the nodenet with the given uid, and loads into memory if necessary.
     Returns None if nodenet does not exist"""
@@ -110,6 +112,7 @@ def get_nodenet(nodenet_uid):
         else:
             return None
     return nodenets[nodenet_uid]
+
 
 def load_nodenet(nodenet_uid):
     """ Load the nodenet with the given uid into memeory
@@ -141,6 +144,7 @@ def load_nodenet(nodenet_uid):
         return True, nodenet_uid
     return False, "no such nodenet"
 
+
 def unload_nodenet(nodenet_uid):
     """ Unload the nodenet.
         Deletes the instance of this nodenet without deleting it from the storage
@@ -157,26 +161,14 @@ def unload_nodenet(nodenet_uid):
 
 
 def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
-    """ return all nodes and links within the given area of the nodenet
-        for representation in the UI
-        TODO
+    """ returns part of the nodespace for representation in the UI
+    Either you specify an area to be retrieved, or the retrieval is limited to 500 nodes currently
     """
     if x2 < 0 or y2 < 0:
-        data = {}
-        for key in nodenets[nodenet_uid].state:
-            if key in ['uid', 'links', 'nodespaces', 'monitors']:
-                data[key] = nodenets[nodenet_uid].state[key]
-            elif key == "nodes":
-                i = 0
-                data[key] = {}
-                for id in nodenets[nodenet_uid].state[key]:
-                    i += 1
-                    data[key][id] = nodenets[nodenet_uid].state[key][id]
-                    if i > 500:
-                        break
-        return data
+        return nodenets[nodenet_uid].get_nodespace(nodespace, 500)
     else:
         return nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+
 
 def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):
     """Creates a new node net manager and registers it.
@@ -204,7 +196,8 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
             step=0,
             version=1
         )
-    if not uid: uid = tools.generate_uid()
+    if not uid:
+        uid = tools.generate_uid()
     data.update(dict(
         uid=uid,
         name=nodenet_name,
@@ -212,7 +205,7 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
         owner=owner,
         world=world_uid
     ))
-    data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid']+".json")
+    data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     with open(data['filename'], 'w+') as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
@@ -220,21 +213,13 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
     #load_nodenet(data['uid'])
     return True, data['uid']
 
+
 def clear_nodenet(nodenet_uid):
     """Deletes all contents of a nodenet"""
 
     nodenet = get_nodenet(nodenet_uid)
-    nodenet.nodes = {}
-    nodenet.links = {}
-    nodenet.active_nodes = {}
-    nodenet.privileged_active_nodes = {}
-    nodenet.monitors = {}
+    nodenet.clear()
 
-    nodenet.nodes_by_coords = {}
-    nodenet.max_coords = {'x': 0, 'y': 0}
-
-    nodenet.nodespaces = {}
-    Nodespace(nodenet, None, (0,0), "Root", "Root")
 
 def delete_nodenet(nodenet_uid):
     """Unloads the given nodenet from memory and deletes it from the storage.
@@ -245,6 +230,7 @@ def delete_nodenet(nodenet_uid):
     os.remove(nodenet_data[nodenet_uid].filename)
     del nodenet_data[nodenet_uid]
     return True
+
 
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
@@ -265,10 +251,12 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     nodenet_data[nodenet_uid] = Bunch(**nodenet.state)
     return True
 
+
 def start_nodenetrunner(nodenet_uid):
     """Starts a thread that regularly advances the given nodenet by one step."""
     nodenets[nodenet_uid].is_active = True
     return True
+
 
 def set_nodenetrunner_timestep(timestep):
     """Sets the speed of the nodenet simulation in ms.
@@ -280,18 +268,22 @@ def set_nodenetrunner_timestep(timestep):
     runner['nodenet']['timestep'] = timestep
     return True
 
+
 def get_nodenetrunner_timestep():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
     return configs['nodenetrunner_timestep']
+
 
 def get_is_nodenet_running(nodenet_uid):
     """Returns True if a nodenet runner is active for the given nodenet, False otherwise."""
     return nodenets[nodenet_uid].is_active
 
+
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
     nodenets[nodenet_uid].is_active = False
     return True
+
 
 def step_nodenet(nodenet_uid, nodespace=None):
     """Advances the given nodenet by one simulation step.
@@ -303,11 +295,13 @@ def step_nodenet(nodenet_uid, nodespace=None):
     nodenets[nodenet_uid].step()
     return nodenets[nodenet_uid].state['step']
 
+
 def revert_nodenet(nodenet_uid):
     """Returns the nodenet to the last saved state."""
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
+
 
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
@@ -317,12 +311,14 @@ def save_nodenet(nodenet_uid):
     fp.close()
     return True
 
+
 def export_nodenet(nodenet_uid):
     """Exports the nodenet state to the user, so it can be viewed and exchanged.
 
     Returns a string that contains the nodenet state in JSON format.
     """
     return json.dumps(nodenets[nodenet_uid].state, sort_keys=True, indent=4)
+
 
 def import_nodenet(string, owner=None):
     """Imports the nodenet state, instantiates the nodenet.
@@ -345,6 +341,7 @@ def import_nodenet(string, owner=None):
     nodenet_data[nodenet_data['uid']] = parse_definition(nodenet_data, filename)
     return True
 
+
 def merge_nodenet(nodenet_uid, string):
     """Merges the nodenet data with an existing nodenet, instantiates the nodenet.
 
@@ -354,14 +351,12 @@ def merge_nodenet(nodenet_uid, string):
     """
     nodenet = nodenets[nodenet_uid]
     data = json.loads(string)
-    # these values shouldn't be overwritten:
-    for key in ['uid', 'filename', 'world']:
-        data.pop(key, None)
-    nodenet.state.update(data)
+    nodenet.merge_data(data)
     save_nodenet(nodenet_uid)
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
+
 
 def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespace_uid="Root",
                copy_associated_links=True):
@@ -403,6 +398,7 @@ def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
         data.update({'current_step': nodenets[nodenet_uid].current_step})
     return data
 
+
 def get_node(nodenet_uid, node_uid):
     """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
     structured as follows:
@@ -425,6 +421,7 @@ def get_node(nodenet_uid, node_uid):
         }
      """
     return nodenets[nodenet_uid].nodes[node_uid]
+
 
 def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
     """Creates a new node. (Including nodespace, native module.)
@@ -452,6 +449,7 @@ def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, nam
         nodenet.update_node_positions()
     return True, uid
 
+
 def set_node_position(nodenet_uid, node_uid, pos):
     """Positions the specified node at the given coordinates."""
     nodenet = nodenets[nodenet_uid]
@@ -462,6 +460,7 @@ def set_node_position(nodenet_uid, node_uid, pos):
     nodenet.update_node_positions()
     return True
 
+
 def set_node_name(nodenet_uid, node_uid, name):
     """Sets the display name of the node"""
     nodenet = nodenets[nodenet_uid]
@@ -470,6 +469,7 @@ def set_node_name(nodenet_uid, node_uid, name):
     elif node_uid in nodenet.nodespaces:
         nodenet.nodespaces[node_uid].name = name
     return True
+
 
 def set_node_state(nodenet_uid, node_uid, state):
     """ Sets the state of the given node to the given state,
@@ -480,9 +480,11 @@ def set_node_state(nodenet_uid, node_uid, state):
         return True
     return False
 
+
 def set_node_activation(nodenet_uid, node_uid, activation):
     nodenets[nodenet_uid].nodes[node_uid].activation = activation
     return True
+
 
 def delete_node(nodenet_uid, node_uid):
     """Removes the node"""

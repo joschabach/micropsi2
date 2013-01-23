@@ -289,19 +289,35 @@ class Nodenet(object):
         del self.state['nodes'][node_uid]
         self.update_node_positions()
 
-    def get_nodespace_data(self, nodespace_uid):
+    def get_nodespace(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""
-        nodespace = self.nodespaces[nodespace_uid]
         data = {'nodes': {}, 'links': {}, 'nodespaces': {}}
-        linkUids = []
-        for uid in nodespace.netentities.get('nodes', []):
-            data['nodes'][uid] = self.state['nodes'][uid]
-            linkUids.extend(self.nodes[uid].get_associated_link_ids())
-        for uid in self.links:
-            data['links'][uid] = self.state['links'][uid]
-        for uid in nodespace.netentities.get('nodespaces', []):
-            data['nodespaces'][uid] = self.state['nodespaces'][uid]
+        for key in self.state:
+            if key in ['uid', 'links', 'nodespaces', 'monitors']:
+                data[key] = self.state[key]
+            elif key == "nodes":
+                i = 0
+                data[key] = {}
+                for id in self.state[key]:
+                    i += 1
+                    data[key][id] = self.state[key][id]
+                    if max_nodes and i > max_nodes:
+                        break
         return data
+
+    def clear(self):
+        self.nodes = {}
+        self.links = {}
+        self.active_nodes = {}
+        self.privileged_active_nodes = {}
+        self.monitors = {}
+
+        self.nodes_by_coords = {}
+        self.max_coords = {'x': 0, 'y': 0}
+
+        self.nodespaces = {}
+        Nodespace(self, None, (0, 0), "Root", "Root")
+
 
     # add functions for exporting and importing node nets
     def export_data(self):
@@ -314,7 +330,10 @@ class Nodenet(object):
 
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-        pass
+        # these values shouldn't be overwritten:
+        for key in ['uid', 'filename', 'world']:
+            nodenet_data.pop(key, None)
+        self.state.update(nodenet_data)
 
     def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.

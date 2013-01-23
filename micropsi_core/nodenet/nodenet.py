@@ -104,7 +104,7 @@ class Nodenet(object):
         uid = uid or micropsi_core.tools.generate_uid()
 
         self.state = {
-            "version": NODENET_VERSION, # used to check compatibility of the node net data
+            "version": NODENET_VERSION,  # used to check compatibility of the node net data
             "uid": uid,
             "nodes": {},
             "links": {},

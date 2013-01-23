@@ -196,7 +196,7 @@ function setCurrentNodenet(uid, nodespace){
                             available_gatetypes = nodetypes[key].gatetypes;
                         }
                     }
-                    get_available_worldadapters(data.world_id);
+                    get_available_worldadapters(data.world);
                     setNodespaceData(data);
                 });
             } else {

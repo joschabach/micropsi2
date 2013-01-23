@@ -145,6 +145,12 @@ def load_nodenet(nodenet_uid):
     return False, "no such nodenet"
 
 
+def get_nodenet_data(nodenet_uid, **coordinates):
+    data = get_nodenet(nodenet_uid).state
+    data.update(get_nodenet_area(nodenet_uid, **coordinates))
+    return data
+
+
 def unload_nodenet(nodenet_uid):
     """ Unload the nodenet.
         Deletes the instance of this nodenet without deleting it from the storage

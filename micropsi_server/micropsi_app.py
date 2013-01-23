@@ -640,7 +640,7 @@ def load_nodenet(nodenet_uid, **coordinates):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return dict(Error=uid)
-    return runtime.get_nodenet_area(nodenet_uid, **coordinates)
+    return runtime.get_nodenet_data(nodenet_uid, **coordinates)
 
 
 @rpc("generate_uid")

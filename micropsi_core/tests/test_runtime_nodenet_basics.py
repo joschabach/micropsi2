@@ -33,6 +33,29 @@ def test_new_nodenet(test_nodenet, resourcepath):
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
 
+
+def test_activators_inhibit_nodenet_propagation(fixed_nodenet):
+    micropsi.set_node_activation(fixed_nodenet, 'A1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'B1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTA', 0)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTB', 0.5)
+    micropsi.step_nodenet(fixed_nodenet)
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    assert nodenet.nodes['A2'].activation == 0
+    assert nodenet.nodes['B2'].activation > 0
+
+
+def test_activators_inhibit_nodespace_propagation(fixed_nodenet):
+    micropsi.set_node_activation(fixed_nodenet, 'A1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'B1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTA', 0)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTB', 0.5)
+    micropsi.step_nodenet(fixed_nodenet, nodespace='Root')
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    assert nodenet.nodes['A2'].activation == 0
+    assert nodenet.nodes['B2'].activation > 0
+
+
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):
     assert 0

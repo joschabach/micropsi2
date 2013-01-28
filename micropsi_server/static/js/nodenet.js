@@ -2235,7 +2235,7 @@ function handleEditNode(event){
     event.preventDefault();
     form = $(event.target);
     var nodeUid = $('#node_uid_input').val();
-    $(".modal").modal("hide");
+    if($(".modal")) $(".modal").modal("hide");
     var parameters = {};
     var fields = form.serializeArray();
     var name = null;

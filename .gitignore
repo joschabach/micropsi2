@@ -13,3 +13,5 @@
 /buildout.cfg
 /var
 /.idea
+/.coverage
+data_converters/experimental/

@@ -27,6 +27,8 @@ History
 1.3 - Unreleased
 ================
 
+ * make activators work, prepare stencil-retrieval via activation spreading
+
 
 1.2 - 2013-01-17
 ================

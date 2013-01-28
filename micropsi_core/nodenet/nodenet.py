@@ -982,8 +982,9 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         gate_factor = 1
 
         # check if the current node space has an activator that would prevent the activity of this gate
-        if self.type in self.node.nodenet.nodespaces[self.node.parent_nodespace].activators:
-            gate_factor = self.node.parent_nodespace.activators[self.type]
+        nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]
+        if self.type in nodespace.activators:
+            gate_factor = nodespace.activators[self.type]
             if gate_factor == 0.0:
                 self.activation = 0
                 return  # if the gate is closed, we don't need to execute the gate function
@@ -1076,7 +1077,7 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "parameters": ["type"],
         "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
-        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.parameters[type]] = node.slots["gen"].activation"""
+        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation"""
     }
 }
 

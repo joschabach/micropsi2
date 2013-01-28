@@ -454,11 +454,18 @@ class Nodenet(object):
 
     def step_nodespace(self, nodespace):
         """ perform a simulation step limited to the given nodespace"""
-        active_nodes = self.get_active_nodes(nodespace)
-        for key in active_nodes:
-            del self.active_nodes[key]
+        activators = dict((uid, self.nodes[uid]) for uid in self.nodespaces[nodespace].netentities['nodes'] if self.nodes[uid].type == "Activator")
+        active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
+        for uid, node in active_nodes.items():
+            del self.active_nodes[node.uid]
+        self.calculate_node_functions(activators)
         self.calculate_node_functions(active_nodes)
-        self.active_nodes = self.active_nodes.update(active_nodes)
+        self.active_nodes.update(self.propagate_link_activation(active_nodes))
+        self.state["step"] += 1
+        for uid in self.monitors:
+            self.monitors[uid].step(self.state["step"])
+        for uid, node in activators.items():
+            node.activation = self.nodespaces[nodespace].activators[node.parameters['type']]
 
     def get_active_nodes(self, nodespace=None):
         """ returns a list of active nodes, ordered by activation.

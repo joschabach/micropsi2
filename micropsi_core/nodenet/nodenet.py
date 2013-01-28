@@ -130,10 +130,10 @@ class Nodenet(object):
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
 
-        self.load()
-
         self.active_nodes = {}
         self.privileged_active_nodes = {}
+
+        self.load()
 
     def load(self, string=None):
         """Load the node net from a file"""
@@ -799,6 +799,10 @@ class Node(NetEntity):
     @activation.setter
     def activation(self, activation):
         self.data['activation'] = activation
+        if activation == 0 and self.uid in self.nodenet.active_nodes:
+            del self.nodenet.active_nodes[self.uid]
+        elif activation != 0:
+            self.nodenet.active_nodes[self.uid] = self
 
     @property
     def type(self):

@@ -487,6 +487,10 @@ class Nodenet(object):
                 for uid, link in gate.outgoing.items():
                     link.target_slot.activation += gate.activation * link.weight
                     new_active_nodes[link.target_node.uid] = link.target_node
+        for uid, node in new_active_nodes.items():
+            # hack. needed, since node.data['activation'] was not altered.
+            # Goes away when we switch to numpy and explicit delivery of these values.
+            node.data['activation'] = node.activation
         return new_active_nodes
 
     def calculate_node_functions(self, nodes):

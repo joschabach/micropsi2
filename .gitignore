@@ -15,3 +15,5 @@
 /.idea
 /.coverage
 data_converters/experimental/
+/.installed.cfg
+*.pyc

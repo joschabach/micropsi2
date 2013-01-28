@@ -11,12 +11,13 @@ from micropsi_core import runtime as micropsi
 __author__ = 'joscha'
 __date__ = '29.10.12'
 
+
 def test_new_nodenet(test_nodenet, resourcepath):
     success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", "Default", owner="tester")
     assert success
     assert nodenet_uid != test_nodenet
     assert micropsi.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"
-    n_path = os.path.join(resourcepath, runtime.NODENET_DIRECTORY, nodenet_uid+".json")
+    n_path = os.path.join(resourcepath, runtime.NODENET_DIRECTORY, nodenet_uid + ".json")
     assert os.path.exists(n_path)
 
     # get_available_nodenets
@@ -31,6 +32,29 @@ def test_new_nodenet(test_nodenet, resourcepath):
     micropsi.delete_nodenet(nodenet_uid)
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
+
+
+def test_activators_inhibit_nodenet_propagation(fixed_nodenet):
+    micropsi.set_node_activation(fixed_nodenet, 'A1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'B1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTA', 0)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTB', 0.5)
+    micropsi.step_nodenet(fixed_nodenet)
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    assert nodenet.nodes['A2'].activation == 0
+    assert nodenet.nodes['B2'].activation > 0
+
+
+def test_activators_inhibit_nodespace_propagation(fixed_nodenet):
+    micropsi.set_node_activation(fixed_nodenet, 'A1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'B1', 0.5)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTA', 0)
+    micropsi.set_node_activation(fixed_nodenet, 'ACTB', 0.5)
+    micropsi.step_nodenet(fixed_nodenet, nodespace='Root')
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    assert nodenet.nodes['A2'].activation == 0
+    assert nodenet.nodes['B2'].activation > 0
+
 
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):

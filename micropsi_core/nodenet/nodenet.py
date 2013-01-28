@@ -318,7 +318,6 @@ class Nodenet(object):
         self.nodespaces = {}
         Nodespace(self, None, (0, 0), "Root", "Root")
 
-
     # add functions for exporting and importing node nets
     def export_data(self):
         """serializes and returns the nodenet state for export to a end user"""
@@ -469,7 +468,8 @@ class Nodenet(object):
         return sorted(nodes, key=lambda n: n.activation, reverse=True)
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
-        """ propagate activation from gates to slots via their links. returns the nodes that received activation.
+        """ the linkfunction
+            propagate activation from gates to slots via their links. returns the nodes that received activation.
             Arguments:
                 nodes: the dict of nodes to consider
                 limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating
@@ -600,7 +600,8 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
         self.netentities = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet.nodespaces[uid] = self
-        if not gatefunctions: gatefunctions = dict()
+        if not gatefunctions:
+            gatefunctions = dict()
         self.gatefunctions = gatefunctions
         for nodetype in gatefunctions:
             for gatetype in gatefunctions[nodetype]:
@@ -843,7 +844,8 @@ class Node(NetEntity):
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, **_):
-        if not gate_parameters: gate_parameters = {}
+        if not gate_parameters:
+            gate_parameters = {}
 
         if uid in nodenet.nodes:
             raise KeyError, "Node already exists"
@@ -874,8 +876,10 @@ class Node(NetEntity):
         for gate in self.gates:
             if self.gates[gate].parameters:
                 gate_parameters[gate] = self.gates[gate].parameters
-        if len(gate_parameters): return gate_parameters
-        else: return None
+        if len(gate_parameters):
+            return gate_parameters
+        else:
+            return None
 
     def node_function(self):
         """Called whenever the node is activated or active.

@@ -105,7 +105,7 @@ fixed_nodenet_data = """{
             "type": "Concept",
             "uid": "B1"
         },
-        "ACT1": {
+        "ACTA": {
             "activation": 0,
             "index": 6,
             "name": "",
@@ -118,7 +118,7 @@ fixed_nodenet_data = """{
                 103
             ],
             "type": "Activator",
-            "uid": "ACT1"
+            "uid": "ACTA"
         },
         "B2": {
             "activation": 0,
@@ -133,7 +133,7 @@ fixed_nodenet_data = """{
             "type": "Concept",
             "uid": "B2"
         },
-        "ACT2": {
+        "ACTB": {
             "activation": 0,
             "index": 7,
             "name": "",
@@ -146,7 +146,7 @@ fixed_nodenet_data = """{
                 336
             ],
             "type": "Activator",
-            "uid": "ACT2"
+            "uid": "ACTB"
         }
     },
     "nodetypes": {

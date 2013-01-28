@@ -1,54 +1,55 @@
 
 fixed_nodenet_data = """{
+    "uid": "fixed_test_nodenet",
     "links": {
-        "7bf9769f-141e-4186-9a42-e62b40f91e2b": {
+        "B1B2": {
             "certainty": 1,
             "source_gate_name": "sub",
-            "source_node": "7d101cf3-05a5-4d5d-976d-918690a09f83",
-            "source_node_uid": "7d101cf3-05a5-4d5d-976d-918690a09f83",
-            "target_node": "b807a7d8-2814-4809-bcee-6f8e1d33490c",
-            "target_node_uid": "b807a7d8-2814-4809-bcee-6f8e1d33490c",
+            "source_node": "B1",
+            "source_node_uid": "B1",
+            "target_node": "B2",
+            "target_node_uid": "B2",
             "target_slot_name": "gen",
-            "uid": "7bf9769f-141e-4186-9a42-e62b40f91e2b",
+            "uid": "B1B2",
             "weight": 1
         },
-        "ada8ae37-4bad-412b-afd2-77e6f2dfe0f7": {
+        "A1A2": {
             "certainty": 1,
             "source_gate_name": "por",
-            "source_node": "21faed9c-f3b1-48e9-950f-bb219e655376",
-            "source_node_uid": "21faed9c-f3b1-48e9-950f-bb219e655376",
-            "target_node": "6380cb9c-beb2-494c-b649-2a514d70f858",
-            "target_node_uid": "6380cb9c-beb2-494c-b649-2a514d70f858",
+            "source_node": "A1",
+            "source_node_uid": "A1",
+            "target_node": "A2",
+            "target_node_uid": "A2",
             "target_slot_name": "gen",
-            "uid": "ada8ae37-4bad-412b-afd2-77e6f2dfe0f7",
+            "uid": "A1A2",
             "weight": 1
         },
-        "f136049a-63f6-4fe1-be92-21527565e649": {
+        "SB1": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node": "359095b7-7fe7-47fb-9fa6-136871edfe07",
-            "source_node_uid": "359095b7-7fe7-47fb-9fa6-136871edfe07",
-            "target_node": "7d101cf3-05a5-4d5d-976d-918690a09f83",
-            "target_node_uid": "7d101cf3-05a5-4d5d-976d-918690a09f83",
+            "source_node": "S",
+            "source_node_uid": "S",
+            "target_node": "B1",
+            "target_node_uid": "B1",
             "target_slot_name": "gen",
-            "uid": "f136049a-63f6-4fe1-be92-21527565e649",
+            "uid": "SB1",
             "weight": 1
         },
-        "f3d12f50-3a70-4066-84e6-0262ad335277": {
+        "SA1": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node": "359095b7-7fe7-47fb-9fa6-136871edfe07",
-            "source_node_uid": "359095b7-7fe7-47fb-9fa6-136871edfe07",
-            "target_node": "21faed9c-f3b1-48e9-950f-bb219e655376",
-            "target_node_uid": "21faed9c-f3b1-48e9-950f-bb219e655376",
+            "source_node": "S",
+            "source_node_uid": "S",
+            "target_node": "A1",
+            "target_node_uid": "A1",
             "target_slot_name": "gen",
-            "uid": "f3d12f50-3a70-4066-84e6-0262ad335277",
+            "uid": "SA1",
             "weight": 1
         }
     },
     "name": "fixed",
     "nodes": {
-        "21faed9c-f3b1-48e9-950f-bb219e655376": {
+        "A1": {
             "activation": 0,
             "index": 2,
             "name": "",
@@ -59,9 +60,9 @@ fixed_nodenet_data = """{
                 115
             ],
             "type": "Concept",
-            "uid": "21faed9c-f3b1-48e9-950f-bb219e655376"
+            "uid": "A1"
         },
-        "359095b7-7fe7-47fb-9fa6-136871edfe07": {
+        "S": {
             "activation": 0,
             "index": 1,
             "name": "",
@@ -74,9 +75,9 @@ fixed_nodenet_data = """{
                 138
             ],
             "type": "Sensor",
-            "uid": "359095b7-7fe7-47fb-9fa6-136871edfe07"
+            "uid": "S"
         },
-        "6380cb9c-beb2-494c-b649-2a514d70f858": {
+        "A2": {
             "activation": 0,
             "index": 4,
             "name": "testnode",
@@ -89,9 +90,9 @@ fixed_nodenet_data = """{
                 118
             ],
             "type": "test_type",
-            "uid": "6380cb9c-beb2-494c-b649-2a514d70f858"
+            "uid": "A2"
         },
-        "7d101cf3-05a5-4d5d-976d-918690a09f83": {
+        "B1": {
             "activation": 0,
             "index": 3,
             "name": "",
@@ -102,9 +103,9 @@ fixed_nodenet_data = """{
                 296
             ],
             "type": "Concept",
-            "uid": "7d101cf3-05a5-4d5d-976d-918690a09f83"
+            "uid": "B1"
         },
-        "88994f98-1e6e-488f-851c-896e779f4570": {
+        "ACT1": {
             "activation": 0,
             "index": 6,
             "name": "",
@@ -117,9 +118,9 @@ fixed_nodenet_data = """{
                 103
             ],
             "type": "Activator",
-            "uid": "88994f98-1e6e-488f-851c-896e779f4570"
+            "uid": "ACT1"
         },
-        "b807a7d8-2814-4809-bcee-6f8e1d33490c": {
+        "B2": {
             "activation": 0,
             "index": 5,
             "name": "",
@@ -130,9 +131,9 @@ fixed_nodenet_data = """{
                 298
             ],
             "type": "Concept",
-            "uid": "b807a7d8-2814-4809-bcee-6f8e1d33490c"
+            "uid": "B2"
         },
-        "d4e7ef80-12e5-4807-9b70-43191195934e": {
+        "ACT2": {
             "activation": 0,
             "index": 7,
             "name": "",
@@ -145,7 +146,7 @@ fixed_nodenet_data = """{
                 336
             ],
             "type": "Activator",
-            "uid": "d4e7ef80-12e5-4807-9b70-43191195934e"
+            "uid": "ACT2"
         }
     },
     "nodetypes": {

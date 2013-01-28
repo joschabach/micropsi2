@@ -435,11 +435,15 @@ class Nodenet(object):
         if self.state['step'] == 0 and not self.active_nodes:
             self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
         if self.active_nodes:
+            activators = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Activator")
+            self.calculate_node_functions(activators)
             self.calculate_node_functions(self.active_nodes)
             self.active_nodes = self.propagate_link_activation(self.active_nodes)
             self.state["step"] += 1
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
+        for uid, node in activators.items():
+            node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
 
     def step_privileged(self):
         """ performs a simulation step within the privileged nodes"""

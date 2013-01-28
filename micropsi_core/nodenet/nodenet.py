@@ -794,15 +794,26 @@ class Node(NetEntity):
 
     @property
     def activation(self):
-        return self.data.get("activation", 0)
+        try:
+            act = sum([self.slots[slot].activation for slot in self.slots])
+        except TypeError:
+            # syntax error or some other error message written as activation:
+            return self.slots['gen'].activation
+        if self.parameters.get('datasource') and self.nodenet.world:
+            act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
+        return act
 
     @activation.setter
     def activation(self, activation):
-        self.data['activation'] = activation
+        activation = float(activation)
+        if self.slots == {}:
+            self.slots = {'gen': Slot('gen', self)}
+        self.slots['gen'].activation = activation
         if activation == 0 and self.uid in self.nodenet.active_nodes:
             del self.nodenet.active_nodes[self.uid]
         elif activation != 0:
             self.nodenet.active_nodes[self.uid] = self
+        self.data['activation'] = self.activation
 
     @property
     def type(self):
@@ -826,7 +837,7 @@ class Node(NetEntity):
     def state(self, state):
         self.data['state'] = state
 
-    def __init__(self, nodenet, parent_nodespace, position, state=None,
+    def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, **_):
         if not gate_parameters: gate_parameters = {}
 
@@ -851,7 +862,7 @@ class Node(NetEntity):
             self.state = state
             # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
         nodenet.nodes[self.uid] = self
-        nodenet.nodes[self.uid].activation = 0  # TODO: should this be persisted?
+        self.activation = activation
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
@@ -874,15 +885,8 @@ class Node(NetEntity):
         which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
         # process the slots
-        if self.type == 'Sensor':
-            if self.parameters['datasource'] and self.nodenet.world:
-                self.activation = self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource'])
-            else:
-                self.activation = 0
-        elif self.type == "Actor" and not self.nodenet.world:
+        if self.type == "Actor" and not self.nodenet.world:
             return
-        else:
-            self.activation = sum([self.slots[slot].activation for slot in self.slots])
 
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:

@@ -27,7 +27,7 @@ History
 1.3 - Unreleased
 ================
 
- * make activators work, prepare stencil-retrieval via activation spreading
+ * retrieve stencils via spreading activation rather than only link-weight comparison
 
 
 1.2 - 2013-01-17

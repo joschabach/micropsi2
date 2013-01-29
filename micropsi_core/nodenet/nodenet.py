@@ -496,8 +496,10 @@ class Nodenet(object):
                 gates = node.gates.items()
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    link.target_slot.activation += gate.activation * link.weight
+                    link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
                     new_active_nodes[link.target_node.uid] = link.target_node
+        for uid, node in nodes.items():
+            node.activation = 0
         for uid, node in new_active_nodes.items():
             # hack. needed, since node.data['activation'] was not altered.
             # Goes away when we switch to numpy and explicit delivery of these values.

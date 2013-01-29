@@ -13,7 +13,7 @@ nn_uid = None
 
 @pytest.fixture(scope="session")
 def resourcepath():
-    return os.path.join(os.path.dirname(__file__), "..", "..", "resources")
+    return os.path.join(os.path.dirname(__file__), "..", "..", micropsi.DATA_PATH)
 
 
 @pytest.fixture(scope="session")

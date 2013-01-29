@@ -514,6 +514,16 @@ class Nodenet(object):
         for uid, node in nodes.items():
             node.node_function()
 
+    def get_activators(self, nodespace=None, type=None):
+        """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""
+        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        activators = {}
+        for uid in nodes:
+            if self.nodes[uid].type == 'Activator':
+                if type is None or type == self.nodes[uid].parameters['type']:
+                    activators.update(self.nodes[uid])
+        return activators
+
 
 class NetEntity(object):
     """The basic building blocks of node nets.

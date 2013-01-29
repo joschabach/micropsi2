@@ -472,7 +472,7 @@ class Nodenet(object):
         If you give a nodespace, the list will be filtered to return only active nodes from the
         given nodespace
         """
-        if nodespace is not None:
+        if nodespace is None:
             nodes = self.active_nodes.values()
         else:
             nodes = [node for node in self.active_nodes.values() if node.parent_nodespace == nodespace]

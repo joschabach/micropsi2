@@ -172,6 +172,8 @@ function setCurrentNodenet(uid, nodespace){
             y2: loaded_coordinates.y[1]},
         function(data){
 
+            var nodenetChanged = (uid != currentNodenet);
+
             nodenet_data = data;
 
             showDefaultForm();
@@ -187,7 +189,7 @@ function setCurrentNodenet(uid, nodespace){
             linkLayer.removeChildren();
 
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
-            if(uid != currentNodenet || jQuery.isEmptyObject(nodetypes)){
+            if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 api.call('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
                     nodetypes = nodetypedata;
                     available_gatetypes = [];

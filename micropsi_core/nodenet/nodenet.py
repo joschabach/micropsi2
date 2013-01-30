@@ -454,6 +454,8 @@ class Nodenet(object):
 
     def step_nodespace(self, nodespace):
         """ perform a simulation step limited to the given nodespace"""
+        if self.state['step'] == 0 and not self.active_nodes:
+            self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
         activators = dict((uid, self.nodes[uid]) for uid in self.nodespaces[nodespace].netentities['nodes'] if self.nodes[uid].type == "Activator")
         active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
         for uid, node in active_nodes.items():

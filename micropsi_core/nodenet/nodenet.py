@@ -442,10 +442,10 @@ class Nodenet(object):
             self.state["step"] += 1
             for uid, node in activators.items():
                 node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+            self.active_nodes.update(new_active_nodes)
             for uid, node in self.active_nodes.items():
                 if node.activation == 0:
                     del self.active_nodes[uid]
-            self.active_nodes.update(new_active_nodes)
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
 
@@ -466,6 +466,7 @@ class Nodenet(object):
         self.calculate_node_functions(active_nodes)
         new_active_nodes = self.propagate_link_activation(active_nodes)
         self.state["step"] += 1
+        self.active_nodes.update(new_active_nodes)
         for uid, node in self.active_nodes.items():
             if node.activation == 0:
                 del self.active_nodes[uid]

@@ -438,10 +438,14 @@ class Nodenet(object):
             activators = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Activator")
             self.calculate_node_functions(activators)
             self.calculate_node_functions(self.active_nodes)
-            self.active_nodes = self.propagate_link_activation(self.active_nodes)
+            new_active_nodes = self.propagate_link_activation(self.active_nodes.copy())
             self.state["step"] += 1
             for uid, node in activators.items():
                 node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+            self.active_nodes.update(new_active_nodes)
+            for uid, node in self.active_nodes.items():
+                if node.activation == 0:
+                    del self.active_nodes[uid]
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
 
@@ -454,14 +458,18 @@ class Nodenet(object):
 
     def step_nodespace(self, nodespace):
         """ perform a simulation step limited to the given nodespace"""
+        if self.state['step'] == 0 and not self.active_nodes:
+            self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
         activators = dict((uid, self.nodes[uid]) for uid in self.nodespaces[nodespace].netentities['nodes'] if self.nodes[uid].type == "Activator")
         active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
-        for uid, node in active_nodes.items():
-            del self.active_nodes[node.uid]
         self.calculate_node_functions(activators)
         self.calculate_node_functions(active_nodes)
-        self.active_nodes.update(self.propagate_link_activation(active_nodes))
+        new_active_nodes = self.propagate_link_activation(active_nodes)
         self.state["step"] += 1
+        self.active_nodes.update(new_active_nodes)
+        for uid, node in self.active_nodes.items():
+            if node.activation == 0:
+                del self.active_nodes[uid]
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
         for uid, node in activators.items():
@@ -490,13 +498,17 @@ class Nodenet(object):
         """
         new_active_nodes = {}
         for uid, node in nodes.items():
+            if node.type != 'Activator':
+                node.activation = 0
+
+        for uid, node in nodes.items():
             if limit_gatetypes is not None:
                 gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
             else:
                 gates = node.gates.items()
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    link.target_slot.activation += gate.activation * link.weight
+                    link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
                     new_active_nodes[link.target_node.uid] = link.target_node
         for uid, node in new_active_nodes.items():
             # hack. needed, since node.data['activation'] was not altered.
@@ -511,6 +523,16 @@ class Nodenet(object):
         """
         for uid, node in nodes.items():
             node.node_function()
+
+    def get_activators(self, nodespace=None, type=None):
+        """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""
+        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        activators = {}
+        for uid in nodes:
+            if self.nodes[uid].type == 'Activator':
+                if type is None or type == self.nodes[uid].parameters['type']:
+                    activators.update({uid: self.nodes[uid]})
+        return activators
 
 
 class NetEntity(object):
@@ -1004,9 +1026,11 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]
         if self.type in nodespace.activators:
             gate_factor = nodespace.activators[self.type]
-            if gate_factor == 0.0:
-                self.activation = 0
-                return  # if the gate is closed, we don't need to execute the gate function
+        else:
+            gate_factor = 0.0
+        if gate_factor == 0.0:
+            self.activation = 0
+            return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
             self.type)

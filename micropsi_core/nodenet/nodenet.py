@@ -498,6 +498,10 @@ class Nodenet(object):
         """
         new_active_nodes = {}
         for uid, node in nodes.items():
+            if node.type != 'Activator':
+                node.activation = 0
+
+        for uid, node in nodes.items():
             if limit_gatetypes is not None:
                 gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
             else:
@@ -506,8 +510,6 @@ class Nodenet(object):
                 for uid, link in gate.outgoing.items():
                     link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
                     new_active_nodes[link.target_node.uid] = link.target_node
-        for uid, node in nodes.items():
-            node.activation = 0
         for uid, node in new_active_nodes.items():
             # hack. needed, since node.data['activation'] was not altered.
             # Goes away when we switch to numpy and explicit delivery of these values.

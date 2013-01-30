@@ -435,7 +435,7 @@ class Nodenet(object):
         if self.state['step'] == 0 and not self.active_nodes:
             self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
         if self.active_nodes:
-            activators = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Activator")
+            activators = self.get_activators()
             self.calculate_node_functions(activators)
             self.calculate_node_functions(self.active_nodes)
             new_active_nodes = self.propagate_link_activation(self.active_nodes.copy())
@@ -460,7 +460,7 @@ class Nodenet(object):
         """ perform a simulation step limited to the given nodespace"""
         if self.state['step'] == 0 and not self.active_nodes:
             self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
-        activators = dict((uid, self.nodes[uid]) for uid in self.nodespaces[nodespace].netentities['nodes'] if self.nodes[uid].type == "Activator")
+        activators = self.get_activators(nodespace=nodespace)
         active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
         self.calculate_node_functions(activators)
         self.calculate_node_functions(active_nodes)

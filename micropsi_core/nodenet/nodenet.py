@@ -438,7 +438,7 @@ class Nodenet(object):
             activators = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Activator")
             self.calculate_node_functions(activators)
             self.calculate_node_functions(self.active_nodes)
-            new_active_nodes = self.propagate_link_activation(self.active_nodes)
+            new_active_nodes = self.propagate_link_activation(self.active_nodes.copy())
             self.state["step"] += 1
             for uid, node in activators.items():
                 node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]

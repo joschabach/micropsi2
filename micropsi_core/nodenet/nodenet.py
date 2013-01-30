@@ -521,7 +521,7 @@ class Nodenet(object):
         for uid in nodes:
             if self.nodes[uid].type == 'Activator':
                 if type is None or type == self.nodes[uid].parameters['type']:
-                    activators.update(self.nodes[uid])
+                    activators.update({uid: self.nodes[uid]})
         return activators
 
 

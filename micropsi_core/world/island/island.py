@@ -66,7 +66,7 @@ class Island(World):
         """ overwrite world.step """
         for agent in self.agents:
             agent.update()
-        self.current_step +=1
+        self.current_step += 1
 
     def add_object(self, type, position, orientation=0.0, name="", parameters=None, uid=None):
         """
@@ -105,7 +105,7 @@ class Island(World):
                 brightness += world_object.get_intensity(_2d_distance_squared(world_object.position, position))
         return brightness
 
-    def get_movement_result(self, start_position, effort_vector, diameter = 0):
+    def get_movement_result(self, start_position, effort_vector, diameter=0):
         """determine how much an agent moves in the direction of the effort vector, starting in the start position.
         Note that agents may be hindered by impassable terrain and other objects"""
 
@@ -116,12 +116,12 @@ class Island(World):
 
         # make sure we don't bump into stuff
         target_position = None
-        while target_position is None and _2d_distance_squared((0,0), movement_vector) > 0.01:
+        while target_position is None and _2d_distance_squared((0, 0), movement_vector) > 0.01:
             target_position = _2d_translate(start_position, movement_vector)
 
             for i in self.objects:
-                if _2d_distance_squared(target_position, i.position) < (diameter + i.diameter)/2:
-                    movement_vector = (movement_vector[0] * 0.5, movement_vector[1] * 0.5) # should be collision point
+                if _2d_distance_squared(target_position, i.position) < (diameter + i.diameter) / 2:
+                    movement_vector = (movement_vector[0] * 0.5, movement_vector[1] * 0.5)  # should be collision point
                     target_position = None
                     break
 
@@ -143,29 +143,37 @@ class Island(World):
         Returns True if object exists, otherwise False"""
 
         if uid in self.objects:
-            if type: self.objects[uid].type = type
-            if position: self.objects[uid].position = position
-            if orientation: self.objects[uid].orientation = orientation
-            if name: self.objects[uid].name = name
-            if parameters: self.objects[uid].parameters = parameters
+            if type:
+                self.objects[uid].type = type
+            if position:
+                self.objects[uid].position = position
+            if orientation:
+                self.objects[uid].orientation = orientation
+            if name:
+                self.objects[uid].name = name
+            if parameters:
+                self.objects[uid].parameters = parameters
             return True
         return False
-
-
-
 
     def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         """set attributes of the agent 'uid'; only supplied attributes will be changed.
         Returns True if agent exists, otherwise False"""
 
         if uid in self.agents:
-            if type: self.agents[uid].type = type
-            if position: self.agents[uid].position = position
-            if orientation: self.agents[uid].orientation = orientation
-            if name: self.agents[uid].name = name
-            if parameters: self.agents[uid].parameters = parameters
+            if type:
+                self.agents[uid].type = type
+            if position:
+                self.agents[uid].position = position
+            if orientation:
+                self.agents[uid].orientation = orientation
+            if name:
+                self.agents[uid].name = name
+            if parameters:
+                self.agents[uid].parameters = parameters
             return True
         return False
+
 
 class Lightsource(WorldObject):
     """A pretty inert and boring light source, with a square falloff"""
@@ -196,7 +204,7 @@ class Lightsource(WorldObject):
     def __init__(self, world, uid=None, **data):
         WorldObject.__init__(self, world, "Lightsource", uid=uid, **data)
         self.intensity = data.get('intensity', 1.0)
-        self.diameter = data.get('diameter' ,0.1)
+        self.diameter = data.get('diameter', 0.1)
         self.data['orientation'] = 0
         self.data['type'] = "Lightsource"
 
@@ -206,7 +214,8 @@ class Lightsource(WorldObject):
     def get_intensity(self, distance_squared):
         """returns the strength of the light, depending on the square of the distance
         (we are using the square to avoid a math.sqr elsewhere)"""
-        return self.intensity*self.diameter*self.diameter/distance_squared
+        return self.intensity * self.diameter * self.diameter / distance_squared
+
 
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
@@ -253,19 +262,18 @@ class Braitenberg(WorldAdapter):
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
-
         # drive engines
         l_wheel_speed = self.get_datasource("engine_l")
         r_wheel_speed = self.get_datasource("engine_r")
 
         # constrain speed
-        if l_wheel_speed + r_wheel_speed > 2 * self.speed_limit: # too fast
+        if l_wheel_speed + r_wheel_speed > 2 * self.speed_limit:  # too fast
             f = 2 * self.speed_limit / (l_wheel_speed + r_wheel_speed)
             r_wheel_speed *= f
             l_wheel_speed *= f
 
         rotation = math.degrees((l_wheel_speed - r_wheel_speed) / (self.diameter))
-        translation = _2d_rotate((0, (r_wheel_speed + l_wheel_speed)/2), rotation)
+        translation = _2d_rotate((0, (r_wheel_speed + l_wheel_speed) / 2), rotation)
         self.orientation += rotation
         # you may decide how far you want to go, but it is up the world to decide how far you make it
         self.position = self.world.get_movement_result(self.position, translation)
@@ -290,13 +298,16 @@ def _2d_rotate(position, angle_degrees):
     x, y = position
     return x * cos - y * sin, x * sin + y * cos
 
+
 def _2d_distance_squared(position1, position2):
     """calculate the square of the distance bwtween two 2D coordinate tuples"""
     return (position1[0] - position2[0]) ** 2 + (position1[0] - position2[1]) ** 2
 
+
 def _2d_translate(position1, position2):
     """add two 2d vectors"""
-    return (position1[0]+position2[0], position1[1]+position2[1])
+    return (position1[0] + position2[0], position1[1] + position2[1])
+
 
 # the indices of ground types correspond to the color numbers in the groundmap png
 ground_types = (

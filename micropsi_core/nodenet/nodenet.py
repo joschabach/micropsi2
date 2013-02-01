@@ -235,7 +235,9 @@ class Nodenet(object):
             'is_active': self.is_active,
             'step': self.current_step,
             'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
-                           if self.state['nodespaces'][i]["parent_nodespace"] == nodespace}
+                           if self.state['nodespaces'][i]["parent_nodespace"] == nodespace},
+            'world': self.state["world"],
+            'worldadapter': self.worldadapter
         }
         links = []
         followupnodes = []

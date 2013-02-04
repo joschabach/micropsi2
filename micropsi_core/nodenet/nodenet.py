@@ -120,7 +120,8 @@ class Nodenet(object):
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
-        self.worldadapter = worldadapter
+        if world and worldadapter:
+            self.worldadapter = worldadapter
 
         self.nodes = {}
         self.links = {}

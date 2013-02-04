@@ -260,6 +260,8 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     nodenet = nodenets[nodenet_uid]
     if world_uid is None:
         world_uid = nodenet.world
+    elif nodenet.world:
+        nodenet.world.unregister_nodenet(nodenet_uid)
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:

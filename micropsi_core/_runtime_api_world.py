@@ -156,7 +156,7 @@ def revert_world(world_uid):
 
 def save_world(world_uid):
     """Stores the world state on the server."""
-    with open(os.path.join(runtime.DATA_PATH, runtime.WORLD_DIRECTORY, world_uid), 'w+') as fp:
+    with open(os.path.join(runtime.DATA_PATH, runtime.WORLD_DIRECTORY, world_uid + '.json'), 'w+') as fp:
         fp.write(json.dumps(runtime.worlds[world_uid].data, sort_keys=True, indent=4))
     fp.close()
     return True

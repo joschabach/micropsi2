@@ -165,9 +165,33 @@ class World(object):
             'current_step': self.current_step,
         }
 
-    def get_world_objects(self):
+    def add_object(self, type, position, uid=None, orientation=0.0, name="", parameters=None, **data):
+        """
+        Add a new object to the current world.
+
+        Arguments:
+            type: the type of the object (currently, only "light_source" is supported
+            position: a (x, y) tuple with the coordinates
+            orientation (optional): an angle, usually between 0 and 2*pi
+            name (optional): a readable name for that object
+            uid (optional): if omitted, a uid will be generated
+
+        Returns:
+            True, uid if successful
+            False, errormessage if not
+        """
+        if not uid:
+            uid = tools.generate_uid()
+        if type in self.supported_worldobjects:
+            self.objects[uid] = self.supported_worldobjects[type](self, type, uid=uid, position=position, orientation=orientation, name=name, parameters=parameters, **data)
+            return True, uid
+        return False, "type not supported"
+
+    def get_world_objects(self, type=None):
         """ returns a dictionary of world objects. """
         objects = {}
+        if type:
+            return self.data.get(type, {})
         for key in self.supported_worldobjects:
             objects.update(self.data.get(key, {}))
         return objects

@@ -11,13 +11,14 @@ from micropsi_core import runtime as micropsi
 __author__ = 'joscha'
 __date__ = '29.10.12'
 
+
 def test_new_world(resourcepath, test_world):
-    success, world_uid = micropsi.new_world("Waterworld", "World", owner = "tester")
+    success, world_uid = micropsi.new_world("Waterworld", "World", owner="tester")
     assert success
     assert world_uid != test_world
     world_properties = micropsi.get_world_properties(world_uid)
     assert world_properties["name"] == "Waterworld"
-    w_path = os.path.join(resourcepath, runtime.WORLD_DIRECTORY, world_uid+".json")
+    w_path = os.path.join(resourcepath, runtime.WORLD_DIRECTORY, world_uid + ".json")
     assert os.path.exists(w_path)
 
     # get_available_worlds
@@ -33,10 +34,12 @@ def test_new_world(resourcepath, test_world):
     assert world_uid not in micropsi.get_available_worlds()
     assert not os.path.exists(w_path)
 
+
 def test_get_world_properties(test_world):
     wp = micropsi.get_world_properties(test_world)
     assert "World" == wp["world_type"]
     assert test_world == wp["uid"]
+
 
 def test_get_worldadapters(test_world):
     wa = micropsi.get_worldadapters(test_world)
@@ -44,10 +47,28 @@ def test_get_worldadapters(test_world):
     assert "datasources" in wa["Default"]
     assert "datatargets" in wa["Default"]
 
-"""
-def test_get_world_objects(micropsi, test_world):
-    assert 0
 
+def test_add_worldobject(test_world):
+    world = runtime.get_available_worlds()[test_world]
+    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
+    assert "foobar" in world.data["Default"]
+    assert "foobar" in world.objects
+
+
+def test_add_worldobject_without_id(test_world):
+    world = runtime.get_available_worlds()[test_world]
+    count = len(world.objects.keys())
+    runtime.add_worldobject(test_world, "Default", (10, 10), name='bazbaz', parameters={})
+    assert count + 1 == len(world.objects.keys())
+    assert count + 1 == len(world.data["Default"].keys())
+
+
+def test_get_worldobjects(test_world):
+    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
+    objects = runtime.get_world_objects(test_world)
+    assert 'foobar' in objects
+
+"""
 def test_get_world_view(micropsi, test_world):
     assert 0
 

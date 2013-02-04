@@ -68,37 +68,6 @@ class Island(World):
             agent.update()
         self.current_step += 1
 
-    def add_object(self, type, position, orientation=0.0, name="", parameters=None, uid=None):
-        """
-        Add a new object to the current world.
-
-        Arguments:
-            type: the type of the object (currently, only "light_source" is supported
-            position: a (x, y) tuple with the coordinates
-            orientation (optional): an angle, usually between 0 and 2*pi
-            name (optional): a readable name for that object
-            uid (optional): if omitted, a uid will be generated
-
-        Returns:
-            True, uid if successful
-            False, errormessage if not
-        """
-        if not uid:
-            uid = micropsi_core.tools.generate_uid()
-        if type in self.supported_worldobjects:
-            objects = self.objects
-            objects.update({uid: self.supported_worldobjects[type](self, uid, position=position, orientation=orientation, name=name, parameters=parameters)})
-            self.objects = objects
-            # self.objects[uid] = {
-            #     "uid": uid,
-            #     "type": type,
-            #     "position": position,
-            #     "orientation": orientation,
-            #     "parameters": parameters
-            # }
-            return True, uid
-        return False, "type not supported"
-
     def get_brightness_at(self, position):
         """calculate the brightness of the world at the given position; used by sensors of agents"""
         brightness = 0

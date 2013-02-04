@@ -144,10 +144,12 @@ class World(object):
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, world_object in self.data.get('objects', {}).items():
-            self.objects[uid] = getattr(worldobject, world_object.type)(self, 'objects', uid=uid, **self.data.objects[uid])
+        for name in self.supported_worldobjects:
+            if name in self.data:
+                for uid, world_object in self.data.get(name, {}).items():
+                    self.objects[uid] = self.supported_worldobjects[world_object['type']](self, **world_object)
         for uid, agent in self.data.get('agents', {}).items():
-            self.agents[uid] = getattr(agent, agent.type)(self, 'agents', uid=uid, **self.data.agents[uid])
+            self.agents[uid] = self.supported_worldadapters[agent.type](self, 'agents', **self.data.agents[uid])
 
     def step(self):
         """ advance the simluation """

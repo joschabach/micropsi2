@@ -203,7 +203,7 @@ class Lightsource(WorldObject):
     def intensity(self, intensity):
         self.data['intensity'] = intensity
 
-    def __init__(self, world, uid=None, **data):
+    def __init__(self, world, uid=None, type='Lightsource', **data):
         WorldObject.__init__(self, world, "Lightsource", uid=uid, **data)
         self.intensity = data.get('intensity', 1.0)
         self.diameter = data.get('diameter', 0.1)

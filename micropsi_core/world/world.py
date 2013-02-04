@@ -72,14 +72,6 @@ class World(object):
     def agents(self, agents):
         self.data['agents'] = agents
 
-    @property
-    def objects(self):
-        return self.data.get('objects', {})
-
-    @objects.setter
-    def objects(self, objects):
-        self.data['objects'] = objects
-
     def __init__(self, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 

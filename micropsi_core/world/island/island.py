@@ -86,7 +86,9 @@ class Island(World):
         if not uid:
             uid = micropsi_core.tools.generate_uid()
         if type in self.supported_worldobjects:
-            self.objects[uid] = self.supported_worldobjects[type](self, uid, position=position, orientation=orientation, name=name, parameters=parameters)
+            objects = self.objects
+            objects.update({uid: self.supported_worldobjects[type](self, uid, position=position, orientation=orientation, name=name, parameters=parameters)})
+            self.objects = objects
             # self.objects[uid] = {
             #     "uid": uid,
             #     "type": type,

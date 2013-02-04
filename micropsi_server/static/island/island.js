@@ -50,6 +50,8 @@ $('#world_objects_list').html(
     '<div><a href="#" id="add_object_link" class="add_link">add Object</a></div>' +
     '<div id="island_objects"><strong>Objects</strong><table class="table-striped table-condensed"></table></div>');
 
+var objectList = $('#island_objects table');
+
 initializeControls();
 
 wasRunning = false;
@@ -133,8 +135,8 @@ function loadWorldInfo(){
         currentWorldSimulationStep = data.step;
         if('assets' in data){
             var iconhtml = '';
-            for(key in data.assets.icons){
-                iconhtml += '<img src="/static/'+data.assets.icons[key]+'" id="icon_' + key + '" /> '
+            for(var key in data.assets.icons){
+                iconhtml += '<img src="/static/'+data.assets.icons[key]+'" id="icon_' + key + '" /> ';
             }
             $('#world_objects_icons').html(iconhtml);
             if(data.assets.x && data.assets.y){
@@ -168,8 +170,9 @@ function addObject(worldobject){
         renderObject(worldobject);
         objects[worldobject.uid] = worldobject;
     } else {
-        redrawObject(objects[worldobject.uid])
+        redrawObject(objects[worldobject.uid]);
     }
+    objectList.html(objectList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="worldobject_edit">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
     return worldobject;
 }
 
@@ -199,7 +202,7 @@ function createObjectShape(worldobject, bounds){
             var raster = new Raster('icon_Lightsource');
             raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
             raster.rotate(worldobject.orientation);
-        return raster
+        return raster;
 
         default:
             var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
@@ -391,6 +394,7 @@ function initializeControls(){
 
     $('#add_object_link').on('click', function(event){
         event.preventDefault();
+        $('#wo_uid_input').attr('disabled', 'disabled');
         showObjectForm();
     });
 
@@ -403,6 +407,12 @@ function initializeControls(){
     });
     $('#wo_type_input').html('<option>' + available_object_types.join('</option><option>')+'</option>');
     $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
+    objectList.on('click', function(event){
+        var target = $(event.target);
+        if(target.attr('class') == 'worldobject_edit' && target.attr('data')){
+            showObjectForm(objects[target.attr('data')]);
+        }
+    });
 }
 
 function resetWorld(event){

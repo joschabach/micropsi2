@@ -33,6 +33,9 @@ class WorldAdapter(WorldObject):
     datasources = {}
     datatargets = {}
 
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category='agents', uid=uid, **data)
+
     def initialize_worldobject(self, data):
         for key in self.datasources:
             if key in data.get('datasources', {}):
@@ -70,4 +73,3 @@ class WorldAdapter(WorldObject):
 class Default(WorldAdapter):
     datasources = {'default': 1}
     datatargets = {'default': 0}
-

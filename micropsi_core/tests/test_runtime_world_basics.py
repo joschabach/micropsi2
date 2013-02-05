@@ -51,7 +51,11 @@ def test_get_worldadapters(test_world):
 def test_add_worldobject(test_world):
     world = runtime.get_available_worlds()[test_world]
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
-    assert "foobar" in world.data["Default"]
+    assert "foobar" in world.data['objects']
+    assert "foobar" in world.objects
+    runtime.save_world(test_world)
+    runtime.revert_world(test_world)
+    assert "foobar" in world.data['objects']
     assert "foobar" in world.objects
 
 
@@ -60,13 +64,31 @@ def test_add_worldobject_without_id(test_world):
     count = len(world.objects.keys())
     runtime.add_worldobject(test_world, "Default", (10, 10), name='bazbaz', parameters={})
     assert count + 1 == len(world.objects.keys())
-    assert count + 1 == len(world.data["Default"].keys())
+    assert count + 1 == len(world.data['objects'].keys())
 
 
 def test_get_worldobjects(test_world):
     runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
     objects = runtime.get_world_objects(test_world)
     assert 'foobar' in objects
+    runtime.save_world(test_world)
+    runtime.revert_world(test_world)
+    objects = runtime.get_world_objects(test_world)
+    assert 'foobar' in objects
+
+
+def test_register_agent(test_world, test_nodenet):
+    world = runtime.worlds[test_world]
+    nodenet = runtime.get_nodenet(test_nodenet)
+    assert nodenet.uid not in world.data['agents']
+    nodenet.world = world
+    runtime.load_nodenet(test_nodenet)
+    assert nodenet.uid in world.data['agents']
+    assert nodenet.uid in world.agents
+    runtime.save_world(test_world)
+    runtime.revert_world(test_world)
+    assert nodenet.uid in world.data['agents']
+    assert nodenet.uid in world.agents
 
 """
 def test_get_world_view(micropsi, test_world):

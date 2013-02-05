@@ -172,12 +172,11 @@ class Lightsource(WorldObject):
     def intensity(self, intensity):
         self.data['intensity'] = intensity
 
-    def __init__(self, world, type='Lightsource', uid=None, **data):
-        WorldObject.__init__(self, world, "Lightsource", uid=uid, **data)
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
         self.intensity = data.get('intensity', 1.0)
         self.diameter = data.get('diameter', 0.1)
         self.data['orientation'] = 0
-        self.data['type'] = "Lightsource"
 
     def initialize_worldobject(self, data):
         self.data = data
@@ -222,7 +221,6 @@ class Braitenberg(WorldAdapter):
 
     @orientation.setter
     def orientation(self, orientation):
-
         self.data['orientation'] = orientation % 360
 
     def initialize_worldobject(self, data):

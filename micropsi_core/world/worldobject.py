@@ -13,16 +13,17 @@ class WorldObject(object):
     def uid(self):
         return self.data['uid']
 
-    def __init__(self, world, type, uid=None, **data):
+    def __init__(self, world, category='objects', uid=None, **data):
         self.world = world
         self.data = {}
         if uid is None:
             uid = generate_uid()
-        if type not in self.world.data:
-            self.world.data[type] = {}
-        if uid not in self.world.data[type]:
-            self.world.data[type][uid] = data
-        self.data = self.world.data[type][uid]
+        if category not in self.world.data:
+            self.world.data[category] = {}
+        if uid not in self.world.data[category]:
+            self.world.data[category][uid] = data
+        self.data = self.world.data[category][uid]
+        self.data["type"] = data.get('type', self.__class__.__name__)
         self.data["uid"] = uid
         self.initialize_worldobject(data)
 

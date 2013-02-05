@@ -291,9 +291,7 @@ function onMouseMove(event) {
                     if(clickHighlight){
                         removeClickHighlight();
                     }
-                    //objects[uid].representation.scale(viewProperties.hoverScale);
-                    label = getLegend(objects[hoverUid]);
-                    objectLayer.addChild(label);
+                    highlightObject(hoverUid);
                 }
                 path = objectLayer.children[uid];
                 movePath = true;
@@ -337,19 +335,9 @@ function onMouseUp(event) {
     }
 }
 
-function highlightWorldobject(event){
-    event.preventDefault();
-    var link = $(event.target);
-    var uid = link.attr('data');
-    removeClickHighlight();
-    var obj = objects[uid];
-    obj.representation.scale(viewProperties.hoverScale);
-    clickHighlight = uid;
-    label = getLegend(obj);
+function highlightObject(uid){
+    label = getLegend(objects[uid]);
     objectLayer.addChild(label);
-    if(!objectInViewport(obj)){
-        scrollToObject(obj);
-    }
     view.draw(true);
 }
 
@@ -408,9 +396,11 @@ function initializeControls(){
     $('#wo_type_input').html('<option>' + available_object_types.join('</option><option>')+'</option>');
     $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
     objectList.on('click', function(event){
+        event.preventDefault();
         var target = $(event.target);
         if(target.attr('class') == 'worldobject_edit' && target.attr('data')){
             showObjectForm(objects[target.attr('data')]);
+            highlightObject(target.attr('data'));
         }
     });
 }

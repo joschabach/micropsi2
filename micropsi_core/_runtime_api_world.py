@@ -70,7 +70,7 @@ def add_worldobject(world_uid, type, position, orientation=0.0, name="", paramet
         parameters=parameters, uid=uid)
 
 
-def set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters):
+def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
     return runtime.worlds[world_uid].set_object_properties(uid, type, position, orientation, name, parameters)
 
 

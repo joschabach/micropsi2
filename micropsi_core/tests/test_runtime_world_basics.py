@@ -90,6 +90,26 @@ def test_register_agent(test_world, test_nodenet):
     assert nodenet.uid in world.data['agents']
     assert nodenet.uid in world.agents
 
+
+def test_set_object_properties(test_world):
+    world = runtime.get_available_worlds()[test_world]
+    runtime.add_worldobject(test_world, "Default", (10, 10), uid='foobar', name='foobar', parameters={})
+    runtime.set_worldobject_properties(test_world, "foobar", position=(5, 5))
+    assert world.objects["foobar"].position == (5, 5)
+    assert world.data['objects']['foobar']['position'] == (5, 5)
+    assert runtime.get_world_view(test_world, -1)['objects']['foobar']['position'] == (5, 5)
+
+
+def test_set_agent_properties(test_world, test_nodenet):
+    world = runtime.worlds[test_world]
+    nodenet = runtime.get_nodenet(test_nodenet)
+    nodenet.world = world
+    runtime.load_nodenet(test_nodenet)
+    runtime.set_worldagent_properties(test_world, test_nodenet, position=(5, 5))
+    assert world.agents[test_nodenet].position == (5, 5)
+    assert world.data['agents'][test_nodenet]['position'] == (5, 5)
+
+
 """
 def test_get_world_view(micropsi, test_world):
     assert 0

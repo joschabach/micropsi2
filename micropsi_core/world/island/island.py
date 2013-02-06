@@ -22,7 +22,10 @@ class Island(World):
         'js': "island/island.js",
         'x': 2048,
         'y': 2048,
-        'icons': {'Lightsource': 'island/lamp.png'}
+        'icons': {
+            'Lightsource': 'island/lamp.png',
+            'Braitenberg': 'island/braitenberg.png'
+        }
     }
 
     def __init__(self, filename, world_type="Island", name="", owner="", uid=None, version=1):

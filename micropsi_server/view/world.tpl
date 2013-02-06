@@ -52,10 +52,16 @@
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
             <form class="form-horizontal" id="world_objects">
+                <h4>Agents</h4>
+                <div id="world_agents_list">
+                    <table class="table-striped table-condensed"></table>
+                </div>
                 <h4>World Objects</h4>
                 <div id="world_objects_list">
+                    <a href="#" id="add_object_link" class="add_link">+ add Object</a>
+                    <table class="table-striped table-condensed"></table>
                 </div>
-                <div id="world_objects_icons"></div>
+                <div id="world_objects_icons" style="visibility:hidden;"></div>
             </form>
 
             <form class="form-horizontal hide" id="edit_worldobject">

@@ -30,6 +30,7 @@ var available_object_types = ['Lightsource'];
 
 objects = {};
 symbols = {};
+agents = {};
 
 currentWorld = $.cookie('selected_world') || null;
 
@@ -46,11 +47,8 @@ if (currentWorld){
 
 worldRunning = false;
 
-$('#world_objects_list').html(
-    '<div><a href="#" id="add_object_link" class="add_link">add Object</a></div>' +
-    '<div id="island_objects"><strong>Objects</strong><table class="table-striped table-condensed"></table></div>');
-
-var objectList = $('#island_objects table');
+var objectList = $('#world_objects_list table');
+var agentsList = $('#world_agents_list table');
 
 initializeControls();
 
@@ -79,6 +77,8 @@ function refreshWorldView(){
             currentWorldSimulationStep = data.current_step;
             $('#world_step').val(currentWorldSimulationStep);
             $('#world_status').val(data.status_message);
+            // treat agents and objects the same
+            data.objects = jQuery.extend(data.objects, data.agents);
             for(var key in objects){
                 if(!(key in data.objects)){
                     if(objects[key].representation){
@@ -100,8 +100,11 @@ function refreshWorldView(){
             }
             for(key in data.objects){
                 if(data.objects[key].position && data.objects[key].position.length == 2){
-                    console.log(data.objects[key].position);
-                    addObject(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                    if(key in data.agents){
+                        addAgent(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                    } else {
+                        addObject(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                    }
                 } else {
                     console.log('obj has no pos ' + key);
                 }
@@ -176,6 +179,18 @@ function addObject(worldobject){
     return worldobject;
 }
 
+function addAgent(worldobject){
+    if(! (worldobject.uid in objects)) {
+        renderObject(worldobject);
+        objects[worldobject.uid] = worldobject;
+    } else {
+        redrawObject(objects[worldobject.uid]);
+    }
+    agents[worldobject.uid] = worldobject;
+    agentsList.html(agentsList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="worldobject_edit">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
+    return worldobject;
+}
+
 function redrawObject(obj){
     if(objects[obj.uid].representation){
         objects[obj.uid].representation.remove();
@@ -197,9 +212,16 @@ function renderObject(worldobject){
 }
 
 function createObjectShape(worldobject, bounds){
+    var raster;
     switch(worldobject.type){
         case "Lightsource":
-            var raster = new Raster('icon_Lightsource');
+            raster = new Raster('icon_Lightsource');
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Braitenberg":
+            raster = new Raster('icon_Braitenberg');
             raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
             raster.rotate(worldobject.orientation);
         return raster;
@@ -495,6 +517,9 @@ function handleSubmitWorldobject(event){
 }
 
 function setObjectProperties(worldobject, x, y, name, orientation, parameters){
+    if(worldobject.uid in agents){
+        return setAgentProperties(worldobject, x, y, name, orientation, parameters);
+    }
     if(x) worldobject.x = x;
     if(y) worldobject.y = y;
     if(name) worldobject.name = name;
@@ -513,6 +538,25 @@ function setObjectProperties(worldobject, x, y, name, orientation, parameters){
             redrawObject(worldobject);
         }
     }, api.defaultErrorCallback);
-
 }
 
+function setAgentProperties(worldobject, x, y, name, orientation, parameters){
+    if(x) worldobject.x = x;
+    if(y) worldobject.y = y;
+    if(name) worldobject.name = name;
+    if(orientation) worldobject.orientation = orientation;
+    if(parameters) worldobject.parameters = parameters;
+    data = {
+        world_uid: currentWorld,
+        uid: worldobject.uid,
+        position: [worldobject.x, worldobject.y],
+        name: worldobject.name,
+        orientation: worldobject.orientation,
+        parameters: worldobject.parameters || {}
+    };
+    api.call('set_worldagent_properties', data, function(result){
+        if(result.status =='success'){
+            redrawObject(worldobject);
+        }
+    }, api.defaultErrorCallback);
+}

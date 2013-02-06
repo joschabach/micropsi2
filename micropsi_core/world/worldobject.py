@@ -10,19 +10,43 @@ from micropsi_core.tools import generate_uid
 class WorldObject(object):
 
     @property
+    def position(self):
+        return self.data.get('position', 0)
+
+    @position.setter
+    def position(self, position):
+        self.data['position'] = position
+
+    @property
+    def orientation(self):
+        return self.data.get('orientation', 0)
+
+    @orientation.setter
+    def orientation(self, orientation):
+        self.data['orientation'] = orientation % 360
+
+    @property
+    def name(self):
+        return self.data.get('name', self.uid)
+
+    @name.setter
+    def name(self, name):
+        self.data['name'] = name
+
+    @property
     def uid(self):
         return self.data['uid']
 
-    def __init__(self, world, type, uid=None, **data):
+    def __init__(self, world, category='objects', uid=None, **data):
         self.world = world
-        self.data = {}
         if uid is None:
             uid = generate_uid()
-        if 'type' not in self.world.data:
-            self.world.data[type] = {}
-        if uid not in self.world.data[type]:
-            self.world.data[type][uid] = data
-        self.data = self.world.data[type][uid]
+        if category not in self.world.data:
+            self.world.data[category] = {}
+        if uid not in self.world.data[category]:
+            self.world.data[category][uid] = data
+        self.data = self.world.data[category][uid]
+        self.data["type"] = data.get('type', self.__class__.__name__)
         self.data["uid"] = uid
         self.initialize_worldobject(data)
 

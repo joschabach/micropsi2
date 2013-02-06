@@ -120,7 +120,8 @@ class Nodenet(object):
         self.owner = owner
         self.name = name or os.path.basename(filename)
         self.filename = filename
-        self.worldadapter = worldadapter
+        if world and worldadapter:
+            self.worldadapter = worldadapter
 
         self.nodes = {}
         self.links = {}
@@ -231,11 +232,14 @@ class Nodenet(object):
         data = {
             'links': {},
             'nodes': {},
+            'name': self.name,
             'max_coords': self.max_coords,
             'is_active': self.is_active,
             'step': self.current_step,
             'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
-                           if self.state['nodespaces'][i]["parent_nodespace"] == nodespace}
+                           if self.state['nodespaces'][i]["parent_nodespace"] == nodespace},
+            'world': self.state["world"],
+            'worldadapter': self.worldadapter
         }
         links = []
         followupnodes = []

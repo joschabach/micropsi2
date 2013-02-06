@@ -71,6 +71,10 @@
                         <td><input type="text" name="nodenet_name" id="nodenet_name"></td>
                     </tr>
                     <tr>
+                        <td><label for="nodenet_world">World</label></td>
+                        <td><select name="nodenet_world" id="nodenet_world"></select></td>
+                    </tr>
+                    <tr>
                         <td><label for="nodenet_worldadapter">Worldadapter</label></td>
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>

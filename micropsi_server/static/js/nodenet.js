@@ -111,7 +111,9 @@ worldadapters = {};
 currentSimulationStep = 0;
 nodenetRunning = false;
 
+get_available_worlds();
 refreshNodenetList();
+
 function refreshNodenetList(){
     $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
         $('#nodenet_list .nodenet_select').on('click', function(event){
@@ -123,7 +125,17 @@ function refreshNodenetList(){
     });
 }
 
-function get_available_worldadapters(world_uid){
+function get_available_worlds(){
+    api.call('get_available_worlds', {}, success=function(data){
+        var html = '<option value="">None</option>';
+        for(var uid in data){
+            html += '<option value="'+uid+'">'+data[uid].name+'</option>';
+        }
+        $('#nodenet_world').html(html);
+    });
+}
+
+function get_available_worldadapters(world_uid, callback){
     worldadapters = {};
     if(world_uid){
         api.call("get_worldadapters", {world_uid: world_uid},
@@ -135,17 +147,20 @@ function get_available_worldadapters(world_uid){
                     str += '<option>'+name+'</option>';
                 }
                 $('#nodenet_worldadapter').html(str);
-                setNodenetValues(nodenet_data);
-                showDefaultForm();
+                if(callback){
+                    callback();
+                }
         });
     } else {
         $('#nodenet_worldadapter').html('<option>&lt;No world selected&gt;</option>');
-        setNodenetValues(nodenet_data);
-        showDefaultForm();
+        if(callback){
+            callback();
+        }
     }
 }
 
 function setNodenetValues(data){
+    $('#nodenet_world').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     setNodeTypes();
@@ -198,7 +213,10 @@ function setCurrentNodenet(uid, nodespace){
                             available_gatetypes = nodetypes[key].gatetypes;
                         }
                     }
-                    get_available_worldadapters(data.world);
+                    get_available_worldadapters(data.world, function(){
+                        setNodenetValues(nodenet_data);
+                        showDefaultForm();
+                    });
                     setNodespaceData(data);
                 });
             } else {
@@ -2410,6 +2428,7 @@ function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
     var params = {
+        nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val()
     };
     if(nodenet_data.world){
@@ -2525,7 +2544,14 @@ function initializeSidebarForms(){
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
+    var world_selector = $("#nodenet_world");
     var worldadapter_selector = $('#nodenet_worldadapter');
+    world_selector.on('change', function(){
+        get_available_worldadapters(world_selector.val(), function(){
+            $('#nodenet_worldadapter').val(nodenet_data.worldadapter);
+            showDataSourcesTargetsForWorldadapter(worldadapter_selector.val());
+        });
+    });
     worldadapter_selector.on('change', function(){
         showDataSourcesTargetsForWorldadapter(worldadapter_selector.val());
     });
@@ -2534,7 +2560,7 @@ function initializeSidebarForms(){
 function showDataSourcesTargetsForWorldadapter(worldadapter){
     var i;
     var datatargets, datasources = '';
-    if(worldadapter){
+    if(worldadapter && $('#nodenet_world').val()){
         if (worldadapters[worldadapter].datatargets) {
             for (i in worldadapters[worldadapter].datatargets){
                 datatargets += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';

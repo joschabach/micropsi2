@@ -20,7 +20,6 @@ from micropsi_core.tools import generate_uid
 WORLD_VERSION = 1.0
 
 
-
 class World(object):
     """The environment of MicroPsi agents. The world connects to their nodenets via world adapters."""
 
@@ -64,22 +63,6 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
-    @property
-    def agents(self):
-        return self.data.get('agents', {})
-
-    @agents.setter
-    def agents(self, agents):
-        self.data['agents'] = agents
-
-    @property
-    def objects(self):
-        return self.data.get('objects', {})
-
-    @objects.setter
-    def objects(self, objects):
-        self.data['objects'] = objects
-
     def __init__(self, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
@@ -101,7 +84,10 @@ class World(object):
         self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
 
         self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject)
-                                        if cls not in self.supported_worldadapters}
+                                        if cls not in self.supported_worldadapters.values()}
+        # freaky hack.
+        self.supported_worldobjects.pop('WorldAdapter')
+        self.supported_worldobjects['Default'] = worldobject.WorldObject
 
         self.uid = uid or generate_uid()
         self.owner = owner
@@ -121,14 +107,14 @@ class World(object):
         # try to access file
         if string:
             try:
-                self.data = json.loads(string)
+                self.data.update(json.loads(string))
             except ValueError:
                 warnings.warn("Could not read world data from string")
                 return False
         else:
             try:
                 with open(self.filename) as file:
-                    self.data = json.load(file)
+                    self.data.update(json.load(file))
             except ValueError:
                 warnings.warn("Could not read world data")
                 return False
@@ -152,10 +138,10 @@ class World(object):
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, world_object in self.data.get('objects', {}).items():
-            self.objects[uid] = getattr(worldobject, world_object.type)(self, 'objects', uid=uid, **self.data.objects[uid])
+        for uid, worldobject in self.data['objects'].items():
+            self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
         for uid, agent in self.data.get('agents', {}).items():
-            self.agents[uid] = getattr(agent, agent.type)(self, 'agents', uid=uid, **self.data.agents[uid])
+            self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
 
     def step(self):
         """ advance the simluation """
@@ -171,14 +157,40 @@ class World(object):
             'current_step': self.current_step,
         }
 
-    def get_world_objects(self):
+    def add_object(self, type, position, uid=None, orientation=0.0, name="", parameters=None, **data):
+        """
+        Add a new object to the current world.
+
+        Arguments:
+            type: the type of the object (currently, only "light_source" is supported
+            position: a (x, y) tuple with the coordinates
+            orientation (optional): an angle, usually between 0 and 2*pi
+            name (optional): a readable name for that object
+            uid (optional): if omitted, a uid will be generated
+
+        Returns:
+            True, uid if successful
+            False, errormessage if not
+        """
+        if not uid:
+            uid = tools.generate_uid()
+        if type in self.supported_worldobjects:
+            self.objects[uid] = self.supported_worldobjects[type](self, type=type, uid=uid, position=position, orientation=orientation, name=name, parameters=parameters, **data)
+            return True, uid
+        return False, "type not supported"
+
+    def get_world_objects(self, type=None):
         """ returns a dictionary of world objects. """
         objects = {}
-        for key in self.supported_worldobjects:
-            objects.update(self.data.get(key, {}))
+        if type is None:
+            return self.data['objects']
+        else:
+            for uid, obj in self.data['objects'].items():
+                if obj['type'] == type:
+                    objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet_uid):
+    def register_nodenet(self, worldadapter, nodenet):
         """Attempts to register a nodenet at this world.
 
         Returns True, nodenet_uid if successful,
@@ -191,13 +203,12 @@ class World(object):
         We don't do it the other way around, because the soulless agent body may have been loaded as part of the
         world definition itself.
         """
-        if nodenet_uid in self.agents:
-            if self.agents[nodenet_uid].__class__.__name__ == worldadapter:
-                return True, nodenet_uid
+        if nodenet.uid in self.agents:
+            if self.agents[nodenet.uid].__class__.__name__ == worldadapter:
+                return True, nodenet.uid
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-
-        return self.spawn_agent(worldadapter, nodenet_uid)
+        return self.spawn_agent(worldadapter, nodenet.uid, name=nodenet.name)
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
@@ -206,19 +217,61 @@ class World(object):
         if nodenet_uid in self.agents:
             del self.agents[nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, options={}):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
         """Creates an agent object,
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
         try:
-            self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, 'agents', uid=nodenet_uid, **options)
+            self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet_uid, **options)
             return True, nodenet_uid
         except AttributeError:
             if worldadapter_name in self.supported_worldadapters:
                 return False, "Worldadapter \"%s\" not found" % worldadapter_name
             return False, "Incompatible Worldadapter for this World."
+
+    def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
+        """set attributes of the world object 'uid'; only supplied attributes will be changed.
+
+       Arguments:
+           uid: the uid of the worldobject. Mandatory.
+           type: a new type for the object. Optional
+           position: a new position for the object. Optional
+           orientation: a new orientation for the object. Optional
+           name: a new name for the object. Optional
+           parameters: a new dict of parameters for the object. optional.
+
+        Returns True if object exists, otherwise False"""
+        if uid in self.objects:
+            if type:
+                self.objects[uid].type = type
+            if position:
+                self.objects[uid].position = position
+            if orientation:
+                self.objects[uid].orientation = orientation
+            if name:
+                self.objects[uid].name = name
+            if parameters:
+                self.objects[uid].parameters = parameters
+            return True
+        return False
+
+    def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
+        """set attributes of the agent 'uid'; only supplied attributes will be changed.
+        Returns True if agent exists, otherwise False"""
+
+        if uid in self.agents:
+            if position:
+                self.agents[uid].position = position
+            if orientation:
+                self.agents[uid].orientation = orientation
+            if name:
+                self.agents[uid].name = name
+            if parameters:
+                self.agents[uid].parameters = parameters
+            return True
+        return False
 
     def get_available_datasources(self, nodenet_uid):
         """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""

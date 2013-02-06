@@ -140,7 +140,7 @@ def load_nodenet(nodenet_uid):
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
         if world:
-            world.register_nodenet(worldadapter, nodenet_uid)
+            world.register_nodenet(worldadapter, nodenets[nodenet_uid])
         return True, nodenet_uid
     return False, "no such nodenet"
 
@@ -243,13 +243,15 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     nodenet = nodenets[nodenet_uid]
     if world_uid is None:
         world_uid = nodenet.world
+    elif nodenet.world:
+        nodenet.world.unregister_nodenet(nodenet_uid)
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = worlds[world_uid]
         nodenet.worldadapter = worldadapter
-        worlds[world_uid].register_nodenet(nodenet_uid, worldadapter)
+        worlds[world_uid].register_nodenet(worldadapter, nodenet)
     if nodenet_name:
         nodenet.name = nodenet_name
     if owner:
@@ -511,6 +513,7 @@ def delete_node(nodenet_uid, node_uid):
         nodenet.delete_node(node_uid)
     return True
 
+
 def get_available_node_types(nodenet_uid=None):
     """Returns a list of available node types. (Including native modules.)"""
     data = STANDARD_NODETYPES.copy()
@@ -518,14 +521,17 @@ def get_available_node_types(nodenet_uid=None):
         data.update(nodenets[nodenet_uid].state.get('nodetypes', {}))
     return data
 
+
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
     return nodenets[nodenet_uid].state['nodetypes']
 
+
 def get_nodefunction(nodenet_uid, node_type):
     """Returns the current node function for this node type"""
     return nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition
+
 
 def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
     """Sets a new node function for this node type. This amounts to a program that is executed every time the
@@ -537,10 +543,12 @@ def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
     nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition = nodefunction
     return True
 
+
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
     nodenets[nodenet_uid].nodes[node_uid].parameters = parameters
     return True
+
 
 def add_node_type(nodenet_uid, node_type, slots=None, gates=None, node_function=None, parameters=None):
     """Adds or modifies a native module.
@@ -562,6 +570,7 @@ def add_node_type(nodenet_uid, node_type, slots=None, gates=None, node_function=
         nodefunction_definition=node_function)
     return True
 
+
 def delete_node_type(nodenet_uid, node_type):
     """Remove the node type from the current nodenet definition, if it is part of it."""
     try:
@@ -570,13 +579,16 @@ def delete_node_type(nodenet_uid, node_type):
     except KeyError:
         return False
 
+
 def get_slot_types(nodenet_uid, node_type):
     """Returns the list of slot types for the given node type."""
     return nodenets[nodenet_uid].nodetypes[node_type].slottypes
 
+
 def get_gate_types(nodenet_uid, node_type):
     """Returns the list of gate types for the given node type."""
     return nodenets[nodenet_uid].nodetypes[node_type].gatetypes
+
 
 def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     """Returns a string with the gate function of the given node and gate within the current nodespace.
@@ -584,6 +596,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     """
     return nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(
         gate_type)
+
 
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
     """Sets the gate function of the given node and gate within the current nodespace.
@@ -596,18 +609,22 @@ def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_functio
         parameters)
     return True
 
+
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters=None):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
     nodenets[nodenet_uid].nodes[node_uid].set_gate_parameters(gate_type, parameters)
     return True
 
+
 def get_available_datasources(nodenet_uid):
     """Returns a list of available datasource types for the given nodenet."""
     return worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datasources(nodenet_uid)
 
+
 def get_available_datatargets(nodenet_uid):
     """Returns a list of available datatarget types for the given nodenet."""
     return worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datatargets(nodenet_uid)
+
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     """Associates the datasource type to the sensor node with the given uid."""
@@ -617,6 +634,7 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
         return True
     return False
 
+
 def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     """Associates the datatarget type to the actor node with the given uid."""
     node = nodenets[nodenet_uid].nodes[actor_uid]
@@ -624,6 +642,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
         node.parameters.update({'datatarget': datatarget})
         return True
     return False
+
 
 def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1,
              uid=None):
@@ -664,6 +683,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         nodenet.links[link.uid] = link
     return True, link.uid
 
+
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
     """Set weight of the given link."""
     nodenet = nodenets[nodenet_uid]
@@ -672,6 +692,7 @@ def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
     nodenet.links[link_uid].weight = weight
     nodenet.links[link_uid].certainty = certainty
     return True
+
 
 def get_link(nodenet_uid, link_uid):
     """Returns a dictionary of the parameters of the given link, or None if it does not exist. It is
@@ -689,6 +710,7 @@ def get_link(nodenet_uid, link_uid):
     """
     return nodenets[nodenet_uid].links[link_uid]
 
+
 def delete_link(nodenet_uid, link_uid):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
@@ -696,6 +718,7 @@ def delete_link(nodenet_uid, link_uid):
     del nodenet.links[link_uid]
     del nodenet.state['links'][link_uid]
     return True
+
 
 def align_nodes(nodenet_uid, nodespace):
     """Perform auto-alignment of nodes in the current nodespace"""

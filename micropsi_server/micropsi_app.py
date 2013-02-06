@@ -677,7 +677,7 @@ def delete_nodenet(nodenet_uid):
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name, worldadapter, world_uid, owner)
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner)
 
 
 @rpc("set_node_state")
@@ -747,9 +747,11 @@ def merge_nodenet(nodenet_uid, nodenet): return runtime.merge_nodenet
 
 # World
 @rpc("get_available_worlds")
-def get_available_worlds():
-    user_id, p, t = get_request_data()
-    return runtime.get_available_worlds(user_id)
+def get_available_worlds(user_id=None):
+    data = {}
+    for uid, world in runtime.get_available_worlds(user_id).items():
+        data[uid] = {'name': world.name}  # fixme
+    return data
 
 
 @rpc("get_world_properties")
@@ -784,10 +786,17 @@ def add_worldobject(world_uid, type, position, orientation=0.0, name="", paramet
 
 @rpc("set_worldobject_properties")
 def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
-    try:
-        runtime.set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters)
+    if runtime.set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters):
         return dict(status="success")
-    except KeyError:
+    else:
+        return dict(status="error", msg="unknown world or world object")
+
+
+@rpc("set_worldagent_properties")
+def set_worldagent_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
+    if runtime.set_worldagent_properties(world_uid, uid, position, orientation, name, parameters):
+        return dict(status="success")
+    else:
         return dict(status="error", msg="unknown world or world object")
 
 

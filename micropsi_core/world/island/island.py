@@ -1,6 +1,4 @@
 import math
-import micropsi_core
-import json
 import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
@@ -31,13 +29,7 @@ class Island(World):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.load_groundmap()
         self.current_step = 0
-        self.load_json_data()
         self.data['assets'] = self.assets
-
-    def load_json_data(self):
-        filename = os.path.join(os.path.dirname(__file__), 'resources', 'island.json')
-        with open(filename) as file:
-            self.world_objects = json.load(file)
 
     def load_groundmap(self):
         """
@@ -122,12 +114,6 @@ class Lightsource(WorldObject):
 
     def __init__(self, world, uid=None, **data):
         WorldObject.__init__(self, world, category="objects", uid=uid, **data)
-        self.intensity = data.get('intensity', 1.0)
-        self.diameter = data.get('diameter', 0.1)
-        self.data['orientation'] = 0
-
-    def initialize_worldobject(self, data):
-        self.data = data
 
     def get_intensity(self, distance_squared):
         """returns the strength of the light, depending on the square of the distance

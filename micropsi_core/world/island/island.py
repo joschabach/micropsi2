@@ -103,13 +103,6 @@ class Island(World):
 
 class Lightsource(WorldObject):
     """A pretty inert and boring light source, with a square falloff"""
-    @property
-    def position(self):
-        return self.data.get('position', 0)
-
-    @position.setter
-    def position(self, position):
-        self.data['position'] = position
 
     @property
     def diameter(self):
@@ -162,24 +155,7 @@ class Braitenberg(WorldAdapter):
     # maximum speed
     speed_limit = 1.5
 
-    @property
-    def position(self):
-        return self.data.get('position', 0)
-
-    @position.setter
-    def position(self, position):
-        self.data['position'] = position
-
-    @property
-    def orientation(self):
-        return self.data.get('orientation', 0)
-
-    @orientation.setter
-    def orientation(self, orientation):
-        self.data['orientation'] = orientation % 360
-
     def initialize_worldobject(self, data):
-        self.data = data
         if not "position" in data:
             self.position = self.world.groundmap['start_position']
 

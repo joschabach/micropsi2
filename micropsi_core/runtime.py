@@ -140,7 +140,7 @@ def load_nodenet(nodenet_uid):
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
         if world:
-            world.register_nodenet(worldadapter, nodenet_uid)
+            world.register_nodenet(worldadapter, nodenets[nodenet_uid])
         return True, nodenet_uid
     return False, "no such nodenet"
 
@@ -268,7 +268,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = worlds[world_uid]
         nodenet.worldadapter = worldadapter
-        worlds[world_uid].register_nodenet(nodenet_uid, worldadapter)
+        worlds[world_uid].register_nodenet(worldadapter, nodenet)
     if nodenet_name:
         nodenet.name = nodenet_name
     if owner:

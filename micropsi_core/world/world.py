@@ -190,7 +190,7 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet_uid):
+    def register_nodenet(self, worldadapter, nodenet):
         """Attempts to register a nodenet at this world.
 
         Returns True, nodenet_uid if successful,
@@ -203,13 +203,12 @@ class World(object):
         We don't do it the other way around, because the soulless agent body may have been loaded as part of the
         world definition itself.
         """
-        if nodenet_uid in self.agents:
-            if self.agents[nodenet_uid].__class__.__name__ == worldadapter:
-                return True, nodenet_uid
+        if nodenet.uid in self.agents:
+            if self.agents[nodenet.uid].__class__.__name__ == worldadapter:
+                return True, nodenet.uid
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-
-        return self.spawn_agent(worldadapter, nodenet_uid)
+        return self.spawn_agent(worldadapter, nodenet.uid, name=nodenet.name)
 
     def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
@@ -218,14 +217,14 @@ class World(object):
         if nodenet_uid in self.agents:
             del self.agents[nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, options={}):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
         """Creates an agent object,
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
         try:
-            self.agents[nodenet_uid] = getattr(worldadapter, worldadapter_name)(self, uid=nodenet_uid, **options)
+            self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet_uid, **options)
             return True, nodenet_uid
         except AttributeError:
             if worldadapter_name in self.supported_worldadapters:

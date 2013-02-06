@@ -74,6 +74,10 @@ def set_worldobject_properties(world_uid, uid, type, position, orientation, name
     return runtime.worlds[world_uid].set_object_properties(uid, type, position, orientation, name, parameters)
 
 
+def set_worldagent_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
+    return runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
+
+
 def new_world(world_name, world_type, owner=""):
     """Creates a new world  and registers it.
 

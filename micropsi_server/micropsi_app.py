@@ -786,10 +786,17 @@ def add_worldobject(world_uid, type, position, orientation=0.0, name="", paramet
 
 @rpc("set_worldobject_properties")
 def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
-    try:
-        runtime.set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters)
+    if runtime.set_worldobject_properties(world_uid, uid, type, position, orientation, name, parameters):
         return dict(status="success")
-    except KeyError:
+    else:
+        return dict(status="error", msg="unknown world or world object")
+
+
+@rpc("set_worldagent_properties")
+def set_worldagent_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
+    if runtime.set_worldagent_properties(world_uid, uid, position, orientation, name, parameters):
+        return dict(status="success")
+    else:
         return dict(status="error", msg="unknown world or world object")
 
 

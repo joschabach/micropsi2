@@ -232,6 +232,7 @@ class Nodenet(object):
         data = {
             'links': {},
             'nodes': {},
+            'name': self.name,
             'max_coords': self.max_coords,
             'is_active': self.is_active,
             'step': self.current_step,

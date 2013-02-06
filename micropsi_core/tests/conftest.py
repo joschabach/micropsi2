@@ -5,7 +5,7 @@ import os
 import pytest
 from micropsi_core import runtime as micropsi
 
-DELETE_TEST_FILES_ON_EXIT = False
+DELETE_TEST_FILES_ON_EXIT = True
 
 world_uid = None
 nn_uid = None
@@ -17,7 +17,7 @@ def resourcepath():
 
 
 @pytest.fixture(scope="session")
-def test_world():
+def test_world(request):
     global world_uid
     worlds = micropsi.get_available_worlds("Pytest User")
     if worlds:
@@ -28,11 +28,12 @@ def test_world():
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_world(world_uid)
+    request.addfinalizer(fin)
     return world_uid
 
 
 @pytest.fixture(scope="session")
-def test_nodenet():
+def test_nodenet(request):
     global nn_uid
     nodenets = micropsi.get_available_nodenets("Pytest User") or {}
     for uid, nn in nodenets.items():
@@ -44,11 +45,12 @@ def test_nodenet():
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_nodenet(nn_uid)
+    request.addfinalizer(fin)
     return nn_uid
 
 
 @pytest.fixture(scope="function")
-def fixed_nodenet(test_world):
+def fixed_nodenet(request, test_world):
     from micropsi_core.tests.nodenet_data import fixed_nodenet_data
     success, uid = micropsi.new_nodenet("Fixednet", "Default", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
     micropsi.get_nodenet(uid)
@@ -57,6 +59,7 @@ def fixed_nodenet(test_world):
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_nodenet(uid)
+    request.addfinalizer(fin)
     return uid
 
 #test_nodenet(micropsi())

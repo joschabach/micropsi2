@@ -232,6 +232,48 @@ class World(object):
                 return False, "Worldadapter \"%s\" not found" % worldadapter_name
             return False, "Incompatible Worldadapter for this World."
 
+    def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
+        """set attributes of the world object 'uid'; only supplied attributes will be changed.
+
+       Arguments:
+           uid: the uid of the worldobject. Mandatory.
+           type: a new type for the object. Optional
+           position: a new position for the object. Optional
+           orientation: a new orientation for the object. Optional
+           name: a new name for the object. Optional
+           parameters: a new dict of parameters for the object. optional.
+
+        Returns True if object exists, otherwise False"""
+        if uid in self.objects:
+            if type:
+                self.objects[uid].type = type
+            if position:
+                self.objects[uid].position = position
+            if orientation:
+                self.objects[uid].orientation = orientation
+            if name:
+                self.objects[uid].name = name
+            if parameters:
+                self.objects[uid].parameters = parameters
+            return True
+        return False
+
+    def set_agent_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
+        """set attributes of the agent 'uid'; only supplied attributes will be changed.
+        Returns True if agent exists, otherwise False"""
+
+        if uid in self.agents:
+            if position:
+                self.agents[uid].position = position
+            if orientation:
+                self.agents[uid].orientation = orientation
+            if name:
+                self.agents[uid].name = name
+            if parameters:
+                self.agents[uid].parameters = parameters
+            return True
+        return False
+
     def get_available_datasources(self, nodenet_uid):
         """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
         if nodenet_uid in self.agents:

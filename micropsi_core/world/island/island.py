@@ -146,8 +146,8 @@ class Braitenberg(WorldAdapter):
         """called on every world simulation step to advance the life of the agent"""
 
         # drive engines
-        l_wheel_speed = self.get_datasource("engine_l")
-        r_wheel_speed = self.get_datasource("engine_r")
+        l_wheel_speed = self.datatargets["engine_l"]
+        r_wheel_speed = self.datatargets["engine_r"]
 
         # constrain speed
         if l_wheel_speed + r_wheel_speed > 2 * self.speed_limit:  # too fast
@@ -169,8 +169,8 @@ class Braitenberg(WorldAdapter):
         brightness_l = self.world.get_brightness_at(brightness_l_position)
         brightness_r = self.world.get_brightness_at(brightness_r_position)
 
-        self.set_datatarget('brightness_l', brightness_l)
-        self.set_datatarget('brightness_r', brightness_r)
+        self.datasources['brightness_l'] = brightness_l
+        self.datasources['brightness_r'] = brightness_r
 
 
 def _2d_rotate(position, angle_degrees):

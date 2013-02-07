@@ -436,8 +436,7 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-        if self.state['step'] == 0 and not self.active_nodes:
-            self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
+        self.active_nodes.update(self.get_sensors())
         if self.active_nodes:
             activators = self.get_activators()
             self.calculate_node_functions(activators)
@@ -462,8 +461,7 @@ class Nodenet(object):
 
     def step_nodespace(self, nodespace):
         """ perform a simulation step limited to the given nodespace"""
-        if self.state['step'] == 0 and not self.active_nodes:
-            self.active_nodes = dict((uid, node) for uid, node in self.nodes.items() if node.type == "Sensor")
+        self.active_nodes.update(self.get_sensors(nodespace))
         activators = self.get_activators(nodespace=nodespace)
         active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
         self.calculate_node_functions(activators)
@@ -537,6 +535,15 @@ class Nodenet(object):
                 if type is None or type == self.nodes[uid].parameters['type']:
                     activators.update({uid: self.nodes[uid]})
         return activators
+
+    def get_sensors(self, nodespace=None):
+        """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
+        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        sensors = {}
+        for uid in nodes:
+            if self.nodes[uid].type == 'Sensor':
+                sensors[uid] = self.nodes[uid]
+        return sensors
 
 
 class NetEntity(object):
@@ -1092,8 +1099,8 @@ STANDARD_NODETYPES = {
     },
     "Actor": {
         "name": "Actor",
-        "parameters": ["datasource", "datatarget"],
-        "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, nodenet.uid, node.activation)""",
+        "parameters": ["datatarget"],
+        "nodefunction_definition": """node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.activation)""",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },

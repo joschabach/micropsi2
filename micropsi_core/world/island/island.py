@@ -57,18 +57,12 @@ class Island(World):
         _y = min(self.y_max, max(0, round(y * self.scale_y)))
         return self.ground_data[_y][_x]
 
-    def step(self):
-        """ overwrite world.step """
-        for agent in self.agents:
-            agent.update()
-        self.current_step += 1
-
     def get_brightness_at(self, position):
         """calculate the brightness of the world at the given position; used by sensors of agents"""
         brightness = 0
-        for world_object in self.objects:
-            if hasattr(world_object, "get_intensity"):
-                brightness += world_object.get_intensity(_2d_distance_squared(world_object.position, position))
+        for key in self.objects:
+            if hasattr(self.objects[key], "get_intensity"):
+                brightness += self.objects[key].get_intensity(_2d_distance_squared(self.objects[key].position, position))
         return brightness
 
     def get_movement_result(self, start_position, effort_vector, diameter=0):
@@ -101,7 +95,7 @@ class Lightsource(WorldObject):
 
     @property
     def diameter(self):
-        return self.data.get('diameter', 0.0)
+        return self.data.get('diameter', 0.6)
 
     @diameter.setter
     def diameter(self, diameter):
@@ -109,7 +103,7 @@ class Lightsource(WorldObject):
 
     @property
     def intensity(self):
-        return self.data.get('intensity', 0.0)
+        return self.data.get('intensity', 0.6)
 
     @intensity.setter
     def intensity(self, intensity):
@@ -152,8 +146,8 @@ class Braitenberg(WorldAdapter):
         """called on every world simulation step to advance the life of the agent"""
 
         # drive engines
-        l_wheel_speed = self.get_datasource("engine_l")
-        r_wheel_speed = self.get_datasource("engine_r")
+        l_wheel_speed = self.datatargets["engine_l"]
+        r_wheel_speed = self.datatargets["engine_r"]
 
         # constrain speed
         if l_wheel_speed + r_wheel_speed > 2 * self.speed_limit:  # too fast
@@ -175,8 +169,8 @@ class Braitenberg(WorldAdapter):
         brightness_l = self.world.get_brightness_at(brightness_l_position)
         brightness_r = self.world.get_brightness_at(brightness_r_position)
 
-        self.set_datatarget('brightness_l', brightness_l)
-        self.set_datatarget('brightness_r', brightness_r)
+        self.datasources['brightness_l'] = brightness_l
+        self.datasources['brightness_r'] = brightness_r
 
 
 def _2d_rotate(position, angle_degrees):

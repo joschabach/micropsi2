@@ -60,9 +60,9 @@ class Island(World):
     def get_brightness_at(self, position):
         """calculate the brightness of the world at the given position; used by sensors of agents"""
         brightness = 0
-        for world_object in self.objects:
-            if hasattr(world_object, "get_intensity"):
-                brightness += world_object.get_intensity(_2d_distance_squared(world_object.position, position))
+        for key in self.objects:
+            if hasattr(self.objects[key], "get_intensity"):
+                brightness += self.objects[key].get_intensity(_2d_distance_squared(self.objects[key].position, position))
         return brightness
 
     def get_movement_result(self, start_position, effort_vector, diameter=0):

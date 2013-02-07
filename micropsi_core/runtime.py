@@ -317,8 +317,11 @@ def step_nodenet(nodenet_uid, nodespace=None):
         nodenet_uid: The uid of the nodenet
         nodespace (optional): when supplied, returns the contents of the nodespace after the simulation step
     """
+    # if nodespace is not None:
+    #     nodenets[nodenet_uid].step_nodespace(nodespace)
+    # else:
     nodenets[nodenet_uid].step()
-    return nodenets[nodenet_uid].state['step']
+    return nodenets[nodenet_uid].current_step
 
 
 def revert_nodenet(nodenet_uid):

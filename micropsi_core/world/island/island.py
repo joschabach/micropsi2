@@ -57,12 +57,6 @@ class Island(World):
         _y = min(self.y_max, max(0, round(y * self.scale_y)))
         return self.ground_data[_y][_x]
 
-    def step(self):
-        """ overwrite world.step """
-        for agent in self.agents:
-            agent.update()
-        self.current_step += 1
-
     def get_brightness_at(self, position):
         """calculate the brightness of the world at the given position; used by sensors of agents"""
         brightness = 0

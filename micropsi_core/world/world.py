@@ -147,6 +147,8 @@ class World(object):
         """ advance the simluation """
         for uid in self.objects:
             self.objects[uid].update()
+        for uid in self.agents:
+            self.agents[uid].update()
         self.current_step += 1
 
     def get_world_view(self, step):

@@ -95,7 +95,7 @@ class Lightsource(WorldObject):
 
     @property
     def diameter(self):
-        return self.data.get('diameter', 0.0)
+        return self.data.get('diameter', 0.6)
 
     @diameter.setter
     def diameter(self, diameter):
@@ -103,7 +103,7 @@ class Lightsource(WorldObject):
 
     @property
     def intensity(self):
-        return self.data.get('intensity', 0.0)
+        return self.data.get('intensity', 0.6)
 
     @intensity.setter
     def intensity(self, intensity):

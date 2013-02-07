@@ -1099,8 +1099,8 @@ STANDARD_NODETYPES = {
     },
     "Actor": {
         "name": "Actor",
-        "parameters": ["datasource", "datatarget"],
-        "nodefunction_definition": """node.nodenet.world.set_datatarget(datatarget, nodenet.uid, node.activation)""",
+        "parameters": ["datatarget"],
+        "nodefunction_definition": """node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.activation)""",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },

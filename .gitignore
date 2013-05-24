@@ -1,3 +1,4 @@
+/.idea/
 /bin/
 /downloads/
 /develop-eggs/
@@ -9,3 +10,4 @@
 /resources/user-db.json
 /.installed.cfg
 *.pyc
+/resources/server-config.json

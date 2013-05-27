@@ -146,7 +146,7 @@ def load_nodenet(nodenet_uid):
 
 
 def get_nodenet_data(nodenet_uid, **coordinates):
-    data = get_nodenet(nodenet_uid).state
+    data = get_nodenet(nodenet_uid).state.copy()
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
     return data
 

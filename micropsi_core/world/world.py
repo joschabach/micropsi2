@@ -155,7 +155,7 @@ class World(object):
         """ returns a list of world objects, and the current step of the simulation """
         return {
             'objects': self.get_world_objects(),
-            'agents': self.agents,
+            'agents': self.data.get('agents', {}),
             'current_step': self.current_step,
         }
 

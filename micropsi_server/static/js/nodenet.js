@@ -1083,6 +1083,7 @@ function createNodeTitleBarDelimiter (node) {
 
 // turn shape into shadowed outline
 function createBorder(shape, displacement) {
+
     var highlight = shape.clone();
     highlight.fillColor = viewProperties.highlightColor;
     var highlightSubtract = highlight.clone();
@@ -1090,7 +1091,7 @@ function createBorder(shape, displacement) {
     var highlightClipper = highlight.clone();
     highlightClipper.position -= new Point(0.5, 0.5);
     highlightClipper.clipMask = true;
-    var upper = new Group([highlightClipper, new CompoundPath([highlight, highlightSubtract])]);
+    var upper = new Group([highlightClipper, highlight, highlightSubtract]);
     upper.opacity = 0.5;
 
     var shadowSubtract = shape;
@@ -1100,7 +1101,7 @@ function createBorder(shape, displacement) {
     var shadowClipper = shadow.clone();
     shadowClipper.position += new Point(0.5, 0.5);
     shadowClipper.clipMask = true;
-    var lower = new Group([shadowClipper, new CompoundPath([shadow, shadowSubtract])]);
+    var lower = new Group([shadowClipper,shadow, shadowSubtract]);
     lower.opacity = 0.5;
 
     var border = new Group([lower, upper]);

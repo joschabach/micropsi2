@@ -51,11 +51,12 @@ def get_worldadapters(world_uid):
     """Returns the world adapters available in the given world"""
 
     data = {}
-    for name, worldadapter in runtime.worlds[world_uid].supported_worldadapters.items():
-        data[name] = {
-            'datasources': worldadapter.datasources.keys(),
-            'datatargets': worldadapter.datatargets.keys()
-        }
+    if world_uid in runtime.worlds:
+        for name, worldadapter in runtime.worlds[world_uid].supported_worldadapters.items():
+            data[name] = {
+                'datasources': worldadapter.datasources.keys(),
+                'datatargets': worldadapter.datatargets.keys()
+            }
     return data
 
 

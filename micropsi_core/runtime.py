@@ -132,8 +132,9 @@ def load_nodenet(nodenet_uid):
             data = nodenet_data[nodenet_uid]
 
             if data.get('world'):
-                world = worlds[data.world] or None
-                worldadapter = data.get('worldadapter')
+                if data.world in worlds:
+                    world = worlds.get(data.world)
+                    worldadapter = data.get('worldadapter')
             nodenets[nodenet_uid] = Nodenet(data.filename, name=data.name, worldadapter=worldadapter,
                 world=world, owner=data.owner, uid=data.uid)
         else:

@@ -30,7 +30,7 @@ class Berlin(World):
         self.scale_y = (self.assets['y'] / -(self.coords['y1'] - self.coords['y2']))
         self.stations = {}
         self.fahrinfo_berlin = {}
-        self.current_step = 123
+        self.current_step = 1
         self.load_json_data()
 
     def load_json_data(self):

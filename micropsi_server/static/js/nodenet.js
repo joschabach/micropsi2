@@ -1732,20 +1732,28 @@ function stepNodenet(event){
     if(nodenetRunning){
         stopNodenetrunner(event);
     }
-    api.call("step_nodenet",
-        {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
-        success=function(data){
-            refreshNodespace();
-            dialogs.notification("Nodenet stepped", "success");
-        });
+    if(currentNodenet){
+        api.call("step_nodenet",
+            {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
+            success=function(data){
+                refreshNodespace();
+                dialogs.notification("Nodenet stepped", "success");
+            });
+    } else {
+        dialogs.notification('No nodenet selected', 'error');
+    }
 }
 
 function startNodenetrunner(event){
     event.preventDefault();
     nodenetRunning = true;
-    api.call('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
-        refreshNodespace();
-    });
+    if(currentNodenet){
+        api.call('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
+            refreshNodespace();
+        });
+    } else {
+        dialogs.notification('No nodenet selected', 'error');
+    }
 }
 function stopNodenetrunner(event){
     event.preventDefault();
@@ -1755,13 +1763,17 @@ function stopNodenetrunner(event){
 function resetNodenet(event){
     event.preventDefault();
     nodenetRunning = false;
-    api.call(
-        'revert_nodenet',
-        {nodenet_uid: currentNodenet},
-        function(){
-            setCurrentNodenet(currentNodenet);
-        }
-    );
+    if(currentNodenet){
+        api.call(
+            'revert_nodenet',
+            {nodenet_uid: currentNodenet},
+            function(){
+                setCurrentNodenet(currentNodenet);
+            }
+        );
+    } else {
+        dialogs.notification('No nodenet selected', 'error');
+    }
 }
 
 var clickPosition = null;

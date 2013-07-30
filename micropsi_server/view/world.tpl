@@ -47,7 +47,7 @@
             <canvas id="world" width="700" height="500" style="background:#eeeeee"></canvas>
         </div>
         <div class="editor_field " id="world_forms">
-            <form class="form-horizontal" id="world_status">
+            <form class="form-horizontal">
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>

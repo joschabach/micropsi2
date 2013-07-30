@@ -33,8 +33,6 @@
                 <td>
                     <a href="/select_nodenet_from_console/{{nodenet_uid}}" class="btn">View</a>
                     <a href="/delete_nodenet_from_console/{{nodenet_uid}}" class="btn">Delete</a>
-                    <a href="/stencil_from_console/{{nodenet_uid}}" class="btn">Make stencil</a>
-                    <a href="/delete_stencil_from_console/{{nodenet_uid}}" class="btn">Delete stencil</a>
                 </td>
             </tr>
             %end

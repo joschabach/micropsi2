@@ -8,15 +8,13 @@ __author__ = 'dominik'
 __date__ = '11.12.12'
 
 import runtime
-import nodenet.nodenet
-
-
+from nodenet.nodenet import Monitor
 
 def add_gate_monitor(nodenet_uid, node_uid, gate):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
     value in every simulation step."""
     nodenet = runtime.nodenets[nodenet_uid]
-    monitor = nodenet.Monitor(nodenet, node_uid, 'gate', gate)
+    monitor = Monitor(nodenet, node_uid, 'gate', gate)
     nodenet.monitors[monitor.uid] = monitor
     return monitor.data
 
@@ -25,7 +23,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot):
     """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
     value in every simulation step."""
     nodenet = runtime.nodenets[nodenet_uid]
-    monitor = nodenet.Monitor(nodenet, node_uid, 'slot', slot)
+    monitor = Monitor(nodenet, node_uid, 'slot', slot)
     nodenet.monitors[monitor.uid] = monitor
     return monitor.data
 

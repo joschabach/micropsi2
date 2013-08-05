@@ -1,0 +1,11 @@
+.wrapper {
+    position: relative;
+    width: 1000px;
+    height: 600px;
+}
+
+.wrapper canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}

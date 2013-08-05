@@ -3,7 +3,7 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-import png
+from micropsi_core.world.island import png
 
 
 class Island(World):
@@ -40,7 +40,7 @@ class Island(World):
         a point with one of 256 possible values).
         """
         filename = os.path.join(os.path.dirname(__file__), 'resources', 'groundmaps', self.groundmap["image"])
-        with open(filename) as file:
+        with open(filename, 'rb') as file:
             png_reader = png.Reader(file)
             x, y, image_array, image_params = png_reader.read()
             self.ground_data = list(image_array)
@@ -49,7 +49,7 @@ class Island(World):
             self.x_max = x - 1
             self.y_max = y - 1
 
-    def get_ground_at(self, (x, y)):
+    def get_ground_at(self, x, y):
         """
         returns the ground type (an integer) at the given position
         """
@@ -69,7 +69,7 @@ class Island(World):
         """determine how much an agent moves in the direction of the effort vector, starting in the start position.
         Note that agents may be hindered by impassable terrain and other objects"""
 
-        efficiency = ground_types[self.get_ground_at(start_position)]['move_efficiency']
+        efficiency = ground_types[self.get_ground_at(*start_position)]['move_efficiency']
         if not efficiency:
             return start_position
         movement_vector = (effort_vector[0] * efficiency, effort_vector[1] * efficiency)

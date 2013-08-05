@@ -7,8 +7,8 @@ Runtime API functionality for creating and maintaining activation monitors
 __author__ = 'dominik'
 __date__ = '11.12.12'
 
-import runtime
-from nodenet.nodenet import Monitor
+from micropsi_core.nodenet.nodenet import Monitor
+
 
 def add_gate_monitor(nodenet_uid, node_uid, gate):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation

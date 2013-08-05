@@ -13,8 +13,6 @@ from micropsi_core.world import world
 __author__ = 'joscha'
 __date__ = '11.12.12'
 
-import runtime
-
 
 # World
 def get_available_worlds(owner=None):
@@ -211,7 +209,7 @@ def import_world(worlddata, owner=None):
 
 def get_world_class_from_name(world_type):
     """Returns the class from a world type, if it is known"""
-    from world.world import World
+    from micropsi_core.world.world import World
     worldclasses = { cls.__name__: cls for cls in vars()['World'].__subclasses__() }
     return worldclasses.get(world_type, World)
 

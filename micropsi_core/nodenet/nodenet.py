@@ -606,7 +606,7 @@ class NetEntity(object):
                  uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
         if uid in nodenet.state.get("entitytype", []):
-            raise KeyError, "Netentity already exists"
+            raise KeyError("Netentity already exists")
 
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
@@ -684,7 +684,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
             try:
                 self.gatefunctions[nodetype] = micropsi_core.tools.create_function(gatefunction,
                     parameters="gate, params")
-            except SyntaxError, err:
+            except SyntaxError as err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))
                 self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
                     parameters="gate, params")
@@ -892,7 +892,7 @@ class Node(NetEntity):
             gate_parameters = {}
 
         if uid in nodenet.nodes:
-            raise KeyError, "Node already exists"
+            raise KeyError("Node already exists")
 
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
@@ -944,10 +944,10 @@ class Node(NetEntity):
         if self.nodetype and self.nodetype.nodefunction is not None:
             try:
                 self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
-            except SyntaxError, err:
+            except SyntaxError as err:
                 warnings.warn("Syntax error during node execution: %s" % err.message)
                 self.data["activation"] = "Syntax error"
-            except TypeError, err:
+            except TypeError as err:
                 warnings.warn("Type error during node execution: %s" % err.message)
                 self.data["activation"] = "Parameter mismatch"
 
@@ -1194,7 +1194,7 @@ class Nodetype(object):
         try:
             self.nodefunction = micropsi_core.tools.create_function(string,
                 parameters="nodenet, node, " + args)
-        except SyntaxError, err:
+        except SyntaxError as err:
             warnings.warn("Syntax error while compiling node function: %s", err.message)
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node, " + args)

@@ -79,7 +79,7 @@ class Berlin(World):
     def load_trains_for_current_timestep(self):
         """ load the list of all trains at the current step / timestamp into self.trains and self.data"""
         self.minute = (self.current_step / 8.0) % 1440
-        self.day = (self.current_step / 8) / 1440
+        self.day = int(int(self.current_step / 8) / 1440)
 
         lines = {}
         trains = {}
@@ -134,7 +134,7 @@ class Berlin(World):
                             next_station = str(train["stops"][station_index + 1]["station_id"])
                         except IndexError:
                             err += 1
-                            print "next station not found: %s " % train_id
+                            print("next station not found: %s " % train_id)
                             continue
                         dep = train["stops"][station_index]["dep"]
                         arr = train["stops"][station_index + 1]["arr"]
@@ -153,7 +153,7 @@ class Berlin(World):
                     trains[train_id]['pos'] = (((trains[train_id]['lon'] - self.coords['x1']) * self.scale_x), ((trains[train_id]['lat'] - self.coords['y1']) * self.scale_y))
                 else:
                     err += 1
-                    print "coords not found: %s" % train_id
+                    print("coords not found: %s" % train_id)
                     del trains[train_id]
         self.trains = trains
         self.data['trains'] = self.trains

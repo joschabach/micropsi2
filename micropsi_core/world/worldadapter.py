@@ -20,7 +20,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 
-from worldobject import WorldObject
+from micropsi_core.world.worldobject import WorldObject
 
 
 class WorldAdapter(WorldObject):

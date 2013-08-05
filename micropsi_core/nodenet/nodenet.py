@@ -178,8 +178,7 @@ class Nodenet(object):
         self.nodespaces = {}
 
         nodespaces_to_initialize = set(self.state.get('nodespaces', {}).keys())
-        while len(nodespaces_to_initialize):
-            next_nodespace = iter(nodespaces_to_initialize).next()
+        for next_nodespace in nodespaces_to_initialize:
             # move up the nodespace tree until we find an existing parent or hit root
             while self.state["nodespaces"][next_nodespace].get(
                 'parent_nodespace') not in self.nodespaces and next_nodespace != "Root":
@@ -192,8 +191,8 @@ class Nodenet(object):
                 uid=next_nodespace,
                 index=data.get('index'),
                 gatefunctions=data.get('gatefunctions', {}))
-            nodespaces_to_initialize.remove(next_nodespace)
 
+        nodespaces_to_initialize = []
         if not self.nodespaces:
             self.nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 

@@ -217,5 +217,5 @@ def get_world_class_from_name(world_type):
 
 def get_available_world_types():
     """Returns the names of the available world types"""
-    from world.world import World
+    from micropsi_core.world.world import World
     return [cls.__name__ for cls in vars()['World'].__subclasses__()]

@@ -14,7 +14,7 @@ class Island(World):
     groundmap = {
         'image': "psi_1.png",
         'start_position': (100, 100),
-        'scaling': (200, 200)
+        'scaling': (8, 8)
     }
 
     assets = {
@@ -44,17 +44,17 @@ class Island(World):
             png_reader = png.Reader(file)
             x, y, image_array, image_params = png_reader.read()
             self.ground_data = list(image_array)
+            self.scale_x = self.groundmap["scaling"][0]
+            self.scale_y = self.groundmap["scaling"][1]
             self.x_max = x - 1
             self.y_max = y - 1
-            self.scale_x = float(x) / self.groundmap["scaling"][0]
-            self.scale_y = float(y) / self.groundmap["scaling"][1]
 
     def get_ground_at(self, (x, y)):
         """
         returns the ground type (an integer) at the given position
         """
-        _x = min(self.x_max, max(0, round(x * self.scale_x)))
-        _y = min(self.y_max, max(0, round(y * self.scale_y)))
+        _x = int(min(self.x_max, max(0, round(x / self.scale_x))))
+        _y = int(min(self.y_max, max(0, round(y / self.scale_y))))
         return self.ground_data[_y][_x]
 
     def get_brightness_at(self, position):
@@ -79,7 +79,7 @@ class Island(World):
         while target_position is None and _2d_distance_squared((0, 0), movement_vector) > 0.01:
             target_position = _2d_translate(start_position, movement_vector)
 
-            for i in self.objects:
+            for i in self.objects.values():
                 if _2d_distance_squared(target_position, i.position) < (diameter + i.diameter) / 2:
                     movement_vector = (movement_vector[0] * 0.5, movement_vector[1] * 0.5)  # should be collision point
                     target_position = None

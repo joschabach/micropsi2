@@ -401,7 +401,7 @@ class Nodenet(object):
         # copy the links
         if len(nodes):
             links = {}
-            origin_links = nodes[nodes.keys()[0]].nodenet.links
+            origin_links = nodes[list(nodes.keys())[0]].nodenet.links
             for node_uid in nodes:
                 node = nodes[node_uid]
                 for slot in node.slots:
@@ -445,9 +445,11 @@ class Nodenet(object):
             for uid, node in activators.items():
                 node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
             self.active_nodes.update(new_active_nodes)
+            tmp_active_nodes = {}
             for uid, node in self.active_nodes.items():
-                if node.activation == 0:
-                    del self.active_nodes[uid]
+                if node.activation != 0:
+                    tmp_active_nodes[uid] = node
+            self.active_nodes = tmp_active_nodes
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
 

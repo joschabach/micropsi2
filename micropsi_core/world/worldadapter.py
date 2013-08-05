@@ -47,11 +47,11 @@ class WorldAdapter(WorldObject):
     # agent facing methods:
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
-        return self.datasources.keys()
+        return list(self.datasources.keys())
 
     def get_available_datatargets(self):
         """returns a list of identifiers of the datatargets available for this world adapter"""
-        return self.datatargets.keys()
+        return list(self.datatargets.keys())
 
     def get_datasource(self, key):
         """allows the agent to read a value from a datasource"""

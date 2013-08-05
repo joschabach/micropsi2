@@ -111,7 +111,7 @@ class Nodenet(object):
             "monitors": {},
             "nodespaces": {'Root': {}},
             "nodetypes": STANDARD_NODETYPES,
-            "activatortypes": STANDARD_NODETYPES.keys(),
+            "activatortypes": list(STANDARD_NODETYPES.keys()),
             "step": 0,
             "filename": filename
         }
@@ -874,7 +874,7 @@ class Node(NetEntity):
     @parameters.setter
     def parameters(self, dictionary):
         if self.data["type"] == "Native":
-            self.nodetype.parameters = dictionary.keys()
+            self.nodetype.parameters = list(dictionary.keys())
         self.data["parameters"] = dictionary
 
     @property

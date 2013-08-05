@@ -53,8 +53,8 @@ def get_worldadapters(world_uid):
     if world_uid in micropsi_core.runtime.worlds:
         for name, worldadapter in micropsi_core.runtime.worlds[world_uid].supported_worldadapters.items():
             data[name] = {
-                'datasources': worldadapter.datasources.keys(),
-                'datatargets': worldadapter.datatargets.keys()
+                'datasources': list(worldadapter.datasources.keys()),
+                'datatargets': list(worldadapter.datatargets.keys())
             }
     return data
 

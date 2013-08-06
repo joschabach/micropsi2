@@ -111,7 +111,7 @@ class Client(object):
 			self.connect(host, port)
 			self.handshake()
 			self.event_loop()
-		self.exit()
+		#self.exit()
 
 		def customKeyboardInterruptHandler(signum, stackframe):
 			print("CTRL-C from user, exiting....")
@@ -120,8 +120,8 @@ class Client(object):
 	def event_loop(self):
 
 		#Set up signal handlers
-		signal.signal(signal.SIGINT, self.signal_handler)
-		signal.signal(signal.SIGTERM, self.signal_handler)
+		#signal.signal(signal.SIGINT, self.signal_handler)
+		#signal.signal(signal.SIGTERM, self.signal_handler)
 		#Fire off plugins that need to run after init
 		for callback in self.plugin_handlers[cflags['START_EVENT']]: callback(flag)
 
@@ -131,7 +131,7 @@ class Client(object):
 		websock.listen(1)
 		self.read_list = [websock]
 
-		for i in range(0,500):
+		for i in range(0,100):
 			self.step()
 
 

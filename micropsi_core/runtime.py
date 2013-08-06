@@ -56,6 +56,7 @@ def nodenetrunner():
 def worldrunner():
     """Looping thread to simulate worlds continously"""
     while True:
+        print("worldrunner - loop - start")
         if configs['worldrunner_timestep'] > 1000:
             step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
         else:

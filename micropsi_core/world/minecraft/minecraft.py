@@ -105,8 +105,8 @@ class Minecraft(World):
 			self.client = RikerClient(plugins=plugins)
 			self.client.start()
 			self.first_step = False
-		World.step()
-		self.client.tick()
+		World.step(self)
+		self.client.step()
 
 
 

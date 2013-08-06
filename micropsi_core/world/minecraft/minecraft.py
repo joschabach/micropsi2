@@ -44,22 +44,8 @@ class Minecraft(World):
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
-    datasources = {'brightness_l': 1.7, 'brightness_r': 1.7}
-    datatargets = {'engine_l': 0, 'engine_r': 0}
-
-    # positions of sensors, relative to origin of agent center
-    brightness_l_offset = (-0.25, 0.25)
-    brightness_r_offset = (0.25, 0.25)
-
-    # positions of engines, relative to origin of agent center
-    engine_l_offset = (-0.3, 0)
-    engine_r_offset = (0.3, 0)
-
-    # agent diameter
-    diameter = 0.6
-
-    # maximum speed
-    speed_limit = 1.5
+    datasources = {'x_coord': 0.7}
+    datatargets = {}
 
     def initialize_worldobject(self, data):
         if not "position" in data:
@@ -68,4 +54,5 @@ class Braitenberg(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        pass
+        x_coord = self.world.client.position['x']
+        self.datasources['x_coord'] = x_coord

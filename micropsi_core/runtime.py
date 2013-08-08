@@ -9,7 +9,6 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
 
-
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
@@ -36,7 +35,7 @@ worlds = {}
 nodenets = {}
 runner = {
     'nodenet': {'timestep': 1000, 'runner': None},
-    'world': {'timestep': 5000, 'runner': None}
+    'world': {'timestep': 800, 'runner': None}
 }
 
 
@@ -55,6 +54,8 @@ def nodenetrunner():
 
 def worldrunner():
     """Looping thread to simulate worlds continously"""
+
+
     while True:
         if configs['worldrunner_timestep'] > 1000:
             step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)

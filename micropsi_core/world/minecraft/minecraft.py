@@ -5,8 +5,9 @@ from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.minecraft import png
 from micropsi_core.world.minecraft.spock.riker.rkclient import RikerClient
+import micropsi_core.world.minecraft.vis.main as vis
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
-
+import micropsi_core.world.minecraft.vis.main
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -33,19 +34,22 @@ class Minecraft(World):
             # launch minecraft bot
             username = "ownspock"
             password = ""
+            micropsi_core.world.minecraft.vis.main.commence_vis()
+            micropsi_core.world.minecraft.vis.main.step_vis()
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin]
             self.client = RikerClient(plugins=plugins)
             self.client.start()
             self.first_step = False
         World.step(self)
         self.client.step()
+        micropsi_core.world.minecraft.vis.main.step_vis()
 
 
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
     datasources = {'x_coord': 0.7}
-    datatargets = {}
+    datatargets = {'psi_look_value': 0}
 
     def initialize_worldobject(self, data):
         if not "position" in data:
@@ -55,4 +59,5 @@ class Braitenberg(WorldAdapter):
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
         x_coord = self.world.client.position['x']
+        self.world.client.psi_look_value = self.datatargets['psi_look_value']
         self.datasources['x_coord'] = x_coord

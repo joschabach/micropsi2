@@ -160,6 +160,8 @@ class Client(object):
 					data = komm.recv(32)
 					psicraft.dispatch_psicraft_command(data.decode(), self, komm)
 					komm.close()
+            #checking for micropsi commands
+
 
 			if self.kill_flag:
 				print("closing sockets & shutting down")

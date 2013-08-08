@@ -43,6 +43,7 @@ def tex_coords(top, bottom, side):
 GRASS = tex_coords((1, 0), (0, 1), (0, 0))
 SAND = tex_coords((1, 1), (1, 1), (1, 1))
 BRICK = tex_coords((2, 0), (2, 0), (2, 0))
+GOLDORE = tex_coords((3, 0), (3, 0), (3, 0))
 STONE = tex_coords((2, 1), (2, 1), (2, 1))
 
 FACES = [
@@ -99,12 +100,20 @@ class Model(object):
             for y in xrange(0, n):
                 for z in xrange(0, n):
                     if client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
-                        if client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
-                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) != 0:
-                            print("found ", client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
-                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z))
-                            print("model block x %s y %s z %s" % (x, y, z))
-                            self.init_block((-x - 16, -y - 16, -z - 16), GRASS)
+                        current_block = client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
+                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
+                        if current_block == 14:
+                           self.init_block((-x + 8, y - 16, -z), GOLDORE)
+                        elif current_block == 3:
+                           self.init_block((-x + 8, y - 16, -z), SAND)
+                        elif current_block == 1:
+                           self.init_block((-x + 8, y - 16, -z), STONE)
+                        elif current_block == 13:
+                           self.init_block((-x + 8, y - 16, -z), STONE)
+                        elif current_block == 2:
+                           self.init_block((-x + 8, y - 16, -z), GRASS)
+                        else:
+                            print(current_block)
 
                 #for x in xrange(-n, n + 1, s):
         #    for z in xrange(-n, n + 1, s):

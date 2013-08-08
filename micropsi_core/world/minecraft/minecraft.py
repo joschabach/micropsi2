@@ -34,12 +34,13 @@ class Minecraft(World):
             # launch minecraft bot
             username = "ownspock"
             password = ""
-            micropsi_core.world.minecraft.vis.main.commence_vis()
-            micropsi_core.world.minecraft.vis.main.step_vis()
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin]
             self.client = RikerClient(plugins=plugins)
             self.client.start()
+            micropsi_core.world.minecraft.vis.main.commence_vis(self.client)
+            micropsi_core.world.minecraft.vis.main.step_vis()
             self.first_step = False
+
         World.step(self)
         self.client.step()
         micropsi_core.world.minecraft.vis.main.step_vis()

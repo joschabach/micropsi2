@@ -7,6 +7,7 @@ import math
 import random
 import time
 import os
+import micropsi_core.world.minecraft.spock.spock.net.client as client
 
 SECTOR_SIZE = 16
 
@@ -74,7 +75,7 @@ def sectorize(position):
     return (x, 0, z)
 
 class Model(object):
-    def __init__(self):
+    def __init__(self, client):
         self.batch = pyglet.graphics.Batch()
         print(os.getcwd())
         self.group = TextureGroup('micropsi_core/world/minecraft/vis/texture.png')
@@ -83,36 +84,53 @@ class Model(object):
         self._shown = {}
         self.sectors = {}
         self.queue = []
-        self.initialize()
-    def initialize(self):
-        n = 80
+        self.initialize(client)
+    def initialize(self, client):
+        n = 16
         s = 1
         y = 0
-        for x in xrange(-n, n + 1, s):
-            for z in xrange(-n, n + 1, s):
-                self.init_block((x, y - 2, z), GRASS)
-                self.init_block((x, y - 3, z), STONE)
-                if x in (-n, n) or z in (-n, n):
-                    for dy in xrange(-2, 3):
-                        self.init_block((x, y + dy, z), STONE)
-        o = n - 10
-        for _ in xrange(120):
-            a = random.randint(-o, o)
-            b = random.randint(-o, o)
-            c = -1
-            h = random.randint(1, 6)
-            s = random.randint(4, 8)
-            d = 1
-            t = random.choice([GRASS, SAND, BRICK])
-            for y in xrange(c, c + h):
-                for x in xrange(a - s, a + s + 1):
-                    for z in xrange(b - s, b + s + 1):
-                        if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
-                            continue
-                        if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
-                            continue
-                        self.init_block((x, y, z), t)
-                s -= d
+
+        x_chunk = client.position['x'] // 16
+        z_chunk = client.position['z'] // 16
+
+        bot_block = [client.position['x'], client.position['y'], client.position['z']]
+
+        for x in xrange(0, n):
+            for y in xrange(0, n):
+                for z in xrange(0, n):
+                    if client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
+                        if client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
+                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) != 0:
+                            print("found ", client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
+                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z))
+                            print("model block x %s y %s z %s" % (x, y, z))
+                            self.init_block((-x - 16, -y - 16, -z - 16), GRASS)
+
+                #for x in xrange(-n, n + 1, s):
+        #    for z in xrange(-n, n + 1, s):
+        #        self.init_block((x, y - 2, z), GRASS)
+        #        self.init_block((x, y - 3, z), STONE)
+        #        if x in (-n, n) or z in (-n, n):
+        #            for dy in xrange(-2, 3):
+        #                self.init_block((x, y + dy, z), STONE)
+        #o = n - 10
+        #for _ in xrange(120):
+        #    a = random.randint(-o, o)
+        #    b = random.randint(-o, o)
+        #    c = -1
+        #    h = random.randint(1, 6)
+        #    s = random.randint(4, 8)
+        #    d = 1
+        #    t = random.choice([GRASS, SAND, BRICK])
+        #    for y in xrange(c, c + h):
+        #        for x in xrange(a - s, a + s + 1):
+        #            for z in xrange(b - s, b + s + 1):
+        #                if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
+        #                    continue
+        #                if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
+        #                    continue
+        #                self.init_block((x, y, z), t)
+        #        s -= d
     def hit_test(self, position, vector, max_distance=8):
         m = 8
         x, y, z = position
@@ -243,7 +261,7 @@ class Model(object):
             self.dequeue()
 
 class Window(pyglet.window.Window):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, client, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         self.exclusive = False
         self.flying = False
@@ -258,7 +276,7 @@ class Window(pyglet.window.Window):
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]
-        self.model = Model()
+        self.model = Model(client)
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18, 
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top', 
             color=(0, 0, 0, 255))
@@ -480,8 +498,8 @@ def setup():
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     setup_fog()
 
-def commence_vis():
-    window = Window(width=800, height=600, caption='Pyglet', resizable=True)
+def commence_vis(client):
+    window = Window(client, width=800, height=600, caption='Pyglet', resizable=True)
     window.set_exclusive_mouse(True)
     setup()
     for i in range(0,50):

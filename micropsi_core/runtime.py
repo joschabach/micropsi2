@@ -35,7 +35,7 @@ worlds = {}
 nodenets = {}
 runner = {
     'nodenet': {'timestep': 1000, 'runner': None},
-    'world': {'timestep': 800, 'runner': None}
+    'world': {'timestep': 10, 'runner': None}
 }
 
 

@@ -8,6 +8,7 @@ from micropsi_core.world.minecraft.spock.riker.rkclient import RikerClient
 import micropsi_core.world.minecraft.vis.main as vis
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 import micropsi_core.world.minecraft.vis.main
+from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -28,6 +29,7 @@ class Minecraft(World):
         self.current_step = 0
         self.data['assets'] = self.assets
         self.first_step = True
+        self.chat_ping_counter = 0
 
     def step(self):
         if self.first_step:
@@ -41,6 +43,10 @@ class Minecraft(World):
             micropsi_core.world.minecraft.vis.main.step_vis()
             self.first_step = False
 
+        self.chat_ping_counter += 1
+        if self.chat_ping_counter % 10 == 0:
+            self.client.push(Packet(ident = 0x03, data = {
+						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
         self.client.step()
         micropsi_core.world.minecraft.vis.main.step_vis()

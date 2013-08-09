@@ -85,7 +85,7 @@ def psicraft_query_chunk(client, komm):
 
 	bot_block = [client.position['x'], client.position['y'], client.position['z']]
 
-	for y in range (0,10):
+	for y in range (0,layers):
 		for x in range (0,16):
 			for z in range (0,16):
 				if client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1]+y)//16)] != None:

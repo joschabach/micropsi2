@@ -85,61 +85,76 @@ class Model(object):
         self._shown = {}
         self.sectors = {}
         self.queue = []
-        self.initialize(client)
-    def initialize(self, client):
+        self.client = client
+        self.initialize()
+    def initialize(self):
         n = 16
         s = 1
         y = 0
 
-        x_chunk = client.position['x'] // 16
-        z_chunk = client.position['z'] // 16
+        x_chunk = self.client.position['x'] // 16
+        z_chunk = self.client.position['z'] // 16
 
-        bot_block = [client.position['x'], client.position['y'], client.position['z']]
+        bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
 
         for x in xrange(0, n):
             for y in xrange(0, n):
                 for z in xrange(0, n):
-                    if client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
-                        current_block = client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
+                    if self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
+                        current_block = self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
                             'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if current_block == 14:
-                           self.init_block((-x + 8, y - 16, -z), GOLDORE)
+                           self.init_block((x, y, z), GOLDORE)
                         elif current_block == 3:
-                           self.init_block((-x + 8, y - 16, -z), SAND)
+                           self.init_block((x, y, z), SAND)
                         elif current_block == 1:
-                           self.init_block((-x + 8, y - 16, -z), STONE)
+                           self.init_block((x, y, z), STONE)
                         elif current_block == 13:
-                           self.init_block((-x + 8, y - 16, -z), STONE)
+                           self.init_block((x, y, z), STONE)
                         elif current_block == 2:
-                           self.init_block((-x + 8, y - 16, -z), GRASS)
-                        else:
-                            print(current_block)
+                           self.init_block((x, y, z), GRASS)
 
-                #for x in xrange(-n, n + 1, s):
-        #    for z in xrange(-n, n + 1, s):
-        #        self.init_block((x, y - 2, z), GRASS)
-        #        self.init_block((x, y - 3, z), STONE)
-        #        if x in (-n, n) or z in (-n, n):
-        #            for dy in xrange(-2, 3):
-        #                self.init_block((x, y + dy, z), STONE)
-        #o = n - 10
-        #for _ in xrange(120):
-        #    a = random.randint(-o, o)
-        #    b = random.randint(-o, o)
-        #    c = -1
-        #    h = random.randint(1, 6)
-        #    s = random.randint(4, 8)
-        #    d = 1
-        #    t = random.choice([GRASS, SAND, BRICK])
-        #    for y in xrange(c, c + h):
-        #        for x in xrange(a - s, a + s + 1):
-        #            for z in xrange(b - s, b + s + 1):
-        #                if (x - a) ** 2 + (z - b) ** 2 > (s + 1) ** 2:
-        #                    continue
-        #                if (x - 0) ** 2 + (z - 0) ** 2 < 5 ** 2:
-        #                    continue
-        #                self.init_block((x, y, z), t)
-        #        s -= d
+                        if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
+                            print("BotBlock @ x %s y %s z %s" % (x,y,z))
+                            self.init_block((x, y, z), SAND)
+                        #else:
+                        #    print(current_block)
+
+    def reload(self):
+        n = 16
+        s = 1
+        y = 0
+
+        x_chunk = self.client.position['x'] // 16
+        z_chunk = self.client.position['z'] // 16
+
+        bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
+
+        for x in xrange(0, n):
+            for y in xrange(0, n):
+                for z in xrange(0, n):
+                    if self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
+                        current_block = self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
+                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
+                        if current_block == 14:
+                           #self.add_block((x, y, z), GOLDORE)
+                            pass
+                        elif current_block == 3:
+                           #self.add_block((x, y, z), SAND)
+                            pass
+                        elif current_block == 1:
+                           #self.add_block((x, y, z), STONE)
+                            pass
+                        elif current_block == 13:
+                           #self.add_block((x, y, z), STONE)
+                            pass
+                        elif current_block == 2:
+                           #self.add_block((x, y, z), GRASS)
+                            pass
+                        if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
+                            print("BotBlock @ x %s y %s z %s" % (x,y,z))
+                            self.add_block((x, y, z), SAND)
+                            
     def hit_test(self, position, vector, max_distance=8):
         m = 8
         x, y, z = position
@@ -275,8 +290,8 @@ class Window(pyglet.window.Window):
         self.exclusive = False
         self.flying = False
         self.strafe = [0, 0]
-        self.position = (0, 0, 0)
-        self.rotation = (0, 0)
+        self.position = (0, 16, 16)
+        self.rotation = (45, -45) # first left,right - second up,down
         self.sector = None
         self.reticle = None
         self.dy = 0
@@ -285,7 +300,8 @@ class Window(pyglet.window.Window):
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]
-        self.model = Model(client)
+        self.client = client
+        self.model = Model(self.client)
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18, 
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top', 
             color=(0, 0, 0, 255))
@@ -343,7 +359,7 @@ class Window(pyglet.window.Window):
         dx, dy, dz = dx * d, dy * d, dz * d
         # gravity
         if not self.flying:
-            self.dy -= dt * 0.044 # g force, should be = jump_speed * 0.5 / max_jump_height
+            self.dy -= dt * 0.00044 # g force, should be = jump_speed * 0.5 / max_jump_height
             self.dy = max(self.dy, -0.5) # terminal velocity
             dy += self.dy
         # collisions
@@ -518,6 +534,7 @@ def step_vis():
     pyglet.clock.tick()
     for window in pyglet.app.windows:
         window.switch_to()
+        window.model.reload()
         window.dispatch_events()
         window.dispatch_event('on_draw')
         window.flip()

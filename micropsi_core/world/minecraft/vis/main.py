@@ -40,11 +40,12 @@ def tex_coords(top, bottom, side):
     result.extend(side * 4)
     return result
 
-GRASS = tex_coords((1, 0), (0, 1), (0, 0))
-SAND = tex_coords((1, 1), (1, 1), (1, 1))
+GRASS = tex_coords((1, 0), (0, 1), (0, 0)) # 1st top 2nd bottom  3rd side
+SAND = tex_coords((1, 1), (1, 1), (1, 1))# (row, line)
 BRICK = tex_coords((2, 0), (2, 0), (2, 0))
 GOLDORE = tex_coords((3, 0), (3, 0), (3, 0))
 STONE = tex_coords((2, 1), (2, 1), (2, 1))
+HUMAN = tex_coords((3, 2), (3, 2), (3, 1))
 
 FACES = [
     ( 0, 1, 0),
@@ -87,6 +88,7 @@ class Model(object):
         self.queue = []
         self.client = client
         self.initialize()
+        self.last_known_botblock = (0,0,0)
     def initialize(self):
         n = 16
         s = 1
@@ -153,7 +155,9 @@ class Model(object):
                             pass
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
                             print("BotBlock @ x %s y %s z %s" % (x,y,z))
-                            self.add_block((x, y, z), SAND)
+                            self.remove_block(self.last_known_botblock)
+                            self.add_block((x, y+1, z), HUMAN )
+                            self.last_known_botblock = (x, y+1, z)
                             
     def hit_test(self, position, vector, max_distance=8):
         m = 8

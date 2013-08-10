@@ -6,10 +6,14 @@ import sys
 import math
 import random
 import time
+from micropsi_core.world.minecraft.vis.PIL import *
 import os
 import micropsi_core.world.minecraft.spock.spock.net.client as client
 
 SECTOR_SIZE = 16
+
+WINDOW = None
+
 
 if sys.version_info[0] >= 3:
     xrange = range
@@ -490,7 +494,7 @@ class Window(pyglet.window.Window):
         self.draw_focused_block()
         self.set_2d()
         self.draw_label()
-        self.draw_reticle()
+        #self.draw_reticle()
     def draw_focused_block(self):
         vector = self.get_sight_vector()
         block = self.model.hit_test(self.position, vector)[0]
@@ -528,17 +532,19 @@ def setup():
     setup_fog()
 
 def commence_vis(client):
-    window = Window(client, width=800, height=600, caption='Pyglet', resizable=True)
-    window.set_exclusive_mouse(True)
+    global window
+    window = Window(client, width=800, height=600, caption='Pyglet', resizable=True, visible=False)
+    #window.set_exclusive_mouse(True)
     setup()
     for i in range(0,50):
         step_vis()
 
 def step_vis():
     pyglet.clock.tick()
-    for window in pyglet.app.windows:
-        window.switch_to()
-        window.model.reload()
-        window.dispatch_events()
-        window.dispatch_event('on_draw')
-        window.flip()
+    pyglet.image.get_buffer_manager().get_color_buffer().save('screenshot.png')
+    global window
+    window.switch_to()
+    window.model.reload()
+    window.dispatch_events()
+    window.dispatch_event('on_draw')
+    window.flip()

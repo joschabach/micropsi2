@@ -1,14 +1,12 @@
 from __future__ import division
+from shutil import move
 
 from pyglet.gl import *
 from pyglet.window import key
 import sys
 import math
-import random
 import time
-from micropsi_core.world.minecraft.vis.PIL import *
 import os
-import micropsi_core.world.minecraft.spock.spock.net.client as client
 
 SECTOR_SIZE = 16
 
@@ -44,8 +42,8 @@ def tex_coords(top, bottom, side):
     result.extend(side * 4)
     return result
 
-GRASS = tex_coords((1, 0), (0, 1), (0, 0)) # 1st top 2nd bottom  3rd side
-SAND = tex_coords((1, 1), (1, 1), (1, 1))# (row, line)
+GRASS = tex_coords((1, 0), (0, 1), (0, 0))# (row, line)
+SAND = tex_coords((1, 1), (1, 1), (1, 1))
 BRICK = tex_coords((2, 0), (2, 0), (2, 0))
 GOLDORE = tex_coords((3, 0), (3, 0), (3, 0))
 STONE = tex_coords((2, 1), (2, 1), (2, 1))
@@ -102,13 +100,14 @@ class Model(object):
         z_chunk = self.client.position['z'] // 16
 
         bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
+        current_column = self.client.world.columns[(x_chunk, z_chunk)]
+        current_section = current_column.chunks[int((bot_block[1] + y % 16) // 16)]
 
         for x in xrange(0, n):
             for y in xrange(0, n):
                 for z in xrange(0, n):
-                    if self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
-                        current_block = self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
-                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
+                    if current_section != None:
+                        current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if current_block == 14:
                            self.init_block((x, y, z), GOLDORE)
                         elif current_block == 3:
@@ -121,10 +120,7 @@ class Model(object):
                            self.init_block((x, y, z), GRASS)
 
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
-                            print("BotBlock @ x %s y %s z %s" % (x,y,z))
                             self.init_block((x, y, z), SAND)
-                        #else:
-                        #    print(current_block)
 
     def reload(self):
         n = 16
@@ -135,12 +131,14 @@ class Model(object):
         z_chunk = self.client.position['z'] // 16
 
         bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
+        current_column = self.client.world.columns[(x_chunk, z_chunk)]
+        current_section = current_column.chunks[int((bot_block[1] + y % 16) // 16)]
 
         for x in xrange(0, n):
             for y in xrange(0, n):
                 for z in xrange(0, n):
-                    if self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y % 16) // 16)] != None:
-                        current_block = self.client.world.columns[(x_chunk, z_chunk)].chunks[int((bot_block[1] + y - 10 // 2) // 16)][
+                    if current_section != None:
+                        current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)][
                             'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if current_block == 14:
                            #self.add_block((x, y, z), GOLDORE)
@@ -541,7 +539,8 @@ def commence_vis(client):
 
 def step_vis():
     pyglet.clock.tick()
-    pyglet.image.get_buffer_manager().get_color_buffer().save('screenshot.png')
+    pyglet.image.get_buffer_manager().get_color_buffer().save('screenshot_write.jpg')
+    move('screenshot_write.jpg', 'screenshot.jpg')
     global window
     window.switch_to()
     window.model.reload()

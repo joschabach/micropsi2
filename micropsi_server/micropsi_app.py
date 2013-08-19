@@ -18,7 +18,7 @@ from micropsi_core import runtime
 import micropsi_core.tools
 from micropsi_server import usermanagement
 from micropsi_server import bottle
-from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error
+from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error, Bottle, abort
 import argparse
 import os
 import json
@@ -128,6 +128,10 @@ def _add_world_list(template_name, **params):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
         world_js=world_js, **params)
 
+
+@route('/stream')
+def server_static():
+    return
 
 @route('/static/<filepath:path>')
 def server_static(filepath):

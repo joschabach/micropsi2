@@ -539,8 +539,8 @@ def commence_vis(client):
 
 def step_vis():
     pyglet.clock.tick()
-    pyglet.image.get_buffer_manager().get_color_buffer().save('screenshot_write.jpg')
-    move('screenshot_write.jpg', 'screenshot.jpg')
+    pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.jpg')
+    move('./micropsi_server/static/minecraft/screenshot_write.jpg', './micropsi_server/static/minecraft/screenshot.jpg')
     global window
     window.switch_to()
     window.model.reload()

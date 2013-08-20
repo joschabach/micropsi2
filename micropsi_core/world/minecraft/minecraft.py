@@ -15,7 +15,7 @@ class Minecraft(World):
     supported_worldadapters = ['Braitenberg']
 
     assets = {
-    'background': "island/psi_1.png",
+    'background': "minecraft/screenshot.jpg",
     'js': "minecraft/minecraft.js",
     'x': 2048,
     'y': 2048,

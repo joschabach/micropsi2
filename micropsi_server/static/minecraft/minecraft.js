@@ -26,6 +26,9 @@ var viewProperties = {
     }
 };
 
+var i = 0;
+var next_refresh = 0;
+
 var available_object_types = ['Lightsource'];
 
 objects = {};
@@ -66,25 +69,38 @@ $(window).focus(function () {
 
 function refreshWorldView() {
 
-    api.call('get_world_properties', {
-        world_uid: currentWorld
-    }, success = function (data) {
-        if ('assets' in data) {
-            var randomnumber = Math.floor(Math.random() * 10000001)
-            canvas.css('background', 'url("/static/' + data.assets.background + "?q=" + randomnumber + '") no-repeat top left');
-            //var objContext = world.getContext('2d');
-            //var objImg = new Image()
-            //objImg.src = ("/static/" + data.assets.background + "?q=" + randomnumber);
-            //objContext.drawImage(objImg, 200, 800);
-            //console.log("canvas is " + canvas);
-            //console.log("canvas.parent() is " + canvas.parent());
-            //console.log("world is " + world);
-        }
-    }, error = function (data) {
-        $.cookie('selected_world', '', {expires: -1, path: '/'});
-        dialogs.notification(data.Error, 'error');
-    });
+    /* api.call('get_world_properties', {
+     world_uid: currentWorld
+     }, success = function (data) {
+     if ('assets' in data) {
+     var randomnumber = Math.floor(Math.random() * 10000001)
+     //canvas.css('background', 'url("/static/' + data.assets.background + "?q=" + randomnumber + '") no-repeat top left');
+     //var objContext = world.getContext('2d');
+     //var objImg = new Image()
+     //objImg.src = ("/static/" + data.assets.background + "?q=" + randomnumber);
+     //objContext.drawImage(objImg, 200, 800);
+     //console.log("canvas is " + canvas);
+     //console.log("canvas.parent() is " + canvas.parent());
+     //console.log("world is " + world);
+     }
+     }, error = function (data) {
+     $.cookie('selected_world', '', {expires: -1, path: '/'});
+     dialogs.notification(data.Error, 'error');
+     });*/
 
+    if (next_refresh == 0) {
+        i++;
+        var randomnumber = Math.floor(Math.random() * 10000001)
+        screenshot0.src = "/static/minecraft/screenshot.jpg?q=" + i * randomnumber;
+        console.log("refreshedd " + 0 + " " + i * randomnumber);
+        next_refresh == 1;
+    } else if (next_refresh == 1) {
+        i++;
+        var randomnumber = Math.floor(Math.random() * 10000001)
+        screenshot1.src = "/static/minecraft/screenshot.jpg?q=" + i * randomnumber;
+        console.log("refreshedd " + 1 + " " + i * randomnumber);
+        next_refresh == 0;
+    }
 
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
@@ -150,6 +166,27 @@ function setCurrentWorld(uid) {
 
 
 function loadWorldInfo() {
+
+    var world_div = document.getElementsByClassName("editor_field span9").item(1);
+    var screenshot_div = document.createElement("div");
+    screenshot_div.id = "canvas_div";
+    world_div.appendChild(screenshot_div);
+
+    var canvas_div = document.getElementById("canvas_div")
+
+    var newImg = document.createElement("img");
+    newImg.id = "screenshot0";
+    //newImg.src = "/static/minecraft/screenshot.jpg";
+    newImg.style = "position: absolute; top: 30px; right: 5px;";
+    canvas_div.appendChild(newImg);
+
+
+    var newImg2 = document.createElement("img");
+    newImg2.id = "screenshot1";
+    //newImg2.src = "/static/minecraft/screenshot.jpg";
+    newImg2.style = "position: absolute; top: 30px; right: 5px;";
+    canvas_div.appendChild(newImg2);
+
     api.call('get_world_properties', {
         world_uid: currentWorld
     }, success = function (data) {

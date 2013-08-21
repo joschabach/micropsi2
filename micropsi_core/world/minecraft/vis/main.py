@@ -85,6 +85,7 @@ class Model(object):
         self.group = TextureGroup('micropsi_core/world/minecraft/vis/texture.png')
         self.own_group = TextureGroup('micropsi_core/world/minecraft/vis/own_texture.png')
         self.world = {}
+        self.type = {}
         self.shown = {}
         self._shown = {}
         self.sectors = {}
@@ -110,18 +111,18 @@ class Model(object):
                     if current_section != None:
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if current_block == 14:
-                           self.own_init_block((x, y, z), GOLDORE)
+                           self.init_block((x, y, z), GOLDORE, "GOLDORE")
                         elif current_block == 3:
-                           self.init_block((x, y, z), SAND)
+                           self.init_block((x, y, z), SAND, "GOLDORE")
                         elif current_block == 1:
-                           self.init_block((x, y, z), STONE)
+                           self.init_block((x, y, z), STONE, "STONE")
                         elif current_block == 13:
-                           self.init_block((x, y, z), STONE)
+                           self.init_block((x, y, z), STONE, "STONE")
                         elif current_block == 2:
-                           self.init_block((x, y, z), GRASS)
+                           self.init_block((x, y, z), GRASS, "GRASS")
 
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
-                            self.init_block((x, y, z), SAND)
+                            self.init_block((x, y, z), SAND, "SAND")
 
     def reload(self):
         n = 16
@@ -159,7 +160,7 @@ class Model(object):
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
                             print("BotBlock @ x %s y %s z %s" % (x,y,z))
                             self.remove_block(self.last_known_botblock)
-                            self.add_block((x, y+1, z), HUMAN )
+                            self.add_block((x, y+1, z), HUMAN, "HUMAN" )
                             self.last_known_botblock = (x, y+1, z)
                             
     def hit_test(self, position, vector, max_distance=8):
@@ -180,8 +181,8 @@ class Model(object):
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
-    def init_block(self, position, texture):
-        self.add_block(position, texture, False)
+    def init_block(self, position, texture, type):
+        self.add_block(position, texture, type, False)
     def own_init_block(self, position, texture):
         self.own_add_block(position, texture, False)
     def own_add_block(self, position, texture, sync=True):
@@ -193,9 +194,10 @@ class Model(object):
             if self.exposed(position):
                 self.show_own_block(position)
             self.check_neighbors(position)
-    def add_block(self, position, texture, sync=True):
+    def add_block(self, position, texture, type, sync=True):
         if position in self.world:
             self.remove_block(position, sync)
+        self.type[position] = type
         self.world[position] = texture
         self.sectors.setdefault(sectorize(position), []).append(position)
         if sync:
@@ -292,7 +294,10 @@ class Model(object):
     def show_sector(self, sector):
         for position in self.sectors.get(sector, []):
             if position not in self.shown and self.exposed(position):
-                self.show_block(position, False)
+                if self.type[position] == "GOLDORE":
+                    self.show_own_block(position, False)
+                else:
+                    self.show_block(position, False)
     def hide_sector(self, sector):
         for position in self.sectors.get(sector, []):
             if position in self.shown:

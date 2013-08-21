@@ -774,7 +774,7 @@ class Model(object):
                 for z in xrange(0, n):
                     if current_section != None:
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
-                        if current_block != 0:
+                        if (current_block in (1, 2, 3, 4, 5, 7, 10, 11, 12, 13, 14, 15, 16, 19, 21, 22, 24, 25, 35, 41, 42, 43, 45, 46, 47, 48, 49, 52, 56, 57, 73, 74, 80, 82, 84, 87, 88, 89, 97, 98, 103, 110, 112, 121, 123, 124, 125, 125, 129, 133, 137, 152, 153, 155, 159, 172, 173)):
                             #print(current_block)
                             #print(self.block_names[str(current_block)])
                             self.init_block((x, y, z), GOLDORE, self.block_names[str(current_block)])

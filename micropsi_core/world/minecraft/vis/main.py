@@ -337,6 +337,162 @@ class Model(object):
         self.texture_workbench_front = TextureGroup('micropsi_core/world/minecraft/vis/workbench_front.png')
         self.texture_workbench_side = TextureGroup('micropsi_core/world/minecraft/vis/workbench_side.png')
         self.texture_workbench_top = TextureGroup('micropsi_core/world/minecraft/vis/workbench_top.png')
+        self.block_names = {'1': "stone",
+                            '2': "grass_top",
+                            '3': "dirt",
+                            '4': "stonebrick",
+                            '5': "wood",
+                            '6': "sapling",
+                            '7': "bedrock",
+                            '8': "water",
+                            '9': "water",
+                            '10': "lava",
+                            '11': "lava",
+                            '12': "sand",
+                            '13': "gravel",
+                            '14': "oreGold",
+                            '15': "oreIron",
+                            '16': "oreCoal",
+                            '17': "tree_top",
+                            '18': "leaves",
+                            '19': "sponge",
+                            '20': "glass",
+                            '21': "oreLapis",
+                            '22': "blockLapis",
+                            '23': "furnace_top",
+                            '24': "sandstone_top",
+                            '25': "musicBlock",
+                            '26': "bed_feet_top",
+                            '27': "goldenRail_powered",
+                            '28': "detectorRail_on",
+                            '29': "piston_inner_top",
+                            '30': "web",
+                            '31': "fern",
+                            '32': "deadbush",
+                            '33': "piston_top",
+                            '34': "piston_top_sticky",
+                            '35': "cloth_0",
+                            '37': "flower",
+                            '38': "rose",
+                            '39': "mushroom_brown",
+                            '40': "mushroom_red",
+                            '41': "blockGold",
+                            '42': "blockIron",
+                            '43': "stoneslab_top",
+                            '44': "stoneslab_top",
+                            '45': "brick",
+                            '46': "tnt_top",
+                            '47': "wood",
+                            '48': "stoneMoss",
+                            '49': "obsidian",
+                            '50': "torch",
+                            '51': "fire_0",
+                            '52': "mobSpawner",
+                            '53': "wood",
+                            '55': "redstoneDust_line",
+                            '56': "oreDiamond",
+                            '57': "blockDiamond",
+                            '58': "workbench_front",
+                            '59': "crops_7",
+                            '60': "dirt",
+                            '61': "furnace_front",
+                            '62': "furnace_front_lit",
+                            '63': "wood",
+                            '64': "doorWood_lower",
+                            '65': "ladder",
+                            '66': "rail",
+                            '67': "stonebrick",
+                            '68': "wood",
+                            '69': "stonebrick",
+                            '70': "stone",
+                            '71': "doorIron_lower",
+                            '72': "wood",
+                            '73': "oreRedstone",
+                            '74': "oreRedstone",
+                            '75': "redtorch",
+                            '76': "redtorch_lit",
+                            '77': "stone",
+                            '78': "snow",
+                            '79': "ice",
+                            '80': "snow",
+                            '81': "cactus_top",
+                            '82': "clay",
+                            '83': "reeds",
+                            '84': "jukebox_top",
+                            '85': "wood",
+                            '86': "ppumpkin_face",
+                            '87': "hellrock",
+                            '88': "hellsand",
+                            '89': "lightgem",
+                            '91': "pumpkin_jack",
+                            '92': "cake_inner",
+                            '93': "redtorch",
+                            '94': "redtorch_lit",
+                            '95': "cactus_bottom",
+                            '96': "trapdoor",
+                            '97': "stone",
+                            '98': "stonebricksmooth",
+                            '99': "mushroom_skin_stem",
+                            '100': "mushroom_skin_stem",
+                            '101': "fenceIron",
+                            '102': "glass",
+                            '103': "melon_top",
+                            '104': "stem_bent",
+                            '105': "bentStem=stem_bent",
+                            '106': "vine",
+                            '107': "wood",
+                            '108': "brick",
+                            '109': "stonebricksmooth",
+                            '110': "mycel_top",
+                            '111': "waterlily",
+                            '112': "netherBrick",
+                            '113': "netherBrick",
+                            '114': "netherBrick",
+                            '115': "netherStalk_2",
+                            '116': "enchantment_bottom",
+                            '117': "brewingStand",
+                            '118': "water",
+                            '120': "endframe_eye",
+                            '121': "whiteStone",
+                            '122': "dragonEgg",
+                            '123': "redstoneLight",
+                            '124': "redstoneLight_lit",
+                            '125': "wood",
+                            '127': "cocoa_2",
+                            '128': "sandstone_side",
+                            '129': "oreEmerald",
+                            '131': "wood",
+                            '133': "blockEmerald",
+                            '134': "wood_spruce",
+                            '135': "wood_birch",
+                            '136': "wood_jungle",
+                            '137': "commandBlock",
+                            '138': "obsidian",
+                            '139': "stonebrick",
+                            '139': "stoneMoss",
+                            '141': "carrots_3",
+                            '142': "potatoes_2",
+                            '143': "wood",
+                            '145': "anvil_top_damaged_2",
+                            '147': "blockGold",
+                            '148': "blockIron",
+                            '149': "comparator_lit",
+                            '150': "redtorch_lit",
+                            '151': "daylightDetector_side",
+                            '152': "blockRedstone",
+                            '153': "netherquartz",
+                            '154': "hopper_inside",
+                            '155': "quartzblock_top",
+                            '156': "quartzblock_top",
+                            '157': "activatorRail_powered",
+                            '158': "dropper_front",
+                            '159': "clayHardenedStained_0",
+                            '170': "hayBlock_top",
+                            '171': "cloth_0",
+                            '171': "cloth_1",
+                            '172': "clayHardened",
+                            '173': "blockCoal"}
+
         self.texturepack = {'activatorRail': self.texture_activatorRail,
                             'activatorRail_powered': self.texture_activatorRail_powered,
                             'anvil_base': self.texture_anvil_base,
@@ -618,19 +774,10 @@ class Model(object):
                 for z in xrange(0, n):
                     if current_section != None:
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
-                        if current_block == 14:
-                           self.init_block((x, y, z), GOLDORE, "oreGold")
-                        elif current_block == 3:
-                           self.init_block((x, y, z), SAND, "GOLDORE")
-                        elif current_block == 1:
-                           self.init_block((x, y, z), STONE, "STONE")
-                        elif current_block == 13:
-                           self.init_block((x, y, z), STONE, "STONE")
-                        elif current_block == 2:
-                           self.init_block((x, y, z), GRASS, "GRASS")
-
-                        if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
-                            self.init_block((x, y, z), SAND, "SAND")
+                        if current_block != 0:
+                            #print(current_block)
+                            #print(self.block_names[str(current_block)])
+                            self.init_block((x, y, z), GOLDORE, self.block_names[str(current_block)])
 
     def reload(self):
         n = 16
@@ -668,7 +815,7 @@ class Model(object):
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
                             print("BotBlock @ x %s y %s z %s" % (x,y,z))
                             self.remove_block(self.last_known_botblock)
-                            self.add_block((x, y+1, z), HUMAN, "HUMAN" )
+                            self.add_block((x, y+1, z), HUMAN, "oreGold" )
                             self.last_known_botblock = (x, y+1, z)
                             
     def hit_test(self, position, vector, max_distance=8):
@@ -766,12 +913,7 @@ class Model(object):
             else:
                 index += 1
         # create vertex list
-        if self.type[position] == "oreGold":
-            self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack["oreGold"],
-                                               ('v3f/static', vertex_data),
-                                               ('t2f/static', texture_data))
-        else:
-            self._shown[position] = self.batch.add(count, GL_QUADS, self.group,
+        self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data))
 

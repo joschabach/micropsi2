@@ -83,6 +83,7 @@ class Model(object):
         self.batch = pyglet.graphics.Batch()
         print(os.getcwd())
         self.group = TextureGroup('micropsi_core/world/minecraft/vis/texture.png')
+        self.own_group = TextureGroup('micropsi_core/world/minecraft/vis/own_texture.png')
         self.world = {}
         self.shown = {}
         self._shown = {}
@@ -109,7 +110,7 @@ class Model(object):
                     if current_section != None:
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if current_block == 14:
-                           self.init_block((x, y, z), GOLDORE)
+                           self.own_init_block((x, y, z), GOLDORE)
                         elif current_block == 3:
                            self.init_block((x, y, z), SAND)
                         elif current_block == 1:
@@ -181,6 +182,17 @@ class Model(object):
         return False
     def init_block(self, position, texture):
         self.add_block(position, texture, False)
+    def own_init_block(self, position, texture):
+        self.own_add_block(position, texture, False)
+    def own_add_block(self, position, texture, sync=True):
+        if position in self.world:
+            self.remove_block(position, sync)
+        self.world[position] = texture
+        self.sectors.setdefault(sectorize(position), []).append(position)
+        if sync:
+            if self.exposed(position):
+                self.show_own_block(position)
+            self.check_neighbors(position)
     def add_block(self, position, texture, sync=True):
         if position in self.world:
             self.remove_block(position, sync)
@@ -205,14 +217,14 @@ class Model(object):
                 continue
             if self.exposed(key):
                 if key not in self.shown:
-                    self.show_block(key)
+                    self.show_own_block(key)
             else:
                 if key in self.shown:
                     self.hide_block(key)
     def show_blocks(self):
         for position in self.world:
             if position not in self.shown and self.exposed(position):
-                self.show_block(position)
+                self.show_own_block(position)
     def show_block(self, position, immediate=True):
         texture = self.world[position]
         self.shown[position] = texture
@@ -220,6 +232,13 @@ class Model(object):
             self._show_block(position, texture)
         else:
             self.enqueue(self._show_block, position, texture)
+    def show_own_block(self, position, immediate=True):
+        texture = self.world[position]
+        self.shown[position] = texture
+        if immediate:
+            self._show_own_block(position, texture)
+        else:
+            self.enqueue(self._show_own_block, position, texture)
     def _show_block(self, position, texture):
         x, y, z = position
         # only show exposed faces
@@ -240,6 +259,28 @@ class Model(object):
         self._shown[position] = self.batch.add(count, GL_QUADS, self.group, 
             ('v3f/static', vertex_data),
             ('t2f/static', texture_data))
+
+    def _show_own_block(self, position, texture):
+        x, y, z = position
+        # only show exposed faces
+        index = 0
+        count = 24
+        vertex_data = cube_vertices(x, y, z, 0.5)
+        texture_data = list(texture)
+        for dx, dy, dz in []:#FACES:
+            if (x + dx, y + dy, z + dz) in self.world:
+                count -= 4
+                i = index * 12
+                j = index * 8
+                del vertex_data[i:i + 12]
+                del texture_data[j:j + 8]
+            else:
+                index += 1
+        # create vertex list
+        self._shown[position] = self.batch.add(count, GL_QUADS, self.own_group,
+            ('v3f/static', vertex_data),
+            ('t2f/static', texture_data))
+
     def hide_block(self, position, immediate=True):
         self.shown.pop(position)
         if immediate:

@@ -8,7 +8,7 @@ import math
 import time
 import os
 
-from micropsi_core.world.minecraft.vis.structs import block_names, load_textures
+from micropsi_core.world.minecraft.vis.structs import block_names, load_textures, has_sides
 
 SECTOR_SIZE = 16
 
@@ -19,6 +19,16 @@ if sys.version_info[0] >= 3:
     xrange = range
 
 def cube_vertices(x, y, z, n):
+    return [
+        x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
+        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
+        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
+        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
+        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
+    ]
+
+def cube_vertices_top(x, y, z, n):
     return [
         x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
         #x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
@@ -45,6 +55,16 @@ def tex_coord(x, y, n=1):
     return dx, dy, dx + m, dy, dx + m, dy + m, dx, dy + m
 
 def tex_coords(top, bottom, side):
+    top = tex_coord(*top)
+    bottom = tex_coord(*bottom)
+    side = tex_coord(*side)
+    result = []
+    result.extend(top)
+    result.extend(bottom)
+    result.extend(side * 4)
+    return result
+
+def tex_coords_top(top, bottom, side):
     top = tex_coord(*top)
     bottom = tex_coord(*bottom)
     side = tex_coord(*side)
@@ -256,31 +276,33 @@ class Model(object):
             self.enqueue(self._show_own_block, position, texture)
     def _show_block(self, position, texture):
         x, y, z = position
-        # only show exposed faces
-        index = 0
-        count = 4
-        vertex_data = cube_vertices(x, y, z, 0.5)
-        texture_data = list(texture)
-        for dx, dy, dz in []:#FACES:
-            if (x + dx, y + dy, z + dz) in self.world:
-                count -= 4
-                i = index * 3
-                j = index * 2
-                del vertex_data[i:i + 3]
-                del texture_data[j:j + 2]
-            else:
-                index += 1
-        # create vertex list
-        self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
-                ('v3f/static', vertex_data),
-                ('t2f/static', texture_data))
-        if self.type[position] == "grass_top":
-                # only show exposed faces
+
+        if self.type[position] in has_sides:
+            # only show exposed faces
+            index = 0
+            count = 4
+            vertex_data = cube_vertices_top(x, y, z, 0.5)
+            texture_data = list(tex_coords_top((0, 0), (0, 0), (0, 0)))
+            self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
+                    ('v3f/static', vertex_data),
+                    ('t2f/static', texture_data))
+
             vertex_data = cube_vertices_sides(x, y, z, 0.5)
             texture_data = list(tex_coords_sides((0, 0), (0, 0), (0, 0)))
-            self._shown[position] = self.batch.add(16, GL_QUADS, self.texturepack["grass_side"],
+            self._shown[position] = self.batch.add(16, GL_QUADS, self.side_files[self.type[position]],
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data))
+
+        else:
+            # only show exposed faces
+            index = 0
+            count = 24
+            vertex_data = cube_vertices(x, y, z, 0.5)
+            texture_data = list(tex_coords((0, 0), (0, 0), (0, 0)))
+            # create vertex list
+            self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
+                    ('v3f/static', vertex_data),
+                    ('t2f/static', texture_data))
 
     def _show_own_block(self, position, texture):
         x, y, z = position

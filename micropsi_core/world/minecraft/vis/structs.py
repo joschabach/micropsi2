@@ -12,6 +12,8 @@ class TextureGroup(pyglet.graphics.Group):
     def unset_state(self):
         glDisable(self.texture.target)
 
+has_sides = ["grass_top"]
+
 block_names = {'1': "stone",
                             '2': "grass_top",
                             '3': "dirt",
@@ -424,6 +426,7 @@ def load_textures(self):
         self.texture_workbench_side = TextureGroup('micropsi_core/world/minecraft/vis/workbench_side.png')
         self.texture_workbench_top = TextureGroup('micropsi_core/world/minecraft/vis/workbench_top.png')
 
+        self.side_files = {"grass_top": self.texture_grass_side}
 
         self.texturepack = {'activatorRail': self.texture_activatorRail,
                             'activatorRail_powered': self.texture_activatorRail_powered,

@@ -21,11 +21,11 @@ if sys.version_info[0] >= 3:
 def cube_vertices(x, y, z, n):
     return [
         x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
-        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
-        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
-        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
-        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
-        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
+        #x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
+        #x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
+        #x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
+        #x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
+        #x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
     ]
 
 def tex_coord(x, y, n=1):
@@ -40,8 +40,8 @@ def tex_coords(top, bottom, side):
     side = tex_coord(*side)
     result = []
     result.extend(top)
-    result.extend(bottom)
-    result.extend(side * 4)
+    #result.extend(bottom)
+    #result.extend(side * 4)
     return result
 
 GRASS = tex_coords((1, 0), (0, 1), (0, 0))# (row, line)
@@ -53,11 +53,11 @@ HUMAN = tex_coords((3, 2), (3, 2), (3, 1))
 
 FACES = [
     ( 0, 1, 0),
-    ( 0,-1, 0),
-    (-1, 0, 0),
-    ( 1, 0, 0),
-    ( 0, 0, 1),
-    ( 0, 0,-1),
+    #( 0,-1, 0),
+    #(-1, 0, 0),
+    #( 1, 0, 0),
+    #( 0, 0, 1),
+    #( 0, 0,-1),
 ]
 
 class TextureGroup(pyglet.graphics.Group):
@@ -746,16 +746,16 @@ class Model(object):
         x, y, z = position
         # only show exposed faces
         index = 0
-        count = 24
+        count = 4
         vertex_data = cube_vertices(x, y, z, 0.5)
         texture_data = list(texture)
         for dx, dy, dz in []:#FACES:
             if (x + dx, y + dy, z + dz) in self.world:
                 count -= 4
-                i = index * 12
-                j = index * 8
-                del vertex_data[i:i + 12]
-                del texture_data[j:j + 8]
+                i = index * 3
+                j = index * 2
+                del vertex_data[i:i + 3]
+                del texture_data[j:j + 2]
             else:
                 index += 1
         # create vertex list
@@ -767,7 +767,7 @@ class Model(object):
         x, y, z = position
         # only show exposed faces
         index = 0
-        count = 24
+        count = 4
         vertex_data = cube_vertices(x, y, z, 0.5)
         texture_data = list(texture)
         for dx, dy, dz in []:#FACES:
@@ -1048,7 +1048,7 @@ class Window(pyglet.window.Window):
             vertex_data = cube_vertices(x, y, z, 0.51)
             glColor3d(0, 0, 0)
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-            pyglet.graphics.draw(24, GL_QUADS, ('v3f/static', vertex_data))
+            pyglet.graphics.draw(4, GL_QUADS, ('v3f/static', vertex_data))
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
     def draw_label(self):
         x, y, z = self.position

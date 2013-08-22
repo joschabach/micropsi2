@@ -28,6 +28,16 @@ def cube_vertices(x, y, z, n):
         #x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
     ]
 
+def cube_vertices_sides(x, y, z, n):
+    return [
+        #x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
+        #x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
+        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
+        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
+        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
+        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
+    ]
+
 def tex_coord(x, y, n=1):
     m = 1.0 / n
     dx = x * m
@@ -42,6 +52,16 @@ def tex_coords(top, bottom, side):
     result.extend(top)
     #result.extend(bottom)
     #result.extend(side * 4)
+    return result
+
+def tex_coords_sides(top, bottom, side):
+    top = tex_coord(*top)
+    bottom = tex_coord(*bottom)
+    side = tex_coord(*side)
+    result = []
+    #result.extend(top)
+    #result.extend(bottom)
+    result.extend(side * 4)
     return result
 
 GRASS = tex_coords((1, 0), (0, 1), (0, 0))# (row, line)
@@ -252,6 +272,13 @@ class Model(object):
                 index += 1
         # create vertex list
         self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
+                ('v3f/static', vertex_data),
+                ('t2f/static', texture_data))
+        if self.type[position] == "grass_top":
+                # only show exposed faces
+            vertex_data = cube_vertices_sides(x, y, z, 0.5)
+            texture_data = list(tex_coords_sides((0, 0), (0, 0), (0, 0)))
+            self._shown[position] = self.batch.add(16, GL_QUADS, self.texturepack["grass_side"],
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data))
 

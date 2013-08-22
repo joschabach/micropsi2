@@ -48,6 +48,16 @@ def cube_vertices_sides(x, y, z, n):
         x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
     ]
 
+def human_vertices(x, y, z, n):
+    return [
+        x-n,y+n+1,z-n, x-n,y+n+1,z+n, x+n,y+n+1,z+n, x+n,y+n+1,z-n, # top
+        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
+        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n+1,z+n, x-n,y+n+1,z-n, # left
+        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n+1,z-n, x+n,y+n+1,z+n, # right
+        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n+1,z+n, x-n,y+n+1,z+n, # front
+        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n+1,z-n, x+n,y+n+1,z-n, # back
+    ]
+
 def tex_coord(x, y, n=1):
     m = 1.0 / n
     dx = x * m
@@ -176,7 +186,7 @@ class Model(object):
                             'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
                             self.remove_block(self.last_known_botblock)
-                            self.add_block((x, y+1, z), HUMAN, "oreGold" )
+                            self.add_block((x, y+1, z), HUMAN, "human" )
                             self.last_known_botblock = (x, y+1, z)
                             
     def hit_test(self, position, vector, max_distance=8):
@@ -262,6 +272,15 @@ class Model(object):
             self._shown[position] = self.batch.add(16, GL_QUADS, self.side_files[self.type[position]],
                 ('v3f/static', vertex_data),
                 ('t2f/static', texture_data))
+
+        if self.type[position] == "human":
+            count = 24
+            vertex_data = human_vertices(x, y, z, 0.5)
+            texture_data = list(tex_coords((0, 0), (0, 0), (0, 0)))
+            # create vertex list
+            self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
+                    ('v3f/static', vertex_data),
+                    ('t2f/static', texture_data))
 
         else:
             count = 24

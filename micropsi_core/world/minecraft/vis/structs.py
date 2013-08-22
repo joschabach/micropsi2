@@ -173,6 +173,7 @@ block_names = {'1': "stone",
                             '173': "blockCoal"}
 
 def load_textures(self):
+        self.texture_human = TextureGroup('micropsi_core/world/minecraft/vis/block_textures/human.png')
         self.texture_activatorRail = TextureGroup('micropsi_core/world/minecraft/vis/block_textures/activatorRail.png')
         self.texture_activatorRail_powered = TextureGroup('micropsi_core/world/minecraft/vis/block_textures/activatorRail_powered.png')
         self.texture_anvil_base = TextureGroup('micropsi_core/world/minecraft/vis/block_textures/anvil_base.png')
@@ -430,7 +431,8 @@ def load_textures(self):
 
         self.side_files = {"grass_top": self.texture_grass_side}
 
-        self.texturepack = {'activatorRail': self.texture_activatorRail,
+        self.texturepack = {'human': self.texture_human,
+                            'activatorRail': self.texture_activatorRail,
                             'activatorRail_powered': self.texture_activatorRail_powered,
                             'anvil_base': self.texture_anvil_base,
                             'anvil_top': self.texture_anvil_top,

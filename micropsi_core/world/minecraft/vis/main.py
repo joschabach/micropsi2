@@ -124,7 +124,6 @@ class Model(object):
     def __init__(self, client):
         self.batch = pyglet.graphics.Batch()
         print(os.getcwd())
-        self.group = TextureGroup('micropsi_core/world/minecraft/vis/texture.png')
         load_textures(self)
         self.world = {}
         self.type = {}

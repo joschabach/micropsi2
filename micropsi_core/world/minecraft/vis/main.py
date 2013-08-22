@@ -8,7 +8,7 @@ import math
 import time
 import os
 
-from micropsi_core.world.minecraft.vis.structs import block_names, load_textures, has_sides
+from micropsi_core.world.minecraft.vis.structs import block_names, load_textures, has_sides, solid_blocks
 
 SECTOR_SIZE = 16
 
@@ -147,15 +147,15 @@ class Model(object):
         current_column = self.client.world.columns[(x_chunk, z_chunk)]
         current_section = current_column.chunks[int((bot_block[1] + y % 16) // 16)]
 
-        for x in xrange(0, n):
-            for y in xrange(0, n):
-                for z in xrange(0, n):
-                    if current_section != None:
+        if current_section != None:
+            for x in xrange(0, n):
+                for y in xrange(0, n):
+                    for z in xrange(0, n):
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
-                        if (current_block in (1, 2, 3, 4, 5, 7, 10, 11, 12, 13, 14, 15, 16, 19, 21, 22, 24, 25, 35, 41, 42, 43, 45, 46, 47, 48, 49, 52, 56, 57, 73, 74, 80, 82, 84, 87, 88, 89, 97, 98, 103, 110, 112, 121, 123, 124, 125, 125, 129, 133, 137, 152, 153, 155, 159, 172, 173)):
-                            #print(current_block)
-                            #print(self.block_names[str(current_block)])
+                        if (current_block in solid_blocks):
                             self.init_block((x, y, z), GOLDORE, block_names[str(current_block)])
+                        elif current_block != 0:
+                            print("not drawing block: %s which basically is: %s" % (str(current_block), block_names[str(current_block)]))
 
     def reload(self):
         n = 16
@@ -175,23 +175,7 @@ class Model(object):
                     if current_section != None:
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)][
                             'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
-                        if current_block == 14:
-                           #self.add_block((x, y, z), GOLDORE)
-                            pass
-                        elif current_block == 3:
-                           #self.add_block((x, y, z), SAND)
-                            pass
-                        elif current_block == 1:
-                           #self.add_block((x, y, z), STONE)
-                            pass
-                        elif current_block == 13:
-                           #self.add_block((x, y, z), STONE)
-                            pass
-                        elif current_block == 2:
-                           #self.add_block((x, y, z), GRASS)
-                            pass
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
-                            print("BotBlock @ x %s y %s z %s" % (x,y,z))
                             self.remove_block(self.last_known_botblock)
                             self.add_block((x, y+1, z), HUMAN, "oreGold" )
                             self.last_known_botblock = (x, y+1, z)
@@ -216,27 +200,16 @@ class Model(object):
         return False
     def init_block(self, position, texture, type):
         self.add_block(position, texture, type, False)
-    def own_init_block(self, position, texture):
-        self.own_add_block(position, texture, False)
-    def own_add_block(self, position, texture, sync=True):
-        if position in self.world:
-            self.remove_block(position, sync)
-        self.world[position] = texture
-        self.sectors.setdefault(sectorize(position), []).append(position)
-        if sync:
-            if self.exposed(position):
-                self.show_own_block(position)
-            self.check_neighbors(position)
     def add_block(self, position, texture, type, sync=True):
         if position in self.world:
             self.remove_block(position, sync)
         self.type[position] = type
         self.world[position] = texture
         self.sectors.setdefault(sectorize(position), []).append(position)
-        if sync:
-            if self.exposed(position):
-                self.show_block(position)
-            self.check_neighbors(position)
+        #if sync:
+        #    if self.exposed(position):
+        self.show_block(position)
+        #    self.check_neighbors(position)
     def remove_block(self, position, sync=True):
         del self.world[position]
         self.sectors[sectorize(position)].remove(position)
@@ -278,8 +251,6 @@ class Model(object):
         x, y, z = position
 
         if self.type[position] in has_sides:
-            # only show exposed faces
-            index = 0
             count = 4
             vertex_data = cube_vertices_top(x, y, z, 0.5)
             texture_data = list(tex_coords_top((0, 0), (0, 0), (0, 0)))
@@ -294,8 +265,6 @@ class Model(object):
                 ('t2f/static', texture_data))
 
         else:
-            # only show exposed faces
-            index = 0
             count = 24
             vertex_data = cube_vertices(x, y, z, 0.5)
             texture_data = list(tex_coords((0, 0), (0, 0), (0, 0)))
@@ -303,27 +272,6 @@ class Model(object):
             self._shown[position] = self.batch.add(count, GL_QUADS, self.texturepack[self.type[position]],
                     ('v3f/static', vertex_data),
                     ('t2f/static', texture_data))
-
-    def _show_own_block(self, position, texture):
-        x, y, z = position
-        # only show exposed faces
-        index = 0
-        count = 4
-        vertex_data = cube_vertices(x, y, z, 0.5)
-        texture_data = list(texture)
-        for dx, dy, dz in []:#FACES:
-            if (x + dx, y + dy, z + dz) in self.world:
-                count -= 4
-                i = index * 12
-                j = index * 8
-                del vertex_data[i:i + 12]
-                del texture_data[j:j + 8]
-            else:
-                index += 1
-        # create vertex list
-        self._shown[position] = self.batch.add(count, GL_QUADS, self.group,
-            ('v3f/static', vertex_data),
-            ('t2f/static', texture_data))
 
     def hide_block(self, position, immediate=True):
         self.shown.pop(position)
@@ -577,7 +525,7 @@ class Window(pyglet.window.Window):
         self.set_3d()
         glColor3d(1, 1, 1)
         self.model.batch.draw()
-        self.draw_focused_block()
+        #self.draw_focused_block()
         self.set_2d()
         self.draw_label()
         #self.draw_reticle()

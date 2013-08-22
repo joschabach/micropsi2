@@ -32,7 +32,6 @@ class Minecraft(World):
         self.chat_ping_counter = 0
 
     def step(self):
-        print("minecraft step")
         if self.first_step:
             # launch minecraft bot
             username = "ownspock"

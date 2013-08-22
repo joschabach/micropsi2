@@ -168,7 +168,6 @@ def step_world(world_uid, return_world_view=False):
 		return_world_view: if True, return the current world state for UI purposes
 	"""
 
-	print("stepping world")
 	micropsi_core.runtime.worlds[world_uid].step()
 	if return_world_view:
 		return get_world_view(world_uid)

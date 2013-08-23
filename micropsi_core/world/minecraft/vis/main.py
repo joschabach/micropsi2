@@ -9,6 +9,7 @@ import time
 import os
 
 from micropsi_core.world.minecraft.vis.structs import block_names, load_textures, has_sides, solid_blocks
+from micropsi_core.world.minecraft.vis.vertices import cube_vertices, cube_vertices_sides, cube_vertices_top, human_vertices
 
 SECTOR_SIZE = 16
 
@@ -17,46 +18,6 @@ WINDOW = None
 
 if sys.version_info[0] >= 3:
     xrange = range
-
-def cube_vertices(x, y, z, n):
-    return [
-        x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
-        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
-        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
-        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
-        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
-        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
-    ]
-
-def cube_vertices_top(x, y, z, n):
-    return [
-        x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
-        #x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
-        #x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
-        #x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
-        #x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
-        #x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
-    ]
-
-def cube_vertices_sides(x, y, z, n):
-    return [
-        #x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
-        #x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
-        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n,z+n, x-n,y+n,z-n, # left
-        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n,z-n, x+n,y+n,z+n, # right
-        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n,z+n, x-n,y+n,z+n, # front
-        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n,z-n, x+n,y+n,z-n, # back
-    ]
-
-def human_vertices(x, y, z, n):
-    return [
-        x-n,y+n+1,z-n, x-n,y+n+1,z+n, x+n,y+n+1,z+n, x+n,y+n+1,z-n, # top
-        x-n,y-n,z-n, x+n,y-n,z-n, x+n,y-n,z+n, x-n,y-n,z+n, # bottom
-        x-n,y-n,z-n, x-n,y-n,z+n, x-n,y+n+1,z+n, x-n,y+n+1,z-n, # left
-        x+n,y-n,z+n, x+n,y-n,z-n, x+n,y+n+1,z-n, x+n,y+n+1,z+n, # right
-        x-n,y-n,z+n, x+n,y-n,z+n, x+n,y+n+1,z+n, x-n,y+n+1,z+n, # front
-        x+n,y-n,z-n, x-n,y-n,z-n, x-n,y+n+1,z-n, x+n,y+n+1,z-n, # back
-    ]
 
 def tex_coord(x, y, n=1):
     m = 1.0 / n
@@ -163,8 +124,6 @@ class Model(object):
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if (current_block in solid_blocks):
                             self.init_block((x, y, z), GOLDORE, block_names[str(current_block)])
-                        elif current_block != 0:
-                            print("not drawing block: %s which basically is: %s" % (str(current_block), block_names[str(current_block)]))
 
     def reload(self):
         n = 16

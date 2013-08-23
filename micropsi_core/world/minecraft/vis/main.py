@@ -63,17 +63,14 @@ class Model(object):
         self.client = client # Minecraft client "spock"
         self.initialize()
         self.last_known_botblock = (0,0,0)
+
     def initialize(self):
-        n = 16
-        s = 1
-        y = 0
+        n = 16 #What exactly does this do?
 
         x_chunk = self.client.position['x'] // 16
         z_chunk = self.client.position['z'] // 16
-
         bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
         current_column = self.client.world.columns[(x_chunk, z_chunk)]
-
 
         for y in xrange(0, n):
             current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)] #TODO explain formula
@@ -85,9 +82,7 @@ class Model(object):
                             self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
 
     def reload(self):
-        n = 16
-        s = 1
-        y = 0
+        n = 16 #What exactly does this do?
 
         x_chunk = self.client.position['x'] // 16
         z_chunk = self.client.position['z'] // 16
@@ -105,7 +100,6 @@ class Model(object):
                             self.remove_block(self.last_known_botblock)
                             self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
                             self.last_known_botblock = (x, y+1, z)
-                            
 
     def exposed(self, position):
         x, y, z = position
@@ -113,8 +107,10 @@ class Model(object):
             if (x + dx, y + dy, z + dz) not in self.world:
                 return True
         return False
+
     def init_block(self, position, texture, type):
         self.add_block(position, texture, type, False)
+
     def add_block(self, position, texture, type, sync=True):
         if position in self.world:
             self.remove_block(position, sync)
@@ -122,9 +118,10 @@ class Model(object):
         self.world[position] = texture
         self.sectors.setdefault(sectorize(position), []).append(position)
         #if sync:
-        #    if self.exposed(position):
+        #    if self.exposed(position): #TODO if this is active, only blocks on top get drawn. why?
         self.show_block(position)
         #    self.check_neighbors(position)
+
     def remove_block(self, position, sync=True):
         del self.world[position]
         self.sectors[sectorize(position)].remove(position)
@@ -132,6 +129,7 @@ class Model(object):
             if position in self.shown:
                 self.hide_block(position)
             self.check_neighbors(position)
+
     def check_neighbors(self, position):
         x, y, z = position
         for dx, dy, dz in FACES:
@@ -144,10 +142,12 @@ class Model(object):
             else:
                 if key in self.shown:
                     self.hide_block(key)
+
     def show_blocks(self):
         for position in self.world:
             if position not in self.shown and self.exposed(position):
                 self.show_own_block(position)
+
     def show_block(self, position, immediate=True):
         texture = self.world[position]
         self.shown[position] = texture
@@ -155,6 +155,7 @@ class Model(object):
             self._show_block(position, texture)
         else:
             self.enqueue(self._show_block, position, texture)
+
     def show_own_block(self, position, immediate=True):
         texture = self.world[position]
         self.shown[position] = texture
@@ -162,10 +163,11 @@ class Model(object):
             self._show_own_block(position, texture)
         else:
             self.enqueue(self._show_own_block, position, texture)
+
     def _show_block(self, position, texture):
         x, y, z = position
 
-        if self.type[position] in has_sides:
+        if self.type[position] in has_sides: #TODO make smarter
             count = 4
             vertex_data = cube_vertices_top(x, y, z, 0.5)
             texture_data = list(tex_coords_top((0, 0), (0, 0), (0, 0)))
@@ -203,16 +205,20 @@ class Model(object):
             self._hide_block(position)
         else:
             self.enqueue(self._hide_block, position)
+
     def _hide_block(self, position):
         self._shown.pop(position).delete()
+
     def show_sector(self, sector):
         for position in self.sectors.get(sector, []):
             if position not in self.shown and self.exposed(position):
                 self.show_block(position, False)
+
     def hide_sector(self, sector):
         for position in self.sectors.get(sector, []):
             if position in self.shown:
                 self.hide_block(position, False)
+
     def change_sectors(self, before, after):
         before_set = set()
         after_set = set()
@@ -234,15 +240,19 @@ class Model(object):
             self.show_sector(sector)
         for sector in hide:
             self.hide_sector(sector)
+
     def enqueue(self, func, *args):
         self.queue.append((func, args))
+
     def dequeue(self):
         func, args = self.queue.pop(0)
         func(*args)
+
     def process_queue(self):
         start = time.clock()
         while self.queue and time.clock() - start < 1 / 60.0:
             self.dequeue()
+
     def process_entire_queue(self):
         while self.queue:
             self.dequeue()
@@ -258,19 +268,16 @@ class Window(pyglet.window.Window):
         self.sector = None
         self.reticle = None
         self.dy = 0
-        #self.inventory = [BRICK, GRASS, SAND]
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]
-        self.client = client
+        self.client = client #Minecraft Client "spock"
         self.model = Model(self.client)
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18, 
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top', 
             color=(0, 0, 0, 255))
         pyglet.clock.schedule_interval(self.update, 1.0 / 60)
-    def set_exclusive_mouse(self, exclusive):
-        super(Window, self).set_exclusive_mouse(exclusive)
-        self.exclusive = exclusive
+    
     def get_sight_vector(self):
         x, y = self.rotation
         m = math.cos(math.radians(y))

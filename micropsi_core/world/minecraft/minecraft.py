@@ -47,7 +47,7 @@ class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
     datasources = {'x_coord': 0.7}
-    datatargets = {'psi_look_value': 0}
+    datatargets = {'psi_look_value': 0} #TODO this does not do anything yet
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""

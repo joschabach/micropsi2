@@ -35,7 +35,7 @@ worlds = {}
 nodenets = {}
 runner = {
     'nodenet': {'timestep': 1000, 'runner': None},
-    'world': {'timestep': 1000, 'runner': None}
+    'world': {'timestep': 5000, 'runner': None}
 }
 
 
@@ -375,7 +375,6 @@ def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespa
                copy_associated_links=True):
     """Copies a set of netentities, either between nodenets or within a nodenet. If a target nodespace
     is supplied, all nodes will be inserted below that target nodespace, otherwise below "Root".
-    If parent nodespaces are included in the set of node_uids, the contained nodes will remain in
     If parent nodespaces are included in the set of node_uids, the contained nodes will remain in
     these parent nodespaces.
     Only explicitly listed nodes and nodespaces will be copied.
@@ -729,11 +728,6 @@ def align_nodes(nodenet_uid, nodespace):
     if result:
         nodenets[nodenet_uid].update_node_positions()
     return result
-
-def get_minecraft_imagedata(nodenet_uid):
-    """Returns a list of available datatarget types for the given nodenet."""
-    return worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datatargets(nodenet_uid)
-
 
 # --- end of API
 

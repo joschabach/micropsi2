@@ -32,11 +32,10 @@ class Minecraft(World):
             self.client = RikerClient(plugins=plugins) #TODO Riker is not needed either and not in development anymore
             self.client.start()
             vis.commence_vis(self.client)
-            #vis.step_vis()
             self.first_step = False
 
         self.chat_ping_counter += 1
-        if self.chat_ping_counter % 10 == 0:
+        if self.chat_ping_counter % 100 == 0: #TODO find other way to send "keepalive"
             self.client.push(Packet(ident = 0x03, data = {
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
@@ -49,11 +48,6 @@ class Braitenberg(WorldAdapter):
 
     datasources = {'x_coord': 0.7}
     datatargets = {'psi_look_value': 0}
-
-    def initialize_worldobject(self, data):
-        if not "position" in data:
-            self.position = self.world.groundmap['start_position']
-
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""

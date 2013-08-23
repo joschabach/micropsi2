@@ -3,7 +3,7 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-from micropsi_core.world.minecraft.spock.riker.rkclient import RikerClient
+from micropsi_core.world.minecraft.spock.spock.net.client import Client
 import micropsi_core.world.minecraft.vis.main as vis
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
@@ -29,7 +29,7 @@ class Minecraft(World):
         if self.first_step: #TODO probably not too smart
             # launch minecraft bot
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin] #TODO not all plugins - if any - are needed
-            self.client = RikerClient(plugins=plugins) #TODO Riker is not needed either and not in development anymore
+            self.client = Client(plugins=plugins)
             self.client.start()
             vis.commence_vis(self.client)
             self.first_step = False

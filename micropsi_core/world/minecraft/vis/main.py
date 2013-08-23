@@ -277,7 +277,7 @@ class Window(pyglet.window.Window):
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top', 
             color=(0, 0, 0, 255))
         pyglet.clock.schedule_interval(self.update, 1.0 / 60)
-    
+
     def get_sight_vector(self):
         x, y = self.rotation
         m = math.cos(math.radians(y))
@@ -285,6 +285,7 @@ class Window(pyglet.window.Window):
         dx = math.cos(math.radians(x - 90)) * m
         dz = math.sin(math.radians(x - 90)) * m
         return (dx, dy, dz)
+
     def get_motion_vector(self):
         if any(self.strafe):
             x, y = self.rotation
@@ -308,6 +309,7 @@ class Window(pyglet.window.Window):
             dx = 0.0
             dz = 0.0
         return (dx, dy, dz)
+
     def update(self, dt):
         self.model.process_queue()
         sector = sectorize(self.position)
@@ -320,6 +322,7 @@ class Window(pyglet.window.Window):
         dt = min(dt, 0.2)
         for _ in xrange(m):
             self._update(dt / m)
+
     def _update(self, dt):
         # walking
         speed = 15 if self.flying else 5
@@ -335,6 +338,7 @@ class Window(pyglet.window.Window):
         x, y, z = self.position
         x, y, z = self.collide((x + dx, y + dy, z + dz), 2)
         self.position = (x, y, z)
+
     def collide(self, position, height):
         pad = 0.25
         p = list(position)
@@ -358,12 +362,7 @@ class Window(pyglet.window.Window):
                         self.dy = 0
                     break
         return tuple(p)
-    def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
-        return
-        x, y, z = self.position
-        dx, dy, dz = self.get_sight_vector()
-        d = scroll_y * 10
-        self.position = (x + dx * d, y + dy * d, z + dz * d)
+
     def on_mouse_press(self, x, y, button, modifiers):
         if self.exclusive:
             vector = self.get_sight_vector()

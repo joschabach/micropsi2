@@ -1,7 +1,7 @@
 from __future__ import division
 from shutil import move
 
-from pyglet.gl import *
+from pyglet.gl import * #TODO write tutorial onto how to install pyglet (latest version from mercurial repo), offer binaries
 from pyglet.window import key
 import sys
 import math

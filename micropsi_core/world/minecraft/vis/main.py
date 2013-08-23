@@ -76,11 +76,11 @@ class Model(object):
 
 
         for y in xrange(0, n):
-            current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]
+            current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)] #TODO explain formula
             if current_section != None:
                 for x in xrange(0, n):
                     for z in xrange(0, n):
-                        current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
+                        current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
                         if (current_block in solid_blocks):
                             self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
 
@@ -94,15 +94,14 @@ class Model(object):
 
         bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
         current_column = self.client.world.columns[(x_chunk, z_chunk)]
-        current_section = current_column.chunks[int((bot_block[1] + y % 16) // 16)]
 
-        for x in xrange(0, n):
-            for y in xrange(0, n):
-                for z in xrange(0, n):
-                    if current_section != None:
-                        current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)][
-                            'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
-                        if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
+        for y in xrange(0, n):
+            current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)] #TODO explain formula
+            if current_section != None:
+                for x in xrange(0, n):
+                    for z in xrange(0, n):
+                        #not needed here (yet) current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
+                        if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:  #TODO explain formula
                             self.remove_block(self.last_known_botblock)
                             self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
                             self.last_known_botblock = (x, y+1, z)

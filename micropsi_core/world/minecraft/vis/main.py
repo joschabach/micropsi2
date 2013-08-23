@@ -106,18 +106,7 @@ class Model(object):
                             self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
                             self.last_known_botblock = (x, y+1, z)
                             
-    def hit_test(self, position, vector, max_distance=8):
-        m = 8
-        x, y, z = position
-        dx, dy, dz = vector
-        previous = None
-        for _ in xrange(max_distance * m):
-            key = normalize((x, y, z))
-            if key != previous and key in self.world:
-                return key, previous
-            previous = key
-            x, y, z = x + dx / m, y + dy / m, z + dz / m
-        return None, None
+
     def exposed(self, position):
         x, y, z = position
         for dx, dy, dz in FACES:
@@ -371,7 +360,7 @@ class Window(pyglet.window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if self.exclusive:
             vector = self.get_sight_vector()
-            block, previous = self.model.hit_test(self.position, vector)
+            #block, previous = self.model.hit_test(self.position, vector)
             if button == pyglet.window.mouse.LEFT:
                 if block:
                     texture = self.model.world[block]
@@ -462,7 +451,7 @@ class Window(pyglet.window.Window):
         #self.draw_reticle()
     def draw_focused_block(self):
         vector = self.get_sight_vector()
-        block = self.model.hit_test(self.position, vector)[0]
+        #block = self.model.hit_test(self.position, vector)[0]
         if block:
             x, y, z = block
             vertex_data = cube_vertices(x, y, z, 0.51)

@@ -363,55 +363,6 @@ class Window(pyglet.window.Window):
                     break
         return tuple(p)
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        if self.exclusive:
-            vector = self.get_sight_vector()
-            #block, previous = self.model.hit_test(self.position, vector)
-            if button == pyglet.window.mouse.LEFT:
-                if block:
-                    texture = self.model.world[block]
-                    if texture != STONE:
-                        self.model.remove_block(block)
-            else:
-                if previous:
-                    self.model.add_block(previous, self.block)
-        else:
-            self.set_exclusive_mouse(True)
-    def on_mouse_motion(self, x, y, dx, dy):
-        if self.exclusive:
-            m = 0.15
-            x, y = self.rotation
-            x, y = x + dx * m, y + dy * m
-            y = max(-90, min(90, y))
-            self.rotation = (x, y)
-    def on_key_press(self, symbol, modifiers):
-        if symbol == key.W:
-            self.strafe[0] -= 1
-        elif symbol == key.S:
-            self.strafe[0] += 1
-        elif symbol == key.A:
-            self.strafe[1] -= 1
-        elif symbol == key.D:
-            self.strafe[1] += 1
-        elif symbol == key.SPACE:
-            if self.dy == 0:
-                self.dy = 0.015 # jump speed
-        elif symbol == key.ESCAPE:
-            self.set_exclusive_mouse(False)
-        elif symbol == key.TAB:
-            self.flying = not self.flying
-        elif symbol in self.num_keys:
-            index = (symbol - self.num_keys[0]) % len(self.inventory)
-            self.block = self.inventory[index]
-    def on_key_release(self, symbol, modifiers):
-        if symbol == key.W:
-            self.strafe[0] += 1
-        elif symbol == key.S:
-            self.strafe[0] -= 1
-        elif symbol == key.A:
-            self.strafe[1] += 1
-        elif symbol == key.D:
-            self.strafe[1] -= 1
     def on_resize(self, width, height):
         # label
         self.label.y = height - 10

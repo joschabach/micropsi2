@@ -73,13 +73,14 @@ class Model(object):
 
         bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
         current_column = self.client.world.columns[(x_chunk, z_chunk)]
-        current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]
 
-        if current_section != None:
-            for x in xrange(0, n):
-                for y in xrange(0, n):
+
+        for y in xrange(0, n):
+            current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]
+            if current_section != None:
+                for x in xrange(0, n):
                     for z in xrange(0, n):
-                        current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
+                        current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if (current_block in solid_blocks):
                             self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
 

@@ -6,7 +6,6 @@ from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.minecraft.spock.riker.rkclient import RikerClient
 import micropsi_core.world.minecraft.vis.main as vis
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
-import micropsi_core.world.minecraft.vis.main
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
 
 class Minecraft(World):
@@ -14,13 +13,9 @@ class Minecraft(World):
     supported_worldadapters = ['Braitenberg']
 
     assets = {
-    'background': "minecraft/screenshot.jpg",
     'js': "minecraft/minecraft.js",
     'x': 2048,
     'y': 2048,
-    'icons': {
-    'Braitenberg': 'island/braitenberg.png'
-    }
     }
 
     def __init__(self, filename, world_type="Minecraft", name="", owner="", uid=None, version=1):
@@ -31,15 +26,13 @@ class Minecraft(World):
         self.chat_ping_counter = 0
 
     def step(self):
-        if self.first_step:
+        if self.first_step: #TODO probably not too smart
             # launch minecraft bot
-            username = "ownspock"
-            password = ""
-            plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin]
-            self.client = RikerClient(plugins=plugins)
+            plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin] #TODO not all plugins - if any - are needed
+            self.client = RikerClient(plugins=plugins) #TODO Riker is not needed either and not in development anymore
             self.client.start()
-            micropsi_core.world.minecraft.vis.main.commence_vis(self.client)
-            micropsi_core.world.minecraft.vis.main.step_vis()
+            vis.commence_vis(self.client)
+            #vis.step_vis()
             self.first_step = False
 
         self.chat_ping_counter += 1
@@ -48,7 +41,7 @@ class Minecraft(World):
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
         self.client.step()
-        micropsi_core.world.minecraft.vis.main.step_vis()
+        vis.step_vis()
 
 
 class Braitenberg(WorldAdapter):

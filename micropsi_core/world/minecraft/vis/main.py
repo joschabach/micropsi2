@@ -29,16 +29,6 @@ FACES = [ #TODO find out what this is used for
     #( 0, 0,-1),
 ]
 
-class TextureGroup(pyglet.graphics.Group):
-    def __init__(self, path):
-        super(TextureGroup, self).__init__()
-        self.texture = pyglet.image.load(path).get_texture()
-    def set_state(self):
-        glEnable(self.texture.target)
-        glBindTexture(self.texture.target, self.texture.id)
-    def unset_state(self):
-        glDisable(self.texture.target)
-
 def normalize(position):
     x, y, z = position
     x, y, z = (int(round(x)), int(round(y)), int(round(z)))
@@ -95,7 +85,7 @@ class Model(object):
             if current_section != None:
                 for x in xrange(0, n):
                     for z in xrange(0, n):
-                        #not needed here (yet) current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
+                        #not needed here (yet?) current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:  #TODO explain formula
                             self.remove_block(self.last_known_botblock)
                             self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
@@ -412,16 +402,15 @@ def setup():
 def commence_vis(client):
     global window
     window = Window(client, width=800, height=600, caption='Pyglet', resizable=True, visible=False)
-    #window.set_exclusive_mouse(True)
     setup()
-    for i in range(0,50):
+    for i in range(0,50): #TODO make smarter
         step_vis()
 
 def step_vis():
     pyglet.clock.tick()
     pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.jpg')
     move('./micropsi_server/static/minecraft/screenshot_write.jpg', './micropsi_server/static/minecraft/screenshot.jpg')
-    global window
+    global window #TODO try to avoid global
     window.switch_to()
     window.model.reload()
     window.dispatch_events()

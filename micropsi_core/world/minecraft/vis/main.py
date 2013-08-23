@@ -10,6 +10,7 @@ import os
 
 from micropsi_core.world.minecraft.vis.structs import block_names, load_textures, has_sides, solid_blocks
 from micropsi_core.world.minecraft.vis.vertices import cube_vertices, cube_vertices_sides, cube_vertices_top, human_vertices
+from micropsi_core.world.minecraft.vis.tex_coords import tex_coords, tex_coords_sides, tex_coords_top
 
 SECTOR_SIZE = 16
 
@@ -18,49 +19,6 @@ WINDOW = None
 
 if sys.version_info[0] >= 3:
     xrange = range
-
-def tex_coord(x, y, n=1): #TODO probably not needed anymore because every texture is a single file
-    m = 1.0 / n
-    dx = x * m
-    dy = y * m
-    return dx, dy, dx + m, dy, dx + m, dy + m, dx, dy + m
-
-def tex_coords(top, bottom, side):
-    top = tex_coord(*top)
-    bottom = tex_coord(*bottom)
-    side = tex_coord(*side)
-    result = []
-    result.extend(top)
-    result.extend(bottom)
-    result.extend(side * 4)
-    return result
-
-def tex_coords_top(top, bottom, side):
-    top = tex_coord(*top)
-    bottom = tex_coord(*bottom)
-    side = tex_coord(*side)
-    result = []
-    result.extend(top)
-    #result.extend(bottom)
-    #result.extend(side * 4)
-    return result
-
-def tex_coords_sides(top, bottom, side):
-    top = tex_coord(*top)
-    bottom = tex_coord(*bottom)
-    side = tex_coord(*side)
-    result = []
-    #result.extend(top)
-    #result.extend(bottom)
-    result.extend(side * 4)
-    return result
-
-GRASS = tex_coords((1, 0), (0, 1), (0, 0))# (row, line)
-SAND = tex_coords((1, 1), (1, 1), (1, 1))
-BRICK = tex_coords((2, 0), (2, 0), (2, 0))
-GOLDORE = tex_coords((0, 0), (0, 0), (0, 0))
-STONE = tex_coords((2, 1), (2, 1), (2, 1))
-HUMAN = tex_coords((3, 2), (3, 2), (3, 1))
 
 FACES = [
     ( 0, 1, 0),
@@ -123,7 +81,7 @@ class Model(object):
                     for z in xrange(0, n):
                         current_block = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if (current_block in solid_blocks):
-                            self.init_block((x, y, z), GOLDORE, block_names[str(current_block)])
+                            self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
 
     def reload(self):
         n = 16
@@ -145,7 +103,7 @@ class Model(object):
                             'block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z)
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:
                             self.remove_block(self.last_known_botblock)
-                            self.add_block((x, y+1, z), HUMAN, "human" )
+                            self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
                             self.last_known_botblock = (x, y+1, z)
                             
     def hit_test(self, position, vector, max_distance=8):
@@ -261,10 +219,7 @@ class Model(object):
     def show_sector(self, sector):
         for position in self.sectors.get(sector, []):
             if position not in self.shown and self.exposed(position):
-                if self.type[position] == "GOLDORE":
-                    self.show_own_block(position, False)
-                else:
-                    self.show_block(position, False)
+                self.show_block(position, False)
     def hide_sector(self, sector):
         for position in self.sectors.get(sector, []):
             if position in self.shown:
@@ -314,8 +269,7 @@ class Window(pyglet.window.Window):
         self.sector = None
         self.reticle = None
         self.dy = 0
-        self.inventory = [BRICK, GRASS, SAND]
-        self.block = self.inventory[0]
+        #self.inventory = [BRICK, GRASS, SAND]
         self.num_keys = [
             key._1, key._2, key._3, key._4, key._5,
             key._6, key._7, key._8, key._9, key._0]

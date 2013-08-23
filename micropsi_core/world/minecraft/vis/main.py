@@ -19,7 +19,7 @@ WINDOW = None
 if sys.version_info[0] >= 3:
     xrange = range
 
-def tex_coord(x, y, n=1):
+def tex_coord(x, y, n=1): #TODO probably not needed anymore because every texture is a single file
     m = 1.0 / n
     dx = x * m
     dy = y * m

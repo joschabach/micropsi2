@@ -363,17 +363,6 @@ class Window(pyglet.window.Window):
                     break
         return tuple(p)
 
-    def on_resize(self, width, height):
-        # label
-        self.label.y = height - 10
-        # reticle
-        if self.reticle:
-            self.reticle.delete()
-        x, y = self.width // 2, self.height // 2
-        n = 10
-        self.reticle = pyglet.graphics.vertex_list(4,
-            ('v2i', (x - n, y, x + n, y, x, y - n, x, y + n))
-        )
     def set_2d(self):
         width, height = self.get_size()
         glDisable(GL_DEPTH_TEST)
@@ -383,6 +372,7 @@ class Window(pyglet.window.Window):
         glOrtho(0, width, 0, height, -1, 1)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
+
     def set_3d(self):
         width, height = self.get_size()
         glEnable(GL_DEPTH_TEST)
@@ -397,6 +387,7 @@ class Window(pyglet.window.Window):
         glRotatef(-y, math.cos(math.radians(x)), 0, math.sin(math.radians(x)))
         x, y, z = self.position
         glTranslatef(-x, -y, -z)
+
     def on_draw(self):
         self.clear()
         self.set_3d()
@@ -406,6 +397,7 @@ class Window(pyglet.window.Window):
         self.set_2d()
         self.draw_label()
         #self.draw_reticle()
+
     def draw_focused_block(self):
         vector = self.get_sight_vector()
         #block = self.model.hit_test(self.position, vector)[0]
@@ -416,12 +408,14 @@ class Window(pyglet.window.Window):
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             pyglet.graphics.draw(4, GL_QUADS, ('v3f/static', vertex_data))
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
     def draw_label(self):
         x, y, z = self.position
         self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z, 
             len(self.model._shown), len(self.model.world))
         self.label.draw()
+
     def draw_reticle(self):
         glColor3d(0, 0, 0)
         self.reticle.draw(GL_LINES)

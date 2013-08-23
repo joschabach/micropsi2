@@ -20,7 +20,7 @@ WINDOW = None
 if sys.version_info[0] >= 3:
     xrange = range
 
-FACES = [
+FACES = [ #TODO find out what this is used for
     ( 0, 1, 0),
     #( 0,-1, 0),
     #(-1, 0, 0),
@@ -53,14 +53,14 @@ class Model(object):
     def __init__(self, client):
         self.batch = pyglet.graphics.Batch()
         print(os.getcwd())
-        load_textures(self)
+        load_textures(self) #load custom texture pack
         self.world = {}
         self.type = {}
         self.shown = {}
         self._shown = {}
         self.sectors = {}
         self.queue = []
-        self.client = client
+        self.client = client # Minecraft client "spock"
         self.initialize()
         self.last_known_botblock = (0,0,0)
     def initialize(self):
@@ -73,7 +73,7 @@ class Model(object):
 
         bot_block = [self.client.position['x'], self.client.position['y'], self.client.position['z']]
         current_column = self.client.world.columns[(x_chunk, z_chunk)]
-        current_section = current_column.chunks[int((bot_block[1] + y % 16) // 16)]
+        current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)]
 
         if current_section != None:
             for x in xrange(0, n):

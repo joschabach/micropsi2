@@ -69,8 +69,13 @@ class Braitenberg(WorldAdapter):
                     for z in range(0, 16):
                         current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
                         if current_block == 56:
-                            diamond_coords= (x,y,z)
+                            diamond_coords= (x + x_chunk * 16,y,z + z_chunk * 16)
 
         print("found diamond at %s" % str(diamond_coords))
-        self.world.client.diamond_direction = diamond_coords[0]
-        self.datatargets['diamond_direction'] = diamond_coords[0]
+        diamond_offset_x = self.world.client.position['x'] - diamond_coords[0]
+        print(" diamond OFFSET x is %s" % diamond_offset_x)
+        diamond_offset_z = self.world.client.position['z'] - diamond_coords[2]
+        print(" diamond OFFSET z is %s" % diamond_offset_z)
+        self.world.client.diamond_offset_x = diamond_offset_x
+        self.world.client.diamond_offset_z = diamond_offset_z
+        self.datatargets['diamond_offset'] = diamond_coords[0]

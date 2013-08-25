@@ -79,7 +79,8 @@ class Client(object):
 
 		#MicroPsi Datatargets
 		self.psi_look_value = 0
-		self.diamond_direction = 0
+		self.diamond_offset_x = 0
+		self.diamond_offset_z = 0
 
 		#Game State variables
 		#Plugins should read these (but generally not write)
@@ -174,11 +175,38 @@ class Client(object):
 						'text': "is this real life?"
 						}))
 
-			if self.diamond_direction != 0:
+			if self.diamond_offset_x > 1:
 				self.push(Packet(ident = 0x0B, data = {
 					'x': (self.position['x'] - 1)  // 1,
 					'y': self.position['y'] // 1,
 					'z': self.position['z'] // 1,
+					'on_ground': False,
+					'stance': self.position['y'] + 0.11
+					}))
+
+			if self.diamond_offset_x < -1:
+				self.push(Packet(ident = 0x0B, data = {
+					'x': (self.position['x'] + 1)  // 1,
+					'y': self.position['y'] // 1,
+					'z': self.position['z'] // 1,
+					'on_ground': False,
+					'stance': self.position['y'] + 0.11
+					}))
+
+			if self.diamond_offset_z > 1:
+				self.push(Packet(ident = 0x0B, data = {
+					'x': (self.position['x']) // 1,
+					'y': self.position['y'] // 1,
+					'z': self.position['z'] - 1 // 1,
+					'on_ground': False,
+					'stance': self.position['y'] + 0.11
+					}))
+
+			if self.diamond_offset_z < -1:
+				self.push(Packet(ident = 0x0B, data = {
+					'x': (self.position['x'])  // 1,
+					'y': self.position['y'] // 1,
+					'z': self.position['z'] + 1 // 1,
 					'on_ground': False,
 					'stance': self.position['y'] + 0.11
 					}))

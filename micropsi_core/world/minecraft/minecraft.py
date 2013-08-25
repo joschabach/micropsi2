@@ -46,14 +46,31 @@ class Minecraft(World):
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
-    datasources = {'x_coord': 0.7}
+    datasources = {'x_coord': 0.7, 'diamond_direction': 0}
     datatargets = {'psi_look_value': 0} #TODO this does not do anything yet
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
         x_coord = self.world.client.position['x'] * -1
-        print("DATATARGET is: self.datatargets['psi_look_value']", self.datatargets['psi_look_value'])
-        print("WRITING psi_look_value - WAS: ", self.world.client.psi_look_value)
         self.world.client.psi_look_value = self.datatargets['psi_look_value']
-        print("NOW IS: ", self.world.client.psi_look_value)
         self.datasources['x_coord'] = x_coord
+
+        #find diamond
+
+        x_chunk = self.world.client.position['x'] // 16
+        z_chunk = self.world.client.position['z'] // 16
+        bot_block = [self.world.client.position['x'], self.world.client.position['y'], self.world.client.position['z']]
+        current_column = self.world.client.world.columns[(x_chunk, z_chunk)]
+
+        for y in range(0, 16):
+            current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)] #TODO explain formula
+            if current_section != None:
+                for x in range(0, 16):
+                    for z in range(0, 16):
+                        current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
+                        if current_block == 56:
+                            diamond_coords= (x,y,z)
+
+        print("found diamond at %s" % str(diamond_coords))
+        self.world.client.diamond_direction = diamond_coords[0]
+        self.datatargets['diamond_direction'] = diamond_coords[0]

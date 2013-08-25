@@ -79,6 +79,7 @@ class Client(object):
 
 		#MicroPsi Datatargets
 		self.psi_look_value = 0
+		self.diamond_direction = 0
 
 		#Game State variables
 		#Plugins should read these (but generally not write)
@@ -168,11 +169,19 @@ class Client(object):
 					komm.close()
 
 			#check for MicroPsi input
-			print("psi_look_value is ", self.psi_look_value)
 			if self.psi_look_value != 0:
 				self.push(Packet(ident = 0x03, data = {
 						'text': "is this real life?"
 						}))
+
+			if self.diamond_direction != 0:
+				self.push(Packet(ident = 0x0B, data = {
+					'x': (self.position['x'] - 1)  // 1,
+					'y': self.position['y'] // 1,
+					'z': self.position['z'] // 1,
+					'on_ground': False,
+					'stance': self.position['y'] + 0.11
+					}))
 
 
 			if self.kill_flag:

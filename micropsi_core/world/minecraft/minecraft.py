@@ -51,6 +51,9 @@ class Braitenberg(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        x_coord = self.world.client.position['x']
+        x_coord = self.world.client.position['x'] * -1
+        print("DATATARGET is: self.datatargets['psi_look_value']", self.datatargets['psi_look_value'])
+        print("WRITING psi_look_value - WAS: ", self.world.client.psi_look_value)
         self.world.client.psi_look_value = self.datatargets['psi_look_value']
+        print("NOW IS: ", self.world.client.psi_look_value)
         self.datasources['x_coord'] = x_coord

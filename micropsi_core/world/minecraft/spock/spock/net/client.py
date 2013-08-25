@@ -8,6 +8,8 @@ import os
 import logging
 import micropsi_core.world.minecraft.spock.plugins.psicraft_dispatcher as psicraft
 
+from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
+
 from micropsi_core.world.minecraft.spock.Crypto import Random
 
 from micropsi_core.world.minecraft.spock.spock.net.cflags import cflags
@@ -75,6 +77,9 @@ class Client(object):
 
 		self.kill_flag = False
 
+		#MicroPsi Datatargets
+		self.psi_look_value = 0
+
 		#Game State variables
 		#Plugins should read these (but generally not write)
 		self.world = smpmap.World()
@@ -131,7 +136,7 @@ class Client(object):
 		websock.listen(1)
 		self.read_list = [websock]
 
-		for i in range(0,100):
+		for i in range(0,100): #TODO make smarter
 			self.step()
 
 
@@ -152,7 +157,8 @@ class Client(object):
 			if self.daemon:
 				sys.stdout.flush()
 				sys.stderr.flush()
-			#waiting for new commands from webinterface. 0.01s timeout
+
+			#waiting for new commands from webinterface. 0.01s timeout #TODO probably not needed anymore (soon)
 			readable, writable, errored = select.select(self.read_list, [], [], 0.01)
 			for s in readable:
 				if s is s:
@@ -160,7 +166,13 @@ class Client(object):
 					data = komm.recv(32)
 					psicraft.dispatch_psicraft_command(data.decode(), self, komm)
 					komm.close()
-            #checking for micropsi commands
+
+			#check for MicroPsi input
+			print("psi_look_value is ", self.psi_look_value)
+			if self.psi_look_value != 0:
+				self.push(Packet(ident = 0x03, data = {
+						'text': "is this real life?"
+						}))
 
 
 			if self.kill_flag:
@@ -208,7 +220,7 @@ class Client(object):
 	def register_timer(self, timer):
 		self.timers.append(timer)
 
-	def connect(self, host = 'localhost', port = 25565):
+	def connect(self, host = 'localhost', port = 25565): #TODO do not hardcode
 		if self.proxy['enabled']:
 			self.host = self.proxy['host']
 			self.port = self.proxy['port']

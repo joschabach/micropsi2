@@ -8,11 +8,11 @@ Individual world classes must not only inherit from this one, but also be import
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-import worldadapter
-import worldobject
 import json
 import os
 import warnings
+from micropsi_core.world import worldadapter
+from micropsi_core.world import worldobject
 from micropsi_core import tools
 from micropsi_core.tools import generate_uid
 
@@ -301,5 +301,5 @@ class World(object):
 
 
 # imports of individual world types:
-import island.island
-import berlin.berlin
+from micropsi_core.world.island import island
+from micropsi_core.world.berlin import berlin

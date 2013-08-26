@@ -16,14 +16,14 @@ __date__ = '15.05.12'
 from micropsi_core import runtime
 
 import micropsi_core.tools
-import usermanagement
-import bottle
-from bottle import route, post, run, request, response, template, static_file, redirect, error
+from micropsi_server import usermanagement
+from micropsi_server import bottle
+from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error
 import argparse
 import os
 import json
 import inspect
-import minidoc
+from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
 APP_PATH = os.path.dirname(__file__)
@@ -75,7 +75,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                         else:
                             kwargs.append(val)
                     kwargs = dict((n.strip(), json.loads(v)) for n, v in (item.split('=') for item in kwargs))
-                except ValueError, err:
+                except ValueError as err:
                     response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
             elif request.json:
@@ -91,7 +91,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args if name in kwargs)
                 arguments.update(kwargs)
                 return json.dumps(func(**arguments))
-                # except TypeError, err:
+                # except TypeError as err:
                 #     response.status = 400
                 #     return {"Error": "Bad parameters in remote procedure call: %s" % err}
         return _wrapper
@@ -506,10 +506,10 @@ def export_nodenet(nodenet_uid):
 @route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
-    id = request.params.get('id', None)
+    nodenet_id = request.params.get('id', None)
     # nodenet_uid = request.params.get('nodenet_uid', None) @TODO to get this to work, we need to use rpc or another way of transferring the nodenet uid as a parameter; at the moment, this route is a static link
     title = 'Edit Nodenet' if id is not None else 'New Nodenet'
-    print id
+    print(nodenet_id)
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),

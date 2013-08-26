@@ -9,7 +9,7 @@ on the fly and only on demand, and produce HTML from them, mostly be parsing the
 
 import os
 import urllib
-import urlparse
+from urllib import parse as urlparse
 import time
 import ast
 

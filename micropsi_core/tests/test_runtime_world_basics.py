@@ -61,10 +61,10 @@ def test_add_worldobject(test_world):
 
 def test_add_worldobject_without_id(test_world):
     world = runtime.get_available_worlds()[test_world]
-    count = len(world.objects.keys())
+    count = len(world.objects)
     runtime.add_worldobject(test_world, "Default", (10, 10), name='bazbaz', parameters={})
-    assert count + 1 == len(world.objects.keys())
-    assert count + 1 == len(world.data['objects'].keys())
+    assert count + 1 == len(world.objects)
+    assert count + 1 == len(world.data['objects'])
 
 
 def test_get_worldobjects(test_world):

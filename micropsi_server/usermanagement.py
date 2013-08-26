@@ -135,7 +135,7 @@ class UserManager(object):
         if user_id and not user_id in self.users:
             self.users[user_id] = {
                 "uid": uid or user_id,
-                "hashed_password": hashlib.md5(password).hexdigest(),
+                "hashed_password": hashlib.md5(password.encode('utf-8')).hexdigest(),
                 "role": role,
                 "session_token": None,
                 "session_expires": False
@@ -180,7 +180,7 @@ class UserManager(object):
     def set_user_password(self, user_id, password):
         """sets the password of a user, returns False if user does not exist"""
         if user_id in self.users:
-            self.users[user_id]["hashed_password"] = hashlib.md5(password).hexdigest()
+            self.users[user_id]["hashed_password"] = hashlib.md5(password.encode('utf-8')).hexdigest()
             self.save_users()
             return True
         return False
@@ -239,7 +239,7 @@ class UserManager(object):
     def test_password(self, user_id, password):
         """returns True if the user is known and the password matches, False otherwise"""
         if user_id in self.users:
-            if self.users[user_id]["hashed_password"] == hashlib.md5(password).hexdigest():
+            if self.users[user_id]["hashed_password"] == hashlib.md5(password.encode('utf-8')).hexdigest():
                 return True
         return False
 
@@ -253,7 +253,9 @@ class UserManager(object):
 
     def end_all_sessions(self):
         """useful during a reset of the runtime, because all open user sessions will persist during shutdown"""
-        for session_token in self.sessions.keys(): self.end_session(session_token)
+        sessions = self.sessions.copy()
+        for session_token in sessions.keys():
+            self.end_session(session_token)
 
     def refresh_session(self, session_token):
         """resets the idle time until a currently active session expires to some point in the future"""
@@ -268,7 +270,8 @@ class UserManager(object):
 
         change_flag = False
         now = datetime.datetime.now().isoformat()
-        for session_token in self.sessions.keys():
+        sessions = self.sessions.copy()
+        for session_token in sessions.keys():
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
                 if self.users[user_id]["session_expires"] < now:

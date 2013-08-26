@@ -63,6 +63,8 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
+    supported_worldadapters = []
+
     def __init__(self, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
@@ -80,11 +82,10 @@ class World(object):
             "agents": {},
             "step": 0
         }
-
-        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter)}
+        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter) if cls.__name__ in self.supported_worldadapters }
 
         self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject)
-                                        if cls not in self.supported_worldadapters.values()}
+                                        if cls not in self.supported_worldadapters}
         # freaky hack.
         self.supported_worldobjects.pop('WorldAdapter')
         self.supported_worldobjects['Default'] = worldobject.WorldObject
@@ -229,8 +230,8 @@ class World(object):
             self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet_uid, **options)
             return True, nodenet_uid
         except AttributeError:
-            if worldadapter_name in self.supported_worldadapters:
-                return False, "Worldadapter \"%s\" not found" % worldadapter_name
+            return False, "Worldadapter \"%s\" not found" % worldadapter_name
+        except KeyError:
             return False, "Incompatible Worldadapter for this World."
 
     def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):

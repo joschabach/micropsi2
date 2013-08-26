@@ -78,10 +78,8 @@ class Client(object):
         self.kill_flag = False
 
         #MicroPsi Datatargets
-        self.psi_look_value = 0
-        self.diamond_offset_x = 0
-        self.diamond_offset_z = 0
-        self.find_diamond = 0
+        self.move_x = 0
+        self.move_z = 0
 
         #Game State variables
         #Plugins should read these (but generally not write)
@@ -171,55 +169,41 @@ class Client(object):
                     komm.close()
 
             #check for MicroPsi input
-            if self.psi_look_value != 0:
-                self.push(Packet(ident = 0x03, data = {
-                        'text': "is this real life?"
-                        }))
-
-            #print("SPOCK: find_diamond is ", self.find_diamond)
-            if self.find_diamond != 0:
-
-                if self.diamond_offset_x > 1:
-                    self.push(Packet(ident = 0x0B, data = {
-                        'x': (self.position['x'] - 1)  // 1,
-                        'y': self.position['y'] // 1,
-                        'z': self.position['z'] // 1,
-                        'on_ground': False,
-                        'stance': self.position['y'] + 0.11
-                        }))
-
-                if self.diamond_offset_x < -1:
-                    self.push(Packet(ident = 0x0B, data = {
-                        'x': (self.position['x'] + 1)  // 1,
-                        'y': self.position['y'] // 1,
-                        'z': self.position['z'] // 1,
-                        'on_ground': False,
-                        'stance': self.position['y'] + 0.11
-                        }))
-
-                if self.diamond_offset_z > 1:
-                    self.push(Packet(ident = 0x0B, data = {
-                        'x': (self.position['x']) // 1,
-                        'y': self.position['y'] // 1,
-                        'z': self.position['z'] - 1 // 1,
-                        'on_ground': False,
-                        'stance': self.position['y'] + 0.11
-                        }))
-
-                if self.diamond_offset_z < -1:
-                    self.push(Packet(ident = 0x0B, data = {
-                        'x': (self.position['x'])  // 1,
-                        'y': self.position['y'] // 1,
-                        'z': self.position['z'] + 1 // 1,
-                        'on_ground': False,
-                        'stance': self.position['y'] + 0.11
-                        }))
-
-
+            if self.move_x > 0:
+                self.push(Packet(ident = 0x0B, data = {
+                    'x': (self.position['x'] - 1)  // 1,
+                    'y': self.position['y'] // 1,
+                    'z': self.position['z'] // 1,
+                    'on_ground': False,
+                    'stance': self.position['y'] + 0.11
+                    }))
+            if self.move_x < 0:
+                self.push(Packet(ident = 0x0B, data = {
+                    'x': (self.position['x'] + 1)  // 1,
+                    'y': self.position['y'] // 1,
+                    'z': self.position['z'] // 1,
+                    'on_ground': False,
+                    'stance': self.position['y'] + 0.11
+                    }))
+            if self.move_z > 0:
+                self.push(Packet(ident = 0x0B, data = {
+                    'x': (self.position['x']) // 1,
+                    'y': self.position['y'] // 1,
+                    'z': self.position['z'] - 1 // 1,
+                    'on_ground': False,
+                    'stance': self.position['y'] + 0.11
+                    }))
+            if self.move_z < 0:
+                self.push(Packet(ident = 0x0B, data = {
+                    'x': (self.position['x'])  // 1,
+                    'y': self.position['y'] // 1,
+                    'z': self.position['z'] + 1 // 1,
+                    'on_ground': False,
+                    'stance': self.position['y'] + 0.11
+                    }))
             if self.kill_flag:
-                print("closing sockets & shutting down")
-                s.close()
-
+                 print("closing sockets & shutting down")
+                 s.close()
 
     def getflags(self):
         self.flags = 0

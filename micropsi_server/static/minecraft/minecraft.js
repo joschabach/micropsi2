@@ -55,17 +55,17 @@ var agentsList = $('#world_agents_list table');
 
 initializeControls();
 
-wasRunning = false;
-$(window).focus(function () {
-    worldRunning = wasRunning;
-    if (wasRunning) {
-        refreshWorldView();
-    }
-})
-    .blur(function () {
-        wasRunning = worldRunning;
-        worldRunning = false;
-    });
+//wasRunning = false;
+//$(window).focus(function () {
+//    worldRunning = wasRunning;
+//    if (wasRunning) {
+//        refreshWorldView();
+//    }
+//})
+//    .blur(function () {
+//        wasRunning = worldRunning;
+//        worldRunning = false;
+//    });
 
 function refreshWorldView() {
 

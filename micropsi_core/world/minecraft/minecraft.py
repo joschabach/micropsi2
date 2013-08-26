@@ -46,14 +46,12 @@ class Minecraft(World):
 class Braitencraft(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
-    datasources = {'x_coord': 0.7, 'diamond_direction': 0}
-    datatargets = {'psi_look_value': 0, 'find_diamond': 0} #TODO this does not do anything yet
+    datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0}
+    datatargets = {'move_x': 0, 'move_z': 0}
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
         x_coord = self.world.client.position['x'] * -1
-        self.world.client.psi_look_value = self.datatargets['psi_look_value']
-        self.datasources['x_coord'] = x_coord
 
         #find diamond
 
@@ -62,6 +60,7 @@ class Braitencraft(WorldAdapter):
         bot_block = [self.world.client.position['x'], self.world.client.position['y'], self.world.client.position['z']]
         current_column = self.world.client.world.columns[(x_chunk, z_chunk)]
 
+        diamond_coords = (0,0,0)
         for y in range(0, 16):
             current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)] #TODO explain formula
             if current_section != None:
@@ -69,19 +68,10 @@ class Braitencraft(WorldAdapter):
                     for z in range(0, 16):
                         current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
                         if current_block == 56:
-                            diamond_coords= (x + x_chunk * 16,y,z + z_chunk * 16)
+                            diamond_coords = (x + x_chunk * 16,y,z + z_chunk * 16)
 
-        #print("found diamond at %s" % str(diamond_coords))
-        diamond_offset_x = self.world.client.position['x'] - diamond_coords[0]
-        #print(" diamond OFFSET x is %s" % diamond_offset_x)
-        diamond_offset_z = self.world.client.position['z'] - diamond_coords[2]
-        #print(" diamond OFFSET z is %s" % diamond_offset_z)
-        self.world.client.diamond_offset_x = diamond_offset_x
-        self.world.client.diamond_offset_z = diamond_offset_z
-        self.datatargets['diamond_offset'] = diamond_coords[0]
+        self.datasources['diamond_offset_x'] = self.world.client.position['x'] - diamond_coords[0]
+        self.datasources['diamond_offset_z'] = self.world.client.position['z'] - diamond_coords[2]
 
-        #self.datatargets['find_diamond'] = 1
-        self.world.client.find_diamond = self.datatargets['find_diamond']
-
-
-        print("### self.datatargets['find_diamond'] is ", self.datatargets['find_diamond'])
+        self.world.client.move_x = self.datatargets['move_x']
+        self.world.client.move_z = self.datatargets['move_z']

@@ -10,7 +10,7 @@ from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
-    supported_worldadapters = ['Braitenberg']
+    supported_worldadapters = ['Braitencraft']
 
     assets = {
     'js': "minecraft/minecraft.js",
@@ -43,7 +43,7 @@ class Minecraft(World):
         vis.step_vis()
 
 
-class Braitenberg(WorldAdapter):
+class Braitencraft(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
     datasources = {'x_coord': 0.7, 'diamond_direction': 0}

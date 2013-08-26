@@ -38,6 +38,13 @@ class Minecraft(World):
         if self.chat_ping_counter % 20 == 0: #TODO find other way to send "keepalive"
             self.client.push(Packet(ident = 0x03, data = {
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
+            self.client.push(Packet(ident = 0x0B, data = {
+                    'x': (self.client.position['x'])  // 1,
+                    'y': self.client.position['y'] // 1,
+                    'z': self.client.position['z'] + 1 // 1,
+                    'on_ground': False,
+                    'stance': self.client.position['y'] + 0.11
+                    }))
         World.step(self)
         self.client.step()
         vis.step_vis()
@@ -70,8 +77,8 @@ class Braitencraft(WorldAdapter):
                         if current_block == 56:
                             diamond_coords = (x + x_chunk * 16,y,z + z_chunk * 16)
 
-        self.datasources['diamond_offset_x'] = self.world.client.position['x'] - diamond_coords[0]
-        self.datasources['diamond_offset_z'] = self.world.client.position['z'] - diamond_coords[2]
+        self.datasources['diamond_offset_x'] = self.world.client.position['x'] - diamond_coords[0] - 2
+        self.datasources['diamond_offset_z'] = self.world.client.position['z'] - diamond_coords[2] - 2
 
         self.world.client.move_x = self.datatargets['move_x']
         self.world.client.move_z = self.datatargets['move_z']

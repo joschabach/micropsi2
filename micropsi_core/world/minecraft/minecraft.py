@@ -3,7 +3,7 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-from micropsi_core.world.minecraft.spock.spock.net.client import Client
+from micropsi_core.world.minecraft.spock.spock.net.client import Client as Spock
 import micropsi_core.world.minecraft.vis.main as vis
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
@@ -29,7 +29,7 @@ class Minecraft(World):
         if self.first_step: #TODO probably not too smart
             # launch minecraft bot
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin] #TODO not all plugins - if any - are needed
-            self.client = Client(plugins=plugins)
+            self.client = Spock(plugins=plugins)
             self.client.start()
             vis.commence_vis(self.client)
             self.first_step = False
@@ -47,7 +47,7 @@ class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
     datasources = {'x_coord': 0.7, 'diamond_direction': 0}
-    datatargets = {'psi_look_value': 0} #TODO this does not do anything yet
+    datatargets = {'psi_look_value': 0, 'find_diamond': 0} #TODO this does not do anything yet
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
@@ -71,11 +71,17 @@ class Braitenberg(WorldAdapter):
                         if current_block == 56:
                             diamond_coords= (x + x_chunk * 16,y,z + z_chunk * 16)
 
-        print("found diamond at %s" % str(diamond_coords))
+        #print("found diamond at %s" % str(diamond_coords))
         diamond_offset_x = self.world.client.position['x'] - diamond_coords[0]
-        print(" diamond OFFSET x is %s" % diamond_offset_x)
+        #print(" diamond OFFSET x is %s" % diamond_offset_x)
         diamond_offset_z = self.world.client.position['z'] - diamond_coords[2]
-        print(" diamond OFFSET z is %s" % diamond_offset_z)
+        #print(" diamond OFFSET z is %s" % diamond_offset_z)
         self.world.client.diamond_offset_x = diamond_offset_x
         self.world.client.diamond_offset_z = diamond_offset_z
         self.datatargets['diamond_offset'] = diamond_coords[0]
+
+        #self.datatargets['find_diamond'] = 1
+        self.world.client.find_diamond = self.datatargets['find_diamond']
+
+
+        print("### self.datatargets['find_diamond'] is ", self.datatargets['find_diamond'])

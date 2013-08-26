@@ -403,7 +403,7 @@ def commence_vis(client):
     global window
     window = Window(client, width=800, height=600, caption='Pyglet', resizable=True, visible=False)
     setup()
-    for i in range(0,50): #TODO make smarter
+    for i in range(0,3): #TODO make smarter
         step_vis()
 
 def step_vis():

@@ -35,7 +35,7 @@ class Minecraft(World):
             self.first_step = False
 
         self.chat_ping_counter += 1
-        if self.chat_ping_counter % 100 == 0: #TODO find other way to send "keepalive"
+        if self.chat_ping_counter % 20 == 0: #TODO find other way to send "keepalive"
             self.client.push(Packet(ident = 0x03, data = {
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)

@@ -137,7 +137,7 @@ class Client(object):
         websock.listen(1)
         self.read_list = [websock]
 
-        for i in range(0,100): #TODO make smarter
+        for i in range(0,18): #TODO make smarter
             self.step()
 
 

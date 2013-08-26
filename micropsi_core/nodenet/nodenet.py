@@ -111,7 +111,7 @@ class Nodenet(object):
             "monitors": {},
             "nodespaces": {'Root': {}},
             "nodetypes": STANDARD_NODETYPES,
-            "activatortypes": STANDARD_NODETYPES.keys(),
+            "activatortypes": list(STANDARD_NODETYPES.keys()),
             "step": 0,
             "filename": filename
         }
@@ -178,8 +178,7 @@ class Nodenet(object):
         self.nodespaces = {}
 
         nodespaces_to_initialize = set(self.state.get('nodespaces', {}).keys())
-        while len(nodespaces_to_initialize):
-            next_nodespace = iter(nodespaces_to_initialize).next()
+        for next_nodespace in nodespaces_to_initialize:
             # move up the nodespace tree until we find an existing parent or hit root
             while self.state["nodespaces"][next_nodespace].get(
                 'parent_nodespace') not in self.nodespaces and next_nodespace != "Root":
@@ -192,8 +191,8 @@ class Nodenet(object):
                 uid=next_nodespace,
                 index=data.get('index'),
                 gatefunctions=data.get('gatefunctions', {}))
-            nodespaces_to_initialize.remove(next_nodespace)
 
+        nodespaces_to_initialize = []
         if not self.nodespaces:
             self.nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
@@ -402,7 +401,7 @@ class Nodenet(object):
         # copy the links
         if len(nodes):
             links = {}
-            origin_links = nodes[nodes.keys()[0]].nodenet.links
+            origin_links = nodes[list(nodes.keys())[0]].nodenet.links
             for node_uid in nodes:
                 node = nodes[node_uid]
                 for slot in node.slots:
@@ -446,9 +445,11 @@ class Nodenet(object):
             for uid, node in activators.items():
                 node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
             self.active_nodes.update(new_active_nodes)
+            tmp_active_nodes = {}
             for uid, node in self.active_nodes.items():
-                if node.activation == 0:
-                    del self.active_nodes[uid]
+                if node.activation != 0:
+                    tmp_active_nodes[uid] = node
+            self.active_nodes = tmp_active_nodes
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
 
@@ -606,7 +607,7 @@ class NetEntity(object):
                  uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
         if uid in nodenet.state.get("entitytype", []):
-            raise KeyError, "Netentity already exists"
+            raise KeyError("Netentity already exists")
 
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
@@ -684,7 +685,7 @@ class Nodespace(NetEntity):  # todo: adapt to new form, as net entitities
             try:
                 self.gatefunctions[nodetype] = micropsi_core.tools.create_function(gatefunction,
                     parameters="gate, params")
-            except SyntaxError, err:
+            except SyntaxError as err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))
                 self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
                     parameters="gate, params")
@@ -875,7 +876,7 @@ class Node(NetEntity):
     @parameters.setter
     def parameters(self, dictionary):
         if self.data["type"] == "Native":
-            self.nodetype.parameters = dictionary.keys()
+            self.nodetype.parameters = list(dictionary.keys())
         self.data["parameters"] = dictionary
 
     @property
@@ -892,7 +893,7 @@ class Node(NetEntity):
             gate_parameters = {}
 
         if uid in nodenet.nodes:
-            raise KeyError, "Node already exists"
+            raise KeyError("Node already exists")
 
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
@@ -944,10 +945,10 @@ class Node(NetEntity):
         if self.nodetype and self.nodetype.nodefunction is not None:
             try:
                 self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
-            except SyntaxError, err:
+            except SyntaxError as err:
                 warnings.warn("Syntax error during node execution: %s" % err.message)
                 self.data["activation"] = "Syntax error"
-            except TypeError, err:
+            except TypeError as err:
                 warnings.warn("Type error during node execution: %s" % err.message)
                 self.data["activation"] = "Parameter mismatch"
 
@@ -1194,7 +1195,7 @@ class Nodetype(object):
         try:
             self.nodefunction = micropsi_core.tools.create_function(string,
                 parameters="nodenet, node, " + args)
-        except SyntaxError, err:
+        except SyntaxError as err:
             warnings.warn("Syntax error while compiling node function: %s", err.message)
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node, " + args)

@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# $URL$
-# $Rev$
-
 # png.py - PNG encoder/decoder in pure Python
 #
 # Copyright (C) 2006 Johann C. Rocholl <johann@browsershots.org>
@@ -11,7 +8,7 @@
 #
 # Original concept by Johann C. Rocholl.
 #
-# LICENSE (The MIT License)
+# LICENCE (MIT)
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -165,7 +162,7 @@ And now, my famous members
 # http://www.python.org/doc/2.2.3/whatsnew/node5.html
 from __future__ import generators
 
-__version__ = "$URL$ $Rev$"
+__version__ = "0.0.15"
 
 from array import array
 try: # See :pyver:old
@@ -180,6 +177,12 @@ import sys
 import zlib
 # http://www.python.org/doc/2.4.4/lib/module-warnings.html
 import warnings
+try:
+    import pyximport
+    pyximport.install()
+    import cpngfilters as pngfilters
+except ImportError:
+    pass
 
 
 __all__ = ['Image', 'Reader', 'Writer', 'write_chunks', 'from_array']
@@ -352,7 +355,7 @@ class Writer:
         gamma
           Specify a gamma value (create a ``gAMA`` chunk).
         compression
-          zlib compression level (1-9).
+          zlib compression level: 0 (none) to 9 (more compressed); default: -1 or None.
         interlace
           Create an interlaced image.
         chunk_limit
@@ -420,12 +423,13 @@ class Writer:
         the PNG file, they are assumed to have already been converted
         appropriately for the gamma specified.
 
-        The `compression` argument specifies the compression level
-        to be used by the ``zlib`` module.  Higher values are likely
-        to compress better, but will be slower to compress.  The
-        default for this argument is ``None``; this does not mean
-        no compression, rather it means that the default from the
-        ``zlib`` module is used (which is generally acceptable).
+        The `compression` argument specifies the compression level to
+        be used by the ``zlib`` module.  Values from 1 to 9 specify
+        compression, with 9 being "more compressed" (usually smaller
+        and slower, but it doesn't always work out that way).  0 means
+        no compression.  -1 and ``None`` both mean that the default
+        level of compession will be picked by the ``zlib`` module
+        (which is generally acceptable).
 
         If `interlace` is true then an interlaced image is created
         (using PNG's so far only interace method, *Adam7*).  This does not
@@ -1355,7 +1359,7 @@ class Reader:
                 kw["bytes"] = _guess
             elif isinstance(_guess, str):
                 kw["filename"] = _guess
-            elif isinstance(_guess, file):
+            elif hasattr(_guess, 'read'):
                 kw["file"] = _guess
 
         if "filename" in kw:
@@ -1367,7 +1371,8 @@ class Reader:
         else:
             raise TypeError("expecting filename, file or bytes array")
 
-    def chunk(self, seek=None):
+
+    def chunk(self, seek=None, lenient=False):
         """
         Read the next PNG chunk from the input file; returns a
         (*type*,*data*) tuple.  *type* is the chunk's type as a string
@@ -1379,6 +1384,9 @@ class Reader:
         out of file or finds the type specified by the argument.  Note
         that in general the order of chunks in PNGs is unspecified, so
         using `seek` can cause you to miss chunks.
+
+        If the optional `lenient` argument evaluates to True,
+        checksum failures will raise warnings rather than exceptions.
         """
 
         self.validate_signature()
@@ -1395,7 +1403,7 @@ class Reader:
                   % (type, length))
             checksum = self.file.read(4)
             if len(checksum) != 4:
-                raise ValueError('Chunk %s too short for checksum.', type)
+                raise ValueError('Chunk %s too short for checksum.', tag)
             if seek and type != seek:
                 continue
             verify = zlib.crc32(strtobytes(type))
@@ -1411,9 +1419,11 @@ class Reader:
                 # print repr(checksum)
                 (a, ) = struct.unpack('!I', checksum)
                 (b, ) = struct.unpack('!I', verify)
-                raise ChunkError(
-                  "Checksum error in %s chunk: 0x%08X != 0x%08X." %
-                  (type, a, b))
+                message = "Checksum error in %s chunk: 0x%08X != 0x%08X." % (type, a, b)
+                if lenient:
+                    warnings.warn(message, RuntimeWarning)
+                else:
+                    raise ChunkError(message)
             return type, data
 
     def chunks(self):
@@ -1443,17 +1453,12 @@ class Reader:
         """
 
         # :todo: Would it be better to update scanline in place?
-
-        # Create the result byte array.  It seems that the best way to
-        # create the array to be the right size is to copy from an
-        # existing sequence.  *sigh*
-        # If we fill the result with scanline, then this allows a
-        # micro-optimisation in the "null" and "sub" cases.
-        result = array('B', scanline)
+        # Yes, with the Cython extension making the undo_filter fast,
+        # updating scanline inplace makes the code 3 times faster
+        # (reading 50 images of 800x800 went from 40s to 16s)
+        result = scanline
 
         if filter_type == 0:
-            # And here, we _rely_ on filling the result with scanline,
-            # above.
             return result
 
         if filter_type not in (1,2,3,4):
@@ -1536,7 +1541,11 @@ class Reader:
 
         # Call appropriate filter algorithm.  Note that 0 has already
         # been dealt with.
-        (None, sub, up, average, paeth)[filter_type]()
+        (None,
+         pngfilters.undo_filter_sub,
+         pngfilters.undo_filter_up,
+         pngfilters.undo_filter_average,
+         pngfilters.undo_filter_paeth)[filter_type](fu, scanline, previous, result)
         return result
 
     def deinterlace(self, raw):
@@ -1617,7 +1626,7 @@ class Reader:
                 out.extend(map(lambda i: mask&(o>>i), shifts))
             return out[:width]
 
-        return itertools.imap(asvalues, rows)
+        return map(asvalues, rows)
 
     def serialtoflat(self, bytes, width=None):
         """Convert serial format (byte stream) pixel data to flat row
@@ -1685,12 +1694,15 @@ class Reader:
         if self.signature != _signature:
             raise FormatError("PNG file has invalid signature.")
 
-    def preamble(self):
+    def preamble(self, lenient=False):
         """
         Extract the image metadata by reading the initial part of the PNG
         file up to the start of the ``IDAT`` chunk.  All the chunks that
         precede the ``IDAT`` chunk are read and either processed for
         metadata or discarded.
+
+        If the optional `lenient` argument evaluates to True,
+        checksum failures will raise warnings rather than exceptions.
         """
 
         self.validate_signature()
@@ -1703,7 +1715,7 @@ class Reader:
                       'This PNG file has no IDAT chunks.')
             if self.atchunk[1] == 'IDAT':
                 return
-            self.process_chunk()
+            self.process_chunk(lenient=lenient)
 
     def chunklentype(self):
         """Reads just enough of the input to determine the next
@@ -1724,13 +1736,16 @@ class Reader:
             raise FormatError('Chunk %s is too large: %d.' % (type,length))
         return length,type
 
-    def process_chunk(self):
+    def process_chunk(self, lenient=False):
         """Process the next chunk and its data.  This only processes the
         following chunk types, all others are ignored: ``IHDR``,
         ``PLTE``, ``bKGD``, ``tRNS``, ``gAMA``, ``sBIT``.
+
+        If the optional `lenient` argument evaluates to True,
+        checksum failures will raise warnings rather than exceptions.
         """
 
-        type, data = self.chunk()
+        type, data = self.chunk(lenient=lenient)
         if type == 'IHDR':
             # http://www.w3.org/TR/PNG/#11IHDR
             if len(data) != 13:
@@ -1845,7 +1860,7 @@ class Reader:
                 not self.colormap and len(data) != self.planes):
                 raise FormatError("sBIT chunk has incorrect length.")
 
-    def read(self):
+    def read(self, lenient=False):
         """
         Read the PNG file and decode it.  Returns (`width`, `height`,
         `pixels`, `metadata`).
@@ -1853,14 +1868,17 @@ class Reader:
         May use excessive memory.
 
         `pixels` are returned in boxed row flat pixel format.
+
+        If the optional `lenient` argument evaluates to True,
+        checksum failures will raise warnings rather than exceptions.
         """
 
         def iteridat():
             """Iterator that yields all the ``IDAT`` chunks as strings."""
             while True:
                 try:
-                    type, data = self.chunk()
-                except ValueError, e:
+                    type, data = self.chunk(lenient=lenient)
+                except ValueError as e:
                     raise ChunkError(e.args[0])
                 if type == 'IEND':
                     # http://www.w3.org/TR/PNG/#11IEND
@@ -1890,7 +1908,7 @@ class Reader:
                 yield array('B', d.decompress(data))
             yield array('B', d.flush())
 
-        self.preamble()
+        self.preamble(lenient=lenient)
         raw = iterdecomp(iteridat())
 
         if self.interlace:
@@ -1910,6 +1928,8 @@ class Reader:
             a = getattr(self, attr, None)
             if a is not None:
                 meta[attr] = a
+        if self.plte:
+            meta['palette'] = self.palette()
         return self.width, self.height, pixels, meta
 
 
@@ -2085,7 +2105,10 @@ class Reader:
         def iterscale():
             for row in pixels:
                 yield map(lambda x: int(round(x*factor)), row)
-        return width, height, iterscale(), meta
+        if maxval == targetmaxval:
+            return width, height, pixels, meta
+        else:
+            return width, height, iterscale(), meta
 
     def asRGB8(self):
         """Return the image data as an RGB pixels with 8-bits per
@@ -2161,8 +2184,10 @@ class Reader:
             return width,height,pixels,meta
         typecode = 'BH'[meta['bitdepth'] > 8]
         maxval = 2**meta['bitdepth'] - 1
+        maxbuffer = struct.pack('=' + typecode, maxval) * 4 * width
         def newarray():
-            return array(typecode, [0]) * 4 * width
+            return array(typecode, maxbuffer)
+
         if meta['alpha'] and meta['greyscale']:
             # LA to RGBA
             def convert():
@@ -2171,18 +2196,14 @@ class Reader:
                     # into first three target channels, and A channel
                     # into fourth channel.
                     a = newarray()
-                    for i in range(3):
-                        a[i::4] = row[0::2]
-                    a[3::4] = row[1::2]
+                    pngfilters.convert_la_to_rgba(row, a)
                     yield a
         elif meta['greyscale']:
             # L to RGBA
             def convert():
                 for row in pixels:
                     a = newarray()
-                    for i in range(3):
-                        a[i::4] = row
-                    a[3::4] = array(typecode, [maxval]) * width
+                    pngfilters.convert_l_to_rgba(row, a)
                     yield a
         else:
             assert not meta['alpha'] and not meta['greyscale']
@@ -2190,9 +2211,7 @@ class Reader:
             def convert():
                 for row in pixels:
                     a = newarray()
-                    for i in range(3):
-                        a[i::4] = row[i::3]
-                    a[3::4] = array(typecode, [maxval]) * width
+                    pngfilters.convert_rgb_to_rgba(row, a)
                     yield a
         meta['alpha'] = True
         meta['greyscale'] = False
@@ -2292,6 +2311,97 @@ except:
     itertools.chain = _itertools_chain
 
 
+# === Support for users without Cython ===
+
+try:
+    pngfilters
+except:
+    class pngfilters(object):
+        def undo_filter_sub(filter_unit, scanline, previous, result):
+            """Undo sub filter."""
+
+            ai = 0
+            # Loops starts at index fu.  Observe that the initial part
+            # of the result is already filled in correctly with
+            # scanline.
+            for i in range(filter_unit, len(result)):
+                x = scanline[i]
+                a = result[ai]
+                result[i] = (x + a) & 0xff
+                ai += 1
+        undo_filter_sub = staticmethod(undo_filter_sub)
+
+        def undo_filter_up(filter_unit, scanline, previous, result):
+            """Undo up filter."""
+
+            for i in range(len(result)):
+                x = scanline[i]
+                b = previous[i]
+                result[i] = (x + b) & 0xff
+        undo_filter_up = staticmethod(undo_filter_up)
+
+        def undo_filter_average(filter_unit, scanline, previous, result):
+            """Undo up filter."""
+
+            ai = -filter_unit
+            for i in range(len(result)):
+                x = scanline[i]
+                if ai < 0:
+                    a = 0
+                else:
+                    a = result[ai]
+                b = previous[i]
+                result[i] = (x + ((a + b) >> 1)) & 0xff
+                ai += 1
+        undo_filter_average = staticmethod(undo_filter_average)
+
+        def undo_filter_paeth(filter_unit, scanline, previous, result):
+            """Undo Paeth filter."""
+
+            # Also used for ci.
+            ai = -filter_unit
+            for i in range(len(result)):
+                x = scanline[i]
+                if ai < 0:
+                    a = c = 0
+                else:
+                    a = result[ai]
+                    c = previous[ai]
+                b = previous[i]
+                p = a + b - c
+                pa = abs(p - a)
+                pb = abs(p - b)
+                pc = abs(p - c)
+                if pa <= pb and pa <= pc:
+                    pr = a
+                elif pb <= pc:
+                    pr = b
+                else:
+                    pr = c
+                result[i] = (x + pr) & 0xff
+                ai += 1
+        undo_filter_paeth = staticmethod(undo_filter_paeth)
+
+        def convert_la_to_rgba(row, result):
+            for i in range(3):
+                result[i::4] = row[0::2]
+            result[3::4] = row[1::2]
+        convert_la_to_rgba = staticmethod(convert_la_to_rgba)
+
+        def convert_l_to_rgba(row, result):
+            """Convert a grayscale image to RGBA. This method assumes the alpha
+            channel in result is already correctly initialized."""
+            for i in range(3):
+                result[i::4] = row
+        convert_l_to_rgba = staticmethod(convert_l_to_rgba)
+
+        def convert_rgb_to_rgba(row, result):
+            """Convert an RGB image to RGBA. This method assumes the alpha
+            channel in result is already correctly initialized."""
+            for i in range(3):
+                result[i::4] = row[i::3]
+        convert_rgb_to_rgba = staticmethod(convert_rgb_to_rgba)
+
 
 # === Internal Test Support ===
 
@@ -2331,7 +2441,7 @@ def topngbytes(name, rows, x, y, **k):
 
     import os
 
-    print name
+    print(name)
     f = BytesIO()
     w = Writer(x, y, **k)
     w.write(f, rows)
@@ -2437,7 +2547,7 @@ class Test(unittest.TestCase):
         x,y,pixels,meta = r.asRGB8()
         self.assertEqual(x, 1)
         self.assertEqual(y, 4)
-        self.assertEqual(list(pixels), map(list, [a, b, b, c]))
+        self.assertEqual(map(list, pixels), map(list, [a, b, b, c]))
     def testPtrns(self):
         "Test colour type 3 and tRNS chunk (and 4-bit palette)."
         a = (50,99,50,50)
@@ -2465,7 +2575,7 @@ class Test(unittest.TestCase):
         x,y,pixels,meta = r.asRGBA8()
         # Test the pixels at row 9 columns 0 and 1.
         row9 = list(pixels)[9]
-        self.assertEqual(row9[0:8],
+        self.assertEqual(list(row9[0:8]),
                          [0xff, 0xdf, 0xff, 0xff, 0xff, 0xde, 0xff, 0xff])
     def testLtoRGBA(self):
         "asRGBA() on grey source."""
@@ -2495,7 +2605,7 @@ class Test(unittest.TestCase):
             candi = candidate.replace('n', 'i')
             if candi not in _pngsuite:
                 continue
-            print 'adam7 read', candidate
+            print('adam7 read', candidate)
             straight = Reader(bytes=_pngsuite[candidate])
             adam7 = Reader(bytes=_pngsuite[candi])
             # Just compare the pixels.  Ignore x,y (because they're
@@ -2574,6 +2684,44 @@ class Test(unittest.TestCase):
           greyscale=True, alpha=True, bitdepth=4)
         sbit = Reader(bytes=bytes).chunk('sBIT')[1]
         self.assertEqual(sbit, strtobytes('\x04\x04'))
+    def testPal(self):
+        """Test that a palette PNG returns the palette in info."""
+        r = Reader(bytes=_pngsuite['basn3p04'])
+        x,y,pixels,info = r.read()
+        self.assertEqual(x, 32)
+        self.assertEqual(y, 32)
+        self.assertTrue('palette' in info)
+    def testPalWrite(self):
+        """Test metadata for paletted PNG can be passed from one PNG
+        to another."""
+        r = Reader(bytes=_pngsuite['basn3p04'])
+        x,y,pixels,info = r.read()
+        w = Writer(**info)
+        o = BytesIO()
+        w.write(o, pixels)
+        o.flush()
+        o.seek(0)
+        r = Reader(file=o)
+        _,_,_,again_info = r.read()
+        # Same palette
+        self.assertEqual(again_info['palette'], info['palette'])
+    def testPalExpand(self):
+        """Test that bitdepth can be used to fiddle with pallete image."""
+        r = Reader(bytes=_pngsuite['basn3p04'])
+        x,y,pixels,info = r.read()
+        pixels = [list(row) for row in pixels]
+        info['bitdepth'] = 8
+        w = Writer(**info)
+        o = BytesIO()
+        w.write(o, pixels)
+        o.flush()
+        o.seek(0)
+        r = Reader(file=o)
+        _,_,again_pixels,again_info = r.read()
+        # Same pixels
+        again_pixels = [list(row) for row in again_pixels]
+        self.assertEqual(again_pixels, pixels)
+
     def testPNMsbit(self):
         """Test that PNM files can generates sBIT chunk."""
         def do():
@@ -2693,6 +2841,7 @@ class Test(unittest.TestCase):
             data = zlib.compress(data)
             return (chunk[0], data)
         self.assertRaises(FormatError, self.helperFormat, eachchunk)
+
     def testFlat(self):
         """Test read_flat."""
         import hashlib
@@ -2771,6 +2920,103 @@ class Test(unittest.TestCase):
         pixels = numpy.array([[0,0x5555],[0x5555,0xaaaa]], numpy.uint16)
         img = from_array(pixels, 'L')
         img.save('testnumpyL16.png')
+
+    def paeth(self, x, a, b, c):
+        p = a + b - c
+        pa = abs(p - a)
+        pb = abs(p - b)
+        pc = abs(p - c)
+        if pa <= pb and pa <= pc:
+            pr = a
+        elif pb <= pc:
+            pr = b
+        else:
+            pr = c
+        return x - pr
+
+    # test filters and unfilters
+    def testFilterScanlineFirstLine(self):
+        fo = 3  # bytes per pixel
+        line = [30, 31, 32, 230, 231, 232]
+        out = filter_scanline(0, line, fo, None)  # none
+        self.assertEqual(list(out), [0, 30, 31, 32, 230, 231, 232])
+        out = filter_scanline(1, line, fo, None)  # sub
+        self.assertEqual(list(out), [1, 30, 31, 32, 200, 200, 200])
+        out = filter_scanline(2, line, fo, None)  # up
+        # TODO: All filtered scanlines start with a byte indicating the filter
+        # algorithm, except "up". Is this a bug? Should the expected output
+        # start with 2 here?
+        self.assertEqual(list(out), [30, 31, 32, 230, 231, 232])
+        out = filter_scanline(3, line, fo, None)  # average
+        self.assertEqual(list(out), [3, 30, 31, 32, 215, 216, 216])
+        out = filter_scanline(4, line, fo, None)  # paeth
+        self.assertEqual(list(out), [
+            4, self.paeth(30, 0, 0, 0), self.paeth(31, 0, 0, 0),
+            self.paeth(32, 0, 0, 0), self.paeth(230, 30, 0, 0),
+            self.paeth(231, 31, 0, 0), self.paeth(232, 32, 0, 0)
+            ])
+    def testFilterScanline(self):
+        prev = [20, 21, 22, 210, 211, 212]
+        line = [30, 32, 34, 230, 233, 236]
+        fo = 3
+        out = filter_scanline(0, line, fo, prev)  # none
+        self.assertEqual(list(out), [0, 30, 32, 34, 230, 233, 236])
+        out = filter_scanline(1, line, fo, prev)  # sub
+        self.assertEqual(list(out), [1, 30, 32, 34, 200, 201, 202])
+        out = filter_scanline(2, line, fo, prev)  # up
+        self.assertEqual(list(out), [2, 10, 11, 12, 20, 22, 24])
+        out = filter_scanline(3, line, fo, prev)  # average
+        self.assertEqual(list(out), [3, 20, 22, 23, 110, 112, 113])
+        out = filter_scanline(4, line, fo, prev)  # paeth
+        self.assertEqual(list(out), [
+            4, self.paeth(30, 0, 20, 0), self.paeth(32, 0, 21, 0),
+            self.paeth(34, 0, 22, 0), self.paeth(230, 30, 210, 20),
+            self.paeth(233, 32, 211, 21), self.paeth(236, 34, 212, 22)
+            ])
+    def testUnfilterScanline(self):
+        reader = Reader(bytes='')
+        reader.psize = 3
+        scanprev = array('B', [20, 21, 22, 210, 211, 212])
+        scanline = array('B', [30, 32, 34, 230, 233, 236])
+        def cp(a):
+            return array('B', a)
+
+        out = reader.undo_filter(0, cp(scanline), cp(scanprev))
+        self.assertEqual(list(out), list(scanline))  # none
+        out = reader.undo_filter(1, cp(scanline), cp(scanprev))
+        self.assertEqual(list(out), [30, 32, 34, 4, 9, 14])  # sub
+        out = reader.undo_filter(2, cp(scanline), cp(scanprev))
+        self.assertEqual(list(out), [50, 53, 56, 184, 188, 192])  # up
+        out = reader.undo_filter(3, cp(scanline), cp(scanprev))
+        self.assertEqual(list(out), [40, 42, 45, 99, 103, 108])  # average
+        out = reader.undo_filter(4, cp(scanline), cp(scanprev))
+        self.assertEqual(list(out), [50, 53, 56, 184, 188, 192])  # paeth
+    def testUnfilterScanlinePaeth(self):
+        # This tests more edge cases in the paeth unfilter
+        reader = Reader(bytes='')
+        reader.psize = 3
+        scanprev = array('B', [2, 0, 0, 0, 9, 11])
+        scanline = array('B', [6, 10, 9, 100, 101, 102])
+
+        out = reader.undo_filter(4, scanline, scanprev)
+        self.assertEqual(list(out), [8, 10, 9, 108, 111, 113])  # paeth
+    def testIterstraight(self):
+        def arraify(list_of_str):
+            return [array('B', s) for s in list_of_str]
+        reader = Reader(bytes='')
+        reader.row_bytes = 6
+        reader.psize = 3
+        rows = reader.iterstraight(arraify(['\x00abcdef', '\x00ghijkl']))
+        self.assertEqual(list(rows), arraify(['abcdef', 'ghijkl']))
+
+        rows = reader.iterstraight(arraify(['\x00abc', 'def\x00ghijkl']))
+        self.assertEqual(list(rows), arraify(['abcdef', 'ghijkl']))
+
+        rows = reader.iterstraight(arraify(['\x00abcdef\x00ghijkl']))
+        self.assertEqual(list(rows), arraify(['abcdef', 'ghijkl']))
+
+        rows = reader.iterstraight(arraify(['\x00abcdef\x00ghi', 'jkl']))
+        self.assertEqual(list(rows), arraify(['abcdef', 'ghijkl']))
 
 # === Command Line Support ===
 
@@ -3011,6 +3257,15 @@ f3edf2705dd10160f3b2815fe8ecf2027974a6b0c03f74a6e4192843e75c6c03
 fb8d3630039dbd59601e7ab3c06cf428507f0634d039afdc80123a7bb1801e7a
 b1802a7a14c89f016d74ce331bf080ce9e08f8414f04bca133bfe642fe5e07bb
 c4ec0000000049454e44ae426082
+"""),
+  'basn3p04': _dehex("""
+89504e470d0a1a0a0000000d4948445200000020000000200403000000815467
+c70000000467414d41000186a031e8965f000000037342495404040477f8b5a3
+0000002d504c54452200ff00ffff8800ff22ff000099ffff6600dd00ff77ff00
+ff000000ff99ddff00ff00bbffbb000044ff00ff44d2b049bd00000047494441
+54789c63e8e8080d3d7366d5aaf27263e377ef66ce64204300952b28488e002a
+d7c5851c0154eeddbbe408a07119c81140e52a29912380ca4d4b23470095bb7b
+37190200e0c4ead10f82057d0000000049454e44ae426082
 """),
   'basn6a08': _dehex("""
 89504e470d0a1a0a0000000d4948445200000020000000200806000000737a7a
@@ -3296,176 +3551,6 @@ acf0c6211c036f14a239703741740adc7da227edd7e56b833d0ae92549b4d357
 """),
 }
 
-def test_suite(options, args):
-    """
-    Create a PNG test image and write the file to stdout.
-    """
-
-    import re
-
-    # Below is a big stack of test image generators.
-    # They're all really tiny, so PEP 8 rules are suspended.
-
-    def test_gradient_horizontal_lr(x, y): return x
-    def test_gradient_horizontal_rl(x, y): return 1-x
-    def test_gradient_vertical_tb(x, y): return y
-    def test_gradient_vertical_bt(x, y): return 1-y
-    def test_radial_tl(x, y): return max(1-math.sqrt(x*x+y*y), 0.0)
-    def test_radial_center(x, y): return test_radial_tl(x-0.5, y-0.5)
-    def test_radial_tr(x, y): return test_radial_tl(1-x, y)
-    def test_radial_bl(x, y): return test_radial_tl(x, 1-y)
-    def test_radial_br(x, y): return test_radial_tl(1-x, 1-y)
-    def test_stripe(x, n): return float(int(x*n) & 1)
-    def test_stripe_h_2(x, y): return test_stripe(x, 2)
-    def test_stripe_h_4(x, y): return test_stripe(x, 4)
-    def test_stripe_h_10(x, y): return test_stripe(x, 10)
-    def test_stripe_v_2(x, y): return test_stripe(y, 2)
-    def test_stripe_v_4(x, y): return test_stripe(y, 4)
-    def test_stripe_v_10(x, y): return test_stripe(y, 10)
-    def test_stripe_lr_10(x, y): return test_stripe(x+y, 10)
-    def test_stripe_rl_10(x, y): return test_stripe(1+x-y, 10)
-    def test_checker(x, y, n): return float((int(x*n) & 1) ^ (int(y*n) & 1))
-    def test_checker_8(x, y): return test_checker(x, y, 8)
-    def test_checker_15(x, y): return test_checker(x, y, 15)
-    def test_zero(x, y): return 0
-    def test_one(x, y): return 1
-
-    test_patterns = {
-        'GLR': test_gradient_horizontal_lr,
-        'GRL': test_gradient_horizontal_rl,
-        'GTB': test_gradient_vertical_tb,
-        'GBT': test_gradient_vertical_bt,
-        'RTL': test_radial_tl,
-        'RTR': test_radial_tr,
-        'RBL': test_radial_bl,
-        'RBR': test_radial_br,
-        'RCTR': test_radial_center,
-        'HS2': test_stripe_h_2,
-        'HS4': test_stripe_h_4,
-        'HS10': test_stripe_h_10,
-        'VS2': test_stripe_v_2,
-        'VS4': test_stripe_v_4,
-        'VS10': test_stripe_v_10,
-        'LRS': test_stripe_lr_10,
-        'RLS': test_stripe_rl_10,
-        'CK8': test_checker_8,
-        'CK15': test_checker_15,
-        'ZERO': test_zero,
-        'ONE': test_one,
-        }
-
-    def test_pattern(width, height, bitdepth, pattern):
-        """Create a single plane (monochrome) test pattern.  Returns a
-        flat row flat pixel array.
-        """
-
-        maxval = 2**bitdepth-1
-        if maxval > 255:
-            a = array('H')
-        else:
-            a = array('B')
-        fw = float(width)
-        fh = float(height)
-        pfun = test_patterns[pattern]
-        for y in range(height):
-            fy = float(y)/fh
-            for x in range(width):
-                a.append(int(round(pfun(float(x)/fw, fy) * maxval)))
-        return a
-
-    def test_rgba(size=(256,256), bitdepth=8,
-                  red="GTB", green="GLR", blue="RTL", alpha=None):
-        """
-        Create a test image.  Each channel is generated from the
-        specified pattern; any channel apart from red can be set to
-        None, which will cause it not to be in the image.  It
-        is possible to create all PNG channel types (L, RGB, LA, RGBA),
-        as well as non PNG channel types (RGA, and so on).
-        *size* is a pair: (*width*,*height).
-        """
-
-        i = test_pattern(size[0], size[1], bitdepth, red)
-        psize = 1
-        for channel in (green, blue, alpha):
-            if channel:
-                c = test_pattern(size[0], size[1], bitdepth, channel)
-                i = interleave_planes(i, c, psize, 1)
-                psize += 1
-        return i
-
-    def pngsuite_image(name):
-        """
-        Create a test image by reading an internal copy of the files
-        from the PngSuite.  Returned in flat row flat pixel format.
-        """
-
-        if name not in _pngsuite:
-            raise NotImplementedError("cannot find PngSuite file %s (use -L for a list)" % name)
-        r = Reader(bytes=_pngsuite[name])
-        w,h,pixels,meta = r.asDirect()
-        # LAn for n < 8 is a special case for which we need to rescale
-        # the data.
-        if meta['greyscale'] and meta['alpha'] and meta['bitdepth'] < 8:
-            factor = 255 // (2**meta['bitdepth']-1)
-            def rescale(data):
-                for row in data:
-                    yield map(factor.__mul__, row)
-            pixels = rescale(pixels)
-            meta['bitdepth'] = 8
-        arraycode = 'BH'[meta['bitdepth']>8]
-        return w, h, array(arraycode, itertools.chain(*pixels)), meta
-
-    # The body of test_suite()
-
-    size = (256,256)
-    # Expect option of the form '64,40'.
-    if options.test_size:
-        size = re.findall(r'\d+', options.test_size)
-        if len(size) not in [1,2]:
-            raise ValueError(
-              'size should be one or two numbers, separated by punctuation')
-        if len(size) == 1:
-            size *= 2
-        assert len(size) == 2
-        size = map(int, size)
-    options.bitdepth = options.test_depth
-    options.greyscale=bool(options.test_black)
-
-    kwargs = {}
-    if options.test_red:
-        kwargs["red"] = options.test_red
-    if options.test_green:
-        kwargs["green"] = options.test_green
-    if options.test_blue:
-        kwargs["blue"] = options.test_blue
-    if options.test_alpha:
-        kwargs["alpha"] = options.test_alpha
-    if options.greyscale:
-        if options.test_red or options.test_green or options.test_blue:
-            raise ValueError("cannot specify colours (R, G, B) when greyscale image (black channel, K) is specified")
-        kwargs["red"] = options.test_black
-        kwargs["green"] = None
-        kwargs["blue"] = None
-    options.alpha = bool(options.test_alpha)
-    if not args:
-        pixels = test_rgba(size, options.bitdepth, **kwargs)
-    else:
-        w,h,pixels,meta = pngsuite_image(args[0])
-        size = (w,h)
-        for k in ['bitdepth', 'alpha', 'greyscale']:
-            setattr(options, k, meta[k])
-
-    writer = Writer(size[0], size[1],
-                    bitdepth=options.bitdepth,
-                    transparent=options.transparent,
-                    background=options.background,
-                    gamma=options.gamma,
-                    greyscale=options.greyscale,
-                    alpha=options.alpha,
-                    compression=options.compression,
-                    interlace=options.interlace)
-    writer.write_array(sys.stdout, pixels)
-
 def read_pam_header(infile):
     """
     Read (the rest of a) PAM header.  `infile` should be positioned
@@ -3648,6 +3733,27 @@ def color_triple(color):
                 int(color[5:9], 16),
                 int(color[9:13], 16))
 
+def _add_common_options(parser):
+    """Call *parser.add_option* for each of the options that are
+    common between this PNG--PNM conversion tool and the gen
+    tool.
+    """
+    parser.add_option("-i", "--interlace",
+                      default=False, action="store_true",
+                      help="create an interlaced PNG file (Adam7)")
+    parser.add_option("-t", "--transparent",
+                      action="store", type="string", metavar="#RRGGBB",
+                      help="mark the specified colour as transparent")
+    parser.add_option("-b", "--background",
+                      action="store", type="string", metavar="#RRGGBB",
+                      help="save the specified background colour")
+    parser.add_option("-g", "--gamma",
+                      action="store", type="float", metavar="value",
+                      help="save the specified gamma value")
+    parser.add_option("-c", "--compression",
+                      action="store", type="int", metavar="level",
+                      help="zlib compression level (0-9)")
+    return parser
 
 def _main(argv):
     """
@@ -3663,52 +3769,11 @@ def _main(argv):
     parser.add_option('-r', '--read-png', default=False,
                       action='store_true',
                       help='Read PNG, write PNM')
-    parser.add_option("-i", "--interlace",
-                      default=False, action="store_true",
-                      help="create an interlaced PNG file (Adam7)")
-    parser.add_option("-t", "--transparent",
-                      action="store", type="string", metavar="color",
-                      help="mark the specified colour (#RRGGBB) as transparent")
-    parser.add_option("-b", "--background",
-                      action="store", type="string", metavar="color",
-                      help="save the specified background colour")
     parser.add_option("-a", "--alpha",
                       action="store", type="string", metavar="pgmfile",
                       help="alpha channel transparency (RGBA)")
-    parser.add_option("-g", "--gamma",
-                      action="store", type="float", metavar="value",
-                      help="save the specified gamma value")
-    parser.add_option("-c", "--compression",
-                      action="store", type="int", metavar="level",
-                      help="zlib compression level (0-9)")
-    parser.add_option("-T", "--test",
-                      default=False, action="store_true",
-                      help="create a test image (a named PngSuite image if an argument is supplied)")
-    parser.add_option('-L', '--list',
-                      default=False, action='store_true',
-                      help="print list of named test images")
-    parser.add_option("-R", "--test-red",
-                      action="store", type="string", metavar="pattern",
-                      help="test pattern for the red image layer")
-    parser.add_option("-G", "--test-green",
-                      action="store", type="string", metavar="pattern",
-                      help="test pattern for the green image layer")
-    parser.add_option("-B", "--test-blue",
-                      action="store", type="string", metavar="pattern",
-                      help="test pattern for the blue image layer")
-    parser.add_option("-A", "--test-alpha",
-                      action="store", type="string", metavar="pattern",
-                      help="test pattern for the alpha image layer")
-    parser.add_option("-K", "--test-black",
-                      action="store", type="string", metavar="pattern",
-                      help="test pattern for greyscale image")
-    parser.add_option("-d", "--test-depth",
-                      default=8, action="store", type="int",
-                      metavar='NBITS',
-                      help="create test PNGs that are NBITS bits per channel")
-    parser.add_option("-S", "--test-size",
-                      action="store", type="string", metavar="w[,h]",
-                      help="width and height of the test image")
+    _add_common_options(parser)
+
     (options, args) = parser.parse_args(args=argv[1:])
 
     # Convert options
@@ -3716,17 +3781,6 @@ def _main(argv):
         options.transparent = color_triple(options.transparent)
     if options.background is not None:
         options.background = color_triple(options.background)
-
-    if options.list:
-        names = list(_pngsuite)
-        names.sort()
-        for name in names:
-            print name
-        return
-
-    # Run regression tests
-    if options.test:
-        return test_suite(options, args)
 
     # Prepare input and output files
     if len(args) == 0:
@@ -3796,5 +3850,5 @@ def _main(argv):
 if __name__ == '__main__':
     try:
         _main(sys.argv)
-    except Error, e:
-        print >>sys.stderr, e
+    except Error as e:
+        print(e, file=sys.stderr)

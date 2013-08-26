@@ -6,8 +6,8 @@ MicroPsi runtime module;
 maintains a set of users, worlds (up to one per user), and nodenets, and provides an interface to external clients
 """
 
-from _runtime_api_world import *
-from _runtime_api_monitors import *
+from micropsi_core._runtime_api_world import *
+from micropsi_core._runtime_api_monitors import *
 
 
 __author__ = 'joscha'
@@ -20,7 +20,7 @@ from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
 import os
-import tools
+from micropsi_core import tools
 import json
 import warnings
 from threading import Thread
@@ -47,7 +47,7 @@ def nodenetrunner():
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
-                print "%s stepping nodenet %s" % (str(start), nodenets[uid].name)
+                print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
         time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
@@ -63,7 +63,7 @@ def worldrunner():
         start = datetime.now()
         for uid in worlds:
             if worlds[uid].is_active:
-                print "%s stepping world %s" % (str(start), worlds[uid].name)
+                print("%s stepping world %s" % (str(start), worlds[uid].name))
                 worlds[uid].step()
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
@@ -793,7 +793,7 @@ for uid in world_data:
             worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
         except TypeError:
             worlds[uid] = world.World(**world_data[uid])
-        except AttributeError, err:
+        except AttributeError as err:
             warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
     else:
         worlds[uid] = world.World(**world_data[uid])

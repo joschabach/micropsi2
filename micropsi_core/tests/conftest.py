@@ -21,7 +21,7 @@ def test_world(request):
     global world_uid
     worlds = micropsi.get_available_worlds("Pytest User")
     if worlds:
-        world_uid = worlds.keys()[0]
+        world_uid = list(worlds.keys())[0]
     else:
         success, world_uid = micropsi.new_world("World of Pain", "World", "Pytest User")
 
@@ -38,7 +38,7 @@ def test_nodenet(request):
     nodenets = micropsi.get_available_nodenets("Pytest User") or {}
     for uid, nn in nodenets.items():
         if(nn.name == 'Testnet'):
-            nn_uid = nodenets.keys()[0]
+            nn_uid = list(nodenets.keys())[0]
     else:
         success, nn_uid = micropsi.new_nodenet("Testnet", "Default", owner="Pytest User", world_uid=world_uid, uid='Testnet')
 

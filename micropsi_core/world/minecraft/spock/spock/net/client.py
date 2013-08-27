@@ -170,6 +170,7 @@ class Client(object):
 
             #check for MicroPsi input
             if self.move_x > 0:
+                print("SPOCK: my self.move_x is %s ... that's why i'm moving!" % self.move_x)
                 self.push(Packet(ident = 0x0B, data = {
                     'x': (self.position['x'] - 1)  // 1,
                     'y': self.position['y'] // 1,
@@ -177,7 +178,9 @@ class Client(object):
                     'on_ground': False,
                     'stance': self.position['y'] + 0.11
                     }))
+                self.move_x = 0
             if self.move_x < 0:
+                print("SPOCK: my self.move_x is %s ... that's why i'm moving!" % self.move_x)
                 self.push(Packet(ident = 0x0B, data = {
                     'x': (self.position['x'] + 1)  // 1,
                     'y': self.position['y'] // 1,
@@ -185,7 +188,9 @@ class Client(object):
                     'on_ground': False,
                     'stance': self.position['y'] + 0.11
                     }))
+                self.move_x = 0
             if self.move_z > 0:
+                print("SPOCK: my self.move_z is %s ... that's why i'm moving!" % self.move_z)
                 self.push(Packet(ident = 0x0B, data = {
                     'x': (self.position['x']) // 1,
                     'y': self.position['y'] // 1,
@@ -193,7 +198,9 @@ class Client(object):
                     'on_ground': False,
                     'stance': self.position['y'] + 0.11
                     }))
+                self.move_z = 0
             if self.move_z < 0:
+                print("SPOCK: my self.move_x is %z ... that's why i'm moving!" % self.move_z)
                 self.push(Packet(ident = 0x0B, data = {
                     'x': (self.position['x'])  // 1,
                     'y': self.position['y'] // 1,
@@ -201,6 +208,7 @@ class Client(object):
                     'on_ground': False,
                     'stance': self.position['y'] + 0.11
                     }))
+                self.move_z = 0
             if self.kill_flag:
                  print("closing sockets & shutting down")
                  s.close()

@@ -86,6 +86,9 @@ class Model(object):
                 for x in xrange(0, n):
                     for z in xrange(0, n):
                         #not needed here (yet?) current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
+                        #current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
+                        #if (current_block in solid_blocks):
+                        #    self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:  #TODO explain formula
                             self.remove_block(self.last_known_botblock)
                             self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )

@@ -38,13 +38,6 @@ class Minecraft(World):
         if self.chat_ping_counter % 20 == 0: #TODO find other way to send "keepalive"
             self.client.push(Packet(ident = 0x03, data = {
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
-            self.client.push(Packet(ident = 0x0B, data = {
-                    'x': (self.client.position['x'])  // 1,
-                    'y': self.client.position['y'] // 1,
-                    'z': self.client.position['z'] + 1 // 1,
-                    'on_ground': False,
-                    'stance': self.client.position['y'] + 0.11
-                    }))
         World.step(self)
         self.client.step()
         vis.step_vis()
@@ -64,10 +57,14 @@ class Braitencraft(WorldAdapter):
 
         x_chunk = self.world.client.position['x'] // 16
         z_chunk = self.world.client.position['z'] // 16
-        bot_block = [self.world.client.position['x'], self.world.client.position['y'], self.world.client.position['z']]
+        bot_block = (self.world.client.position['x'], self.world.client.position['y'], self.world.client.position['z'])
         current_column = self.world.client.world.columns[(x_chunk, z_chunk)]
 
         diamond_coords = (0,0,0)
+
+        self.datasources['diamond_offset_x'] = 0
+        self.datasources['diamond_offset_z'] = 0
+
         for y in range(0, 16):
             current_section = current_column.chunks[int((bot_block[1] + y - 10 // 2) // 16)] #TODO explain formula
             if current_section != None:
@@ -75,10 +72,19 @@ class Braitencraft(WorldAdapter):
                     for z in range(0, 16):
                         current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
                         if current_block == 56:
+                            print("Found diamond at ", (x + x_chunk * 16,y,z + z_chunk * 16))
                             diamond_coords = (x + x_chunk * 16,y,z + z_chunk * 16)
+                            self.datasources['diamond_offset_x'] = bot_block[0] - diamond_coords[0] - 2
+                            self.datasources['diamond_offset_z'] = bot_block[2] - diamond_coords[2] - 2
 
-        self.datasources['diamond_offset_x'] = self.world.client.position['x'] - diamond_coords[0] - 2
-        self.datasources['diamond_offset_z'] = self.world.client.position['z'] - diamond_coords[2] - 2
 
         self.world.client.move_x = self.datatargets['move_x']
         self.world.client.move_z = self.datatargets['move_z']
+
+        print("self.datasources['diamond_offset_x'] is ", self.datasources['diamond_offset_x'])
+        print("self.datasources['diamond_offset_z'] is ", self.datasources['diamond_offset_z'])
+        print("self.datatargets['move_x'] is ", self.datatargets['move_x'])
+        print("self.datatargets['move_z'] is ", self.datatargets['move_z'])
+
+        self.datatargets['move_x'] = 0
+        self.datatargets['move_z'] = 0

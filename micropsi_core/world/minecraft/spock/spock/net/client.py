@@ -6,7 +6,7 @@ import signal
 import sys
 import os
 import logging
-import micropsi_core.world.minecraft.spock.plugins.psicraft_dispatcher as psicraft
+#import micropsi_core.world.minecraft.spock.plugins.psicraft_dispatcher as psicraft
 
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
 
@@ -25,8 +25,8 @@ smask = select.POLLOUT|select.POLLIN|select.POLLERR|select.POLLHUP
 
 webinterface_port = 50104
 
-#Initialize socket for communication with webinterface
-websock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+##Initialize socket for communication with webinterface
+#websock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 import sys
 OriginalExceptHook = sys.excepthook
@@ -63,7 +63,7 @@ class Client(object):
         self.poll = select.poll()
         self.poll.register(self.sock, smask)
 
-        self.read_list = None
+        #self.read_list = None
 
         #Initialize Event Loop/Network variables
         #Plugins should generally not touch these
@@ -75,7 +75,7 @@ class Client(object):
         self.sbuff = b''
         self.flags = 0
 
-        self.kill_flag = False
+        #self.kill_flag = False
 
         #MicroPsi Datatargets
         self.move_x = 0
@@ -119,9 +119,9 @@ class Client(object):
             self.event_loop()
         #self.exit()
 
-        def customKeyboardInterruptHandler(signum, stackframe):
-            print("CTRL-C from user, exiting....")
-            websock.close()
+        #def customKeyboardInterruptHandler(signum, stackframe):
+        #    print("CTRL-C from user, exiting....")
+        #    websock.close()
 
     def event_loop(self):
 
@@ -131,11 +131,11 @@ class Client(object):
         #Fire off plugins that need to run after init
         for callback in self.plugin_handlers[cflags['START_EVENT']]: callback(flag)
 
-        #starting webinterface socket
-        websock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        websock.bind(("", webinterface_port))
-        websock.listen(1)
-        self.read_list = [websock]
+        ##starting webinterface socket
+        #websock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #websock.bind(("", webinterface_port))
+        #websock.listen(1)
+        #self.read_list = [websock]
 
         for i in range(0,18): #TODO make smarter
             self.step()
@@ -159,14 +159,14 @@ class Client(object):
                 sys.stdout.flush()
                 sys.stderr.flush()
 
-            #waiting for new commands from webinterface. 0.01s timeout #TODO probably not needed anymore (soon)
-            readable, writable, errored = select.select(self.read_list, [], [], 0.01)
-            for s in readable:
-                if s is s:
-                    komm, addr = s.accept()
-                    data = komm.recv(32)
-                    psicraft.dispatch_psicraft_command(data.decode(), self, komm)
-                    komm.close()
+            ##waiting for new commands from webinterface. 0.01s timeout #TODO probably not needed anymore (soon)
+            #readable, writable, errored = select.select(self.read_list, [], [], 0.01)
+            #for s in readable:
+            #    if s is s:
+            #        komm, addr = s.accept()
+            #        data = komm.recv(32)
+            #        psicraft.dispatch_psicraft_command(data.decode(), self, komm)
+            #        komm.close()
 
             #check for MicroPsi input
             if self.move_x > 0:
@@ -209,9 +209,9 @@ class Client(object):
                     'stance': self.position['y'] + 0.11
                     }))
                 self.move_z = 0
-            if self.kill_flag:
-                 print("closing sockets & shutting down")
-                 s.close()
+           #if self.kill_flag:
+           #     print("closing sockets & shutting down")
+           #     s.close()
 
     def getflags(self):
         self.flags = 0

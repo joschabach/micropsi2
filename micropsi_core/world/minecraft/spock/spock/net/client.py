@@ -18,6 +18,7 @@ from micropsi_core.world.minecraft.spock.spock.net.packet_handlers import phandl
 from micropsi_core.world.minecraft.spock.spock.net import timer, cipher, defaults
 from micropsi_core.world.minecraft.spock.spock.mcp import mcdata, mcpacket
 from micropsi_core.world.minecraft.spock.spock import utils, smpmap, bound_buffer
+from micropsi_core.world.minecraft.spock.spock.psidispatcher import PsiDispatcher
 
 
 rmask = select.POLLIN|select.POLLERR|select.POLLHUP
@@ -78,6 +79,7 @@ class Client(object):
         #self.kill_flag = False
 
         #MicroPsi Datatargets
+        self.psi_dispatcher = PsiDispatcher(self)
         self.move_x = 0
         self.move_z = 0
 
@@ -159,6 +161,8 @@ class Client(object):
                 sys.stdout.flush()
                 sys.stderr.flush()
 
+            self.psi_dispatcher.dispatchPsiCommands()
+
             ##waiting for new commands from webinterface. 0.01s timeout #TODO probably not needed anymore (soon)
             #readable, writable, errored = select.select(self.read_list, [], [], 0.01)
             #for s in readable:
@@ -168,47 +172,7 @@ class Client(object):
             #        psicraft.dispatch_psicraft_command(data.decode(), self, komm)
             #        komm.close()
 
-            #check for MicroPsi input
-            if self.move_x > 0:
-                print("SPOCK: my self.move_x is %s ... that's why i'm moving!" % self.move_x)
-                self.push(Packet(ident = 0x0B, data = {
-                    'x': (self.position['x'] - 1)  // 1,
-                    'y': self.position['y'] // 1,
-                    'z': self.position['z'] // 1,
-                    'on_ground': False,
-                    'stance': self.position['y'] + 0.11
-                    }))
-                self.move_x = 0
-            if self.move_x < 0:
-                print("SPOCK: my self.move_x is %s ... that's why i'm moving!" % self.move_x)
-                self.push(Packet(ident = 0x0B, data = {
-                    'x': (self.position['x'] + 1)  // 1,
-                    'y': self.position['y'] // 1,
-                    'z': self.position['z'] // 1,
-                    'on_ground': False,
-                    'stance': self.position['y'] + 0.11
-                    }))
-                self.move_x = 0
-            if self.move_z > 0:
-                print("SPOCK: my self.move_z is %s ... that's why i'm moving!" % self.move_z)
-                self.push(Packet(ident = 0x0B, data = {
-                    'x': (self.position['x']) // 1,
-                    'y': self.position['y'] // 1,
-                    'z': self.position['z'] - 1 // 1,
-                    'on_ground': False,
-                    'stance': self.position['y'] + 0.11
-                    }))
-                self.move_z = 0
-            if self.move_z < 0:
-                print("SPOCK: my self.move_x is %z ... that's why i'm moving!" % self.move_z)
-                self.push(Packet(ident = 0x0B, data = {
-                    'x': (self.position['x'])  // 1,
-                    'y': self.position['y'] // 1,
-                    'z': self.position['z'] + 1 // 1,
-                    'on_ground': False,
-                    'stance': self.position['y'] + 0.11
-                    }))
-                self.move_z = 0
+
            #if self.kill_flag:
            #     print("closing sockets & shutting down")
            #     s.close()

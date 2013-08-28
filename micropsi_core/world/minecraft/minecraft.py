@@ -4,7 +4,7 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.minecraft.spock.spock.net.client import MinecraftClient
-import micropsi_core.world.minecraft.vis.main as vis
+from micropsi_core.world.minecraft.vis.main import MinecraftVisualisation
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
 
@@ -31,7 +31,8 @@ class Minecraft(World):
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin] #TODO not all plugins - if any - are needed
             self.minecraftClient = MinecraftClient(plugins=plugins)
             self.minecraftClient.start()
-            vis.commence_vis(self.minecraftClient)
+            self.minecraftVisualisation = MinecraftVisualisation(self.minecraftClient)
+            self.minecraftVisualisation.commence_vis()
             self.first_step = False
 
         self.chat_ping_counter += 1
@@ -39,8 +40,8 @@ class Minecraft(World):
             self.minecraftClient.push(Packet(ident = 0x03, data = {
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
-        self.minecraftClient.step()
-        vis.advanceVisualisation()
+        self.minecraftClient.advanceClient()
+        self.minecraftVisualisation.advanceVisualisation()
 
 
 class Braitencraft(WorldAdapter):

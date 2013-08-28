@@ -142,10 +142,10 @@ class MinecraftClient(object):
         #self.read_list = [websock]
 
         for i in range(0,18): #TODO make smarter
-            self.step()
+            self.advanceClient()
 
 
-    def step(self):
+    def advanceClient(self):
             self.getflags()
             if self.flags:
                 for name, flag in cflags.items():

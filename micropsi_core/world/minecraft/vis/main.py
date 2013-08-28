@@ -396,26 +396,30 @@ class Window(pyglet.window.Window):
             len(self.model._shown), len(self.model.world))
         self.label.draw()
 
-def setup():
-    glClearColor(0.5, 0.69, 1.0, 1)
-    glEnable(GL_CULL_FACE)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+class MinecraftVisualisation:
+    def __init__(self, minecraftClient):
+        self.minecraftClient = minecraftClient
 
-def commence_vis(client):
-    global window
-    window = Window(client, width=800, height=600, caption='Pyglet', resizable=True, visible=False)
-    setup()
-    for i in range(0,3): #TODO make smarter
-        advanceVisualisation()
+    def setup(self):
+        glClearColor(0.5, 0.69, 1.0, 1)
+        glEnable(GL_CULL_FACE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 
-def advanceVisualisation():
-    pyglet.clock.tick()
-    pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.png')
-    move('./micropsi_server/static/minecraft/screenshot_write.png', './micropsi_server/static/minecraft/screenshot.png')
-    global window #TODO try to avoid global
-    window.switch_to()
-    window.model.reload()
-    window.dispatch_events()
-    window.dispatch_event('on_draw')
-    window.flip()
+    def commence_vis(self):
+        global window
+        window = Window(self.minecraftClient, width=800, height=600, caption='Pyglet', resizable=True, visible=False)
+        self.setup()
+        for i in range(0,3): #TODO make smarter
+            self.advanceVisualisation()
+
+    def advanceVisualisation(self):
+        pyglet.clock.tick()
+        pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.png')
+        move('./micropsi_server/static/minecraft/screenshot_write.png', './micropsi_server/static/minecraft/screenshot.png')
+        global window #TODO try to avoid global
+        window.switch_to()
+        window.model.reload()
+        window.dispatch_events()
+        window.dispatch_event('on_draw')
+        window.flip()

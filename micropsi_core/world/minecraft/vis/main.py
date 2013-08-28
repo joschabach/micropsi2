@@ -407,9 +407,9 @@ def commence_vis(client):
     window = Window(client, width=800, height=600, caption='Pyglet', resizable=True, visible=False)
     setup()
     for i in range(0,3): #TODO make smarter
-        step_vis()
+        advanceVisualisation()
 
-def step_vis():
+def advanceVisualisation():
     pyglet.clock.tick()
     pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.png')
     move('./micropsi_server/static/minecraft/screenshot_write.png', './micropsi_server/static/minecraft/screenshot.png')

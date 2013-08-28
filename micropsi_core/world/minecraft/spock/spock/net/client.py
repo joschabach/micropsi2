@@ -42,7 +42,7 @@ sys.excepthook = NewExceptHook
 
 
 
-class Client(object):
+class MinecraftClient(object):
     def __init__(self, **kwargs):
         #Grab some settings
         settings = kwargs.get('settings', {})

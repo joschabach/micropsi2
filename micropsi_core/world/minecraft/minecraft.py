@@ -3,7 +3,7 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-from micropsi_core.world.minecraft.spock.spock.net.client import Client as Spock
+from micropsi_core.world.minecraft.spock.spock.net.client import MinecraftClient
 import micropsi_core.world.minecraft.vis.main as vis
 from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
@@ -29,18 +29,18 @@ class Minecraft(World):
         if self.first_step: #TODO probably not too smart
             # launch minecraft bot
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin] #TODO not all plugins - if any - are needed
-            self.client = Spock(plugins=plugins)
-            self.client.start()
-            vis.commence_vis(self.client)
+            self.minecraftClient = MinecraftClient(plugins=plugins)
+            self.minecraftClient.start()
+            vis.commence_vis(self.minecraftClient)
             self.first_step = False
 
         self.chat_ping_counter += 1
         if self.chat_ping_counter % 20 == 0: #TODO find other way to send "keepalive"
-            self.client.push(Packet(ident = 0x03, data = {
+            self.minecraftClient.push(Packet(ident = 0x03, data = {
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
-        self.client.step()
-        vis.step_vis()
+        self.minecraftClient.step()
+        vis.advanceVisualisation()
 
 
 class Braitencraft(WorldAdapter):
@@ -51,14 +51,14 @@ class Braitencraft(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        x_coord = self.world.client.position['x'] * -1
+        x_coord = self.world.minecraftClient.position['x'] * -1
 
         #find diamond
 
-        x_chunk = self.world.client.position['x'] // 16
-        z_chunk = self.world.client.position['z'] // 16
-        bot_block = (self.world.client.position['x'], self.world.client.position['y'], self.world.client.position['z'])
-        current_column = self.world.client.world.columns[(x_chunk, z_chunk)]
+        x_chunk = self.world.minecraftClient.position['x'] // 16
+        z_chunk = self.world.minecraftClient.position['z'] // 16
+        bot_block = (self.world.minecraftClient.position['x'], self.world.minecraftClient.position['y'], self.world.minecraftClient.position['z'])
+        current_column = self.world.minecraftClient.world.columns[(x_chunk, z_chunk)]
 
         self.datasources['diamond_offset_x'] = 0
         self.datasources['diamond_offset_z'] = 0
@@ -81,10 +81,10 @@ class Braitencraft(WorldAdapter):
         print("self.datasources['diamond_offset_x_'] is ", self.datasources['diamond_offset_x_'])
 
 
-        self.world.client.move_x = self.datatargets['move_x']
-        self.world.client.move_z = self.datatargets['move_z']
-        self.world.client.move_x_ = self.datatargets['move_x_']
-        self.world.client.move_z_ = self.datatargets['move_z_']
+        self.world.minecraftClient.move_x = self.datatargets['move_x']
+        self.world.minecraftClient.move_z = self.datatargets['move_z']
+        self.world.minecraftClient.move_x_ = self.datatargets['move_x_']
+        self.world.minecraftClient.move_z_ = self.datatargets['move_z_']
 
         self.datatargets['move_x'] = 0
         self.datatargets['move_z'] = 0

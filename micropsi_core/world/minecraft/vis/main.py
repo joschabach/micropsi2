@@ -411,8 +411,8 @@ def commence_vis(client):
 
 def step_vis():
     pyglet.clock.tick()
-    pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.jpg')
-    move('./micropsi_server/static/minecraft/screenshot_write.jpg', './micropsi_server/static/minecraft/screenshot.jpg')
+    pyglet.image.get_buffer_manager().get_color_buffer().save('./micropsi_server/static/minecraft/screenshot_write.png')
+    move('./micropsi_server/static/minecraft/screenshot_write.png', './micropsi_server/static/minecraft/screenshot.png')
     global window #TODO try to avoid global
     window.switch_to()
     window.model.reload()

@@ -82,6 +82,8 @@ class Client(object):
         self.psi_dispatcher = PsiDispatcher(self)
         self.move_x = 0
         self.move_z = 0
+        self.move_x_ = 0
+        self.move_z_ = 0
 
         #Game State variables
         #Plugins should read these (but generally not write)
@@ -162,21 +164,6 @@ class Client(object):
                 sys.stderr.flush()
 
             self.psi_dispatcher.dispatchPsiCommands()
-
-            ##waiting for new commands from webinterface. 0.01s timeout #TODO probably not needed anymore (soon)
-            #readable, writable, errored = select.select(self.read_list, [], [], 0.01)
-            #for s in readable:
-            #    if s is s:
-            #        komm, addr = s.accept()
-            #        data = komm.recv(32)
-            #        psicraft.dispatch_psicraft_command(data.decode(), self, komm)
-            #        komm.close()
-
-
-           #if self.kill_flag:
-           #     print("closing sockets & shutting down")
-           #     s.close()
-
     def getflags(self):
         self.flags = 0
         if self.sbuff:

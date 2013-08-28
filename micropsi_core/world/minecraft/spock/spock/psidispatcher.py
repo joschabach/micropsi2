@@ -17,7 +17,7 @@ class PsiDispatcher():
                     'on_ground': False,
                     'stance': self.client.position['y'] + 0.11
                     }))
-            if self.client.move_x < 0:
+            if self.client.move_x_ > 0:
                 self.client.push(Packet(ident = 0x0B, data = {
                     'x': (self.client.position['x'] + 1)  // 1,
                     'y': self.client.position['y'] // 1,
@@ -33,7 +33,7 @@ class PsiDispatcher():
                     'on_ground': False,
                     'stance': self.client.position['y'] + 0.11
                     }))
-            if self.client.move_z < 0:
+            if self.client.move_z_ > 0:
                 self.client.push(Packet(ident = 0x0B, data = {
                     'x': (self.client.position['x'])  // 1,
                     'y': self.client.position['y'] // 1,

@@ -68,8 +68,9 @@ class Model(object):
                 for x in xrange(0, n):
                     for z in xrange(0, n):
                         current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
-                        if (current_block in solid_blocks):
+                        if (current_block in solid_blocks and current_block in (2, 14, 46)):
                             self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
+                        self.add_block((0, 0, 0), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
 
     def reload(self):
         n = 16 #What exactly does this do?

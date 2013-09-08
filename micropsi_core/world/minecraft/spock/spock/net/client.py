@@ -7,6 +7,7 @@ import sys
 import os
 import logging
 #import micropsi_core.world.minecraft.spock.plugins.psicraft_dispatcher as psicraft
+from micropsi_core.world.minecraft.minecraft_config import minecraft_server
 
 from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
 
@@ -115,7 +116,7 @@ class MinecraftClient(object):
         }
 
     #Convenience method for starting a client
-    def start(self, host = 'localhost', port = 25565):
+    def start(self, host = minecraft_server['ip'], port = minecraft_server['port']):
         if self.daemon: self.start_daemon()
         if (self.start_session(self.mc_username, self.mc_password)['Response'] == "Good to go!"):
             self.connect(host, port)

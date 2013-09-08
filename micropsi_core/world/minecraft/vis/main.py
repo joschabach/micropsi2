@@ -16,6 +16,8 @@ SECTOR_SIZE = 16
 
 WINDOW = None
 
+vis_counter = 0
+
 
 if sys.version_info[0] >= 3:
     xrange = range
@@ -86,10 +88,9 @@ class Model(object):
             if current_section != None:
                 for x in xrange(0, n):
                     for z in xrange(0, n):
-                        #not needed here (yet?) current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
-                        #current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
-                        #if (current_block in solid_blocks):
-                        #    self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
+                        current_block = current_section['block_data'].get(x, int((bot_block[1] + y - 10 // 2) % 16), z) #TODO explain formula
+                        if (current_block in solid_blocks and current_block in (2, 14, 56)):
+                            self.init_block((x, y, z), tex_coords((0, 0), (0, 0), (0, 0)), block_names[str(current_block)])
                         if [int(self.client.position['x'] % 16), int((bot_block[1] + y - 10 // 2) // 16), int(self.client.position['z'] % 16)] == [x,y,z]:  #TODO explain formula
                             self.remove_block(self.last_known_botblock)
                             self.add_block((x, y+1, z), tex_coords((0, 0), (0, 0), (0, 0)), "human" )
@@ -255,7 +256,7 @@ class Window(pyglet.window.Window):
     def __init__(self, client, *args, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
         self.exclusive = False
-        self.flying = False
+        self.flying = True
         self.strafe = [0, 0]
         self.position = (0, 16, 16)
         self.rotation = (45, -45) # first left,right - second up,down
@@ -392,9 +393,11 @@ class Window(pyglet.window.Window):
 
     def draw_label(self):
         x, y, z = self.position
-        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
+        global vis_counter
+        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d i = %d' % (
             pyglet.clock.get_fps(), x, y, z, 
-            len(self.model._shown), len(self.model.world))
+            len(self.model._shown), len(self.model.world), vis_counter)
+        vis_counter += 1
         self.label.draw()
 
 class MinecraftVisualisation:

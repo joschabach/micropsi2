@@ -43,7 +43,6 @@ class Minecraft(World):
         World.step(self)
         self.minecraftClient.advanceClient()
         self.the_image = self.minecraftVisualisation.advanceVisualisation()
-        #print("Worldadapter image is, ", self.the_image)
 
 
 class Braitencraft(WorldAdapter):

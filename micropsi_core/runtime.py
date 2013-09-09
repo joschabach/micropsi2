@@ -91,14 +91,8 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 # Minecraft Image
 def get_minecraft_image():
-    print("looking for uids")
     for uid in worlds:
-        print("found uid")
-        #if worlds[uid].is_active:
-        #print("RUNTIME: The image is ", worlds[uid].the_image)
         return worlds[uid].the_image
-        #else:
-          #  print("uid is not active")
            # return None
 
 # Nodenet

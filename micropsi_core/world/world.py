@@ -97,6 +97,8 @@ class World(object):
         self.agents = {}
         self.objects = {}
 
+        #self.the_image = None
+
         self.load()
 
     def load(self, string=None):

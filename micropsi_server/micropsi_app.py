@@ -26,6 +26,8 @@ import inspect
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
+from io import BytesIO
+
 APP_PATH = os.path.dirname(__file__)
 
 bottle.debug(True)  # devV
@@ -151,6 +153,21 @@ def document(filepath):
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
+@route('/minecraft/screenshot.png')
+def deliver_image():
+    print("deliverin' image")
+    #print("BOTTLE: The image is:", runtime.get_minecraft_image())
+    image = runtime.get_minecraft_image()
+    if image != None:
+        image_value = image
+        #img_io = BytesIO()
+        #img_io.write(image_value)
+        #img_io.seek(0)
+        #print("returning value: ", image_value)
+        response.headers['Content-Type'] = 'image/png'
+        return image_value
+    else:
+        return None
 
 @route("/world")
 def world():

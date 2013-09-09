@@ -91,13 +91,13 @@ function refreshWorldView() {
     if (next_refresh == 0) {
         i++;
         var randomnumber = Math.floor(Math.random() * 10000001)
-        screenshot0.src = "/static/minecraft/screenshot.png?q=" + i * randomnumber;
+        screenshot0.src = "/minecraft/screenshot.png?q=" + i * randomnumber;
         console.log("refreshedd " + 0 + " " + i * randomnumber);
         next_refresh == 1;
     } else if (next_refresh == 1) {
         i++;
         var randomnumber = Math.floor(Math.random() * 10000001)
-        screenshot1.src = "/static/minecraft/screenshot.png?q=" + i * randomnumber;
+        screenshot1.src = "/minecraft/screenshot.png?q=" + i * randomnumber;
         console.log("refreshedd " + 1 + " " + i * randomnumber);
         next_refresh == 0;
     }

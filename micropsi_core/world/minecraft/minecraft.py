@@ -24,6 +24,7 @@ class Minecraft(World):
         self.data['assets'] = self.assets
         self.first_step = True
         self.chat_ping_counter = 0
+        self.the_image = None
 
     def step(self):
         if self.first_step: #TODO probably not too smart
@@ -41,7 +42,8 @@ class Minecraft(World):
 						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
         self.minecraftClient.advanceClient()
-        self.minecraftVisualisation.advanceVisualisation()
+        self.the_image = self.minecraftVisualisation.advanceVisualisation()
+        #print("Worldadapter image is, ", self.the_image)
 
 
 class Braitencraft(WorldAdapter):

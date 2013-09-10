@@ -424,8 +424,8 @@ class MinecraftVisualisation:
         pyglet.clock.tick()
         output = io.BytesIO()
         pyglet.image.get_buffer_manager().get_color_buffer().save(file=output)
-        image = output.getvalue()
-        output.close()
+        #image = output.getvalue()
+        ##output.close()
 
         global window #TODO try to avoid global
         window.switch_to()
@@ -433,4 +433,4 @@ class MinecraftVisualisation:
         window.dispatch_events()
         window.dispatch_event('on_draw')
         window.flip()
-        return image
+        return output

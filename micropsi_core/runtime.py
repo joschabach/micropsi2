@@ -93,7 +93,6 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 def get_minecraft_image():
     for uid in worlds:
         return worlds[uid].the_image
-           # return None
 
 # Nodenet
 def get_available_nodenets(owner=None):

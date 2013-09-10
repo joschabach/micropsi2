@@ -157,9 +157,9 @@ def document(filepath):
 def deliver_image():
     image = runtime.get_minecraft_image()
     if image != None:
-        image_value = image
+        #image_value = image
         response.headers['Content-Type'] = 'image/png'
-        return image_value
+        return image.getvalue()
     else:
         return None
 

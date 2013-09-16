@@ -4,7 +4,7 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.minecraft.MinecraftClient.spock.net.client import MinecraftClient
-from micropsi_core.world.minecraft.vis.main import MinecraftVisualisation
+from micropsi_core.world.minecraft.MinecraftVisualisation.main import MinecraftVisualisation
 from micropsi_core.world.minecraft.MinecraftClient.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
 
@@ -46,7 +46,6 @@ class Minecraft(World):
 
 
 class Braitencraft(WorldAdapter):
-    """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
     datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0, 'diamond_offset_x_': 0, 'diamond_offset_z_': 0}
     datatargets = {'move_x': 0, 'move_z': 0, 'move_x_': 0, 'move_z_': 0}

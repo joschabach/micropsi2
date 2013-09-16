@@ -10,7 +10,7 @@ from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcpacket impor
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
-    supported_worldadapters = ['Braitencraft']
+    supported_worldadapters = ['MinecraftWorldadapter']
 
     assets = {
     'js': "minecraft/minecraft.js",
@@ -45,7 +45,7 @@ class Minecraft(World):
         self.the_image = self.minecraftVisualisation.advanceVisualisation()
 
 
-class Braitencraft(WorldAdapter):
+class MinecraftWorldadapter(WorldAdapter):
 
     datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0, 'diamond_offset_x_': 0, 'diamond_offset_z_': 0}
     datatargets = {'move_x': 0, 'move_z': 0, 'move_x_': 0, 'move_z_': 0}

@@ -25,9 +25,6 @@ import json
 import inspect
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
-
-from io import BytesIO
-
 APP_PATH = os.path.dirname(__file__)
 
 bottle.debug(True)  # devV

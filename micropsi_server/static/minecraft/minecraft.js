@@ -89,6 +89,7 @@ function refreshWorldView() {
      });*/
 
     if (next_refresh == 0) {
+
         i++;
         var randomnumber = Math.floor(Math.random() * 10000001)
         screenshot0.src = "/minecraft/screenshot.png?q=" + i * randomnumber;

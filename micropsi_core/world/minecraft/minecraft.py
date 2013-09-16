@@ -3,10 +3,10 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-from micropsi_core.world.minecraft.spock.spock.net.client import MinecraftClient
+from micropsi_core.world.minecraft.MinecraftClient.spock.net.client import MinecraftClient
 from micropsi_core.world.minecraft.vis.main import MinecraftVisualisation
-from micropsi_core.world.minecraft.spock.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
-from micropsi_core.world.minecraft.spock.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.MinecraftClient.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -29,7 +29,7 @@ class Minecraft(World):
     def step(self):
         if self.first_step: #TODO probably not too smart
             # launch minecraft bot
-            plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin] #TODO not all plugins - if any - are needed
+            plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin, EchoPacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
             self.minecraftClient = MinecraftClient(plugins=plugins)
             self.minecraftClient.start()
             self.minecraftVisualisation = MinecraftVisualisation(self.minecraftClient)
@@ -92,3 +92,5 @@ class Braitencraft(WorldAdapter):
         self.datatargets['move_z'] = 0
         self.datatargets['move_x_'] = 0
         self.datatargets['move_z_'] = 0
+
+        self.world.minecraftClient.psi_dispatcher.dispatchPsiCommands()

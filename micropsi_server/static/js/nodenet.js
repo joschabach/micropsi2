@@ -2444,8 +2444,9 @@ function handleEditNodenet(event){
         nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val()
     };
-    if(nodenet_data.world){
-        params.world_uid = nodenet_data.world;
+    var nodenet_world = $('#nodenet_world', form).val();
+    if(nodenet_world){
+        params.world_uid = nodenet_world;
     }
     var worldadapter = $('#nodenet_worldadapter', form).val();
     if(worldadapter){

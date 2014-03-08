@@ -303,7 +303,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         step: currentSimulationStep
     };
     if (coordinates){
-        params.step = -1;
+        // params.step = -1;
     } else {
         coordinates = loaded_coordinates;
         if(step){

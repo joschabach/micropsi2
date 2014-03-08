@@ -185,12 +185,12 @@ $(function() {
         });
     });
 
-    $('.navbar a.nodenet_edit').on('click', function(){
+    $('.navbar a.nodenet_edit').on('click', function(event){
         event.preventDefault();
         api.call('edit_nodenet', {nodenet_uid: currentNodenet});
     });
 
-    $('.navbar a.nodenet_save').on('click', function(){
+    $('.navbar a.nodenet_save').on('click', function(event){
         event.preventDefault();
         api.call('save_nodenet', {nodenet_uid: currentNodenet});
     });

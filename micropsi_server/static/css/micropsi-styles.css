@@ -204,3 +204,8 @@ graphs
   fill: none;
   stroke-width: 1.5px;
 }
+
+
+/* why????  bootstrap fubar */
+.btn-group {position: initial;}
+

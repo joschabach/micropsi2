@@ -1656,12 +1656,10 @@ function onMouseUp(event) {
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
     if (event.character == "+" && event.event.target.tagName == "BODY") {
-        viewProperties.zoomFactor += 0.1;
-        redrawNodeNet(currentNodeSpace);
+        zoomIn(event);
     }
     else if (event.character == "-" && event.event.target.tagName == "BODY") {
-        if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
-        redrawNodeNet(currentNodeSpace);
+        zoomOut(event);
     }
     // delete nodes and links
     else if (event.key == "backspace" || event.key == "delete") {
@@ -1674,6 +1672,18 @@ function onKeyDown(event) {
     else if (event.key == "escape") {
         if (linkCreationStart) cancelLinkCreationHandler();
     }
+}
+
+function zoomIn(event){
+    event.preventDefault();
+    viewProperties.zoomFactor += 0.1;
+    redrawNodeNet(currentNodeSpace);
+}
+
+function zoomOut(event){
+    event.preventDefault();
+    if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
+    redrawNodeNet(currentNodeSpace);
 }
 
 function onResize(event) {
@@ -1725,6 +1735,8 @@ function initializeControls(){
     $('#nodenet_stop').on('click', stopNodenetrunner);
     $('#nodenet_reset').on('click', resetNodenet);
     $('#nodenet_step_forward').on('click', stepNodenet);
+    $('#zoomOut').on('click', zoomOut);
+    $('#zoomIn').on('click', zoomIn);
 }
 
 function stepNodenet(event){

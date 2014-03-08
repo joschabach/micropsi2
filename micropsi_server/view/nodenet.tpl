@@ -25,6 +25,12 @@
                                 </div>
 
                             </td>
+                            <td>
+                                <div class="btn-group" id="nodenet_list">
+                                    <a class="btn" id="zoomIn" href="#">+</a>
+                                    <a class="btn" id="zoomOut" href="#">-</a>
+                                </div>
+                            </td>
                         </tr>
                     </table>
                 </td>

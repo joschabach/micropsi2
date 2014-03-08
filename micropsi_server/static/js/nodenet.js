@@ -2559,6 +2559,24 @@ function follownode(event){
     }
 }
 
+// function followslot(event){
+//     event.preventDefault();
+//     var slot = $(event.target).attr('data');
+//     deselectAll();
+//     selectLink(slot);
+//     view.draw();
+//     showLinkForm(id);
+// }
+function followgate(event){
+    event.preventDefault();
+    var node = nodes[$(event.target).attr('data-node')];
+    var gate = node.gates[$(event.target).attr('data-gate')];
+    deselectAll();
+    selectGate(node, gate);
+    view.draw();
+    showGateForm(node, gate);
+}
+
 // sidebar editor forms ---------------------------------------------------------------
 
 function initializeSidebarForms(){
@@ -2653,7 +2671,10 @@ function showNodeForm(nodeUid){
         }
         for(var j in available_gatetypes){
             if(available_gatetypes[j] in inlink_types){
-                link_list += "<tr><td>"+available_gatetypes[j]+"</td><td><ul>"+inlink_types[available_gatetypes[j]].join(' ')+"</ul></td></tr>";
+                link_list += '<tr><td>';
+                //link_list += '<a href="#followslot" class="followslots" data="'+available_gatetypes[j]+'">'+available_gatetypes[j]+"</a>";
+                link_list += available_gatetypes[j]+'</td><td>';
+                link_list += "<ul>"+inlink_types[available_gatetypes[j]].join(' ')+"</ul></td></tr>";
             }
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
@@ -2663,11 +2684,17 @@ function showNodeForm(nodeUid){
             for(id in nodes[nodeUid].gates[name].outgoing){
                 link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> -> <a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
             }
-            if(link_list !== "") content += "<tr><td>"+name+"</td><td><ul>"+link_list+"<ul></td></tr>";
+            content += '<tr><td><a href="#followgate" class="followgate" data-node="'+nodeUid+'" data-gate="'+name+'">'+name+'</td>';
+            if(link_list){
+                content += "<td><ul>"+link_list+"<ul></td>";
+            }
+            content += "</tr>";
         }
         $('#node_gates').html(content || "<tr><td>None</td></tr>");
         $('a.followlink').on('click', followlink);
         $('a.follownode').on('click', follownode);
+        //$('a.followslot').on('click', followslot);
+        $('a.followgate').on('click', followgate);
     }
 }
 

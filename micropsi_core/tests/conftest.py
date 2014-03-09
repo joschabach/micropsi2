@@ -23,8 +23,7 @@ def test_world(request):
     if worlds:
         world_uid = list(worlds.keys())[0]
     else:
-        success, world_uid = micropsi.new_world("World of Pain", "World", "Pytest User")
-
+        success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User")
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_world(world_uid)

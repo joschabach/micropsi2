@@ -37,15 +37,16 @@ def test_new_world(resourcepath, test_world):
 
 def test_get_world_properties(test_world):
     wp = micropsi.get_world_properties(test_world)
-    assert "World" == wp["world_type"]
+    assert "Island" == wp["world_type"]
     assert test_world == wp["uid"]
 
 
 def test_get_worldadapters(test_world):
     wa = micropsi.get_worldadapters(test_world)
-    assert 'Default' in wa
-    assert "datasources" in wa["Default"]
-    assert "datatargets" in wa["Default"]
+    assert 'engine_l' in wa['Braitenberg']['datatargets']
+    assert 'engine_r' in wa['Braitenberg']['datatargets']
+    assert 'brightness_l' in wa['Braitenberg']['datasources']
+    assert 'brightness_r' in wa['Braitenberg']['datasources']
 
 
 def test_add_worldobject(test_world):
@@ -81,8 +82,9 @@ def test_register_agent(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     assert nodenet.uid not in world.data['agents']
-    nodenet.world = world
     runtime.load_nodenet(test_nodenet)
+    nodenet.world = world
+    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     assert nodenet.uid in world.data['agents']
     assert nodenet.uid in world.agents
     runtime.save_world(test_world)

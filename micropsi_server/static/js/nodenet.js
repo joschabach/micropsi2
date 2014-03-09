@@ -1868,6 +1868,18 @@ function handleContextMenu(event) {
                     break;
                 case "Create actor":
                     type = "Actor";
+                    callback = function(data){
+                        clickOriginUid = data.uid;
+                        dialogs.notification('Please Select a datatarget for this actor');
+                        var target_select = $('#select_datatarget_modal select');
+                        target_select.html('');
+                        $("#select_datatarget_modal").modal("show");
+                        var targets = worldadapters[currentWorldadapter].datatargets;
+                        for(var i in targets){
+                            target_select.append($('<option>', {value:targets[i]}).text(targets[i]));
+                        }
+                        target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
+                    };
                     break;
                 case "Create activator":
                     type = "Activator";
@@ -2418,9 +2430,9 @@ function handleSelectDatatargetModal(event){
     var nodeUid = clickOriginUid;
     var value = $('#select_datatarget_modal select').val();
     $("#select_datatarget_modal").modal("hide");
-    nodes[clickOriginUid].parameters['datatargets'] = value;
+    nodes[clickOriginUid].parameters['datatarget'] = value;
     showNodeForm(nodeUid);
-    api.call("bind_datasource_to_sensor", {
+    api.call("bind_datatarget_to_actor", {
         nodenet_uid: currentNodenet,
         actor_uid: nodeUid,
         datatarget: value

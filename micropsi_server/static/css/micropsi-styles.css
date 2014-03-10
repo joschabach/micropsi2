@@ -184,6 +184,10 @@ input.inplace, select.inplace{
 .modal-body form .buttons{
   display: none;  /** hide submit buttons in modal (modal footer bears the buttons) **/
 }
+.editor_field form .controls{
+  margin-left: 70px;
+  margin-top: 10px;
+}
 
 
 /**

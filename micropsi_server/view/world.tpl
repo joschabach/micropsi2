@@ -86,6 +86,7 @@
                     </tr>
                 </table>
                 <div class="controls">
+                    <button type="reset" class="btn">Cancel</button>
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
             </form>

@@ -408,6 +408,7 @@ function initializeControls(){
     $('#world_start').on('click', startWorldrunner);
     $('#world_stop').on('click', stopWorldrunner);
 
+    $('.editor_field form .controls button[type="reset"]').on('click', showDefaultForm);
     $('#add_object_link').on('click', function(event){
         event.preventDefault();
         $('#wo_uid_input').attr('disabled', 'disabled');

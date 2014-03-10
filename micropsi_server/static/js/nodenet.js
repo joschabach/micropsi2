@@ -1432,10 +1432,13 @@ var clickType = null;
 var clickIndex = -1;
 
 var selectionStart = null;
+var dragMultiples = false;
 
 function onMouseDown(event) {
     path = hoverPath = null;
     var p = event.point;
+    dragMultiples = Object.keys(selection).length > 1;
+    var clickedSelected = false;
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
     for (var nodeUid in nodeLayer.children) {
@@ -1446,8 +1449,9 @@ function onMouseDown(event) {
                 path = nodeLayer.children[nodeUid];
                 clickOriginUid = nodeUid;
                 nodeLayer.addChild(path); // bring to front
-                if (!event.modifiers.shift &&
-                    !event.modifiers.control && !event.modifiers.command && event.event.button != 2) deselectAll();
+                clickedSelected = nodeUid in selection;
+                if ( !clickedSelected && !event.modifiers.shift &&
+                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) deselectAll();
                 if (event.modifiers.command && nodeUid in selection) deselectNode(nodeUid); // toggle
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
@@ -1481,8 +1485,8 @@ function onMouseDown(event) {
                 else {
                     movePath = true;
                     clickPoint = p;
+                    return;
                 }
-                return;
             }
         }
     }
@@ -1623,14 +1627,23 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    if (movePath) {
-        path.nodeMoved = true;
-        path.position += event.delta;
-        var node = nodes[path.name];
+    function moveNode(uid){
+        nodeLayer.children[uid].position += event.delta;
+        nodeLayer.children[uid].nodeMoved = true;
+        var node = nodes[uid]
         node.x += event.delta.x/viewProperties.zoomFactor;
         node.y += event.delta.y/viewProperties.zoomFactor;
         node.bounds = calculateNodeBounds(node);
         redrawNodeLinks(node);
+    }
+    if (movePath) {
+        if(dragMultiples){
+            for(var uid in selection){
+                moveNode(uid);
+            }
+        } else {
+            moveNode(path.name);
+        }
     }
 }
 
@@ -1642,6 +1655,9 @@ function onMouseUp(event) {
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
             movePath = false;
             updateViewSize();
+        } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
+            deselectAll();
+            selectNode(path.name);
         }
     }
     if(selectionStart){

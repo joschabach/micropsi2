@@ -1432,10 +1432,13 @@ var clickType = null;
 var clickIndex = -1;
 
 var selectionStart = null;
+var dragMultiples = false;
 
 function onMouseDown(event) {
     path = hoverPath = null;
     var p = event.point;
+    dragMultiples = Object.keys(selection).length > 1;
+    var clickedSelected = false;
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
     for (var nodeUid in nodeLayer.children) {
@@ -1446,8 +1449,9 @@ function onMouseDown(event) {
                 path = nodeLayer.children[nodeUid];
                 clickOriginUid = nodeUid;
                 nodeLayer.addChild(path); // bring to front
-                if (!event.modifiers.shift &&
-                    !event.modifiers.control && !event.modifiers.command && event.event.button != 2) deselectAll();
+                clickedSelected = nodeUid in selection;
+                if ( !clickedSelected && !event.modifiers.shift &&
+                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) deselectAll();
                 if (event.modifiers.command && nodeUid in selection) deselectNode(nodeUid); // toggle
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
@@ -1481,8 +1485,8 @@ function onMouseDown(event) {
                 else {
                     movePath = true;
                     clickPoint = p;
+                    return;
                 }
-                return;
             }
         }
     }
@@ -1623,14 +1627,23 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    if (movePath) {
-        path.nodeMoved = true;
-        path.position += event.delta;
-        var node = nodes[path.name];
+    function moveNode(uid){
+        nodeLayer.children[uid].position += event.delta;
+        nodeLayer.children[uid].nodeMoved = true;
+        var node = nodes[uid]
         node.x += event.delta.x/viewProperties.zoomFactor;
         node.y += event.delta.y/viewProperties.zoomFactor;
         node.bounds = calculateNodeBounds(node);
         redrawNodeLinks(node);
+    }
+    if (movePath) {
+        if(dragMultiples){
+            for(var uid in selection){
+                moveNode(uid);
+            }
+        } else {
+            moveNode(path.name);
+        }
     }
 }
 
@@ -1642,6 +1655,9 @@ function onMouseUp(event) {
             moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
             movePath = false;
             updateViewSize();
+        } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
+            deselectAll();
+            selectNode(path.name);
         }
     }
     if(selectionStart){
@@ -1868,6 +1884,18 @@ function handleContextMenu(event) {
                     break;
                 case "Create actor":
                     type = "Actor";
+                    callback = function(data){
+                        clickOriginUid = data.uid;
+                        dialogs.notification('Please Select a datatarget for this actor');
+                        var target_select = $('#select_datatarget_modal select');
+                        target_select.html('');
+                        $("#select_datatarget_modal").modal("show");
+                        var targets = worldadapters[currentWorldadapter].datatargets;
+                        for(var i in targets){
+                            target_select.append($('<option>', {value:targets[i]}).text(targets[i]));
+                        }
+                        target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
+                    };
                     break;
                 case "Create activator":
                     type = "Activator";
@@ -2418,9 +2446,9 @@ function handleSelectDatatargetModal(event){
     var nodeUid = clickOriginUid;
     var value = $('#select_datatarget_modal select').val();
     $("#select_datatarget_modal").modal("hide");
-    nodes[clickOriginUid].parameters['datatargets'] = value;
+    nodes[clickOriginUid].parameters['datatarget'] = value;
     showNodeForm(nodeUid);
-    api.call("bind_datasource_to_sensor", {
+    api.call("bind_datatarget_to_actor", {
         nodenet_uid: currentNodenet,
         actor_uid: nodeUid,
         datatarget: value
@@ -2559,6 +2587,24 @@ function follownode(event){
     }
 }
 
+// function followslot(event){
+//     event.preventDefault();
+//     var slot = $(event.target).attr('data');
+//     deselectAll();
+//     selectLink(slot);
+//     view.draw();
+//     showLinkForm(id);
+// }
+function followgate(event){
+    event.preventDefault();
+    var node = nodes[$(event.target).attr('data-node')];
+    var gate = node.gates[$(event.target).attr('data-gate')];
+    deselectAll();
+    selectGate(node, gate);
+    view.draw();
+    showGateForm(node, gate);
+}
+
 // sidebar editor forms ---------------------------------------------------------------
 
 function initializeSidebarForms(){
@@ -2653,7 +2699,10 @@ function showNodeForm(nodeUid){
         }
         for(var j in available_gatetypes){
             if(available_gatetypes[j] in inlink_types){
-                link_list += "<tr><td>"+available_gatetypes[j]+"</td><td><ul>"+inlink_types[available_gatetypes[j]].join(' ')+"</ul></td></tr>";
+                link_list += '<tr><td>';
+                //link_list += '<a href="#followslot" class="followslots" data="'+available_gatetypes[j]+'">'+available_gatetypes[j]+"</a>";
+                link_list += available_gatetypes[j]+'</td><td>';
+                link_list += "<ul>"+inlink_types[available_gatetypes[j]].join(' ')+"</ul></td></tr>";
             }
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
@@ -2663,11 +2712,17 @@ function showNodeForm(nodeUid){
             for(id in nodes[nodeUid].gates[name].outgoing){
                 link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">'+id.substr(0,8)+'&hellip;</a> -> <a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
             }
-            if(link_list !== "") content += "<tr><td>"+name+"</td><td><ul>"+link_list+"<ul></td></tr>";
+            content += '<tr><td><a href="#followgate" class="followgate" data-node="'+nodeUid+'" data-gate="'+name+'">'+name+'</td>';
+            if(link_list){
+                content += "<td><ul>"+link_list+"<ul></td>";
+            }
+            content += "</tr>";
         }
         $('#node_gates').html(content || "<tr><td>None</td></tr>");
         $('a.followlink').on('click', followlink);
         $('a.follownode').on('click', follownode);
+        //$('a.followslot').on('click', followslot);
+        $('a.followgate').on('click', followgate);
     }
 }
 

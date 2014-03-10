@@ -7,7 +7,7 @@ Runtime API functionality for creating and maintaining activation monitors
 __author__ = 'dominik'
 __date__ = '11.12.12'
 
-from micropsi_core.nodenet.nodenet import Monitor
+from micropsi_core.nodenet.monitor import Monitor
 
 import micropsi_core
 

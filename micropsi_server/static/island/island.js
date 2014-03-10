@@ -187,7 +187,7 @@ function addAgent(worldobject){
         redrawObject(objects[worldobject.uid]);
     }
     agents[worldobject.uid] = worldobject;
-    agentsList.html(agentsList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="worldobject_edit">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
+    agentsList.html(agentsList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="world_agent">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
     return worldobject;
 }
 
@@ -363,6 +363,12 @@ function highlightObject(uid){
     view.draw(true);
 }
 
+function highlightAgent(uid){
+    label = getLegend(agents[uid]);
+    objectLayer.addChild(label);
+    view.draw(true);
+}
+
 function removeClickHighlight(){
     if(clickHighlight) {
         objects[clickHighlight].representation.scale(1/viewProperties.hoverScale);
@@ -388,10 +394,10 @@ function objectInViewport(obj) {
 function scrollToObject(obj){
     var parent = canvas.parent();
     var bounds = obj.representation.bounds;
-    if(bounds.y <= parent.scrollTop()) parent.scrollTop(bounds.y - 20);
-    else if(bounds.y + bounds.height >= (parent.innerHeight() + parent.scrollTop() - 20)) parent.scrollTop(bounds.y + 20);
-    if(bounds.x <= parent.scrollLeft()) parent.scrollLeft(bounds.x - 20);
-    else if (bounds.x + bounds.width >= (parent.innerWidth() + parent.scrollLeft() - 20)) parent.scrollLeft(bounds.x + 20);
+    if(bounds.y <= parent.scrollTop()) parent.scrollTop(bounds.y - 50);
+    else if(bounds.y + bounds.height >= (parent.innerHeight() + parent.scrollTop())) parent.scrollTop(bounds.y - parent.innerHeight() + bounds.height + 50);
+    if(bounds.x <= parent.scrollLeft()) parent.scrollLeft(bounds.x - 50);
+    else if (bounds.x + bounds.width >= (parent.innerWidth() + parent.scrollLeft())) parent.scrollLeft(bounds.x - parent.innerWidth() + bounds.width + 50);
 }
 
 // --------------------------- controls -------------------------------------------------------- //
@@ -417,12 +423,21 @@ function initializeControls(){
     });
     $('#wo_type_input').html('<option>' + available_object_types.join('</option><option>')+'</option>');
     $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
+    agentsList.on('click', function(event){
+        event.preventDefault();
+        var target = $(event.target);
+        if(target.attr('class') == 'world_agent' && target.attr('data')){
+            highlightAgent(target.attr('data'));
+            scrollToObject(agents[target.attr('data')]);
+        }
+    })
     objectList.on('click', function(event){
         event.preventDefault();
         var target = $(event.target);
         if(target.attr('class') == 'worldobject_edit' && target.attr('data')){
             showObjectForm(objects[target.attr('data')]);
             highlightObject(target.attr('data'));
+            scrollToObject(objects[target.attr('data')]);
         }
     });
 }

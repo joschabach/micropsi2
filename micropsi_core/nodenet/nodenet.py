@@ -12,7 +12,7 @@ import warnings
 from .node import Node, Nodetype, STANDARD_NODETYPES
 from .nodespace import Nodespace
 from .link import Link
-
+from .monitor import Monitor
 
 __author__ = 'joscha'
 __date__ = '09.05.12'

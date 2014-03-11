@@ -51,6 +51,7 @@ var objectList = $('#world_objects_list table');
 var agentsList = $('#world_agents_list table');
 
 initializeControls();
+initializeMenus();
 
 wasRunning = false;
 $(window).focus(function() {
@@ -285,9 +286,15 @@ path = null;
 
 clickLabel = false;
 clickHighlight = false;
+clickPosition = null;
 
 function onMouseDown(event){
+    clickPosition = null;
     showDefaultForm();
+    // context menus:
+    if (event.modifiers.control || event.event.button == 2){
+        openContextMenu("#create_object_menu", event);
+    }
 }
 
 function onMouseMove(event) {
@@ -398,6 +405,31 @@ function scrollToObject(obj){
     else if(bounds.y + bounds.height >= (parent.innerHeight() + parent.scrollTop())) parent.scrollTop(bounds.y - parent.innerHeight() + bounds.height + 50);
     if(bounds.x <= parent.scrollLeft()) parent.scrollLeft(bounds.x - 50);
     else if (bounds.x + bounds.width >= (parent.innerWidth() + parent.scrollLeft())) parent.scrollLeft(bounds.x - parent.innerWidth() + bounds.width + 50);
+}
+
+// --------------------------- menus -------------------------------------------------------- //
+
+function initializeMenus(){
+    $('#create_object_menu li').on('click', handleContextMenu);
+}
+
+function openContextMenu(menu_id, event){
+    event.event.cancelBubble = true;
+    clickPosition = event.point;
+    $(menu_id).css({
+        position: "absolute",
+        zIndex: 500,
+        marginLeft: -5, marginTop: -5,
+        top: event.event.pageY, left: event.event.pageX });
+    $(menu_id+" .dropdown-toggle").dropdown("toggle");
+}
+
+function handleContextMenu(event){
+    var item = $(event.target);
+    switch(item.attr('data')){
+    case 'add_worldobject':
+        showObjectForm();
+    }
 }
 
 // --------------------------- controls -------------------------------------------------------- //
@@ -523,9 +555,17 @@ function handleSubmitWorldobject(event){
     if(uid){
         setObjectProperties(objects[uid], null, null, data.name, null, data.parameters);
     } else {
+        var pos;
+        if(clickPosition){
+            pos = clickPosition;
+        } else {
+            var parent = canvas.parent();
+            pos = new Point(parent.scrollTop() + (parent.innerHeight() / 2), parent.scrollLeft() + (parent.innerWidth()/2));
+        }
+        data.position = [pos.x, pos.y];
         api.call('add_worldobject', data, function(result){
             if(result.status =='success'){
-                addObject(new WorldObject(result.uid, 10, 10, 0, data.name, data.type, data.parameters));
+                addObject(new WorldObject(result.uid, pos.x, pos.y, 0, data.name, data.type, data.parameters));
             }
             updateViewSize();
         }, api.defaultErrorCallback);

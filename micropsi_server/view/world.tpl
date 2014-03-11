@@ -95,5 +95,13 @@
     </div>
 </div>
 
+<div class="dropdown" id="create_object_menu">
+    <a class="dropdown-toggle" data-toggle="dropdown" href="#create_object_menu"></a>
+    <ul class="world_menu dropdown-menu">
+        <li><a href="#" data="add_worldobject">Add worldobject</a></li>
+    </ul>
+</div>
+
+
 %if world_js:
     <script src="/static/{{world_js}}" type="text/paperscript" canvas="world"></script>

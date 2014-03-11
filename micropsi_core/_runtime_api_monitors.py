@@ -32,7 +32,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot):
 
 def remove_monitor(nodenet_uid, monitor_uid):
     """Deletes an activation monitor."""
-    del micropsi_core.runtime.nodenets[nodenet_uid].data['monitors'][monitor_uid]
+    del micropsi_core.runtime.nodenets[nodenet_uid].state['monitors'][monitor_uid]
     del micropsi_core.runtime.nodenets[nodenet_uid].monitors[monitor_uid]
     return True
 

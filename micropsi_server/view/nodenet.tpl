@@ -311,7 +311,7 @@
                 <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
                         class="icon-chevron-right"></i></span></td>
 
-                <td> Nodenet Monitor &nbsp;</td>
+                <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
 
                 <td><div class="collapse" id="monitor_controls">
                     <button class="btn">Clear</button>
@@ -356,7 +356,8 @@
 <div class="dropdown" id="slot_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#slot_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
-        <li><a href="#">Add monitor to slot</a></li>
+        <li><a href="#" data-add-monitor>Add monitor to slot</a></li>
+        <li><a href="#" data-remove-monitor>Remove monitor from slot</a></li>
     </ul>
 </div>
 
@@ -364,7 +365,8 @@
     <a class="dropdown-toggle" data-toggle="dropdown" href="#gate_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create link</a></li>
-        <li><a href="#">Add monitor to gate</a></li>
+        <li><a href="#" data-add-monitor>Add monitor to gate</a></li>
+        <li><a href="#" data-remove-monitor>Remove monitor from gate</a></li>
     </ul>
 </div>
 

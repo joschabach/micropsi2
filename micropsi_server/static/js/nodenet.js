@@ -1414,6 +1414,16 @@ function activationColor(activation, baseColor) {
                         baseColor.lightness * r + c.lightness * a);
 }
 
+function getMonitor(node, target, type){
+    for(var key in monitors){
+        if(monitors[key]['node_uid'] == node.uid
+            && monitors[key]['target'] == target
+            && monitors[key]['type'] == type)
+            return key;
+    }
+    return false;
+}
+
 // mouse and keyboard interaction -----------------------------------
 
 var hitOptions = {
@@ -1466,7 +1476,12 @@ function onMouseDown(event) {
                 if ((i = testSlots(node, p)) >-1) {
                     clickType = "slot";
                     clickIndex = i;
-                    if (event.modifiers.control || event.event.button == 2) openContextMenu("#slot_menu", event.event);
+                    if (event.modifiers.control || event.event.button == 2){
+                        var monitor = getMonitor(node, node.slotIndexes[clickIndex], 'slot');
+                        $('#slot_menu [data-add-monitor]').toggle(monitor == false);
+                        $('#slot_menu [data-remove-monitor]').toggle(monitor != false);
+                        openContextMenu("#slot_menu", event.event);
+                    }
                     else if (linkCreationStart) finalizeLinkHandler(nodeUid, clickIndex); // was slotIndex TODO: clickIndex?? linkcreationstart.gateIndex???
                     return;
                 } else if ((i = testGates(node, p)) > -1) {
@@ -1476,7 +1491,12 @@ function onMouseDown(event) {
                     deselectGate();
                     selectGate(node, gate);
                     showGateForm(node, gate);
-                    if (event.modifiers.control || event.event.button == 2) openContextMenu("#gate_menu", event.event);
+                    if (event.modifiers.control || event.event.button == 2) {
+                        var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
+                        $('#gate_menu [data-add-monitor]').toggle(monitor == false);
+                        $('#gate_menu [data-remove-monitor]').toggle(monitor != false);
+                        openContextMenu("#gate_menu", event.event);
+                    }
                     return;
                 }
                 clickType = "node";
@@ -1968,6 +1988,9 @@ function handleContextMenu(event) {
                 case "Add monitor to slot":
                     addSlotMonitor(nodes[clickOriginUid], clickIndex);
                     break;
+                case "Remove monitor from slot":
+                    removeMonitor(nodes[clickOriginUid], nodes[clickOriginUid].slotIndexes[clickIndex], 'slot');
+                    break;
             }
             break;
         case "gate":
@@ -1977,6 +2000,9 @@ function handleContextMenu(event) {
                     break;
                 case "Add monitor to gate":
                     addGateMonitor(nodes[clickOriginUid], clickIndex);
+                    break;
+                case "Remove monitor from gate":
+                    removeMonitor(nodes[clickOriginUid], nodes[clickOriginUid].gateIndexes[clickIndex], 'gate');
                     break;
             }
             break;
@@ -2518,6 +2544,17 @@ function addGateMonitor(node, index){
         gate: node.gateIndexes[index]
     }, function(data){
         monitors[data.uid] = data;
+        updateMonitorList();
+    });
+}
+
+function removeMonitor(node, target, type){
+    monitor = getMonitor(node, target, type);
+    api.call('remove_monitor', {
+        nodenet_uid: currentNodenet,
+        monitor_uid: monitor
+    }, function(data){
+        delete monitors[monitor];
         updateMonitorList();
     });
 }

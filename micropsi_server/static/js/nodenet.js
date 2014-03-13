@@ -288,6 +288,7 @@ function setNodespaceData(data){
         if(data.monitors){
             monitors = data.monitors;
         }
+        gatefunctions[currentNodeSpace] = {};
         updateMonitorList();
         updateMonitorGraphs();
     }
@@ -2391,8 +2392,7 @@ function handleEditGate(event){
             params[data[i].name] = parseFloat(data[i].value);
         }
     }
-    if(!(node.type in gatefunctions[currentNodeSpace]) ||
-        gatefunctions[currentNodeSpace][node.type][gate.name] != gatefunction){
+    if(gatefunction && (!(node.type in gatefunctions[currentNodeSpace]) || gatefunctions[currentNodeSpace][node.type][gate.name] != gatefunction)){
         if(!(node.type in gatefunctions[currentNodeSpace])){
             gatefunctions[currentNodeSpace][node.type] = {};
         }

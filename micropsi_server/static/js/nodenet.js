@@ -405,8 +405,16 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         for(i in nodetypes[type].slottypes){
             this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
         }
+        var parameters;
         for(i in nodetypes[type].gatetypes){
-            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, this.gate_parameters[nodetypes[type].gatetypes[i]]);
+            parameters = {};
+            if(nodetypes[type].gate_defaults[i]){
+                parameters = nodetypes[type].gate_defaults[i];
+            }
+            for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
+                parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key]
+            }
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, parameters);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -2833,6 +2841,8 @@ function showGateForm(node, gate){
             if(gatefunctions[currentNodeSpace] && node.type in gatefunctions[currentNodeSpace]){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
+        } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
+            el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }
     });
     form.show();

@@ -523,7 +523,14 @@ def get_available_node_types(nodenet_uid=None):
     """Returns a list of available node types. (Including native modules.)"""
     data = STANDARD_NODETYPES.copy()
     if nodenet_uid:
-        data.update(nodenets[nodenet_uid].state.get('nodetypes', {}))
+        nodenet = nodenets[nodenet_uid]
+        for nodetype in nodenet.nodetypes:
+            defaults = nodenet.nodetypes[nodetype].gate_defaults.copy()
+            if 'gate_defaults' in data[nodetype]:
+                for gate in data[nodetype]['gate_defaults']:
+                    for key in data[nodetype]['gate_defaults'][gate]:
+                        defaults[gate][key] = data[nodetype]['gate_defaults'][gate][key]
+            data[nodetype]['gate_defaults'] = defaults
     return data
 
 

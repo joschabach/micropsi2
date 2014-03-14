@@ -11,6 +11,8 @@ default Nodetypes
 
 """
 
+import json
+import warnings
 import micropsi_core.tools
 from .netentity import NetEntity
 
@@ -96,7 +98,7 @@ class Node(NetEntity):
         self.nodetype = self.nodenet.nodetypes[type]
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
-            self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate))
+            self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:
@@ -184,7 +186,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         outgoing: the set of links originating at the gate
     """
 
-    def __init__(self, type, node, gate_function=None, parameters=None):
+    def __init__(self, type, node, gate_function=None, parameters=None, gate_defaults=None):
         """create a gate.
 
         Parameters:
@@ -194,18 +196,12 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         """
         self.type = type
         self.node = node
-        self.parameters = parameters
         self.activation = 0
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
-        self.parameters = {
-            "minimum": -1,
-            "maximum": 1,
-            "certainty": 1,
-            "amplification": 1,
-            "threshold": 0,
-            "decay": 0
-        }
+        self.parameters = {}
+        if gate_defaults is not None:
+            self.parameters = gate_defaults.copy()
         if parameters is not None:
             for key in parameters:
                 if key in self.parameters:
@@ -280,7 +276,12 @@ STANDARD_NODETYPES = {
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
-        "gatetypes": ["gen"]
+        "gatetypes": ["gen"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": 99,
+            }
+        }
     },
     "Sensor": {
         "name": "Sensor",
@@ -391,7 +392,7 @@ class Nodetype(object):
                 parameters="nodenet, node, " + args)
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
-                 nodefunction_definition=None, parameter_values=None):
+                 nodefunction_definition=None, parameter_values=None, gate_defaults=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -426,6 +427,23 @@ class Nodetype(object):
         self.states = self.data.get('states', {}) if states is None else states
         self.slottypes = self.data.get("slottypes", ["gen"]) if slottypes is None else slottypes
         self.gatetypes = self.data.get("gatetypes", ["gen"]) if gatetypes is None else gatetypes
+
+        self.gate_defaults = {}
+        for g in self.gatetypes:
+            self.gate_defaults[g] = {
+                "minimum": -1,
+                "maximum": 1,
+                "certainty": 1,
+                "amplification": 1,
+                "threshold": 0,
+                "decay": 0
+            }
+
+        gate_defaults = self.data.get("gate_defaults") if gate_defaults is None else gate_defaults
+        if gate_defaults is not None:
+            for g in gate_defaults:
+                for key in gate_defaults[g]:
+                    self.gate_defaults[g][key] = gate_defaults[g][key]
 
         self.parameters = self.data.get("parameters", []) if parameters is None else parameters
         self.parameter_values = self.data.get("parameter_values", []) if parameter_values is None else parameter_values

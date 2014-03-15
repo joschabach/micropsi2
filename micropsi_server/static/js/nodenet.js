@@ -1470,8 +1470,12 @@ function onMouseDown(event) {
                 nodeLayer.addChild(path); // bring to front
                 clickedSelected = nodeUid in selection;
                 if ( !clickedSelected && !event.modifiers.shift &&
-                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) deselectAll();
-                if (event.modifiers.command && nodeUid in selection) deselectNode(nodeUid); // toggle
+                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) {
+                         deselectAll();
+                }
+                if (event.modifiers.command && nodeUid in selection){
+                    deselectNode(nodeUid); // toggle
+                }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
                     if(nodes[nodeUid].type == "Native"){
@@ -1491,7 +1495,9 @@ function onMouseDown(event) {
                         $('#slot_menu [data-remove-monitor]').toggle(monitor != false);
                         openContextMenu("#slot_menu", event.event);
                     }
-                    else if (linkCreationStart) finalizeLinkHandler(nodeUid, clickIndex); // was slotIndex TODO: clickIndex?? linkcreationstart.gateIndex???
+                    else if (linkCreationStart){
+                        finalizeLinkHandler(nodeUid, clickIndex); // was slotIndex TODO: clickIndex?? linkcreationstart.gateIndex???
+                    }
                     return;
                 } else if ((i = testGates(node, p)) > -1) {
                     clickType = "gate";
@@ -1501,6 +1507,13 @@ function onMouseDown(event) {
                     selectGate(node, gate);
                     showGateForm(node, gate);
                     if (event.modifiers.control || event.event.button == 2) {
+                        if(Object.keys(selection).length > 2) {
+                            for(var key in selection){
+                                if(key != node.uid && selection[key].gates){
+                                    deselectNode(key);
+                                }
+                            }
+                        }
                         var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
                         $('#gate_menu [data-add-monitor]').toggle(monitor == false);
                         $('#gate_menu [data-remove-monitor]').toggle(monitor != false);
@@ -1682,7 +1695,7 @@ function onMouseDrag(event) {
 }
 
 function onMouseUp(event) {
-    if (movePath) {
+    if (movePath && path) {
         if(path.nodeMoved && nodes[path.name]){
             // update position on server
             path.nodeMoved = false;

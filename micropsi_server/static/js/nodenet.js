@@ -1509,8 +1509,13 @@ function onMouseDown(event) {
                     return;
                 }
                 clickType = "node";
-                if (event.modifiers.control || event.event.button == 2) openNodeContextMenu("#node_menu", event.event, nodeUid);
-                else if (linkCreationStart) finalizeLinkHandler(nodeUid);
+                if (event.modifiers.control || event.event.button == 2) {
+                    openNodeContextMenu("#node_menu", event.event, nodeUid);
+                    return;
+                }
+                else if (linkCreationStart) {
+                    finalizeLinkHandler(nodeUid);
+                }
                 else {
                     movePath = true;
                     clickPoint = p;

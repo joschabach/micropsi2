@@ -1460,6 +1460,13 @@ function onMouseDown(event) {
     var clickedSelected = false;
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
+    function deselectOtherNodes(nodeUid){
+        for(var key in selection){
+            if(key != node.uid && selection[key].constructor == Node){
+                deselectNode(key);
+            }
+        }
+    }
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             var node = nodes[nodeUid];
@@ -1507,13 +1514,7 @@ function onMouseDown(event) {
                     selectGate(node, gate);
                     showGateForm(node, gate);
                     if (event.modifiers.control || event.event.button == 2) {
-                        if(Object.keys(selection).length > 2) {
-                            for(var key in selection){
-                                if(key != node.uid && selection[key].gates){
-                                    deselectNode(key);
-                                }
-                            }
-                        }
+                        deselectOtherNodes(node.uid);
                         var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
                         $('#gate_menu [data-add-monitor]').toggle(monitor == false);
                         $('#gate_menu [data-remove-monitor]').toggle(monitor != false);
@@ -1523,6 +1524,7 @@ function onMouseDown(event) {
                 }
                 clickType = "node";
                 if (event.modifiers.control || event.event.button == 2) {
+                    deselectOtherNodes(nodeUid);
                     openNodeContextMenu("#node_menu", event.event, nodeUid);
                     return;
                 }

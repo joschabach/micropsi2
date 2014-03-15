@@ -2210,13 +2210,13 @@ function deleteNodeHandler(nodeUid) {
         deletedNodes.push(nodeUid);
         removeNode(nodes[nodeUid]);
         if (nodeUid in selection) delete selection[nodeUid];
-        // todo: tell the server all about it
     }
     for (var selected in selection) {
-        deletedNodes.push(selected);
-        removeNode(nodes[selected]);
-        delete selection[selected];
-        // todo: tell the server all about it
+        if(selection[selected].constructor == Node){
+            deletedNodes.push(selected);
+            removeNode(nodes[selected]);
+            delete selection[selected];
+        }
     }
     for(var i in deletedNodes){
         deleteNodeOnServer(deletedNodes[i]);
@@ -2240,9 +2240,11 @@ function deleteLinkHandler(linkUid) {
         removeLinkOnServer(linkUid);
     }
     for (var selected in selection) {
-        removeLink(links[selected]);
-        delete selection[selected];
-        removeLinkOnServer(selected);
+        if(selection[selected].constructor == Link){
+            removeLink(links[selected]);
+            delete selection[selected];
+            removeLinkOnServer(selected);
+        }
     }
     showDefaultForm();
 }

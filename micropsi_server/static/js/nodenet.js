@@ -307,9 +307,9 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         // params.step = -1;
     } else {
         coordinates = loaded_coordinates;
-        if(step){
-            params.step = step;
-        }
+    }
+    if(step){
+        params.step = step;
     }
     params.x1 = parseInt(coordinates.x[0]);
     params.x2 = parseInt(coordinates.x[1]);
@@ -2520,7 +2520,7 @@ function handleEnterNodespace(nodespaceUid) {
         refreshNodespace(nodespaceUid, {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
-        });
+        }, -1);
     }
 }
 
@@ -2531,7 +2531,7 @@ function handleNodespaceUp() {
         refreshNodespace(nodes[currentNodeSpace].parent, {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
-        });
+        }, -1);
     }
 }
 

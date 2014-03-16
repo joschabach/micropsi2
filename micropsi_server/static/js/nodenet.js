@@ -1688,7 +1688,9 @@ function onMouseDrag(event) {
     if (movePath) {
         if(dragMultiples){
             for(var uid in selection){
-                moveNode(uid);
+                if(uid != "gate"){
+                    moveNode(uid);
+                }
             }
         } else {
             moveNode(path.name);

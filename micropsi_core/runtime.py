@@ -406,6 +406,31 @@ def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespa
 
 # Node operations
 
+def get_nodespace_list(nodenet_uid):
+    """ returns a list of nodespaces in the given nodenet. information includes:
+     - nodespace name,
+     - nodespace parent
+     - a list of nodes (uid, name, and type) residing in that nodespace
+    """
+    nodenet = nodenets[nodenet_uid]
+    data = {}
+    for uid, nodespace in nodenet.nodespaces.items():
+        nodedata = {}
+        for nid in nodespace.netentities['nodes']:
+            nodedata[nid] = {
+                'name': nodenet.nodes[nid].name,
+                'type': nodenet.nodes[nid].type,
+                'gates': nodenet.nodetypes[nodenet.nodes[nid].type].gatetypes,
+                'slots': nodenet.nodetypes[nodenet.nodes[nid].type].slottypes
+            }
+        data[uid] = {
+            'name': nodespace.name,
+            'parent': nodespace.parent_nodespace,
+            'nodes': nodedata
+        }
+    return data
+
+
 def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}

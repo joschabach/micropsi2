@@ -550,8 +550,10 @@ def get_available_node_types(nodenet_uid=None):
     if nodenet_uid:
         nodenet = nodenets[nodenet_uid]
         for nodetype in nodenet.nodetypes:
+            if nodetype not in data:
+                data[nodetype] = nodenet.nodetypes[nodetype].data
             defaults = nodenet.nodetypes[nodetype].gate_defaults.copy()
-            if 'gate_defaults' in data[nodetype]:
+            if nodetype in data and 'gate_defaults' in data[nodetype]:
                 for gate in data[nodetype]['gate_defaults']:
                     for key in data[nodetype]['gate_defaults'][gate]:
                         defaults[gate][key] = data[nodetype]['gate_defaults'][gate][key]

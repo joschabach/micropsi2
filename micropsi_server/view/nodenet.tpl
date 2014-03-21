@@ -6,7 +6,7 @@
                 <td>
                     <table>
                         <tr>
-                            <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
+                            <td><span data-toggle="collapse" data-target="#nodenet_editor"><i
                                     class="icon-chevron-right"></i></span></td>
 
                             <td>
@@ -16,15 +16,23 @@
                                     </a>
                                 </div>
                             </td>
-                            <td style="white-space:nowrap;">
-                                <div id="nodespace_control" class="collapse in">
-                                    &nbsp;&nbsp;Nodespace:
-                                    <input id="nodespace_name" type="text" class="input-large" disabled="disabled"
-                                           value="Root"/>
-                                    <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
-                                </div>
-
+                            <td> &nbsp; &nbsp; Nodespace:
                             </td>
+                            <td style="white-space:nowrap;">
+                                <div id="nodespace_control" class="btn-group">
+                                    <a href="#" class="btn dropdown-toggle" data-toggle="dropdown">
+                                        <span id="nodespace_name">Root</span>
+                                        <b class="caret"></b>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li>asdf</li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" id="nodespace_up" title="Go to parent nodespace" class="btn"><i class="icon-share"></i></a>
+                            </td>
+                            <td> &nbsp; &nbsp; Zoom:</td>
                             <td>
                                 <div class="btn-group" id="nodenet_list">
                                     <a class="btn" id="zoomIn" href="#">+</a>

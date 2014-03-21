@@ -223,6 +223,11 @@ function setCurrentNodenet(uid, nodespace){
                 });
                 api.call('get_nodespace_list', {nodenet_uid:uid}, function(nodespacedata){
                     nodespaces = nodespacedata;
+                    html = '';
+                    for(var uid in nodespaces){
+                        html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
+                    }
+                    $('#nodespace_control ul').html(html);
                 });
             } else {
                 setNodespaceData(data);
@@ -323,7 +328,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     api.call('get_nodespace', params , success=function(data){
         if(nodespace != currentNodeSpace){
             currentNodeSpace = nodespace;
-            $("#nodespace_name").val(nodespace in nodes && nodes[nodespace].name ? nodes[nodespace].name : nodespace);
+            $("#nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
@@ -1809,6 +1814,14 @@ function initializeControls(){
     $('#nodenet_step_forward').on('click', stepNodenet);
     $('#zoomOut').on('click', zoomOut);
     $('#zoomIn').on('click', zoomIn);
+    $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
+        event.preventDefault();
+        var nodespace = $(event.target).attr('data-nodespace');
+        refreshNodespace(nodespace, {
+            x: [0, canvas_container.width() * 2],
+            y: [0, canvas_container.height() * 2]
+        }, -1);
+    });
 }
 
 function initializeDialogs(){
@@ -2607,8 +2620,8 @@ function handleEnterNodespace(nodespaceUid) {
 // handler for entering parent nodespace
 function handleNodespaceUp() {
     deselectAll();
-    if (nodes[currentNodeSpace].parent) { // not yet root nodespace
-        refreshNodespace(nodes[currentNodeSpace].parent, {
+    if (nodespaces[currentNodeSpace].parent) { // not yet root nodespace
+        refreshNodespace(nodespaces[currentNodeSpace].parent, {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
         }, -1);

@@ -410,6 +410,52 @@
 </div>
 
 
+<div class="modal hide" id="create_link_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Create a link</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="link_source_gate">Source Gate</label>
+                    <div class="controls">
+                        <select name="source_gate" id="link_source_gate">
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_target_nodespace">Nodespace</label>
+                    <div class="controls">
+                        <select name="target_nodespace" id="link_target_nodespace">
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_target_node">Target Node</label>
+                    <div class="controls">
+                        <select name="target_node" id="link_target_node">
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_target_slot">Target Slot</label>
+                    <div class="controls">
+                        <select data-nodespace name="target_slot" id="link_target_slot">
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+        <a href="#" class="btn btn-primary">Create</a>
+    </div>
+</div>
+
+
 <div class="modal hide edit_node_modal" id="select_datasource_modal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>

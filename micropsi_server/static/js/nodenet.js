@@ -85,8 +85,10 @@ selectionBox.name = "selectionBox";
 STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
 available_gatetypes = [];
+nodespaces = {};
 
 initializeMenus();
+initializeDialogs();
 initializeControls();
 initializeSidebarForms();
 
@@ -218,6 +220,9 @@ function setCurrentNodenet(uid, nodespace){
                         showDefaultForm();
                     });
                     setNodespaceData(data);
+                });
+                api.call('get_nodespace_list', {nodenet_uid:uid}, function(nodespacedata){
+                    nodespaces = nodespacedata;
                 });
             } else {
                 setNodespaceData(data);
@@ -1806,6 +1811,39 @@ function initializeControls(){
     $('#zoomIn').on('click', zoomIn);
 }
 
+function initializeDialogs(){
+    var source_gate = $("#link_source_gate");
+    var target_nodespace = $("#link_target_nodespace");
+    var target_node = $("#link_target_node");
+    var target_slot = $('#link_target_slot');
+    target_nodespace.on('change', function(event){
+        var ns = nodespaces[target_nodespace.val()];
+        if(ns){
+            var html = '';
+            for(var nid in ns.nodes){
+                html += '<option value="'+nid+'">'+ns.nodes[nid].name + '('+ns.nodes[nid].type+')</option>';
+            }
+            target_node.html(html);
+            target_node.trigger('change');
+        }
+    });
+    target_node.on('change', function(event){
+        var node = nodespaces[target_nodespace.val()].nodes[target_node.val()];
+        if(node){
+            var html = '';
+            for(var i in node.slots){
+                html += '<option value="'+node.slots[i]+'">'+node.slots[i]+'</option>';
+            }
+            target_slot.html(html);
+        }
+    });
+    $('#create_link_modal .btn-primary').on('click', function(event){
+        event.preventDefault();
+        createLinkFromDialog(path.name, source_gate.val(), target_node.val(), target_slot.val());
+        $("#create_link_modal").modal("hide");
+    });
+}
+
 function stepNodenet(event){
     event.preventDefault();
     if(nodenetRunning){
@@ -1874,15 +1912,17 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
+    menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
+    menu.append('<li class="divider"></li>')
     if (node.type == "Concept") {
-        menu.append('<li><a href="#">Create gen link</a></li>');
-        menu.append('<li><a href="#">Create por/ret link</a></li>');
-        menu.append('<li><a href="#">Create sub/sur link</a></li>');
-        menu.append('<li><a href="#">Create cat/exp link</a></li>');
+        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub">Draw sub/sur link</a></li>');
+        menu.append('<li><a href="#" data-link-type="cat">Draw cat/exp link</a></li>');
         menu.append('<li class="divider"></li>');
     } else if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            menu.append('<li><a href="#">Create '+gateName+' link</a></li>');
+            menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
         }
         menu.append('<li class="divider"></li>');
     }
@@ -2004,13 +2044,27 @@ function handleContextMenu(event) {
                     break;
                 default:
                     // link creation
-                    if (menuText.substring(0, 6) == "Create" && menuText.indexOf(" link")>0) {
-                        var linktype = menuText.substring(7, menuText.indexOf(" link"));
+                    var linktype = $(event.target).attr('data-link-type');
+                    if (linktype) {
                         if(linktype.indexOf('/')){
                             linktype = linktype.split('/')[0];
                         }
                         clickIndex = available_gatetypes.indexOf(linktype);
-                        createLinkHandler(clickOriginUid, clickIndex, menuText.substring(7, menuText.indexOf(" link")));
+                        createLinkHandler(clickOriginUid, clickIndex, linktype);
+                    } else {
+                        $("#link_target_node").html('');
+                        $('#link_target_slot').html('');
+                        var html = '';
+                        for(var key in nodespaces){
+                            html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
+                        }
+                        $('#link_target_nodespace').html(html);
+                        html = '';
+                        for(var g in nodes[path.name].gates){
+                            html += '<option value="'+g+'">'+g+'</option>';
+                        }
+                        $("#link_source_gate").html(html);
+                        $("#create_link_modal").modal("show");
                     }
             }
             break;
@@ -2298,6 +2352,32 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
         };
     }
 }
+
+function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
+    if ((sourceUid in nodes) &&
+        (targetUid != sourceUid)) {
+
+        var uuid = makeUuid();
+        if(!(targetUid in nodes)){
+            nodes[sourceUid].linksToOutside.push(uuid);
+        } else if(nodes[targetUid].parent != currentNodeSpace){
+            nodes[sourceUid].linksToOutside.push(uuid);
+            nodes[targetUid].linksFromOutside.push(uuid);
+        }
+        addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
+        // TODO: also write backwards link??
+        api.call("add_link", {
+            nodenet_uid: currentNodenet,
+            source_node_uid: sourceUid,
+            gate_type: sourceGate,
+            target_node_uid: targetUid,
+            slot_type: targetSlot,
+            weight: 1,
+            uid: uuid
+        });
+    }
+}
+
 
 // establish the created link
 function finalizeLinkHandler(nodeUid, slotIndex) {

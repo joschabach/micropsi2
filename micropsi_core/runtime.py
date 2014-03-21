@@ -416,7 +416,7 @@ def get_nodespace_list(nodenet_uid):
     data = {}
     for uid, nodespace in nodenet.nodespaces.items():
         nodedata = {}
-        for nid in nodespace.netentities['nodes']:
+        for nid in nodespace.netentities.get('nodes', []):
             nodedata[nid] = {
                 'name': nodenet.nodes[nid].name,
                 'type': nodenet.nodes[nid].type,

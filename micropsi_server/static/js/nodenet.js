@@ -2081,6 +2081,7 @@ function handleContextMenu(event) {
                             html += '<option value="'+g+'">'+g+'</option>';
                         }
                         $("#link_source_gate").html(html);
+                        $('#link_target_nodespace').trigger('change');
                         $("#create_link_modal").modal("show");
                     }
             }

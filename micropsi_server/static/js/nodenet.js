@@ -221,14 +221,7 @@ function setCurrentNodenet(uid, nodespace){
                     });
                     setNodespaceData(data);
                 });
-                api.call('get_nodespace_list', {nodenet_uid:uid}, function(nodespacedata){
-                    nodespaces = nodespacedata;
-                    html = '';
-                    for(var uid in nodespaces){
-                        html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
-                    }
-                    $('#nodespace_control ul').html(html);
-                });
+                getNodespaceList();
             } else {
                 setNodespaceData(data);
             }
@@ -239,6 +232,17 @@ function setCurrentNodenet(uid, nodespace){
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
             dialogs.notification(data.Error, "error");
         });
+}
+
+function getNodespaceList(){
+    api.call('get_nodespace_list', {nodenet_uid:currentNodenet}, function(nodespacedata){
+        nodespaces = nodespacedata;
+        html = '';
+        for(var uid in nodespaces){
+            html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
+        }
+        $('#nodespace_control ul').html(html);
+    });
 }
 
 // set visible nodes and links
@@ -2157,6 +2161,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
         success=function(data){
             if(callback) callback(data);
             showNodeForm(uid);
+            getNodespaceList();
         });
     return uid;
 }
@@ -2273,6 +2278,7 @@ function deleteNodeHandler(nodeUid) {
             {nodenet_uid:currentNodenet, node_uid: node_uid},
             success=function(data){
                 dialogs.notification('node deleted', 'success');
+                getNodespaceList();
             }
         );
     }

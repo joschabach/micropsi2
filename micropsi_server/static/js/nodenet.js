@@ -2373,8 +2373,7 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
 }
 
 function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
-    if ((sourceUid in nodes) &&
-        (targetUid != sourceUid)) {
+    if ((sourceUid in nodes)) {
 
         var uuid = makeUuid();
         if(!(targetUid in nodes)){
@@ -2407,8 +2406,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
     if (!slotIndex || slotIndex < 0) slotIndex = 0;
 
     if ((targetUid in nodes) &&
-        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex) &&
-        (targetUid != sourceUid)) {
+        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
         var uuid = makeUuid();

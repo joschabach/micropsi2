@@ -2728,9 +2728,9 @@ function follownode(event){
     var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
     if(isOutsideNodespace(nodes[id])){
         refreshNodespace(nodes[id].parent, {
-            x: [x-canvas_container.width(), canvas_container.width() * 2],
-            y: [y, canvas_container.height() * 2]
-        }, null, function(){
+            x: [0, canvas_container.width() * 2],
+            y: [0, canvas_container.height() * 2]
+        }, -1, function(){
             deselectAll();
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);

@@ -302,7 +302,29 @@ STANDARD_NODETYPES = {
         "name": "Pipe",
         "slottypes": ["gen", "por", "ret", "sub", "sur"],
         "nodefunction_name": "pipe",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur"]
+        "gatetypes": ["gen", "por", "ret", "sub", "sur"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "por": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "ret": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "sub": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "sur": {
+                "minimum": -100,
+                "maximum": 100
+            }
+        }
     },
     "Label": {
         "name": "Label",

@@ -82,7 +82,7 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
-STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
+STANDARD_NODETYPES = ["Concept", "Pipe", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
 available_gatetypes = [];
 nodespaces = {};
@@ -1052,6 +1052,7 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Concept": // draw circle
+        case "Pipe": // draw circle
         case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
@@ -1395,7 +1396,7 @@ function deselectAll() {
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
-    if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
+    if (/^Concept|Pipe|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
 }
 
@@ -1937,6 +1938,11 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
         menu.append('<li><a href="#" data-link-type="sub">Draw sub/sur link</a></li>');
         menu.append('<li><a href="#" data-link-type="cat">Draw cat/exp link</a></li>');
         menu.append('<li class="divider"></li>');
+    } else if (node.type == "Pipe") {
+        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub">Draw sub/sur link</a></li>');
+        menu.append('<li class="divider"></li>');
     } else if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
             menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
@@ -1968,6 +1974,9 @@ function handleContextMenu(event) {
             switch (menuText) {
                 case "Create concept node":
                     type = "Concept";
+                    break;
+                case "Create pipe node":
+                    type = "Pipe";
                     break;
                 case "Create native module":
                     type = "Native";
@@ -2140,6 +2149,7 @@ function autoalignmentHandler(currentNodespace) {
 
 // let user create a new node
 function createNodeHandler(x, y, currentNodespace, name, type, parameters, callback) {
+    alert("alles gut bis hier");
     var uid = makeUuid();
     params = {};
     if (!parameters) parameters = {};

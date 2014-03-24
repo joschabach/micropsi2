@@ -2149,7 +2149,6 @@ function autoalignmentHandler(currentNodespace) {
 
 // let user create a new node
 function createNodeHandler(x, y, currentNodespace, name, type, parameters, callback) {
-    alert("alles gut bis hier");
     var uid = makeUuid();
     params = {};
     if (!parameters) parameters = {};

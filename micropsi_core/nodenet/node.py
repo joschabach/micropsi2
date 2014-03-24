@@ -286,26 +286,26 @@ STANDARD_NODETYPES = {
     "Sensor": {
         "name": "Sensor",
         "parameters": ["datasource"],
-        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))""",
+        "nodefunction_name": "sensor",
         "gatetypes": ["gen"]
     },
     "Actor": {
         "name": "Actor",
         "parameters": ["datatarget"],
-        "nodefunction_definition": """node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.activation)""",
+        "nodefunction_name": "actor",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
     "Concept": {
         "name": "Concept",
         "slottypes": ["gen"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "nodefunction_name": "concept",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
     },
     "Label": {
         "name": "Label",
         "slottypes": ["gen"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "nodefunction_name": "label",
         "gatetypes": ["sym", "ref"]
     },
     "Event": {
@@ -313,7 +313,7 @@ STANDARD_NODETYPES = {
         "parameters": ["time"],
         "slottypes": ["gen"],
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "nodefunction_name": "event",
         # TODO: this needs to juggle the states
         "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped',
                    'failed', 'completed']
@@ -323,7 +323,7 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "parameters": ["type"],
         "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
-        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation"""
+        "nodefunction_name": "activator"
     }
 }
 
@@ -391,8 +391,23 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node, " + args)
 
+    @property
+    def nodefunction_name(self):
+        return self.data.get("nodefunction_name")
+
+    @nodefunction_name.setter
+    def nodefunction_name(self, name):
+        self.data["nodefunction_name"] = name
+        try:
+            from . import nodefunctions
+            self.nodefunction = getattr(nodefunctions, name)
+        except ImportError as err:
+            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
+            self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
+                parameters="nodenet, node, " + args)
+
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
-                 nodefunction_definition=None, parameter_values=None, gate_defaults=None):
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -450,5 +465,7 @@ class Nodetype(object):
 
         if nodefunction_definition:
             self.nodefunction_definition = nodefunction_definition
+        elif nodefunction_name:
+            self.nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None

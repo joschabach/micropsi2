@@ -1,4 +1,7 @@
 
+def register(nodenet, node=None, **params):
+    for type, gate in node.gates.items():
+        gate.gate_function(node.activation)
 
 def sensor(nodenet, node=None, datasource=None, **params):
     node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))

@@ -276,12 +276,8 @@ STANDARD_NODETYPES = {
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
-        "gatetypes": ["gen"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": 99,
-            }
-        }
+        "nodefunction_name": "register",
+        "gatetypes": ["gen"]
     },
     "Sensor": {
         "name": "Sensor",

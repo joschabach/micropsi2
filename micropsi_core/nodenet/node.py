@@ -302,6 +302,12 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "concept",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
     },
+    "Pipe": {
+        "name": "Pipe",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "pipe",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur"]
+    },
     "Label": {
         "name": "Label",
         "slottypes": ["gen"],

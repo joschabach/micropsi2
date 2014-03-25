@@ -1118,11 +1118,11 @@ function createNodeTitleBarDelimiter (node) {
 // turn shape into shadowed outline
 function createBorder(shape, displacement) {
 
-    var highlight = shape.clone();
+    var highlight = shape.clone(false);
     highlight.fillColor = viewProperties.highlightColor;
-    var highlightSubtract = highlight.clone();
+    var highlightSubtract = highlight.clone(false);
     highlightSubtract.position += displacement;
-    var highlightClipper = highlight.clone();
+    var highlightClipper = highlight.clone(false);
     highlightClipper.position -= new Point(0.5, 0.5);
     highlightClipper.clipMask = true;
     var upper = new Group([highlightClipper, highlight, highlightSubtract]);
@@ -1130,9 +1130,9 @@ function createBorder(shape, displacement) {
 
     var shadowSubtract = shape;
     shadowSubtract.fillColor = viewProperties.shadowColor;
-    var shadow = shadowSubtract.clone();
+    var shadow = shadowSubtract.clone(false);
     shadow.position += displacement;
-    var shadowClipper = shadow.clone();
+    var shadowClipper = shadow.clone(false);
     shadowClipper.position += new Point(0.5, 0.5);
     shadowClipper.clipMask = true;
     var lower = new Group([shadowClipper,shadow, shadowSubtract]);
@@ -1187,7 +1187,7 @@ function createFullNodeSkeleton(node) {
         skeleton.name = node.type;
         prerenderLayer.addChild(skeleton);
     }
-    skeleton = prerenderLayer.children[node.type].clone();
+    skeleton = prerenderLayer.children[node.type].clone(false);
     skeleton.position = node.bounds.center;
     return skeleton;
 }
@@ -1225,7 +1225,7 @@ function createFullNodeActivations(node) {
         container.name = name;
         prerenderLayer.addChild(container);
     }
-    activation = prerenderLayer.children[name].firstChild.clone();
+    activation = prerenderLayer.children[name].firstChild.clone(false);
     activation.position = node.bounds.center;
     return activation;
 }
@@ -1271,7 +1271,7 @@ function createPillsWithLabels(bounds, labeltext) {
         border.name = "pillshape";
         prerenderLayer.addChild(border);
     }
-    border = prerenderLayer.children["pillshape"].clone();
+    border = prerenderLayer.children["pillshape"].clone(false);
     border.position = bounds.center;
     var label = new Group();
     // clipping rectangle, so text does not flow out of the node

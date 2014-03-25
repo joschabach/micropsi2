@@ -509,7 +509,7 @@ class Nodenet(object):
         new_active_nodes = {}
         for uid, node in nodes.items():
             if node.type != 'Activator':
-                node.activation = 0
+                node.reset_slots();
 
         for uid, node in nodes.items():
             if limit_gatetypes is not None:

@@ -82,7 +82,7 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
-STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
+STANDARD_NODETYPES = ["Concept", "Pipe", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
 available_gatetypes = [];
 nodespaces = {};
@@ -1052,6 +1052,7 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Concept": // draw circle
+        case "Pipe": // draw circle
         case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
@@ -1395,7 +1396,7 @@ function deselectAll() {
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
-    if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
+    if (/^Concept|Pipe|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
 }
 
@@ -1933,9 +1934,14 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.append('<li class="divider"></li>')
     if (node.type == "Concept") {
         menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub">Draw sub/sur link</a></li>');
-        menu.append('<li><a href="#" data-link-type="cat">Draw cat/exp link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
+        menu.append('<li><a href="#" data-link-type="cat/exp">Draw cat/exp link</a></li>');
+        menu.append('<li class="divider"></li>');
+    } else if (node.type == "Pipe") {
+        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
         menu.append('<li class="divider"></li>');
     } else if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
@@ -1968,6 +1974,9 @@ function handleContextMenu(event) {
             switch (menuText) {
                 case "Create concept node":
                     type = "Concept";
+                    break;
+                case "Create pipe node":
+                    type = "Pipe";
                     break;
                 case "Create native module":
                     type = "Native";
@@ -2063,10 +2072,11 @@ function handleContextMenu(event) {
                     // link creation
                     var linktype = $(event.target).attr('data-link-type');
                     if (linktype) {
-                        if(linktype.indexOf('/')){
-                            linktype = linktype.split('/')[0];
+                        var forwardlinktype = linktype;
+                        if(forwardlinktype.indexOf('/')){
+                            forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = available_gatetypes.indexOf(linktype);
+                        clickIndex = available_gatetypes.indexOf(forwardlinktype);
                         createLinkHandler(clickOriginUid, clickIndex, linktype);
                     } else {
                         $("#link_target_node").html('');
@@ -2410,40 +2420,88 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
         nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
-        var uuid = makeUuid();
-        if(nodes[sourceUid].parent != currentNodeSpace){
-            nodes[targetUid].linksFromOutside.push(uuid);
-            nodes[sourceUid].linksToOutside.push(uuid);
-        }
+        var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
+        var sourceSlots = nodes[sourceUid].slots ? nodes[sourceUid].slotIndexes.length : 0;
+
+        var newlinks = Array();
+
         switch (linkCreationStart.creationType) {
             case "por/ret":
-                addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));
-                if (targetGates > 2) addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                // the por link
+                if (targetSlots > 2) {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "por", targetUid, "por", 1, 1));
+                } else {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "por", targetUid, "gen", 1, 1));
+                }
+                // the ret link
+                if (targetGates > 2) {
+                    if(sourceSlots > 2) {
+                        newlinks.push(new Link(makeUuid(), targetUid, "ret", sourceUid, "ret", 1, 1));
+                    } else {
+                        newlinks.push(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "sub/sur":
-                addLink(new Link(uuid, sourceUid, "sub", targetUid, "gen", 1, 1));
-                if (targetGates > 4) addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                // the sub link
+                if (targetSlots > 4) {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "sub", targetUid, "sub", 1, 1));
+                } else {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "sub", targetUid, "gen", 1, 1));
+                }
+                // the sur link
+                if (targetGates > 4) {
+                    if(sourceSlots > 4) {
+                        newlinks.push(new Link(makeUuid(), targetUid, "sur", sourceUid, "sur", 1, 1));
+                    } else {
+                        newlinks.push(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "cat/exp":
-                addLink(new Link(uuid, sourceUid, "cat", targetUid, "gen", 1, 1));
-                if (targetGates > 6) addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                // the cat link
+                if (targetSlots > 6) {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "cat", targetUid, "cat", 1, 1));
+                } else {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "cat", targetUid, "gen", 1, 1));
+                }
+                // the exp link
+                if (targetGates > 6) {
+                    if(sourceSlots > 6) {
+                        newlinks.push(new Link(makeUuid(), targetUid, "cat", sourceUid, "cat", 1, 1));
+                    } else {
+                        newlinks.push(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "gen":
-                addLink(new Link(uuid, sourceUid, "gen", targetUid, "gen", 1, 1));
+                newlinks.push(new Link(makeUuid(), sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
-                addLink(new Link(uuid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
+                newlinks.push(new Link(makeUuid(), sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
-        // TODO: also write backwards link??
-        api.call("add_link", {
-            nodenet_uid: currentNodenet,
-            source_node_uid: sourceUid,
-            gate_type: nodes[sourceUid].gateIndexes[gateIndex],
-            target_node_uid: targetUid,
-            slot_type: nodes[targetUid].slotIndexes[slotIndex],
-            weight: 1,
-            uid: uuid
-        });
+
+        for (i=0;i<newlinks.length;i++) {
+
+            var link = newlinks[i];
+
+            addLink(link);
+            if(nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+            }
+
+            api.call("add_link", {
+                nodenet_uid: currentNodenet,
+                source_node_uid: link.sourceNodeUid,
+                gate_type: link.gateName,
+                target_node_uid: link.targetNodeUid,
+                slot_type: link.slotName,
+                weight: link.weight,
+                uid: link.uid
+            });
+        }
+
         cancelLinkCreationHandler();
     }
 }

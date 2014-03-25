@@ -382,6 +382,7 @@
     <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create concept node</a></li>
+        <li><a href="#">Create pipe node</a></li>
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>
         <li><a href="#">Create actor</a></li>

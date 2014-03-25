@@ -25,7 +25,6 @@ import json
 import inspect
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
-
 APP_PATH = os.path.dirname(__file__)
 
 bottle.debug(True)  # devV
@@ -128,7 +127,6 @@ def _add_world_list(template_name, **params):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
         world_js=world_js, **params)
 
-
 @route('/static/<filepath:path>')
 def server_static(filepath):
     return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
@@ -152,6 +150,15 @@ def document(filepath):
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
+@route('/minecraft/screenshot.png')
+def deliver_image():
+    image = runtime.get_minecraft_image()
+    if image != None:
+        #image_value = image
+        response.headers['Content-Type'] = 'image/png'
+        return image.getvalue()
+    else:
+        return None
 
 @route("/world")
 def world():

@@ -97,6 +97,8 @@ class World(object):
         self.agents = {}
         self.objects = {}
 
+        #self.the_image = None
+
         self.load()
 
     def load(self, string=None):
@@ -303,3 +305,4 @@ class World(object):
 # imports of individual world types:
 from micropsi_core.world.island import island
 from micropsi_core.world.berlin import berlin
+from micropsi_core.world.MinecraftWorld import minecraft

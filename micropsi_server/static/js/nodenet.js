@@ -2071,7 +2071,6 @@ function handleContextMenu(event) {
                 default:
                     // link creation
                     var linktype = $(event.target).attr('data-link-type');
-                    alert(linktype);
                     if (linktype) {
                         var forwardlinktype = linktype;
                         if(forwardlinktype.indexOf('/')){

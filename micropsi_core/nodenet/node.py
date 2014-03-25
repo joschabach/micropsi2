@@ -173,6 +173,12 @@ class Node(NetEntity):
         self.data['gate_parameters'][gate_type] = parameters
         self.gates[gate_type].parameters = parameters
 
+    def reset_slots(self):
+        for slot in self.slots.keys():
+            self.slots[slot].activation = 0
+        if self.uid in self.nodenet.active_nodes:
+            del self.nodenet.active_nodes[self.uid]
+        self.data['activation'] = self.activation
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.

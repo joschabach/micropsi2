@@ -1934,14 +1934,14 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.append('<li class="divider"></li>')
     if (node.type == "Concept") {
         menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub">Draw sub/sur link</a></li>');
-        menu.append('<li><a href="#" data-link-type="cat">Draw cat/exp link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
+        menu.append('<li><a href="#" data-link-type="cat/exp">Draw cat/exp link</a></li>');
         menu.append('<li class="divider"></li>');
     } else if (node.type == "Pipe") {
         menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub">Draw sub/sur link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
         menu.append('<li class="divider"></li>');
     } else if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
@@ -2071,11 +2071,13 @@ function handleContextMenu(event) {
                 default:
                     // link creation
                     var linktype = $(event.target).attr('data-link-type');
+                    alert(linktype);
                     if (linktype) {
-                        if(linktype.indexOf('/')){
-                            linktype = linktype.split('/')[0];
+                        var forwardlinktype = linktype;
+                        if(forwardlinktype.indexOf('/')){
+                            forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = available_gatetypes.indexOf(linktype);
+                        clickIndex = available_gatetypes.indexOf(forwardlinktype);
                         createLinkHandler(clickOriginUid, clickIndex, linktype);
                     } else {
                         $("#link_target_node").html('');
@@ -2419,6 +2421,9 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
         nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
+        var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
+        var sourceSlots = nodes[sourceUid].slots ? nodes[sourceUid].slotIndexes.length : 0;
+
         var uuid = makeUuid();
         if(nodes[sourceUid].parent != currentNodeSpace){
             nodes[targetUid].linksFromOutside.push(uuid);
@@ -2426,16 +2431,52 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
         }
         switch (linkCreationStart.creationType) {
             case "por/ret":
-                addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));
-                if (targetGates > 2) addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                // the por link
+                if (targetSlots > 2) {
+                    addLink(new Link(uuid, sourceUid, "por", targetUid, "por", 1, 1));
+                } else {
+                    addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));
+                }
+                // the ret link
+                if (targetGates > 2) {
+                    if(sourceSlots > 2) {
+                        addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "ret", 1, 1));
+                    } else {
+                        addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "sub/sur":
-                addLink(new Link(uuid, sourceUid, "sub", targetUid, "gen", 1, 1));
-                if (targetGates > 4) addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                // the sub link
+                if (targetSlots > 4) {
+                    addLink(new Link(uuid, sourceUid, "sub", targetUid, "sub", 1, 1));
+                } else {
+                    addLink(new Link(uuid, sourceUid, "sub", targetUid, "gen", 1, 1));
+                }
+                // the sur link
+                if (targetGates > 4) {
+                    if(sourceSlots > 4) {
+                        addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "sur", 1, 1));
+                    } else {
+                        addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "cat/exp":
-                addLink(new Link(uuid, sourceUid, "cat", targetUid, "gen", 1, 1));
-                if (targetGates > 6) addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                // the cat link
+                if (targetSlots > 6) {
+                    addLink(new Link(uuid, sourceUid, "cat", targetUid, "cat", 1, 1));
+                } else {
+                    addLink(new Link(uuid, sourceUid, "cat", targetUid, "gen", 1, 1));
+                }
+                // the exp link
+                if (targetGates > 6) {
+                    if(sourceSlots > 6) {
+                        addLink(new Link(makeUuid(), targetUid, "cat", sourceUid, "cat", 1, 1));
+                    } else {
+                        addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "gen":
                 addLink(new Link(uuid, sourceUid, "gen", targetUid, "gen", 1, 1));

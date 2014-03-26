@@ -51,6 +51,7 @@ class Node(NetEntity):
         if self.gates == {}:
             self.gates = {'gen': Gate('gen', self)}
         self.gates['gen'].activation = activation
+        self.report_gate_activation('gen', activation)
         self.data['activation'] = self.activation
 
     @property
@@ -169,6 +170,11 @@ class Node(NetEntity):
         self.data['gate_parameters'][gate_type] = parameters
         self.gates[gate_type].parameters = parameters
 
+    def report_gate_activation(self, gate_type, activation):
+        if 'gate_activations' not in self.data:
+            self.data['gate_activations'] = {}
+        self.data['gate_activations'][gate_type] = activation
+
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].activation = 0
@@ -196,6 +202,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.type = type
         self.node = node
         self.activation = 0
+        self.node.report_gate_activation(self.type, self.activation)
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
@@ -244,6 +251,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
         self.activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.node.report_gate_activation(self.type, self.activation)
 
 
 class Slot(object):

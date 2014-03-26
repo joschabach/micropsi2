@@ -37,24 +37,21 @@ class Node(NetEntity):
     @property
     def activation(self):
         try:
-            act = sum([self.slots[slot].activation for slot in self.slots])
+            act = sum([self.gates[gate].activation for gate in self.gates])
         except TypeError:
             # syntax error or some other error message written as activation:
-            return self.slots['gen'].activation
-        if self.parameters.get('datasource') and self.nodenet.world:
-            act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
+            return self.gates['gen'].activation
+        #if self.parameters.get('datasource') and self.nodenet.world:
+        #    act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
         return act
 
     @activation.setter
     def activation(self, activation):
         activation = float(activation)
-        if self.slots == {}:
-            self.slots = {'gen': Slot('gen', self)}
-        self.slots['gen'].activation = activation
-        if activation == 0 and self.uid in self.nodenet.active_nodes:
-            del self.nodenet.active_nodes[self.uid]
-        elif activation != 0:
-            self.nodenet.active_nodes[self.uid] = self
+        if self.gates == {}:
+            self.gates = {'gen': Gate('gen', self)}
+        self.gates['gen'].activation = activation
+        self.report_gate_activation('gen', activation)
         self.data['activation'] = self.activation
 
     @property
@@ -173,6 +170,14 @@ class Node(NetEntity):
         self.data['gate_parameters'][gate_type] = parameters
         self.gates[gate_type].parameters = parameters
 
+    def report_gate_activation(self, gate_type, activation):
+        if 'gate_activations' not in self.data:
+            self.data['gate_activations'] = {}
+        self.data['gate_activations'][gate_type] = activation
+
+    def reset_slots(self):
+        for slot in self.slots.keys():
+            self.slots[slot].activation = 0
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -197,6 +202,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.type = type
         self.node = node
         self.activation = 0
+        self.node.report_gate_activation(self.type, self.activation)
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
@@ -245,6 +251,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
         self.activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.node.report_gate_activation(self.type, self.activation)
 
 
 class Slot(object):
@@ -276,36 +283,60 @@ STANDARD_NODETYPES = {
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
-        "gatetypes": ["gen"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": 99,
-            }
-        }
+        "nodefunction_name": "register",
+        "gatetypes": ["gen"]
     },
     "Sensor": {
         "name": "Sensor",
         "parameters": ["datasource"],
-        "nodefunction_definition": """node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))""",
+        "nodefunction_name": "sensor",
         "gatetypes": ["gen"]
     },
     "Actor": {
         "name": "Actor",
         "parameters": ["datatarget"],
-        "nodefunction_definition": """node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.activation)""",
+        "nodefunction_name": "actor",
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
     "Concept": {
         "name": "Concept",
         "slottypes": ["gen"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "nodefunction_name": "concept",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
+    },
+    "Pipe": {
+        "name": "Pipe",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "pipe",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "por": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "ret": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "sub": {
+                "minimum": -100,
+                "maximum": 100
+            },
+            "sur": {
+                "minimum": -100,
+                "maximum": 100
+            }
+        }
     },
     "Label": {
         "name": "Label",
         "slottypes": ["gen"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "nodefunction_name": "label",
         "gatetypes": ["sym", "ref"]
     },
     "Event": {
@@ -313,7 +344,7 @@ STANDARD_NODETYPES = {
         "parameters": ["time"],
         "slottypes": ["gen"],
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym"],
-        "nodefunction_definition": """for type, gate in node.gates.items(): gate.gate_function(node.activation)""",
+        "nodefunction_name": "event",
         # TODO: this needs to juggle the states
         "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped',
                    'failed', 'completed']
@@ -323,7 +354,7 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "parameters": ["type"],
         "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
-        "nodefunction_definition": """nodenet.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation"""
+        "nodefunction_name": "activator"
     }
 }
 
@@ -391,8 +422,23 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node, " + args)
 
+    @property
+    def nodefunction_name(self):
+        return self.data.get("nodefunction_name")
+
+    @nodefunction_name.setter
+    def nodefunction_name(self, name):
+        self.data["nodefunction_name"] = name
+        try:
+            from . import nodefunctions
+            self.nodefunction = getattr(nodefunctions, name)
+        except ImportError as err:
+            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
+            self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
+                parameters="nodenet, node, " + args)
+
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
-                 nodefunction_definition=None, parameter_values=None, gate_defaults=None):
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -450,5 +496,7 @@ class Nodetype(object):
 
         if nodefunction_definition:
             self.nodefunction_definition = nodefunction_definition
+        elif nodefunction_name:
+            self.nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None

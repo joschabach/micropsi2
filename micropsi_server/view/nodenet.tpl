@@ -6,7 +6,7 @@
                 <td>
                     <table>
                         <tr>
-                            <td><span data-toggle="collapse" data-target="#nodenet_editor, #nodespace_control"><i
+                            <td><span data-toggle="collapse" data-target="#nodenet_editor"><i
                                     class="icon-chevron-right"></i></span></td>
 
                             <td>
@@ -16,15 +16,23 @@
                                     </a>
                                 </div>
                             </td>
-                            <td style="white-space:nowrap;">
-                                <div id="nodespace_control" class="collapse in">
-                                    &nbsp;&nbsp;Nodespace:
-                                    <input id="nodespace_name" type="text" class="input-large" disabled="disabled"
-                                           value="Root"/>
-                                    <a href="#" id="nodespace_up" class="btn"><i class="icon-share"></i></a>
-                                </div>
-
+                            <td> &nbsp; &nbsp; Nodespace:
                             </td>
+                            <td style="white-space:nowrap;">
+                                <div id="nodespace_control" class="btn-group">
+                                    <a href="#" class="btn dropdown-toggle" data-toggle="dropdown">
+                                        <span id="nodespace_name">Root</span>
+                                        <b class="caret"></b>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li>asdf</li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td>
+                                <a href="#" id="nodespace_up" title="Go to parent nodespace" class="btn"><i class="icon-share"></i></a>
+                            </td>
+                            <td> &nbsp; &nbsp; Zoom:</td>
                             <td>
                                 <div class="btn-group" id="nodenet_list">
                                     <a class="btn" id="zoomIn" href="#">+</a>
@@ -135,6 +143,10 @@
             <form class="form-horizontal hide" id="edit_gate_form">
                 <h4>Gate <span class="gate_gatetype"></span></h4>
                 <table>
+                    <tr>
+                        <td><label for="gate_activation">Activation</label></td>
+                        <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
+                    </tr>
                     <tr>
                         <td><label for="gate_minimum">Minimum</label></td>
                         <td><input type="text" class="" name="minimum" id="gate_minimum"></td>
@@ -374,6 +386,7 @@
     <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create concept node</a></li>
+        <li><a href="#">Create pipe node</a></li>
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>
         <li><a href="#">Create actor</a></li>
@@ -406,6 +419,52 @@
     <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Close</a>
         <a href="#" class="btn btn-primary">Apply changes</a>
+    </div>
+</div>
+
+
+<div class="modal hide" id="create_link_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Create a link</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="link_source_gate">Source Gate</label>
+                    <div class="controls">
+                        <select name="source_gate" id="link_source_gate">
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_target_nodespace">Nodespace</label>
+                    <div class="controls">
+                        <select name="target_nodespace" id="link_target_nodespace">
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_target_node">Target Node</label>
+                    <div class="controls">
+                        <select name="target_node" id="link_target_node">
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="link_target_slot">Target Slot</label>
+                    <div class="controls">
+                        <select data-nodespace name="target_slot" id="link_target_slot">
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+        <a href="#" class="btn btn-primary">Create</a>
     </div>
 </div>
 

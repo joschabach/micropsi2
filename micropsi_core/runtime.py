@@ -406,6 +406,31 @@ def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespa
 
 # Node operations
 
+def get_nodespace_list(nodenet_uid):
+    """ returns a list of nodespaces in the given nodenet. information includes:
+     - nodespace name,
+     - nodespace parent
+     - a list of nodes (uid, name, and type) residing in that nodespace
+    """
+    nodenet = nodenets[nodenet_uid]
+    data = {}
+    for uid, nodespace in nodenet.nodespaces.items():
+        nodedata = {}
+        for nid in nodespace.netentities.get('nodes', []):
+            nodedata[nid] = {
+                'name': nodenet.nodes[nid].name,
+                'type': nodenet.nodes[nid].type,
+                'gates': nodenet.nodetypes[nodenet.nodes[nid].type].gatetypes,
+                'slots': nodenet.nodetypes[nodenet.nodes[nid].type].slottypes
+            }
+        data[uid] = {
+            'name': nodespace.name,
+            'parent': nodespace.parent_nodespace,
+            'nodes': nodedata
+        }
+    return data
+
+
 def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}
@@ -525,8 +550,10 @@ def get_available_node_types(nodenet_uid=None):
     if nodenet_uid:
         nodenet = nodenets[nodenet_uid]
         for nodetype in nodenet.nodetypes:
+            if nodetype not in data:
+                data[nodetype] = nodenet.nodetypes[nodetype].data
             defaults = nodenet.nodetypes[nodetype].gate_defaults.copy()
-            if 'gate_defaults' in data[nodetype]:
+            if nodetype in data and 'gate_defaults' in data[nodetype]:
                 for gate in data[nodetype]['gate_defaults']:
                     for key in data[nodetype]['gate_defaults'][gate]:
                         defaults[gate][key] = data[nodetype]['gate_defaults'][gate][key]

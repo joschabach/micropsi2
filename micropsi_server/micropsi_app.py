@@ -914,6 +914,11 @@ def get_monitor_data(nodenet_uid, step):
 
 # Nodenet
 
+@rpc("get_nodespace_list")
+def get_nodespace_list(nodenet_uid):
+    """ returns a list of nodespaces in the given nodenet."""
+    return runtime.get_nodespace_list(nodenet_uid)
+
 
 @rpc("get_nodespace")
 def get_nodespace(nodenet_uid, nodespace, step, **coordinates):

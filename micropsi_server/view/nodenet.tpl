@@ -144,6 +144,10 @@
                 <h4>Gate <span class="gate_gatetype"></span></h4>
                 <table>
                     <tr>
+                        <td><label for="gate_activation">Activation</label></td>
+                        <td><input type="text" class="" name="activation" id="gate_activation" disabled="disabled"></td>
+                    </tr>
+                    <tr>
                         <td><label for="gate_minimum">Minimum</label></td>
                         <td><input type="text" class="" name="minimum" id="gate_minimum"></td>
                     </tr>

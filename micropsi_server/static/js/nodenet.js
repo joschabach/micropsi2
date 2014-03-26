@@ -3039,6 +3039,8 @@ function showGateForm(node, gate){
             if(gatefunctions[currentNodeSpace] && node.type in gatefunctions[currentNodeSpace]){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
+        } else if(el.name == 'activation'){
+            el.value = gate.activation || '0';
         } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }

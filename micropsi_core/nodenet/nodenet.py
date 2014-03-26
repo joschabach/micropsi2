@@ -479,11 +479,7 @@ class Nodenet(object):
                 nodes: the dict of nodes to consider
                 limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating
                     from the given slottypes.
-            Returns:
-                new_active_nodes: the dict of nodes, that received activation through the propagation
         """
-        new_active_nodes = {}
-
         for uid, node in nodes.items():
             if node.type != 'Activator':
                 node.reset_slots();
@@ -496,8 +492,6 @@ class Nodenet(object):
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
                     link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
-                    new_active_nodes[link.target_node.uid] = link.target_node
-        return new_active_nodes
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions

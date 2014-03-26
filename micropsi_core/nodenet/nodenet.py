@@ -136,9 +136,6 @@ class Nodenet(object):
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
 
-        self.active_nodes = {}
-        self.privileged_active_nodes = {}
-
         self.load()
 
     def load(self, string=None):
@@ -318,8 +315,6 @@ class Nodenet(object):
     def clear(self):
         self.nodes = {}
         self.links = {}
-        self.active_nodes = {}
-        self.privileged_active_nodes = {}
         self.monitors = {}
 
         self.nodes_by_coords = {}
@@ -442,59 +437,38 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-        self.active_nodes.update(self.get_sensors())
-        if self.active_nodes:
-            activators = self.get_activators()
-            self.calculate_node_functions(activators)
-            self.calculate_node_functions(self.active_nodes)
-            new_active_nodes = self.propagate_link_activation(self.active_nodes.copy())
-            self.state["step"] += 1
-            for uid, node in activators.items():
-                node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
-            self.active_nodes.update(new_active_nodes)
-            tmp_active_nodes = {}
-            for uid, node in self.active_nodes.items():
-                if node.activation != 0:
-                    tmp_active_nodes[uid] = node
-            self.active_nodes = tmp_active_nodes
-        for uid in self.monitors:
-            self.monitors[uid].step(self.state["step"])
-
-    def step_privileged(self):
-        """ performs a simulation step within the privileged nodes"""
-        if self.privileged_active_nodes:
-            self.calculate_node_functions(self.privileged_active_nodes)
-            self.privileged_active_nodes = self.propagate_link_activation(self.privileged_active_nodes,
-                limit_gatetypes=["cat"])
-
-    def step_nodespace(self, nodespace):
-        """ perform a simulation step limited to the given nodespace"""
-        self.active_nodes.update(self.get_sensors(nodespace))
-        activators = self.get_activators(nodespace=nodespace)
-        active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
+        activators = self.get_activators()
         self.calculate_node_functions(activators)
-        self.calculate_node_functions(active_nodes)
-        new_active_nodes = self.propagate_link_activation(active_nodes)
+        self.calculate_node_functions(self.nodes)
+        self.propagate_link_activation(self.nodes.copy())
         self.state["step"] += 1
-        self.active_nodes.update(new_active_nodes)
-        for uid, node in self.active_nodes.items():
-            if node.activation == 0:
-                del self.active_nodes[uid]
+        for uid, node in activators.items():
+            node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
-        for uid, node in activators.items():
-            node.activation = self.nodespaces[nodespace].activators[node.parameters['type']]
 
-    def get_active_nodes(self, nodespace=None):
-        """ returns a list of active nodes, ordered by activation.
-        If you give a nodespace, the list will be filtered to return only active nodes from the
-        given nodespace
-        """
-        if nodespace is None:
-            nodes = self.active_nodes.values()
-        else:
-            nodes = [node for node in self.active_nodes.values() if node.parent_nodespace == nodespace]
-        return sorted(nodes, key=lambda n: n.activation, reverse=True)
+#    def step_privileged(self):
+#        """ performs a simulation step within the privileged nodes"""
+#        self.calculate_node_functions(self.privileged_nodes)
+#        self.propagate_link_activation(self.privileged_nodes, limit_gatetypes=["cat"])
+
+#    def step_nodespace(self, nodespace):
+#        """ perform a simulation step limited to the given nodespace"""
+#        self.active_nodes.update(self.get_sensors(nodespace))
+#        activators = self.get_activators(nodespace=nodespace)
+#        active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
+#        self.calculate_node_functions(activators)
+#        self.calculate_node_functions(active_nodes)
+#        new_active_nodes = self.propagate_link_activation(active_nodes)
+#        self.state["step"] += 1
+#        self.active_nodes.update(new_active_nodes)
+#        for uid, node in self.active_nodes.items():
+#            if node.activation == 0:
+#                del self.active_nodes[uid]
+#        for uid in self.monitors:
+#            self.monitors[uid].step(self.state["step"])
+#        for uid, node in activators.items():
+#            node.activation = self.nodespaces[nodespace].activators[node.parameters['type']]
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction

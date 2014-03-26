@@ -51,10 +51,6 @@ class Node(NetEntity):
         if self.slots == {}:
             self.slots = {'gen': Slot('gen', self)}
         self.slots['gen'].activation = activation
-        if activation == 0 and self.uid in self.nodenet.active_nodes:
-            del self.nodenet.active_nodes[self.uid]
-        elif activation != 0:
-            self.nodenet.active_nodes[self.uid] = self
         self.data['activation'] = self.activation
 
     @property
@@ -176,8 +172,6 @@ class Node(NetEntity):
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].activation = 0
-        if self.uid in self.nodenet.active_nodes:
-            del self.nodenet.active_nodes[self.uid]
         self.data['activation'] = self.activation
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params

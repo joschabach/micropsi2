@@ -37,20 +37,20 @@ class Node(NetEntity):
     @property
     def activation(self):
         try:
-            act = sum([self.slots[slot].activation for slot in self.slots])
+            act = sum([self.gates[gate].activation for gate in self.gates])
         except TypeError:
             # syntax error or some other error message written as activation:
-            return self.slots['gen'].activation
-        if self.parameters.get('datasource') and self.nodenet.world:
-            act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
+            return self.gates['gen'].activation
+        #if self.parameters.get('datasource') and self.nodenet.world:
+        #    act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
         return act
 
     @activation.setter
     def activation(self, activation):
         activation = float(activation)
-        if self.slots == {}:
-            self.slots = {'gen': Slot('gen', self)}
-        self.slots['gen'].activation = activation
+        if self.gates == {}:
+            self.gates = {'gen': Gate('gen', self)}
+        self.gates['gen'].activation = activation
         self.data['activation'] = self.activation
 
     @property
@@ -172,7 +172,6 @@ class Node(NetEntity):
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].activation = 0
-        self.data['activation'] = self.activation
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.

@@ -437,10 +437,12 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
+
+        self.propagate_link_activation(self.nodes.copy())
         activators = self.get_activators()
         self.calculate_node_functions(activators)
         self.calculate_node_functions(self.nodes)
-        self.propagate_link_activation(self.nodes.copy())
+
         self.state["step"] += 1
         for uid, node in activators.items():
             node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
@@ -481,6 +483,7 @@ class Nodenet(object):
                 new_active_nodes: the dict of nodes, that received activation through the propagation
         """
         new_active_nodes = {}
+
         for uid, node in nodes.items():
             if node.type != 'Activator':
                 node.reset_slots();
@@ -494,10 +497,6 @@ class Nodenet(object):
                 for uid, link in gate.outgoing.items():
                     link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
                     new_active_nodes[link.target_node.uid] = link.target_node
-        for uid, node in new_active_nodes.items():
-            # hack. needed, since node.data['activation'] was not altered.
-            # Goes away when we switch to numpy and explicit delivery of these values.
-            node.data['activation'] = node.activation
         return new_active_nodes
 
     def calculate_node_functions(self, nodes):
@@ -507,6 +506,7 @@ class Nodenet(object):
         """
         for uid, node in nodes.items():
             node.node_function()
+            node.data['activation'] = node.activation
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""

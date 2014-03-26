@@ -173,10 +173,10 @@ def _convert_path_to_url(path):
         if folder:
             if folder in EXCLUDED_DIRS or (EXCLUDE_HIDDEN and folder.startswith(".")):
                 return None
-            folders.append(urllib.quote_plus(folder))
+            folders.append(urlparse.quote_plus(folder))
         else:
             if path_tail:
-                folders.append(urllib.quote_plus(path_tail))
+                folders.append(urlparse.quote_plus(path_tail))
             break
     folders.reverse()
 

@@ -107,6 +107,7 @@ if(currentNodenet){
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
     splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
     nodeLayer.addChild(splash);
+    toggleButtons(false);
 }
 
 worldadapters = {};
@@ -115,6 +116,13 @@ nodenetRunning = false;
 
 get_available_worlds();
 refreshNodenetList();
+
+function toggleButtons(on){
+    if(on)
+        $('[data-nodenet-control]').removeAttr('disabled');
+    else
+        $('[data-nodenet-control]').attr('disabled', 'disabled');
+}
 
 function refreshNodenetList(){
     $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
@@ -188,6 +196,8 @@ function setCurrentNodenet(uid, nodespace){
             y1: loaded_coordinates.y[0],
             y2: loaded_coordinates.y[1]},
         function(data){
+
+            toggleButtons(true);
 
             var nodenetChanged = (uid != currentNodenet);
 

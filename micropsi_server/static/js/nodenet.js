@@ -1084,7 +1084,6 @@ function createFullNodeLabel(node) {
         viewProperties.lineHeight*viewProperties.zoomFactor);
     clipper.clipMask = true;
     label.addChild(clipper);
-    label.opacity = 0.99; // clipping workaround to bug in paper.js
     var titleText = new PointText(new Point(bounds.x+viewProperties.padding*viewProperties.zoomFactor,
         bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
     titleText.characterStyle = {
@@ -1153,7 +1152,6 @@ function createFullNodeBodyLabel(node) {
         bounds.width-2*viewProperties.padding*viewProperties.zoomFactor, bounds.height);
     clipper.clipMask = true;
     label.addChild(clipper);
-    label.opacity = 0.99; // clipping workaround to bug in paper.js
     var typeText = new PointText(new Point(bounds.x+bounds.width/2,
         bounds.y+viewProperties.lineHeight*1.8*viewProperties.zoomFactor));
     typeText.characterStyle = {
@@ -1278,8 +1276,7 @@ function createPillsWithLabels(bounds, labeltext) {
     var clipper = new Path.Rectangle(bounds);
     clipper.clipMask = true;
     label.addChild(clipper);
-    label.opacity = 0.99; // clipping workaround to bug in paper.js
-    var text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.3));
+    var text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.1));
     text.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor

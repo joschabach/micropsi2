@@ -8,7 +8,7 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
-
+from micropsi_core.world.MinecraftWorld.minecraft import Minecraft
 
 __author__ = 'joscha'
 __date__ = '10.05.12'
@@ -59,6 +59,8 @@ def nodenetrunner():
 
 def worldrunner():
     """Looping thread to simulate worlds continously"""
+
+
     while True:
         if configs['worldrunner_timestep'] > 1000:
             step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
@@ -91,6 +93,14 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 
 # MicroPsi API
+
+# Minecraft Image
+def get_minecraft_image():
+    for uid in worlds:
+        if isinstance(worlds[uid], Minecraft):
+            return worlds[uid].the_image
+        else:
+            return None
 
 # Nodenet
 def get_available_nodenets(owner=None):
@@ -783,7 +793,6 @@ def align_nodes(nodenet_uid, nodespace):
     if result:
         nodenets[nodenet_uid].update_node_positions()
     return result
-
 
 # --- end of API
 

@@ -43,6 +43,21 @@ def test_get_nodespace(test_nodenet):
     assert node1["position"] == (200, 250)
 
 
+def test_get_nodespace_list(test_nodenet):
+    data = micropsi.get_nodespace_list(test_nodenet)
+    assert data['Root']['name'] == 'Root'
+    assert 'node_a' in data['Root']['nodes']
+    node = data['Root']['nodes']['node_a']
+    assert node['name'] == 'A'
+    assert node['type'] == 'Concept'
+    assert node['slots'] == ['gen']
+    assert len(node['gates']) == 9
+
+def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
+    micropsi.add_node(test_nodenet, "Nodespace", (200, 250), "Root", state=None, uid="foospace", name="Foospace")
+    data = micropsi.get_nodespace_list(test_nodenet)
+    assert data["foospace"]['nodes'] == {}
+
 def test_add_link(test_nodenet):
     micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1, "por_ab")
     micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 1, 0.1, "por_ab2")

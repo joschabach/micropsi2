@@ -167,6 +167,19 @@ class Nodenet(object):
             warnings.warn("Wrong version of the nodenet data; starting new nodenet")
             return False
 
+    def initialize_nodespace(self, id, data):
+        if id not in self.nodespaces:
+            # move up the nodespace tree until we find an existing parent or hit root
+            while id != 'Root' and data[id].get('parent_nodespace') not in self.nodespaces:
+                self.initialize_nodespace(data[id]['parent_nodespace'], data)
+            self.nodespaces[id] = Nodespace(self,
+                data[id]['parent_nodespace'],
+                data[id]['position'],
+                name=data[id]['name'],
+                uid=id,
+                index=data[id].get('index'),
+                gatefunctions=data[id].get('gatefunctions', {}))
+
     def initialize_nodenet(self):
         """Called after reading new nodenet state.
 
@@ -184,18 +197,7 @@ class Nodenet(object):
 
         nodespaces_to_initialize = set(self.state.get('nodespaces', {}).keys())
         for next_nodespace in nodespaces_to_initialize:
-            # move up the nodespace tree until we find an existing parent or hit root
-            while self.state["nodespaces"][next_nodespace].get(
-                'parent_nodespace') not in self.nodespaces and next_nodespace != "Root":
-                next_nodespace = self.state["nodespaces"][next_nodespace]['parent_nodespace']
-            data = self.state["nodespaces"][next_nodespace]
-            self.nodespaces[next_nodespace] = Nodespace(self,
-                data['parent_nodespace'],
-                data['position'],
-                name=data['name'],
-                uid=next_nodespace,
-                index=data.get('index'),
-                gatefunctions=data.get('gatefunctions', {}))
+            self.initialize_nodespace(next_nodespace, self.state['nodespaces'])
 
         nodespaces_to_initialize = []
         if not self.nodespaces:
@@ -507,7 +509,7 @@ class Nodenet(object):
         new_active_nodes = {}
         for uid, node in nodes.items():
             if node.type != 'Activator':
-                node.activation = 0
+                node.reset_slots();
 
         for uid, node in nodes.items():
             if limit_gatetypes is not None:

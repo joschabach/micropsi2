@@ -82,11 +82,13 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
-STANDARD_NODETYPES = ["Concept", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
+STANDARD_NODETYPES = ["Concept", "Pipe", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
 available_gatetypes = [];
+nodespaces = {};
 
 initializeMenus();
+initializeDialogs();
 initializeControls();
 initializeSidebarForms();
 
@@ -105,6 +107,7 @@ if(currentNodenet){
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
     splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
     nodeLayer.addChild(splash);
+    toggleButtons(false);
 }
 
 worldadapters = {};
@@ -113,6 +116,13 @@ nodenetRunning = false;
 
 get_available_worlds();
 refreshNodenetList();
+
+function toggleButtons(on){
+    if(on)
+        $('[data-nodenet-control]').removeAttr('disabled');
+    else
+        $('[data-nodenet-control]').attr('disabled', 'disabled');
+}
 
 function refreshNodenetList(){
     $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
@@ -187,6 +197,8 @@ function setCurrentNodenet(uid, nodespace){
             y2: loaded_coordinates.y[1]},
         function(data){
 
+            toggleButtons(true);
+
             var nodenetChanged = (uid != currentNodenet);
 
             nodenet_data = data;
@@ -219,6 +231,7 @@ function setCurrentNodenet(uid, nodespace){
                     });
                     setNodespaceData(data);
                 });
+                getNodespaceList();
             } else {
                 setNodespaceData(data);
             }
@@ -229,6 +242,17 @@ function setCurrentNodenet(uid, nodespace){
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
             dialogs.notification(data.Error, "error");
         });
+}
+
+function getNodespaceList(){
+    api.call('get_nodespace_list', {nodenet_uid:currentNodenet}, function(nodespacedata){
+        nodespaces = nodespacedata;
+        html = '';
+        for(var uid in nodespaces){
+            html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
+        }
+        $('#nodespace_control ul').html(html);
+    });
 }
 
 // set visible nodes and links
@@ -318,7 +342,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     api.call('get_nodespace', params , success=function(data){
         if(nodespace != currentNodeSpace){
             currentNodeSpace = nodespace;
-            $("#nodespace_name").val(nodespace in nodes && nodes[nodespace].name ? nodes[nodespace].name : nodespace);
+            $("#nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
@@ -1038,6 +1062,7 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Concept": // draw circle
+        case "Pipe": // draw circle
         case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
@@ -1381,7 +1406,7 @@ function deselectAll() {
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
-    if (/^Concept|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
+    if (/^Concept|Pipe|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
     return false; // we don't know how to render this in compact form
 }
 
@@ -1804,6 +1829,47 @@ function initializeControls(){
     $('#nodenet_step_forward').on('click', stepNodenet);
     $('#zoomOut').on('click', zoomOut);
     $('#zoomIn').on('click', zoomIn);
+    $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
+        event.preventDefault();
+        var nodespace = $(event.target).attr('data-nodespace');
+        refreshNodespace(nodespace, {
+            x: [0, canvas_container.width() * 2],
+            y: [0, canvas_container.height() * 2]
+        }, -1);
+    });
+}
+
+function initializeDialogs(){
+    var source_gate = $("#link_source_gate");
+    var target_nodespace = $("#link_target_nodespace");
+    var target_node = $("#link_target_node");
+    var target_slot = $('#link_target_slot');
+    target_nodespace.on('change', function(event){
+        var ns = nodespaces[target_nodespace.val()];
+        if(ns){
+            var html = '';
+            for(var nid in ns.nodes){
+                html += '<option value="'+nid+'">'+ns.nodes[nid].name + '('+ns.nodes[nid].type+')</option>';
+            }
+            target_node.html(html);
+            target_node.trigger('change');
+        }
+    });
+    target_node.on('change', function(event){
+        var node = nodespaces[target_nodespace.val()].nodes[target_node.val()];
+        if(node){
+            var html = '';
+            for(var i in node.slots){
+                html += '<option value="'+node.slots[i]+'">'+node.slots[i]+'</option>';
+            }
+            target_slot.html(html);
+        }
+    });
+    $('#create_link_modal .btn-primary').on('click', function(event){
+        event.preventDefault();
+        createLinkFromDialog(path.name, source_gate.val(), target_node.val(), target_slot.val());
+        $("#create_link_modal").modal("hide");
+    });
 }
 
 function stepNodenet(event){
@@ -1874,15 +1940,22 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
+    menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
+    menu.append('<li class="divider"></li>')
     if (node.type == "Concept") {
-        menu.append('<li><a href="#">Create gen link</a></li>');
-        menu.append('<li><a href="#">Create por/ret link</a></li>');
-        menu.append('<li><a href="#">Create sub/sur link</a></li>');
-        menu.append('<li><a href="#">Create cat/exp link</a></li>');
+        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
+        menu.append('<li><a href="#" data-link-type="cat/exp">Draw cat/exp link</a></li>');
+        menu.append('<li class="divider"></li>');
+    } else if (node.type == "Pipe") {
+        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
+        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
+        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
         menu.append('<li class="divider"></li>');
     } else if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            menu.append('<li><a href="#">Create '+gateName+' link</a></li>');
+            menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
         }
         menu.append('<li class="divider"></li>');
     }
@@ -1911,6 +1984,9 @@ function handleContextMenu(event) {
             switch (menuText) {
                 case "Create concept node":
                     type = "Concept";
+                    break;
+                case "Create pipe node":
+                    type = "Pipe";
                     break;
                 case "Create native module":
                     type = "Native";
@@ -2004,13 +2080,29 @@ function handleContextMenu(event) {
                     break;
                 default:
                     // link creation
-                    if (menuText.substring(0, 6) == "Create" && menuText.indexOf(" link")>0) {
-                        var linktype = menuText.substring(7, menuText.indexOf(" link"));
-                        if(linktype.indexOf('/')){
-                            linktype = linktype.split('/')[0];
+                    var linktype = $(event.target).attr('data-link-type');
+                    if (linktype) {
+                        var forwardlinktype = linktype;
+                        if(forwardlinktype.indexOf('/')){
+                            forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = available_gatetypes.indexOf(linktype);
-                        createLinkHandler(clickOriginUid, clickIndex, menuText.substring(7, menuText.indexOf(" link")));
+                        clickIndex = available_gatetypes.indexOf(forwardlinktype);
+                        createLinkHandler(clickOriginUid, clickIndex, linktype);
+                    } else {
+                        $("#link_target_node").html('');
+                        $('#link_target_slot').html('');
+                        var html = '';
+                        for(var key in nodespaces){
+                            html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
+                        }
+                        $('#link_target_nodespace').html(html);
+                        html = '';
+                        for(var g in nodes[path.name].gates){
+                            html += '<option value="'+g+'">'+g+'</option>';
+                        }
+                        $("#link_source_gate").html(html);
+                        $('#link_target_nodespace').trigger('change');
+                        $("#create_link_modal").modal("show");
                     }
             }
             break;
@@ -2090,6 +2182,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
         success=function(data){
             if(callback) callback(data);
             showNodeForm(uid);
+            getNodespaceList();
         });
     return uid;
 }
@@ -2206,6 +2299,7 @@ function deleteNodeHandler(nodeUid) {
             {nodenet_uid:currentNodenet, node_uid: node_uid},
             success=function(data){
                 dialogs.notification('node deleted', 'success');
+                getNodespaceList();
             }
         );
     }
@@ -2299,6 +2393,31 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
     }
 }
 
+function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
+    if ((sourceUid in nodes)) {
+
+        var uuid = makeUuid();
+        if(!(targetUid in nodes)){
+            nodes[sourceUid].linksToOutside.push(uuid);
+        } else if(nodes[targetUid].parent != currentNodeSpace){
+            nodes[sourceUid].linksToOutside.push(uuid);
+            nodes[targetUid].linksFromOutside.push(uuid);
+        }
+        addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
+        // TODO: also write backwards link??
+        api.call("add_link", {
+            nodenet_uid: currentNodenet,
+            source_node_uid: sourceUid,
+            gate_type: sourceGate,
+            target_node_uid: targetUid,
+            slot_type: targetSlot,
+            weight: 1,
+            uid: uuid
+        });
+    }
+}
+
+
 // establish the created link
 function finalizeLinkHandler(nodeUid, slotIndex) {
     var sourceUid = linkCreationStart.sourceNode.uid;
@@ -2308,44 +2427,91 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
     if (!slotIndex || slotIndex < 0) slotIndex = 0;
 
     if ((targetUid in nodes) &&
-        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex) &&
-        (targetUid != sourceUid)) {
+        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
-        var uuid = makeUuid();
-        if(nodes[sourceUid].parent != currentNodeSpace){
-            nodes[targetUid].linksFromOutside.push(uuid);
-            nodes[sourceUid].linksToOutside.push(uuid);
-        }
+        var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
+        var sourceSlots = nodes[sourceUid].slots ? nodes[sourceUid].slotIndexes.length : 0;
+
+        var newlinks = Array();
+
         switch (linkCreationStart.creationType) {
             case "por/ret":
-                addLink(new Link(uuid, sourceUid, "por", targetUid, "gen", 1, 1));
-                if (targetGates > 2) addLink(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                // the por link
+                if (targetSlots > 2) {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "por", targetUid, "por", 1, 1));
+                } else {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "por", targetUid, "gen", 1, 1));
+                }
+                // the ret link
+                if (targetGates > 2) {
+                    if(sourceSlots > 2) {
+                        newlinks.push(new Link(makeUuid(), targetUid, "ret", sourceUid, "ret", 1, 1));
+                    } else {
+                        newlinks.push(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "sub/sur":
-                addLink(new Link(uuid, sourceUid, "sub", targetUid, "gen", 1, 1));
-                if (targetGates > 4) addLink(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                // the sub link
+                if (targetSlots > 4) {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "sub", targetUid, "sub", 1, 1));
+                } else {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "sub", targetUid, "gen", 1, 1));
+                }
+                // the sur link
+                if (targetGates > 4) {
+                    if(sourceSlots > 4) {
+                        newlinks.push(new Link(makeUuid(), targetUid, "sur", sourceUid, "sur", 1, 1));
+                    } else {
+                        newlinks.push(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "cat/exp":
-                addLink(new Link(uuid, sourceUid, "cat", targetUid, "gen", 1, 1));
-                if (targetGates > 6) addLink(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                // the cat link
+                if (targetSlots > 6) {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "cat", targetUid, "cat", 1, 1));
+                } else {
+                    newlinks.push(new Link(makeUuid(), sourceUid, "cat", targetUid, "gen", 1, 1));
+                }
+                // the exp link
+                if (targetGates > 6) {
+                    if(sourceSlots > 6) {
+                        newlinks.push(new Link(makeUuid(), targetUid, "cat", sourceUid, "cat", 1, 1));
+                    } else {
+                        newlinks.push(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                    }
+                }
                 break;
             case "gen":
-                addLink(new Link(uuid, sourceUid, "gen", targetUid, "gen", 1, 1));
+                newlinks.push(new Link(makeUuid(), sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
-                addLink(new Link(uuid, sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
+                newlinks.push(new Link(makeUuid(), sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
-        // TODO: also write backwards link??
-        api.call("add_link", {
-            nodenet_uid: currentNodenet,
-            source_node_uid: sourceUid,
-            gate_type: nodes[sourceUid].gateIndexes[gateIndex],
-            target_node_uid: targetUid,
-            slot_type: nodes[targetUid].slotIndexes[slotIndex],
-            weight: 1,
-            uid: uuid
-        });
+
+        for (i=0;i<newlinks.length;i++) {
+
+            var link = newlinks[i];
+
+            addLink(link);
+            if(nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+            }
+
+            api.call("add_link", {
+                nodenet_uid: currentNodenet,
+                source_node_uid: link.sourceNodeUid,
+                gate_type: link.gateName,
+                target_node_uid: link.targetNodeUid,
+                slot_type: link.slotName,
+                weight: link.weight,
+                uid: link.uid
+            });
+        }
+
         cancelLinkCreationHandler();
     }
 }
@@ -2527,8 +2693,8 @@ function handleEnterNodespace(nodespaceUid) {
 // handler for entering parent nodespace
 function handleNodespaceUp() {
     deselectAll();
-    if (nodes[currentNodeSpace].parent) { // not yet root nodespace
-        refreshNodespace(nodes[currentNodeSpace].parent, {
+    if (nodespaces[currentNodeSpace].parent) { // not yet root nodespace
+        refreshNodespace(nodespaces[currentNodeSpace].parent, {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
         }, -1);
@@ -2631,9 +2797,9 @@ function follownode(event){
     var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
     if(isOutsideNodespace(nodes[id])){
         refreshNodespace(nodes[id].parent, {
-            x: [x-canvas_container.width(), canvas_container.width() * 2],
-            y: [y, canvas_container.height() * 2]
-        }, null, function(){
+            x: [0, canvas_container.width() * 2],
+            y: [0, canvas_container.height() * 2]
+        }, -1, function(){
             deselectAll();
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);

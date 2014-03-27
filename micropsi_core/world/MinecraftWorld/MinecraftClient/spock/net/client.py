@@ -1,4 +1,4 @@
-import pyglet
+#import pyglet
 
 import select
 import socket

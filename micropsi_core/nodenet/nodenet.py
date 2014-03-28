@@ -438,19 +438,18 @@ class Nodenet(object):
     def step(self):
         """perform a simulation step"""
 
-        activators = self.get_activators()
-
         self.propagate_link_activation(self.nodes.copy())
 
-        for uid, node in activators.items():
-            node.get_slot("gen").activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+        activators = self.get_activators()
         self.calculate_node_functions(activators)
-
         self.calculate_node_functions(self.nodes)
 
         self.state["step"] += 1
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
+        for uid, node in activators.items():
+            node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+
 
 #    def step_privileged(self):
 #        """ performs a simulation step within the privileged nodes"""

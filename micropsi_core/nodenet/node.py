@@ -36,11 +36,14 @@ class Node(NetEntity):
 
     @property
     def activation(self):
-        try:
-            act = sum([self.gates[gate].activation for gate in self.gates])
-        except TypeError:
-            # syntax error or some other error message written as activation:
-            return self.gates['gen'].activation
+        if len(self.gates) > 0:
+            try:
+                act = sum([self.gates[gate].activation for gate in self.gates])
+            except TypeError:
+                # syntax error or some other error message written as activation:
+                return self.gates['gen'].activation
+        else:
+            act = self.activation
         #if self.parameters.get('datasource') and self.nodenet.world:
         #    act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
         return act
@@ -48,11 +51,10 @@ class Node(NetEntity):
     @activation.setter
     def activation(self, activation):
         activation = float(activation)
-        if self.gates == {}:
-            self.gates = {'gen': Gate('gen', self)}
-        self.gates['gen'].activation = activation
-        self.report_gate_activation('gen', activation)
         self.data['activation'] = self.activation
+        if len(self.gates) > 0:
+            self.gates['gen'].activation = activation
+            self.report_gate_activation('gen', activation)
 
     @property
     def type(self):

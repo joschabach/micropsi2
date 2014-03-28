@@ -1,4 +1,5 @@
-from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.Cipher import AES
+#from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.Cipher import AES
+from Crypto.Cipher import AES
 
 class AESCipher():
 	def __init__(self, SharedSecret):

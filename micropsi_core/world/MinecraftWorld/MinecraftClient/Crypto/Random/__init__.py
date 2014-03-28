@@ -25,8 +25,7 @@
 __revision__ = "$Id$"
 __all__ = ['new']
 
-from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.Random import OSRNG
-from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.Random import _UserFriendlyRNG
+import micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.Random
 
 def new(*args, **kwargs):
     """Return a file-like object that outputs cryptographically random bytes."""

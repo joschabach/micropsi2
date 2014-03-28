@@ -2620,7 +2620,9 @@ function handleEditGate(event){
 function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
-    nodes[nodeUid].gates["gen"].activation = activation;
+    if(nodes[nodeUid].gates["gen"]) {
+        nodes[nodeUid].gates["gen"].activation = activation;
+    }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
         'node_uid': nodeUid,

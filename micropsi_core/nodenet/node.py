@@ -43,15 +43,13 @@ class Node(NetEntity):
                 # syntax error or some other error message written as activation:
                 return self.gates['gen'].activation
         else:
-            act = self.activation
-        #if self.parameters.get('datasource') and self.nodenet.world:
-        #    act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
+            act = self.data['activation']
         return act
 
     @activation.setter
     def activation(self, activation):
         activation = float(activation)
-        self.data['activation'] = self.activation
+        self.data['activation'] = activation
         if len(self.gates) > 0:
             self.gates['gen'].activation = activation
             self.report_gate_activation('gen', activation)

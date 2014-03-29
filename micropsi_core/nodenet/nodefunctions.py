@@ -8,6 +8,7 @@ def sensor(nodenet, node=None, datasource=None, **params):
 
 def actor(nodenet, node=None, datatarget=None, **params):
     node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.get_slot("gen").activation)
+    node.activation = node.get_slot("gen").activation
 
 def concept(nodenet, node=None, **params):
     for type, gate in node.gates.items():

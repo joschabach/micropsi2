@@ -451,29 +451,6 @@ class Nodenet(object):
             node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
 
 
-#    def step_privileged(self):
-#        """ performs a simulation step within the privileged nodes"""
-#        self.calculate_node_functions(self.privileged_nodes)
-#        self.propagate_link_activation(self.privileged_nodes, limit_gatetypes=["cat"])
-
-#    def step_nodespace(self, nodespace):
-#        """ perform a simulation step limited to the given nodespace"""
-#        self.active_nodes.update(self.get_sensors(nodespace))
-#        activators = self.get_activators(nodespace=nodespace)
-#        active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
-#        self.calculate_node_functions(activators)
-#        self.calculate_node_functions(active_nodes)
-#        new_active_nodes = self.propagate_link_activation(active_nodes)
-#        self.state["step"] += 1
-#        self.active_nodes.update(new_active_nodes)
-#        for uid, node in self.active_nodes.items():
-#            if node.activation == 0:
-#                del self.active_nodes[uid]
-#        for uid in self.monitors:
-#            self.monitors[uid].step(self.state["step"])
-#        for uid, node in activators.items():
-#            node.activation = self.nodespaces[nodespace].activators[node.parameters['type']]
-
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
             propagate activation from gates to slots via their links. returns the nodes that received activation.

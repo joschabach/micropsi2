@@ -34,7 +34,8 @@ def pipe(nodenet, node=None, **params):
 
     por += node.get_slot("sur").activation      # send confirmation from our parts onwards to our successors
 
-    ret += node.get_slot("sur").activation      # send confirmation from pir parts backwards, cancelling the inhibition
+    ret += (node.get_slot("por").activation *
+            node.get_slot("sur").activation)    # send confirmation from pir parts backwards, cancelling the inhibition
                                                 # we're normally sending on ret (see normalization)
     ret += node.get_slot("ret").activation      # propagate ret back-and-upwards for confirmation
     if ret < 1: ret = -1                        # normalize to inhibition if we're not positively confirmed yet

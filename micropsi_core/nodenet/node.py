@@ -36,26 +36,23 @@ class Node(NetEntity):
 
     @property
     def activation(self):
-        try:
-            act = sum([self.slots[slot].activation for slot in self.slots])
-        except TypeError:
-            # syntax error or some other error message written as activation:
-            return self.slots['gen'].activation
-        if self.parameters.get('datasource') and self.nodenet.world:
-            act += self.nodenet.world.get_datasource(self.nodenet.uid, self.parameters['datasource']) or 0
+        if len(self.gates) > 0:
+            try:
+                act = sum([self.gates[gate].activation for gate in self.gates])
+            except TypeError:
+                # syntax error or some other error message written as activation:
+                return self.gates['gen'].activation
+        else:
+            act = self.data['activation']
         return act
 
     @activation.setter
     def activation(self, activation):
         activation = float(activation)
-        if self.slots == {}:
-            self.slots = {'gen': Slot('gen', self)}
-        self.slots['gen'].activation = activation
-        if activation == 0 and self.uid in self.nodenet.active_nodes:
-            del self.nodenet.active_nodes[self.uid]
-        elif activation != 0:
-            self.nodenet.active_nodes[self.uid] = self
-        self.data['activation'] = self.activation
+        self.data['activation'] = activation
+        if len(self.gates) > 0:
+            self.gates['gen'].activation = activation
+            self.report_gate_activation('gen', activation)
 
     @property
     def type(self):
@@ -173,12 +170,14 @@ class Node(NetEntity):
         self.data['gate_parameters'][gate_type] = parameters
         self.gates[gate_type].parameters = parameters
 
+    def report_gate_activation(self, gate_type, activation):
+        if 'gate_activations' not in self.data:
+            self.data['gate_activations'] = {}
+        self.data['gate_activations'][gate_type] = activation
+
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].activation = 0
-        if self.uid in self.nodenet.active_nodes:
-            del self.nodenet.active_nodes[self.uid]
-        self.data['activation'] = self.activation
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -203,6 +202,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.type = type
         self.node = node
         self.activation = 0
+        self.node.report_gate_activation(self.type, self.activation)
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
@@ -234,6 +234,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             gate_factor = 0.0
         if gate_factor == 0.0:
             self.activation = 0
+            self.node.report_gate_activation(self.type, self.activation)
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
@@ -251,6 +252,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                 activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
         self.activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.node.report_gate_activation(self.type, self.activation)
 
 
 class Slot(object):

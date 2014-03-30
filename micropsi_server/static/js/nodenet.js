@@ -271,10 +271,14 @@ function setNodespaceData(data){
         }
         var uid;
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_parameters);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
             if(uid in nodes){
-                redrawNode(item);
-                nodes[uid].update(item);
+                if(nodeRedrawNeeded(item)) {
+                    nodes[uid].update(item);
+                    redrawNode(nodes[uid], true);
+                } else {
+                    nodes[uid].update(item);
+                }
             } else{
                 addNode(item);
             }
@@ -400,7 +404,7 @@ function setNodeTypes(){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -421,6 +425,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
     this.slotIndexes = [];
     this.gateIndexes = [];
     this.gate_parameters = gate_parameters || {};
+    this.gate_activations = gate_activations || {};
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
@@ -434,15 +439,17 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
             this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
         }
         var parameters;
+        var activation;
         for(i in nodetypes[type].gatetypes){
             parameters = {};
+            activation = this.gate_activations[nodetypes[type].gatetypes[i]];
             if(nodetypes[type].gate_defaults[i]){
                 parameters = nodetypes[type].gate_defaults[i];
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key]
             }
-            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, parameters);
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, activation, parameters);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -459,6 +466,10 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.state = item.state;
         this.parameters = item.parameters;
         this.gate_parameters = item.gate_parameters;
+        this.gate_activations = item.gate_activations;
+        for(i in nodetypes[type].gatetypes){
+            this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
+        }
     };
 }
 
@@ -470,11 +481,11 @@ function Slot(name) {
 }
 
 // source for links, part of a net entity
-function Gate(name, index, parameters) {
+function Gate(name, index, activation, parameters) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
-	this.activation = 0;
+	this.activation = activation;
     if(parameters){
         this.parameters = parameters;
     } else {
@@ -1442,11 +1453,16 @@ function activationColor(activation, baseColor) {
 	activation = Math.max(Math.min(activation, 1.0), -1.0);
 	if (activation == 0) return baseColor;
 	if (activation == 1) return viewProperties.activeColor;
-	var col = new Color();
-    var c;
-	if (activation >0) c = viewProperties.activeColor; else c = viewProperties.inhibitedColor;
+	if (activation == -1) return viewProperties.inhibitedColor;
+
 	var a = Math.abs(activation);
 	var r = 1.0-a;
+    var c;
+	if (activation > 0) {
+	    c = viewProperties.activeColor;
+	} else {
+	    c = viewProperties.inhibitedColor;
+	}
 	return new HSLColor(c.hue,
                         baseColor.saturation * r + c.saturation * a,
                         baseColor.lightness * r + c.lightness * a);
@@ -2617,6 +2633,10 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
+    //TODO not sure this is generic enough, should probably just take the 0th
+    if(nodes[nodeUid].gates["gen"]) {
+        nodes[nodeUid].gates["gen"].activation = activation;
+    }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
         'node_uid': nodeUid,
@@ -3037,6 +3057,8 @@ function showGateForm(node, gate){
             if(gatefunctions[currentNodeSpace] && node.type in gatefunctions[currentNodeSpace]){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
+        } else if(el.name == 'activation'){
+            el.value = gate.activation || '0';
         } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }

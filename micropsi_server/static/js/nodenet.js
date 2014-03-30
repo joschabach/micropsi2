@@ -295,7 +295,11 @@ function setNodespaceData(data){
             targetId = data.links[uid]['target_node_uid'];
             if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                redrawLink(link);
+                if(uid in links){
+                    redrawLink(link);
+                } else {
+                    addLink(link);
+                }
             } else if(sourceId in nodes || targetId in nodes){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
                 if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)

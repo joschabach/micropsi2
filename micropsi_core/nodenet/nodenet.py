@@ -290,9 +290,11 @@ class Nodenet(object):
         for key, slot in self.nodes[node_uid].slots.items():
             link_uids.extend(slot.incoming.keys())
         for uid in link_uids:
-            self.links[uid].remove()
-            del self.links[uid]
-            del self.state['links'][uid]
+            if uid in self.links:
+                self.links[uid].remove()
+                del self.links[uid]
+            if uid in self.state['links']:
+                del self.state['links'][uid]
         parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
         parent_nodespace.netentities["nodes"].remove(node_uid)
         del self.nodes[node_uid]

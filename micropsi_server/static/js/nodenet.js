@@ -295,7 +295,7 @@ function setNodespaceData(data){
             targetId = data.links[uid]['target_node_uid'];
             if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                addLink(link);
+                redrawLink(link);
             } else if(sourceId in nodes || targetId in nodes){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
                 if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
@@ -522,7 +522,7 @@ function addLink(link) {
 
 function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
-    if (forceRedraw || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
+    if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
         nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
@@ -2647,6 +2647,8 @@ function renameNode(nodeUid, name) {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         name: name
+    }, success=function(){
+        getNodespaceList();
     });
 }
 

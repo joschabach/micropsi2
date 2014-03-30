@@ -104,12 +104,6 @@ def test_save_nodenet(test_nodenet):
     assert len(nodespace["nodes"]) == 4
 
 
-def test_activation_setter_changes_nodenet_active_nodes(test_nodenet):
-    micropsi.set_node_activation(test_nodenet, 'node_a', 0.7)
-    assert 'node_a' in micropsi.get_nodenet(test_nodenet).active_nodes
-    micropsi.set_node_activation(test_nodenet, 'node_a', 0)
-    assert 'node_a' not in micropsi.get_nodenet(test_nodenet).active_nodes
-
 """
 
 

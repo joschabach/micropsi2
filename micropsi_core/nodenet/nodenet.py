@@ -136,9 +136,6 @@ class Nodenet(object):
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
 
-        self.active_nodes = {}
-        self.privileged_active_nodes = {}
-
         self.load()
 
     def load(self, string=None):
@@ -320,8 +317,6 @@ class Nodenet(object):
     def clear(self):
         self.nodes = {}
         self.links = {}
-        self.active_nodes = {}
-        self.privileged_active_nodes = {}
         self.monitors = {}
 
         self.nodes_by_coords = {}
@@ -444,59 +439,19 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-        self.active_nodes.update(self.get_sensors())
-        if self.active_nodes:
-            activators = self.get_activators()
-            self.calculate_node_functions(activators)
-            self.calculate_node_functions(self.active_nodes)
-            new_active_nodes = self.propagate_link_activation(self.active_nodes.copy())
-            self.state["step"] += 1
-            for uid, node in activators.items():
-                node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
-            self.active_nodes.update(new_active_nodes)
-            tmp_active_nodes = {}
-            for uid, node in self.active_nodes.items():
-                if node.activation != 0:
-                    tmp_active_nodes[uid] = node
-            self.active_nodes = tmp_active_nodes
-        for uid in self.monitors:
-            self.monitors[uid].step(self.state["step"])
 
-    def step_privileged(self):
-        """ performs a simulation step within the privileged nodes"""
-        if self.privileged_active_nodes:
-            self.calculate_node_functions(self.privileged_active_nodes)
-            self.privileged_active_nodes = self.propagate_link_activation(self.privileged_active_nodes,
-                limit_gatetypes=["cat"])
+        self.propagate_link_activation(self.nodes.copy())
 
-    def step_nodespace(self, nodespace):
-        """ perform a simulation step limited to the given nodespace"""
-        self.active_nodes.update(self.get_sensors(nodespace))
-        activators = self.get_activators(nodespace=nodespace)
-        active_nodes = dict((uid, node) for uid, node in self.active_nodes.items() if node.parent_nodespace == nodespace)
+        activators = self.get_activators()
         self.calculate_node_functions(activators)
-        self.calculate_node_functions(active_nodes)
-        new_active_nodes = self.propagate_link_activation(active_nodes)
+        self.calculate_node_functions(self.nodes)
+
         self.state["step"] += 1
-        self.active_nodes.update(new_active_nodes)
-        for uid, node in self.active_nodes.items():
-            if node.activation == 0:
-                del self.active_nodes[uid]
         for uid in self.monitors:
             self.monitors[uid].step(self.state["step"])
         for uid, node in activators.items():
-            node.activation = self.nodespaces[nodespace].activators[node.parameters['type']]
+            node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
 
-    def get_active_nodes(self, nodespace=None):
-        """ returns a list of active nodes, ordered by activation.
-        If you give a nodespace, the list will be filtered to return only active nodes from the
-        given nodespace
-        """
-        if nodespace is None:
-            nodes = self.active_nodes.values()
-        else:
-            nodes = [node for node in self.active_nodes.values() if node.parent_nodespace == nodespace]
-        return sorted(nodes, key=lambda n: n.activation, reverse=True)
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
@@ -505,13 +460,9 @@ class Nodenet(object):
                 nodes: the dict of nodes to consider
                 limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating
                     from the given slottypes.
-            Returns:
-                new_active_nodes: the dict of nodes, that received activation through the propagation
         """
-        new_active_nodes = {}
         for uid, node in nodes.items():
-            if node.type != 'Activator':
-                node.reset_slots();
+            node.reset_slots();
 
         for uid, node in nodes.items():
             if limit_gatetypes is not None:
@@ -521,12 +472,6 @@ class Nodenet(object):
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
                     link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
-                    new_active_nodes[link.target_node.uid] = link.target_node
-        for uid, node in new_active_nodes.items():
-            # hack. needed, since node.data['activation'] was not altered.
-            # Goes away when we switch to numpy and explicit delivery of these values.
-            node.data['activation'] = node.activation
-        return new_active_nodes
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions
@@ -535,6 +480,7 @@ class Nodenet(object):
         """
         for uid, node in nodes.items():
             node.node_function()
+            node.data['activation'] = node.activation
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""

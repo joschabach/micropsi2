@@ -224,12 +224,14 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         You might want to replace it with a radial basis function, for instance.
         """
 
+        gate_factor = 1
+
         # check if the current node space has an activator that would prevent the activity of this gate
         nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]
         if self.type in nodespace.activators:
             gate_factor = nodespace.activators[self.type]
         else:
-            gate_factor = 1.0
+            gate_factor = 0.0
         if gate_factor == 0.0:
             self.activation = 0
             self.node.report_gate_activation(self.type, self.activation)

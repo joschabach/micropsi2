@@ -20,23 +20,24 @@
                             </td>
                             <td style="white-space:nowrap;">
                                 <div id="nodespace_control" class="btn-group">
-                                    <a href="#" class="btn dropdown-toggle" data-toggle="dropdown">
+                                    <a href="#" class="btn dropdown-toggle" data-toggle="dropdown" data-nodenet-control>
                                         <span id="nodespace_name">Root</span>
                                         <b class="caret"></b>
                                     </a>
                                     <ul class="dropdown-menu">
-                                        <li>asdf</li>
                                     </ul>
                                 </div>
                             </td>
                             <td>
-                                <a href="#" id="nodespace_up" title="Go to parent nodespace" class="btn"><i class="icon-share"></i></a>
+                                <a href="#" id="nodespace_up" title="Go to parent nodespace" class="btn" data-nodenet-control>
+                                    <i class="icon-share"></i>
+                                </a>
                             </td>
                             <td> &nbsp; &nbsp; Zoom:</td>
                             <td>
                                 <div class="btn-group" id="nodenet_list">
-                                    <a class="btn" id="zoomIn" href="#">+</a>
-                                    <a class="btn" id="zoomOut" href="#">-</a>
+                                    <a class="btn" id="zoomIn" href="#" data-nodenet-control>+</a>
+                                    <a class="btn" id="zoomOut" href="#" data-nodenet-control>-</a>
                                 </div>
                             </td>
                         </tr>
@@ -47,10 +48,10 @@
                         <tr>
                             <td style="white-space:nowrap;">
                                 <div class="btn-group">
-                                  <a href="#" id="nodenet_reset" class="btn"><i class="icon-fast-backward"></i></a>
-                                  <a href="#" id="nodenet_start" class="btn"><i class="icon-play"></i></a>
-                                  <a href="#" id="nodenet_step_forward" class="btn"><i class="icon-step-forward"></i></a>
-                                  <a href="#" id="nodenet_stop" class="btn"><i class="icon-pause"></i></a>
+                                  <a href="#" id="nodenet_reset" class="btn" data-nodenet-control><i class="icon-fast-backward"></i></a>
+                                  <a href="#" id="nodenet_start" class="btn" data-nodenet-control><i class="icon-play"></i></a>
+                                  <a href="#" id="nodenet_step_forward" class="btn" data-nodenet-control><i class="icon-step-forward"></i></a>
+                                  <a href="#" id="nodenet_stop" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
                                 </div>
                             </td>
 

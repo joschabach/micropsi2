@@ -314,23 +314,28 @@ STANDARD_NODETYPES = {
         "gate_defaults": {
             "gen": {
                 "minimum": -100,
-                "maximum": 100
+                "maximum": 100,
+                "threshold": -100
             },
             "por": {
                 "minimum": -100,
-                "maximum": 100
+                "maximum": 100,
+                "threshold": -100
             },
             "ret": {
                 "minimum": -100,
-                "maximum": 100
+                "maximum": 100,
+                "threshold": -100
             },
             "sub": {
                 "minimum": -100,
-                "maximum": 100
+                "maximum": 100,
+                "threshold": -100
             },
             "sur": {
                 "minimum": -100,
-                "maximum": 100
+                "maximum": 100,
+                "threshold": -100
             }
         }
     },

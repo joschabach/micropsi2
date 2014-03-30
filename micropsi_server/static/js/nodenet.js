@@ -107,6 +107,7 @@ if(currentNodenet){
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
     splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
     nodeLayer.addChild(splash);
+    toggleButtons(false);
 }
 
 worldadapters = {};
@@ -115,6 +116,13 @@ nodenetRunning = false;
 
 get_available_worlds();
 refreshNodenetList();
+
+function toggleButtons(on){
+    if(on)
+        $('[data-nodenet-control]').removeAttr('disabled');
+    else
+        $('[data-nodenet-control]').attr('disabled', 'disabled');
+}
 
 function refreshNodenetList(){
     $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
@@ -188,6 +196,8 @@ function setCurrentNodenet(uid, nodespace){
             y1: loaded_coordinates.y[0],
             y2: loaded_coordinates.y[1]},
         function(data){
+
+            toggleButtons(true);
 
             var nodenetChanged = (uid != currentNodenet);
 
@@ -289,7 +299,11 @@ function setNodespaceData(data){
             targetId = data.links[uid]['target_node_uid'];
             if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                addLink(link);
+                if(uid in links){
+                    redrawLink(link);
+                } else {
+                    addLink(link);
+                }
             } else if(sourceId in nodes || targetId in nodes){
                 link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
                 if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
@@ -523,7 +537,7 @@ function addLink(link) {
 
 function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
-    if (forceRedraw || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
+    if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
         nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
@@ -2660,6 +2674,8 @@ function renameNode(nodeUid, name) {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         name: name
+    }, success=function(){
+        getNodespaceList();
     });
 }
 

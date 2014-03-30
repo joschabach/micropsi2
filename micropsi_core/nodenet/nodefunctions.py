@@ -71,4 +71,5 @@ def event(nodenet, node, **params):
         gate.gate_function(node.get_slot("gen").activation)
 
 def activator(nodenet, node, **params):
+    node.activation = node.get_slot("gen").activation
     nodenet.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation

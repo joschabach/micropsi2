@@ -2632,6 +2632,7 @@ function handleEditGate(event){
 }
 
 function setNodeActivation(nodeUid, activation){
+    activation = activation || 0
     nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {

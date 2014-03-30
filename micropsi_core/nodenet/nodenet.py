@@ -460,8 +460,7 @@ class Nodenet(object):
                     from the given slottypes.
         """
         for uid, node in nodes.items():
-            if node.type != 'Activator':
-                node.reset_slots();
+            node.reset_slots();
 
         for uid, node in nodes.items():
             if limit_gatetypes is not None:

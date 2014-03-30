@@ -540,6 +540,10 @@ def delete_node(nodenet_uid, node_uid):
         del nodenet.nodespaces[node_uid]
         del nodenet.state['nodespaces'][node_uid]
     else:
+        parent_nodespace = nodenet.nodespaces.get(nodenet.nodes[node_uid].parent_nodespace)
+        if nodenet.nodes[node_uid].type in parent_nodespace.activators:
+            del parent_nodespace.activators[nodenet.nodes[node_uid].type]
+
         nodenet.delete_node(node_uid)
     return True
 

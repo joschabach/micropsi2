@@ -2650,6 +2650,8 @@ function renameNode(nodeUid, name) {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         name: name
+    }, success=function(){
+        getNodespaceList();
     });
 }
 

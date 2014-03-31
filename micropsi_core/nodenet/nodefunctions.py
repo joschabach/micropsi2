@@ -21,13 +21,13 @@ def pipe(nodenet, node=None, **params):
     sub = 0.0
     sur = 0.0
 
-    gen += node.get_slot("sur").activation * node.get_slot("sub").activation
+    gen += node.get_slot("sur").activation
     if gen < 0: gen = 0
     if gen > 1: gen = 1
 
+    sub += node.get_slot("gen").activation * 3
     sub += node.get_slot("sub").activation
     sub += node.get_slot("por").activation
-    sub += node.get_slot("sur").activation
     if sub == 0: sub = -1
 
     sur += node.get_slot("sur").activation * \

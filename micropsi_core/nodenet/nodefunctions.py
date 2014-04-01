@@ -20,6 +20,7 @@ def pipe(nodenet, node=None, **params):
     ret = 0.0
     sub = 0.0
     sur = 0.0
+    hyp = 0.0
 
     gen += node.get_slot("sur").activation
     if gen < 0: gen = 0
@@ -28,6 +29,7 @@ def pipe(nodenet, node=None, **params):
     sub += node.get_slot("gen").activation * 3
     sub += node.get_slot("sub").activation
     sub += node.get_slot("por").activation
+    sub += node.get_slot("hyp").activation
     if sub == 0: sub = -1
 
     sur += node.get_slot("sur").activation * \
@@ -42,11 +44,14 @@ def pipe(nodenet, node=None, **params):
     ret += node.get_slot("ret").activation
     if ret == 0: ret = -1
 
+    hyp += node.get_slot("hyp").activation
+
     node.get_gate("gen").gate_function(gen)
     node.get_gate("por").gate_function(por)
     node.get_gate("ret").gate_function(ret)
     node.get_gate("sub").gate_function(sub)
     node.get_gate("sur").gate_function(sur)
+    node.get_gate("hyp").gate_function(hyp)
 
 def label(nodenet, node, **params):
     for type, gate in node.gates.items():

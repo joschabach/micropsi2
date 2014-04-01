@@ -306,9 +306,9 @@ STANDARD_NODETYPES = {
     },
     "Pipe": {
         "name": "Pipe",
-        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "slottypes": ["gen", "por", "ret", "sub", "sur", "hyp"],
         "nodefunction_name": "pipe",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur"],
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "hyp"],
         "gate_defaults": {
             "gen": {
                 "minimum": -100,
@@ -331,6 +331,11 @@ STANDARD_NODETYPES = {
                 "threshold": -100
             },
             "sur": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100
+            },
+            "hyp": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100

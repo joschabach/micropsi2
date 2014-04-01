@@ -1748,7 +1748,13 @@ function onMouseUp(event) {
         if(path.nodeMoved && nodes[path.name]){
             // update position on server
             path.nodeMoved = false;
-            moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            if(dragMultiples){
+                for(var uid in selection){
+                    moveNode(uid, nodes[uid].x, nodes[uid].y);
+                }
+            } else {
+                moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            }
             movePath = false;
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){

@@ -48,13 +48,17 @@ def test_nodenet(request):
     return nn_uid
 
 
+def pytest_runtest_call(item):
+    if 'fixed_test_nodenet' in micropsi.nodenets:
+        micropsi.revert_nodenet("fixed_test_nodenet")
+
+
 @pytest.fixture(scope="function")
 def fixed_nodenet(request, test_world):
     from micropsi_core.tests.nodenet_data import fixed_nodenet_data
-    success, uid = micropsi.new_nodenet("Fixednet", "Default", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
+    success, uid = micropsi.new_nodenet("Fixednet", "Braitenberg", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
     micropsi.get_nodenet(uid)
     micropsi.merge_nodenet(uid, fixed_nodenet_data)
-
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_nodenet(uid)

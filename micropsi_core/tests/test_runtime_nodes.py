@@ -110,6 +110,12 @@ def test_activation_setter_changes_nodenet_active_nodes(test_nodenet):
     micropsi.set_node_activation(test_nodenet, 'node_a', 0)
     assert 'node_a' not in micropsi.get_nodenet(test_nodenet).active_nodes
 
+
+def test_remove_nodes_linking_to_themselves(fixed_nodenet):
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    micropsi.add_link(fixed_nodenet, 'A1', 'gen', 'A1', 'gen')
+    assert micropsi.delete_node(fixed_nodenet, 'A1')
+
 """
 
 

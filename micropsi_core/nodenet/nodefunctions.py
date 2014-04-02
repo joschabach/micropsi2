@@ -25,7 +25,7 @@ def pipe(nodenet, node=None, **params):
     if gen < 0: gen = 0
     if gen > 1: gen = 1
 
-    sub += node.get_slot("gen").activation * 3
+    sub += node.get_slot("gen").activation
     sub += node.get_slot("sub").activation
     sub += node.get_slot("por").activation
     if sub == 0: sub = -1
@@ -34,12 +34,11 @@ def pipe(nodenet, node=None, **params):
     sur += node.get_slot("sur").voted_activation
     if sur < 0: sur = 0
 
-    por += node.get_slot("sur").activation * \
-           (1+node.get_slot("sub").activation) * \
-           (1+node.get_slot("por").activation)
+    por += node.get_slot("sur").voted_activation * \
+           node.get_slot("sub").activation
     por += node.get_slot("por").activation * \
            (1+node.get_slot("ret").activation)
-    if por == 0: por = -1
+    if por < 1: por = -1
     if por > 1: por = 1
 
     ret += node.get_slot("ret").activation

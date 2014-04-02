@@ -277,6 +277,12 @@ class Slot(object):
         self.current_step = -1
         self.activation = 0
 
+    @property
+    def voted_activation(self):
+        if len(self.incoming) == 0:
+            return 0;
+        return self.activation / len(self.incoming)
+
 
 STANDARD_NODETYPES = {
     "Register": {

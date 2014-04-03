@@ -28,13 +28,12 @@ def pipe(nodenet, node=None, **params):
     sub += node.get_slot("gen").activation
     sub += node.get_slot("sub").activation
     sub += node.get_slot("por").activation
-    #if sub == 0: sub = -1
-    if sub > 1: sub = 1
+    if sub > 0: sub = 1
 
     sur += node.get_slot("sur").voted_activation
     if sur < 0: sur = 0
 
-    por += node.get_slot("sur").voted_activation * \
+    por += node.get_slot("sur").activation * \
            node.get_slot("sub").activation
     por += node.get_slot("por").activation * \
            (1+node.get_slot("ret").activation)

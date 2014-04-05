@@ -1733,7 +1733,7 @@ function onMouseDrag(event) {
     if (movePath) {
         if(dragMultiples){
             for(var uid in selection){
-                if(uid != "gate"){
+                if(uid in nodes){
                     moveNode(uid);
                 }
             }
@@ -1750,7 +1750,9 @@ function onMouseUp(event) {
             path.nodeMoved = false;
             if(dragMultiples){
                 for(var uid in selection){
-                    moveNode(uid, nodes[uid].x, nodes[uid].y);
+                    if(uid in nodes){
+                        moveNode(uid, nodes[uid].x, nodes[uid].y);
+                    }
                 }
             } else {
                 moveNode(path.name, nodes[path.name].x, nodes[path.name].y);

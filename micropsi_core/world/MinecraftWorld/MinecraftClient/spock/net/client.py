@@ -6,12 +6,13 @@ import signal
 import sys
 import os
 import logging
+from Crypto.Random import _UserFriendlyRNG
 #import micropsi_core.world.minecraft.spock.plugins.psicraft_dispatcher as psicraft
 from micropsi_core.world.MinecraftWorld.minecraft_config import minecraft_server
 
 from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcpacket import Packet
 
-from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto import Random
+from Crypto import Random
 
 from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.cflags import cflags
 from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.flag_handlers import fhandles
@@ -274,7 +275,7 @@ class MinecraftClient(object):
                 'SessionID': "sessionid"}
 
     def handshake(self):
-        self.SharedSecret = Random._UserFriendlyRNG.get_random_bytes(16)
+        self.SharedSecret = _UserFriendlyRNG.get_random_bytes(16)
 
         #Stage 2: Send initial handshake
         self.push(mcpacket.Packet(ident = 0x02, data = {

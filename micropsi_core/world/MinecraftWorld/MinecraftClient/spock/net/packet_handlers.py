@@ -1,9 +1,10 @@
 import logging
 import socket
+from Crypto.PublicKey import RSA
 from micropsi_core.world.MinecraftWorld.MinecraftClient.spock import utils, smpmap
 from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp import mcdata, mcpacket
-from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.Cipher import PKCS1_v1_5
-from micropsi_core.world.MinecraftWorld.MinecraftClient.Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_v1_5
+from Crypto.PublicKey import RSA
 
 phandles = {}
 def phandle(ident):

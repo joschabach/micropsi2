@@ -67,7 +67,7 @@ fixed_nodenet_data = """{
             "index": 1,
             "name": "",
             "parameters": {
-                "datasource": "default"
+                "datasource": "brightness_l"
             },
             "parent_nodespace": "Root",
             "position": [

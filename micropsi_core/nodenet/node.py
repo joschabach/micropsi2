@@ -436,10 +436,10 @@ class Nodetype(object):
         try:
             from . import nodefunctions
             self.nodefunction = getattr(nodefunctions, name)
-        except ImportError as err:
+        except (ImportError, AttributeError) as err:
             warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-                parameters="nodenet, node, " + args)
+                parameters="nodenet, node")
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None):

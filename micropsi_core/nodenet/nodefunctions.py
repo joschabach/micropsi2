@@ -92,40 +92,29 @@ def pipe(nodenet, node=None, **params):
     sub = 0.0
     sur = 0.0
 
-    sub += node.get_slot("gen").activation      # push gen activation down: someone wants to check this concept
-                                                # it's debatable whether such a request should only be allowed on the
-                                                # sub channel itself or whether the gen alternative is cleaner because
-                                                # it does not require a sub link that has no sur correlate.
-    sub += node.get_slot("sub").activation      # sub is pushed down: the concept we're part of is requested to be
-                                                # checked
-    sub += node.get_slot("por").activation      # por is pushed down: our predecessor is confirmed and wants us to be
-                                                # next
-    if sub > 1: sub = 1                         # more than one condition met, normalize to 1 for now
-    if sub < 0: sub = 0                         # negative sub has no semantics and is messy, normalize to 0 for now
+    gen += node.get_slot("sur").activation
+    if gen < 0: gen = 0
+    if gen > 1: gen = 1
 
-    por += node.get_slot("sur").activation      # send confirmation from our parts onwards to our successors
+    sub += node.get_slot("gen").activation * 3
+    sub += node.get_slot("sub").activation
+    sub += node.get_slot("por").activation
+    if sub == 0: sub = -1
+    if sub > 1: sub = 1
 
-    ret += node.get_slot("sur").activation      # send confirmation from pir parts backwards, cancelling the inhibition
-                                                # we're normally sending on ret (see normalization)
-    ret += node.get_slot("ret").activation      # propagate ret back-and-upwards for confirmation
-    if ret < 1: ret = -1                        # normalize to inhibition if we're not positively confirmed yet
-    if ret > 1: ret = 1                         # normalize to 1 if more than one condition met
+    sur += node.get_slot("sur").activation * \
+           (1+node.get_slot("sub").activation) * \
+           (1+node.get_slot("ret").activation) * \
+           (1+node.get_slot("por").activation)
+    if sur < 0: sur = 0
 
-    sur += (node.get_slot("sub").activation *   # sur is activated if we're being requested and a sensor is
-            node.get_slot("gen").activation)    # gen-connected and active. Again, it's debatable whether sensors
-                                                # should be gen-connected or non-reciprocal sur-links would be
-                                                # preferable
-    sur += (node.get_slot("sub").activation *   # sur is activated if we're being requested and a sensor or subscript
-            node.get_slot("sur").activation)    # is sur-connected and active.
-    sur += node.get_slot("ret").activation      # sur is activated if ret is active: propagate success upwards
-    if sur < -1: sur = -1                       # normalize negative sur to -1
-    if sur > 1: sur = 1                         # normalize positive sur to 1
+    por += node.get_slot("sur").activation
+    por += node.get_slot("por").activation
+    if por == 0: por = -1
+    if por > 1: por = 1
 
-    gen += node.get_slot("sur").activation      # gen is activated if confirmation is being propagated from below
-                                                # if we decide to go for non-reciprocal sur, this can be dropped
-    gen += (node.get_slot("sub").activation *   # if requested from above, we allow gen-loops to keep state after
-            node.get_slot("gen").activation)    # a sensor has activated us once
-    if gen < 0: gen = 0                         # negative gen undefined for now
+    ret += node.get_slot("ret").activation
+    if ret == 0: ret = -1
 
     node.get_gate("gen").gate_function(gen)
     node.get_gate("por").gate_function(por)

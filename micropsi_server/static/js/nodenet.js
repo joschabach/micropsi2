@@ -1734,7 +1734,7 @@ function onMouseDrag(event) {
     if (movePath) {
         if(dragMultiples){
             for(var uid in selection){
-                if(uid != "gate"){
+                if(uid in nodes){
                     moveNode(uid);
                 }
             }
@@ -1749,7 +1749,15 @@ function onMouseUp(event) {
         if(path.nodeMoved && nodes[path.name]){
             // update position on server
             path.nodeMoved = false;
-            moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            if(dragMultiples){
+                for(var uid in selection){
+                    if(uid in nodes){
+                        moveNode(uid, nodes[uid].x, nodes[uid].y);
+                    }
+                }
+            } else {
+                moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+            }
             movePath = false;
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
@@ -1853,10 +1861,12 @@ function initializeControls(){
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
         event.preventDefault();
         var nodespace = $(event.target).attr('data-nodespace');
-        refreshNodespace(nodespace, {
-            x: [0, canvas_container.width() * 2],
-            y: [0, canvas_container.height() * 2]
-        }, -1);
+        if(nodespace != currentNodespace){
+            refreshNodespace(nodespace, {
+                x: [0, canvas_container.width() * 2],
+                y: [0, canvas_container.height() * 2]
+            }, -1);
+        }
     });
 }
 

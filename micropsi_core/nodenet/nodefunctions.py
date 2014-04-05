@@ -120,6 +120,7 @@ def pipe(nodenet, node=None, **params):
     ret += node.get_slot("ret").activation
     if ret == 0: ret = -1
 
+    node.activation = gen
     node.get_gate("gen").gate_function(gen)
     node.get_gate("por").gate_function(por)
     node.get_gate("ret").gate_function(ret)

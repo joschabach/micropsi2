@@ -388,6 +388,7 @@
     <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Create concept node</a></li>
         <li><a href="#">Create pipe node</a></li>
+        <li><a href="#">Create script node</a></li>
         <li><a href="#">Create register</a></li>
         <li><a href="#">Create sensor</a></li>
         <li><a href="#">Create actor</a></li>

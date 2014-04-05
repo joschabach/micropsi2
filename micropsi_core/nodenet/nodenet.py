@@ -19,6 +19,7 @@ __date__ = '09.05.12'
 
 NODENET_VERSION = 1
 
+
 class Nodenet(object):
     """Main data structure for MicroPsi agents,
 

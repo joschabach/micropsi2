@@ -135,10 +135,10 @@ class Node(NetEntity):
             try:
                 self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
             except SyntaxError as err:
-                warnings.warn("Syntax error during node execution: %s" % err.message)
+                warnings.warn("Syntax error during node execution: %s" % err)
                 self.data["activation"] = "Syntax error"
             except TypeError as err:
-                warnings.warn("Type error during node execution: %s" % err.message)
+                warnings.warn("Type error during node execution: %s" % err)
                 self.data["activation"] = "Parameter mismatch"
 
     def get_gate(self, gatename):
@@ -302,6 +302,12 @@ STANDARD_NODETYPES = {
         "name": "Concept",
         "slottypes": ["gen"],
         "nodefunction_name": "concept",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
+    },
+    "Script": {
+        "name": "Script",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "script",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
     },
     "Pipe": {

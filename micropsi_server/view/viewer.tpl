@@ -1,7 +1,7 @@
 
 %include menu.tpl version = version, user_id = user_id, permissions = permissions
 
-<script src="/static/js/paper.js" type="text/javascript"></script>
+<script src="/static/js/paper-full.js" type="text/javascript"></script>
 
 <div class="row-fluid">
 %if mode == "nodenet":

@@ -471,6 +471,14 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
             this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };
+
+    this.gatesum = function(){
+        var gatesum = 0;
+        for(i in nodetypes[type].gatetypes){
+            gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
+        }
+        return gatesum;
+    }
 }
 
 // target for links, part of a net entity
@@ -685,6 +693,7 @@ function nodeRedrawNeeded(node){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
             node.activation == nodes[node.uid].activation &&
+            node.gatesum() == nodes[node.uid].gatesum() &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }

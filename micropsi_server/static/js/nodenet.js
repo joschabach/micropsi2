@@ -55,6 +55,8 @@ var viewProperties = {
     xMax: 13500
 };
 
+var nodenetscope = paper;
+
 // hashes from uids to object definitions; we import these via json
 nodes = {};
 links = {};
@@ -196,7 +198,7 @@ function setCurrentNodenet(uid, nodespace){
             y1: loaded_coordinates.y[0],
             y2: loaded_coordinates.y[1]},
         function(data){
-
+            nodenetscope.activate();
             toggleButtons(true);
 
             var nodenetChanged = (uid != currentNodenet);
@@ -257,6 +259,7 @@ function getNodespaceList(){
 
 // set visible nodes and links
 function setNodespaceData(data){
+    nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.step || 0;
         $('#nodenet_step').val(currentSimulationStep);

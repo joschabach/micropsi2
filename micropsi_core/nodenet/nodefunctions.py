@@ -1,16 +1,20 @@
 
 def register(nodenet, node=None, **params):
+    node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
 def sensor(nodenet, node=None, datasource=None, **params):
+    node.activation = node.get_slot("gen").activation = nodenet.world.get_datasource(nodenet.uid, datasource)
     node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))
 
 def actor(nodenet, node=None, datatarget=None, **params):
-    node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.get_slot("gen").activation)
     node.activation = node.get_slot("gen").activation
+    if not nodenet.world: return
+    node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.get_slot("gen").activation)
 
 def concept(nodenet, node=None, **params):
+    node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
@@ -46,6 +50,7 @@ def pipe(nodenet, node=None, **params):
     ret += node.get_slot("ret").activation
     if ret == 0: ret = -1
 
+    node.activation = gen
     node.get_gate("gen").gate_function(gen)
     node.get_gate("por").gate_function(por)
     node.get_gate("ret").gate_function(ret)
@@ -53,10 +58,12 @@ def pipe(nodenet, node=None, **params):
     node.get_gate("sur").gate_function(sur)
 
 def label(nodenet, node, **params):
+    node.activation = sum([node.slots[slot].activation for slot in node.slots])
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
 def event(nodenet, node, **params):
+    node.activation = sum([node.slots[slot].activation for slot in node.slots])
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 

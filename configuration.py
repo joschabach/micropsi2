@@ -9,13 +9,18 @@ __author__ = 'joscha'
 __date__ = '03.12.12'
 
 import os
+import configparser
+
+config = configparser.ConfigParser()
+config.read('config.ini')
 
 VERSION = "0.2"
+APPTITLE = "Micropsi"
 
-APPTITLE = "PSI Cortex"
+RESOURCE_PATH = config['micropsi2']['data_directory']
 
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), "resources")
 USERMANAGER_PATH = os.path.join(RESOURCE_PATH, "user-db.json")
 
-DEFAULT_PORT = 6543
-DEFAULT_HOST = "localhost"
+DEFAULT_PORT = config['micropsi2']['port']
+
+DEFAULT_HOST = config['micropsi2']['host']

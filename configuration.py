@@ -20,6 +20,7 @@ APPTITLE = "Micropsi"
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), config['micropsi2']['data_directory'])
 
 USERMANAGER_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
+SERVER_SETTINGS_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')
 
 DEFAULT_PORT = config['micropsi2']['port']
 

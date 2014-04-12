@@ -14,6 +14,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 from configuration import RESOURCE_PATH
+from configuration import SERVER_SETTINGS_PATH
 
 from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
@@ -34,7 +35,7 @@ import time
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
+configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 
 worlds = {}
 nodenets = {}

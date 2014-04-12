@@ -17,9 +17,9 @@ config.read('config.ini')
 VERSION = "0.2"
 APPTITLE = "Micropsi"
 
-RESOURCE_PATH = config['micropsi2']['data_directory']
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), config['micropsi2']['data_directory'])
 
-USERMANAGER_PATH = os.path.join(RESOURCE_PATH, "user-db.json")
+USERMANAGER_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
 
 DEFAULT_PORT = config['micropsi2']['port']
 

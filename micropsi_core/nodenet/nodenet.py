@@ -117,8 +117,7 @@ class Nodenet(object):
             "nodespaces": {'Root': {}},
             "nodetypes": STANDARD_NODETYPES,
             "activatortypes": list(STANDARD_NODETYPES.keys()),
-            "step": 0,
-            "filename": filename
+            "step": 0
         }
 
         self.world = world

@@ -140,7 +140,9 @@ def load_nodenet(nodenet_uid):
                 if data.world in worlds:
                     world = worlds.get(data.world)
                     worldadapter = data.get('worldadapter')
-            nodenets[nodenet_uid] = Nodenet(data.filename, name=data.name, worldadapter=worldadapter,
+            nodenets[nodenet_uid] = Nodenet(
+                os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
+                name=data.name, worldadapter=worldadapter,
                 world=world, owner=data.owner, uid=data.uid)
         else:
             world = nodenets[nodenet_uid].world or None
@@ -217,9 +219,9 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
         owner=owner,
         world=world_uid
     ))
-    data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
-    with open(data['filename'], 'w+') as fp:
+    with open(filename, 'w+') as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
     fp.close()
     #load_nodenet(data['uid'])
@@ -239,7 +241,8 @@ def delete_nodenet(nodenet_uid):
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
     unload_nodenet(nodenet_uid)
-    os.remove(nodenet_data[nodenet_uid].filename)
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
+    os.remove(filename)
     del nodenet_data[nodenet_uid]
     return True
 
@@ -323,7 +326,7 @@ def revert_nodenet(nodenet_uid):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
+    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'), 'w+') as fp:
         fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
     fp.close()
     return True
@@ -350,8 +353,7 @@ def import_nodenet(string, owner=None):
     if 'owner':
         nodenet_data['owner'] = owner
     # assert nodenet_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
-    nodenet_data['filename'] = filename
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(nodenet_data))
     fp.close()
@@ -833,9 +835,9 @@ world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIREC
 if not world_data:
     # create a default world for convenience.
     uid = tools.generate_uid()
-    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
-    world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
-    with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:
+    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid +'.json')
+    world_data[uid] = Bunch(uid=uid, name="default", version=1)
+    with open(filename, 'w+') as fp:
         fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     fp.close()
 

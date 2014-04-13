@@ -84,7 +84,6 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
-STANDARD_NODETYPES = ["Concept", "Pipe", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
 available_gatetypes = [];
 nodespaces = {};
@@ -219,20 +218,18 @@ function setCurrentNodenet(uid, nodespace){
 
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
-                api.call('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
-                    nodetypes = nodetypedata;
-                    available_gatetypes = [];
-                    for(var key in nodetypes){
-                        if(nodetypes[key].gatetypes && nodetypes[key].gatetypes.length > available_gatetypes.length){
-                            available_gatetypes = nodetypes[key].gatetypes;
-                        }
+                nodetypes = data.nodetypes;
+                available_gatetypes = [];
+                for(var key in nodetypes){
+                    if(nodetypes[key].gatetypes && nodetypes[key].gatetypes.length > available_gatetypes.length){
+                        available_gatetypes = nodetypes[key].gatetypes;
                     }
-                    get_available_worldadapters(data.world, function(){
-                        setNodenetValues(nodenet_data);
-                        showDefaultForm();
-                    });
-                    setNodespaceData(data);
+                }
+                get_available_worldadapters(data.world, function(){
+                    setNodenetValues(nodenet_data);
+                    showDefaultForm();
                 });
+                setNodespaceData(data);
                 getNodespaceList();
             } else {
                 setNodespaceData(data);
@@ -393,11 +390,7 @@ function refreshViewPortData(){
 function setNodeTypes(){
     var str = '';
     for (var key in nodetypes){
-        if(STANDARD_NODETYPES.indexOf(key) >= 0){
-            str += '<tr><td>' + key + '</td></tr>';
-        } else {
-            str += '<tr><td>' + key + '<a class="delete_nodetype close label" data="'+key+'">x</a></td></tr>';
-        }
+        str += '<tr><td>' + key + '</td></tr>';
     }
     $('#nodenet_nodetypes').html(str);
     $('.delete_nodetype').on('click', delete_nodetype);
@@ -432,11 +425,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
-        if (STANDARD_NODETYPES.indexOf(type) >= 0){
-            this.symbol = type.substr(0,1);
-        } else {
-            this.symbol = "Na";
-        }
+        this.symbol = nodetypes[type].symbol || type.substr(0,1);
         var i;
         for(i in nodetypes[type].slottypes){
             this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);

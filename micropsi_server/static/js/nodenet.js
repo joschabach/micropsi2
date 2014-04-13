@@ -55,6 +55,8 @@ var viewProperties = {
     xMax: 13500
 };
 
+var nodenetscope = paper;
+
 // hashes from uids to object definitions; we import these via json
 nodes = {};
 links = {};
@@ -196,7 +198,7 @@ function setCurrentNodenet(uid, nodespace){
             y1: loaded_coordinates.y[0],
             y2: loaded_coordinates.y[1]},
         function(data){
-
+            nodenetscope.activate();
             toggleButtons(true);
 
             var nodenetChanged = (uid != currentNodenet);
@@ -257,6 +259,7 @@ function getNodespaceList(){
 
 // set visible nodes and links
 function setNodespaceData(data){
+    nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.step || 0;
         $('#nodenet_step').val(currentSimulationStep);
@@ -471,6 +474,14 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
             this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };
+
+    this.gatesum = function(){
+        var gatesum = 0;
+        for(i in nodetypes[type].gatetypes){
+            gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
+        }
+        return gatesum;
+    }
 }
 
 // target for links, part of a net entity
@@ -685,6 +696,7 @@ function nodeRedrawNeeded(node){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
             node.activation == nodes[node.uid].activation &&
+            node.gatesum() == nodes[node.uid].gatesum() &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }
@@ -1099,7 +1111,6 @@ function createFullNodeLabel(node) {
         viewProperties.lineHeight*viewProperties.zoomFactor);
     clipper.clipMask = true;
     label.addChild(clipper);
-    label.opacity = 0.99; // clipping workaround to bug in paper.js
     var titleText = new PointText(new Point(bounds.x+viewProperties.padding*viewProperties.zoomFactor,
         bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
     titleText.characterStyle = {
@@ -1133,11 +1144,11 @@ function createNodeTitleBarDelimiter (node) {
 // turn shape into shadowed outline
 function createBorder(shape, displacement) {
 
-    var highlight = shape.clone();
+    var highlight = shape.clone(false);
     highlight.fillColor = viewProperties.highlightColor;
-    var highlightSubtract = highlight.clone();
+    var highlightSubtract = highlight.clone(false);
     highlightSubtract.position += displacement;
-    var highlightClipper = highlight.clone();
+    var highlightClipper = highlight.clone(false);
     highlightClipper.position -= new Point(0.5, 0.5);
     highlightClipper.clipMask = true;
     var upper = new Group([highlightClipper, highlight, highlightSubtract]);
@@ -1145,9 +1156,9 @@ function createBorder(shape, displacement) {
 
     var shadowSubtract = shape;
     shadowSubtract.fillColor = viewProperties.shadowColor;
-    var shadow = shadowSubtract.clone();
+    var shadow = shadowSubtract.clone(false);
     shadow.position += displacement;
-    var shadowClipper = shadow.clone();
+    var shadowClipper = shadow.clone(false);
     shadowClipper.position += new Point(0.5, 0.5);
     shadowClipper.clipMask = true;
     var lower = new Group([shadowClipper,shadow, shadowSubtract]);
@@ -1168,7 +1179,6 @@ function createFullNodeBodyLabel(node) {
         bounds.width-2*viewProperties.padding*viewProperties.zoomFactor, bounds.height);
     clipper.clipMask = true;
     label.addChild(clipper);
-    label.opacity = 0.99; // clipping workaround to bug in paper.js
     var typeText = new PointText(new Point(bounds.x+bounds.width/2,
         bounds.y+viewProperties.lineHeight*1.8*viewProperties.zoomFactor));
     typeText.characterStyle = {
@@ -1202,7 +1212,7 @@ function createFullNodeSkeleton(node) {
         skeleton.name = node.type;
         prerenderLayer.addChild(skeleton);
     }
-    skeleton = prerenderLayer.children[node.type].clone();
+    skeleton = prerenderLayer.children[node.type].clone(false);
     skeleton.position = node.bounds.center;
     return skeleton;
 }
@@ -1240,7 +1250,7 @@ function createFullNodeActivations(node) {
         container.name = name;
         prerenderLayer.addChild(container);
     }
-    activation = prerenderLayer.children[name].firstChild.clone();
+    activation = prerenderLayer.children[name].firstChild.clone(false);
     activation.position = node.bounds.center;
     return activation;
 }
@@ -1286,15 +1296,14 @@ function createPillsWithLabels(bounds, labeltext) {
         border.name = "pillshape";
         prerenderLayer.addChild(border);
     }
-    border = prerenderLayer.children["pillshape"].clone();
+    border = prerenderLayer.children["pillshape"].clone(false);
     border.position = bounds.center;
     var label = new Group();
     // clipping rectangle, so text does not flow out of the node
     var clipper = new Path.Rectangle(bounds);
     clipper.clipMask = true;
     label.addChild(clipper);
-    label.opacity = 0.99; // clipping workaround to bug in paper.js
-    var text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.3));
+    var text = new PointText(bounds.center+new Point(0, viewProperties.lineHeight *0.1));
     text.characterStyle = {
         fillColor: viewProperties.nodeFontColor,
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
@@ -1733,7 +1742,7 @@ function onMouseDrag(event) {
     if (movePath) {
         if(dragMultiples){
             for(var uid in selection){
-                if(uid != "gate"){
+                if(uid in nodes){
                     moveNode(uid);
                 }
             }
@@ -1750,7 +1759,9 @@ function onMouseUp(event) {
             path.nodeMoved = false;
             if(dragMultiples){
                 for(var uid in selection){
-                    moveNode(uid, nodes[uid].x, nodes[uid].y);
+                    if(uid in nodes){
+                        moveNode(uid, nodes[uid].x, nodes[uid].y);
+                    }
                 }
             } else {
                 moveNode(path.name, nodes[path.name].x, nodes[path.name].y);

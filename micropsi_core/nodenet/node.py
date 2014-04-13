@@ -333,7 +333,9 @@ STANDARD_NODETYPES = {
                 "maximum": 100,
                 "threshold": -100
             }
-        }
+        },
+        'symbol': 'πp',
+        'shape': 'Rectangle'
     },
     "Label": {
         "name": "Label",
@@ -440,7 +442,8 @@ class Nodetype(object):
                 parameters="nodenet, node")
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
-                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None):
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
+                 symbol=None, shape=None):
         """Initializes or creates a nodetype.
 
         Arguments:

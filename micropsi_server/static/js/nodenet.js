@@ -1078,12 +1078,18 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Concept": // draw circle
-        case "Pipe": // draw circle
         case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
         default:
-            shape = new Path.RoundRectangle(bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+            var shape;
+            if (nodetypes[node.type] && nodetypes[node.type].shape){
+                shape = nodetypes[node.type].shape;
+            }
+            if(!['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape)){
+                shape = 'RoundedReactangle';
+            }
+            shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
     }
     return shape;
 }
@@ -1419,8 +1425,7 @@ function deselectAll() {
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
-    if (/^Concept|Pipe|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
-    return false; // we don't know how to render this in compact form
+    else return viewProperties.compactNodes;
 }
 
 function isOutsideNodespace(node) {

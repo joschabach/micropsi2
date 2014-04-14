@@ -9,9 +9,9 @@ import time
 import os
 
 
-from micropsi_core.world.minecraft.MinecraftVisualisation.structs import block_names, load_textures, has_sides, solid_blocks
-from micropsi_core.world.minecraft.MinecraftVisualisation.vertices import cube_vertices, cube_vertices_sides, cube_vertices_top, human_vertices
-from micropsi_core.world.minecraft.MinecraftVisualisation.tex_coords import tex_coords, tex_coords_sides, tex_coords_top
+from micropsi_core.world.minecraft.visualisation.structs import block_names, load_textures, has_sides, solid_blocks
+from micropsi_core.world.minecraft.visualisation.vertices import cube_vertices, cube_vertices_sides, cube_vertices_top, human_vertices
+from micropsi_core.world.minecraft.visualisation.tex_coords import tex_coords, tex_coords_sides, tex_coords_top
 
 import io
 

@@ -4,7 +4,7 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.minecraft.client.spock.net.client import MinecraftClient
-#from micropsi_core.world.minecraft.MinecraftVisualisation.main import MinecraftVisualisation
+#from micropsi_core.world.minecraft.visualisation.main import visualisation
 from micropsi_core.world.minecraft.client.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
 from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
 
@@ -32,7 +32,7 @@ class Minecraft(World):
             plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin, EchoPacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
             self.minecraftClient = MinecraftClient(plugins=plugins)
             self.minecraftClient.start()
-#            self.minecraftVisualisation = MinecraftVisualisation(self.minecraftClient)
+#            self.minecraftVisualisation = visualisation(self.minecraftClient)
 #            self.minecraftVisualisation.commence_vis()
             self.first_step = False
 

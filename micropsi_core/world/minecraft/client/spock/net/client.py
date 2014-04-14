@@ -10,17 +10,17 @@ from Crypto.Random import _UserFriendlyRNG
 #import micropsi_core.world.minecraft.spock.plugins.psicraft_dispatcher as psicraft
 from micropsi_core.world.minecraft.minecraft_config import minecraft_server
 
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
 
 from Crypto import Random
 
-from micropsi_core.world.minecraft.MinecraftClient.spock.net.cflags import cflags
-from micropsi_core.world.minecraft.MinecraftClient.spock.net.flag_handlers import fhandles
-from micropsi_core.world.minecraft.MinecraftClient.spock.net.packet_handlers import phandles
-from micropsi_core.world.minecraft.MinecraftClient.spock.net import timer, cipher, defaults
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp import mcdata, mcpacket
-from micropsi_core.world.minecraft.MinecraftClient.spock import utils, smpmap, bound_buffer
-from micropsi_core.world.minecraft.MinecraftClient.spock.psidispatcher import PsiDispatcher
+from micropsi_core.world.minecraft.client.spock.net.cflags import cflags
+from micropsi_core.world.minecraft.client.spock.net.flag_handlers import fhandles
+from micropsi_core.world.minecraft.client.spock.net.packet_handlers import phandles
+from micropsi_core.world.minecraft.client.spock.net import timer, cipher, defaults
+from micropsi_core.world.minecraft.client.spock.mcp import mcdata, mcpacket
+from micropsi_core.world.minecraft.client.spock import utils, smpmap, bound_buffer
+from micropsi_core.world.minecraft.client.spock.psidispatcher import PsiDispatcher
 
 
 rmask = select.POLLIN|select.POLLERR|select.POLLHUP

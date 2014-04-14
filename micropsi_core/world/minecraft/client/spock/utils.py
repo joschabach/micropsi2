@@ -7,7 +7,7 @@ import socket
 import os
 import sys
 
-from micropsi_core.world.minecraft.MinecraftClient.spock import smpmap
+from micropsi_core.world.minecraft.client.spock import smpmap
 
 # This function courtesy of barneygale
 def javaHexDigest(digest):

@@ -1,4 +1,4 @@
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
 
 __author__ = 'jonas'
 

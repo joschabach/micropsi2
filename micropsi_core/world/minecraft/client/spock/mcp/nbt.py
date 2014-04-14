@@ -6,7 +6,7 @@ import os, io, zlib, gzip
 
 from struct import Struct, error as StructError
 from collections import MutableMapping, MutableSequence, Sequence
-from micropsi_core.world.minecraft.MinecraftClient.spock.bound_buffer import BoundBuffer
+from micropsi_core.world.minecraft.client.spock.bound_buffer import BoundBuffer
 #from utils import ByteToHex
 
 try:

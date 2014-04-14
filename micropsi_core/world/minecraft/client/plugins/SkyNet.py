@@ -1,7 +1,7 @@
 import psycopg2
 from copy import copy
 from skylogin import dbname, dbuser, dbpass
-from micropsi_core.world.minecraft.MinecraftClient.spock.net.cflags import cflags
+from micropsi_core.world.minecraft.client.spock.net.cflags import cflags
 
 class SkyNetPlugin:
 	def __init__(self, client):

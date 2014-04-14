@@ -1,8 +1,8 @@
 import logging
 import socket
 from Crypto.PublicKey import RSA
-from micropsi_core.world.minecraft.MinecraftClient.spock import utils, smpmap
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp import mcdata, mcpacket
+from micropsi_core.world.minecraft.client.spock import utils, smpmap
+from micropsi_core.world.minecraft.client.spock.mcp import mcdata, mcpacket
 from Crypto.Cipher import PKCS1_v1_5
 from Crypto.PublicKey import RSA
 

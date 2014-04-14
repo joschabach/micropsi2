@@ -1,4 +1,4 @@
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcdata import structs
+from micropsi_core.world.minecraft.client.spock.mcp.mcdata import structs
 
 class EchoPacketPlugin:
 	def __init__(self, client):

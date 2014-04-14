@@ -1,6 +1,6 @@
 from time import gmtime, strftime
-from micropsi_core.world.minecraft.MinecraftClient.spock import bound_buffer
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp import mcpacket_extensions, datautils, mcdata
+from micropsi_core.world.minecraft.client.spock import bound_buffer
+from micropsi_core.world.minecraft.client.spock.mcp import mcpacket_extensions, datautils, mcdata
 #from utils import ByteToHex
 
 class Packet(object):

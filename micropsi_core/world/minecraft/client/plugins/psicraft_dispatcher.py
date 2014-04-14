@@ -1,5 +1,5 @@
 __author__ = 'jonas'
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
 import json
 layers = 2
 

@@ -1,6 +1,6 @@
 import math
-from micropsi_core.world.minecraft.MinecraftClient.spock.net.packet_handlers import phandles, PositionUpdate
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.client.spock.net.packet_handlers import phandles, PositionUpdate
+from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
 
 class GravityPlugin:
 	def __init__(self, client):

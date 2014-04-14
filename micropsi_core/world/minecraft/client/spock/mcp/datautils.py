@@ -1,5 +1,5 @@
 import struct
-from micropsi_core.world.minecraft.MinecraftClient.spock.mcp import mcdata, nbt
+from micropsi_core.world.minecraft.client.spock.mcp import mcdata, nbt
 #from micropsi_core.world.minecraft.spock.spock.utils import ByteToHex
 
 endian = '>'

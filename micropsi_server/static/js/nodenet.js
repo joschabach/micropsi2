@@ -101,6 +101,10 @@ loaded_coordinates = {
 max_coordinates = {};
 canvas_container.on('scroll', refreshViewPortData);
 
+// hm. not really nice. but let's see if we got other pairs, or need them configurable:
+var inverse_link_map = {'por':'ret', 'sub':'sur', 'cat':'exp'};
+var inverse_link_targets = ['ret', 'sur', 'exp'];
+
 if(currentNodenet){
     setCurrentNodenet(currentNodenet);
 } else {
@@ -1985,20 +1989,14 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     var node = nodes[nodeUid];
     menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
     menu.append('<li class="divider"></li>')
-    if (node.type == "Concept") {
-        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
-        menu.append('<li><a href="#" data-link-type="cat/exp">Draw cat/exp link</a></li>');
-        menu.append('<li class="divider"></li>');
-    } else if (node.type == "Pipe") {
-        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
-        menu.append('<li class="divider"></li>');
-    } else if (node.gateIndexes.length) {
+    if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
+            if(gateName in inverse_link_map){
+                var compound = gateName+'/'+inverse_link_map[gateName];
+                menu.append('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
+            } else if(inverse_link_targets.indexOf(gateName) == -1){
+                menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
+            }
         }
         menu.append('<li class="divider"></li>');
     }

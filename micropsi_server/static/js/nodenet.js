@@ -1964,6 +1964,16 @@ function openContextMenu(menu_id, event) {
         zIndex: 500,
         marginLeft: -5, marginTop: -5,
         top: event.pageY, left: event.pageX });
+    switch(menu_id){
+        case '#create_node_menu':
+            var list = $('[data-nodetype-entries]');
+            html = '';
+            for(var key in nodetypes){
+                html += '<li><a data-create-node="'+key+'">Create ' + key +'</a></li>';
+            }
+            html += '<li class="divider"></li><li><a data-auto-align">Autoalign Nodes</a></li>';
+            list.html(html);
+    }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
 }
 
@@ -2010,25 +2020,12 @@ function handleContextMenu(event) {
     var menuText = event.target.text;
     switch (clickType) {
         case null: // create nodes
-            var type;
+            var type = $(event.target).attr("data-create-node") || "Autoalign";
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
-            switch (menuText) {
-                case "Create concept node":
-                    type = "Concept";
-                    break;
-                case "Create pipe node":
-                    type = "Pipe";
-                    break;
-                case "Create native module":
-                    type = "Native";
-                    break;
-                case "Create node space":
-                    type = "Nodespace";
-                    break;
-                case "Create sensor":
-                    type = "Sensor";
+            switch (type) {
+                case "Sensor":
                     callback = function(data){
                         clickOriginUid = data.uid;
                         dialogs.notification('Please Select a datasource for this sensor');
@@ -2042,8 +2039,7 @@ function handleContextMenu(event) {
                         source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     };
                     break;
-                case "Create actor":
-                    type = "Actor";
+                case "Actor":
                     callback = function(data){
                         clickOriginUid = data.uid;
                         dialogs.notification('Please Select a datatarget for this actor');
@@ -2057,17 +2053,6 @@ function handleContextMenu(event) {
                         target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     };
                     break;
-                case "Create activator":
-                    type = "Activator";
-                    break;
-                case "Create event":
-                    type = "Event";
-                    break;
-                case "Create register":
-                    type = "Register";
-                    break;
-                default:
-                    type = "Autoalign";
             }
             if(type == "Autoalign"){
                 autoalignmentHandler(currentNodeSpace);

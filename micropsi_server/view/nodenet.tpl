@@ -385,17 +385,7 @@
 
 <div class="dropdown" id="create_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
-    <ul class="nodenet_menu dropdown-menu">
-        <li><a href="#">Create concept node</a></li>
-        <li><a href="#">Create pipe node</a></li>
-        <li><a href="#">Create register</a></li>
-        <li><a href="#">Create sensor</a></li>
-        <li><a href="#">Create actor</a></li>
-        <li><a href="#">Create event</a></li>
-        <li><a href="#">Create node space</a></li>
-        <li><a href="#">Create native module</a></li>
-        <li><a href="#">Create activator</a></li>
-        <li><a href="#">Align nodes</a></li>
+    <ul class="nodenet_menu dropdown-menu" data-nodetype-entries>
     </ul>
 </div>
 

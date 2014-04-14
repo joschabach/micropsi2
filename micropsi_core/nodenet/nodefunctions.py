@@ -38,7 +38,8 @@ def pipe(nodenet, node=None, **params):
     if sur < 0: sur = 0
 
     por += node.get_slot("sur").activation * \
-           node.get_slot("sub").activation
+           node.get_slot("sub").activation * \
+           (1+node.get_slot("por").activation)
     por += node.get_slot("por").activation * \
            (1+node.get_slot("ret").activation)
     if por < 1: por = -1

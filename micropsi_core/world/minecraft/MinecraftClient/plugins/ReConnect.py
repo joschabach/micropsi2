@@ -1,7 +1,7 @@
 import threading
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcpacket import Packet
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.cflags import cflags
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.timer import EventTimer
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.MinecraftClient.spock.net.cflags import cflags
+from micropsi_core.world.minecraft.MinecraftClient.spock.net.timer import EventTimer
 
 #Will relentlessly try to reconnect to a server
 class ReConnectPlugin:

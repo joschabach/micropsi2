@@ -3,10 +3,10 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.client import MinecraftClient
-#from micropsi_core.world.MinecraftWorld.MinecraftVisualisation.main import MinecraftVisualisation
-from micropsi_core.world.MinecraftWorld.MinecraftClient.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.MinecraftClient.spock.net.client import MinecraftClient
+#from micropsi_core.world.minecraft.MinecraftVisualisation.main import MinecraftVisualisation
+from micropsi_core.world.minecraft.MinecraftClient.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""

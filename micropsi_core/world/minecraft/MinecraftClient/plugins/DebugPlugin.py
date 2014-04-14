@@ -1,7 +1,7 @@
 #Constantly Changing, just a plugin I use to debug whatever is broken atm
 import sys
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcdata import structs
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.cflags import cflags
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcdata import structs
+from micropsi_core.world.minecraft.MinecraftClient.spock.net.cflags import cflags
 
 class DebugPlugin:
 	def __init__(self, client):

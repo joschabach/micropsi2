@@ -317,7 +317,7 @@ except:
     sys.stdout.write("Could not import berlin world.\nError: %s \n\n" % e)
 
 try:
-    from micropsi_core.world.MinecraftWorld import minecraft
+    from micropsi_core.world.minecraft import minecraft
 except:
     e = sys.exc_info()[0]
     sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e)

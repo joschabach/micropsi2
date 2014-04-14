@@ -1,5 +1,5 @@
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcdata import structs
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcpacket import Packet
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcdata import structs
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import Packet
 import socket
 
 class ChatMessagePlugin:

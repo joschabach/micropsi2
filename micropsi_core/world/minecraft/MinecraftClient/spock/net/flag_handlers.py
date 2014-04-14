@@ -1,9 +1,9 @@
 import socket
 import logging
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.mcpacket import read_packet, Packet
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.net.cflags import cflags
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.bound_buffer import BufferUnderflowException
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock import utils
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.mcpacket import read_packet, Packet
+from micropsi_core.world.minecraft.MinecraftClient.spock.net.cflags import cflags
+from micropsi_core.world.minecraft.MinecraftClient.spock.bound_buffer import BufferUnderflowException
+from micropsi_core.world.minecraft.MinecraftClient.spock import utils
 
 fhandles = {}
 def fhandle(ident):

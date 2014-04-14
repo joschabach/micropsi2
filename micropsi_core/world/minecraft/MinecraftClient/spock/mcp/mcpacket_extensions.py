@@ -1,4 +1,4 @@
-from micropsi_core.world.MinecraftWorld.MinecraftClient.spock.mcp.datautils import unpack, pack, unpack_array, pack_array
+from micropsi_core.world.minecraft.MinecraftClient.spock.mcp.datautils import unpack, pack, unpack_array, pack_array
 
 extensions = {}
 def extension(ident):

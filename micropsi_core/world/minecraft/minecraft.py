@@ -5,7 +5,7 @@ from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from micropsi_core.world.minecraft.client.spock.net.client import MinecraftClient
 #from micropsi_core.world.minecraft.visualisation.main import visualisation
-from micropsi_core.world.minecraft.client.plugins import DebugPlugin, ReConnect, EchoPacket, Gravity, AntiAFK, ChatMessage, ChunkSaver
+from micropsi_core.world.minecraft.client.plugins import debugplugin, reconnect, echopacket, gravity, anti_afk, chatmessage, chunksaver
 from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
 
 class Minecraft(World):
@@ -29,7 +29,7 @@ class Minecraft(World):
     def step(self):
         if self.first_step: #TODO probably not too smart
             # launch minecraft bot
-            plugins = [DebugPlugin.DebugPlugin, ChatMessage.ChatMessagePlugin, ChunkSaver.ChunkSaverPlugin, EchoPacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
+            plugins = [debugplugin.DebugPlugin, chatmessage.ChatMessagePlugin, chunksaver.ChunkSaverPlugin, echopacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
             self.minecraftClient = MinecraftClient(plugins=plugins)
             self.minecraftClient.start()
 #            self.minecraftVisualisation = visualisation(self.minecraftClient)

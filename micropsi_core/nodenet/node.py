@@ -337,22 +337,6 @@ STANDARD_NODETYPES = {
         'symbol': 'πp',
         'shape': 'Rectangle'
     },
-    "Label": {
-        "name": "Label",
-        "slottypes": ["gen"],
-        "nodefunction_name": "label",
-        "gatetypes": ["sym", "ref"]
-    },
-    "Event": {
-        "name": "Event",
-        "parameters": ["time"],
-        "slottypes": ["gen"],
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym"],
-        "nodefunction_name": "event",
-        # TODO: this needs to juggle the states
-        "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped',
-                   'failed', 'completed']
-    },
     "Activator": {
         "name": "Activator",
         "slottypes": ["gen"],

@@ -294,6 +294,8 @@ class Nodenet(object):
                 del self.state['links'][uid]
         parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
         parent_nodespace.netentities["nodes"].remove(node_uid)
+        if self.nodes[node_uid].type == "Activator":
+            parent_nodespace.activators.pop(self.nodes[node_uid].parameters["type"], None)
         del self.nodes[node_uid]
         del self.state['nodes'][node_uid]
         self.update_node_positions()

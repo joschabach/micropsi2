@@ -36,15 +36,7 @@ class Node(NetEntity):
 
     @property
     def activation(self):
-        if len(self.gates) > 0:
-            try:
-                act = sum([self.gates[gate].activation for gate in self.gates])
-            except TypeError:
-                # syntax error or some other error message written as activation:
-                return self.gates['gen'].activation
-        else:
-            act = self.data['activation']
-        return act
+        return self.data['activation']
 
     @activation.setter
     def activation(self, activation):
@@ -126,9 +118,6 @@ class Node(NetEntity):
         incoming activations in an arbitrarily specific way, and may then excite the outgoing dendrites (gates),
         which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
-        # process the slots
-        if self.type == "Actor" and not self.nodenet.world:
-            return
 
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
@@ -140,6 +129,15 @@ class Node(NetEntity):
             except TypeError as err:
                 warnings.warn("Type error during node execution: %s" % err.message)
                 self.data["activation"] = "Parameter mismatch"
+            return
+
+        # default node function
+        if len(self.slots):
+            self.activation = sum([self.slots[slot].activation for slot in self.slots])
+            if len(self.gates):
+                for type, gate in self.gates.items():
+                    gate.gate_function(self.activation)
+
 
     def get_gate(self, gatename):
         return self.gates.get(gatename)
@@ -436,10 +434,10 @@ class Nodetype(object):
         try:
             from . import nodefunctions
             self.nodefunction = getattr(nodefunctions, name)
-        except ImportError as err:
+        except (ImportError, AttributeError) as err:
             warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-                parameters="nodenet, node, " + args)
+                parameters="nodenet, node")
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None):

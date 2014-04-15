@@ -11,6 +11,7 @@ __date__ = '10.05.12'
 import json
 import os
 import warnings
+import sys
 from micropsi_core.world import worldadapter
 from micropsi_core.world import worldobject
 from micropsi_core import tools
@@ -96,6 +97,8 @@ class World(object):
         self.filename = filename
         self.agents = {}
         self.objects = {}
+
+        #self.the_image = None
 
         self.load()
 
@@ -301,5 +304,20 @@ class World(object):
 
 
 # imports of individual world types:
-from micropsi_core.world.island import island
-from micropsi_core.world.berlin import berlin
+try:
+    from micropsi_core.world.island import island
+except:
+    e = sys.exc_info()[0]
+    sys.stdout.write("Could not import island world.\nError: %s \n\n" % e)
+
+try:
+    from micropsi_core.world.berlin import berlin
+except:
+    e = sys.exc_info()[0]
+    sys.stdout.write("Could not import berlin world.\nError: %s \n\n" % e)
+
+try:
+    from micropsi_core.world.minecraft import minecraft
+except:
+    e = sys.exc_info()[0]
+    sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e)

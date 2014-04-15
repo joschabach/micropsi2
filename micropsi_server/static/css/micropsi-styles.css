@@ -2,6 +2,18 @@
  * Additional styles for MicroPsi
  */
 
+#screenshot0 { /* these are only for displaying the Minecraft visualization */
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#screenshot1 {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
 .editor_field {
     height: 500px;
     overflow: scroll;

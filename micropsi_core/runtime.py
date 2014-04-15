@@ -869,6 +869,10 @@ if os.path.isfile(custom_nodetype_file):
     except ValueError:
         warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
+# respect user defined nodefunctions:
+if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
+    import sys
+    sys.path.append(RESOURCE_PATH)
 
 # initialize runners
 # Initialize the threads for the continuous simulation of nodenets and worlds

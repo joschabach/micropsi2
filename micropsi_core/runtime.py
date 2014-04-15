@@ -39,6 +39,7 @@ configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 
 worlds = {}
 nodenets = {}
+nodetypes = {}
 runner = {
     'nodenet': {'timestep': 1000, 'runner': None},
     'world': {'timestep': 5000, 'runner': None}
@@ -143,7 +144,8 @@ def load_nodenet(nodenet_uid):
             nodenets[nodenet_uid] = Nodenet(
                 os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
                 name=data.name, worldadapter=worldadapter,
-                world=world, owner=data.owner, uid=data.uid)
+                world=world, owner=data.owner, uid=data.uid,
+                nodetypes=nodetypes)
         else:
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
@@ -538,8 +540,8 @@ def delete_node(nodenet_uid, node_uid):
             if node.parent_nodespace == node_uid:
                 delete_node(nodenet_uid, uid)
         parent_nodespace = nodenet.nodespaces.get(nodenet.nodespaces[node_uid].parent_nodespace)
-        if parent_nodespace:
-            parent_nodespace.netentities["nodespaces"].pop(node_uid, None)
+        if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:
+            parent_nodespace.netentities["nodespaces"].remove(node_uid)
         del nodenet.nodespaces[node_uid]
         del nodenet.state['nodespaces'][node_uid]
     else:
@@ -549,19 +551,18 @@ def delete_node(nodenet_uid, node_uid):
 
 def get_available_node_types(nodenet_uid=None):
     """Returns a list of available node types. (Including native modules.)"""
-    data = STANDARD_NODETYPES.copy()
     if nodenet_uid:
         nodenet = nodenets[nodenet_uid]
         for nodetype in nodenet.nodetypes:
-            if nodetype not in data:
-                data[nodetype] = nodenet.nodetypes[nodetype].data
+            if nodetype not in nodetypes:
+                nodetypes[nodetype] = nodenet.nodetypes[nodetype].data
             defaults = nodenet.nodetypes[nodetype].gate_defaults.copy()
-            if nodetype in data and 'gate_defaults' in data[nodetype]:
-                for gate in data[nodetype]['gate_defaults']:
-                    for key in data[nodetype]['gate_defaults'][gate]:
-                        defaults[gate][key] = data[nodetype]['gate_defaults'][gate][key]
-            data[nodetype]['gate_defaults'] = defaults
-    return data
+            if nodetype in nodetypes and 'gate_defaults' in nodetypes[nodetype]:
+                for gate in nodetypes[nodetype]['gate_defaults']:
+                    for key in nodetypes[nodetype]['gate_defaults'][gate]:
+                        defaults[gate][key] = nodetypes[nodetype]['gate_defaults'][gate][key]
+            nodetypes[nodetype]['gate_defaults'] = defaults
+    return nodetypes
 
 
 def get_available_native_module_types(nodenet_uid):
@@ -856,6 +857,17 @@ for uid in world_data:
             warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
     else:
         worlds[uid] = world.World(**world_data[uid])
+
+# see if we have additional nodetypes defined by the user.
+nodetypes.update(STANDARD_NODETYPES)
+custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
+if os.path.isfile(custom_nodetype_file):
+    try:
+        with open(custom_nodetype_file) as fp:
+            data = json.load(fp)
+            nodetypes.update(data)
+    except ValueError:
+        warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
 
 # initialize runners

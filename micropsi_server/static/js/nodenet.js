@@ -225,10 +225,9 @@ function setCurrentNodenet(uid, nodespace){
                 nodetypes = data.nodetypes;
                 available_gatetypes = [];
                 for(var key in nodetypes){
-                    if(nodetypes[key].gatetypes && nodetypes[key].gatetypes.length > available_gatetypes.length){
-                        available_gatetypes = nodetypes[key].gatetypes;
-                    }
+                    $.merge(available_gatetypes, nodetypes[key].gatetypes || []);
                 }
+                available_gatetypes = $.unique(available_gatetypes);
                 get_available_worldadapters(data.world, function(){
                     setNodenetValues(nodenet_data);
                     showDefaultForm();
@@ -1975,6 +1974,7 @@ function openContextMenu(menu_id, event) {
             for(var key in nodetypes){
                 html += '<li><a data-create-node="'+key+'">Create ' + key +'</a></li>';
             }
+            html += '<li><a data-create-node="Nodespace">Create Nodespace</a></li>';
             html += '<li class="divider"></li><li><a data-auto-align">Autoalign Nodes</a></li>';
             list.html(html);
     }
@@ -2102,7 +2102,7 @@ function handleContextMenu(event) {
                         if(forwardlinktype.indexOf('/')){
                             forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = available_gatetypes.indexOf(forwardlinktype);
+                        clickIndex = nodes[clickOriginUid].gateIndexes.indexOf(forwardlinktype);
                         createLinkHandler(clickOriginUid, clickIndex, linktype);
                     } else {
                         $("#link_target_node").html('');

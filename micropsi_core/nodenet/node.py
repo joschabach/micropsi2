@@ -277,6 +277,10 @@ class Slot(object):
 
 
 STANDARD_NODETYPES = {
+    "Nodespace": {
+        "name": "Nodespace",
+    },
+
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
@@ -448,16 +452,7 @@ class Nodetype(object):
                     nodenet as arguments>
             }
         """
-        self.nodenet = nodenet
-        if name not in STANDARD_NODETYPES:
-            if not "nodetypes" in nodenet.state:
-                self.nodenet.state["nodetypes"] = {}
-            if not name in self.nodenet.state["nodetypes"]:
-                self.nodenet.state["nodetypes"][name] = {}
-            self.data = self.nodenet.state["nodetypes"][name]
-        else:
-            self.data = {}
-        self.data["name"] = name
+        self.data = {'name': name}
 
         self.states = self.data.get('states', {}) if states is None else states
         self.slottypes = self.data.get("slottypes", ["gen"]) if slottypes is None else slottypes

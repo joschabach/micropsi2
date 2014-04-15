@@ -95,7 +95,7 @@ class Nodenet(object):
     def is_active(self, is_active):
         self.state['is_active'] = is_active
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes=STANDARD_NODETYPES):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -129,7 +129,7 @@ class Nodenet(object):
 
         self.nodes = {}
         self.links = {}
-        self.nodetypes = {}
+        self.nodetypes = nodetypes
         self.nodespaces = {}
         self.monitors = {}
         self.nodes_by_coords = {}
@@ -183,10 +183,10 @@ class Nodenet(object):
         computation of the node net
         """
 
-        nodetypes = self.state.get('nodetypes', {}).copy()
-        nodetypes.update(STANDARD_NODETYPES)
-        for type, data in nodetypes.items():
-            self.nodetypes[type] = Nodetype(nodenet=self, **data)
+        nodetypes = {}
+        for type, data in self.nodetypes.items():
+            nodetypes[type] = Nodetype(nodenet=self, **data)
+        self.nodetypes = nodetypes
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.nodespaces = {}

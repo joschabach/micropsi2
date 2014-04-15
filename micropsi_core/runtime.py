@@ -8,7 +8,7 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
-from micropsi_core.world.MinecraftWorld.minecraft import Minecraft
+from micropsi_core.world.minecraft.minecraft import Minecraft
 
 __author__ = 'joscha'
 __date__ = '10.05.12'

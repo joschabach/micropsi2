@@ -1867,7 +1867,7 @@ function initializeControls(){
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
         event.preventDefault();
         var nodespace = $(event.target).attr('data-nodespace');
-        if(nodespace != currentNodespace){
+        if(nodespace != currentNodeSpace){
             refreshNodespace(nodespace, {
                 x: [0, canvas_container.width() * 2],
                 y: [0, canvas_container.height() * 2]

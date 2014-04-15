@@ -88,7 +88,7 @@ function refreshWorldView() {
      dialogs.notification(data.Error, 'error');
      });*/
 
-    /*if (next_refresh == 0) {
+    if (next_refresh == 0) {
 
         i++;
         var randomnumber = Math.floor(Math.random() * 10000001)
@@ -101,7 +101,7 @@ function refreshWorldView() {
         screenshot1.src = "/minecraft/screenshot.png?q=" + i * randomnumber;
         console.log("refreshedd " + 1 + " " + i * randomnumber);
         next_refresh == 0;
-    }*/
+    }
 
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
@@ -168,7 +168,7 @@ function setCurrentWorld(uid) {
 
 function loadWorldInfo() {
 
-    /*var world_div = document.getElementsByClassName("editor_field span9").item(1);
+    var world_div = document.getElementsByClassName("editor_field span9").item(1);
     var screenshot_div = document.createElement("div");
     screenshot_div.id = "canvas_div";
     world_div.appendChild(screenshot_div);
@@ -186,7 +186,7 @@ function loadWorldInfo() {
     newImg2.id = "screenshot1";
     //newImg2.src = "/static/minecraft/screenshot.jpg";
     newImg2.style = "position: absolute; top: 30px; right: 5px;";
-    canvas_div.appendChild(newImg2);*/
+    canvas_div.appendChild(newImg2);
 
     api.call('get_world_properties', {
         world_uid: currentWorld

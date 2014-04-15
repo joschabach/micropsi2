@@ -243,7 +243,8 @@ $(function() {
         });
     });
 
-    $('.navbar a.world_save').on('click', function(){
+    $('.navbar a.world_save').on('click', function(event){
+        event.preventDefault();
         api.call('save_world', {world_uid: currentWorld});
     });
 

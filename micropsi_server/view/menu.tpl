@@ -14,7 +14,6 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="/nodenet/edit" class="nodenet_new">New...</a></li>
-                        <li><a href="/nodenet/edit?id=1" class="nodenet_edit">Edit...</a></li>
                         <li class="divider"></li>
                         <li><a href="#" class="nodenet_delete">Delete</a></li>
                         <li><a href="#" class="nodenet_save">Save</a></li>
@@ -36,7 +35,6 @@
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
                         <li><a href="/world/edit" class="world_new">New...</a></li>
-                        <li><a href="/world/edit" class="world_edit">Edit...</a></li>
                         <li class="divider"></li>
                         <li><a href="#" class="world_delete">Delete</a></li>
                         <li><a href="#" class="world_save">Save</a></li>
@@ -61,7 +59,6 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_config">Config
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="#">Server</a></li>
                         <li><a href="/config/nodenet/runner" class="remote_form_dialog edit_nodenetrunner">Nodenet runner</a></li>
                         <li><a href="/config/world/runner" class="remote_form_dialog edit_worldrunner">World runner</a></li>
                     </ul>

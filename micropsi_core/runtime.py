@@ -859,7 +859,6 @@ for uid in world_data:
         worlds[uid] = world.World(**world_data[uid])
 
 # see if we have additional nodetypes defined by the user.
-nodetypes.update(STANDARD_NODETYPES)
 custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
 if os.path.isfile(custom_nodetype_file):
     try:
@@ -868,6 +867,7 @@ if os.path.isfile(custom_nodetype_file):
             nodetypes.update(data)
     except ValueError:
         warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+nodetypes.update(STANDARD_NODETYPES)
 
 # respect user defined nodefunctions:
 if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):

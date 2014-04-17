@@ -836,8 +836,8 @@ world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIREC
 if not world_data:
     # create a default world for convenience.
     uid = tools.generate_uid()
-    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid +'.json')
-    world_data[uid] = Bunch(uid=uid, name="default", version=1)
+    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+    world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     fp.close()

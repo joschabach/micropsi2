@@ -433,8 +433,6 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         for(i in nodetypes[type].slottypes){
             this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
         }
-        var parameters;
-        var activation;
         for(i in nodetypes[type].gatetypes){
             parameters = {};
             activation = this.gate_activations[nodetypes[type].gatetypes[i]];
@@ -442,7 +440,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
                 parameters = nodetypes[type].gate_defaults[i];
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
-                parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key]
+                parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];
             }
             this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, activation, parameters);
         }
@@ -462,18 +460,18 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.parameters = item.parameters;
         this.gate_parameters = item.gate_parameters;
         this.gate_activations = item.gate_activations;
-        for(i in nodetypes[type].gatetypes){
+        for(var i in nodetypes[type].gatetypes){
             this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };
 
     this.gatesum = function(){
         var gatesum = 0;
-        for(i in nodetypes[type].gatetypes){
+        for(var i in nodetypes[type].gatetypes){
             gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
         }
         return gatesum;
-    }
+    };
 }
 
 // target for links, part of a net entity
@@ -1085,7 +1083,6 @@ function createCompactNodeShape(node) {
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
         default:
-            var shape;
             if (nodetypes[node.type] && nodetypes[node.type].shape){
                 shape = nodetypes[node.type].shape;
             }
@@ -1465,9 +1462,9 @@ function activationColor(activation, baseColor) {
 	var r = 1.0-a;
     var c;
 	if (activation > 0) {
-	    c = viewProperties.activeColor;
+        c = viewProperties.activeColor;
 	} else {
-	    c = viewProperties.inhibitedColor;
+        c = viewProperties.inhibitedColor;
 	}
 	return new HSLColor(c.hue,
                         baseColor.saturation * r + c.saturation * a,
@@ -1476,9 +1473,9 @@ function activationColor(activation, baseColor) {
 
 function getMonitor(node, target, type){
     for(var key in monitors){
-        if(monitors[key]['node_uid'] == node.uid
-            && monitors[key]['target'] == target
-            && monitors[key]['type'] == type)
+        if(monitors[key]['node_uid'] == node.uid &&
+            monitors[key]['target'] == target &&
+            monitors[key]['type'] == type)
             return key;
     }
     return false;
@@ -1730,7 +1727,7 @@ function onMouseDrag(event) {
     function moveNode(uid){
         nodeLayer.children[uid].position += event.delta;
         nodeLayer.children[uid].nodeMoved = true;
-        var node = nodes[uid]
+        var node = nodes[uid];
         node.x += event.delta.x/viewProperties.zoomFactor;
         node.y += event.delta.y/viewProperties.zoomFactor;
         node.bounds = calculateNodeBounds(node);
@@ -1988,7 +1985,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.empty();
     var node = nodes[nodeUid];
     menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
-    menu.append('<li class="divider"></li>')
+    menu.append('<li class="divider"></li>');
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
             if(gateName in inverse_link_map){
@@ -2449,7 +2446,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
         var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
         var sourceSlots = nodes[sourceUid].slots ? nodes[sourceUid].slotIndexes.length : 0;
 
-        var newlinks = Array();
+        var newlinks = [];
 
         switch (linkCreationStart.creationType) {
             case "por/ret":
@@ -2628,7 +2625,7 @@ function handleEditGate(event){
 }
 
 function setNodeActivation(nodeUid, activation){
-    activation = activation || 0
+    activation = activation || 0;
     nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {

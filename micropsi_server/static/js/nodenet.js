@@ -85,6 +85,7 @@ selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
 nodetypes = {};
+native_modules = {};
 available_gatetypes = [];
 nodespaces = {};
 
@@ -110,7 +111,7 @@ if(currentNodenet){
 } else {
     splash = new PointText(new Point(50, 50));
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
-    splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
+    splash.content = 'Create a nodenet by selecting "New..." from the "Nodenet" menu.';
     nodeLayer.addChild(splash);
     toggleButtons(false);
 }
@@ -223,6 +224,10 @@ function setCurrentNodenet(uid, nodespace){
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
+                native_modules = data.native_modules;
+                for(var key in native_modules){
+                    nodetypes[key] = native_modules[key];
+                }
                 available_gatetypes = [];
                 for(var key in nodetypes){
                     $.merge(available_gatetypes, nodetypes[key].gatetypes || []);
@@ -436,8 +441,18 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         for(i in nodetypes[type].gatetypes){
             parameters = {};
             activation = this.gate_activations[nodetypes[type].gatetypes[i]];
-            if(nodetypes[type].gate_defaults[i]){
+            if(nodetypes[type].gate_defaults){
                 parameters = nodetypes[type].gate_defaults[i];
+            } else {
+                // mh. evil. where should this be defined?
+                parameters = {
+                    "minimum": -1,
+                    "maximum": 1,
+                    "certainty": 1,
+                    "amplification": 1,
+                    "threshold": 0,
+                    "decay": 0
+                };
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];

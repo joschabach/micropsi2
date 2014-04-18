@@ -84,7 +84,7 @@ class Node(NetEntity):
         self.data["type"] = type
         self.nodetype = None
 
-        self.nodetype = self.nodenet.nodetypes[type]
+        self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
             self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
@@ -361,8 +361,6 @@ class Nodetype(object):
 
     @name.setter
     def name(self, identifier):
-        self.nodenet.state["nodetypes"][identifier] = self.nodenet.state["nodetypes"][self.data["name"]]
-        del self.nodenet.state["nodetypes"][self.data["name"]]
         self.data["name"] = identifier
 
     @property

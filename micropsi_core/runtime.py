@@ -39,7 +39,8 @@ configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 
 worlds = {}
 nodenets = {}
-nodetypes = {}
+nodetypes = STANDARD_NODETYPES
+native_modules = {}
 runner = {
     'nodenet': {'timestep': 1000, 'runner': None},
     'world': {'timestep': 5000, 'runner': None}
@@ -145,7 +146,7 @@ def load_nodenet(nodenet_uid):
                 os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
                 name=data.name, worldadapter=worldadapter,
                 world=world, owner=data.owner, uid=data.uid,
-                nodetypes=nodetypes)
+                nodetypes=nodetypes, native_modules=native_modules)
         else:
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
@@ -156,8 +157,13 @@ def load_nodenet(nodenet_uid):
 
 
 def get_nodenet_data(nodenet_uid, **coordinates):
+    """ returns the current state of the nodenet """
     data = get_nodenet(nodenet_uid).state.copy()
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
+    data.update({
+        'nodetypes': nodetypes,
+        'native_modules': native_modules
+    })
     return data
 
 
@@ -425,8 +431,8 @@ def get_nodespace_list(nodenet_uid):
             nodedata[nid] = {
                 'name': nodenet.nodes[nid].name,
                 'type': nodenet.nodes[nid].type,
-                'gates': nodenet.nodetypes[nodenet.nodes[nid].type].gatetypes,
-                'slots': nodenet.nodetypes[nodenet.nodes[nid].type].slottypes
+                'gates': nodenet.get_nodetype(nodenet.nodes[nid].type).gatetypes,
+                'slots': nodenet.get_nodetype(nodenet.nodes[nid].type).slottypes
             }
         data[uid] = {
             'name': nodespace.name,
@@ -551,29 +557,24 @@ def delete_node(nodenet_uid, node_uid):
 
 def get_available_node_types(nodenet_uid=None):
     """Returns a list of available node types. (Including native modules.)"""
-    if nodenet_uid:
-        nodenet = nodenets[nodenet_uid]
-        for nodetype in nodenet.nodetypes:
-            if nodetype not in nodetypes:
-                nodetypes[nodetype] = nodenet.nodetypes[nodetype].data
-            defaults = nodenet.nodetypes[nodetype].gate_defaults.copy()
-            if nodetype in nodetypes and 'gate_defaults' in nodetypes[nodetype]:
-                for gate in nodetypes[nodetype]['gate_defaults']:
-                    for key in nodetypes[nodetype]['gate_defaults'][gate]:
-                        defaults[gate][key] = nodetypes[nodetype]['gate_defaults'][gate][key]
-            nodetypes[nodetype]['gate_defaults'] = defaults
-    return nodetypes
+    all_nodetypes = native_modules.copy()
+    all_nodetypes.update(nodetypes)
+    return all_nodetypes
 
 
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-    return nodenets[nodenet_uid].state['nodetypes']
+    return native_modules
 
 
 def get_nodefunction(nodenet_uid, node_type):
     """Returns the current node function for this node type"""
-    return nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition
+    nodefunc_def = nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_definition
+    nodefunc_name = nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_name
+    if not nodefunc_def:
+        return "nodefunctions.%s" % nodefunc_name
+    return nodefunc_def
 
 
 def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
@@ -583,7 +584,7 @@ def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
     Setting the node_function to None will return it to its default state (passing the slot activations to
     all gate functions).
     """
-    nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition = nodefunction
+    nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_definition = nodefunction
     return True
 
 
@@ -609,28 +610,29 @@ def add_node_type(nodenet_uid, node_type, slots=None, gates=None, node_function=
         parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
     """
     nodenet = nodenets[nodenet_uid]
-    nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
+    nodenet.native_modules[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
         nodefunction_definition=node_function)
+    native_modules[node_type] = nodenet.native_modules[node_type].state.copy()
     return True
 
 
 def delete_node_type(nodenet_uid, node_type):
     """Remove the node type from the current nodenet definition, if it is part of it."""
-    try:
-        del nodenets[nodenet_uid].state['nodetypes'][node_type]
-        return True
-    except KeyError:
-        return False
+    # try:
+    #     del nodenets[nodenet_uid].state['nodetypes'][node_type]
+    #     return True
+    # except KeyError:
+    return False
 
 
 def get_slot_types(nodenet_uid, node_type):
     """Returns the list of slot types for the given node type."""
-    return nodenets[nodenet_uid].nodetypes[node_type].slottypes
+    return nodenets[nodenet_uid].get_nodetype(node_type).slottypes
 
 
 def get_gate_types(nodenet_uid, node_type):
     """Returns the list of gate types for the given node type."""
-    return nodenets[nodenet_uid].nodetypes[node_type].gatetypes
+    return nodenets[nodenet_uid].get_nodetype(node_type).gatetypes
 
 
 def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
@@ -863,11 +865,9 @@ custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
 if os.path.isfile(custom_nodetype_file):
     try:
         with open(custom_nodetype_file) as fp:
-            data = json.load(fp)
-            nodetypes.update(data)
+            native_modules = json.load(fp)
     except ValueError:
         warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
-nodetypes.update(STANDARD_NODETYPES)
 
 # respect user defined nodefunctions:
 if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):

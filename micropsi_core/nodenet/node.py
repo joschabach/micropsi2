@@ -40,11 +40,14 @@ class Node(NetEntity):
     """
 
     @property
-    def activation(self, sheaf="default"):
-        return self.sheaves[sheaf].activation
+    def activation(self):
+        return self.sheaves['default'].activation
 
     @activation.setter
-    def activation(self, activation, sheaf="default", sheafname="default"):
+    def activation(self, activation):
+        self.set_sheaf_activation(activation)
+
+    def set_sheaf_activation(self, activation, sheaf="default", sheafname="default"):
         self.sheaves[sheaf].activation = float(activation)
 
         if 'sheaves' not in self.data:

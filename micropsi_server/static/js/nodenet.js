@@ -445,14 +445,14 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         var activation;
         for(i in nodetypes[type].gatetypes){
             parameters = {};
-            activation = this.gate_activations[nodetypes[type].gatetypes[i]];
+            sheaves = this.gate_activations[nodetypes[type].gatetypes[i]];
             if(nodetypes[type].gate_defaults[i]){
                 parameters = nodetypes[type].gate_defaults[i];
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key]
             }
-            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, activation, parameters);
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, sheaves, parameters);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -471,14 +471,14 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.gate_parameters = item.gate_parameters;
         this.gate_activations = item.gate_activations;
         for(i in nodetypes[type].gatetypes){
-            this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
+            this.gates[nodetypes[type].gatetypes[i]].sheaves = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };
 
     this.gatesum = function(){
         var gatesum = 0;
         for(i in nodetypes[type].gatetypes){
-            gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
+            gatesum += this.gates[nodetypes[type].gatetypes[i]].sheaves["default"].oomph;
         }
         return gatesum;
     }
@@ -492,11 +492,11 @@ function Slot(name) {
 }
 
 // source for links, part of a net entity
-function Gate(name, index, activation, parameters) {
+function Gate(name, index, sheaves, parameters) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
-	this.activation = activation;
+	this.sheaves = sheaves;
     if(parameters){
         this.parameters = parameters;
     } else {
@@ -550,8 +550,8 @@ function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
-        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
-            nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
+        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves["default"].oomph !=
+            nodes[link.sourceNodeUid].gates[link.gateName].sheaves["default"].oomph)) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();
         }
@@ -940,7 +940,7 @@ function renderLink(link) {
     }
 
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
-    link.strokeColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
+    link.strokeColor = activationColor(gate.sheaves["default"].oomph * link.weight, viewProperties.linkColor);
 
     var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
     var endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkEnd.angle);
@@ -1348,7 +1348,7 @@ function setActivation(node) {
             i=0;
             for (type in node.gates) {
                 nodeItem.children["activation"].children["gates"].children[i++].fillColor =
-                    activationColor(node.gates[type].activation,
+                    activationColor(node.gates[type].sheaves["default"].oomph,
                     viewProperties.nodeColor);
             }
         }
@@ -2655,7 +2655,7 @@ function setNodeActivation(nodeUid, activation){
     nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {
-        nodes[nodeUid].gates["gen"].activation = activation;
+        nodes[nodeUid].gates["gen"].sheaves["default"].oomph = activation;
     }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
@@ -3078,7 +3078,7 @@ function showGateForm(node, gate){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
         } else if(el.name == 'activation'){
-            el.value = gate.activation || '0';
+            el.value = gate.sheaves["default"].oomph || '0';
         } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }

@@ -19,6 +19,11 @@ from .netentity import NetEntity
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
+class SheafElement:
+    def __init__(self, uid="default", name="default", oomph=0):
+        self.uid = uid
+        self.name = name
+        self.oomph = oomph
 
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
@@ -43,8 +48,8 @@ class Node(NetEntity):
         activation = float(activation)
         self.data['activation'] = activation
         if len(self.gates) > 0:
-            self.gates['gen'].activation = activation
-            self.report_gate_activation('gen', activation)
+            self.gates['gen'].sheaves['default'].oomph = activation
+            self.report_gate_activation('gen', self.gates['gen'].sheaves['default'])
 
     @property
     def type(self):
@@ -168,10 +173,14 @@ class Node(NetEntity):
         self.data['gate_parameters'][gate_type] = parameters
         self.gates[gate_type].parameters = parameters
 
-    def report_gate_activation(self, gate_type, activation):
+    def report_gate_activation(self, gate_type, sheafelement):
         if 'gate_activations' not in self.data:
             self.data['gate_activations'] = {}
-        self.data['gate_activations'][gate_type] = activation
+        if gate_type not in self.data['gate_activations']:
+            self.data['gate_activations'][gate_type] = {}
+        if sheafelement.uid not in self.data['gate_activations'][gate_type]:
+            self.data['gate_activations'][gate_type][sheafelement.uid] = {}
+        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid":sheafelement.uid, "name":sheafelement.name, "oomph":sheafelement.oomph}
 
     def reset_slots(self):
         for slot in self.slots.keys():
@@ -199,8 +208,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         """
         self.type = type
         self.node = node
-        self.activation = 0
-        self.node.report_gate_activation(self.type, self.activation)
+        self.sheaves = {"default" : SheafElement(uid="default", name="default", oomph=0)}
+        self.node.report_gate_activation(self.type, self.sheaves['default'])
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
@@ -214,7 +223,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                     self.parameters[key] = parameters[key]
         self.monitor = None
 
-    def gate_function(self, input_activation):
+    def gate_function(self, input_activation, sheaf="default"):
         """This function sets the activation of the gate.
 
         The gate function should be called by the node function, and can be replaced by different functions
@@ -229,8 +238,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:
-            self.activation = 0
-            self.node.report_gate_activation(self.type, self.activation)
+            self.sheaves[sheaf].oomph = 0
+            self.node.report_gate_activation(self.type, self.sheaves[sheaf])
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
@@ -247,8 +256,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             else:
                 activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
-        self.activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
-        self.node.report_gate_activation(self.type, self.activation)
+        self.sheaves[sheaf].oomph = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.node.report_gate_activation(self.type, self.sheaves[sheaf])
 
 
 class Slot(object):

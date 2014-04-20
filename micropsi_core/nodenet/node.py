@@ -40,16 +40,19 @@ class Node(NetEntity):
     """
 
     @property
-    def activation(self):
-        return self.data['activation']
+    def activation(self, sheaf="default"):
+        return self.sheaves[sheaf].oomph
 
     @activation.setter
-    def activation(self, activation):
-        activation = float(activation)
-        self.data['activation'] = activation
+    def activation(self, activation, sheaf="default", sheafname="default"):
+        self.sheaves[sheaf].oomph = float(activation)
+
+        if 'sheaves' not in self.data:
+            self.data['sheaves'] = {}
+        self.data['sheaves'][sheaf] = {"uid":sheaf, "name": sheafname, "oomph": activation}
         if len(self.gates) > 0:
-            self.gates['gen'].sheaves['default'].oomph = activation
-            self.report_gate_activation('gen', self.gates['gen'].sheaves['default'])
+            self.gates['gen'].sheaves[sheaf].oomph = activation
+            self.report_gate_activation('gen', self.gates['gen'].sheaves[sheaf])
 
     @property
     def type(self):
@@ -99,7 +102,7 @@ class Node(NetEntity):
             self.state = state
             # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
         nodenet.nodes[self.uid] = self
-        self.activation = activation
+        self.sheaves = {"default": SheafElement(oomph=activation)}
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""

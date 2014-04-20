@@ -473,7 +473,7 @@ class Nodenet(object):
                 gates = node.gates.items()
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    link.target_slot.sheaves['default'].oomph += gate.sheaves['default'].oomph * float(link.weight)  # TODO: where's the string coming from?
+                    link.target_slot.sheaves['default'].oomph += float(gate.sheaves['default'].oomph) * float(link.weight)  # TODO: where's the string coming from?
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions
@@ -482,7 +482,6 @@ class Nodenet(object):
         """
         for uid, node in nodes.items():
             node.node_function()
-            node.data['activation'] = node.activation
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""

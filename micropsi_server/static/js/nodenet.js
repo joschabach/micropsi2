@@ -274,7 +274,7 @@ function setNodespaceData(data){
         }
         var uid;
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -407,11 +407,11 @@ function setNodeTypes(){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
-	this.activation = activation;
+	this.sheaves = sheaves || {"default": {"uid": "default", "name": "default", "oomph": 0}};
     this.state = state;
 	this.name = name;
 	this.type = type;
@@ -468,7 +468,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.y = item.y;
         this.parent = item.parent;
         this.name = item.name;
-        this.activation = item.activation;
+        this.sheaves = item.sheaves;
         this.state = item.state;
         this.parameters = item.parameters;
         this.gate_parameters = item.gate_parameters;
@@ -698,7 +698,7 @@ function nodeRedrawNeeded(node){
     if(node.uid in nodeLayer.children){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
-            node.activation == nodes[node.uid].activation &&
+            node.sheaves["default"].oomph == nodes[node.uid].sheaves["default"].oomph &&
             node.gatesum() == nodes[node.uid].gatesum() &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
@@ -1339,7 +1339,7 @@ function setActivation(node) {
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
         node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-            activationColor(node.activation, viewProperties.nodeColor);
+            activationColor(node.sheaves["default"].oomph, viewProperties.nodeColor);
         if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
             var i=0;
             var type;
@@ -2210,7 +2210,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
             params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
         }
     }
-    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, null, params));
+    addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
     view.draw();
     selectNode(uid);
     api.call("add_node", {
@@ -2608,7 +2608,7 @@ function handleEditNode(event){
     if(nodes[nodeUid].state != state){
         setNodeState(nodeUid, state);
     }
-    if(nodes[nodeUid].activation != activation){
+    if(nodes[nodeUid].sheaves["default"].oomph != activation){
         setNodeActivation(nodeUid, activation);
     }
     redrawNode(nodes[nodeUid], true);
@@ -2655,7 +2655,7 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     activation = activation || 0
-    nodes[nodeUid].activation = activation;
+    nodes[nodeUid].sheaves["default"].oomph = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {
         nodes[nodeUid].gates["gen"].sheaves["default"].oomph = activation;
@@ -2953,7 +2953,7 @@ function showNodeForm(nodeUid){
         $('tr.node', form).hide();
     } else {
         $('tr.node', form).show();
-        $('#node_activation_input').val(nodes[nodeUid].activation);
+        $('#node_activation_input').val(nodes[nodeUid].sheaves["default"].oomph);
         $('#node_function_input').val("Todo");
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);

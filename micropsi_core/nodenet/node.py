@@ -77,7 +77,7 @@ class Node(NetEntity):
         self.data['state'] = state
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, **_):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, **_):
         if not gate_parameters:
             gate_parameters = {}
 
@@ -95,7 +95,7 @@ class Node(NetEntity):
         self.nodetype = self.nodenet.nodetypes[type]
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
-            self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
+            self.gates[gate] = Gate(gate, self, sheaves=gate_activations[gate], gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:
@@ -201,7 +201,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         outgoing: the set of links originating at the gate
     """
 
-    def __init__(self, type, node, gate_function=None, parameters=None, gate_defaults=None):
+    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
         """create a gate.
 
         Parameters:
@@ -211,7 +211,12 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         """
         self.type = type
         self.node = node
-        self.sheaves = {"default" : SheafElement()}
+        if sheaves is None:
+            self.sheaves = {"default" : SheafElement()}
+        else:
+            self.sheaves = {}
+            for key in sheaves:
+                self.sheaves[key] = SheafElement(uid=sheaves[key]['uid'], name=sheaves[key]['name'], oomph=sheaves[key]['oomph'])
         self.node.report_gate_activation(self.type, self.sheaves['default'])
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function

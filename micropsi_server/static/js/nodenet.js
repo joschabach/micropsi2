@@ -1029,7 +1029,8 @@ function renderFullNode(node) {
     var skeleton = createFullNodeSkeleton(node);
     var activations = createFullNodeActivations(node);
     var titleBar = createFullNodeLabel(node);
-    var nodeItem = new Group([activations, skeleton, titleBar]);
+    var sheavesAnnotation = createSheavesAnnotation(node);
+    var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
     nodeItem.name = node.uid;
     nodeLayer.addChild(nodeItem);
 }
@@ -1121,6 +1122,31 @@ function createFullNodeLabel(node) {
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
     titleText.content = (node.name ? node.name : node.uid);
+    titleText.name = "text";
+    label.addChild(titleText);
+    return label;
+}
+
+// draw the sheaves annotation of a full node -- this is rather hacky, we will want to find
+// a better way of visualizing sheaves, including sheaf states
+function createSheavesAnnotation(node) {
+    var bounds = node.bounds;
+    var label = new Group();
+    label.name = "sheavesLabel";
+    var titleText = new PointText(new Point(bounds.x+ 80*viewProperties.zoomFactor +viewProperties.padding*viewProperties.zoomFactor,
+        bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
+    titleText.characterStyle = {
+        fillColor: viewProperties.nodeFontColor,
+        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+    };
+    var sheavesText = "";
+    for(uid in node.sheaves) {
+        name = node.sheaves[uid].name;
+        if(name != "default") {
+            sheavesText += name + "\n";
+        }
+    }
+    titleText.content = sheavesText;
     titleText.name = "text";
     label.addChild(titleText);
     return label;

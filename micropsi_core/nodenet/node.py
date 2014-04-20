@@ -136,22 +136,23 @@ class Node(NetEntity):
 
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
-            try:
-                self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
-            except SyntaxError as err:
-                warnings.warn("Syntax error during node execution: %s" % err.message)
-                self.data["activation"] = "Syntax error"
-            except TypeError as err:
-                warnings.warn("Type error during node execution: %s" % err.message)
-                self.data["activation"] = "Parameter mismatch"
-            return
-
-        # default node function
-        if len(self.slots):
-            self.activation = sum([self.slots[slot].activation for slot in self.slots])
-            if len(self.gates):
-                for type, gate in self.gates.items():
-                    gate.gate_function(self.activation)
+            sheavestocalculate = self.get_sheaves_to_calculate()
+            for sheaf_id in sheavestocalculate:
+                try:
+                    self.nodetype.nodefunction(nodenet=self.nodenet, node=self, sheaf=sheaf_id, **self.parameters)
+                except SyntaxError as err:
+                    warnings.warn("Syntax error during node execution: %s" % err.message)
+                    self.data["activation"] = "Syntax error"
+                except TypeError as err:
+                    warnings.warn("Type error during node execution: %s" % err.message)
+                    self.data["activation"] = "Parameter mismatch"
+        else:
+            # default node function
+            if len(self.slots):
+                self.activation = sum([self.slots[slot].activation for slot in self.slots])
+                if len(self.gates):
+                    for type, gate in self.gates.items():
+                        gate.gate_function(self.activation)
 
 
     def get_gate(self, gatename):
@@ -176,6 +177,14 @@ class Node(NetEntity):
             if self.nodenet.links[link].target_node.uid != self.uid:
                 nodes.append(self.nodenet.links[link].target_node.uid)
         return nodes
+
+    def get_sheaves_to_calculate(self):
+        sheaves_to_calculate = []
+        for slotname in self.slots:
+            slot = self.get_slot(slotname)
+            for uid in slot.sheaves.keys():
+                sheaves_to_calculate.append(uid)
+        return sheaves_to_calculate
 
     def set_gate_parameters(self, gate_type, parameters):
         if 'gate_parameters' not in self.data:

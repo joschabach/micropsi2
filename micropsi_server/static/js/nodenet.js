@@ -491,7 +491,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 function Slot(name) {
 	this.name = name;
 	this.incoming = {};
-	this.activation = 0;
+	this.sheaves = {"default": {"uid": "default", "name": "default", "oomph": 0}};
 }
 
 // source for links, part of a net entity
@@ -1345,7 +1345,7 @@ function setActivation(node) {
             var type;
             for (type in node.slots) {
                 nodeItem.children["activation"].children["slots"].children[i++].fillColor =
-                    activationColor(node.slots[type].activation,
+                    activationColor(node.slots[type].sheaves["default"].oomph,
                     viewProperties.nodeColor);
             }
             i=0;

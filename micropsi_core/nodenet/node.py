@@ -184,7 +184,7 @@ class Node(NetEntity):
 
     def reset_slots(self):
         for slot in self.slots.keys():
-            self.slots[slot].activation = 0
+            self.slots[slot].sheaves = {"default": SheafElement()}
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -282,13 +282,19 @@ class Slot(object):
         self.node = node
         self.incoming = {}
         self.current_step = -1
-        self.activation = 0
+        self.sheaves = {"default": SheafElement()}
 
     @property
-    def voted_activation(self):
+    def activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0;
-        return self.activation / len(self.incoming)
+        return self.sheaves[sheaf].oomph
+
+    @property
+    def voted_activation(self, sheaf="default"):
+        if len(self.incoming) == 0:
+            return 0;
+        return self.sheaves[sheaf].oomph / len(self.incoming)
 
 
 STANDARD_NODETYPES = {

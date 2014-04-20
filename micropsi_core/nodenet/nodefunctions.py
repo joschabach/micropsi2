@@ -48,12 +48,20 @@ def pipe(nodenet, node=None, sheaf="default", **params):
     ret += node.get_slot("ret").get_activation(sheaf)
     if ret == 0: ret = -1
 
-    node.activation = gen
+    node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)
     node.get_gate("por").gate_function(por, sheaf)
     node.get_gate("ret").gate_function(ret, sheaf)
-    node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
+
+    # example implementation for now: we open a new sheaf on positiv sub
+    # (properties will be check in their own sheaf)
+    if sub > 0:
+        node.get_gate("sub").open_sheaf(sub, sheaf)
+        node.get_gate("sub").gate_function(0, sheaf)
+    else:
+        node.get_gate("sub").gate_function(sub, sheaf)
+
 
 def label(nodenet, node, **params):
     node.activation = sum([node.slots[slot].activation for slot in node.slots])

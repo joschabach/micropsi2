@@ -95,7 +95,11 @@ class Node(NetEntity):
         self.nodetype = self.nodenet.nodetypes[type]
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
-            self.gates[gate] = Gate(gate, self, sheaves=gate_activations[gate], gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
+            if gate_activations is None:
+                sheavestouse = None
+            else:
+                sheavestouse = gate_activations[gate]
+            self.gates[gate] = Gate(gate, self, sheaves=sheavestouse, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:

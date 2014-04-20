@@ -20,10 +20,10 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 class SheafElement:
-    def __init__(self, uid="default", name="default", oomph=0):
+    def __init__(self, uid="default", name="default", activation=0):
         self.uid = uid
         self.name = name
-        self.oomph = oomph
+        self.activation = activation
 
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
@@ -41,17 +41,17 @@ class Node(NetEntity):
 
     @property
     def activation(self, sheaf="default"):
-        return self.sheaves[sheaf].oomph
+        return self.sheaves[sheaf].activation
 
     @activation.setter
     def activation(self, activation, sheaf="default", sheafname="default"):
-        self.sheaves[sheaf].oomph = float(activation)
+        self.sheaves[sheaf].activation = float(activation)
 
         if 'sheaves' not in self.data:
             self.data['sheaves'] = {}
-        self.data['sheaves'][sheaf] = {"uid":sheaf, "name": sheafname, "oomph": activation}
+        self.data['sheaves'][sheaf] = {"uid":sheaf, "name": sheafname, "activation": activation}
         if len(self.gates) > 0:
-            self.gates['gen'].sheaves[sheaf].oomph = activation
+            self.gates['gen'].sheaves[sheaf].activation = activation
             self.report_gate_activation('gen', self.gates['gen'].sheaves[sheaf])
 
     @property
@@ -106,7 +106,7 @@ class Node(NetEntity):
             self.state = state
             # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
         nodenet.nodes[self.uid] = self
-        self.sheaves = {"default": SheafElement(oomph=activation)}
+        self.sheaves = {"default": SheafElement(activation=activation)}
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
@@ -187,7 +187,7 @@ class Node(NetEntity):
             self.data['gate_activations'][gate_type] = {}
         if sheafelement.uid not in self.data['gate_activations'][gate_type]:
             self.data['gate_activations'][gate_type][sheafelement.uid] = {}
-        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid":sheafelement.uid, "name":sheafelement.name, "oomph":sheafelement.oomph}
+        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid":sheafelement.uid, "name":sheafelement.name, "activation":sheafelement.activation}
 
     def reset_slots(self):
         for slot in self.slots.keys():
@@ -220,7 +220,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         else:
             self.sheaves = {}
             for key in sheaves:
-                self.sheaves[key] = SheafElement(uid=sheaves[key]['uid'], name=sheaves[key]['name'], oomph=sheaves[key]['oomph'])
+                self.sheaves[key] = SheafElement(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
         self.node.report_gate_activation(self.type, self.sheaves['default'])
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
@@ -250,7 +250,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:
-            self.sheaves[sheaf].oomph = 0
+            self.sheaves[sheaf].activation = 0
             self.node.report_gate_activation(self.type, self.sheaves[sheaf])
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
@@ -268,7 +268,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             else:
                 activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
-        self.sheaves[sheaf].oomph = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.sheaves[sheaf].activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
         self.node.report_gate_activation(self.type, self.sheaves[sheaf])
 
 
@@ -300,13 +300,13 @@ class Slot(object):
     def activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0;
-        return self.sheaves[sheaf].oomph
+        return self.sheaves[sheaf].activation
 
     @property
     def voted_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0;
-        return self.sheaves[sheaf].oomph / len(self.incoming)
+        return self.sheaves[sheaf].activation / len(self.incoming)
 
 
 STANDARD_NODETYPES = {

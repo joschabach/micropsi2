@@ -473,7 +473,7 @@ class Nodenet(object):
                 gates = node.gates.items()
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    link.target_slot.sheaves['default'].oomph += float(gate.sheaves['default'].oomph) * float(link.weight)  # TODO: where's the string coming from?
+                    link.target_slot.sheaves['default'].activation += float(gate.sheaves['default'].activation) * float(link.weight)  # TODO: where's the string coming from?
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions

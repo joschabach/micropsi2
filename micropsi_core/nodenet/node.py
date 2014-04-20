@@ -309,13 +309,15 @@ class Slot(object):
         self.sheaves = {"default": SheafElement()}
 
     @property
-    def activation(self, sheaf="default"):
+    def activation(self):
+        return self.get_activation("default")
+
+    def get_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0;
         return self.sheaves[sheaf].activation
 
-    @property
-    def voted_activation(self, sheaf="default"):
+    def get_voted_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0;
         return self.sheaves[sheaf].activation / len(self.incoming)

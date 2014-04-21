@@ -84,8 +84,8 @@ selectionBox.strokeColor = 'black';
 selectionBox.dashArray = [4,2];
 selectionBox.name = "selectionBox";
 
-STANDARD_NODETYPES = ["Concept", "Pipe", "Register", "Actor", "Activator", "Sensor", "Event", "Label"];
 nodetypes = {};
+native_modules = {};
 available_gatetypes = [];
 nodespaces = {};
 
@@ -102,12 +102,16 @@ loaded_coordinates = {
 max_coordinates = {};
 canvas_container.on('scroll', refreshViewPortData);
 
+// hm. not really nice. but let's see if we got other pairs, or need them configurable:
+var inverse_link_map = {'por':'ret', 'sub':'sur', 'cat':'exp'};
+var inverse_link_targets = ['ret', 'sur', 'exp'];
+
 if(currentNodenet){
     setCurrentNodenet(currentNodenet);
 } else {
     splash = new PointText(new Point(50, 50));
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
-    splash.content = 'Create a nodenet by selecting “New...” from the “Nodenet” menu.';
+    splash.content = 'Create a nodenet by selecting "New..." from the "Nodenet" menu.';
     nodeLayer.addChild(splash);
     toggleButtons(false);
 }
@@ -219,20 +223,21 @@ function setCurrentNodenet(uid, nodespace){
 
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
-                api.call('get_available_node_types', {nodenet_uid:uid}, function(nodetypedata){
-                    nodetypes = nodetypedata;
-                    available_gatetypes = [];
-                    for(var key in nodetypes){
-                        if(nodetypes[key].gatetypes && nodetypes[key].gatetypes.length > available_gatetypes.length){
-                            available_gatetypes = nodetypes[key].gatetypes;
-                        }
-                    }
-                    get_available_worldadapters(data.world, function(){
-                        setNodenetValues(nodenet_data);
-                        showDefaultForm();
-                    });
-                    setNodespaceData(data);
+                nodetypes = data.nodetypes;
+                native_modules = data.native_modules;
+                for(var key in native_modules){
+                    nodetypes[key] = native_modules[key];
+                }
+                available_gatetypes = [];
+                for(var key in nodetypes){
+                    $.merge(available_gatetypes, nodetypes[key].gatetypes || []);
+                }
+                available_gatetypes = $.unique(available_gatetypes);
+                get_available_worldadapters(data.world, function(){
+                    setNodenetValues(nodenet_data);
+                    showDefaultForm();
                 });
+                setNodespaceData(data);
                 getNodespaceList();
             } else {
                 setNodespaceData(data);
@@ -393,11 +398,7 @@ function refreshViewPortData(){
 function setNodeTypes(){
     var str = '';
     for (var key in nodetypes){
-        if(STANDARD_NODETYPES.indexOf(key) >= 0){
-            str += '<tr><td>' + key + '</td></tr>';
-        } else {
-            str += '<tr><td>' + key + '<a class="delete_nodetype close label" data="'+key+'">x</a></td></tr>';
-        }
+        str += '<tr><td>' + key + '</td></tr>';
     }
     $('#nodenet_nodetypes').html(str);
     $('.delete_nodetype').on('click', delete_nodetype);
@@ -432,25 +433,29 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
-        if (STANDARD_NODETYPES.indexOf(type) >= 0){
-            this.symbol = type.substr(0,1);
-        } else {
-            this.symbol = "Na";
-        }
+        this.symbol = nodetypes[type].symbol || type.substr(0,1);
         var i;
         for(i in nodetypes[type].slottypes){
             this.slots[nodetypes[type].slottypes[i]] = new Slot(nodetypes[type].slottypes[i]);
         }
-        var parameters;
-        var activation;
         for(i in nodetypes[type].gatetypes){
             parameters = {};
             activation = this.gate_activations[nodetypes[type].gatetypes[i]];
-            if(nodetypes[type].gate_defaults[i]){
+            if(nodetypes[type].gate_defaults){
                 parameters = nodetypes[type].gate_defaults[i];
+            } else {
+                // mh. evil. where should this be defined?
+                parameters = {
+                    "minimum": -1,
+                    "maximum": 1,
+                    "certainty": 1,
+                    "amplification": 1,
+                    "threshold": 0,
+                    "decay": 0
+                };
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
-                parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key]
+                parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];
             }
             this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, activation, parameters);
         }
@@ -470,18 +475,18 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.parameters = item.parameters;
         this.gate_parameters = item.gate_parameters;
         this.gate_activations = item.gate_activations;
-        for(i in nodetypes[type].gatetypes){
+        for(var i in nodetypes[type].gatetypes){
             this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };
 
     this.gatesum = function(){
         var gatesum = 0;
-        for(i in nodetypes[type].gatetypes){
+        for(var i in nodetypes[type].gatetypes){
             gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
         }
         return gatesum;
-    }
+    };
 }
 
 // target for links, part of a net entity
@@ -1089,12 +1094,17 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Concept": // draw circle
-        case "Pipe": // draw circle
         case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
         default:
-            shape = new Path.RoundRectangle(bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+            if (nodetypes[node.type] && nodetypes[node.type].shape){
+                shape = nodetypes[node.type].shape;
+            }
+            if(!['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape)){
+                shape = 'RoundedReactangle';
+            }
+            shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
     }
     return shape;
 }
@@ -1430,8 +1440,7 @@ function deselectAll() {
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
-    if (/^Concept|Pipe|Register|Sensor|Actor/.test(node.type)) return viewProperties.compactNodes;
-    return false; // we don't know how to render this in compact form
+    else return viewProperties.compactNodes;
 }
 
 function isOutsideNodespace(node) {
@@ -1468,9 +1477,9 @@ function activationColor(activation, baseColor) {
 	var r = 1.0-a;
     var c;
 	if (activation > 0) {
-	    c = viewProperties.activeColor;
+        c = viewProperties.activeColor;
 	} else {
-	    c = viewProperties.inhibitedColor;
+        c = viewProperties.inhibitedColor;
 	}
 	return new HSLColor(c.hue,
                         baseColor.saturation * r + c.saturation * a,
@@ -1479,9 +1488,9 @@ function activationColor(activation, baseColor) {
 
 function getMonitor(node, target, type){
     for(var key in monitors){
-        if(monitors[key]['node_uid'] == node.uid
-            && monitors[key]['target'] == target
-            && monitors[key]['type'] == type)
+        if(monitors[key]['node_uid'] == node.uid &&
+            monitors[key]['target'] == target &&
+            monitors[key]['type'] == type)
             return key;
     }
     return false;
@@ -1733,7 +1742,7 @@ function onMouseDrag(event) {
     function moveNode(uid){
         nodeLayer.children[uid].position += event.delta;
         nodeLayer.children[uid].nodeMoved = true;
-        var node = nodes[uid]
+        var node = nodes[uid];
         node.x += event.delta.x/viewProperties.zoomFactor;
         node.y += event.delta.y/viewProperties.zoomFactor;
         node.bounds = calculateNodeBounds(node);
@@ -1845,7 +1854,7 @@ function updateSelection(event){
 
 
 function initializeMenus() {
-    $(".nodenet_menu").on('click', 'li', handleContextMenu);
+    $(".nodenet_menu").on('click', handleContextMenu);
     $("#rename_node_modal .btn-primary").on('click', handleEditNode);
     $('#rename_node_modal form').on('submit', handleEditNode);
     $("#select_datasource_modal .btn-primary").on('click', handleSelectDatasourceModal);
@@ -1964,12 +1973,37 @@ var clickPosition = null;
 
 function openContextMenu(menu_id, event) {
     event.cancelBubble = true;
+    if(!currentNodenet){
+        return;
+    }
     clickPosition = new Point(event.offsetX, event.offsetY);
     $(menu_id).css({
         position: "absolute",
         zIndex: 500,
         marginLeft: -5, marginTop: -5,
         top: event.pageY, left: event.pageX });
+    if(menu_id == '#create_node_menu'){
+        var list = $('[data-nodetype-entries]');
+        html = '';
+        for(var key in nodetypes){
+            if(!(key in native_modules))
+                html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
+        }
+        if(native_modules != {}){
+            if(Object.keys(native_modules).length > 6 ){
+                html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
+            } else {
+                html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+                html += '<ul class="sub-menu dropdown-menu">';
+                for(key in native_modules){
+                    html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
+                }
+                html += '</ul></li>';
+            }
+        }
+        html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
+        list.html(html);
+    }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
 }
 
@@ -1980,21 +2014,15 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.empty();
     var node = nodes[nodeUid];
     menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
-    menu.append('<li class="divider"></li>')
-    if (node.type == "Concept") {
-        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
-        menu.append('<li><a href="#" data-link-type="cat/exp">Draw cat/exp link</a></li>');
-        menu.append('<li class="divider"></li>');
-    } else if (node.type == "Pipe") {
-        menu.append('<li><a href="#" data-link-type="gen">Draw gen link</a></li>');
-        menu.append('<li><a href="#" data-link-type="por/ret">Draw por/ret link</a></li>');
-        menu.append('<li><a href="#" data-link-type="sub/sur">Draw sub/sur link</a></li>');
-        menu.append('<li class="divider"></li>');
-    } else if (node.gateIndexes.length) {
+    menu.append('<li class="divider"></li>');
+    if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
+            if(gateName in inverse_link_map){
+                var compound = gateName+'/'+inverse_link_map[gateName];
+                menu.append('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
+            } else if(inverse_link_targets.indexOf(gateName) == -1){
+                menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
+            }
         }
         menu.append('<li class="divider"></li>');
     }
@@ -2014,27 +2042,19 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 function handleContextMenu(event) {
     event.preventDefault();
     var menuText = event.target.text;
+    $el = $(event.target);
     switch (clickType) {
         case null: // create nodes
-            var type;
+            var type = $el.attr("data-create-node");
+            var autoalign = $el.attr("data-auto-align");
+            if(!type && !autoalign){
+                return false;
+            }
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
-            switch (menuText) {
-                case "Create concept node":
-                    type = "Concept";
-                    break;
-                case "Create pipe node":
-                    type = "Pipe";
-                    break;
-                case "Create native module":
-                    type = "Native";
-                    break;
-                case "Create node space":
-                    type = "Nodespace";
-                    break;
-                case "Create sensor":
-                    type = "Sensor";
+            switch (type) {
+                case "Sensor":
                     callback = function(data){
                         clickOriginUid = data.uid;
                         dialogs.notification('Please Select a datasource for this sensor');
@@ -2048,8 +2068,7 @@ function handleContextMenu(event) {
                         source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     };
                     break;
-                case "Create actor":
-                    type = "Actor";
+                case "Actor":
                     callback = function(data){
                         clickOriginUid = data.uid;
                         dialogs.notification('Please Select a datatarget for this actor');
@@ -2063,25 +2082,20 @@ function handleContextMenu(event) {
                         target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     };
                     break;
-                case "Create activator":
-                    type = "Activator";
-                    break;
-                case "Create event":
-                    type = "Event";
-                    break;
-                case "Create register":
-                    type = "Register";
-                    break;
-                default:
-                    type = "Autoalign";
             }
-            if(type == "Autoalign"){
+            if(autoalign){
                 autoalignmentHandler(currentNodeSpace);
-            } else {
-                if (type == "Native") createNativeModuleHandler();
-                else createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                    clickPosition.y/viewProperties.zoomFactor,
-                    currentNodeSpace, "", type, null, callback);
+            } else if(type) {
+                if (type == "Native"){
+                    createNativeModuleHandler();
+                }
+                else {
+                    createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
+                        clickPosition.y/viewProperties.zoomFactor,
+                        currentNodeSpace, "", type, null, callback);
+                }
+            } else{
+                return false;
             }
             break;
         case "node":
@@ -2125,7 +2139,7 @@ function handleContextMenu(event) {
                         if(forwardlinktype.indexOf('/')){
                             forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = available_gatetypes.indexOf(forwardlinktype);
+                        clickIndex = nodes[clickOriginUid].gateIndexes.indexOf(forwardlinktype);
                         createLinkHandler(clickOriginUid, clickIndex, linktype);
                     } else {
                         $("#link_target_node").html('');
@@ -2228,105 +2242,24 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
 
 
 function createNativeModuleHandler(event){
-    var form = $('#native_module_form');
-    if (!event){
-        $('#edit_native_modal .modal-body').append(form);
-        form.show();
-        var types = '';
-        for (var name in nodetypes){
-            types += '<option>'+name+'</option>';
-        }
-        $('#native_type').html(types);
-        $('input[type="checkbox"]', false).checked = false;
-        $('#native_function', form).val('');
-        $('.native-default').show();
-        $('.native-details').hide();
-        //setNativeModuleFormValues(form, this.uid);
-        $('#edit_native_modal').modal("show");
+
+    var modal = $("#edit_native_modal");
+    if(event){
+        createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
+                        clickPosition.y/viewProperties.zoomFactor,
+                        currentNodeSpace,
+                        $('#native_module_name').val(),
+                        $('#native_module_type').val(),
+                        {}, null);
+        modal.modal("hide");
     } else {
-        var type = $('#native_type');
-        var custom = $('#native_new_type');
-        var nodetype = custom.val() || type.val();
-        if(event.target.className.indexOf('native-next') >= 0){
-            $('.native-default').hide();
-            $('.native-details').show();
-            form.data = nodetype;
-            if(nodetypes[nodetype]){
-                $('.native-custom').hide();
-                $('#native_parameters').html(getNodeParameterHTML(nodetypes[type.val()].parameters, nodetypes[type.val()].parameter_values));
-            }
-        } else if (event.target.className.indexOf('native-save') >= 0){
-            var parameters;
-            var nodename = $('#native_name').val();
-            if(!nodetypes[nodetype]){
-                var mapping = {'por': 'ret', 'sub': 'sur', 'isa': 'exp'};
-                var relations = {gate: [], slot: []};
-                var parts;
-                var checkboxes = $('input[type="checkbox"]');
-                for(var idx in checkboxes){
-                    if(checkboxes[idx].checked){
-                        parts = checkboxes[idx].name.split('_');
-                        relations[parts[1]].push(parts[0]);
-                        if (mapping[parts[0]]){
-                            relations[parts[1]].push(mapping[parts[0]]);
-                        }
-                    }
-                }
-                parameters = {};
-                var param_fields = $('input[name^="param_"]', form);
-                var param_list = [];
-                for(var i in param_fields){
-                    if(param_fields[i].name == "param_name"){
-                        param_list.push(param_fields[i].value);
-                        parameters[param_fields[i].value] = param_fields[++i].value;
-                    }
-                }
-                var nodefunction = $('#native_function').val();
-                nodetypes[nodetype] = {
-                    gatetypes: relations.gate,
-                    slottypes: relations.slot,
-                    parameters: param_list,
-                    nodefunction_definition: nodefunction,
-                    name: nodetype
-                };
-                api.call('add_node_type', {
-                    nodenet_uid: currentNodenet,
-                    node_type: nodetype,
-                    slots: relations.slot,
-                    gates: relations.gate,
-                    parameters: param_list,
-                    node_function: nodefunction},
-                    function(data){
-                        $('#edit_native_modal').modal("hide");
-                        createNodeHandler(
-                            clickPosition.x/viewProperties.zoomFactor,
-                            clickPosition.y/viewProperties.zoomFactor,
-                            currentNodeSpace,
-                            nodename,
-                            nodetype,
-                            parameters);
-                    },
-                    api.defaultErrorCallback,
-                    "post"
-                );
-            } else {
-                parameters = {};
-                var fields = $(":input", $('native_parameters'));
-                for(var j in fields){
-                    parameters[fields[j].name] = fields[j].value;
-                }
-                $('#edit_native_modal').modal("hide");
-                createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                    clickPosition.y/viewProperties.zoomFactor,
-                    currentNodeSpace,
-                    nodename,
-                    nodetype,
-                    parameters);
-            }
-
-            // save this thing.
-
+        var html = '';
+        for(var key in native_modules){
+            html += '<option>'+ key +'</option>';
         }
+        $('[data-native-module-type]', modal).html(html);
+        $('#native_module_name').val('');
+        modal.modal("show");
     }
 }
 
@@ -2472,7 +2405,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
         var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
         var sourceSlots = nodes[sourceUid].slots ? nodes[sourceUid].slotIndexes.length : 0;
 
-        var newlinks = Array();
+        var newlinks = [];
 
         switch (linkCreationStart.creationType) {
             case "por/ret":
@@ -2651,7 +2584,7 @@ function handleEditGate(event){
 }
 
 function setNodeActivation(nodeUid, activation){
-    activation = activation || 0
+    activation = activation || 0;
     nodes[nodeUid].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {

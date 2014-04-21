@@ -1854,7 +1854,7 @@ function updateSelection(event){
 
 
 function initializeMenus() {
-    $(".nodenet_menu").on('click', 'li', handleContextMenu);
+    $(".nodenet_menu").on('click', handleContextMenu);
     $("#rename_node_modal .btn-primary").on('click', handleEditNode);
     $('#rename_node_modal form').on('submit', handleEditNode);
     $("#select_datasource_modal .btn-primary").on('click', handleSelectDatasourceModal);
@@ -1979,16 +1979,23 @@ function openContextMenu(menu_id, event) {
         zIndex: 500,
         marginLeft: -5, marginTop: -5,
         top: event.pageY, left: event.pageX });
-    switch(menu_id){
-        case '#create_node_menu':
-            var list = $('[data-nodetype-entries]');
-            html = '';
-            for(var key in nodetypes){
-                html += '<li><a data-create-node="'+key+'">Create ' + key +'</a></li>';
+    if(menu_id == '#create_node_menu'){
+        var list = $('[data-nodetype-entries]');
+        html = '';
+        for(var key in nodetypes){
+            if(!(key in native_modules))
+                html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
+        }
+        if(native_modules != {}){
+            html += '<li class="divider"></li><li data-event-ignore><a>Create Native Module <i class="icon-chevron-right"></a></i>'+
+                    '<ul class="sub-menu dropdown-menu">';
+            for(key in native_modules){
+                html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
             }
-            html += '<li><a data-create-node="Nodespace">Create Nodespace</a></li>';
-            html += '<li class="divider"></li><li><a data-auto-align">Autoalign Nodes</a></li>';
-            list.html(html);
+            html += '</ul></li>';
+        }
+        html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
+        list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
 }
@@ -2028,9 +2035,14 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
 function handleContextMenu(event) {
     event.preventDefault();
     var menuText = event.target.text;
+    $el = $(event.target);
     switch (clickType) {
         case null: // create nodes
-            var type = $(event.target).attr("data-create-node") || "Autoalign";
+            var type = $el.attr("data-create-node");
+            var autoalign = $el.attr("data-auto-align");
+            if(!type && !autoalign){
+                return false;
+            }
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2064,13 +2076,19 @@ function handleContextMenu(event) {
                     };
                     break;
             }
-            if(type == "Autoalign"){
+            if(autoalign){
                 autoalignmentHandler(currentNodeSpace);
-            } else {
-                if (type == "Native") createNativeModuleHandler();
-                else createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                    clickPosition.y/viewProperties.zoomFactor,
-                    currentNodeSpace, "", type, null, callback);
+            } else if(type) {
+                if (type == "Native"){
+                    createNativeModuleHandler();
+                }
+                else {
+                    createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
+                        clickPosition.y/viewProperties.zoomFactor,
+                        currentNodeSpace, "", type, null, callback);
+                }
+            } else{
+                return false;
             }
             break;
         case "node":

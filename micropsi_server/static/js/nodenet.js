@@ -1987,12 +1987,16 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
         }
         if(native_modules != {}){
-            html += '<li class="divider"></li><li data-event-ignore><a>Create Native Module <i class="icon-chevron-right"></a></i>'+
-                    '<ul class="sub-menu dropdown-menu">';
-            for(key in native_modules){
-                html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
+            if(Object.keys(native_modules).length > 6 ){
+                html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
+            } else {
+                html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+                html += '<ul class="sub-menu dropdown-menu">';
+                for(key in native_modules){
+                    html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
+                }
+                html += '</ul></li>';
             }
-            html += '</ul></li>';
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         list.html(html);
@@ -2235,105 +2239,24 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
 
 
 function createNativeModuleHandler(event){
-    var form = $('#native_module_form');
-    if (!event){
-        $('#edit_native_modal .modal-body').append(form);
-        form.show();
-        var types = '';
-        for (var name in nodetypes){
-            types += '<option>'+name+'</option>';
-        }
-        $('#native_type').html(types);
-        $('input[type="checkbox"]', false).checked = false;
-        $('#native_function', form).val('');
-        $('.native-default').show();
-        $('.native-details').hide();
-        //setNativeModuleFormValues(form, this.uid);
-        $('#edit_native_modal').modal("show");
+
+    var modal = $("#edit_native_modal");
+    if(event){
+        createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
+                        clickPosition.y/viewProperties.zoomFactor,
+                        currentNodeSpace,
+                        $('#native_module_name').val(),
+                        $('#native_module_type').val(),
+                        {}, null);
+        modal.modal("hide");
     } else {
-        var type = $('#native_type');
-        var custom = $('#native_new_type');
-        var nodetype = custom.val() || type.val();
-        if(event.target.className.indexOf('native-next') >= 0){
-            $('.native-default').hide();
-            $('.native-details').show();
-            form.data = nodetype;
-            if(nodetypes[nodetype]){
-                $('.native-custom').hide();
-                $('#native_parameters').html(getNodeParameterHTML(nodetypes[type.val()].parameters, nodetypes[type.val()].parameter_values));
-            }
-        } else if (event.target.className.indexOf('native-save') >= 0){
-            var parameters;
-            var nodename = $('#native_name').val();
-            if(!nodetypes[nodetype]){
-                var mapping = {'por': 'ret', 'sub': 'sur', 'isa': 'exp'};
-                var relations = {gate: [], slot: []};
-                var parts;
-                var checkboxes = $('input[type="checkbox"]');
-                for(var idx in checkboxes){
-                    if(checkboxes[idx].checked){
-                        parts = checkboxes[idx].name.split('_');
-                        relations[parts[1]].push(parts[0]);
-                        if (mapping[parts[0]]){
-                            relations[parts[1]].push(mapping[parts[0]]);
-                        }
-                    }
-                }
-                parameters = {};
-                var param_fields = $('input[name^="param_"]', form);
-                var param_list = [];
-                for(var i in param_fields){
-                    if(param_fields[i].name == "param_name"){
-                        param_list.push(param_fields[i].value);
-                        parameters[param_fields[i].value] = param_fields[++i].value;
-                    }
-                }
-                var nodefunction = $('#native_function').val();
-                nodetypes[nodetype] = {
-                    gatetypes: relations.gate,
-                    slottypes: relations.slot,
-                    parameters: param_list,
-                    nodefunction_definition: nodefunction,
-                    name: nodetype
-                };
-                api.call('add_node_type', {
-                    nodenet_uid: currentNodenet,
-                    node_type: nodetype,
-                    slots: relations.slot,
-                    gates: relations.gate,
-                    parameters: param_list,
-                    node_function: nodefunction},
-                    function(data){
-                        $('#edit_native_modal').modal("hide");
-                        createNodeHandler(
-                            clickPosition.x/viewProperties.zoomFactor,
-                            clickPosition.y/viewProperties.zoomFactor,
-                            currentNodeSpace,
-                            nodename,
-                            nodetype,
-                            parameters);
-                    },
-                    api.defaultErrorCallback,
-                    "post"
-                );
-            } else {
-                parameters = {};
-                var fields = $(":input", $('native_parameters'));
-                for(var j in fields){
-                    parameters[fields[j].name] = fields[j].value;
-                }
-                $('#edit_native_modal').modal("hide");
-                createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                    clickPosition.y/viewProperties.zoomFactor,
-                    currentNodeSpace,
-                    nodename,
-                    nodetype,
-                    parameters);
-            }
-
-            // save this thing.
-
+        var html = '';
+        for(var key in native_modules){
+            html += '<option>'+ key +'</option>';
         }
+        $('[data-native-module-type]', modal).html(html);
+        $('#native_module_name').val('');
+        modal.modal("show");
     }
 }
 

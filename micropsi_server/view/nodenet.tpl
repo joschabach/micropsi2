@@ -513,15 +513,27 @@
         <h3>Native module</h3>
     </div>
     <div class="modal-body">
-
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="native_module_type">Type</label>
+                    <div class="controls">
+                        <select name="type" id="native_module_type" data-native-module-type>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="native_module_name">Name</label>
+                    <div class="controls">
+                        <input name="name" type="text" id="native_module_name" />
+                    </div>
+                </div>
+            </fieldset>
+        </form>
     </div>
-    <div class="modal-footer footer-next native-default">
+    <div class="modal-footer native-default">
         <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-        <a href="#" class="btn btn-primary native-next">Next</a>
-    </div>
-    <div class="modal-footer footer-save native-details hide">
-        <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary native-save">Apply</a>
+        <a href="#" class="btn btn-primary">Create</a>
     </div>
 </div>
 

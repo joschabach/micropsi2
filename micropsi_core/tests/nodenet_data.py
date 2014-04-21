@@ -89,7 +89,7 @@ fixed_nodenet_data = """{
                 567,
                 118
             ],
-            "type": "test_type",
+            "type": "Concept",
             "uid": "A2"
         },
         "B1": {
@@ -148,27 +148,5 @@ fixed_nodenet_data = """{
             "type": "Activator",
             "uid": "ACTB"
         }
-    },
-    "nodetypes": {
-            "test_type": {
-                "gatetypes": [
-                    "gen",
-                    "por",
-                    "ret",
-                    "sub",
-                    "sur",
-                    "isa",
-                    "exp"
-                ],
-                "name": "test_type",
-                "nodefunction_definition": "for type, gate in node.gates.items(): gate.gate_function(node.activation)",
-                "parameters": [
-                    "foo"
-                ],
-                "slottypes": [
-                    "gen"
-                ],
-                "states": []
-            }
-        }
+    }
 }"""

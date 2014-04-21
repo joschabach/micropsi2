@@ -1973,6 +1973,9 @@ var clickPosition = null;
 
 function openContextMenu(menu_id, event) {
     event.cancelBubble = true;
+    if(!currentNodenet){
+        return;
+    }
     clickPosition = new Point(event.offsetX, event.offsetY);
     $(menu_id).css({
         position: "absolute",

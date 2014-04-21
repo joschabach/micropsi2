@@ -396,27 +396,32 @@ STANDARD_NODETYPES = {
             "gen": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             },
             "por": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             },
             "ret": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             },
             "sub": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": True
             },
             "sur": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             }
         }
     },
@@ -569,7 +574,8 @@ class Nodetype(object):
                 "certainty": 1,
                 "amplification": 1,
                 "threshold": 0,
-                "decay": 0
+                "decay": 0,
+                "spreadsheaves": False
             }
 
         gate_defaults = self.data.get("gate_defaults") if gate_defaults is None else gate_defaults

@@ -474,9 +474,10 @@ class Nodenet(object):
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
                     for sheaf in gate.sheaves.keys():
-                        if sheaf not in link.target_slot.sheaves:
+                        if gate.parameters['spreadsheaves'] is True and sheaf not in link.target_slot.sheaves:
                             link.target_slot.sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
-                        link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+                        if sheaf in link.target_slot.sheaves:
+                            link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions

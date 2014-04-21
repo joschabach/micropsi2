@@ -22,7 +22,14 @@ except OSError:
 VERSION = "0.2"
 APPTITLE = "Micropsi"
 
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), config['micropsi2']['data_directory'])
+homedir = config['micropsi2']['data_directory'].startswith('~')
+
+if homedir:
+    data_path = os.path.expanduser(config['micropsi2']['data_directory'])
+else:
+    data_path = config['micropsi2']['data_directory']
+
+RESOURCE_PATH = os.path.join(os.path.dirname(__file__), data_path)
 
 USERMANAGER_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
 SERVER_SETTINGS_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')

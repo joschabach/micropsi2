@@ -433,6 +433,4 @@ class MinecraftVisualisation:
         window.dispatch_events()
         window.dispatch_event('on_draw')
         window.flip()
-        print("DEBUG#01: Vis: I am about to return: output = ", output)
-        print("DEBUG#01: Vis: It is this big: ", sys.getsizeof(output))
         return output

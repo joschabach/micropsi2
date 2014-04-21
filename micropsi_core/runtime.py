@@ -99,12 +99,7 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 def get_minecraft_image():
     for uid in worlds:
         if isinstance(worlds[uid], Minecraft):
-            print("DEBUG#01: Runtime: I am about to return: worlds[uid].the_image = ", worlds[uid].the_image)
-            print("DEBUG#01: Runtime: It is this big: ", sys.getsizeof(worlds[uid].the_image))
             return worlds[uid].the_image
-        else:
-            print("DEBUG#01: Runtime: I am not returning anything becaus the uid is not Minecrafty")
-            return None
 
 # Nodenet
 def get_available_nodenets(owner=None):

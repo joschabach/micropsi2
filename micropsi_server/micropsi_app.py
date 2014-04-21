@@ -23,6 +23,7 @@ import argparse
 import os
 import json
 import inspect
+import sys
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 APP_PATH = os.path.dirname(__file__)
@@ -156,8 +157,11 @@ def deliver_image():
     if image != None:
         #image_value = image
         response.headers['Content-Type'] = 'image/png'
+        print("DEBUG#01: ServerApp: I am about to return: image = ", image)
+        print("DEBUG#01: ServerApp: It is this big: ", sys.getsizeof(image))
         return image.getvalue()
     else:
+        print("DEBUG#01: ServerApp: I am returnging nothing because runtime.get_minecraft_image() did not return anything.")
         return None
 
 @route("/world")

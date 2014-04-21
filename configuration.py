@@ -10,9 +10,14 @@ __date__ = '03.12.12'
 
 import os
 import configparser
+import warnings
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+try:
+    config = configparser.ConfigParser()
+    config.read_file(open('config.ini'))
+except OSError:
+    warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
+    raise
 
 VERSION = "0.2"
 APPTITLE = "Micropsi"

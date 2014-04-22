@@ -11,13 +11,13 @@ default Nodetypes
 
 """
 
-import json
 import warnings
 import micropsi_core.tools
 from .netentity import NetEntity
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
+
 
 class SheafElement:
     def __init__(self, uid="default", name="default", activation=0):
@@ -27,6 +27,7 @@ class SheafElement:
 
     def copy(self):
         return SheafElement(uid=self.uid, name=self.name)
+
 
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
@@ -53,12 +54,12 @@ class Node(NetEntity):
     def set_sheaf_activation(self, activation, sheaf="default"):
         sheaves_to_calculate = self.get_sheaves_to_calculate()
         if sheaf not in sheaves_to_calculate:
-            raise "Sheaf "+sheaf+" can not be set as it hasn't been propagated to any slot"
+            raise "Sheaf " + sheaf + " can not be set as it hasn't been propagated to any slot"
 
         self.sheaves[sheaf].activation = float(activation)
         if 'sheaves' not in self.data:
             self.data['sheaves'] = {}
-        self.data['sheaves'][sheaf] = {"uid":sheaf, "name": sheaves_to_calculate[sheaf].name, "activation": activation}
+        self.data['sheaves'][sheaf] = {"uid": sheaf, "name": sheaves_to_calculate[sheaf].name, "activation": activation}
         if len(self.gates) > 0:
             self.gates['gen'].sheaves[sheaf].activation = activation
             self.report_gate_activation('gen', self.gates['gen'].sheaves[sheaf])
@@ -178,7 +179,6 @@ class Node(NetEntity):
                     for type, gate in self.gates.items():
                         gate.gate_function(self.activation)
 
-
     def get_gate(self, gatename):
         return self.gates.get(gatename)
 
@@ -223,11 +223,12 @@ class Node(NetEntity):
             self.data['gate_activations'][gate_type] = {}
         if sheafelement.uid not in self.data['gate_activations'][gate_type]:
             self.data['gate_activations'][gate_type][sheafelement.uid] = {}
-        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid":sheafelement.uid, "name":sheafelement.name, "activation":sheafelement.activation}
+        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid": sheafelement.uid, "name": sheafelement.name, "activation": sheafelement.activation}
 
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].sheaves = {"default": SheafElement()}
+
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -252,7 +253,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.type = type
         self.node = node
         if sheaves is None:
-            self.sheaves = {"default" : SheafElement()}
+            self.sheaves = {"default": SheafElement()}
         else:
             self.sheaves = {}
             for key in sheaves:
@@ -312,15 +313,16 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         """
         if sheaf is "default":
             sheaf_uid_prefix = ""
-            sheaf_name_prefix = "";
+            sheaf_name_prefix = ""
         else:
             sheaf_uid_prefix = sheaf + "-"
             sheaf_name_prefix = self.sheaves[sheaf].name + "-"
 
-        new_sheaf = SheafElement(uid=sheaf_uid_prefix+self.node.uid, name=sheaf_name_prefix+self.node.name)
+        new_sheaf = SheafElement(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name)
         self.sheaves[new_sheaf.uid] = new_sheaf
 
         self.gate_function(input_activation, new_sheaf.uid)
+
 
 class Slot(object):
     """The entrance of activation into a node. Nodes may have many slots, in which links terminate.
@@ -352,14 +354,14 @@ class Slot(object):
 
     def get_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
-            return 0;
+            return 0
         if sheaf not in self.sheaves:
-            return 0;
+            return 0
         return self.sheaves[sheaf].activation
 
     def get_voted_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
-            return 0;
+            return 0
         return self.sheaves[sheaf].activation / len(self.incoming)
 
 
@@ -520,7 +522,7 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
+            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name, err.message))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node")
 

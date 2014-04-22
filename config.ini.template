@@ -1,0 +1,22 @@
+##################################################
+#
+# Configuration for the micropsi2 toolkit.
+#
+##################################################
+
+[micropsi2]
+
+# the directory where your nodenet-data, world-data
+# native modules and nodefunctions reside
+data_directory = ~/micropsi2_data/
+
+# the port on your machine where the micropsi
+# toolkit is served
+port = 6543
+
+# which hosts to serve to:
+# localhost serves only for you local machine,
+# 0.0.0.0 serves for everybody
+host = localhost
+
+

@@ -63,15 +63,6 @@ def pipe(nodenet, node=None, sheaf="default", **params):
         node.get_gate("sub").gate_function(sub, sheaf)
 
 
-def label(nodenet, node, **params):
-    node.activation = sum([node.slots[slot].activation for slot in node.slots])
-    for type, gate in node.gates.items():
-        gate.gate_function(node.get_slot("gen").activation)
-
-def event(nodenet, node, **params):
-    node.activation = sum([node.slots[slot].activation for slot in node.slots])
-    for type, gate in node.gates.items():
-        gate.gate_function(node.get_slot("gen").activation)
 
 def activator(nodenet, node, **params):
     node.activation = node.get_slot("gen").activation

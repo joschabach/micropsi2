@@ -101,7 +101,7 @@ class Node(NetEntity):
         self.data["type"] = type
         self.nodetype = None
 
-        self.nodetype = self.nodenet.nodetypes[type]
+        self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
             if gate_activations is None:
@@ -364,6 +364,10 @@ class Slot(object):
 
 
 STANDARD_NODETYPES = {
+    "Nodespace": {
+        "name": "Nodespace",
+    },
+
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
@@ -425,23 +429,9 @@ STANDARD_NODETYPES = {
                 "threshold": -100,
                 "spreadsheaves": False
             }
-        }
-    },
-    "Label": {
-        "name": "Label",
-        "slottypes": ["gen"],
-        "nodefunction_name": "label",
-        "gatetypes": ["sym", "ref"]
-    },
-    "Event": {
-        "name": "Event",
-        "parameters": ["time"],
-        "slottypes": ["gen"],
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym"],
-        "nodefunction_name": "event",
-        # TODO: this needs to juggle the states
-        "states": ['suggested', 'rejected', 'commited', 'scheduled', 'active', 'overdue', 'active overdue', 'dropped',
-                   'failed', 'completed']
+        },
+        'symbol': 'πp',
+        'shape': 'Rectangle'
     },
     "Activator": {
         "name": "Activator",
@@ -463,8 +453,6 @@ class Nodetype(object):
 
     @name.setter
     def name(self, identifier):
-        self.nodenet.state["nodetypes"][identifier] = self.nodenet.state["nodetypes"][self.data["name"]]
-        del self.nodenet.state["nodetypes"][self.data["name"]]
         self.data["name"] = identifier
 
     @property
@@ -524,15 +512,21 @@ class Nodetype(object):
     def nodefunction_name(self, name):
         self.data["nodefunction_name"] = name
         try:
-            from . import nodefunctions
-            self.nodefunction = getattr(nodefunctions, name)
+            from micropsi_core.nodenet import nodefunctions
+            if hasattr(nodefunctions, name):
+                self.nodefunction = getattr(nodefunctions, name)
+            else:
+                import nodefunctions as custom_nodefunctions
+                self.nodefunction = getattr(custom_nodefunctions, name)
+
         except (ImportError, AttributeError) as err:
             warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node")
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
-                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None):
+                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
+                 symbol=None, shape=None):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -553,16 +547,7 @@ class Nodetype(object):
                     nodenet as arguments>
             }
         """
-        self.nodenet = nodenet
-        if name not in STANDARD_NODETYPES:
-            if not "nodetypes" in nodenet.state:
-                self.nodenet.state["nodetypes"] = {}
-            if not name in self.nodenet.state["nodetypes"]:
-                self.nodenet.state["nodetypes"][name] = {}
-            self.data = self.nodenet.state["nodetypes"][name]
-        else:
-            self.data = {}
-        self.data["name"] = name
+        self.data = {'name': name}
 
         self.states = self.data.get('states', {}) if states is None else states
         self.slottypes = self.data.get("slottypes", ["gen"]) if slottypes is None else slottypes

@@ -700,6 +700,7 @@ function nodeRedrawNeeded(node){
             node.y == nodes[node.uid].y &&
             node.sheaves["default"].activation == nodes[node.uid].sheaves["default"].activation &&
             node.gatesum() == nodes[node.uid].gatesum() &&
+            Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }

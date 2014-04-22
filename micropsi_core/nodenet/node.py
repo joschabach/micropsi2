@@ -145,9 +145,11 @@ class Node(NetEntity):
 
             # clear activation states
             self.sheaves = {}
+            self.data['sheaves'] = {}
             for gatename in self.gates:
                 gate = self.get_gate(gatename)
                 gate.sheaves = {}
+                self.data['gate_activations'][gatename] = {}
 
             # calculate activation states for all open sheaves
             sheaves_to_calculate = self.get_sheaves_to_calculate()

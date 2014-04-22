@@ -474,8 +474,12 @@ class Nodenet(object):
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
                     for sheaf in gate.sheaves.keys():
-                        if gate.parameters['spreadsheaves'] is True and sheaf not in link.target_slot.sheaves:
-                            link.target_slot.sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
+                        # make sure the sheaf entry exists in all target slots if we're propagating from a spreading gate
+                        if gate.parameters['spreadsheaves'] is True and sheaf is not 'default':
+                            for slotname in link.target_node.slots.keys():
+                                if sheaf not in link.target_node.get_slot(slotname).sheaves:
+                                    link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
+                        # then propagate the activation
                         if sheaf in link.target_slot.sheaves:
                             link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
 

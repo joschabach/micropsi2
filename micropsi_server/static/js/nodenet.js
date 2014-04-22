@@ -77,6 +77,8 @@ currentNodeSpace = 'Root';   // cookie
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
+var currentSheaf = "default";
+
 var selectionRectangle = new Rectangle(1,1,1,1);
 selectionBox = new Path.Rectangle(selectionRectangle);
 selectionBox.strokeWidth = 0.5;
@@ -481,7 +483,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.gatesum = function(){
         var gatesum = 0;
         for(i in nodetypes[type].gatetypes){
-            gatesum += this.gates[nodetypes[type].gatetypes[i]].sheaves["default"].activation;
+            gatesum += this.gates[nodetypes[type].gatetypes[i]].sheaves[currentSheaf].activation;
         }
         return gatesum;
     }
@@ -553,8 +555,8 @@ function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
-        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves["default"].activation !=
-            nodes[link.sourceNodeUid].gates[link.gateName].sheaves["default"].activation)) {
+        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
+            nodes[link.sourceNodeUid].gates[link.gateName].sheaves[currentSheaf].activation)) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();
         }
@@ -698,7 +700,7 @@ function nodeRedrawNeeded(node){
     if(node.uid in nodeLayer.children){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
-            node.sheaves["default"].activation == nodes[node.uid].sheaves["default"].activation &&
+            node.sheaves[currentSheaf].activation == nodes[node.uid].sheaves[currentSheaf].activation &&
             node.gatesum() == nodes[node.uid].gatesum() &&
             Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
@@ -944,7 +946,7 @@ function renderLink(link) {
     }
 
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
-    link.strokeColor = activationColor(gate.sheaves["default"].activation * link.weight, viewProperties.linkColor);
+    link.strokeColor = activationColor(gate.sheaves[currentSheaf].activation * link.weight, viewProperties.linkColor);
 
     var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
     var endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkEnd.angle);
@@ -1366,19 +1368,19 @@ function setActivation(node) {
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
         node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-            activationColor(node.sheaves["default"].activation, viewProperties.nodeColor);
+            activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
         if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
             var i=0;
             var type;
             for (type in node.slots) {
                 nodeItem.children["activation"].children["slots"].children[i++].fillColor =
-                    activationColor(node.slots[type].sheaves["default"].activation,
+                    activationColor(node.slots[type].sheaves[currentSheaf].activation,
                     viewProperties.nodeColor);
             }
             i=0;
             for (type in node.gates) {
                 nodeItem.children["activation"].children["gates"].children[i++].fillColor =
-                    activationColor(node.gates[type].sheaves["default"].activation,
+                    activationColor(node.gates[type].sheaves[currentSheaf].activation,
                     viewProperties.nodeColor);
             }
         }
@@ -2635,7 +2637,7 @@ function handleEditNode(event){
     if(nodes[nodeUid].state != state){
         setNodeState(nodeUid, state);
     }
-    if(nodes[nodeUid].sheaves["default"].activation != activation){
+    if(nodes[nodeUid].sheaves[currentSheaf].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
     redrawNode(nodes[nodeUid], true);
@@ -2682,10 +2684,10 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     activation = activation || 0
-    nodes[nodeUid].sheaves["default"].activation = activation;
+    nodes[nodeUid].sheaves[currentSheaf].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {
-        nodes[nodeUid].gates["gen"].sheaves["default"].activation = activation;
+        nodes[nodeUid].gates["gen"].sheaves[currentSheaf].activation = activation;
     }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
@@ -2980,7 +2982,7 @@ function showNodeForm(nodeUid){
         $('tr.node', form).hide();
     } else {
         $('tr.node', form).show();
-        $('#node_activation_input').val(nodes[nodeUid].sheaves["default"].activation);
+        $('#node_activation_input').val(nodes[nodeUid].sheaves[currentSheaf].activation);
         $('#node_function_input').val("Todo");
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
@@ -3108,7 +3110,7 @@ function showGateForm(node, gate){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
         } else if(el.name == 'activation'){
-            el.value = gate.sheaves["default"].activation || '0';
+            el.value = gate.sheaves[currentSheaf].activation || '0';
         } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }

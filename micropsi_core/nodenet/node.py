@@ -360,7 +360,7 @@ class Slot(object):
     def get_voted_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0;
-        return self.sheaves[sheaf].activation / len(self.incoming)
+        return self.get_activation(sheaf) / len(self.incoming)
 
 
 STANDARD_NODETYPES = {

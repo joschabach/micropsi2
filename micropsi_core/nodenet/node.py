@@ -312,7 +312,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         """This function opens a new sheaf and calls the gate function for the newly opened sheaf
         """
         if sheaf is "default":
-            sheaf_uid_prefix = ""
+            sheaf_uid_prefix = "default" + "-"
             sheaf_name_prefix = ""
         else:
             sheaf_uid_prefix = sheaf + "-"
@@ -396,9 +396,9 @@ STANDARD_NODETYPES = {
     },
     "Pipe": {
         "name": "Pipe",
-        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "nodefunction_name": "pipe",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur"],
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "gate_defaults": {
             "gen": {
                 "minimum": -100,
@@ -425,6 +425,18 @@ STANDARD_NODETYPES = {
                 "spreadsheaves": True
             },
             "sur": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": False
+            },
+            "cat": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": True
+            },
+            "exp": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,

@@ -1,4 +1,6 @@
 
+import sys
+
 def register(nodenet, node=None, **params):
     node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
@@ -24,22 +26,27 @@ def pipe(nodenet, node=None, sheaf="default", **params):
     ret = 0.0
     sub = 0.0
     sur = 0.0
+    cat = 0.0
+    exp = 0.0
 
     gen += node.get_slot("sur").get_voted_activation(sheaf)
+    gen += node.get_slot("exp").get_activation(sheaf)
     if gen < 0: gen = 0
     if gen > 1: gen = 1
 
     sub += node.get_slot("gen").get_activation(sheaf)
-    sub += node.get_slot("sur").get_activation(sheaf)
+    sub += node.get_slot("sur").get_activation(sheaf)           # sur from sub-scripts in-sheaf
+    sub += node.get_slot("sur").activation                      # sur from sensors, default sheaf
     sub += node.get_slot("sub").get_activation(sheaf)
     sub += node.get_slot("por").get_activation(sheaf)
     if sub > 0: sub = 1
 
     sur += node.get_slot("sur").get_voted_activation(sheaf)
+    sur += node.get_slot("exp").get_activation(sheaf)           # bring it back from lower sheaves
     if sur < 0: sur = 0
 
-    por += node.get_slot("sur").get_voted_activation(sheaf) * \
-           (1+node.get_slot("por").get_activation(sheaf))
+    por += (node.get_slot("sur").get_voted_activation(sheaf) + node.get_slot("sur").activation) * \
+           (1+node.get_slot("por").get_activation(sheaf))       # sur from sub-scripts and sensors
     por += node.get_slot("por").get_activation(sheaf) * \
            (1+node.get_slot("ret").get_activation(sheaf))
     if por < 1: por = -1
@@ -48,19 +55,28 @@ def pipe(nodenet, node=None, sheaf="default", **params):
     ret += node.get_slot("ret").get_activation(sheaf)
     if ret == 0: ret = -1
 
+    cat = sub
+    if cat < 0: cat = 0
+
+    exp += node.get_slot("sur").get_voted_activation(sheaf) * \
+           node.get_slot("cat").get_activation(sheaf)
+    if exp > 1: exp = 1
+
     node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)
     node.get_gate("por").gate_function(por, sheaf)
     node.get_gate("ret").gate_function(ret, sheaf)
+    node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
 
-    # example implementation for now: we open a new sheaf on positiv sub
-    # (properties will be check in their own sheaf)
-    if sub > 0:
-        node.get_gate("sub").open_sheaf(sub, sheaf)
-        node.get_gate("sub").gate_function(0, sheaf)
+    node.get_gate("exp").gate_function(exp, sheaf)
+
+    # cats will be checked in their own sheaf
+    if cat > 0:
+        node.get_gate("cat").open_sheaf(cat, sheaf)
+        node.get_gate("cat").gate_function(0, sheaf)
     else:
-        node.get_gate("sub").gate_function(sub, sheaf)
+        node.get_gate("cat").gate_function(cat, sheaf)
 
 
 

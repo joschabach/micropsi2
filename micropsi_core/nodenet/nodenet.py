@@ -487,13 +487,16 @@ class Nodenet(object):
                 for uid, link in gate.outgoing.items():
                     for sheaf in gate.sheaves.keys():
                         # make sure the sheaf entry exists in all target slots if we're propagating from a spreading gate
-                        if gate.parameters['spreadsheaves'] is True and sheaf is not 'default':
+                        if gate.parameters['spreadsheaves'] is True:
                             for slotname in link.target_node.slots.keys():
                                 if sheaf not in link.target_node.get_slot(slotname).sheaves:
                                     link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
                         # then propagate the activation
                         if sheaf in link.target_slot.sheaves:
                             link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+                        elif sheaf.endswith(link.target_node.uid):
+                            upsheaf = sheaf[:-(len(link.target_node.uid)+1)]
+                            link.target_slot.sheaves[upsheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions

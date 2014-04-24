@@ -478,20 +478,30 @@ class Nodenet(object):
         for uid, node in nodes.items():
             node.reset_slots();
 
+        # propagate sheaf existence
         for uid, node in nodes.items():
             if limit_gatetypes is not None:
                 gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
             else:
                 gates = node.gates.items()
             for type, gate in gates:
-                for uid, link in gate.outgoing.items():
+                if gate.parameters['spreadsheaves'] is True:
                     for sheaf in gate.sheaves.keys():
-                        # make sure the sheaf entry exists in all target slots if we're propagating from a spreading gate
-                        if gate.parameters['spreadsheaves'] is True:
+                        for uid, link in gate.outgoing.items():
                             for slotname in link.target_node.slots.keys():
                                 if sheaf not in link.target_node.get_slot(slotname).sheaves:
                                     link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
-                        # then propagate the activation
+
+        # propagate activation
+        for uid, node in nodes.items():
+            if limit_gatetypes is not None:
+                gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
+            else:
+                gates = node.gates.items()
+
+            for type, gate in gates:
+                for uid, link in gate.outgoing.items():
+                    for sheaf in gate.sheaves.keys():
                         if sheaf in link.target_slot.sheaves:
                             link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
                         elif sheaf.endswith(link.target_node.uid):

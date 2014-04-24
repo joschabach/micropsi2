@@ -29,24 +29,23 @@ def pipe(nodenet, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
-    gen += node.get_slot("sur").get_voted_activation(sheaf)
+    gen += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
     gen += node.get_slot("exp").get_activation(sheaf)
     if gen < 0: gen = 0
     if gen > 1: gen = 1
 
     sub += node.get_slot("gen").get_activation(sheaf)
-    sub += node.get_slot("sur").get_activation(sheaf)           # sur from sub-scripts in-sheaf
-    sub += node.get_slot("sur").activation                      # sur from sensors, default sheaf
+    sub += node.get_slot("sur").get_activation(sheaf) or node.get_slot("sur").activation
     sub += node.get_slot("sub").get_activation(sheaf)
     sub += node.get_slot("por").get_activation(sheaf)
     if sub > 0: sub = 1
 
-    sur += node.get_slot("sur").get_voted_activation(sheaf)
-    sur += node.get_slot("exp").get_activation(sheaf)           # bring it back from lower sheaves
+    sur += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
+    sur += node.get_slot("exp").get_activation(sheaf)
     if sur < 0: sur = 0
 
-    por += (node.get_slot("sur").get_voted_activation(sheaf) + node.get_slot("sur").activation) * \
-           (1+node.get_slot("por").get_activation(sheaf))       # sur from sub-scripts and sensors
+    por += (node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation) * \
+           (1+node.get_slot("por").get_activation(sheaf))
     por += node.get_slot("por").get_activation(sheaf) * \
            (1+node.get_slot("ret").get_activation(sheaf))
     if por < 1: por = -1
@@ -58,9 +57,12 @@ def pipe(nodenet, node=None, sheaf="default", **params):
     cat = sub
     if cat < 0: cat = 0
 
-    exp += node.get_slot("sur").get_voted_activation(sheaf) * \
+    exp += (node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation) * \
            node.get_slot("cat").get_activation(sheaf)
     if exp > 1: exp = 1
+
+    if exp > 0 and sheaf is not "default":
+        sepp = "hugo"
 
     node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)

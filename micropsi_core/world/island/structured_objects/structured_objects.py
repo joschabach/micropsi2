@@ -45,4 +45,17 @@ class StructuredObjects(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        pass
+
+        if self.datatargets['fovea_reset'] > 0:
+            self.scene.reset_fovea()
+
+        self.scene.move_fovea_x(self.datatargets['fovea_x'])
+        self.scene.move_fovea_y(self.datatargets['fovea_y'])
+
+        for shapetype in self.shapetypes:
+            self.datasources[shapetype] = self.scene.is_fovea_on_shape_type(shapetype)
+            self.datasources[shapetype+'-presence'] = self.scene.is_shapetype_in_scene(shapetype)
+
+        for shapecolor in self.shapecolors:
+            self.datasources[shapecolor] = self.scene.is_fovea_on_shape_color(shapecolor)
+            self.datasources[shapecolor+'-presence'] = self.scene.is_shapecolor_in_scene(shapecolor)

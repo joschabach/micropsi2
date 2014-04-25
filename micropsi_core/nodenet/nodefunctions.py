@@ -61,9 +61,6 @@ def pipe(nodenet, node=None, sheaf="default", **params):
            node.get_slot("cat").get_activation(sheaf)
     if exp > 1: exp = 1
 
-    if exp > 0 and sheaf is not "default":
-        sepp = "hugo"
-
     node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)
     node.get_gate("por").gate_function(por, sheaf)

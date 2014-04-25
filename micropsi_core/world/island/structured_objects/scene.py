@@ -93,6 +93,7 @@ class Scene():
                     shape_grid[line][column] = {"type": self.__shape_grid[line][column].type,
                                             "color": self.__shape_grid[line][column].color}
         return {
+            "type": "structured_object",
             "shape_name": self.__shape_name,
             "shape_grid": shape_grid,
             "fovea_x": self.fovea_x,

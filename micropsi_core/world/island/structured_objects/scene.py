@@ -5,8 +5,8 @@ GRIDSIZE = 5
 
 class Scene():
 
-    __fovea_x = (GRIDSIZE-1) / 2
-    __fovea_y = (GRIDSIZE-1) / 2
+    __fovea_x = int((GRIDSIZE-1) / 2)
+    __fovea_y = int((GRIDSIZE-1) / 2)
 
     __shape_grid = [[0]*GRIDSIZE for i in range(GRIDSIZE)]
     __shape_name = "none"
@@ -30,15 +30,15 @@ class Scene():
         """
         Resets the fovea to the center of the grid
         """
-        self.__fovea_x = (GRIDSIZE-1) / 2
-        self.__fovea_y = (GRIDSIZE-1) / 2
+        self.__fovea_x = int((GRIDSIZE-1) / 2)
+        self.__fovea_y = int((GRIDSIZE-1) / 2)
         self.__update_world_data()
 
     def move_fovea_x(self, x):
         """
         Horizontally moves the fovea by x elements on the grid
         """
-        self.__fovea_x += x
+        self.__fovea_x += int(x)
         if self.__fovea_x > GRIDSIZE:
             self.__fovea_x = GRIDSIZE
         if self.__fovea_x < 0:
@@ -49,7 +49,7 @@ class Scene():
         """
         Vertically moves the fovea by y elements on the grid
         """
-        self.__fovea_y += y
+        self.__fovea_y += int(y)
         if self.__fovea_y > GRIDSIZE:
             self.__fovea_y = GRIDSIZE
         if self.__fovea_y < 0:

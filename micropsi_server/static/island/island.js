@@ -20,13 +20,17 @@ var viewProperties = {
     shadowDisplacement: new Point(0.5,1.5),
     innerShadowDisplacement: new Point(0.2,0.7),
     padding: 3,
+    typeColors: {
+        "other": new Color ("#94c2f5")
+    },
     label: {
         x: 10,
         y: -10
     }
 };
 
-var available_object_types = ['Lightsource'];
+// TDOD: this really should be loaded from the server
+var available_object_types = ['Lightsource', 'Tree'];
 
 objects = {};
 symbols = {};

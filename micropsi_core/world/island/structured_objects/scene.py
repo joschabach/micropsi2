@@ -67,14 +67,14 @@ class Scene():
     def is_shapetype_in_scene(self, shapetype):
         for shapeline in self.__shape_grid:
             for shape in shapeline:
-                if self.__shape_grid[shapeline][shape].type is shapetype:
+                if shape is not None and shape.type is shapetype:
                     return True
         return False
 
     def is_shapecolor_in_scene(self, shapecolor):
         for shapeline in self.__shape_grid:
             for shape in shapeline:
-                if self.__shape_grid[shapeline][shape].color is shapecolor:
+                if shape is not None and shape.color is shapecolor:
                     return True
         return False
 

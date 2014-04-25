@@ -644,7 +644,9 @@ def load_nodenet(nodenet_uid, **coordinates):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return dict(Error=uid)
-    return runtime.get_nodenet_data(nodenet_uid, **coordinates)
+    data = runtime.get_nodenet_data(nodenet_uid, **coordinates)
+    data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
+    return data
 
 
 @rpc("generate_uid")

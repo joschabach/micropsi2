@@ -14,6 +14,7 @@ __author__ = 'joscha'
 __date__ = '10.05.12'
 
 from configuration import RESOURCE_PATH
+from configuration import SERVER_SETTINGS_PATH
 
 from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
@@ -35,10 +36,12 @@ import time
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
-configs = config.ConfigurationManager(os.path.join(RESOURCE_PATH, "server-config.json"))
+configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 
 worlds = {}
 nodenets = {}
+nodetypes = STANDARD_NODETYPES
+native_modules = {}
 runner = {
     'nodenet': {'timestep': 1000, 'runner': None},
     'world': {'timestep': 5000, 'runner': None}
@@ -148,8 +151,11 @@ def load_nodenet(nodenet_uid):
                 if data.world in worlds:
                     world = worlds.get(data.world)
                     worldadapter = data.get('worldadapter')
-            nodenets[nodenet_uid] = Nodenet(data.filename, name=data.name, worldadapter=worldadapter,
-                world=world, owner=data.owner, uid=data.uid)
+            nodenets[nodenet_uid] = Nodenet(
+                os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
+                name=data.name, worldadapter=worldadapter,
+                world=world, owner=data.owner, uid=data.uid,
+                nodetypes=nodetypes, native_modules=native_modules)
         else:
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
@@ -160,8 +166,13 @@ def load_nodenet(nodenet_uid):
 
 
 def get_nodenet_data(nodenet_uid, **coordinates):
+    """ returns the current state of the nodenet """
     data = get_nodenet(nodenet_uid).state.copy()
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
+    data.update({
+        'nodetypes': nodetypes,
+        'native_modules': native_modules
+    })
     return data
 
 
@@ -225,9 +236,9 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
         owner=owner,
         world=world_uid
     ))
-    data['filename'] = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
-    with open(data['filename'], 'w+') as fp:
+    with open(filename, 'w+') as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
     fp.close()
     #load_nodenet(data['uid'])
@@ -247,7 +258,8 @@ def delete_nodenet(nodenet_uid):
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
     unload_nodenet(nodenet_uid)
-    os.remove(nodenet_data[nodenet_uid].filename)
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
+    os.remove(filename)
     del nodenet_data[nodenet_uid]
     return True
 
@@ -331,7 +343,7 @@ def revert_nodenet(nodenet_uid):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet.filename), 'w+') as fp:
+    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'), 'w+') as fp:
         fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
     fp.close()
     return True
@@ -358,8 +370,7 @@ def import_nodenet(string, owner=None):
     if 'owner':
         nodenet_data['owner'] = owner
     # assert nodenet_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'])
-    nodenet_data['filename'] = filename
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(nodenet_data))
     fp.close()
@@ -429,8 +440,8 @@ def get_nodespace_list(nodenet_uid):
             nodedata[nid] = {
                 'name': nodenet.nodes[nid].name,
                 'type': nodenet.nodes[nid].type,
-                'gates': nodenet.nodetypes[nodenet.nodes[nid].type].gatetypes,
-                'slots': nodenet.nodetypes[nodenet.nodes[nid].type].slottypes
+                'gates': nodenet.get_nodetype(nodenet.nodes[nid].type).gatetypes,
+                'slots': nodenet.get_nodetype(nodenet.nodes[nid].type).slottypes
             }
         data[uid] = {
             'name': nodespace.name,
@@ -544,8 +555,8 @@ def delete_node(nodenet_uid, node_uid):
             if node.parent_nodespace == node_uid:
                 delete_node(nodenet_uid, uid)
         parent_nodespace = nodenet.nodespaces.get(nodenet.nodespaces[node_uid].parent_nodespace)
-        if parent_nodespace:
-            parent_nodespace.netentities["nodespaces"].pop(node_uid, None)
+        if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:
+            parent_nodespace.netentities["nodespaces"].remove(node_uid)
         del nodenet.nodespaces[node_uid]
         del nodenet.state['nodespaces'][node_uid]
     else:
@@ -555,30 +566,24 @@ def delete_node(nodenet_uid, node_uid):
 
 def get_available_node_types(nodenet_uid=None):
     """Returns a list of available node types. (Including native modules.)"""
-    data = STANDARD_NODETYPES.copy()
-    if nodenet_uid:
-        nodenet = nodenets[nodenet_uid]
-        for nodetype in nodenet.nodetypes:
-            if nodetype not in data:
-                data[nodetype] = nodenet.nodetypes[nodetype].data
-            defaults = nodenet.nodetypes[nodetype].gate_defaults.copy()
-            if nodetype in data and 'gate_defaults' in data[nodetype]:
-                for gate in data[nodetype]['gate_defaults']:
-                    for key in data[nodetype]['gate_defaults'][gate]:
-                        defaults[gate][key] = data[nodetype]['gate_defaults'][gate][key]
-            data[nodetype]['gate_defaults'] = defaults
-    return data
+    all_nodetypes = native_modules.copy()
+    all_nodetypes.update(nodetypes)
+    return all_nodetypes
 
 
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-    return nodenets[nodenet_uid].state['nodetypes']
+    return native_modules
 
 
 def get_nodefunction(nodenet_uid, node_type):
     """Returns the current node function for this node type"""
-    return nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition
+    nodefunc_def = nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_definition
+    nodefunc_name = nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_name
+    if not nodefunc_def:
+        return "nodefunctions.%s" % nodefunc_name
+    return nodefunc_def
 
 
 def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
@@ -588,7 +593,7 @@ def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
     Setting the node_function to None will return it to its default state (passing the slot activations to
     all gate functions).
     """
-    nodenets[nodenet_uid].nodetypes[node_type].nodefunction_definition = nodefunction
+    nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_definition = nodefunction
     return True
 
 
@@ -614,28 +619,29 @@ def add_node_type(nodenet_uid, node_type, slots=None, gates=None, node_function=
         parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
     """
     nodenet = nodenets[nodenet_uid]
-    nodenet.nodetypes[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
+    nodenet.native_modules[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
         nodefunction_definition=node_function)
+    native_modules[node_type] = nodenet.native_modules[node_type].state.copy()
     return True
 
 
 def delete_node_type(nodenet_uid, node_type):
     """Remove the node type from the current nodenet definition, if it is part of it."""
-    try:
-        del nodenets[nodenet_uid].state['nodetypes'][node_type]
-        return True
-    except KeyError:
-        return False
+    # try:
+    #     del nodenets[nodenet_uid].state['nodetypes'][node_type]
+    #     return True
+    # except KeyError:
+    return False
 
 
 def get_slot_types(nodenet_uid, node_type):
     """Returns the list of slot types for the given node type."""
-    return nodenets[nodenet_uid].nodetypes[node_type].slottypes
+    return nodenets[nodenet_uid].get_nodetype(node_type).slottypes
 
 
 def get_gate_types(nodenet_uid, node_type):
     """Returns the list of gate types for the given node type."""
-    return nodenets[nodenet_uid].nodetypes[node_type].gatetypes
+    return nodenets[nodenet_uid].get_nodetype(node_type).gatetypes
 
 
 def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
@@ -840,9 +846,9 @@ world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIREC
 if not world_data:
     # create a default world for convenience.
     uid = tools.generate_uid()
-    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid)
-    world_data[uid] = Bunch(uid=uid, name="default", filename=filename, version=1)
-    with open(os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid), 'w+') as fp:
+    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+    world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
+    with open(filename, 'w+') as fp:
         fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
     fp.close()
 
@@ -862,6 +868,19 @@ for uid in world_data:
     else:
         worlds[uid] = world.World(**world_data[uid])
 
+# see if we have additional nodetypes defined by the user.
+custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
+if os.path.isfile(custom_nodetype_file):
+    try:
+        with open(custom_nodetype_file) as fp:
+            native_modules = json.load(fp)
+    except ValueError:
+        warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+
+# respect user defined nodefunctions:
+if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
+    import sys
+    sys.path.append(RESOURCE_PATH)
 
 # initialize runners
 # Initialize the threads for the continuous simulation of nodenets and worlds

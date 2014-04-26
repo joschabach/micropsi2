@@ -225,8 +225,8 @@ class Nodenet(object):
         for uid in self.state.get('links', {}):
             data = self.state['links'][uid]
             self.links[uid] = Link(
-                self.nodes[data.get('source_node_uid', data.get('source_node'))], data['source_gate_name'],  # fixme
-                self.nodes[data.get('target_node_uid', data.get('target_node'))], data['target_slot_name'],  # fixme
+                self.nodes[data['source_node_uid']], data['source_gate_name'],
+                self.nodes[data['target_node_uid']], data['target_slot_name'],
                 weight=data['weight'], certainty=data['certainty'],
                 uid=uid)
         for uid in self.state.get('monitors', {}):

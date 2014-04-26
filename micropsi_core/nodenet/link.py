@@ -42,7 +42,7 @@ class Link(object):
 
     @property
     def source_node(self):
-        return self.nodenet.nodes.get(self.data.get('source_node_uid', self.data.get('source_node')))  # fixme
+        return self.nodenet.nodes.get(self.data['source_node_uid'])
 
     @source_node.setter
     def source_node(self, node):
@@ -58,7 +58,7 @@ class Link(object):
 
     @property
     def target_node(self):
-        return self.nodenet.nodes.get(self.data.get('target_node_uid', self.data.get('target_node')))  # fixme
+        return self.nodenet.nodes.get(self.data['target_node_uid'])
 
     @target_node.setter
     def target_node(self, node):
@@ -86,8 +86,8 @@ class Link(object):
             self.nodenet.state["links"][uid] = {}
         self.data = source_node.nodenet.state["links"][uid]
         self.data["uid"] = uid
-        self.data["source_node"] = self.data["source_node_uid"] = source_node.uid  # fixme
-        self.data["target_node"] = self.data["target_node_uid"] = target_node.uid  # fixme
+        self.data["source_node_uid"] = source_node.uid
+        self.data["target_node_uid"] = target_node.uid
         self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
 
     def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):

@@ -883,6 +883,14 @@ def load_user_files():
     return native_modules
 
 
+def reload_native_modules(nodenet_uid=None):
+    load_user_files()
+    if nodenet_uid:
+        for key in native_modules:
+            nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
+    return True
+
+
 load_definitions()
 init_worlds(world_data)
 load_user_files()

@@ -832,47 +832,60 @@ def parse_definition(json, filename=None):
 
 
 # Set up the MicroPsi runtime
+def load_definitions():
+    global nodenet_data, world_data
+    nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
+    if not world_data:
+        # create a default world for convenience.
+        uid = tools.generate_uid()
+        filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+        world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
+        fp.close()
+    return nodenet_data, world_data
 
-nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
-world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
-if not world_data:
-    # create a default world for convenience.
-    uid = tools.generate_uid()
-    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
-    world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
-    with open(filename, 'w+') as fp:
-        fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
-    fp.close()
 
 # set up all worlds referred to in the world_data:
-
-# what world classes do we know at this point?
-#from world.world import World
-
-for uid in world_data:
-    if "world_type" in world_data[uid]:
-        try:
-            worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
-        except TypeError:
+def init_worlds(world_data):
+    global worlds
+    for uid in world_data:
+        if "world_type" in world_data[uid]:
+            try:
+                worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
+            except TypeError:
+                worlds[uid] = world.World(**world_data[uid])
+            except AttributeError as err:
+                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
+        else:
             worlds[uid] = world.World(**world_data[uid])
-        except AttributeError as err:
-            warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
-    else:
-        worlds[uid] = world.World(**world_data[uid])
+    return worlds
 
-# see if we have additional nodetypes defined by the user.
-custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
-if os.path.isfile(custom_nodetype_file):
-    try:
-        with open(custom_nodetype_file) as fp:
-            native_modules = json.load(fp)
-    except ValueError:
-        warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
-# respect user defined nodefunctions:
-if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
-    import sys
-    sys.path.append(RESOURCE_PATH)
+def load_user_files():
+    # see if we have additional nodetypes defined by the user.
+    global native_modules
+    native_modules = {}
+    custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
+    if os.path.isfile(custom_nodetype_file):
+        try:
+            with open(custom_nodetype_file) as fp:
+                native_modules = json.load(fp)
+        except ValueError:
+            warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+
+    # respect user defined nodefunctions:
+    if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
+        import sys
+        sys.path.append(RESOURCE_PATH)
+
+    return native_modules
+
+
+load_definitions()
+init_worlds(world_data)
+load_user_files()
 
 # initialize runners
 # Initialize the threads for the continuous simulation of nodenets and worlds

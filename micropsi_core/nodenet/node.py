@@ -42,9 +42,6 @@ class Node(NetEntity):
     def activation(self, activation):
         activation = float(activation)
         self.data['activation'] = activation
-        if len(self.gates) > 0:
-            self.gates['gen'].activation = activation
-            self.report_gate_activation('gen', activation)
 
     @property
     def type(self):
@@ -106,6 +103,13 @@ class Node(NetEntity):
             return gate_parameters
         else:
             return None
+
+    def set_gate_activation(self, gate, activation):
+        """ sets the activation of the given gate, and calls `report_gate_activation`"""
+        activation = float(activation)
+        if gate in self.gates:
+            self.gates[gate].activation = activation
+            self.report_gate_activation(gate, activation)
 
     def node_function(self):
         """Called whenever the node is activated or active.

@@ -863,9 +863,10 @@ def init_worlds(world_data):
     return worlds
 
 
-def load_user_files():
+def load_user_files(do_reload=False):
     # see if we have additional nodetypes defined by the user.
     global native_modules
+    old_native_modules = native_modules.copy()
     native_modules = {}
     custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
     if os.path.isfile(custom_nodetype_file):
@@ -874,6 +875,12 @@ def load_user_files():
                 native_modules = json.load(fp)
         except ValueError:
             warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+
+    if do_reload and old_native_modules != {}:
+        for key in old_native_modules:
+            if key not in native_modules:
+                native_modules[key] = old_native_modules[key]
+                warnings.warn("Deleting native modules during runtime is unsafe. Restoring native module %s" % key)
 
     # respect user defined nodefunctions:
     if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
@@ -884,9 +891,11 @@ def load_user_files():
 
 
 def reload_native_modules(nodenet_uid=None):
-    load_user_files()
+    load_user_files(True)
     if nodenet_uid:
         for key in native_modules:
+            if key not in nodenets[nodenet_uid].native_modules:
+                nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
             nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
     return True
 

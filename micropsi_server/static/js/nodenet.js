@@ -538,8 +538,19 @@ function addLink(link) {
     var sourceNode = nodes[link.sourceNodeUid] || {};
     var targetNode = nodes[link.targetNodeUid] || {};
     if (sourceNode.uid || targetNode.uid) {
-        if(sourceNode.uid) nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
-        if(targetNode.uid) nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+        var gate,slot;
+        if(sourceNode.uid && nodes[link.sourceNodeUid].gates[link.gateName]){
+            nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
+            gate = true;
+        }
+        if(targetNode.uid && nodes[link.targetNodeUid].slots[link.slotName]){
+            nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+            slot = true;
+        }
+        if(!gate || !slot){
+            console.error('Incompatible slots and gates');
+            return;
+        }
         // check if link is visible
         if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
             isOutsideNodespace(nodes[link.targetNodeUid]))) {

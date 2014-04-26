@@ -177,6 +177,7 @@ class Node(NetEntity):
         for slot in self.slots.keys():
             self.slots[slot].activation = 0
 
+
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
 
@@ -434,9 +435,17 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
+            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err.message))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node")
+
+    def reload_nodefunction(self):
+        from micropsi_core.nodenet import nodefunctions
+        if self.nodefunction_name and not self.nodefunction_definition and not hasattr(nodefunctions, self.nodefunction_name):
+            import nodefunctions as custom_nodefunctions
+            from imp import reload
+            reload(custom_nodefunctions)
+            self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,

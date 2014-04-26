@@ -435,7 +435,7 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err.message))
+            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node")
 

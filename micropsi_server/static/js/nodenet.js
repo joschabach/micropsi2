@@ -2467,9 +2467,6 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                     }
                 }
                 break;
-            case "gen":
-                newlinks.push(new Link(makeUuid(), sourceUid, "gen", targetUid, "gen", 1, 1));
-                break;
             default:
                 newlinks.push(new Link(makeUuid(), sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }

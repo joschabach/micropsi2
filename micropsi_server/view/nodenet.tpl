@@ -385,18 +385,7 @@
 
 <div class="dropdown" id="create_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#create_node_menu"></a>
-    <ul class="nodenet_menu dropdown-menu">
-        <li><a href="#">Create concept node</a></li>
-        <li><a href="#">Create pipe node</a></li>
-        <li><a href="#">Create script node</a></li>
-        <li><a href="#">Create register</a></li>
-        <li><a href="#">Create sensor</a></li>
-        <li><a href="#">Create actor</a></li>
-        <li><a href="#">Create event</a></li>
-        <li><a href="#">Create node space</a></li>
-        <li><a href="#">Create native module</a></li>
-        <li><a href="#">Create activator</a></li>
-        <li><a href="#">Align nodes</a></li>
+    <ul class="nodenet_menu dropdown-menu" data-nodetype-entries>
     </ul>
 </div>
 
@@ -524,15 +513,27 @@
         <h3>Native module</h3>
     </div>
     <div class="modal-body">
-
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="native_module_type">Type</label>
+                    <div class="controls">
+                        <select name="type" id="native_module_type" data-native-module-type>
+                        </select>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="native_module_name">Name</label>
+                    <div class="controls">
+                        <input name="name" type="text" id="native_module_name" />
+                    </div>
+                </div>
+            </fieldset>
+        </form>
     </div>
-    <div class="modal-footer footer-next native-default">
+    <div class="modal-footer native-default">
         <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-        <a href="#" class="btn btn-primary native-next">Next</a>
-    </div>
-    <div class="modal-footer footer-save native-details hide">
-        <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary native-save">Apply</a>
+        <a href="#" class="btn btn-primary">Create</a>
     </div>
 </div>
 

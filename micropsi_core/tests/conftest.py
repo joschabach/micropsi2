@@ -13,7 +13,8 @@ nn_uid = None
 
 @pytest.fixture(scope="session")
 def resourcepath():
-    return os.path.join(os.path.dirname(__file__), "..", "..", "resources")
+    from configuration import RESOURCE_PATH
+    return RESOURCE_PATH
 
 
 @pytest.fixture(scope="session")

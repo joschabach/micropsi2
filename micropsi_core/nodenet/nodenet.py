@@ -96,7 +96,7 @@ class Nodenet(object):
     def is_active(self, is_active):
         self.state['is_active'] = is_active
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -116,10 +116,8 @@ class Nodenet(object):
             "links": {},
             "monitors": {},
             "nodespaces": {'Root': {}},
-            "nodetypes": STANDARD_NODETYPES,
-            "activatortypes": list(STANDARD_NODETYPES.keys()),
-            "step": 0,
-            "filename": filename
+            "activatortypes": list(nodetypes.keys()),
+            "step": 0
         }
 
         self.world = world
@@ -131,7 +129,8 @@ class Nodenet(object):
 
         self.nodes = {}
         self.links = {}
-        self.nodetypes = {}
+        self.nodetypes = nodetypes
+        self.native_modules = native_modules
         self.nodespaces = {}
         self.monitors = {}
         self.nodes_by_coords = {}
@@ -185,10 +184,15 @@ class Nodenet(object):
         computation of the node net
         """
 
-        nodetypes = self.state.get('nodetypes', {}).copy()
-        nodetypes.update(STANDARD_NODETYPES)
-        for type, data in nodetypes.items():
-            self.nodetypes[type] = Nodetype(nodenet=self, **data)
+        nodetypes = {}
+        for type, data in self.nodetypes.items():
+            nodetypes[type] = Nodetype(nodenet=self, **data)
+        self.nodetypes = nodetypes
+
+        native_modules = {}
+        for type, data in self.native_modules.items():
+            native_modules[type] = Nodetype(nodenet=self, **data)
+        self.native_modules = native_modules
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.nodespaces = {}
@@ -229,6 +233,13 @@ class Nodenet(object):
             self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 
             # TODO: check if data sources and data targets match
+
+    def get_nodetype(self, type):
+        """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
+        if type in self.nodetypes:
+            return self.nodetypes[type]
+        else:
+            return self.native_modules.get(type)
 
     def get_nodespace_area(self, nodespace, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)

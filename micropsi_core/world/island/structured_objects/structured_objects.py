@@ -15,12 +15,11 @@ class StructuredObjects(WorldAdapter):
     datasources = {}
     datatargets = {'fovea_x': 0, 'fovea_y': 0, 'fovea_reset': 0}
 
-    position = None
     currentobject = None
     scene = None
 
     def __init__(self, world, uid=None, **data):
-        super(StructuredObjects, self).__init__(world, uid)
+        super(StructuredObjects, self).__init__(world, uid, **data)
 
         for key, objecttype in OBJECTS.items():
             for shapeline in objecttype['shape_grid']:

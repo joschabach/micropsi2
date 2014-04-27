@@ -1989,7 +1989,7 @@ function openContextMenu(menu_id, event) {
             if(!(key in native_modules))
                 html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
         }
-        if(native_modules != {}){
+        if(Object.keys(native_modules).length){
             if(Object.keys(native_modules).length > 6 ){
                 html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
             } else {

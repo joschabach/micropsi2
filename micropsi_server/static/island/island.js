@@ -231,6 +231,13 @@ function createObjectShape(worldobject, bounds){
             raster.rotate(worldobject.orientation);
         return raster;
 
+        case "Tree":
+            raster = new Raster('icon_Tree');
+            raster.scale(0.8);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
         default:
             var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             if (worldobject.type in viewProperties.typeColors){
@@ -430,9 +437,10 @@ function openContextMenu(menu_id, event){
 
 function handleContextMenu(event){
     var item = $(event.target);
+    event.preventDefault();
     switch(item.attr('data')){
-    case 'add_worldobject':
-        showObjectForm();
+        case 'add_worldobject':
+            showObjectForm();
     }
 }
 
@@ -467,7 +475,7 @@ function initializeControls(){
             highlightAgent(target.attr('data'));
             scrollToObject(agents[target.attr('data')]);
         }
-    })
+    });
     objectList.on('click', function(event){
         event.preventDefault();
         var target = $(event.target);

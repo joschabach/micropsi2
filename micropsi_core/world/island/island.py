@@ -24,7 +24,8 @@ class Island(World):
         'y': 2048,
         'icons': {
             'Lightsource': 'island/lamp.png',
-            'Braitenberg': 'island/braitenberg.png'
+            'Braitenberg': 'island/braitenberg.png',
+            'Tree': 'island/tree_small.png'
         }
     }
 

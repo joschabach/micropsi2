@@ -42,6 +42,8 @@ class Node(NetEntity):
     def activation(self, activation):
         activation = float(activation)
         self.data['activation'] = activation
+        if len(self.nodetype.gatetypes):
+            self.set_gate_activation(self.nodetype.gatetypes[0], activation)
 
     @property
     def type(self):

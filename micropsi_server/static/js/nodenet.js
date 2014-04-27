@@ -480,12 +480,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         }
     };
 
-    this.gatesum = function(){
-        var gatesum = 0;
+    this.gatechecksum = function(){
+        var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
-            gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
+            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].activation;
         }
-        return gatesum;
+        return gatechecksum;
     };
 }
 
@@ -712,7 +712,7 @@ function nodeRedrawNeeded(node){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
             node.activation == nodes[node.uid].activation &&
-            node.gatesum() == nodes[node.uid].gatesum() &&
+            node.gatechecksum() == nodes[node.uid].gatechecksum() &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }

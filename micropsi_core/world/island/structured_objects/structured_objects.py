@@ -1,12 +1,10 @@
 __author__ = 'rvuine'
 
-import sys
 from micropsi_core.world.island import island
 from micropsi_core.world.island.structured_objects.objects import *
 from micropsi_core.world.island.structured_objects.scene import Scene
-from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
-from micropsi_core.world.worldobject import WorldObject
+
 
 class StructuredObjects(WorldAdapter):
     """A world adapter exposing objects composed of basic shapes and colors to the agent"""
@@ -34,11 +32,11 @@ class StructuredObjects(WorldAdapter):
 
         for shapetype in self.shapetypes:
             self.datasources[shapetype] = 0
-            self.datasources[shapetype+'-presence'] = 0
+            self.datasources[shapetype + '-presence'] = 0
 
         for shapecolor in self.shapecolors:
             self.datasources[shapecolor] = 0
-            self.datasources[shapecolor+'-presence'] = 0
+            self.datasources[shapecolor + '-presence'] = 0
 
         self.scene = Scene(world, uid)
         self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
@@ -80,8 +78,8 @@ class StructuredObjects(WorldAdapter):
 
         for shapetype in self.shapetypes:
             self.datasources[shapetype] = self.scene.is_fovea_on_shape_type(shapetype)
-            self.datasources[shapetype+'-presence'] = self.scene.is_shapetype_in_scene(shapetype)
+            self.datasources[shapetype + '-presence'] = self.scene.is_shapetype_in_scene(shapetype)
 
         for shapecolor in self.shapecolors:
             self.datasources[shapecolor] = self.scene.is_fovea_on_shape_color(shapecolor)
-            self.datasources[shapecolor+'-presence'] = self.scene.is_shapecolor_in_scene(shapecolor)
+            self.datasources[shapecolor + '-presence'] = self.scene.is_shapecolor_in_scene(shapecolor)

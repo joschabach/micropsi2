@@ -10,6 +10,7 @@ class Tree(WorldObject):
         WorldObject.__init__(self, world, category="objects", uid=uid, **data)
         self.structured_object_type = "Tree"
 
+
 class Shape():
 
     def __init__(self, type, color):

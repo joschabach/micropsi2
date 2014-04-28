@@ -308,6 +308,12 @@ function setNodespaceData(data){
         }
         var link, sourceId, targetId;
         var outsideLinks = [];
+
+        for(var uid in links) {
+            if(!(uid in data.links)) {
+                removeLink(links[uid]);
+            }
+        }
         for(uid in data.links){
             sourceId = data.links[uid]['source_node_uid'];
             targetId = data.links[uid]['target_node_uid'];

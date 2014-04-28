@@ -60,9 +60,9 @@ class Node(NetEntity):
         if 'sheaves' not in self.data:
             self.data['sheaves'] = {}
         self.data['sheaves'][sheaf] = {"uid": sheaf, "name": sheaves_to_calculate[sheaf].name, "activation": activation}
-        if len(self.gates) > 0:
-            self.gates['gen'].sheaves[sheaf].activation = activation
-            self.report_gate_activation('gen', self.gates['gen'].sheaves[sheaf])
+        if len(self.nodetype.gatetypes):
+            self.gates[self.nodetype.gatetypes[0]].sheaves[sheaf].activation = activation
+            self.report_gate_activation(self.nodetype.gatetypes[0], self.gates[self.nodetype.gatetypes[0]].sheaves[sheaf])
 
     @property
     def type(self):
@@ -129,6 +129,13 @@ class Node(NetEntity):
         else:
             return None
 
+    def set_gate_activation(self, gate, activation):
+        """ sets the activation of the given gate, and calls `report_gate_activation`"""
+        activation = float(activation)
+        if gate in self.gates:
+            self.gates[gate].activation = activation
+            self.report_gate_activation(gate, activation)
+
     def node_function(self):
         """Called whenever the node is activated or active.
 
@@ -164,7 +171,7 @@ class Node(NetEntity):
 
                 # and actually calculate new values for them
                 try:
-                    self.nodetype.nodefunction(nodenet=self.nodenet, node=self, sheaf=sheaf_id, **self.parameters)
+                    self.nodetype.nodefunction(nodenet=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
                 except SyntaxError as err:
                     warnings.warn("Syntax error during node execution: %s" % err.message)
                     self.data["activation"] = "Syntax error"
@@ -228,6 +235,7 @@ class Node(NetEntity):
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].sheaves = {"default": SheafElement()}
+
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
@@ -533,9 +541,17 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name, err.message))
+            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node")
+
+    def reload_nodefunction(self):
+        from micropsi_core.nodenet import nodefunctions
+        if self.nodefunction_name and not self.nodefunction_definition and not hasattr(nodefunctions, self.nodefunction_name):
+            import nodefunctions as custom_nodefunctions
+            from imp import reload
+            reload(custom_nodefunctions)
+            self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,

@@ -1,26 +1,28 @@
 
-import sys
-
-def register(nodenet, node=None, **params):
+def register(netapi, node=None, **params):
     node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
-def sensor(nodenet, node=None, datasource=None, **params):
-    node.activation = node.get_slot("gen").activation = nodenet.world.get_datasource(nodenet.uid, datasource)
-    node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))
 
-def actor(nodenet, node=None, datatarget=None, **params):
+def sensor(netapi, node=None, datasource=None, **params):
+    node.activation = node.get_slot("gen").activation = netapi.world.get_datasource(netapi.uid, datasource)
+    node.gates["gen"].gate_function(netapi.world.get_datasource(netapi.uid, datasource))
+
+
+def actor(netapi, node=None, datatarget=None, **params):
     node.activation = node.get_slot("gen").activation
-    if not nodenet.world: return
-    node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.get_slot("gen").activation)
+    if not netapi.world:
+        return
+    node.netapi.world.set_datatarget(netapi.uid, datatarget, node.get_slot("gen").activation)
 
-def concept(nodenet, node=None, **params):
+
+def concept(netapi, node=None, **params):
     node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
-def pipe(nodenet, node=None, sheaf="default", **params):
+def pipe(netapi, node=None, sheaf="default", **params):
     gen = 0.0
     por = 0.0
     ret = 0.0
@@ -78,7 +80,6 @@ def pipe(nodenet, node=None, sheaf="default", **params):
         node.get_gate("cat").gate_function(cat, sheaf)
 
 
-
-def activator(nodenet, node, **params):
+def activator(netapi, node, **params):
     node.activation = node.get_slot("gen").activation
-    nodenet.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation
+    netapi.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation

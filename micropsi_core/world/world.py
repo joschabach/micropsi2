@@ -302,4 +302,5 @@ class World(object):
 
 # imports of individual world types:
 from micropsi_core.world.island import island
+from micropsi_core.world.island.structured_objects import structured_objects
 from micropsi_core.world.berlin import berlin

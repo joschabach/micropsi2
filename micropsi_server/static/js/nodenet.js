@@ -280,6 +280,12 @@ function setNodespaceData(data){
             nodeLayer.addChild(selectionBox);
         }
         var uid;
+        for(uid in nodes) {
+            if(!(uid in data.nodes)){
+                removeNode(nodes[uid]);
+                if (uid in selection) delete selection[uid];
+            }
+        }
         for(uid in data.nodes){
             item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
             if(uid in nodes){
@@ -304,6 +310,12 @@ function setNodespaceData(data){
         }
         var link, sourceId, targetId;
         var outsideLinks = [];
+
+        for(var uid in links) {
+            if(!(uid in data.links)) {
+                removeLink(links[uid]);
+            }
+        }
         for(uid in data.links){
             sourceId = data.links[uid]['source_node_uid'];
             targetId = data.links[uid]['target_node_uid'];
@@ -485,12 +497,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         }
     };
 
-    this.gatesum = function(){
-        var gatesum = 0;
+    this.gatechecksum = function(){
+        var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
-            gatesum += this.gates[nodetypes[type].gatetypes[i]].sheaves[currentSheaf].activation;
+            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].activation;
         }
-        return gatesum;
+        return gatechecksum;
     };
 }
 
@@ -543,8 +555,19 @@ function addLink(link) {
     var sourceNode = nodes[link.sourceNodeUid] || {};
     var targetNode = nodes[link.targetNodeUid] || {};
     if (sourceNode.uid || targetNode.uid) {
-        if(sourceNode.uid) nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
-        if(targetNode.uid) nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+        var gate,slot;
+        if(sourceNode.uid && nodes[link.sourceNodeUid].gates[link.gateName]){
+            nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
+            gate = true;
+        }
+        if(targetNode.uid && nodes[link.targetNodeUid].slots[link.slotName]){
+            nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+            slot = true;
+        }
+        if(!gate || !slot){
+            console.error('Incompatible slots and gates');
+            return;
+        }
         // check if link is visible
         if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
             isOutsideNodespace(nodes[link.targetNodeUid]))) {
@@ -705,8 +728,8 @@ function nodeRedrawNeeded(node){
     if(node.uid in nodeLayer.children){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
-            node.sheaves[currentSheaf].activation == nodes[node.uid].sheaves[currentSheaf].activation &&
-            node.gatesum() == nodes[node.uid].gatesum() &&
+            node.activation == nodes[node.uid].activation &&
+            node.gatechecksum() == nodes[node.uid].gatechecksum() &&
             Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
@@ -1108,7 +1131,7 @@ function createCompactNodeShape(node) {
             if (nodetypes[node.type] && nodetypes[node.type].shape){
                 shape = nodetypes[node.type].shape;
             }
-            if(!['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape)){
+            if(['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape) < 0){
                 shape = 'RoundedReactangle';
             }
             shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
@@ -2021,7 +2044,7 @@ function openContextMenu(menu_id, event) {
             if(!(key in native_modules))
                 html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
         }
-        if(native_modules != {}){
+        if(Object.keys(native_modules).length){
             if(Object.keys(native_modules).length > 6 ){
                 html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
             } else {
@@ -2487,9 +2510,6 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                         newlinks.push(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
                     }
                 }
-                break;
-            case "gen":
-                newlinks.push(new Link(makeUuid(), sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
                 newlinks.push(new Link(makeUuid(), sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));

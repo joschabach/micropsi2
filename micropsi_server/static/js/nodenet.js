@@ -480,12 +480,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         }
     };
 
-    this.gatesum = function(){
-        var gatesum = 0;
+    this.gatechecksum = function(){
+        var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
-            gatesum += this.gates[nodetypes[type].gatetypes[i]].activation;
+            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].activation;
         }
-        return gatesum;
+        return gatechecksum;
     };
 }
 
@@ -538,8 +538,19 @@ function addLink(link) {
     var sourceNode = nodes[link.sourceNodeUid] || {};
     var targetNode = nodes[link.targetNodeUid] || {};
     if (sourceNode.uid || targetNode.uid) {
-        if(sourceNode.uid) nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
-        if(targetNode.uid) nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+        var gate,slot;
+        if(sourceNode.uid && nodes[link.sourceNodeUid].gates[link.gateName]){
+            nodes[link.sourceNodeUid].gates[link.gateName].outgoing[link.uid]=link;
+            gate = true;
+        }
+        if(targetNode.uid && nodes[link.targetNodeUid].slots[link.slotName]){
+            nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
+            slot = true;
+        }
+        if(!gate || !slot){
+            console.error('Incompatible slots and gates');
+            return;
+        }
         // check if link is visible
         if (!(isOutsideNodespace(nodes[link.sourceNodeUid]) &&
             isOutsideNodespace(nodes[link.targetNodeUid]))) {
@@ -701,7 +712,7 @@ function nodeRedrawNeeded(node){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
             node.activation == nodes[node.uid].activation &&
-            node.gatesum() == nodes[node.uid].gatesum() &&
+            node.gatechecksum() == nodes[node.uid].gatechecksum() &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }
@@ -1101,7 +1112,7 @@ function createCompactNodeShape(node) {
             if (nodetypes[node.type] && nodetypes[node.type].shape){
                 shape = nodetypes[node.type].shape;
             }
-            if(!['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape)){
+            if(['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape) < 0){
                 shape = 'RoundedReactangle';
             }
             shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
@@ -2455,9 +2466,6 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                         newlinks.push(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
                     }
                 }
-                break;
-            case "gen":
-                newlinks.push(new Link(makeUuid(), sourceUid, "gen", targetUid, "gen", 1, 1));
                 break;
             default:
                 newlinks.push(new Link(makeUuid(), sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));

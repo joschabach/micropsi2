@@ -208,27 +208,36 @@ class Nodenet(object):
         # set up nodes
         for uid in self.state.get('nodes', {}):
             data = self.state['nodes'][uid]
-            self.nodes[uid] = Node(self, **data)
-            pos = self.nodes[uid].position
-            xpos = int(pos[0] - (pos[0] % 100))
-            ypos = int(pos[1] - (pos[1] % 100))
-            if xpos not in self.nodes_by_coords:
-                self.nodes_by_coords[xpos] = {}
-                if xpos > self.max_coords['x']:
-                    self.max_coords['x'] = xpos
-            if ypos not in self.nodes_by_coords[xpos]:
-                self.nodes_by_coords[xpos][ypos] = []
-                if ypos > self.max_coords['y']:
-                    self.max_coords['y'] = ypos
-            self.nodes_by_coords[xpos][ypos].append(uid)
+            if data['type'] in nodetypes or data['type'] in native_modules:
+                self.nodes[uid] = Node(self, **data)
+                pos = self.nodes[uid].position
+                xpos = int(pos[0] - (pos[0] % 100))
+                ypos = int(pos[1] - (pos[1] % 100))
+                if xpos not in self.nodes_by_coords:
+                    self.nodes_by_coords[xpos] = {}
+                    if xpos > self.max_coords['x']:
+                        self.max_coords['x'] = xpos
+                if ypos not in self.nodes_by_coords[xpos]:
+                    self.nodes_by_coords[xpos][ypos] = []
+                    if ypos > self.max_coords['y']:
+                        self.max_coords['y'] = ypos
+                self.nodes_by_coords[xpos][ypos].append(uid)
+            else:
+                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             # set up links
         for uid in self.state.get('links', {}):
             data = self.state['links'][uid]
-            self.links[uid] = Link(
-                self.nodes[data.get('source_node_uid', data.get('source_node'))], data['source_gate_name'],  # fixme
-                self.nodes[data.get('target_node_uid', data.get('target_node'))], data['target_slot_name'],  # fixme
-                weight=data['weight'], certainty=data['certainty'],
-                uid=uid)
+            if data['source_node_uid'] in self.nodes and \
+                    data['source_gate_name'] in self.nodes[data['source_node_uid']].gates and\
+                    data['target_node_uid'] in self.nodes and\
+                    data['target_slot_name'] in self.nodes[data['source_node_uid']].slots:
+                self.links[uid] = Link(
+                    self.nodes[data['source_node_uid']], data['source_gate_name'],
+                    self.nodes[data['target_node_uid']], data['target_slot_name'],
+                    weight=data['weight'], certainty=data['certainty'],
+                    uid=uid)
+            else:
+                warnings.warn("Slot or gatetype for link %s invalid" % uid)
         for uid in self.state.get('monitors', {}):
             self.monitors[uid] = Monitor(self, **self.state['monitors'][uid])
 

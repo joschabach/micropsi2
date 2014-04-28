@@ -135,7 +135,7 @@ class Nodenet(object):
         self.monitors = {}
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
-        self.nodeapi = NodeAPI(self)
+        self.netapi = NetAPI(self)
 
         self.load()
 
@@ -595,7 +595,7 @@ class Nodenet(object):
         return True
 
 
-class NodeAPI(object):
+class NetAPI(object):
     """
     Node Net API facade class for use from within the node net (in node functions)
     """

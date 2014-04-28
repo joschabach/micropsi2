@@ -53,10 +53,12 @@ def test_get_nodespace_list(test_nodenet):
     assert node['slots'] == ['gen']
     assert len(node['gates']) == 9
 
+
 def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
     micropsi.add_node(test_nodenet, "Nodespace", (200, 250), "Root", state=None, uid="foospace", name="Foospace")
     data = micropsi.get_nodespace_list(test_nodenet)
     assert data["foospace"]['nodes'] == {}
+
 
 def test_add_link(test_nodenet):
     micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1, "por_ab")
@@ -69,14 +71,14 @@ def test_add_link(test_nodenet):
     link1 = nodespace["links"]["por_ab"]
     assert link1["weight"] == 1
     assert link1["certainty"] == 0.1
-    assert link1["source_node"] == "node_a"
-    assert link1["target_node"] == "node_b"
+    assert link1["source_node_uid"] == "node_a"
+    assert link1["target_node_uid"] == "node_b"
     assert link1["source_gate_name"] == "por"
     assert link1["target_slot_name"] == "gen"
 
     link2 = nodespace["links"]["ret_cb"]
-    assert link2["source_node"] == "node_c"
-    assert link2["target_node"] == "node_b"
+    assert link2["source_node_uid"] == "node_c"
+    assert link2["target_node_uid"] == "node_b"
     assert link2["source_gate_name"] == "ret"
     assert link2["target_slot_name"] == "gen"
 

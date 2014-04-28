@@ -644,7 +644,7 @@ class NetAPI(object):
         Creates a new node or node space of the given type, with the given name and in the given nodespace.
         Returns the newly created entity.
         """
-        pos = (self.__nodenet.max_coords['x'] + 50, 10)  # default so native modules will not be bothered with positions
+        pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)
         else:

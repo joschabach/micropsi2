@@ -592,3 +592,79 @@ class Nodenet(object):
         del self.links[link_uid]
         del self.state['links'][link_uid]
         return True
+
+
+class NodeAPI(object):
+    """
+    Node Net API facade class for use from within the node net (in node functions)
+    """
+
+    __nodenet = None
+
+    def __init__(self, nodenet):
+        self.__nodenet = nodenet
+
+    def get_node(self, uid):
+        """
+        Returns the node with the given uid
+        """
+        return self.__nodenet.nodes[uid]
+
+    def get_nodes(self, nodespace=None, node_name_prefix=None):
+        """
+        Returns a list of nodes in the given nodespace (all Nodespaces if None) whose names start with
+        the given prefix (all if None)
+        """
+        nodes = []
+        for node in self.__nodenet.nodes:
+            if (node_name_prefix is None or node.name.startswith(node_name_prefix) and
+                nodespace is None or node.parent_nodespace is nodespace):
+                nodes.extend(node)
+        return nodes
+
+    def delete_node(self, uid):
+        """
+        Deletes a node and all links connected to it.
+        """
+        self.__nodenet.delete_node(uid)
+
+    def create_node(self, nodetype, name=None, nodespace=None):
+        """
+        Creates a new node or node space of the given type, with the given name and in the given nodespace.
+        Returns the newly created entity.
+        """
+        pos = (self.__nodenet.max_coords['x'] + 50, 10)  # default so native modules will not be bothered with positions
+        if nodetype == "Nodespace":
+            entity = Nodespace(self.__nodenet, nodespace, pos, name=name)
+        else:
+            entity = Node(self.__nodenet, nodespace, pos, name=name, type=nodetype)
+        self.__nodenet.update_node_positions()
+        return entity
+
+    def link(self, source_uid, origin_gate, target_uid, target_slot, weight=1, certainty=1):
+        """
+        Creates a link between two nodes. If the link already exists, it will be updated
+        with the given weight and certainty values (or the default 1 if not given)
+        """
+        self.__nodenet.create_link(source_uid, origin_gate, target_uid, target_slot, weight, certainty)
+
+    def unlink(self, node_uid, gate=None, target_uid=None, target_slot=None):
+        """
+        Deletes a link, or links, originating from the given node
+        """
+        node = self.__nodenet.nodes[node_uid]
+        links_to_delete = []
+        for gatetype, gateobject in node.gates:
+            if gate is None or gate is gatetype:
+                for linkid, link in gate.outgoing.items():
+                    if target_uid is None or target_uid is link.target_node.uid:
+                        if target_slot is None or target_slot is link.target_slot:
+                            links_to_delete.extend(linkid)
+
+        for uid in links_to_delete:
+            self.__nodenet.delete_link(uid)
+
+
+
+
+

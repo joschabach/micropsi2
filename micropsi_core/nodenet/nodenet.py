@@ -639,7 +639,7 @@ class NodeAPI(object):
         """
         self.__nodenet.delete_node(uid)
 
-    def create_node(self, nodetype, name=None, nodespace=None):
+    def create_node(self, nodetype, nodespace, name=None):
         """
         Creates a new node or node space of the given type, with the given name and in the given nodespace.
         Returns the newly created entity.

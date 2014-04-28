@@ -500,7 +500,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.gatechecksum = function(){
         var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
-            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].activation;
+            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].sheaves[currentSheaf].activation;
         }
         return gatechecksum;
     };

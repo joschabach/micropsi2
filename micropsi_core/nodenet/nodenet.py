@@ -541,3 +541,10 @@ class Nodenet(object):
         except KeyError:
             return None
 
+    def set_link_weight(self, link_uid, weight, certainty=1):
+        """Set weight of the given link."""
+        self.state['links'][link_uid]['weight'] = weight
+        self.state['links'][link_uid]['certainty'] = certainty
+        self.links[link_uid].weight = weight
+        self.links[link_uid].certainty = certainty
+        return True

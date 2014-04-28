@@ -135,6 +135,7 @@ class Nodenet(object):
         self.monitors = {}
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
+        self.nodeapi = NodeAPI(self)
 
         self.load()
 
@@ -599,7 +600,17 @@ class NodeAPI(object):
     Node Net API facade class for use from within the node net (in node functions)
     """
 
-    __nodenet = None
+    @property
+    def uid(self):
+        return self.__nodenet.uid
+
+    @property
+    def world(self):
+        return self.__nodenet.world
+
+    @property
+    def nodespaces(self):
+        return self.__nodenet.nodespaces
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet

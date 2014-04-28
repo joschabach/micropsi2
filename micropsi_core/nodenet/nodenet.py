@@ -585,3 +585,10 @@ class Nodenet(object):
                 uid=uid)
             self.links[link.uid] = link
         return True, link.uid
+
+    def delete_link(self, link_uid):
+        """Delete the given link."""
+        self.links[link_uid].remove()
+        del self.links[link_uid]
+        del self.state['links'][link_uid]
+        return True

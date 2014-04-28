@@ -736,10 +736,7 @@ def get_link(nodenet_uid, link_uid):
 def delete_link(nodenet_uid, link_uid):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.links[link_uid].remove()
-    del nodenet.links[link_uid]
-    del nodenet.state['links'][link_uid]
-    return True
+    return nodenet.delete_link(link_uid)
 
 
 def align_nodes(nodenet_uid, nodespace):

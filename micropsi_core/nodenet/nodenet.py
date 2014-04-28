@@ -548,3 +548,40 @@ class Nodenet(object):
         self.links[link_uid].weight = weight
         self.links[link_uid].certainty = certainty
         return True
+
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1, uid=None):
+        """Creates a new link.
+
+        Arguments.
+            source_node_uid: uid of the origin node
+            gate_type: type of the origin gate (usually defines the link type)
+            target_node_uid: uid of the target node
+            slot_type: type of the target slot
+            weight: the weight of the link (a float)
+            certainty (optional): a probabilistic parameter for the link
+            uid (option): if none is supplied, a uid will be generated
+
+        Returns:
+            link_uid if successful,
+            None if failure
+        """
+
+        # check if link already exists
+        existing_uid = self.get_link_uid(
+            source_node_uid, gate_type,
+            target_node_uid, slot_type)
+        if existing_uid:
+            link = self.links[existing_uid]
+            link.weight = weight
+            link.certainty = certainty
+        else:
+            link = Link(
+                self.nodes[source_node_uid],
+                gate_type,
+                self.nodes[target_node_uid],
+                slot_type,
+                weight=weight,
+                certainty=certainty,
+                uid=uid)
+            self.links[link.uid] = link
+        return True, link.uid

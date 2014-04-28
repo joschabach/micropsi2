@@ -707,26 +707,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         None if failure
     """
     nodenet = nodenets[nodenet_uid]
-
-    # check if link already exists
-    existing_uid = nodenet.get_link_uid(
-        source_node_uid, gate_type,
-        target_node_uid, slot_type)
-    if existing_uid:
-        link = nodenet.links[existing_uid]
-        link.weight = weight
-        link.certainty = certainty
-    else:
-        link = Link(
-            nodenet.nodes[source_node_uid],
-            gate_type,
-            nodenet.nodes[target_node_uid],
-            slot_type,
-            weight=weight,
-            certainty=certainty,
-            uid=uid)
-        nodenet.links[link.uid] = link
-    return True, link.uid
+    nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):

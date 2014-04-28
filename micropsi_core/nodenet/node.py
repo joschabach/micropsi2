@@ -128,7 +128,7 @@ class Node(NetEntity):
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
             try:
-                self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
+                self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **self.parameters)
             except SyntaxError as err:
                 warnings.warn("Syntax error during node execution: %s" % err.message)
                 self.data["activation"] = "Syntax error"

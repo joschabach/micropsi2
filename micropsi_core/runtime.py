@@ -16,7 +16,6 @@ __date__ = '10.05.12'
 from configuration import RESOURCE_PATH
 from configuration import SERVER_SETTINGS_PATH
 
-from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.nodespace import Nodespace
@@ -707,54 +706,13 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         None if failure
     """
     nodenet = nodenets[nodenet_uid]
-
-    # check if link already exists
-    existing_uid = get_link_uid(
-        nodenet.nodes[source_node_uid], gate_type,
-        nodenet.nodes[target_node_uid], slot_type)
-    if existing_uid:
-        link = nodenet.links[existing_uid]
-        link.weight = weight
-        link.certainty = certainty
-    else:
-        link = Link(
-            nodenet.nodes[source_node_uid],
-            gate_type,
-            nodenet.nodes[target_node_uid],
-            slot_type,
-            weight=weight,
-            certainty=certainty,
-            uid=uid)
-        nodenet.links[link.uid] = link
-    return True, link.uid
-
-
-def get_link_uid(source_node, source_gate_name, target_node, target_slot_name):
-    """links are uniquely identified by their origin and targets; this function checks if a link already exists.
-
-    Arguments:
-        source_node: actual node from which the link originates
-        source_gate_name: type of the gate of origin
-        target_node: node that the link ends at
-        target_slot_name: type of the terminating slot
-
-    Returns the link uid, or None if it does not exist"""
-    outgoing_candidates = set(source_node.get_gate(source_gate_name).outgoing.keys())
-    incoming_candidates = set(target_node.get_slot(target_slot_name).incoming.keys())
-    try:
-        return (outgoing_candidates & incoming_candidates).pop()
-    except KeyError:
-        return None
+    nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
     """Set weight of the given link."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.state['links'][link_uid]['weight'] = weight
-    nodenet.state['links'][link_uid]['certainty'] = certainty
-    nodenet.links[link_uid].weight = weight
-    nodenet.links[link_uid].certainty = certainty
-    return True
+    return nodenet.set_link_weight(link_uid, weight, certainty)
 
 
 def get_link(nodenet_uid, link_uid):
@@ -777,10 +735,7 @@ def get_link(nodenet_uid, link_uid):
 def delete_link(nodenet_uid, link_uid):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.links[link_uid].remove()
-    del nodenet.links[link_uid]
-    del nodenet.state['links'][link_uid]
-    return True
+    return nodenet.delete_link(link_uid)
 
 
 def align_nodes(nodenet_uid, nodespace):

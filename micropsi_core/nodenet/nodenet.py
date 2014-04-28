@@ -630,7 +630,7 @@ class NodeAPI(object):
         for node_uid, node in self.__nodenet.nodes.items():
             if (node_name_prefix is None or node.name.startswith(node_name_prefix) and
                     nodespace is None or node.parent_nodespace is nodespace):
-                    nodes.extend(node)
+                nodes.append(node)
         return nodes
 
     def delete_node(self, uid):
@@ -670,7 +670,7 @@ class NodeAPI(object):
                 for linkid, link in gate.outgoing.items():
                     if target_uid is None or target_uid is link.target_node.uid:
                         if target_slot is None or target_slot is link.target_slot:
-                            links_to_delete.extend(linkid)
+                            links_to_delete.append(linkid)
 
         for uid in links_to_delete:
             self.__nodenet.delete_link(uid)

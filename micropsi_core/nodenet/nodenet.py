@@ -627,10 +627,10 @@ class NodeAPI(object):
         the given prefix (all if None)
         """
         nodes = []
-        for node in self.__nodenet.nodes:
+        for node_uid, node in self.__nodenet.nodes.items():
             if (node_name_prefix is None or node.name.startswith(node_name_prefix) and
-                nodespace is None or node.parent_nodespace is nodespace):
-                nodes.extend(node)
+                    nodespace is None or node.parent_nodespace is nodespace):
+                    nodes.extend(node)
         return nodes
 
     def delete_node(self, uid):

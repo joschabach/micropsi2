@@ -278,6 +278,12 @@ function setNodespaceData(data){
             nodeLayer.addChild(selectionBox);
         }
         var uid;
+        for(uid in nodes) {
+            if(!(uid in data.nodes)){
+                removeNode(nodes[uid]);
+                if (uid in selection) delete selection[uid];
+            }
+        }
         for(uid in data.nodes){
             item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
             if(uid in nodes){

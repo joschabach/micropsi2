@@ -16,7 +16,6 @@ __date__ = '10.05.12'
 from configuration import RESOURCE_PATH
 from configuration import SERVER_SETTINGS_PATH
 
-from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.nodespace import Nodespace

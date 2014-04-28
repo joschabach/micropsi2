@@ -476,7 +476,6 @@ class Nodenet(object):
         for uid, node in activators.items():
             node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
 
-
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
             propagate activation from gates to slots via their links. returns the nodes that received activation.
@@ -486,7 +485,7 @@ class Nodenet(object):
                     from the given slottypes.
         """
         for uid, node in nodes.items():
-            node.reset_slots();
+            node.reset_slots()
 
         for uid, node in nodes.items():
             if limit_gatetypes is not None:
@@ -674,8 +673,3 @@ class NetAPI(object):
 
         for uid in links_to_delete:
             self.__nodenet.delete_link(uid)
-
-
-
-
-

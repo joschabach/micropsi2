@@ -1,24 +1,30 @@
 
-def register(nodenet, node=None, **params):
+
+def register(netapi, node=None, **params):
     node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
-def sensor(nodenet, node=None, datasource=None, **params):
-    node.activation = node.get_slot("gen").activation = nodenet.world.get_datasource(nodenet.uid, datasource)
-    node.gates["gen"].gate_function(nodenet.world.get_datasource(nodenet.uid, datasource))
 
-def actor(nodenet, node=None, datatarget=None, **params):
+def sensor(netapi, node=None, datasource=None, **params):
+    node.activation = node.get_slot("gen").activation = netapi.world.get_datasource(netapi.uid, datasource)
+    node.gates["gen"].gate_function(netapi.world.get_datasource(netapi.uid, datasource))
+
+
+def actor(netapi, node=None, datatarget=None, **params):
     node.activation = node.get_slot("gen").activation
-    if not nodenet.world: return
-    node.nodenet.world.set_datatarget(nodenet.uid, datatarget, node.get_slot("gen").activation)
+    if not netapi.world:
+        return
+    node.netapi.world.set_datatarget(netapi.uid, datatarget, node.get_slot("gen").activation)
 
-def concept(nodenet, node=None, **params):
+
+def concept(netapi, node=None, **params):
     node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
 
-def script(nodenet, node=None, **params):
+
+def script(netapi, node=None, **params):
     """ Script nodes are state machines that use the node activation for determining their behavior.
         They form hierarchical scripts that are started via sub-activating their top-node. If the sur-activation
         is turned off, the script stops executing.
@@ -71,20 +77,20 @@ def script(nodenet, node=None, **params):
     )
 
     # always inhibit successor, except when confirmed
-    node.get_gate("por").gate_function(-1.0 if node.activation<1 else 1.0)
+    node.get_gate("por").gate_function(-1.0 if node.activation < 1 else 1.0)
     # inhibit confirmation of predecessor, and tell it to stop once successor is requested
     node.get_gate("ret").gate_function(-1.0 if 0.1 < node.activation < 1 else 1.0)
     # request children when becoming requesting
     node.get_gate("sub").gate_function(1.0 if 0.5 < node.activation else 0)
     # keep parent from failing while pending or processing, confirm parent when confirmed
     node.get_gate("sur").gate_function(
-        0 if node.activation < 0.01 or node.get_slot("ret").activation>0 else
-        0.01 if node.activation<1 else
-        0.01 if node.get_slot("ret").activation<0 else
+        0 if node.activation < 0.01 or node.get_slot("ret").activation > 0 else
+        0.01 if node.activation < 1 else
+        0.01 if node.get_slot("ret").activation < 0 else
         1)
 
 
-def pipe(nodenet, node=None, **params):
+def pipe(netapi, node=None, **params):
     gen = 0.0
     por = 0.0
     ret = 0.0
@@ -122,6 +128,6 @@ def pipe(nodenet, node=None, **params):
     node.get_gate("sur").gate_function(sur)
 
 
-def activator(nodenet, node, **params):
+def activator(netapi, node, **params):
     node.activation = node.get_slot("gen").activation
-    nodenet.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation
+    netapi.nodespaces[node.parent_nodespace].activators[node.parameters["type"]] = node.activation

@@ -16,7 +16,6 @@ __date__ = '10.05.12'
 from configuration import RESOURCE_PATH
 from configuration import SERVER_SETTINGS_PATH
 
-from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.nodespace import Nodespace
@@ -707,54 +706,13 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         None if failure
     """
     nodenet = nodenets[nodenet_uid]
-
-    # check if link already exists
-    existing_uid = get_link_uid(
-        nodenet.nodes[source_node_uid], gate_type,
-        nodenet.nodes[target_node_uid], slot_type)
-    if existing_uid:
-        link = nodenet.links[existing_uid]
-        link.weight = weight
-        link.certainty = certainty
-    else:
-        link = Link(
-            nodenet.nodes[source_node_uid],
-            gate_type,
-            nodenet.nodes[target_node_uid],
-            slot_type,
-            weight=weight,
-            certainty=certainty,
-            uid=uid)
-        nodenet.links[link.uid] = link
-    return True, link.uid
-
-
-def get_link_uid(source_node, source_gate_name, target_node, target_slot_name):
-    """links are uniquely identified by their origin and targets; this function checks if a link already exists.
-
-    Arguments:
-        source_node: actual node from which the link originates
-        source_gate_name: type of the gate of origin
-        target_node: node that the link ends at
-        target_slot_name: type of the terminating slot
-
-    Returns the link uid, or None if it does not exist"""
-    outgoing_candidates = set(source_node.get_gate(source_gate_name).outgoing.keys())
-    incoming_candidates = set(target_node.get_slot(target_slot_name).incoming.keys())
-    try:
-        return (outgoing_candidates & incoming_candidates).pop()
-    except KeyError:
-        return None
+    nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
     """Set weight of the given link."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.state['links'][link_uid]['weight'] = weight
-    nodenet.state['links'][link_uid]['certainty'] = certainty
-    nodenet.links[link_uid].weight = weight
-    nodenet.links[link_uid].certainty = certainty
-    return True
+    return nodenet.set_link_weight(link_uid, weight, certainty)
 
 
 def get_link(nodenet_uid, link_uid):
@@ -777,10 +735,7 @@ def get_link(nodenet_uid, link_uid):
 def delete_link(nodenet_uid, link_uid):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.links[link_uid].remove()
-    del nodenet.links[link_uid]
-    del nodenet.state['links'][link_uid]
-    return True
+    return nodenet.delete_link(link_uid)
 
 
 def align_nodes(nodenet_uid, nodespace):
@@ -832,47 +787,77 @@ def parse_definition(json, filename=None):
 
 
 # Set up the MicroPsi runtime
+def load_definitions():
+    global nodenet_data, world_data
+    nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
+    if not world_data:
+        # create a default world for convenience.
+        uid = tools.generate_uid()
+        filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+        world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
+        fp.close()
+    return nodenet_data, world_data
 
-nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
-world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
-if not world_data:
-    # create a default world for convenience.
-    uid = tools.generate_uid()
-    filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
-    world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
-    with open(filename, 'w+') as fp:
-        fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
-    fp.close()
 
 # set up all worlds referred to in the world_data:
-
-# what world classes do we know at this point?
-#from world.world import World
-
-for uid in world_data:
-    if "world_type" in world_data[uid]:
-        try:
-            worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
-        except TypeError:
+def init_worlds(world_data):
+    global worlds
+    for uid in world_data:
+        if "world_type" in world_data[uid]:
+            try:
+                worlds[uid] = get_world_class_from_name(world_data[uid].world_type)(**world_data[uid])
+            except TypeError:
+                worlds[uid] = world.World(**world_data[uid])
+            except AttributeError as err:
+                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
+        else:
             worlds[uid] = world.World(**world_data[uid])
-        except AttributeError as err:
-            warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
-    else:
-        worlds[uid] = world.World(**world_data[uid])
+    return worlds
 
-# see if we have additional nodetypes defined by the user.
-custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
-if os.path.isfile(custom_nodetype_file):
-    try:
-        with open(custom_nodetype_file) as fp:
-            native_modules = json.load(fp)
-    except ValueError:
-        warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
-# respect user defined nodefunctions:
-if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
-    import sys
-    sys.path.append(RESOURCE_PATH)
+def load_user_files(do_reload=False):
+    # see if we have additional nodetypes defined by the user.
+    global native_modules
+    old_native_modules = native_modules.copy()
+    native_modules = {}
+    custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
+    if os.path.isfile(custom_nodetype_file):
+        try:
+            with open(custom_nodetype_file) as fp:
+                native_modules = json.load(fp)
+        except ValueError:
+            warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+
+    if do_reload and old_native_modules != {}:
+        for key in old_native_modules:
+            if key not in native_modules:
+                native_modules[key] = old_native_modules[key]
+                warnings.warn("Deleting native modules during runtime is unsafe. Restoring native module %s" % key)
+
+    # respect user defined nodefunctions:
+    if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
+        import sys
+        sys.path.append(RESOURCE_PATH)
+
+    return native_modules
+
+
+def reload_native_modules(nodenet_uid=None):
+    load_user_files(True)
+    if nodenet_uid:
+        for key in native_modules:
+            if key not in nodenets[nodenet_uid].native_modules:
+                nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
+            nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
+    return True
+
+
+load_definitions()
+init_worlds(world_data)
+load_user_files()
 
 # initialize runners
 # Initialize the threads for the continuous simulation of nodenets and worlds

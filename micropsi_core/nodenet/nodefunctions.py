@@ -39,7 +39,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     sub += node.get_slot("gen").get_activation(sheaf)
     sub += node.get_slot("sur").get_activation(sheaf) or node.get_slot("sur").activation
     sub += node.get_slot("sub").get_activation(sheaf)
-    sub += node.get_slot("por").get_activation(sheaf)
+    sub *= (1+node.get_slot("por").get_activation(sheaf))
     if sub > 0: sub = 1
 
     sur += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation

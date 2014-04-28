@@ -665,9 +665,9 @@ class NetAPI(object):
         """
         node = self.__nodenet.nodes[node_uid]
         links_to_delete = []
-        for gatetype, gateobject in node.gates:
+        for gatetype, gateobject in node.gates.items():
             if gate is None or gate is gatetype:
-                for linkid, link in gate.outgoing.items():
+                for linkid, link in gateobject.outgoing.items():
                     if target_uid is None or target_uid is link.target_node.uid:
                         if target_slot is None or target_slot is link.target_slot:
                             links_to_delete.append(linkid)

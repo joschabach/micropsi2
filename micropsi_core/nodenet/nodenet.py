@@ -502,7 +502,7 @@ class Nodenet(object):
            Arguments:
                nodes: the dict of nodes to consider
         """
-        for uid, node in nodes.items():
+        for uid, node in nodes.copy().items():
             node.node_function()
             node.data['activation'] = node.activation
 
@@ -628,8 +628,8 @@ class NetAPI(object):
         """
         nodes = []
         for node_uid, node in self.__nodenet.nodes.items():
-            if (node_name_prefix is None or node.name.startswith(node_name_prefix) and
-                    nodespace is None or node.parent_nodespace is nodespace):
+            if ((node_name_prefix is None or node.name.startswith(node_name_prefix)) and
+                    (nodespace is None or node.parent_nodespace is nodespace)):
                 nodes.append(node)
         return nodes
 

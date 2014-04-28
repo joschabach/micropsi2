@@ -524,4 +524,20 @@ class Nodenet(object):
                 sensors[uid] = self.nodes[uid]
         return sensors
 
+    def get_link_uid(self, source_uid, source_gate_name, target_uid, target_slot_name):
+        """links are uniquely identified by their origin and targets; this function checks if a link already exists.
+
+        Arguments:
+            source_node: actual node from which the link originates
+            source_gate_name: type of the gate of origin
+            target_node: node that the link ends at
+            target_slot_name: type of the terminating slot
+
+        Returns the link uid, or None if it does not exist"""
+        outgoing_candidates = set(self.nodes[source_uid].get_gate(source_gate_name).outgoing.keys())
+        incoming_candidates = set(self.nodes[target_uid].get_slot(target_slot_name).incoming.keys())
+        try:
+            return (outgoing_candidates & incoming_candidates).pop()
+        except KeyError:
+            return None
 

@@ -709,9 +709,9 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
     nodenet = nodenets[nodenet_uid]
 
     # check if link already exists
-    existing_uid = get_link_uid(
-        nodenet.nodes[source_node_uid], gate_type,
-        nodenet.nodes[target_node_uid], slot_type)
+    existing_uid = nodenet.get_link_uid(
+        source_node_uid, gate_type,
+        target_node_uid, slot_type)
     if existing_uid:
         link = nodenet.links[existing_uid]
         link.weight = weight
@@ -727,24 +727,6 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
             uid=uid)
         nodenet.links[link.uid] = link
     return True, link.uid
-
-
-def get_link_uid(source_node, source_gate_name, target_node, target_slot_name):
-    """links are uniquely identified by their origin and targets; this function checks if a link already exists.
-
-    Arguments:
-        source_node: actual node from which the link originates
-        source_gate_name: type of the gate of origin
-        target_node: node that the link ends at
-        target_slot_name: type of the terminating slot
-
-    Returns the link uid, or None if it does not exist"""
-    outgoing_candidates = set(source_node.get_gate(source_gate_name).outgoing.keys())
-    incoming_candidates = set(target_node.get_slot(target_slot_name).incoming.keys())
-    try:
-        return (outgoing_candidates & incoming_candidates).pop()
-    except KeyError:
-        return None
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):

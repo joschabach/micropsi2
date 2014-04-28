@@ -61,8 +61,7 @@ class Node(NetEntity):
             self.data['sheaves'] = {}
         self.data['sheaves'][sheaf] = {"uid": sheaf, "name": sheaves_to_calculate[sheaf].name, "activation": activation}
         if len(self.nodetype.gatetypes):
-            self.gates[self.nodetype.gatetypes[0]].sheaves[sheaf].activation = activation
-            self.report_gate_activation(self.nodetype.gatetypes[0], self.gates[self.nodetype.gatetypes[0]].sheaves[sheaf])
+            self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
 
     @property
     def type(self):
@@ -129,12 +128,12 @@ class Node(NetEntity):
         else:
             return None
 
-    def set_gate_activation(self, gate, activation):
+    def set_gate_activation(self, gate, activation, sheaf="default"):
         """ sets the activation of the given gate, and calls `report_gate_activation`"""
         activation = float(activation)
         if gate in self.gates:
-            self.gates[gate].activation = activation
-            self.report_gate_activation(gate, activation)
+            self.gates[gate].sheaves[sheaf].activation = activation
+            self.report_gate_activation(gate, self.gates[gate].sheaves[sheaf])
 
     def node_function(self):
         """Called whenever the node is activated or active.

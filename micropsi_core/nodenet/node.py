@@ -130,10 +130,10 @@ class Node(NetEntity):
             try:
                 self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **self.parameters)
             except SyntaxError as err:
-                warnings.warn("Syntax error during node execution: %s" % err.message)
+                warnings.warn("Syntax error during node execution: %s" % err)
                 self.data["activation"] = "Syntax error"
             except TypeError as err:
-                warnings.warn("Type error during node execution: %s" % err.message)
+                warnings.warn("Type error during node execution: %s" % err)
                 self.data["activation"] = "Parameter mismatch"
             return
 
@@ -318,6 +318,26 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "nodefunction_name": "concept",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
+    },
+    "Script": {
+        "name": "Script",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "script",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"],
+        "gate_defaults": {
+            "por": {
+                "threshold": -1
+            },
+            "ret": {
+                "threshold": -1
+            },
+            "sub": {
+                "threshold": -1
+            },
+            "sur": {
+                "threshold": -1
+            }
+        }
     },
     "Pipe": {
         "name": "Pipe",

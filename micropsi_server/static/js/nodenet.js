@@ -1117,6 +1117,8 @@ function createCompactNodeShape(node) {
             shape.closePath();
             break;
         case "Concept": // draw circle
+        case "Pipe": // draw circle
+        case "Script": // draw circle
         case "Register":
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
@@ -2076,6 +2078,7 @@ function handleContextMenu(event) {
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
+
             switch (type) {
                 case "Sensor":
                     callback = function(data){

@@ -632,6 +632,22 @@ class NetAPI(object):
                 nodes.append(node)
         return nodes
 
+    def get_field(self, uid, gate, no_links_to=None, nodespace=None):
+        """
+        Returns all nodes linked to a given node on the gate
+        """
+        nodes = []
+        for link_uid, link in self.__nodenet.nodes[uid].get_gate(gate).outgoing.items():
+            candidate = link.target_node
+            linked_gates = []
+            for candidate_gate_name, candidate_gate in candidate.gates.items():
+                if len(candidate_gate.outgoing) > 0:
+                    linked_gates.append(candidate_gate_name)
+            if ((nodespace is None or nodespace is link.target_node.parent_nodespace) and
+                (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                nodes.append(link.target_node)
+        return nodes
+
     def delete_node(self, uid):
         """
         Deletes a node and all links connected to it.

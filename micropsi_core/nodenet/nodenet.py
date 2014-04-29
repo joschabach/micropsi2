@@ -703,7 +703,6 @@ class NetAPI(object):
         """
         Deletes a link, or links, originating from the given node
         """
-        node = self.__nodenet.nodes[source_node.uid]
         links_to_delete = []
         for gatetype, gateobject in node.gates.items():
             if source_gate is None or source_gate is gatetype:

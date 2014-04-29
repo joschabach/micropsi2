@@ -72,6 +72,8 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
+viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || 1;
+
 currentNodenet = $.cookie('selected_nodenet') || null;
 currentNodeSpace = $.cookie('current_nodespace') || 'Root';
 
@@ -1843,12 +1845,14 @@ function onKeyDown(event) {
 function zoomIn(event){
     event.preventDefault();
     viewProperties.zoomFactor += 0.1;
+    $.cookie('zoom_factor', viewProperties.zoomFactor, { expires: 7, path: '/' });
     redrawNodeNet(currentNodeSpace);
 }
 
 function zoomOut(event){
     event.preventDefault();
     if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
+    $.cookie('zoom_factor', viewProperties.zoomFactor, { expires: 7, path: '/' });
     redrawNodeNet(currentNodeSpace);
 }
 

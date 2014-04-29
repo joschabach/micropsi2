@@ -1800,8 +1800,10 @@ function onMouseUp(event) {
             movePath = false;
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
-            deselectAll();
-            selectNode(path.name);
+            if(path.name in nodes){
+                deselectAll();
+                selectNode(path.name);
+            }
         }
     }
     if(selectionStart){

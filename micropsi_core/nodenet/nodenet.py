@@ -692,23 +692,23 @@ class NetAPI(object):
         self.__nodenet.update_node_positions()
         return entity
 
-    def link(self, source, origin_gate, target, target_slot, weight=1, certainty=1):
+    def link(self, source_node, source_gate, target_node, target_slot, weight=1, certainty=1):
         """
         Creates a link between two nodes. If the link already exists, it will be updated
         with the given weight and certainty values (or the default 1 if not given)
         """
-        self.__nodenet.create_link(source.uid, origin_gate, target.uid, target_slot, weight, certainty)
+        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight, certainty)
 
-    def unlink(self, node, gate=None, target=None, target_slot=None):
+    def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
         Deletes a link, or links, originating from the given node
         """
-        node = self.__nodenet.nodes[node.uid]
+        node = self.__nodenet.nodes[source_node.uid]
         links_to_delete = []
         for gatetype, gateobject in node.gates.items():
-            if gate is None or gate is gatetype:
+            if source_gate is None or source_gate is gatetype:
                 for linkid, link in gateobject.outgoing.items():
-                    if target.uid is None or target.uid is link.target_node.uid:
+                    if target_node.uid is None or target_node.uid is link.target_node.uid:
                         if target_slot is None or target_slot is link.target_slot:
                             links_to_delete.append(linkid)
 

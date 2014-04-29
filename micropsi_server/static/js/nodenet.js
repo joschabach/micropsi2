@@ -16,9 +16,7 @@ var viewProperties = {
     selectionColor: new Color("#0099ff"),
     hoverColor: new Color("#089AC7"),
     linkColor: new Color("#000000"),
-    bgColor: new Color("#ffffff"),
     nodeColor: new Color("#c2c2d6"),
-    nodeLabelColor: new Color ("#94c2f5"),
     nodeForegroundColor: new Color ("#000000"),
     nodeFontColor: new Color ("#000000"),
     fontSize: 10,
@@ -30,24 +28,19 @@ var viewProperties = {
     slotWidth: 34,
     lineHeight: 15,
     compactNodes: false,
-    compactModules: false,
     outsideDummyDistance: 70,
     outsideDummySize: 15,
     outsideDummyColor: new Color("#cccccc"),
     groupOutsideLinksThreshold: 0,
     forceCompactBelowZoomFactor: 0.9,
     strokeWidth: 0.3,
-    outlineColor: null,
     outlineWidth: 0.3,
     outlineWidthSelected: 2.0,
     highlightColor: new Color ("#ffffff"),
-    gateShadowColor: new Color("#888888"),
     shadowColor: new Color ("#000000"),
-    shadowStrokeWidth: 0,
     shadowDisplacement: new Point(0.5,1.5),
     innerShadowDisplacement: new Point(0.2,0.7),
     linkTension: 50,
-    linkRadius: 30,
     arrowWidth: 6,
     arrowLength: 10,
     rasterize: true,
@@ -1409,7 +1402,7 @@ function deselectNode(nodeUid) {
         delete selection[nodeUid];
         if(nodeUid in nodeLayer.children){
             var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
-            outline.strokeColor = viewProperties.outlineColor;
+            outline.strokeColor = null;
             outline.strokeWidth = viewProperties.outlineWidth;
         }
     }
@@ -1469,7 +1462,6 @@ function deselectAll() {
 // should we draw this node in compact style or full?
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
-    if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     else return viewProperties.compactNodes;
 }
 

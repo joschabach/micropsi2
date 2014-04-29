@@ -15,7 +15,7 @@ def actor(netapi, node=None, datatarget=None, **params):
     node.activation = node.get_slot("gen").activation
     if not netapi.world:
         return
-    node.netapi.world.set_datatarget(netapi.uid, datatarget, node.get_slot("gen").activation)
+    netapi.world.set_datatarget(netapi.uid, datatarget, node.get_slot("gen").activation)
 
 
 def concept(netapi, node=None, **params):

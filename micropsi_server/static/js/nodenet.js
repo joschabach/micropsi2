@@ -73,7 +73,8 @@ prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
-currentNodeSpace = 'Root';   // cookie
+currentNodeSpace = $.cookie('current_nodespace') || 'Root';
+
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
@@ -107,7 +108,7 @@ var inverse_link_map = {'por':'ret', 'sub':'sur', 'cat':'exp'};
 var inverse_link_targets = ['ret', 'sur', 'exp'];
 
 if(currentNodenet){
-    setCurrentNodenet(currentNodenet);
+    setCurrentNodenet(currentNodenet, currentNodeSpace);
 } else {
     splash = new PointText(new Point(50, 50));
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
@@ -259,6 +260,7 @@ function getNodespaceList(){
             html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
         }
         $('#nodespace_control ul').html(html);
+        $("#nodespace_name").text(nodespaces[currentNodeSpace].name);
     });
 }
 
@@ -370,6 +372,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     api.call('get_nodespace', params , success=function(data){
         if(nodespace != currentNodeSpace){
             currentNodeSpace = nodespace;
+            $.cookie('current_nodespace', nodespace, { expires: 7, path: '/' });
             $("#nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();

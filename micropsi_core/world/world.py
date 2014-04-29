@@ -284,7 +284,7 @@ class World(object):
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
-        if nodenet_uid in self.worldadapters:
+        if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].get_available_datatargets()
         return None
 

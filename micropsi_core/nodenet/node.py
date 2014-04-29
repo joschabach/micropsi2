@@ -401,6 +401,26 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "concept",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
     },
+    "Script": {
+        "name": "Script",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "script",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"],
+        "gate_defaults": {
+            "por": {
+                "threshold": -1
+            },
+            "ret": {
+                "threshold": -1
+            },
+            "sub": {
+                "threshold": -1
+            },
+            "sur": {
+                "threshold": -1
+            }
+        }
+    },
     "Pipe": {
         "name": "Pipe",
         "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],

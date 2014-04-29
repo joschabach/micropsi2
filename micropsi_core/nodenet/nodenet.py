@@ -544,6 +544,15 @@ class Nodenet(object):
                 sensors[uid] = self.nodes[uid]
         return sensors
 
+    def get_actors(self, nodespace=None):
+        """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
+        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        actors = {}
+        for uid in nodes:
+            if self.nodes[uid].type == 'Actor':
+                actors[uid] = self.nodes[uid]
+        return actors
+
     def get_link_uid(self, source_uid, source_gate_name, target_uid, target_slot_name):
         """links are uniquely identified by their origin and targets; this function checks if a link already exists.
 
@@ -652,11 +661,43 @@ class NetAPI(object):
                 nodes.append(node)
         return nodes
 
-    def delete_node(self, uid):
+    def get_nodes_field(self, node, gate, no_links_to=None, nodespace=None):
+        """
+        Returns all nodes linked to a given node on the gate
+        """
+        nodes = []
+        for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
+            candidate = link.target_node
+            linked_gates = []
+            for candidate_gate_name, candidate_gate in candidate.gates.items():
+                if len(candidate_gate.outgoing) > 0:
+                    linked_gates.append(candidate_gate_name)
+            if ((nodespace is None or nodespace is link.target_node.parent_nodespace) and
+                (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                nodes.append(link.target_node)
+        return nodes
+
+    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None):
+        """
+        Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
+        """
+        nodes = []
+        for node in self.get_nodes(nodespace):
+            if type is None or node.type == type:
+                if gate is not None:
+                    if gate in node.gates:
+                        if node.get_gate(gate).activation >= min_activation:
+                            nodes.append(node)
+                else:
+                    if node.activation >= min_activation:
+                        nodes.append(node)
+        return nodes
+
+    def delete_node(self, node):
         """
         Deletes a node and all links connected to it.
         """
-        self.__nodenet.delete_node(uid)
+        self.__nodenet.delete_node(node.uid)
 
     def create_node(self, nodetype, nodespace, name=None):
         """
@@ -671,25 +712,89 @@ class NetAPI(object):
         self.__nodenet.update_node_positions()
         return entity
 
-    def link(self, source_uid, origin_gate, target_uid, target_slot, weight=1, certainty=1):
+    def link(self, source_node, source_gate, target_node, target_slot, weight=1, certainty=1):
         """
         Creates a link between two nodes. If the link already exists, it will be updated
         with the given weight and certainty values (or the default 1 if not given)
         """
-        self.__nodenet.create_link(source_uid, origin_gate, target_uid, target_slot, weight, certainty)
+        self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight, certainty)
 
-    def unlink(self, node_uid, gate=None, target_uid=None, target_slot=None):
+    def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
         Deletes a link, or links, originating from the given node
         """
-        node = self.__nodenet.nodes[node_uid]
         links_to_delete = []
         for gatetype, gateobject in node.gates.items():
-            if gate is None or gate is gatetype:
+            if source_gate is None or source_gate is gatetype:
                 for linkid, link in gateobject.outgoing.items():
-                    if target_uid is None or target_uid is link.target_node.uid:
+                    if target_node.uid is None or target_node.uid is link.target_node.uid:
                         if target_slot is None or target_slot is link.target_slot:
                             links_to_delete.append(linkid)
 
         for uid in links_to_delete:
             self.__nodenet.delete_link(uid)
+
+    def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
+        """
+        Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
+        a new actor will be created, otherwise the first actor found will be used
+        """
+        if datatarget not in self.world.get_available_datatargets(self.__nodenet.uid):
+            raise KeyError("Data target %s not found" % datatarget)
+        actor = None
+        for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
+            if candidate.parameters['datatarget'] == datatarget:
+                actor = candidate
+        if actor is None:
+            actor = self.create_node("Actor", node.parent_nodespace, datatarget)
+            actor.parameters.update({'datatarget': datatarget})
+
+        self.link(node, gate, actor, 'gen', weight, certainty)
+        self.link(actor, 'gen', node, slot)
+
+    def link_sensor(self, node, datasource, slot='sur'):
+        """
+        Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
+        a new sensor will be created, otherwise the first sensor found will be used
+        """
+        if datasource not in self.world.get_available_datasources(self.__nodenet.uid):
+            raise KeyError("Data source %s not found" % datasource)
+        sensor = None
+        for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
+            if candidate.parameters['datasource'] == datasource:
+                sensor = candidate
+        if sensor is None:
+            sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
+            sensor.parameters.update({'datasource': datasource})
+
+        self.link(sensor, 'gen', node, slot)
+
+    def import_actors(self, nodespace, datatarget_prefix=None):
+        """
+        Makes sure an actor for all datatargets whose names start with the given prefix, or all datatargets,
+        exists in the given nodespace.
+        """
+        for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
+            if datatarget_prefix is None or datatarget.startwith(datatarget_prefix):
+                actor = None
+                for uid, candidate in self.__nodenet.get_actors(nodespace).items():
+                    if candidate.parameters['datatarget'] == datatarget:
+                        actor = candidate
+                if actor is None:
+                    actor = self.create_node("Actor", nodespace, datatarget)
+                    actor.parameters.update({'datatarget': datatarget})
+
+    def import_sensors(self, nodespace, datasource_prefix=None):
+        """
+        Makes sure a sensor for all datasources whose names start with the given prefix, or all datasources,
+        exists in the given nodespace.
+        """
+        for datasource in self.world.get_available_datasources(self.__nodenet.uid):
+            if datasource_prefix is None or datasource.startswith(datasource_prefix):
+                sensor = None
+                for uid, candidate in self.__nodenet.get_sensors(nodespace).items():
+                    if candidate.parameters['datasource'] == datasource:
+                        sensor = candidate
+                if sensor is None:
+                    sensor = self.create_node("Sensor", nodespace, datasource)
+                    sensor.parameters.update({'datasource': datasource})

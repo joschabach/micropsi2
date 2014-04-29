@@ -721,7 +721,7 @@ class NetAPI(object):
         a new actor will be created, otherwise the first actor found will be used
         """
         if datatarget not in self.world.get_available_datatargets(self.__nodenet.uid):
-            raise KeyError("Data target "+datatarget+" not found")
+            raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
             if candidate.parameters['datatarget'] == datatarget:
@@ -739,7 +739,7 @@ class NetAPI(object):
         a new sensor will be created, otherwise the first sensor found will be used
         """
         if datasource not in self.world.get_available_datasources(self.__nodenet.uid):
-            raise KeyError("Data source "+datasource+" not found")
+            raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
             if candidate.parameters['datasource'] == datasource:

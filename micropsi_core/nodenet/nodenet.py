@@ -733,3 +733,33 @@ class NetAPI(object):
             sensor.parameters.update({'datasource': datasource})
 
         self.link(sensor, 'gen', node, slot)
+
+    def import_actors(self, nodespace, datatarget_prefix=None):
+        """
+        Makes sure an actor for all datatargets whose names start with the given prefix, or all datatargets,
+        exists in the given nodespace.
+        """
+        for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
+            if datatarget_prefix is None or datatarget.startwith(datatarget_prefix):
+                actor = None
+                for uid, candidate in self.__nodenet.get_actors(nodespace).items():
+                    if candidate.parameters['datatarget'] == datatarget:
+                        actor = candidate
+                if actor is None:
+                    actor = self.create_node("Actor", nodespace, datatarget)
+                    actor.parameters.update({'datatarget': datatarget})
+
+    def import_sensors(self, nodespace, datasource_prefix=None):
+        """
+        Makes sure a sensor for all datasources whose names start with the given prefix, or all datasources,
+        exists in the given nodespace.
+        """
+        for datasource in self.world.get_available_datasources(self.__nodenet.uid):
+            if datasource_prefix is None or datasource.startswith(datasource_prefix):
+                sensor = None
+                for uid, candidate in self.__nodenet.get_sensors(nodespace).items():
+                    if candidate.parameters['datasource'] == datasource:
+                        sensor = candidate
+                if sensor is None:
+                    sensor = self.create_node("Sensor", nodespace, datasource)
+                    sensor.parameters.update({'datasource': datasource})

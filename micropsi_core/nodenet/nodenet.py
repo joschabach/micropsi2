@@ -524,6 +524,15 @@ class Nodenet(object):
                 sensors[uid] = self.nodes[uid]
         return sensors
 
+    def get_actors(self, nodespace=None):
+        """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
+        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        actors = {}
+        for uid in nodes:
+            if self.nodes[uid].type == 'Actor':
+                actors[uid] = self.nodes[uid]
+        return actors
+
     def get_link_uid(self, source_uid, source_gate_name, target_uid, target_slot_name):
         """links are uniquely identified by their origin and targets; this function checks if a link already exists.
 
@@ -689,3 +698,25 @@ class NetAPI(object):
 
         for uid in links_to_delete:
             self.__nodenet.delete_link(uid)
+
+    def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
+        """
+        Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
+        a new actor will be created, otherwise the first actor found will be used
+        """
+        if datatarget not in self.world.get_available_datatargets(self.__nodenet.uid):
+            raise KeyError("Data target "+datatarget+" not found")
+        actor = None
+        sepp = None
+        for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
+            if candidate.parameters['datatarget'] == datatarget:
+                actor = candidate
+        if actor is None:
+            actor = self.create_node("Actor", node.parent_nodespace, datatarget)
+            actor.parameters.update({'datatarget': datatarget})
+
+        self.link(node, gate, actor, 'gen', weight, certainty)
+        self.link(actor, 'gen', node, slot)
+
+    def link_sensor(self, node, datasource, slot='sur'):
+        pass

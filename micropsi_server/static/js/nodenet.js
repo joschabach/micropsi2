@@ -208,7 +208,7 @@ function setCurrentNodenet(uid, nodespace){
             showDefaultForm();
             $('#nodenet_step').val(data.step);
 
-            currentNodeSpace = nodespace;
+            currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
             nodes = {};

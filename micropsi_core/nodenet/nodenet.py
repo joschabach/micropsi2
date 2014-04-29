@@ -707,7 +707,6 @@ class NetAPI(object):
         if datatarget not in self.world.get_available_datatargets(self.__nodenet.uid):
             raise KeyError("Data target "+datatarget+" not found")
         actor = None
-        sepp = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
             if candidate.parameters['datatarget'] == datatarget:
                 actor = candidate
@@ -719,4 +718,18 @@ class NetAPI(object):
         self.link(actor, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur'):
-        pass
+        """
+        Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
+        a new sensor will be created, otherwise the first sensor found will be used
+        """
+        if datasource not in self.world.get_available_datasources(self.__nodenet.uid):
+            raise KeyError("Data source "+datasource+" not found")
+        sensor = None
+        for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
+            if candidate.parameters['datasource'] == datasource:
+                sensor = candidate
+        if sensor is None:
+            sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
+            sensor.parameters.update({'datasource': datasource})
+
+        self.link(sensor, 'gen', node, slot)

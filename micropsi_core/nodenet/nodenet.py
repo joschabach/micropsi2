@@ -657,6 +657,22 @@ class NetAPI(object):
                 nodes.append(link.target_node)
         return nodes
 
+    def get_active(self, nodespace, type=None, min_activation=1, gate=None):
+        """
+        Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
+        """
+        nodes = []
+        for node in self.get_nodes(nodespace):
+            if type is None or node.type == type:
+                if gate is not None:
+                    if gate in node.gates:
+                        if node.get_gate(gate).activation >= min_activation:
+                            nodes.append(node)
+                else:
+                    if node.activation >= min_activation:
+                        nodes.append(node)
+        return nodes
+
     def delete_node(self, node):
         """
         Deletes a node and all links connected to it.

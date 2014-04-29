@@ -632,12 +632,12 @@ class NetAPI(object):
                 nodes.append(node)
         return nodes
 
-    def get_field(self, uid, gate, no_links_to=None, nodespace=None):
+    def get_field(self, node, gate, no_links_to=None, nodespace=None):
         """
         Returns all nodes linked to a given node on the gate
         """
         nodes = []
-        for link_uid, link in self.__nodenet.nodes[uid].get_gate(gate).outgoing.items():
+        for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
             candidate = link.target_node
             linked_gates = []
             for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -648,11 +648,11 @@ class NetAPI(object):
                 nodes.append(link.target_node)
         return nodes
 
-    def delete_node(self, uid):
+    def delete_node(self, node):
         """
         Deletes a node and all links connected to it.
         """
-        self.__nodenet.delete_node(uid)
+        self.__nodenet.delete_node(node.uid)
 
     def create_node(self, nodetype, nodespace, name=None):
         """
@@ -667,23 +667,23 @@ class NetAPI(object):
         self.__nodenet.update_node_positions()
         return entity
 
-    def link(self, source_uid, origin_gate, target_uid, target_slot, weight=1, certainty=1):
+    def link(self, source, origin_gate, target, target_slot, weight=1, certainty=1):
         """
         Creates a link between two nodes. If the link already exists, it will be updated
         with the given weight and certainty values (or the default 1 if not given)
         """
-        self.__nodenet.create_link(source_uid, origin_gate, target_uid, target_slot, weight, certainty)
+        self.__nodenet.create_link(source.uid, origin_gate, target.uid, target_slot, weight, certainty)
 
-    def unlink(self, node_uid, gate=None, target_uid=None, target_slot=None):
+    def unlink(self, node, gate=None, target=None, target_slot=None):
         """
         Deletes a link, or links, originating from the given node
         """
-        node = self.__nodenet.nodes[node_uid]
+        node = self.__nodenet.nodes[node.uid]
         links_to_delete = []
         for gatetype, gateobject in node.gates.items():
             if gate is None or gate is gatetype:
                 for linkid, link in gateobject.outgoing.items():
-                    if target_uid is None or target_uid is link.target_node.uid:
+                    if target.uid is None or target.uid is link.target_node.uid:
                         if target_slot is None or target_slot is link.target_slot:
                             links_to_delete.append(linkid)
 

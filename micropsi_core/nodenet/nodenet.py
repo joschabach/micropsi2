@@ -641,7 +641,7 @@ class NetAPI(object):
                 nodes.append(node)
         return nodes
 
-    def get_field(self, node, gate, no_links_to=None, nodespace=None):
+    def get_nodes_field(self, node, gate, no_links_to=None, nodespace=None):
         """
         Returns all nodes linked to a given node on the gate
         """
@@ -657,7 +657,7 @@ class NetAPI(object):
                 nodes.append(link.target_node)
         return nodes
 
-    def get_active(self, nodespace, type=None, min_activation=1, gate=None):
+    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None):
         """
         Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
         """

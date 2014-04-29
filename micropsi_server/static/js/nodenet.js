@@ -2117,7 +2117,7 @@ function handleContextMenu(event) {
                     break;
             }
             if(autoalign){
-                autoalignmentHandler(currentNodeSpace);
+                autoalignmentHandler();
             } else if(type) {
                 if (type == "Native"){
                     createNativeModuleHandler();
@@ -2125,7 +2125,7 @@ function handleContextMenu(event) {
                 else {
                     createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
                         clickPosition.y/viewProperties.zoomFactor,
-                        currentNodeSpace, "", type, null, callback);
+                        "", type, null, callback);
                 }
             } else{
                 return false;
@@ -2234,18 +2234,18 @@ function handleContextMenu(event) {
 }
 
 // rearrange nodes in the current nodespace
-function autoalignmentHandler(currentNodespace) {
+function autoalignmentHandler() {
     api.call("align_nodes", {
             nodenet_uid: currentNodenet,
-            nodespace: currentNodespace
+            nodespace: currentNodeSpace
         },
         function(data){
-            setCurrentNodenet(currentNodenet, currentNodespace);
+            setCurrentNodenet(currentNodenet, currentNodeSpace);
         });
 }
 
 // let user create a new node
-function createNodeHandler(x, y, currentNodespace, name, type, parameters, callback) {
+function createNodeHandler(x, y, name, type, parameters, callback) {
     var uid = makeUuid();
     params = {};
     if (!parameters) parameters = {};
@@ -2261,7 +2261,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
         nodenet_uid: currentNodenet,
         type: type,
         pos: [x,y],
-        nodespace: currentNodespace,
+        nodespace: currentNodeSpace,
         uid: uid,
         name: name,
         parameters: params },
@@ -2280,7 +2280,6 @@ function createNativeModuleHandler(event){
     if(event){
         createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
                         clickPosition.y/viewProperties.zoomFactor,
-                        currentNodeSpace,
                         $('#native_module_name').val(),
                         $('#native_module_type').val(),
                         {}, null);

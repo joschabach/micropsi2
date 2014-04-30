@@ -150,23 +150,32 @@ class Node(NetEntity):
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
 
+            sheaves_to_calculate = self.get_sheaves_to_calculate()
+
+            # find node activation to carry over
+            node_activation_to_carry_over= {}
+            for id in self.sheaves.keys():
+                if id in sheaves_to_calculate:
+                    node_activation_to_carry_over[id] = self.sheaves[id]
+
             # clear activation states
-            self.sheaves = {}
-            self.data['sheaves'] = {}
             for gatename in self.gates:
                 gate = self.get_gate(gatename)
                 gate.sheaves = {}
                 self.data['gate_activations'][gatename] = {}
+            self.sheaves = {}
+            self.data['sheaves'] = {}
 
             # calculate activation states for all open sheaves
-            sheaves_to_calculate = self.get_sheaves_to_calculate()
             for sheaf_id in sheaves_to_calculate.keys():
 
                 # prepare sheaves
-                self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                 for gatename in self.gates:
                     gate = self.get_gate(gatename)
                     gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
+                    gate.node.report_gate_activation(gate.type, gate.sheaves[sheaf_id])
+                self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
+                self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id].activation, sheaf_id)
 
                 # and actually calculate new values for them
                 try:
@@ -214,6 +223,8 @@ class Node(NetEntity):
             slot = self.get_slot(slotname)
             for uid in slot.sheaves.keys():
                 sheaves_to_calculate[uid] = slot.sheaves[uid].copy()
+        if 'default' not in sheaves_to_calculate.keys():
+            sheaves_to_calculate['default'] = SheafElement()
         return sheaves_to_calculate
 
     def set_gate_parameters(self, gate_type, parameters):

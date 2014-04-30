@@ -6,7 +6,7 @@ def register(netapi, node=None, **params):
 
 
 def sensor(netapi, node=None, datasource=None, **params):
-    node.activation = node.get_slot("gen").activation = netapi.world.get_datasource(netapi.uid, datasource)
+    node.activation = netapi.world.get_datasource(netapi.uid, datasource)
     node.gates["gen"].gate_function(netapi.world.get_datasource(netapi.uid, datasource))
 
 

@@ -241,9 +241,9 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
 
 def clear_nodenet(nodenet_uid):
     """Deletes all contents of a nodenet"""
-
     nodenet = get_nodenet(nodenet_uid)
     nodenet.clear()
+    return True
 
 
 def delete_nodenet(nodenet_uid):
@@ -711,6 +711,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
     """
     nodenet = nodenets[nodenet_uid]
     nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
+    return True
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):

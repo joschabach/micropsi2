@@ -1125,7 +1125,7 @@ function createCompactNodeShape(node) {
                 shape = nodetypes[node.type].shape;
             }
             if(['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape) < 0){
-                shape = 'RoundedReactangle';
+                shape = 'RoundedRectangle';
             }
             shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
     }

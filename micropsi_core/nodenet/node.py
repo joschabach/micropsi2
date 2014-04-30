@@ -174,8 +174,13 @@ class Node(NetEntity):
                     gate = self.get_gate(gatename)
                     gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                     gate.node.report_gate_activation(gate.type, gate.sheaves[sheaf_id])
-                self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
-                self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id].activation, sheaf_id)
+                if sheaf_id in node_activation_to_carry_over:
+                    self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
+                    self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id].activation, sheaf_id)
+                else:
+                    self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
+                    self.set_sheaf_activation(0, sheaf_id)
+
 
                 # and actually calculate new values for them
                 try:

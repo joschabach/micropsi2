@@ -677,7 +677,7 @@ class NetAPI(object):
                 nodes.append(link.target_node)
         return nodes
 
-    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None):
+    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None, sheaf='default'):
         """
         Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
         """
@@ -686,10 +686,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.gates:
-                        if node.get_gate(gate).activation >= min_activation:
+                        if node.get_gate(gate).sheaves[sheaf].activation >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.activation >= min_activation:
+                    if node.sheaves[sheaf].activation >= min_activation:
                         nodes.append(node)
         return nodes
 

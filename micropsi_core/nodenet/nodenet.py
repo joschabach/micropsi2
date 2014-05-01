@@ -637,7 +637,7 @@ class NetAPI(object):
         nodes = []
         for node_uid, node in self.__nodenet.nodes.items():
             if ((node_name_prefix is None or node.name.startswith(node_name_prefix)) and
-                    (nodespace is None or node.parent_nodespace is nodespace)):
+                    (nodespace is None or node.parent_nodespace == nodespace)):
                 nodes.append(node)
         return nodes
 

@@ -72,11 +72,11 @@ class StructuredObjects(WorldAdapter):
                                    OBJECTS[self.currentobject.structured_object_type]['shape_grid'])
 
         #manage the scene
-        if self.datatargets['fovea_reset'] > 0:
+        if self.datatargets['fov_reset'] > 0:
             self.scene.reset_fovea()
 
-        self.scene.move_fovea_x(self.datatargets['fovea_x'])
-        self.scene.move_fovea_y(self.datatargets['fovea_y'])
+        self.scene.move_fovea_x(self.datatargets['fov_x'])
+        self.scene.move_fovea_y(self.datatargets['fov_y'])
 
         self.datasources["fov-x"] = self.scene.fovea_x
         self.datasources["fov-y"] = self.scene.fovea_y

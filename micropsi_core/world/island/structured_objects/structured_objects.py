@@ -13,7 +13,7 @@ class StructuredObjects(WorldAdapter):
     shapecolors = []
 
     datasources = {}
-    datatargets = {'fovea_x': 0, 'fovea_y': 0, 'fovea_reset': 0}
+    datatargets = {'fov_x': 0, 'fov_y': 0, 'fov_reset': 0}
 
     currentobject = None
     scene = None
@@ -36,6 +36,9 @@ class StructuredObjects(WorldAdapter):
         for shapecolor in self.shapecolors:
             self.datasources["fovea-"+shapecolor] = 0
             self.datasources["presence-"+shapecolor] = 0
+
+        self.datasources["fov-x"] = 0
+        self.datasources["fov-y"] = 0
 
         self.scene = Scene(world, uid)
         self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
@@ -74,6 +77,9 @@ class StructuredObjects(WorldAdapter):
 
         self.scene.move_fovea_x(self.datatargets['fovea_x'])
         self.scene.move_fovea_y(self.datatargets['fovea_y'])
+
+        self.datasources["fov-x"] = self.scene.fovea_x
+        self.datasources["fov-y"] = self.scene.fovea_y
 
         for shapetype in self.shapetypes:
             self.datasources["fovea-"+shapetype] = self.scene.is_fovea_on_shape_type(shapetype)

@@ -1121,13 +1121,17 @@ function createCompactNodeShape(node) {
             shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
             break;
         default:
-            // if (nodetypes[node.type] && nodetypes[node.type].shape){
-            //     shape = nodetypes[node.type].shape;
-            // }
-            // if(['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape) < 0){
-            //     shape = 'RoundedRectangle';
-            // }
-            shape = new Path.Rectangle(bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+            if (nodetypes[node.type] && nodetypes[node.type].shape){
+                shape = nodetypes[node.type].shape;
+            }
+            if(shape == "Circle"){
+                shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
+            } else {
+                if(['Circle', 'Rectangle', 'RoundRectangle'].indexOf(shape) < 0){
+                    shape = 'RoundRectangle';
+                }
+                shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+            }
     }
     return shape;
 }

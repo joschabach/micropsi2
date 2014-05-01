@@ -16,9 +16,7 @@ var viewProperties = {
     selectionColor: new Color("#0099ff"),
     hoverColor: new Color("#089AC7"),
     linkColor: new Color("#000000"),
-    bgColor: new Color("#ffffff"),
     nodeColor: new Color("#c2c2d6"),
-    nodeLabelColor: new Color ("#94c2f5"),
     nodeForegroundColor: new Color ("#000000"),
     nodeFontColor: new Color ("#000000"),
     fontSize: 10,
@@ -30,24 +28,19 @@ var viewProperties = {
     slotWidth: 34,
     lineHeight: 15,
     compactNodes: false,
-    compactModules: false,
     outsideDummyDistance: 70,
     outsideDummySize: 15,
     outsideDummyColor: new Color("#cccccc"),
     groupOutsideLinksThreshold: 0,
     forceCompactBelowZoomFactor: 0.9,
     strokeWidth: 0.3,
-    outlineColor: null,
     outlineWidth: 0.3,
     outlineWidthSelected: 2.0,
     highlightColor: new Color ("#ffffff"),
-    gateShadowColor: new Color("#888888"),
     shadowColor: new Color ("#000000"),
-    shadowStrokeWidth: 0,
     shadowDisplacement: new Point(0.5,1.5),
     innerShadowDisplacement: new Point(0.2,0.7),
     linkTension: 50,
-    linkRadius: 30,
     arrowWidth: 6,
     arrowLength: 10,
     rasterize: true,
@@ -72,8 +65,11 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
+viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || 1;
+
 currentNodenet = $.cookie('selected_nodenet') || null;
-currentNodeSpace = 'Root';   // cookie
+currentNodeSpace = $.cookie('current_nodespace') || 'Root';
+
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
@@ -109,7 +105,7 @@ var inverse_link_map = {'por':'ret', 'sub':'sur', 'cat':'exp'};
 var inverse_link_targets = ['ret', 'sur', 'exp'];
 
 if(currentNodenet){
-    setCurrentNodenet(currentNodenet);
+    setCurrentNodenet(currentNodenet, currentNodeSpace);
 } else {
     splash = new PointText(new Point(50, 50));
     splash.characterStyle = { fontSize: 20, fillColor: "#66666" };
@@ -214,7 +210,7 @@ function setCurrentNodenet(uid, nodespace){
             showDefaultForm();
             $('#nodenet_step').val(data.step);
 
-            currentNodeSpace = nodespace;
+            currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
             nodes = {};
@@ -261,6 +257,7 @@ function getNodespaceList(){
             html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
         }
         $('#nodespace_control ul').html(html);
+        $("#nodespace_name").text(nodespaces[currentNodeSpace].name);
     });
 }
 
@@ -372,6 +369,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     api.call('get_nodespace', params , success=function(data){
         if(nodespace != currentNodeSpace){
             currentNodeSpace = nodespace;
+            $.cookie('current_nodespace', nodespace, { expires: 7, path: '/' });
             $("#nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
@@ -1133,10 +1131,14 @@ function createCompactNodeShape(node) {
             if (nodetypes[node.type] && nodetypes[node.type].shape){
                 shape = nodetypes[node.type].shape;
             }
-            if(['Circle', 'Rectangle', 'RoundedRectangle'].indexOf(shape) < 0){
-                shape = 'RoundedReactangle';
+            if(shape == "Circle"){
+                shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
+            } else {
+                if(['Circle', 'Rectangle', 'RoundRectangle'].indexOf(shape) < 0){
+                    shape = 'RoundRectangle';
+                }
+                shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
             }
-            shape = new Path[shape](bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
     }
     return shape;
 }
@@ -1436,7 +1438,7 @@ function deselectNode(nodeUid) {
         delete selection[nodeUid];
         if(nodeUid in nodeLayer.children){
             var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
-            outline.strokeColor = viewProperties.outlineColor;
+            outline.strokeColor = null;
             outline.strokeWidth = viewProperties.outlineWidth;
         }
     }
@@ -1496,7 +1498,6 @@ function deselectAll() {
 // should we draw this node in compact style or full?
 function isCompact(node) {
     if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
-    if (node.type == "Native" || node.type=="Nodespace") return viewProperties.compactModules;
     else return viewProperties.compactNodes;
 }
 
@@ -1835,8 +1836,10 @@ function onMouseUp(event) {
             movePath = false;
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
-            deselectAll();
-            selectNode(path.name);
+            if(path.name in nodes){
+                deselectAll();
+                selectNode(path.name);
+            }
         }
     }
     if(selectionStart){
@@ -1872,12 +1875,14 @@ function onKeyDown(event) {
 function zoomIn(event){
     event.preventDefault();
     viewProperties.zoomFactor += 0.1;
+    $.cookie('zoom_factor', viewProperties.zoomFactor, { expires: 7, path: '/' });
     redrawNodeNet(currentNodeSpace);
 }
 
 function zoomOut(event){
     event.preventDefault();
     if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
+    $.cookie('zoom_factor', viewProperties.zoomFactor, { expires: 7, path: '/' });
     redrawNodeNet(currentNodeSpace);
 }
 
@@ -2142,7 +2147,7 @@ function handleContextMenu(event) {
                     break;
             }
             if(autoalign){
-                autoalignmentHandler(currentNodeSpace);
+                autoalignmentHandler();
             } else if(type) {
                 if (type == "Native"){
                     createNativeModuleHandler();
@@ -2150,7 +2155,7 @@ function handleContextMenu(event) {
                 else {
                     createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
                         clickPosition.y/viewProperties.zoomFactor,
-                        currentNodeSpace, "", type, null, callback);
+                        "", type, null, callback);
                 }
             } else{
                 return false;
@@ -2259,18 +2264,18 @@ function handleContextMenu(event) {
 }
 
 // rearrange nodes in the current nodespace
-function autoalignmentHandler(currentNodespace) {
+function autoalignmentHandler() {
     api.call("align_nodes", {
             nodenet_uid: currentNodenet,
-            nodespace: currentNodespace
+            nodespace: currentNodeSpace
         },
         function(data){
-            setCurrentNodenet(currentNodenet, currentNodespace);
+            setCurrentNodenet(currentNodenet, currentNodeSpace);
         });
 }
 
 // let user create a new node
-function createNodeHandler(x, y, currentNodespace, name, type, parameters, callback) {
+function createNodeHandler(x, y, name, type, parameters, callback) {
     var uid = makeUuid();
     params = {};
     if (!parameters) parameters = {};
@@ -2286,7 +2291,7 @@ function createNodeHandler(x, y, currentNodespace, name, type, parameters, callb
         nodenet_uid: currentNodenet,
         type: type,
         pos: [x,y],
-        nodespace: currentNodespace,
+        nodespace: currentNodeSpace,
         uid: uid,
         name: name,
         parameters: params },
@@ -2305,7 +2310,6 @@ function createNativeModuleHandler(event){
     if(event){
         createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
                         clickPosition.y/viewProperties.zoomFactor,
-                        currentNodeSpace,
                         $('#native_module_name').val(),
                         $('#native_module_type').val(),
                         {}, null);

@@ -185,10 +185,14 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
     """ returns part of the nodespace for representation in the UI
     Either you specify an area to be retrieved, or the retrieval is limited to 500 nodes currently
     """
+    if nodespace not in nodenets[nodenet_uid].nodespaces:
+        nodespace = "Root"
     if x2 < 0 or y2 < 0:
-        return nodenets[nodenet_uid].get_nodespace(nodespace, 500)
+        data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
     else:
-        return nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+        data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+    data['nodespace'] = nodespace
+    return data
 
 
 def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):
@@ -237,9 +241,9 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
 
 def clear_nodenet(nodenet_uid):
     """Deletes all contents of a nodenet"""
-
     nodenet = get_nodenet(nodenet_uid)
     nodenet.clear()
+    return True
 
 
 def delete_nodenet(nodenet_uid):
@@ -707,6 +711,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
     """
     nodenet = nodenets[nodenet_uid]
     nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
+    return True
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):

@@ -231,7 +231,7 @@ class Nodenet(object):
             if data['source_node_uid'] in self.nodes and \
                     data['source_gate_name'] in self.nodes[data['source_node_uid']].gates and\
                     data['target_node_uid'] in self.nodes and\
-                    data['target_slot_name'] in self.nodes[data['source_node_uid']].slots:
+                    data['target_slot_name'] in self.nodes[data['target_node_uid']].slots:
                 self.links[uid] = Link(
                     self.nodes[data['source_node_uid']], data['source_gate_name'],
                     self.nodes[data['target_node_uid']], data['target_slot_name'],

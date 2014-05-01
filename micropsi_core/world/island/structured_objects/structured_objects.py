@@ -30,12 +30,12 @@ class StructuredObjects(WorldAdapter):
                         self.shapecolors.append(shape.color)
 
         for shapetype in self.shapetypes:
-            self.datasources[shapetype] = 0
-            self.datasources[shapetype + '-presence'] = 0
+            self.datasources["fovea-"+shapetype] = 0
+            self.datasources["presence-"+shapetype] = 0
 
         for shapecolor in self.shapecolors:
-            self.datasources[shapecolor] = 0
-            self.datasources[shapecolor + '-presence'] = 0
+            self.datasources["fovea-"+shapecolor] = 0
+            self.datasources["presence-"+shapecolor] = 0
 
         self.scene = Scene(world, uid)
         self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
@@ -76,9 +76,9 @@ class StructuredObjects(WorldAdapter):
         self.scene.move_fovea_y(self.datatargets['fovea_y'])
 
         for shapetype in self.shapetypes:
-            self.datasources[shapetype] = self.scene.is_fovea_on_shape_type(shapetype)
-            self.datasources[shapetype + '-presence'] = self.scene.is_shapetype_in_scene(shapetype)
+            self.datasources["fovea-"+shapetype] = self.scene.is_fovea_on_shape_type(shapetype)
+            self.datasources["presence-"+shapetype] = self.scene.is_shapetype_in_scene(shapetype)
 
         for shapecolor in self.shapecolors:
-            self.datasources[shapecolor] = self.scene.is_fovea_on_shape_color(shapecolor)
-            self.datasources[shapecolor + '-presence'] = self.scene.is_shapecolor_in_scene(shapecolor)
+            self.datasources["fovea-"+shapecolor] = self.scene.is_fovea_on_shape_color(shapecolor)
+            self.datasources["presence-"+shapecolor] = self.scene.is_shapecolor_in_scene(shapecolor)

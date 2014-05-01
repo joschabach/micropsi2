@@ -1049,6 +1049,9 @@ function renderNode(node) {
     if (isCompact(node)) renderCompactNode(node);
     else renderFullNode(node);
     setActivation(node);
+    if(node.uid in selection){
+        selectNode(node.uid);
+    }
     node.zoomFactor = viewProperties.zoomFactor;
 }
 

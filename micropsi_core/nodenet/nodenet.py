@@ -529,9 +529,9 @@ class Nodenet(object):
         Removes all locks that time out in the current step
         """
         locks_to_delete = []
-        for lock, steps in self.locks.items():
-            self.locks[lock] = (steps[0] + 1, steps[1])
-            if steps[0] + 1 >= steps[1]:
+        for lock, data in self.locks.items():
+            self.locks[lock] = (data[0] + 1, data[1], data[2])
+            if data[0] + 1 >= data[1]:
                 locks_to_delete.append(lock)
         for lock in locks_to_delete:
             del self.locks[lock]
@@ -645,12 +645,16 @@ class Nodenet(object):
         """Returns true if a lock of the given name exists"""
         return lock in self.locks
 
-    def lock(self, lock, timeout=100):
+    def is_locked(self, lock, key):
+        """Returns true if a lock of the given name exists and the key used is the given one"""
+        return lock in self.locks and self.locks[lock][2] == key
+
+    def lock(self, lock, key, timeout=100):
         """Creates a lock with the given name that will time out after the given number of steps
         """
         if self.is_locked(lock):
             raise NodenetLockException("Lock %s is already locked." % lock)
-        self.locks[lock] = (0, timeout)
+        self.locks[lock] = (0, timeout, key)
 
     def unlock(self, lock):
         """Removes the given lock
@@ -840,7 +844,12 @@ class NetAPI(object):
         """
         return self.__nodenet.is_locked(lock)
 
-    def lock(self, lock, timeout=100):
+    def is_locked_by(self, lock, key):
+        """Returns true if the given lock is locked in the current net step, with the given key
+        """
+        return self.__nodenet.is_locked_by(lock, key)
+
+    def lock(self, lock, key, timeout=100):
         """
         Creates a lock with immediate effect.
         If two nodes try to create the same lock in the same net step, the second call will fail.
@@ -848,7 +857,7 @@ class NetAPI(object):
         nodes attempt to acquire the same lock at the same time (in the same net step), the node to get the
         lock will be chosen randomly.
         """
-        self.__nodenet.lock(lock, timeout)
+        self.__nodenet.lock(lock, key, timeout)
 
     def unlock(self, lock):
         """

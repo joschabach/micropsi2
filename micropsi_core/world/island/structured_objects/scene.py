@@ -1,12 +1,13 @@
 __author__ = 'rvuine'
 
 GRIDSIZE = 5
+HALFGRID = (GRIDSIZE-1) / 2
 
 
 class Scene():
 
-    __fovea_x = int((GRIDSIZE - 1) / 2)
-    __fovea_y = int((GRIDSIZE - 1) / 2)
+    __fovea_x = 0
+    __fovea_y = 0
 
     __shape_grid = [[0] * GRIDSIZE for i in range(GRIDSIZE)]
     __shape_name = "none"
@@ -30,8 +31,8 @@ class Scene():
         """
         Resets the fovea to the center of the grid
         """
-        self.__fovea_x = int((GRIDSIZE - 1) / 2)
-        self.__fovea_y = int((GRIDSIZE - 1) / 2)
+        self.__fovea_x = 0
+        self.__fovea_y = 0
         self.__update_world_data()
 
     def move_fovea_x(self, x):
@@ -39,10 +40,10 @@ class Scene():
         Horizontally moves the fovea by x elements on the grid
         """
         self.__fovea_x += int(x)
-        if self.__fovea_x > GRIDSIZE:
-            self.__fovea_x = GRIDSIZE
-        if self.__fovea_x < 0:
-            self.__fovea_x = 0
+        if self.__fovea_x > HALFGRID:
+            self.__fovea_x = HALFGRID
+        if self.__fovea_x < -HALFGRID:
+            self.__fovea_x = -HALFGRID
         self.__update_world_data()
 
     def move_fovea_y(self, y):
@@ -50,10 +51,10 @@ class Scene():
         Vertically moves the fovea by y elements on the grid
         """
         self.__fovea_y += int(y)
-        if self.__fovea_y > GRIDSIZE:
-            self.__fovea_y = GRIDSIZE
-        if self.__fovea_y < 0:
-            self.__fovea_y = 0
+        if self.__fovea_y > HALFGRID:
+            self.__fovea_y = HALFGRID
+        if self.__fovea_y < -HALFGRID:
+            self.__fovea_y = -HALFGRID
         self.__update_world_data()
 
     def load_object(self, shape_name, shape_grid):
@@ -69,19 +70,19 @@ class Scene():
         """
         Returns true if the shape unter the fovea is of type shapetype
         """
-        return (self.__fovea_x < GRIDSIZE and
-                self.__fovea_y < GRIDSIZE and
-                (self.__shape_grid[self.__fovea_y][self.__fovea_x] is not None) and
-                (self.__shape_grid[self.__fovea_y][self.__fovea_x].type is shapetype))
+        return ((-HALFGRID <= self.__fovea_x <= HALFGRID) and
+                (-HALFGRID <= self.__fovea_y <= HALFGRID) and
+                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID] is not None) and
+                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID].type is shapetype))
 
     def is_fovea_on_shape_color(self, shapecolor):
         """
         Returns true if the shape unter the fovea is shapecolor-colored
         """
-        return (self.__fovea_x < GRIDSIZE and
-                self.__fovea_y < GRIDSIZE and
-                (self.__shape_grid[self.__fovea_y][self.__fovea_x] is not None) and
-                (self.__shape_grid[self.__fovea_y][self.__fovea_x].color is shapecolor))
+        return ((-HALFGRID <= self.__fovea_x <= HALFGRID) and
+                (-HALFGRID <= self.__fovea_y <= HALFGRID) and
+                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID] is not None) and
+                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID].color is shapecolor))
 
     def is_shapetype_in_scene(self, shapetype):
         """

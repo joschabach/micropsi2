@@ -645,7 +645,7 @@ class Nodenet(object):
         """Returns true if a lock of the given name exists"""
         return lock in self.locks
 
-    def is_locked(self, lock, key):
+    def is_locked_by(self, lock, key):
         """Returns true if a lock of the given name exists and the key used is the given one"""
         return lock in self.locks and self.locks[lock][2] == key
 

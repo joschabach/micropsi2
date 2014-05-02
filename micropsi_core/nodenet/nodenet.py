@@ -19,6 +19,8 @@ __date__ = '09.05.12'
 
 NODENET_VERSION = 1
 
+class NodenetLockException(Exception):
+    pass
 
 class Nodenet(object):
     """Main data structure for MicroPsi agents,
@@ -133,6 +135,7 @@ class Nodenet(object):
         self.native_modules = native_modules
         self.nodespaces = {}
         self.monitors = {}
+        self.locks = {}
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
@@ -466,9 +469,13 @@ class Nodenet(object):
 
         self.propagate_link_activation(self.nodes.copy())
 
+        self.timeout_locks()
+
         activators = self.get_activators()
         self.calculate_node_functions(activators)
         self.calculate_node_functions(self.nodes)
+
+        self.netapi.__step()
 
         self.state["step"] += 1
         for uid in self.monitors:
@@ -516,6 +523,18 @@ class Nodenet(object):
                         elif sheaf.endswith(link.target_node.uid):
                             upsheaf = sheaf[:-(len(link.target_node.uid)+1)]
                             link.target_slot.sheaves[upsheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+
+    def timeout_locks(self):
+        """
+        Removes all locks that time out in the current step
+        """
+        locks_to_delete = []
+        for lock, steps in self.locks.items():
+            self.locks[lock] = (steps[0] + 1, steps[1])
+            if steps[0] + 1 >= steps[1]:
+                locks_to_delete.append(lock)
+        for lock in locks_to_delete:
+            del self.locks[lock]
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions
@@ -622,11 +641,28 @@ class Nodenet(object):
         del self.state['links'][link_uid]
         return True
 
+    def is_locked(self, lock):
+        """Returns true if a lock of the given name exists"""
+        return lock in self.locks
+
+    def lock(self, lock, timeout=100):
+        """Creates a lock with the given name that will time out after the given number of steps
+        """
+        if self.is_locked(lock):
+            raise NodenetLockException("Lock %s is already locked." % lock)
+        self.locks[lock] = (0, timeout)
+
+    def unlock(self, lock):
+        """Removes the given lock
+        """
+        del self.locks[lock]
 
 class NetAPI(object):
     """
     Node Net API facade class for use from within the node net (in node functions)
     """
+
+    __locks_to_delete = []
 
     @property
     def uid(self):
@@ -798,3 +834,31 @@ class NetAPI(object):
                 if sensor is None:
                     sensor = self.create_node("Sensor", nodespace, datasource)
                     sensor.parameters.update({'datasource': datasource})
+
+    def is_locked(self, lock):
+        """Returns true if the given lock is locked in the current net step
+        """
+        return self.__nodenet.is_locked(lock)
+
+    def lock(self, lock, timeout=100):
+        """
+        Creates a lock with immediate effect.
+        If two nodes try to create the same lock in the same net step, the second call will fail.
+        As nodes need to check is_locked before acquiring locks anyway, this effectively means that if two
+        nodes attempt to acquire the same lock at the same time (in the same net step), the node to get the
+        lock will be chosen randomly.
+        """
+        self.__nodenet.lock(lock, timeout)
+
+    def unlock(self, lock):
+        """
+        Removes a lock by the end of the net step, after all node functions have been called.
+        Thus, locks can only be acquired in the next net step (no indeterminism based on node function execution
+        order as with creating locks).
+        """
+        self.__locks_to_delete.append(lock)
+
+    def __step(self):
+        for lock in self.__locks_to_delete:
+            self.__nodenet.unlock(lock)
+        self.__locks_to_delete = []

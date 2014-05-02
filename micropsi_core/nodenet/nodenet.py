@@ -475,7 +475,7 @@ class Nodenet(object):
         self.calculate_node_functions(activators)
         self.calculate_node_functions(self.nodes)
 
-        self.netapi.__step()
+        self.netapi._step()
 
         self.state["step"] += 1
         for uid in self.monitors:
@@ -858,7 +858,7 @@ class NetAPI(object):
         """
         self.__locks_to_delete.append(lock)
 
-    def __step(self):
+    def _step(self):
         for lock in self.__locks_to_delete:
             self.__nodenet.unlock(lock)
         self.__locks_to_delete = []

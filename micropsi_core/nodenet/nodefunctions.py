@@ -11,10 +11,13 @@ def sensor(netapi, node=None, datasource=None, **params):
 
 
 def actor(netapi, node=None, datatarget=None, **params):
-    node.activation = node.get_slot("gen").activation
     if not netapi.world:
         return
-    netapi.world.set_datatarget(netapi.uid, datatarget, node.get_slot("gen").activation)
+    activation_to_set = node.get_slot("gen").activation
+    netapi.world.set_datatarget(netapi.uid, datatarget, activation_to_set)
+    # TODO: check if we want to incorporate world feedback here instead of just confirming the write
+    if activation_to_set > 0:
+        node.activation = 1
 
 
 def concept(netapi, node=None, **params):
@@ -112,6 +115,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     sur += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
     sur += node.get_slot("exp").get_activation(sheaf)
     if sur < 0: sur = 0
+    if sur > 1: sur = 1
 
     por += (node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation) * \
            (1+node.get_slot("por").get_activation(sheaf))

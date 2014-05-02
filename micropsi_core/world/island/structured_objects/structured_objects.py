@@ -82,9 +82,9 @@ class StructuredObjects(WorldAdapter):
         self.datasources["fov-y"] = self.scene.fovea_y
 
         for shapetype in self.shapetypes:
-            self.datasources["fovea-"+shapetype] = self.scene.is_fovea_on_shape_type(shapetype)
-            self.datasources["presence-"+shapetype] = self.scene.is_shapetype_in_scene(shapetype)
+            self.datasources["fovea-"+shapetype] = 1 if self.scene.is_fovea_on_shape_type(shapetype) else 0
+            self.datasources["presence-"+shapetype] = 1 if self.scene.is_shapetype_in_scene(shapetype) else 0
 
         for shapecolor in self.shapecolors:
-            self.datasources["fovea-"+shapecolor] = self.scene.is_fovea_on_shape_color(shapecolor)
-            self.datasources["presence-"+shapecolor] = self.scene.is_shapecolor_in_scene(shapecolor)
+            self.datasources["fovea-"+shapecolor] = 1 if self.scene.is_fovea_on_shape_color(shapecolor) else 0
+            self.datasources["presence-"+shapecolor] = 1 if self.scene.is_shapecolor_in_scene(shapecolor) else 0

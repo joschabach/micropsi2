@@ -96,6 +96,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
+    sub_lock_needed = node.parameters['sublock']
+    if sub_lock_needed is not None and len(sub_lock_needed) == 0: sub_lock_needed = None
+
     gen += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
     gen += node.get_slot("exp").get_activation(sheaf)
     if gen < 0: gen = 0
@@ -128,6 +131,25 @@ def pipe(netapi, node=None, sheaf="default", **params):
            node.get_slot("cat").get_activation(sheaf)
     if exp > 1: exp = 1
 
+    # handle locking if configured for this node
+    if sub_lock_needed is not None:
+        surinput = node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
+        if sub > 0 and surinput < 1:
+            # we want to go sub, but we need to acquire a lock for that
+            if netapi.is_locked(sub_lock_needed):
+                if not netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
+                    # it's locked and not by us, so we need to pace ourselves and wait
+                    sub = 0
+            else:
+                # we can proceed, but we need to lock
+                netapi.lock(sub_lock_needed, node.uid+sheaf)
+
+        if surinput >= 1:
+            # we can clear a lock if it's us who had acquired it
+            if netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
+                netapi.unlock(sub_lock_needed)
+
+    # set gates
     node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)
     node.get_gate("por").gate_function(por, sheaf)

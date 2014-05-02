@@ -99,20 +99,20 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
-    sub_lock_needed = node.get_parameter('sublock')
-
     gen += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
     gen += node.get_slot("exp").get_activation(sheaf)
-    if gen < 0: gen = 0
+    gen += node.get_slot("gen").get_activation(sheaf)
+    if gen < 0.1: gen = 0
     if gen > 1: gen = 1
 
-    sub += node.get_slot("gen").get_activation(sheaf)
     sub += node.get_slot("sur").get_activation(sheaf) or node.get_slot("sur").activation
     sub += node.get_slot("sub").get_activation(sheaf)
     sub *= (1+node.get_slot("por").get_activation(sheaf))
+    sub *= 0 if gen > 0 else 1
     if sub > 0: sub = 1
 
     sur += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
+    sur += node.get_slot("gen").get_activation(sheaf)
     sur += node.get_slot("exp").get_activation(sheaf)
     if sur < 0: sur = 0
     if sur > 1: sur = 1
@@ -135,6 +135,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if exp > 1: exp = 1
 
     # handle locking if configured for this node
+    sub_lock_needed = node.get_parameter('sublock')
     if sub_lock_needed is not None:
         surinput = node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
         if sub > 0 and surinput < 1:

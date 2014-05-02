@@ -251,6 +251,25 @@ class Node(NetEntity):
         for slot in self.slots.keys():
             self.slots[slot].sheaves = {"default": SheafElement()}
 
+    def get_parameter(self, parameter):
+        if parameter in self.parameters:
+            return self.parameters[parameter]
+        else:
+            return None
+
+    def set_parameter(self, parameter, value):
+        self.parameters[parameter] = value
+
+    def get_state(self, state_element):
+        if state_element in self.state:
+            return self.state[state_element]
+        else:
+            return None
+
+    def set_state(self, state_element, value):
+        if 'state' not in self.data:
+            self.data['state'] = {}
+        self.data['state'][state_element] = value
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params

@@ -96,8 +96,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
-    sub_lock_needed = node.parameters['sublock']
-    if sub_lock_needed is not None and len(sub_lock_needed) == 0: sub_lock_needed = None
+    sub_lock_needed = node.get_parameter('sublock')
 
     gen += node.get_slot("sur").get_voted_activation(sheaf) or node.get_slot("sur").activation
     gen += node.get_slot("exp").get_activation(sheaf)

@@ -1,7 +1,7 @@
 __author__ = 'rvuine'
 
 GRIDSIZE = 5
-HALFGRID = (GRIDSIZE-1) / 2
+HALFGRID = int((GRIDSIZE-1) / 2)
 
 
 class Scene():
@@ -72,8 +72,8 @@ class Scene():
         """
         return ((-HALFGRID <= self.__fovea_x <= HALFGRID) and
                 (-HALFGRID <= self.__fovea_y <= HALFGRID) and
-                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID] is not None) and
-                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID].type is shapetype))
+                (self.__shape_grid[int(self.__fovea_y+HALFGRID)][int(self.__fovea_x+HALFGRID)] is not None) and
+                (self.__shape_grid[int(self.__fovea_y+HALFGRID)][int(self.__fovea_x+HALFGRID)].type is shapetype))
 
     def is_fovea_on_shape_color(self, shapecolor):
         """
@@ -81,8 +81,8 @@ class Scene():
         """
         return ((-HALFGRID <= self.__fovea_x <= HALFGRID) and
                 (-HALFGRID <= self.__fovea_y <= HALFGRID) and
-                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID] is not None) and
-                (self.__shape_grid[self.__fovea_y+HALFGRID][self.__fovea_x+HALFGRID].color is shapecolor))
+                (self.__shape_grid[int(self.__fovea_y+HALFGRID)][int(self.__fovea_x+HALFGRID)] is not None) and
+                (self.__shape_grid[int(self.__fovea_y+HALFGRID)][int(self.__fovea_x+HALFGRID)].color is shapecolor))
 
     def is_shapetype_in_scene(self, shapetype):
         """

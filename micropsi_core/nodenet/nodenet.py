@@ -790,7 +790,7 @@ class NetAPI(object):
             actor.parameters.update({'datatarget': datatarget})
 
         self.link(node, gate, actor, 'gen', weight, certainty)
-        self.link(actor, 'gen', node, slot)
+        #self.link(actor, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur'):
         """

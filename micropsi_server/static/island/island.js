@@ -30,7 +30,7 @@ var viewProperties = {
 };
 
 // TDOD: this really should be loaded from the server
-var available_object_types = ['Lightsource', 'Tree'];
+var available_object_types = ['Lightsource', 'Tree', 'Pole'];
 
 objects = {};
 symbols = {};

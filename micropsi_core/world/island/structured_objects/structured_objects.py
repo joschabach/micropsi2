@@ -40,6 +40,8 @@ class StructuredObjects(WorldAdapter):
         self.datasources["fov-x"] = 0
         self.datasources["fov-y"] = 0
 
+        self.datasources["major-newscene"] = 0
+
         self.scene = Scene(world, uid)
         self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
 
@@ -70,6 +72,9 @@ class StructuredObjects(WorldAdapter):
             self.currentobject = nearest_worldobject
             self.scene.load_object(self.currentobject.structured_object_type,
                                    OBJECTS[self.currentobject.structured_object_type]['shape_grid'])
+            self.datasources["major-newscene"] = 1
+        else:
+            self.datasources["major-newscene"] = 0
 
         #manage the scene
         if self.datatargets['fov_reset'] > 0:

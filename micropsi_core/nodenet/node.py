@@ -394,6 +394,10 @@ class Slot(object):
     def activation(self):
         return self.get_activation("default")
 
+    @property
+    def voted_activation(self):
+        return self.get_voted_activation("default")
+
     def get_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0

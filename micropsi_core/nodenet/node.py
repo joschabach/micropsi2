@@ -56,6 +56,8 @@ class Node(NetEntity):
         if sheaf not in sheaves_to_calculate:
             raise "Sheaf " + sheaf + " can not be set as it hasn't been propagated to any slot"
 
+        if activation is None: activation = 0
+
         self.sheaves[sheaf].activation = float(activation)
         if 'sheaves' not in self.data:
             self.data['sheaves'] = {}
@@ -321,6 +323,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
         You might want to replace it with a radial basis function, for instance.
         """
+        if input_activation is None: input_activation = 0
+
 
         # check if the current node space has an activator that would prevent the activity of this gate
         nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]

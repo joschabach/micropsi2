@@ -43,13 +43,18 @@ nodenet_record_storage = []
 world_record_storage = []
 system_record_storage = []
 
+logging.captureWarnings(True)
+
 logging.getLogger("nodenet").setLevel(logging.DEBUG)
 logging.getLogger("world").setLevel(logging.DEBUG)
 logging.getLogger("system").setLevel(logging.DEBUG)
 
 logging.getLogger("nodenet").addHandler(RecordWebStorageHandler(nodenet_record_storage))
 logging.getLogger("world").addHandler(RecordWebStorageHandler(world_record_storage))
-logging.getLogger("system").addHandler(RecordWebStorageHandler(system_record_storage))
+
+system_storage_handler = RecordWebStorageHandler(system_record_storage)
+logging.getLogger("system").addHandler(system_storage_handler)
+logging.getLogger("py.warnings").addHandler(system_storage_handler)
 
 logging.getLogger("nodenet").debug("Nodenet logger ready.")
 logging.getLogger("world").debug("World logger ready.")

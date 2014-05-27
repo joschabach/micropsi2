@@ -7,6 +7,7 @@ __author__ = 'rvuine'
 
 import logging
 import time
+from operator import itemgetter
 
 MAX_RECORDS_PER_STORAGE = 1000
 
@@ -71,6 +72,7 @@ def get_logs(logger="*", after=0):
         logs.extend(nodenet_record_storage)
         logs.extend(world_record_storage)
         logs.extend(system_record_storage)
+        logs = sorted(logs, key=itemgetter('time'))
     elif logger == "nodenet":
         logs.extend(nodenet_record_storage)
     elif logger == "world":

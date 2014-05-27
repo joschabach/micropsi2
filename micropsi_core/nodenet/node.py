@@ -104,7 +104,7 @@ class Node(NetEntity):
         self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
         for gate in self.nodetype.gatetypes:
-            if gate_activations is None:
+            if gate_activations is None or gate not in gate_activations:
                 sheavestouse = None
             else:
                 sheavestouse = gate_activations[gate]

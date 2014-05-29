@@ -707,8 +707,8 @@ class NetAPI(object):
         for gatetype, gateobject in source_node.gates.items():
             if source_gate is None or source_gate is gatetype:
                 for linkid, link in gateobject.outgoing.items():
-                    if target_node.uid is None or target_node.uid is link.target_node.uid:
-                        if target_slot is None or target_slot is link.target_slot:
+                    if target_node is None or target_node.uid == link.target_node.uid:
+                        if target_slot is None or target_slot == link.target_slot.type:
                             links_to_delete.append(linkid)
 
         for uid in links_to_delete:

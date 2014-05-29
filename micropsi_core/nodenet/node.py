@@ -237,8 +237,9 @@ class Node(NetEntity):
     def set_gate_parameters(self, gate_type, parameters):
         if 'gate_parameters' not in self.data:
             self.data['gate_parameters'] = {}
-        self.data['gate_parameters'][gate_type] = parameters
-        self.gates[gate_type].parameters = parameters
+        for parameter, value in parameters.items():
+            self.data['gate_parameters'][gate_type][parameter] = value
+            self.gates[gate_type].parameters[parameter] = value
 
     def report_gate_activation(self, gate_type, sheafelement):
         if 'gate_activations' not in self.data:

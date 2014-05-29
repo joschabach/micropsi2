@@ -10,6 +10,7 @@ import json
 import os
 import warnings
 from .node import Node, Nodetype, SheafElement, STANDARD_NODETYPES
+import logging
 from .nodespace import Nodespace
 from .link import Link
 from .monitor import Monitor
@@ -140,12 +141,16 @@ class Nodenet(object):
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
 
+        self.logger = logging.getLogger("nodenet")
+        self.logger.info("Setting up nodenet %s", self.name)
+
         self.load()
 
     def load(self, string=None):
         """Load the node net from a file"""
         # try to access file
         if string:
+            self.logger.info("Loading nodenet %s from string", self.name)
             try:
                 self.state = json.loads(string)
             except ValueError:
@@ -153,6 +158,7 @@ class Nodenet(object):
                 return False
         else:
             try:
+                self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
                 with open(self.filename) as file:
                     self.state = json.load(file)
             except ValueError:
@@ -682,6 +688,10 @@ class NetAPI(object):
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet
+
+    @property
+    def logger(self):
+        return self.__nodenet.logger
 
     def get_node(self, uid):
         """

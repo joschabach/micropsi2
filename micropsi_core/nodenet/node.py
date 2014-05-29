@@ -413,7 +413,11 @@ class Slot(object):
     def get_voted_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0
-        return self.get_activation(sheaf) / len(self.incoming)
+
+        voted = self.get_activation(sheaf) / len(self.incoming)
+        if sheaf != "default" and voted == 0:
+            voted = self.get_activation("default")
+        return voted
 
 STANDARD_NODETYPES = {
     "Nodespace": {

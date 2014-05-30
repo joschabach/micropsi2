@@ -56,7 +56,7 @@ class StructuredObjects(WorldAdapter):
             overrides default to make sure newscene signals are picked up by the node net
         """
         if key == "major-newscene":
-            if self.datasources[key] == 1:
+            if self.datasource_snapshots[key] == 1:
                 self.datasources[key] = 0
                 return 1
         else:

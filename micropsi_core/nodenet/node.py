@@ -414,7 +414,11 @@ class Slot(object):
         if len(self.incoming) == 0:
             return 0
 
-        voted = self.get_activation(sheaf) / len(self.incoming)
+        contrib_factor_sum = 0
+        for linkid, link in self.incoming.items():
+            contrib_factor_sum += link.weight   # TODO: Once certainty is being used in propagation, add here
+
+        voted = self.get_activation(sheaf) / contrib_factor_sum
         if sheaf != "default" and voted == 0:
             voted = self.get_activation("default")
         return voted

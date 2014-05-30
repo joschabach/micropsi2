@@ -471,8 +471,14 @@ class Nodenet(object):
         self.propagate_link_activation(self.nodes.copy())
 
         activators = self.get_activators()
-        self.calculate_node_functions(activators)
-        self.calculate_node_functions(self.nodes)
+        nativemodules = self.get_nativemodules()
+        everythingelse = self.nodes.copy()
+        for key in nativemodules.keys():
+            del everythingelse[key]
+
+        self.calculate_node_functions(activators)       # activators go first
+        self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
+        self.calculate_node_functions(everythingelse)   # then all the peasant nodes get calculated
 
         self.state["step"] += 1
         for uid in self.monitors:
@@ -508,6 +514,15 @@ class Nodenet(object):
         for uid, node in nodes.copy().items():
             node.node_function()
             node.data['activation'] = node.activation
+
+    def get_nativemodules(self, nodespace=None):
+        """Returns a dict of native modules. Optionally filtered by the given nodespace"""
+        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        nativemodules = {}
+        for uid in nodes:
+            if self.nodes[uid].type not in STANDARD_NODETYPES.keys():
+                nativemodules.update({uid: self.nodes[uid]})
+        return nativemodules
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""

@@ -120,6 +120,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     por += node.get_slot("sur").get_voted_activation(sheaf) * \
            (1+node.get_slot("por").get_activation(sheaf))
+    por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
+           (1+node.get_slot("por").get_activation(sheaf))
     por += node.get_slot("por").get_activation(sheaf) * \
            (1+node.get_slot("ret").get_activation(sheaf))
     if por <= 0: por = -1

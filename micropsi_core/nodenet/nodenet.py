@@ -464,6 +464,10 @@ class Nodenet(object):
     def step(self):
         """perform a simulation step"""
 
+        self.world.agents[self.uid].snapshot()      # world adapter snapshot
+                                                    # TODO: Not really sure why we don't just know our world adapter,
+                                                    # but instead the world object itself
+
         self.propagate_link_activation(self.nodes.copy())
 
         activators = self.get_activators()

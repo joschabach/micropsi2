@@ -19,7 +19,7 @@ and treated as parts of the world.
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-
+from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
 
 
@@ -33,6 +33,9 @@ class WorldAdapter(WorldObject):
     datasources = {}
     datatargets = {}
 
+    datasource_lock = Lock()
+    datasource_snapshots = {}
+
     def __init__(self, world, uid=None, **data):
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
 
@@ -45,6 +48,11 @@ class WorldAdapter(WorldObject):
                 self.datatargets[key] = data['datatargets'][key]
 
     # agent facing methods:
+    def snapshot(self):
+        """called by the agent every netstep to create a consistent set of sensory input"""
+        with self.datasource_lock:
+            self.datasource_snapshots = self.datasources.copy()
+
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
         return list(self.datasources.keys())
@@ -55,14 +63,15 @@ class WorldAdapter(WorldObject):
 
     def get_datasource(self, key):
         """allows the agent to read a value from a datasource"""
-        if key in self.datasources:
-            return self.datasources[key]
+        if key in self.datasource_snapshots:
+            return self.datasource_snapshots[key]
         return None
 
     def set_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:
             self.datatargets[key] = value
+
 
     # world facing methods:
     def update(self):

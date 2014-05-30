@@ -1,5 +1,6 @@
 __author__ = 'rvuine'
 
+import logging
 from micropsi_core.world.island import island
 from micropsi_core.world.island.structured_objects.objects import *
 from micropsi_core.world.island.structured_objects.scene import Scene
@@ -73,6 +74,8 @@ class StructuredObjects(WorldAdapter):
             self.scene.load_object(self.currentobject.structured_object_type,
                                    OBJECTS[self.currentobject.structured_object_type]['shape_grid'])
             self.datasources["major-newscene"] = 1
+            logging.getLogger("world").debug("StructuredObjects WA selected new scene: %s",
+                                             self.currentobject.structured_object_type)
         else:
             self.datasources["major-newscene"] = 0
 

@@ -50,6 +50,18 @@ class StructuredObjects(WorldAdapter):
         if not "position" in data:
             self.position = self.world.groundmap['start_position']
 
+    def get_datasource(self, key):
+        """
+            allows the agent to read a value from a datasource.
+            overrides default to make sure newscene signals are picked up by the node net
+        """
+        if key == "major-newscene":
+            if self.datasources[key] == 1:
+                self.datasources[key] = 0
+                return 1
+        else:
+            return WorldAdapter.get_datasource(self, key)
+
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
@@ -76,8 +88,6 @@ class StructuredObjects(WorldAdapter):
             self.datasources["major-newscene"] = 1
             logging.getLogger("world").debug("StructuredObjects WA selected new scene: %s",
                                              self.currentobject.structured_object_type)
-        else:
-            self.datasources["major-newscene"] = 0
 
         #manage the scene
         if self.datatargets['fov_reset'] > 0:

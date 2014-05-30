@@ -6,8 +6,9 @@ def register(netapi, node=None, **params):
 
 
 def sensor(netapi, node=None, datasource=None, **params):
-    node.activation = netapi.world.get_datasource(netapi.uid, datasource)
-    node.gates["gen"].gate_function(netapi.world.get_datasource(netapi.uid, datasource))
+    datasource_value = netapi.world.get_datasource(netapi.uid, datasource)
+    node.activation = datasource_value
+    node.gates["gen"].gate_function(datasource_value)
 
 
 def actor(netapi, node=None, datatarget=None, **params):

@@ -152,7 +152,8 @@ class World(object):
         for uid in self.objects:
             self.objects[uid].update()
         for uid in self.agents:
-            self.agents[uid].update()
+            with self.agents[uid].datasource_lock:
+                self.agents[uid].update()
         self.current_step += 1
 
     def get_world_view(self, step):
@@ -287,7 +288,7 @@ class World(object):
 
     def get_available_datatargets(self, nodenet_uid):
         """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
-        if nodenet_uid in self.worldadapters:
+        if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].get_available_datatargets()
         return None
 
@@ -309,6 +310,12 @@ try:
 except:
     e = sys.exc_info()[0]
     sys.stdout.write("Could not import island world.\nError: %s \n\n" % e)
+
+try:
+    from micropsi_core.world.island.structured_objects import structured_objects
+except:
+    e = sys.exc_info()[0]
+    sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e)
 
 try:
     from micropsi_core.world.berlin import berlin

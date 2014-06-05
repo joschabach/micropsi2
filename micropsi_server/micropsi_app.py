@@ -1076,11 +1076,9 @@ def delete_link(nodenet_uid, link_uid):
     return runtime.delete_link(nodenet_uid, link_uid)
 
 
-@rpc("get_example_nodenet")
-def return_dummy_nodenet():
-    return {
-
-    }
+@rpc("reload_native_modules", permission_required="manage nodenets")
+def reload_native_modules(nodenet_uid=None):
+    return runtime.reload_native_modules(nodenet_uid)
 
 
 # -----------------------------------------------------------------------------------------------

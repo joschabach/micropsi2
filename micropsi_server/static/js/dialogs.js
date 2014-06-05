@@ -204,6 +204,16 @@ $(function() {
         });
     });
 
+    $('.navbar a.reload_native_modules').on('click', function(event){
+        event.preventDefault();
+        api.call('reload_native_modules', {nodenet_uid: currentNodenet}, function(){
+            dialogs.notification("reload successful");
+            window.location.reload();
+        }, function(){
+            dialogs.notification("Error reloading. Please check for syntax errors/import errors in console", 'error');
+        });
+    });
+
     $('.navbar a.nodenet_import').on('click', function(event){
         event.preventDefault();
         dialogs.remote_form_dialog(event.target.href, function(){

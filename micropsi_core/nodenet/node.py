@@ -42,9 +42,8 @@ class Node(NetEntity):
     def activation(self, activation):
         activation = float(activation)
         self.data['activation'] = activation
-        if len(self.gates) > 0:
-            self.gates['gen'].activation = activation
-            self.report_gate_activation('gen', activation)
+        if len(self.nodetype.gatetypes):
+            self.set_gate_activation(self.nodetype.gatetypes[0], activation)
 
     @property
     def type(self):
@@ -107,6 +106,13 @@ class Node(NetEntity):
         else:
             return None
 
+    def set_gate_activation(self, gate, activation):
+        """ sets the activation of the given gate, and calls `report_gate_activation`"""
+        activation = float(activation)
+        if gate in self.gates:
+            self.gates[gate].activation = activation
+            self.report_gate_activation(gate, activation)
+
     def node_function(self):
         """Called whenever the node is activated or active.
 
@@ -122,12 +128,12 @@ class Node(NetEntity):
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
             try:
-                self.nodetype.nodefunction(nodenet=self.nodenet, node=self, **self.parameters)
+                self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **self.parameters)
             except SyntaxError as err:
-                warnings.warn("Syntax error during node execution: %s" % err.message)
+                warnings.warn("Syntax error during node execution: %s" % err)
                 self.data["activation"] = "Syntax error"
             except TypeError as err:
-                warnings.warn("Type error during node execution: %s" % err.message)
+                warnings.warn("Type error during node execution: %s" % err)
                 self.data["activation"] = "Parameter mismatch"
             return
 
@@ -176,6 +182,7 @@ class Node(NetEntity):
     def reset_slots(self):
         for slot in self.slots.keys():
             self.slots[slot].activation = 0
+
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -312,6 +319,26 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "concept",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
     },
+    "Script": {
+        "name": "Script",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "script",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"],
+        "gate_defaults": {
+            "por": {
+                "threshold": -1
+            },
+            "ret": {
+                "threshold": -1
+            },
+            "sub": {
+                "threshold": -1
+            },
+            "sur": {
+                "threshold": -1
+            }
+        }
+    },
     "Pipe": {
         "name": "Pipe",
         "slottypes": ["gen", "por", "ret", "sub", "sur"],
@@ -434,9 +461,17 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s" % (name))
+            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err))
             self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
                 parameters="nodenet, node")
+
+    def reload_nodefunction(self):
+        from micropsi_core.nodenet import nodefunctions
+        if self.nodefunction_name and not self.nodefunction_definition and not hasattr(nodefunctions, self.nodefunction_name):
+            import nodefunctions as custom_nodefunctions
+            from imp import reload
+            reload(custom_nodefunctions)
+            self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,

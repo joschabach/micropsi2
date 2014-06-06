@@ -14,5 +14,5 @@
 /dist/
 /include/
 /lib/
-*.DS_Store
+.DS_Store
 /config.ini

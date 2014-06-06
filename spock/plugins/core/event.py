@@ -9,8 +9,9 @@ class EventCore:
         self.event_handlers = {}
 
     def event_loop(self):
-        signal.signal(signal.SIGINT, self.kill)
-        signal.signal(signal.SIGTERM, self.kill)
+#        signal.signal(signal.SIGINT, self.kill)
+#        signal.signal(signal.SIGTERM, self.kill)
+        # TODO: Find a way of not using signals if not the main thread without modifying spock sources
         while not self.kill_event:
             self.emit('tick')
         self.emit('kill')

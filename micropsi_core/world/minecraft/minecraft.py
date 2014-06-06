@@ -3,10 +3,16 @@ import os
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
-from micropsi_core.world.minecraft.client.spock.net.client import MinecraftClient
-from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
-from micropsi_core.world.minecraft.client.plugins import debugplugin, reconnect, echopacket, gravity, anti_afk, chatmessage, chunksaver
-from micropsi_core.world.minecraft.client.spock.mcp.mcpacket import Packet
+from spock.plugins import DefaultPlugins
+from spock.client import Client
+from spock.client import PluginLoader
+#from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
+from micropsi_core.world.minecraft import spockplugin
+from spock.plugins.helpers import start
+from spock.plugins.core import timers
+from spock.plugins.helpers.clientinfo import ClientInfoPlugin
+from spock.plugins.helpers.move import MovementPlugin
+from threading import Thread
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -26,23 +32,48 @@ class Minecraft(World):
         self.chat_ping_counter = 0
         self.the_image = None
 
-    def step(self):
-        if self.first_step: #TODO probably not too smart
-            # launch minecraft bot
-            plugins = [debugplugin.DebugPlugin, chatmessage.ChatMessagePlugin, chunksaver.ChunkSaverPlugin, echopacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
-            self.minecraftClient = MinecraftClient(plugins=plugins)
-            self.minecraftClient.start()
-            self.minecraftVisualisation = MinecraftVisualisation(self.minecraftClient)
-            self.minecraftVisualisation.commence_vis()
-            self.first_step = False
+        plugins = DefaultPlugins
+        plugins.append(ClientInfoPlugin)
+        plugins.append(MovementPlugin)
+        #plugins.append(spockplugin.MicropsiPlugin)
 
-        self.chat_ping_counter += 1
-        if self.chat_ping_counter % 2 == 0: #TODO find other way to send "keepalive"
-            self.minecraftClient.push(Packet(ident = 0x03, data = {
-						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
+        settings = {
+            'username': 'bot',          #minecraft.net username or name for unauthenticated servers
+		    'password': '',             #Password for account, ignored if not authenticated
+		    'authenticated': False,     #Authenticate with authserver.mojang.com
+		    'bufsize': 4096,            #Size of socket buffer
+		    'sock_quit': True,          #Stop bot on socket error or hangup
+		    'sess_quit': True,          #Stop bot on failed session login
+		    'thread_workers': 5,        #Number of workers in the thread pool
+		    'plugins': DefaultPlugins,
+		    'plugin_settings': {spockplugin.MicropsiPlugin: {"worldadapter": self}},      #Extra settings for plugins
+            'packet_trace': False,
+            'mc_username': "sepp",
+            "mc_password": "hugo"
+        }
+        self.spock = Client(plugins=plugins, settings=settings)
+        # TODO: Read args from config.ini
+        self.minecraft_communication_thread = Thread(target=self.spock.start, args=("localhost", 25565))
+        self.minecraft_communication_thread.start()
+        # the MicropsiPlugin will create a spockplugin field here on instantiation
+
+    def step(self):
+#        if self.first_step: #TODO probably not too smart
+#            # launch minecraft bot
+#            plugins = [debugplugin.DebugPlugin, chatmessage.ChatMessagePlugin, chunksaver.ChunkSaverPlugin, echopacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
+#            self.spockplugin = spockplugin(plugins=plugins)
+#            self.spockplugin.start()
+#            self.minecraftVisualisation = MinecraftVisualisation(self.spockplugin)
+#            self.minecraftVisualisation.commence_vis()
+#            self.first_step = False
+
+#        self.chat_ping_counter += 1
+#        if self.chat_ping_counter % 2 == 0: #TODO find other way to send "keepalive"
+#            self.spockplugin.push(Packet(ident = 0x03, data = {
+#						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
-        self.minecraftClient.advanceClient()
-        self.the_image = self.minecraftVisualisation.advanceVisualisation()
+#        self.spockplugin.advanceClient()
+#        self.the_image = self.minecraftVisualisation.advanceVisualisation()
 
 
 class MinecraftWorldadapter(WorldAdapter):
@@ -52,14 +83,14 @@ class MinecraftWorldadapter(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        x_coord = self.world.minecraftClient.position['x'] * -1
+        x_coord = self.world.spockplugin.position['x'] * -1
 
         #find diamond
 
-        x_chunk = self.world.minecraftClient.position['x'] // 16
-        z_chunk = self.world.minecraftClient.position['z'] // 16
-        bot_block = (self.world.minecraftClient.position['x'], self.world.minecraftClient.position['y'], self.world.minecraftClient.position['z'])
-        current_column = self.world.minecraftClient.world.columns[(x_chunk, z_chunk)]
+        x_chunk = self.world.spockplugin.position['x'] // 16
+        z_chunk = self.world.spockplugin.position['z'] // 16
+        bot_block = (self.world.spockplugin.position['x'], self.world.spockplugin.position['y'], self.world.spockplugin.position['z'])
+        current_column = self.world.spockplugin.world.columns[(x_chunk, z_chunk)]
 
         self.datasources['diamond_offset_x'] = 0
         self.datasources['diamond_offset_z'] = 0
@@ -82,14 +113,14 @@ class MinecraftWorldadapter(WorldAdapter):
         print("self.datasources['diamond_offset_x_'] is ", self.datasources['diamond_offset_x_'])
 
 
-        self.world.minecraftClient.move_x = self.datatargets['move_x']
-        self.world.minecraftClient.move_z = self.datatargets['move_z']
-        self.world.minecraftClient.move_x_ = self.datatargets['move_x_']
-        self.world.minecraftClient.move_z_ = self.datatargets['move_z_']
+        self.world.spockplugin.move_x = self.datatargets['move_x']
+        self.world.spockplugin.move_z = self.datatargets['move_z']
+        self.world.spockplugin.move_x_ = self.datatargets['move_x_']
+        self.world.spockplugin.move_z_ = self.datatargets['move_z_']
 
         self.datatargets['move_x'] = 0
         self.datatargets['move_z'] = 0
         self.datatargets['move_x_'] = 0
         self.datatargets['move_z_'] = 0
 
-        self.world.minecraftClient.psi_dispatcher.dispatchPsiCommands()
+        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()

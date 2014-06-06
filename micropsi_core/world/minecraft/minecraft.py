@@ -90,7 +90,7 @@ class Minecraft(World):
         return server, port
 
     def kill_minecraft_thread(self, *args):
-        self.spock.event.kill()
+        self.spockplugin.event.kill()
 
 
 class MinecraftWorldadapter(WorldAdapter):

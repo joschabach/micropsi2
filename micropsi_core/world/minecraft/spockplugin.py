@@ -14,7 +14,8 @@ class MicropsiPlugin(object):
 
         self.net = ploader.requires('Net')
         self.event = ploader.requires('Event')
-        self.worldplugin = ploader.requires('World')
+        self.world = ploader.requires('World')
+        self.clientinfo = ploader.requires('ClientInfo')
 
         #MicroPsi Datatargets
         self.psi_dispatcher = PsiDispatcher(self)
@@ -22,23 +23,6 @@ class MicropsiPlugin(object):
         self.move_z = 0
         self.move_x_ = 0
         self.move_z_ = 0
-
-        #Game State variables
-        #Plugins should read these (but generally not write)
-        self.health = {
-            'health': 20,
-            'food': 20,
-            'food_saturation': 5,
-        }
-        self.playerlist = {}
-        self.entitylist = {}
-        self.spawn_position = {
-            'x': 0,
-            'y': 0,
-            'z': 0,
-        }
-
-        self.worldset = False
 
     def move(self, position=None):
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):

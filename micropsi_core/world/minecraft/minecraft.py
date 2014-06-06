@@ -52,7 +52,7 @@ class Minecraft(World):
             "mc_password": "hugo"
         }
         self.spock = Client(plugins=plugins, settings=settings)
-        self.minecraft_communication_thread = Thread(target = self.spock.start, args = ("localhost", 25565))
+        self.minecraft_communication_thread = Thread(target=self.spock.start, args=("localhost", 25565))
         self.minecraft_communication_thread.start()
         # the MicropsiPlugin will create a spockplugin field here on instantiation
 

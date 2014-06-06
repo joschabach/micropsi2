@@ -101,14 +101,14 @@ class MinecraftWorldadapter(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        x_coord = self.world.spockplugin.position['x'] * -1
+        x_coord = self.world.spockplugin.clientinfo.position['x'] * -1
 
         #find diamond
 
-        x_chunk = self.world.spockplugin.position['x'] // 16
-        z_chunk = self.world.spockplugin.position['z'] // 16
-        bot_block = (self.world.spockplugin.position['x'], self.world.spockplugin.position['y'], self.world.spockplugin.position['z'])
-        current_column = self.world.spockplugin.worldplugin.map.columns[(x_chunk, z_chunk)]
+        x_chunk = self.world.spockplugin.clientinfo.position['x'] // 16
+        z_chunk = self.world.spockplugin.clientinfo.position['z'] // 16
+        bot_block = (self.world.spockplugin.clientinfo.position['x'], self.world.spockplugin.clientinfo.position['y'], self.world.spockplugin.clientinfo.position['z'])
+        current_column = self.world.spockplugin.world.map.columns[(x_chunk, z_chunk)]
 
         self.datasources['diamond_offset_x'] = 0
         self.datasources['diamond_offset_z'] = 0
@@ -116,11 +116,11 @@ class MinecraftWorldadapter(WorldAdapter):
         self.datasources['diamond_offset_z_'] = 0
 
         for y in range(0, 16):
-            current_section = current_column.chunks[int((self.world.spockplugin.position['y'] + y - 10 // 2) // 16)] #TODO explain formula
+            current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) // 16)] #TODO explain formula
             if current_section != None:
                 for x in range(0, 16):
                     for z in range(0, 16):
-                        current_block = current_section.get(x, int((self.world.spockplugin.position['y'] + y - 10 // 2) % 16), z).id #TODO explain formula
+                        current_block = current_section.get(x, int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) % 16), z).id #TODO explain formula
                         if current_block == 56:
                             diamond_coords = (x + x_chunk * 16,y,z + z_chunk * 16)
                             self.datasources['diamond_offset_x'] = bot_block[0] - diamond_coords[0] - 2
@@ -136,9 +136,9 @@ class MinecraftWorldadapter(WorldAdapter):
         self.world.spockplugin.move_x_ = self.datatargets['move_x_']
         self.world.spockplugin.move_z_ = self.datatargets['move_z_']
 
-        self.datatargets['move_x'] = 0
-        self.datatargets['move_z'] = 0
-        self.datatargets['move_x_'] = 0
-        self.datatargets['move_z_'] = 0
+       # self.datatargets['move_x'] = 0
+       # self.datatargets['move_z'] = 0
+       # self.datatargets['move_x_'] = 0
+       # self.datatargets['move_z_'] = 0
 
-#        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()
+        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()

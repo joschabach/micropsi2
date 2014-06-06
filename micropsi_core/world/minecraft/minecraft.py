@@ -6,13 +6,13 @@ from micropsi_core.world.worldobject import WorldObject
 from spock.plugins import DefaultPlugins
 from spock.client import Client
 from spock.client import PluginLoader
-from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
+#from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
 from micropsi_core.world.minecraft import spockplugin
 from spock.plugins.helpers import start
 from spock.plugins.core import timers
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
-
+from threading import Thread
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -35,7 +35,7 @@ class Minecraft(World):
         plugins = DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
-        plugins.append(spockplugin.MicropsiPlugin)
+        #plugins.append(spockplugin.MicropsiPlugin)
 
         settings = {
             'username': 'bot',          #minecraft.net username or name for unauthenticated servers
@@ -52,7 +52,8 @@ class Minecraft(World):
             "mc_password": "hugo"
         }
         self.spock = Client(plugins=plugins, settings=settings)
-        self.spock.start(host="localhost", port=25565)
+        self.minecraft_communication_thread = Thread(target = self.spock.start, args = ("localhost", 25565))
+        self.minecraft_communication_thread.start()
         # the MicropsiPlugin will create a spockplugin field here on instantiation
 
     def step(self):

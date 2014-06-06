@@ -12,6 +12,7 @@ from spock.plugins.helpers import start
 from spock.plugins.core import timers
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
+from spock.plugins.helpers.world import WorldPlugin
 from threading import Thread
 
 class Minecraft(World):
@@ -35,7 +36,8 @@ class Minecraft(World):
         plugins = DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
-        #plugins.append(spockplugin.MicropsiPlugin)
+        plugins.append(WorldPlugin)
+        plugins.append(spockplugin.MicropsiPlugin)
 
         settings = {
             'username': 'bot',          #minecraft.net username or name for unauthenticated servers

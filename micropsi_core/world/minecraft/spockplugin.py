@@ -18,6 +18,18 @@ class MicropsiPlugin(object):
             self.handle_keepalive
         )
 
+        self.event = ploader.requires('Event')
+        self.event.reg_event_handler(
+            'cl_position_update',
+            self.handle_position_update
+        )
+
+        self.worldplugin = ploader.requires('World')
+        self.event.reg_event_handler(
+            'w_block_update',
+            self.handle_block_update
+        )
+
         #MicroPsi Datatargets
         self.psi_dispatcher = PsiDispatcher(self)
         self.move_x = 0
@@ -57,10 +69,9 @@ class MicropsiPlugin(object):
     def handle_keepalive(self, name, packet):
         logging.getLogger("world").debug("Keep alive!")
 
+    def handle_position_update(self, name, data):
+        self.position = data
 
-
-
-
-
-
-
+    def handle_block_update(self, name, data):
+        if self.worldplugin:
+            self.world = self.worldplugin.world.map

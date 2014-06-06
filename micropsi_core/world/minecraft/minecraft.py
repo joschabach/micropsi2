@@ -1,5 +1,6 @@
 import math
 import os
+import signal
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
@@ -59,13 +60,18 @@ class Minecraft(World):
             "mc_password": "hugo"
         }
         self.spock = Client(plugins=plugins, settings=settings)
+        # the MicropsiPlugin will create self.spockplugin here on instantiation
         # TODO: Read args from config.ini
         self.minecraft_communication_thread = Thread(target=self.spock.start, args=("localhost", 25565))
         self.minecraft_communication_thread.start()
-        # the MicropsiPlugin will create a spockplugin field here on instantiation
+        signal.signal(signal.SIGINT, self.kill_minecraft_thread)
+        signal.signal(signal.SIGTERM, self.kill_minecraft_thread)
 
     def step(self):
         World.step(self)
+
+    def kill_minecraft_thread(self):
+        self.spock.event.kill()
 
 
 class MinecraftWorldadapter(WorldAdapter):

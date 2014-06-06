@@ -13,22 +13,8 @@ class MicropsiPlugin(object):
         self.worldadapter.spockplugin = self
 
         self.net = ploader.requires('Net')
-        ploader.reg_event_handler(
-            mcdata.packet_idents['PLAY<Keep Alive'],
-            self.handle_keepalive
-        )
-
         self.event = ploader.requires('Event')
-        self.event.reg_event_handler(
-            'cl_position_update',
-            self.handle_position_update
-        )
-
         self.worldplugin = ploader.requires('World')
-        self.event.reg_event_handler(
-            'w_block_update',
-            self.handle_block_update
-        )
 
         #MicroPsi Datatargets
         self.psi_dispatcher = PsiDispatcher(self)
@@ -39,20 +25,6 @@ class MicropsiPlugin(object):
 
         #Game State variables
         #Plugins should read these (but generally not write)
-        self.world = smpmap.World()
-        self.world_time = {
-            'world_age': 0,
-            'time_of_day': 0,
-        }
-        self.position = {
-            'x': 0,
-            'y': 0,
-            'z': 0,
-            'stance': 0,
-            'yaw': 0,
-            'pitch': 0,
-            'on_ground': False,
-        }
         self.health = {
             'health': 20,
             'food': 20,
@@ -66,12 +38,4 @@ class MicropsiPlugin(object):
             'z': 0,
         }
 
-    def handle_keepalive(self, name, packet):
-        logging.getLogger("world").debug("Keep alive!")
-
-    def handle_position_update(self, name, data):
-        self.position = data
-
-    def handle_block_update(self, name, data):
-        if self.worldplugin:
-            self.world = self.worldplugin.world.map
+        self.worldset = False

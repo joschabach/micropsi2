@@ -39,3 +39,13 @@ class MicropsiPlugin(object):
         }
 
         self.worldset = False
+
+    def move(self, position=None):
+        if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):
+            return
+        if position is None:
+            position = self.client_info.position
+        self.net.push(mcpacket.Packet(
+            ident='PLAY>Player Position and Look',
+            data=position
+        ))

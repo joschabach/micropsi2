@@ -37,7 +37,7 @@ class Minecraft(World):
         plugins = DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
-        #plugins.append(spockplugin.MicropsiPlugin)
+        plugins.append(spockplugin.MicropsiPlugin)
 
         settings = {
             'username': 'bot',          #minecraft.net username or name for unauthenticated servers
@@ -63,22 +63,7 @@ class Minecraft(World):
         # the MicropsiPlugin will create a spockplugin field here on instantiation
 
     def step(self):
-#        if self.first_step: #TODO probably not too smart
-#            # launch minecraft bot
-#            plugins = [debugplugin.DebugPlugin, chatmessage.ChatMessagePlugin, chunksaver.ChunkSaverPlugin, echopacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
-#            self.spockplugin = spockplugin(plugins=plugins)
-#            self.spockplugin.start()
-#            self.minecraftVisualisation = MinecraftVisualisation(self.spockplugin)
-#            self.minecraftVisualisation.commence_vis()
-#            self.first_step = False
-
-#        self.chat_ping_counter += 1
-#        if self.chat_ping_counter % 2 == 0: #TODO find other way to send "keepalive"
-#            self.spockplugin.push(Packet(ident = 0x03, data = {
-#						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
-#        self.spockplugin.advanceClient()
-#        self.the_image = self.minecraftVisualisation.advanceVisualisation()
 
 
 class MinecraftWorldadapter(WorldAdapter):

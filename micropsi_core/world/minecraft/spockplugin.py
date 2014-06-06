@@ -15,7 +15,7 @@ class MicropsiPlugin(object):
         self.net = ploader.requires('Net')
         ploader.reg_event_handler(
             mcdata.packet_idents['PLAY<Keep Alive'],
-            logging.getLogger("world").debug("Keep alive!")
+            self.handle_keepalive
         )
 
         #MicroPsi Datatargets
@@ -53,6 +53,9 @@ class MicropsiPlugin(object):
             'y': 0,
             'z': 0,
         }
+
+    def handle_keepalive(self, name, packet):
+        logging.getLogger("world").debug("Keep alive!")
 
 
 

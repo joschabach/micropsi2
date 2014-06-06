@@ -69,8 +69,7 @@ class PollSocket(SelectSocket):
         else:
             self.pollobj.register(self.sock, rmask)
         try:
-            #poll = self.pollobj.poll(self.timer.get_timeout() * 1000)
-            poll = self.pollobj.poll(100 * 1000) # TODO: figure out timer instances, go back to the original line above
+            poll = self.pollobj.poll(self.timer.get_timeout() * 1000)
         except select.error as e:
             print(str(e))
             poll = []

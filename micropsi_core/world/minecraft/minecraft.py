@@ -10,21 +10,8 @@ from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisat
 from micropsi_core.world.minecraft import spockplugin
 from spock.plugins.helpers import start
 from spock.plugins.core import timers
-
-class PluginSavingSpockClient(Client):
-    """
-        Spock client class that keeps a reference to the PluginLoader instance, so
-        the world adapter can retrieve the Micropsi plugin and wire itself up.
-        When updating Spock, this needs to be checked and updated manually.
-
-        A complet set of settings needs to be passed (original default settings will
-        not be used to fill up the settings dict)
-    """
-
-    def __init__(self, **kwargs):
-        #Grab some settings
-        settings = kwargs.get('settings', {})
-        self.ploader = PluginLoader(self, settings)
+from spock.plugins.helpers.clientinfo import ClientInfoPlugin
+from spock.plugins.helpers.move import MovementPlugin
 
 
 class Minecraft(World):
@@ -46,8 +33,8 @@ class Minecraft(World):
         self.the_image = None
 
         plugins = DefaultPlugins
-        plugins.append(start.StartPlugin)
-        #plugins.append(timers.TickTimer)
+        plugins.append(ClientInfoPlugin)
+        plugins.append(MovementPlugin)
         plugins.append(spockplugin.MicropsiPlugin)
 
         settings = {
@@ -64,8 +51,8 @@ class Minecraft(World):
             'mc_username': "sepp",
             "mc_password": "hugo"
         }
-        self.spock = PluginSavingSpockClient(settings=settings)
-        self.spock.start()
+        self.spock = Client(plugins=plugins, settings=settings)
+        self.spock.start(host="localhost", port=25565)
         #self.spockplugin = self.spock.ploader.requires('Micropsi')
 
     def step(self):

@@ -185,7 +185,7 @@ def _2d_rotate(position, angle_degrees):
 
 def _2d_distance_squared(position1, position2):
     """calculate the square of the distance bwtween two 2D coordinate tuples"""
-    return (position1[0] - position2[0]) ** 2 + (position1[0] - position2[1]) ** 2
+    return (position1[0] - position2[0]) ** 2 + (position1[1] - position2[1]) ** 2
 
 
 def _2d_translate(position1, position2):

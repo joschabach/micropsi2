@@ -9,6 +9,9 @@ class MicropsiPlugin(object):
 
     def __init__(self, ploader, settings):
 
+        self.worldadapter = settings['worldadapter']
+        self.worldadapter.spockplugin = self
+
         self.net = ploader.requires('Net')
         ploader.reg_event_handler(
             mcdata.packet_idents['PLAY<Keep Alive'],

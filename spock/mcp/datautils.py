@@ -115,7 +115,7 @@ def unpack_metadata(bbuff):
 
 def pack_metadata(metadata):
     o = b''
-    for key, tmp in data:
+    for key, tmp in metadata:
         typ, val = tmp
         o += pack(MC_UBYTE, (typ << 5)|key)
         if typ < len(metadata_lookup) and typ >= 0:

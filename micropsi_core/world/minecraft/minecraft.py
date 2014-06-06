@@ -12,7 +12,9 @@ from spock.plugins.helpers import start
 from spock.plugins.core import timers
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
+from spock.plugins.core.event import EventPlugin
 from threading import Thread
+
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -46,7 +48,10 @@ class Minecraft(World):
 		    'sess_quit': True,          #Stop bot on failed session login
 		    'thread_workers': 5,        #Number of workers in the thread pool
 		    'plugins': DefaultPlugins,
-		    'plugin_settings': {spockplugin.MicropsiPlugin: {"worldadapter": self}},      #Extra settings for plugins
+		    'plugin_settings': {
+            spockplugin.MicropsiPlugin: {"worldadapter": self},
+            EventPlugin: {"killsignals": False}
+            },                          #Extra settings for plugins
             'packet_trace': False,
             'mc_username': "sepp",
             "mc_password": "hugo"

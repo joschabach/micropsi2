@@ -4,14 +4,15 @@ from spock.mcp import mcdata
 from spock.utils import pl_announce
 
 class EventCore:
-    def __init__(self):
+    def __init__(self, register_kill_signal_handlers=True):
         self.kill_event = False
         self.event_handlers = {}
+        self.register_kill_signal_handlers = register_kill_signal_handlers
 
     def event_loop(self):
-#        signal.signal(signal.SIGINT, self.kill)
-#        signal.signal(signal.SIGTERM, self.kill)
-        # TODO: Find a way of not using signals if not the main thread without modifying spock sources
+        if self.register_kill_signal_handlers:
+            signal.signal(signal.SIGINT, self.kill)
+            signal.signal(signal.SIGTERM, self.kill)
         while not self.kill_event:
             self.emit('tick')
         self.emit('kill')
@@ -39,4 +40,6 @@ class EventCore:
 @pl_announce('Event')
 class EventPlugin:
     def __init__(self, ploader, settings):
-        ploader.provides('Event', EventCore())
+        register_kill_signal_handlers = settings is None or 'killsignals' not in settings.keys() or \
+            settings['killsignals'] is True
+        ploader.provides('Event', EventCore(register_kill_signal_handlers))

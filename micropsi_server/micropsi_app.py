@@ -16,6 +16,7 @@ __date__ = '15.05.12'
 from micropsi_core import runtime
 
 import micropsi_core.tools
+from micropsi_server import micropsi_logging
 from micropsi_server import usermanagement
 from micropsi_server import bottle
 from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error
@@ -881,6 +882,15 @@ def export_world_rpc(world_uid):
 @rpc("import_world", permission_required="manage worlds")
 def import_world_rpc(world_uid, worlddata):
     return runtime.import_world(world_uid, worlddata)
+
+
+# Logging
+#@rpc("get_logs")
+@route("/get_logs")
+@route("/get_logs/<logger>")
+@route("/get_logs/<logger>/<after>")
+def get_logs(logger="*", after=0):
+    return micropsi_logging.get_logs(logger, int(after))
 
 
 # Monitor

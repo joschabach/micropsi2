@@ -13,7 +13,9 @@ from spock.plugins.core import timers
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
 from spock.plugins.helpers.world import WorldPlugin
+from spock.plugins.core.event import EventPlugin
 from threading import Thread
+
 
 class Minecraft(World):
     """ mandatory: list of world adapters that are supported"""
@@ -48,7 +50,10 @@ class Minecraft(World):
 		    'sess_quit': True,          #Stop bot on failed session login
 		    'thread_workers': 5,        #Number of workers in the thread pool
 		    'plugins': DefaultPlugins,
-		    'plugin_settings': {spockplugin.MicropsiPlugin: {"worldadapter": self}},      #Extra settings for plugins
+		    'plugin_settings': {
+            spockplugin.MicropsiPlugin: {"worldadapter": self},
+            EventPlugin: {"killsignals": False}
+            },                          #Extra settings for plugins
             'packet_trace': False,
             'mc_username': "sepp",
             "mc_password": "hugo"
@@ -60,22 +65,7 @@ class Minecraft(World):
         # the MicropsiPlugin will create a spockplugin field here on instantiation
 
     def step(self):
-#        if self.first_step: #TODO probably not too smart
-#            # launch minecraft bot
-#            plugins = [debugplugin.DebugPlugin, chatmessage.ChatMessagePlugin, chunksaver.ChunkSaverPlugin, echopacket.EchoPacketPlugin] #TODO not all plugins - if any - are needed
-#            self.spockplugin = spockplugin(plugins=plugins)
-#            self.spockplugin.start()
-#            self.minecraftVisualisation = MinecraftVisualisation(self.spockplugin)
-#            self.minecraftVisualisation.commence_vis()
-#            self.first_step = False
-
-#        self.chat_ping_counter += 1
-#        if self.chat_ping_counter % 2 == 0: #TODO find other way to send "keepalive"
-#            self.spockplugin.push(Packet(ident = 0x03, data = {
-#						'text': "I'm alive! ping %s" % (self.chat_ping_counter) }))
         World.step(self)
-#        self.spockplugin.advanceClient()
-#        self.the_image = self.minecraftVisualisation.advanceVisualisation()
 
 
 class MinecraftWorldadapter(WorldAdapter):

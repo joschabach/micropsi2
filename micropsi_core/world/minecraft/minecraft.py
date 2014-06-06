@@ -1,6 +1,9 @@
 import math
 import os
+import warnings
 import signal
+from threading import Thread
+import configparser
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
@@ -15,7 +18,6 @@ from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
 from spock.plugins.helpers.world import WorldPlugin
 from spock.plugins.core.event import EventPlugin
-from threading import Thread
 
 
 class Minecraft(World):
@@ -61,14 +63,31 @@ class Minecraft(World):
         }
         self.spock = Client(plugins=plugins, settings=settings)
         # the MicropsiPlugin will create self.spockplugin here on instantiation
-        # TODO: Read args from config.ini
-        self.minecraft_communication_thread = Thread(target=self.spock.start, args=("localhost", 25565))
+
+        server_parameters = self.read_server_parameters()
+        self.minecraft_communication_thread = Thread(target=self.spock.start, args=server_parameters)
         self.minecraft_communication_thread.start()
         signal.signal(signal.SIGINT, self.kill_minecraft_thread)
         signal.signal(signal.SIGTERM, self.kill_minecraft_thread)
 
     def step(self):
         World.step(self)
+
+    def read_server_parameters(self):
+        server = 'localhost'
+        port = 25565
+
+        try:
+            config = configparser.ConfigParser()
+            config.read_file(open('config.ini'))
+            if 'minecraft_server' in config.keys():
+                server = config['minecraft_server']
+            if 'minecraft_port' in config.keys():
+                port = config['minecraft_port']
+        except OSError:
+            warnings.warn('Could not read config.ini, falling back to defaults for minecraft server configuration.')
+
+        return server, port
 
     def kill_minecraft_thread(self):
         self.spock.event.kill()

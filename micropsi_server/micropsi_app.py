@@ -879,6 +879,7 @@ def import_world_rpc(world_uid, worlddata):
 # Logging
 #@rpc("get_logs")
 @route("/get_logs")
+@route("/get_logs/<logger>")
 @route("/get_logs/<logger>/<after>")
 def get_logs(logger="*", after=0):
     return micropsi_logging.get_logs(logger, int(after))

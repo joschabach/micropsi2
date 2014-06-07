@@ -54,7 +54,7 @@ def nodenetrunner():
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
-                print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
+                #print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
         time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
@@ -72,7 +72,7 @@ def worldrunner():
         start = datetime.now()
         for uid in worlds:
             if worlds[uid].is_active:
-                print("%s stepping world %s" % (str(start), worlds[uid].name))
+                #print("%s stepping world %s" % (str(start), worlds[uid].name))
                 worlds[uid].step()
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:

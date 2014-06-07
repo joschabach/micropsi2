@@ -9,6 +9,7 @@ from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
 from spock.plugins import DefaultPlugins
 from spock.client import Client
+import logging
 from spock.client import PluginLoader
 #from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
 from micropsi_core.world.minecraft import spockplugin
@@ -128,8 +129,7 @@ class MinecraftWorldadapter(WorldAdapter):
                             self.datasources['diamond_offset_x_'] = self.datasources['diamond_offset_x'] * -1
                             self.datasources['diamond_offset_z_'] = self.datasources['diamond_offset_z'] * -1
 
-        print("self.datasources['diamond_offset_x_'] is ", self.datasources['diamond_offset_x_'])
-
+        logging.getLogger("world").debug("self.datasources['diamond_offset_x_'] is %s", self.datasources['diamond_offset_x_'])
 
         self.world.spockplugin.move_x = self.datatargets['move_x']
         self.world.spockplugin.move_z = self.datatargets['move_z']

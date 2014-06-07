@@ -180,7 +180,7 @@ def _2d_rotate(position, angle_degrees):
     cos = math.cos(radians)
     sin = math.sin(radians)
     x, y = position
-    return x * cos - y * sin, x * sin + y * cos
+    return x * cos - y * sin, - (x * sin + y * cos)
 
 
 def _2d_distance_squared(position1, position2):

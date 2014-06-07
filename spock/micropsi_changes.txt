@@ -1,0 +1,8 @@
+This version of spock is based on:
+
+https://github.com/nickelpro/spock/commit/8d23b900060f8d53f185de97453929990d77e976
+
+As of June 7th 2014, this was on a "patch-1" branch and hadn't been merged into nickelpro's master.
+A single change has been made in addition:
+mcp/mcdata.py lines 796-773, there seems to be a protocol glitch. Keep in mind when updating.
+PR has been created, but nickelpro will have to merge patch-1

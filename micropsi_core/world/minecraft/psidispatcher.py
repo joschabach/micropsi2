@@ -2,6 +2,8 @@ from spock.mcp.mcpacket import Packet
 
 __author__ = 'jonas'
 
+STANCE_ADDITION = 1.620
+
 class PsiDispatcher():
     
     def __init__(self, micropsiplugin):
@@ -21,13 +23,13 @@ class PsiDispatcher():
                                                               int(self.micropsiplugin.clientinfo.position['z'] // 1 % 16)).id
             if current_block == 0:
                 self.micropsiplugin.move(position = {
-                    'x': (self.micropsiplugin.clientinfo.position['x'] - 1)  // 1,
-                    'y': self.micropsiplugin.clientinfo.position['y'] // 1,
-                    'z': self.micropsiplugin.clientinfo.position['z'] // 1,
-                    'yaw': 0,
-                    'pitch': 0,
-                    'on_ground': False,
-                    'stance': self.micropsiplugin.clientinfo.position['y'] + 0.11
+                    'x': (self.micropsiplugin.clientinfo.position['x'] - 0.1),
+                    'y': self.micropsiplugin.clientinfo.position['y'],
+                    'z': self.micropsiplugin.clientinfo.position['z'],
+                    'yaw': self.micropsiplugin.clientinfo.position['yaw'],
+                    'pitch': self.micropsiplugin.clientinfo.position['pitch'],
+                    'on_ground': self.micropsiplugin.clientinfo.position['on_ground'],
+                    'stance': self.micropsiplugin.clientinfo.position['y'] + STANCE_ADDITION
                     })
         if self.micropsiplugin.move_x_ > 0:
             current_block = current_section.get(int((self.micropsiplugin.clientinfo.position['x'] + 1)  // 1 % 16),
@@ -35,13 +37,13 @@ class PsiDispatcher():
                                                               int(self.micropsiplugin.clientinfo.position['z'] // 1 % 16)).id
             if current_block == 0:
                 self.micropsiplugin.move(position = {
-                    'x': (self.micropsiplugin.clientinfo.position['x'] + 1)  // 1,
-                    'y': self.micropsiplugin.clientinfo.position['y'] // 1,
-                    'z': self.micropsiplugin.clientinfo.position['z'] // 1,
-                    'yaw': 0,
-                    'pitch': 0,
-                    'on_ground': False,
-                    'stance': self.micropsiplugin.clientinfo.position['y'] + 0.11
+                    'x': (self.micropsiplugin.clientinfo.position['x'] + 0.1),
+                    'y': self.micropsiplugin.clientinfo.position['y'],
+                    'z': self.micropsiplugin.clientinfo.position['z'],
+                    'yaw': self.micropsiplugin.clientinfo.position['yaw'],
+                    'pitch': self.micropsiplugin.clientinfo.position['pitch'],
+                    'on_ground': self.micropsiplugin.clientinfo.position['on_ground'],
+                    'stance': self.micropsiplugin.clientinfo.position['y'] + STANCE_ADDITION
                     })
         if self.micropsiplugin.move_z > 0:
             current_block = current_section.get(int(self.micropsiplugin.clientinfo.position['x']  // 1 % 16),
@@ -49,13 +51,13 @@ class PsiDispatcher():
                                                               int((self.micropsiplugin.clientinfo.position['z'] - 1) // 1 % 16)).id
             if current_block == 0:
                 self.micropsiplugin.move(position = {
-                    'x': (self.micropsiplugin.clientinfo.position['x']) // 1,
-                    'y': self.micropsiplugin.clientinfo.position['y'] // 1,
-                    'z': self.micropsiplugin.clientinfo.position['z'] - 1 // 1,
-                    'yaw': 0,
-                    'pitch': 0,
-                    'on_ground': False,
-                    'stance': self.micropsiplugin.clientinfo.position['y'] + 0.11
+                    'x': (self.micropsiplugin.clientinfo.position['x']),
+                    'y': self.micropsiplugin.clientinfo.position['y'],
+                    'z': self.micropsiplugin.clientinfo.position['z'] - 0.1,
+                    'yaw': self.micropsiplugin.clientinfo.position['yaw'],
+                    'pitch': self.micropsiplugin.clientinfo.position['pitch'],
+                    'on_ground': self.micropsiplugin.clientinfo.position['on_ground'],
+                    'stance': self.micropsiplugin.clientinfo.position['y'] + STANCE_ADDITION
                     })
         if self.micropsiplugin.move_z_ > 0:
             current_block = current_section.get(int(self.micropsiplugin.clientinfo.position['x']  // 1 % 16),
@@ -63,11 +65,11 @@ class PsiDispatcher():
                                                               int((self.micropsiplugin.clientinfo.position['z'] + 1) // 1 % 16)).id
             if current_block == 0:
                 self.micropsiplugin.move(position = {
-                    'x': (self.micropsiplugin.clientinfo.position['x'])  // 1,
-                    'y': self.micropsiplugin.clientinfo.position['y'] // 1,
-                    'z': self.micropsiplugin.clientinfo.position['z'] + 1 // 1,
-                    'yaw': 0,
-                    'pitch': 0,
-                    'on_ground': False,
-                    'stance': self.micropsiplugin.clientinfo.position['y'] + 0.11
+                    'x': (self.micropsiplugin.clientinfo.position['x']),
+                    'y': self.micropsiplugin.clientinfo.position['y'],
+                    'z': self.micropsiplugin.clientinfo.position['z'] + 0.1,
+                    'yaw': self.micropsiplugin.clientinfo.position['yaw'],
+                    'pitch': self.micropsiplugin.clientinfo.position['pitch'],
+                    'on_ground': self.micropsiplugin.clientinfo.position['on_ground'],
+                    'stance': self.micropsiplugin.clientinfo.position['y'] + STANCE_ADDITION
                     })

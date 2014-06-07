@@ -6,15 +6,11 @@ from threading import Thread
 import configparser
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
-from micropsi_core.world.worldobject import WorldObject
 from spock.plugins import DefaultPlugins
 from spock.client import Client
 import logging
-from spock.client import PluginLoader
-#from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
+from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
 from micropsi_core.world.minecraft import spockplugin
-from spock.plugins.helpers import start
-from spock.plugins.core import timers
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
 from spock.plugins.helpers.world import WorldPlugin
@@ -135,10 +131,5 @@ class MinecraftWorldadapter(WorldAdapter):
         self.world.spockplugin.move_z = self.datatargets['move_z']
         self.world.spockplugin.move_x_ = self.datatargets['move_x_']
         self.world.spockplugin.move_z_ = self.datatargets['move_z_']
-
-       # self.datatargets['move_x'] = 0
-       # self.datatargets['move_z'] = 0
-       # self.datatargets['move_x_'] = 0
-       # self.datatargets['move_z_'] = 0
 
         self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()

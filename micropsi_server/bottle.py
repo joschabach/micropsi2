@@ -2344,7 +2344,7 @@ url       = make_default_app_wrapper('get_url')
 
 
 class ServerAdapter(object):
-    quiet = False
+    quiet = True
     def __init__(self, host='127.0.0.1', port=8080, **config):
         self.options = config
         self.host = host

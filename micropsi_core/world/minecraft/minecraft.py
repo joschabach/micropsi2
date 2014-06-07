@@ -52,7 +52,7 @@ class Minecraft(World):
 		    'sock_quit': True,          #Stop bot on socket error or hangup
 		    'sess_quit': True,          #Stop bot on failed session login
 		    'thread_workers': 5,        #Number of workers in the thread pool
-		    'plugins': DefaultPlugins,
+		    'plugins': plugins,
 		    'plugin_settings': {
             spockplugin.MicropsiPlugin: {"worldadapter": self},
             EventPlugin: {"killsignals": False}

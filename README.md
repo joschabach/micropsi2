@@ -1,6 +1,7 @@
 about
 -----
 a Python implementation of the cognitive architecture MicroPsi.
+
 For more information visit [micropsi.com](http://www.micropsi.com).
 
 
@@ -10,10 +11,10 @@ run
 * run `./start_micropsi_server.py`
 * view in browser at [http://localhost:6543/](http://localhost:6543/)
 
-Minecraft connectivtiy has an additional dependency on pycrypto. See [micropsi_core/world/minecraft/README.md](/micropsi_core/world/minecraft/README.md) for
-information on setting up minecraft connectivity.
+Minecraft connectivtiy has an additional dependency on pycrypto.
+See [micropsi_core/world/minecraft/README.md](/micropsi_core/world/minecraft/README.md) for setup instructions.
 
 
 attribution
 -----
-Python MicroPsi uses [spock](https://github.com/nickelpro/spock) for minecraft connectivity.
+Python MicroPsi uses [spock](https://github.com/nickelpro/spock).

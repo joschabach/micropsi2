@@ -52,16 +52,20 @@ function drawGraph(currentMonitors){
     var values = [];
     var xstart = xmax-viewProperties.xvalues;
     var ymax = 1.0;
+    var ymin = 0;
     for(var uid in currentMonitors){
       for(var step in currentMonitors[uid].values){
         values.push(currentMonitors[uid].values[step]);
-        if(step >= xstart && currentMonitors[uid].values[step] > ymax){
-          ymax = currentMonitors[uid].values[step];
+        if(step >= xstart){
+          ymax = Math.max(ymax, currentMonitors[uid].values[step]);
+          ymin = Math.min(ymin, currentMonitors[uid].values[step]);
         }
       }
     }
 
-    var y = d3.scale.linear().domain([0, ymax]).range([height, 0]);
+    var y = d3.scale.linear().domain([ymin, ymax]).range([height, 0]);
+
+    var x_axis_pos = (ymax / (ymax - ymin)) * height;
 
     var xAxis = d3.svg.axis()
         .scale(x)
@@ -79,7 +83,7 @@ function drawGraph(currentMonitors){
 
     svg.append("g")
       .attr("class", "x axis")
-      .attr("transform", "translate(0," + height + ")")
+      .attr("transform", "translate(0," + x_axis_pos + ")")
       .call(xAxis)
     .append("text")
       .attr("dx", width - 100)

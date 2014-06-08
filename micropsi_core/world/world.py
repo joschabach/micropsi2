@@ -145,7 +145,10 @@ class World(object):
         for uid, worldobject in self.data['objects'].items():
             self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
         for uid, agent in self.data.get('agents', {}).items():
-            self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
+            try:
+                self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
+            except KeyError:
+                warnings.warn('Worldadapter %s not found, can not spawn agent %s' % (agent['type'], agent['name']))
 
     def step(self):
         """ advance the simluation """
@@ -325,6 +328,7 @@ except:
 
 try:
     from micropsi_core.world.minecraft import minecraft
+    from micropsi_core.world.minecraft.minecraft import Minecraft
 except:
     e = sys.exc_info()[0]
     sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e)

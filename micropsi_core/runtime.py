@@ -8,7 +8,6 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
-from micropsi_core.world.minecraft.minecraft import Minecraft
 
 __author__ = 'joscha'
 __date__ = '10.05.12'
@@ -99,6 +98,7 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 # Minecraft Image
 def get_minecraft_image():
+    from micropsi_core.world.minecraft.minecraft import Minecraft
     for uid in worlds:
         if isinstance(worlds[uid], Minecraft):
             return worlds[uid].the_image

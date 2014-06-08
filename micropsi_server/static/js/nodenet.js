@@ -1064,16 +1064,19 @@ function renderFullNode(node) {
 function replaceCompactNodeHover(node, is_hover) {
     if(is_hover){
         nodeLayer.children[node.uid].remove();
-        var width = viewProperties.nodeWidth;
-        var height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2);
-        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4);
-        node.bounds = new Rectangle(node.x*viewProperties.zoomFactor - width/2,
-            node.y*viewProperties.zoomFactor - height/2, // center node on origin
+        zoom = viewProperties.zoomFactor;
+        viewProperties.zoomFactor = 0.7;
+        var width = viewProperties.nodeWidth * viewProperties.zoomFactor;
+        var height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2) * viewProperties.zoomFactor;
+        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
+        node.bounds = new Rectangle(node.x*zoom - width/2,
+            node.y*zoom - height/2, // center node on origin
             width, height);
         var skeleton = createFullNodeSkeleton(node);
         var activations = createFullNodeActivations(node);
         var titleBar = createFullNodeLabel(node);
         var nodeItem = new Group([activations, skeleton, titleBar]);
+        viewProperties.zoomFactor = zoom;
         nodeItem.name = node.uid;
         nodeItem.isCompact = false;
         nodeLayer.addChild(nodeItem);

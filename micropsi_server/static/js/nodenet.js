@@ -2009,7 +2009,7 @@ function openContextMenu(menu_id, event) {
     if(!currentNodenet){
         return;
     }
-    clickPosition = new Point(event.offsetX, event.offsetY);
+    clickPosition = new Point(event.layerX, event.layerY);
     $(menu_id).css({
         position: "absolute",
         zIndex: 500,

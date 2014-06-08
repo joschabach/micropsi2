@@ -399,10 +399,6 @@ class Slot(object):
     def activation(self):
         return self.get_activation("default")
 
-    @property
-    def voted_activation(self):
-        return self.get_voted_activation("default")
-
     def get_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
             return 0
@@ -410,18 +406,6 @@ class Slot(object):
             return 0
         return self.sheaves[sheaf].activation
 
-    def get_voted_activation(self, sheaf="default"):
-        if len(self.incoming) == 0:
-            return 0
-
-        contrib_factor_sum = 0
-        for linkid, link in self.incoming.items():
-            contrib_factor_sum += link.weight   # TODO: Once certainty is being used in propagation, add here
-
-        voted = self.get_activation(sheaf) / contrib_factor_sum
-        if sheaf != "default" and voted == 0:
-            voted = self.get_activation("default")
-        return voted
 
 STANDARD_NODETYPES = {
     "Nodespace": {

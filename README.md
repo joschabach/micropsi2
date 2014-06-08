@@ -12,7 +12,7 @@ run
 * view in browser at [http://localhost:6543/](http://localhost:6543/)
 
 
-run with minecraft connectivity
+run with optional dependencies
 -----
 * To run micropsi with minecraft conectivity, you need to call `make` after checkout, and then follow the steps described above
 (Minecraft connectivtiy has an additional dependency on pycrypto)
@@ -23,5 +23,5 @@ attribution
 -----
 Python MicroPsi uses 
 
-* [spock](https://github.com/nickelpro/spock)
-* [bottle](https://github.com/defnull/bottle).
+* [bottle](https://github.com/defnull/bottle)
+* [spock](https://github.com/nickelpro/spock).

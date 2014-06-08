@@ -1,5 +1,3 @@
-import math
-import os
 import warnings
 import signal
 from threading import Thread
@@ -8,8 +6,6 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from spock.plugins import DefaultPlugins
 from spock.client import Client
-import logging
-from micropsi_core.world.minecraft.visualisation.main import MinecraftVisualisation
 from micropsi_core.world.minecraft import spockplugin
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin

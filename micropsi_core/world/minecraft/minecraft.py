@@ -92,9 +92,8 @@ class Minecraft(World):
 
 class MinecraftWorldadapter(WorldAdapter):
 
-    #datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0, 'diamond_offset_x_': 0, 'diamond_offset_z_': 0}
-    datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0, 'diamond_offset_x_': 0, 'diamond_offset_z_': 0, }
-    datatargets = {'move_x': 0, 'move_z': 0, 'move_x_': 0, 'move_z_': 0}
+    datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0}
+    datatargets = {'move_x': 0, 'move_z': 0}
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
@@ -109,8 +108,6 @@ class MinecraftWorldadapter(WorldAdapter):
 
         self.datasources['diamond_offset_x'] = 0
         self.datasources['diamond_offset_z'] = 0
-        self.datasources['diamond_offset_x_'] = 0
-        self.datasources['diamond_offset_z_'] = 0
 
         for y in range(0, 16):
             current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) // 16)] #TODO explain formula
@@ -120,16 +117,10 @@ class MinecraftWorldadapter(WorldAdapter):
                         current_block = current_section.get(x, int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) % 16), z).id #TODO explain formula
                         if current_block == 56:
                             diamond_coords = (x + x_chunk * 16,y,z + z_chunk * 16)
-                            self.datasources['diamond_offset_x'] = bot_block[0] - diamond_coords[0] - 2
-                            self.datasources['diamond_offset_z'] = bot_block[2] - diamond_coords[2] - 2
-                            self.datasources['diamond_offset_x_'] = self.datasources['diamond_offset_x'] * -1
-                            self.datasources['diamond_offset_z_'] = self.datasources['diamond_offset_z'] * -1
-
-        logging.getLogger("world").debug("self.datasources['diamond_offset_x_'] is %s", self.datasources['diamond_offset_x_'])
+                            self.datasources['diamond_offset_x'] = bot_block[0] - diamond_coords[0]
+                            self.datasources['diamond_offset_z'] = bot_block[2] - diamond_coords[2]
 
         self.world.spockplugin.move_x = self.datatargets['move_x']
         self.world.spockplugin.move_z = self.datatargets['move_z']
-        self.world.spockplugin.move_x_ = self.datatargets['move_x_']
-        self.world.spockplugin.move_z_ = self.datatargets['move_z_']
 
         self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()

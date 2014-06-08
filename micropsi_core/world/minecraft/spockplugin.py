@@ -16,6 +16,7 @@ class MicropsiPlugin(object):
         self.event = ploader.requires('Event')
         self.world = ploader.requires('World')
         self.clientinfo = ploader.requires('ClientInfo')
+        self.threadpool = ploader.requires('ThreadPool')
         self.event.reg_event_handler(
             'cl_position_update',
             self.subtract_stance

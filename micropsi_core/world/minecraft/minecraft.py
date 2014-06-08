@@ -84,6 +84,8 @@ class Minecraft(World):
 
     def kill_minecraft_thread(self, *args):
         self.spockplugin.event.kill()
+        self.minecraft_communication_thread.join()
+        self.spockplugin.threadpool.shutdown(False)
 
 
 class MinecraftWorldadapter(WorldAdapter):

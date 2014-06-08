@@ -2,7 +2,7 @@ about
 -----
 a Python implementation of the cognitive architecture MicroPsi
 
-See [http://www.micropsi.org](micropsi.org)
+See [micropsi.org](http://www.micropsi.org)
 
 
 run
@@ -17,4 +17,4 @@ information on setting up minecraft connectivity.
 
 attribution
 -----
-Python MicroPsi uses [https://github.com/nickelpro/spock](spock)
+Python MicroPsi uses [spock](https://github.com/nickelpro/spock)

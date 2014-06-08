@@ -1057,7 +1057,32 @@ function renderFullNode(node) {
     var titleBar = createFullNodeLabel(node);
     var nodeItem = new Group([activations, skeleton, titleBar]);
     nodeItem.name = node.uid;
+    nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
+}
+
+function replaceCompactNodeHover(node, is_hover) {
+    if(is_hover){
+        nodeLayer.children[node.uid].remove();
+        zoom = viewProperties.zoomFactor;
+        viewProperties.zoomFactor = 0.7;
+        var width = viewProperties.nodeWidth * viewProperties.zoomFactor;
+        var height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2) * viewProperties.zoomFactor;
+        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
+        node.bounds = new Rectangle(node.x*zoom - width/2,
+            node.y*zoom - height/2, // center node on origin
+            width, height);
+        var skeleton = createFullNodeSkeleton(node);
+        var activations = createFullNodeActivations(node);
+        var titleBar = createFullNodeLabel(node);
+        var nodeItem = new Group([activations, skeleton, titleBar]);
+        viewProperties.zoomFactor = zoom;
+        nodeItem.name = node.uid;
+        nodeItem.isCompact = false;
+        nodeLayer.addChild(nodeItem);
+    } else {
+        redrawNode(node, true);
+    }
 }
 
 // render compact version of a net entity
@@ -1069,6 +1094,7 @@ function renderCompactNode(node) {
     var nodeItem = new Group([activations, skeleton]);
     if (label) nodeItem.addChild(label);
     nodeItem.name = node.uid;
+    nodeItem.isCompact = true;
     nodeLayer.addChild(nodeItem);
 }
 
@@ -1468,7 +1494,8 @@ function deselectAll() {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
+    if(node.uid in nodeLayer.children && nodeLayer.children[node.uid].isCompact === false) return false;
+    if(viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     else return viewProperties.compactNodes;
 }
 
@@ -1672,6 +1699,7 @@ function onMouseDown(event) {
 }
 
 var hover = null;
+var hoverNode = null;
 var hoverArrow = null;
 var oldHoverColor = null;
 
@@ -1684,9 +1712,12 @@ function onMouseMove(event) {
             hover.strokeColor = oldHoverColor;
             hoverArrow.fillColor = oldHoverColor;
             oldHoverColor = null;
-        } else hover.fillColor = oldHoverColor;
+        } else {
+            hover.fillColor = oldHoverColor;
+        }
         hover = null;
     }
+
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
     for (var nodeUid in nodeLayer.children) {
@@ -1694,6 +1725,10 @@ function onMouseMove(event) {
             var node = nodes[nodeUid];
             var bounds = node.bounds;
             if (bounds.contains(p)) {
+                if(hoverNode && nodeUid != hoverNode.uid){
+                    replaceCompactNodeHover(hoverNode, false);
+                }
+                hoverNode = nodes[nodeUid];
                 hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
                 // check for slots and gates
                 if ((i = testSlots(node, p)) >-1) {
@@ -1703,10 +1738,18 @@ function onMouseMove(event) {
                 }
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
+                if(isCompact(nodes[nodeUid])){
+                    replaceCompactNodeHover(hoverNode, true);
+                }
                 return;
             }
         }
     }
+    if(hoverNode){
+        replaceCompactNodeHover(hoverNode, false);
+    }
+    hoverNode = null;
+
     if (!hover) {
         // check for links
         var hitResult = linkLayer.hitTest(event.point, hitOptions);
@@ -3055,7 +3098,11 @@ function updateMonitorList(){
     var el = $('#monitor_list');
     var html = '<table class="table-striped table-condensed">';
     for(var uid in monitors){
-        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'" /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
+        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
+        if(currentMonitors.indexOf(uid) > -1){
+            html += ' checked="checked"';
+        }
+        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
     }
     html += '</table>';
     el.html(html);

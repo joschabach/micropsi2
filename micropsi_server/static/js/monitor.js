@@ -49,7 +49,19 @@ function drawGraph(currentMonitors){
         .domain([xmax-viewProperties.xvalues, xmax])
         .range([0, width]);
 
-    var y = d3.scale.linear().range([height, 0]);
+    var values = [];
+    var xstart = xmax-viewProperties.xvalues;
+    var ymax = 1.0;
+    for(var uid in currentMonitors){
+      for(var step in currentMonitors[uid].values){
+        values.push(currentMonitors[uid].values[step]);
+        if(step >= xstart && currentMonitors[uid].values[step] > ymax){
+          ymax = currentMonitors[uid].values[step];
+        }
+      }
+    }
+
+    var y = d3.scale.linear().domain([0, ymax]).range([height, 0]);
 
     var xAxis = d3.svg.axis()
         .scale(x)

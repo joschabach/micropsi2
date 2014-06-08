@@ -3055,7 +3055,11 @@ function updateMonitorList(){
     var el = $('#monitor_list');
     var html = '<table class="table-striped table-condensed">';
     for(var uid in monitors){
-        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'" /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
+        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
+        if(currentMonitors.indexOf(uid) > -1){
+            html += ' checked="checked"';
+        }
+        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
     }
     html += '</table>';
     el.html(html);

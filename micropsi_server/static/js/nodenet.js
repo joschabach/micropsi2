@@ -2040,9 +2040,15 @@ function openContextMenu(menu_id, event) {
     if(menu_id == '#create_node_menu'){
         var list = $('[data-nodetype-entries]');
         html = '';
-        for(var key in nodetypes){
-            if(!(key in native_modules))
-                html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
+        nodetype_keys = Object.keys(nodetypes);
+        nodetype_keys.sort(function(a, b){
+            if(a < b) return -1;
+            if(a > b) return 1;
+            return 0;
+        });
+        for(var idx in nodetype_keys){
+            if(!(nodetype_keys[idx] in native_modules))
+                html += '<li><a data-create-node="' + nodetype_keys[idx] + '">Create ' + nodetype_keys[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
             if(Object.keys(native_modules).length > 6 ){

@@ -750,8 +750,7 @@ class NetAPI(object):
         """
         for source in nodes:
             for target in nodes:
-                if source is not target:
-                    self.link_with_reciprocal(source, target, linktype, weight, certainty)
+                self.link_with_reciprocal(source, target, linktype, weight, certainty)
 
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """

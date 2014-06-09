@@ -1723,7 +1723,7 @@ function onMouseMove(event) {
             }
         }
     }
-    if(hoverNode){
+    if(hoverNode && hoverNode.uid in nodes){
         hoverNode.renderCompact = null;
         redrawNode(hoverNode, true);
     }

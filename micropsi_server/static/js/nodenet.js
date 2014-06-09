@@ -1725,7 +1725,7 @@ function onMouseMove(event) {
     }
     if(hoverNode){
         hoverNode.renderCompact = null;
-        redrawNode(hoverNode, false);
+        redrawNode(hoverNode, true);
     }
     hoverNode = null;
 

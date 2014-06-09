@@ -345,7 +345,8 @@ function setNodespaceData(data){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
-    loaded_coordinates = coordinates;
+    if(coordinates)
+        loaded_coordinates = coordinates;
     method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {
@@ -2234,7 +2235,7 @@ function handleContextMenu(event) {
             break;
         case "gate":
             switch (menuText) {
-                case "Create link":
+                case "Draw link":
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":

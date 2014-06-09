@@ -345,6 +345,7 @@ function setNodespaceData(data){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
+    loaded_coordinates = coordinates;
     method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {
@@ -400,7 +401,7 @@ function refreshViewPortData(){
         refreshNodespace(currentNodeSpace, {
             x:[Math.max(0, left - width), left + 2*width],
             y:[Math.max(0, top-height), top + 2*height]
-        });
+        }, currentSimulationStep - 1);
     }
 }
 

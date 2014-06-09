@@ -345,7 +345,8 @@ function setNodespaceData(data){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
-    loaded_coordinates = coordinates;
+    if(coordinates)
+        loaded_coordinates = coordinates;
     method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {

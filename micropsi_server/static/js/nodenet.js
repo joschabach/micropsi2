@@ -2267,7 +2267,7 @@ function handleContextMenu(event) {
             break;
         case "gate":
             switch (menuText) {
-                case "Create link":
+                case "Draw link":
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":

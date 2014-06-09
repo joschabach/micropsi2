@@ -473,7 +473,7 @@ class Nodenet(object):
     def step(self):
         """perform a simulation step"""
 
-        if self.uid in self.world.agents:
+        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
                                                         # but instead the world object itself
@@ -810,7 +810,8 @@ class NetAPI(object):
         """
         for source in nodes:
             for target in nodes:
-                self.link_with_reciprocal(source, target, linktype, weight, certainty)
+                if source is not target:
+                    self.link_with_reciprocal(source, target, linktype, weight, certainty)
 
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """

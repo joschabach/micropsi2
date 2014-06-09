@@ -470,7 +470,7 @@ class Nodenet(object):
     def step(self):
         """perform a simulation step"""
 
-        if self.uid in self.world.agents:
+        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
                                                         # but instead the world object itself

@@ -119,7 +119,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     sur += node.get_slot("exp").get_activation(sheaf)
     sur *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
     sur *= 0 if node.get_slot("ret").get_activation(sheaf) < 0 else 1
-    sur /= neighbors+1 if neighbors > 1 else 1
+    sur /= neighbors if neighbors > 1 else 1
     if sur < 0: sur = 0
     if sur > 1: sur = 1
 

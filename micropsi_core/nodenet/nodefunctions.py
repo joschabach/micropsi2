@@ -100,6 +100,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
+    neighbors = len(node.get_slot("por").incoming)
+
     gen += node.get_slot("sur").get_activation(sheaf)
     gen += node.get_slot("exp").get_activation(sheaf)
     gen += node.get_slot("gen").get_activation(sheaf)
@@ -108,16 +110,16 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     sub += node.get_slot("sur").get_activation(sheaf)
     sub += node.get_slot("sub").get_activation(sheaf)
-    sub *= (1+node.get_slot("por").get_activation(sheaf))
+    sub *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
     sub *= 0 if node.get_slot("gen").get_activation(sheaf) > 0 else 1
     if sub > 0: sub = 1
 
     sur += node.get_slot("sur").get_activation(sheaf)
     sur += 0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1
     sur += node.get_slot("exp").get_activation(sheaf)
-    sur *= min(1+node.get_slot("por").get_activation(sheaf), 1)
-    sur *= min(1+node.get_slot("ret").get_activation(sheaf), 1)
-    sur /= len(node.get_slot("por").incoming)+1
+    sur *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
+    sur *= 0 if node.get_slot("ret").get_activation(sheaf) < 0 else 1
+    sur /= neighbors+1 if neighbors > 1 else 1
     if sur < 0: sur = 0
     if sur > 1: sur = 1
 
@@ -125,12 +127,11 @@ def pipe(netapi, node=None, sheaf="default", **params):
            (1+node.get_slot("por").get_activation(sheaf))
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
-    #por += node.get_slot("por").get_activation(sheaf) * \
-    #       (1+node.get_slot("ret").get_activation(sheaf))
+    por += 1 if neighbors > 1 else 0
     if por <= 0: por = -1
     if por > 0: por = 1
 
-    #ret += node.get_slot("ret").get_activation(sheaf)
+    ret += 1 if neighbors > 1 else 0
     if ret == 0: ret = -1
 
     cat = sub

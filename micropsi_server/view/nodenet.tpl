@@ -377,7 +377,7 @@
 <div class="dropdown" id="gate_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#gate_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
-        <li><a href="#">Create link</a></li>
+        <li><a href="#">Draw link</a></li>
         <li><a href="#" data-add-monitor>Add monitor to gate</a></li>
         <li><a href="#" data-remove-monitor>Remove monitor from gate</a></li>
     </ul>

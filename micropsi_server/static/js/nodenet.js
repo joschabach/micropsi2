@@ -2068,7 +2068,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
     menu.append('<li class="divider"></li>');
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
@@ -2079,6 +2078,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
                 menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
             }
         }
+        menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
         menu.append('<li class="divider"></li>');
     }
     if(node.type == "Sensor"){

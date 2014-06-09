@@ -789,6 +789,29 @@ class NetAPI(object):
         """
         self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight, certainty)
 
+    def link_with_reciprocal(self, source_node, target_node, linktype, weight=1, certainty=1):
+        """
+        Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, and catexp
+        """
+        if linktype == "subsur":
+            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, "sub", weight, certainty)
+            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, "sur", weight, certainty)
+        elif linktype == "porret":
+            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, "por", weight, certainty)
+            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, "ret", weight, certainty)
+        elif linktype == "catexp":
+            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, "cat", weight, certainty)
+            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, "exp", weight, certainty)
+
+    def link_full(self, nodes, linktype="porret", weight=1, certainty=1):
+        """
+        Creates two (reciprocal) links between all nodes in the node list (every node to every node),
+        valid linktypes are subsur, porret, and catexp.
+        """
+        for source in nodes:
+            for target in nodes:
+                self.link_with_reciprocal(source, target, linktype, weight, certainty)
+
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """
         Deletes a link, or links, originating from the given node

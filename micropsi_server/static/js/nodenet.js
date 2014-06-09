@@ -1068,30 +1068,6 @@ function renderFullNode(node) {
     nodeLayer.addChild(nodeItem);
 }
 
-function replaceCompactNodeHover(node, is_hover) {
-    if(is_hover){
-        nodeLayer.children[node.uid].remove();
-        zoom = viewProperties.zoomFactor;
-        viewProperties.zoomFactor = 0.7;
-        var width = viewProperties.nodeWidth * viewProperties.zoomFactor;
-        var height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2) * viewProperties.zoomFactor;
-        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
-        node.bounds = new Rectangle(node.x*zoom - width/2,
-            node.y*zoom - height/2, // center node on origin
-            width, height);
-        var skeleton = createFullNodeSkeleton(node);
-        var activations = createFullNodeActivations(node);
-        var titleBar = createFullNodeLabel(node);
-        var nodeItem = new Group([activations, skeleton, titleBar]);
-        viewProperties.zoomFactor = zoom;
-        nodeItem.name = node.uid;
-        nodeItem.isCompact = false;
-        nodeLayer.addChild(nodeItem);
-    } else {
-        redrawNode(node, true);
-    }
-}
-
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
@@ -1526,7 +1502,8 @@ function deselectAll() {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if(node.uid in nodeLayer.children && nodeLayer.children[node.uid].isCompact === false) return false;
+    if(node.renderCompact === false) return false;
+    if(node.renderCompact === true) return true;
     if(viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     else return viewProperties.compactNodes;
 }
@@ -1771,14 +1748,16 @@ function onMouseMove(event) {
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
                 if(isCompact(nodes[nodeUid])){
-                    replaceCompactNodeHover(hoverNode, true);
+                    nodes[nodeUid].renderCompact = false;
+                    redrawNode(nodes[nodeUid], true);
                 }
                 return;
             }
         }
     }
-    if(hoverNode){
-        replaceCompactNodeHover(hoverNode, false);
+    if(hoverNode && hoverNode.uid in nodes){
+        hoverNode.renderCompact = null;
+        redrawNode(hoverNode, true);
     }
     hoverNode = null;
 
@@ -2084,7 +2063,7 @@ function openContextMenu(menu_id, event) {
     if(!currentNodenet){
         return;
     }
-    clickPosition = new Point(event.offsetX, event.offsetY);
+    clickPosition = new Point(event.layerX, event.layerY);
     $(menu_id).css({
         position: "absolute",
         zIndex: 500,
@@ -2093,9 +2072,15 @@ function openContextMenu(menu_id, event) {
     if(menu_id == '#create_node_menu'){
         var list = $('[data-nodetype-entries]');
         html = '';
-        for(var key in nodetypes){
-            if(!(key in native_modules))
-                html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
+        nodetype_keys = Object.keys(nodetypes);
+        nodetype_keys.sort(function(a, b){
+            if(a < b) return -1;
+            if(a > b) return 1;
+            return 0;
+        });
+        for(var idx in nodetype_keys){
+            if(!(nodetype_keys[idx] in native_modules))
+                html += '<li><a data-create-node="' + nodetype_keys[idx] + '">Create ' + nodetype_keys[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
             if(Object.keys(native_modules).length > 6 ){
@@ -2121,7 +2106,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
     menu.append('<li class="divider"></li>');
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
@@ -2132,6 +2116,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
                 menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
             }
         }
+        menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
         menu.append('<li class="divider"></li>');
     }
     if(node.type == "Sensor"){

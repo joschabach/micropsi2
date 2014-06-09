@@ -1061,30 +1061,6 @@ function renderFullNode(node) {
     nodeLayer.addChild(nodeItem);
 }
 
-function replaceCompactNodeHover(node, is_hover) {
-    if(is_hover){
-        nodeLayer.children[node.uid].remove();
-        zoom = viewProperties.zoomFactor;
-        viewProperties.zoomFactor = 0.7;
-        var width = viewProperties.nodeWidth * viewProperties.zoomFactor;
-        var height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2) * viewProperties.zoomFactor;
-        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
-        node.bounds = new Rectangle(node.x*zoom - width/2,
-            node.y*zoom - height/2, // center node on origin
-            width, height);
-        var skeleton = createFullNodeSkeleton(node);
-        var activations = createFullNodeActivations(node);
-        var titleBar = createFullNodeLabel(node);
-        var nodeItem = new Group([activations, skeleton, titleBar]);
-        viewProperties.zoomFactor = zoom;
-        nodeItem.name = node.uid;
-        nodeItem.isCompact = false;
-        nodeLayer.addChild(nodeItem);
-    } else {
-        redrawNode(node, true);
-    }
-}
-
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
@@ -1494,7 +1470,8 @@ function deselectAll() {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if(node.uid in nodeLayer.children && nodeLayer.children[node.uid].isCompact === false) return false;
+    if(node.renderCompact === false) return false;
+    if(node.renderCompact === true) return true;
     if(viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     else return viewProperties.compactNodes;
 }
@@ -1739,14 +1716,16 @@ function onMouseMove(event) {
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
                 if(isCompact(nodes[nodeUid])){
-                    replaceCompactNodeHover(hoverNode, true);
+                    nodes[nodeUid].renderCompact = false;
+                    redrawNode(nodes[nodeUid], true);
                 }
                 return;
             }
         }
     }
     if(hoverNode){
-        replaceCompactNodeHover(hoverNode, false);
+        hoverNode.renderCompact = null;
+        redrawNode(hoverNode, false);
     }
     hoverNode = null;
 

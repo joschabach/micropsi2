@@ -1704,9 +1704,8 @@ function onMouseMove(event) {
             var bounds = node.bounds;
             if (bounds.contains(p)) {
                 if(hoverNode && nodeUid != hoverNode.uid){
-                    replaceCompactNodeHover(hoverNode, false);
+                    redrawNode(hoverNode, true);
                 }
-                hoverNode = nodes[nodeUid];
                 hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
                 // check for slots and gates
                 if ((i = testSlots(node, p)) >-1) {
@@ -1717,6 +1716,7 @@ function onMouseMove(event) {
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
                 if(isCompact(nodes[nodeUid])){
+                    hoverNode = nodes[nodeUid];
                     nodes[nodeUid].renderCompact = false;
                     redrawNode(nodes[nodeUid], true);
                 }

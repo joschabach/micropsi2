@@ -120,7 +120,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur > 0:     # else: always propagate failure
         sur *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
         sur *= 0 if node.get_slot("ret").get_activation(sheaf) < 0 else 1
-    sur /= neighbors+1 if neighbors > 1 else 1
+    sur /= neighbors if neighbors > 1 else 1
     if sur < -1: sur = -1
     if sur > 1: sur = 1
 
@@ -132,8 +132,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por <= 0: por = -1
     if por > 0: por = 1
 
-    ret += 1 if neighbors > 1 else 0
-    if ret == 0: ret = -1
+    #ret += 1 if neighbors > 1 else 0
+    #if ret == 0: ret = -1
+    ret = 0
 
     cat = sub
     if cat < 0: cat = 0

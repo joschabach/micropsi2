@@ -1705,6 +1705,7 @@ function onMouseMove(event) {
             var bounds = node.bounds;
             if (bounds.contains(p)) {
                 if(hoverNode && nodeUid != hoverNode.uid){
+                    hoverNode.renderCompact = null;
                     redrawNode(hoverNode, true);
                 }
                 hover = nodeLayer.children[nodeUid].children["activation"].children["body"];

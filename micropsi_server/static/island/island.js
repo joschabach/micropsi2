@@ -447,11 +447,6 @@ function handleContextMenu(event){
 // --------------------------- controls -------------------------------------------------------- //
 
 function initializeControls(){
-    $('#world_reset').on('click', resetWorld);
-    $('#world_step_forward').on('click', stepWorld);
-    $('#world_start').on('click', startWorldrunner);
-    $('#world_stop').on('click', stopWorldrunner);
-
     $('.editor_field form .controls button[type="reset"]').on('click', showDefaultForm);
     $('#add_object_link').on('click', function(event){
         event.preventDefault();

@@ -31,6 +31,7 @@ APP_PATH = os.path.dirname(__file__)
 
 bottle.debug(True)  # devV
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
+bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
@@ -122,14 +123,14 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
-    if current_world in worlds and getattr(worlds[current_world], 'assets', None):
-        world_js = worlds[current_world].assets['js']
+    if current_world in worlds and hasattr(worlds[current_world], 'assets'):
+        world_assets = worlds[current_world].assets
     else:
-        world_js = ''
+        world_assets = {}
     return template(template_name, current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
-        world_js=world_js, **params)
+        world_assets=world_assets, **params)
 
 @route('/static/<filepath:path>')
 def server_static(filepath):

@@ -19,6 +19,7 @@ class Island(World):
 
     assets = {
         'background': "island/psi_1.png",
+        'template': 'island/island.tpl',
         'js': "island/island.js",
         'x': 2048,
         'y': 2048,

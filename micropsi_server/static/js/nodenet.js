@@ -345,6 +345,8 @@ function setNodespaceData(data){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
+    if(coordinates)
+        loaded_coordinates = coordinates;
     method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {
@@ -400,7 +402,7 @@ function refreshViewPortData(){
         refreshNodespace(currentNodeSpace, {
             x:[Math.max(0, left - width), left + 2*width],
             y:[Math.max(0, top-height), top + 2*height]
-        });
+        }, currentSimulationStep - 1);
     }
 }
 
@@ -1057,6 +1059,7 @@ function renderFullNode(node) {
     var titleBar = createFullNodeLabel(node);
     var nodeItem = new Group([activations, skeleton, titleBar]);
     nodeItem.name = node.uid;
+    nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
 }
 
@@ -1069,6 +1072,7 @@ function renderCompactNode(node) {
     var nodeItem = new Group([activations, skeleton]);
     if (label) nodeItem.addChild(label);
     nodeItem.name = node.uid;
+    nodeItem.isCompact = true;
     nodeLayer.addChild(nodeItem);
 }
 
@@ -1468,7 +1472,9 @@ function deselectAll() {
 
 // should we draw this node in compact style or full?
 function isCompact(node) {
-    if (viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
+    if(node.renderCompact === false) return false;
+    if(node.renderCompact === true) return true;
+    if(viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     else return viewProperties.compactNodes;
 }
 
@@ -1672,6 +1678,7 @@ function onMouseDown(event) {
 }
 
 var hover = null;
+var hoverNode = null;
 var hoverArrow = null;
 var oldHoverColor = null;
 
@@ -1684,9 +1691,12 @@ function onMouseMove(event) {
             hover.strokeColor = oldHoverColor;
             hoverArrow.fillColor = oldHoverColor;
             oldHoverColor = null;
-        } else hover.fillColor = oldHoverColor;
+        } else {
+            hover.fillColor = oldHoverColor;
+        }
         hover = null;
     }
+
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
     for (var nodeUid in nodeLayer.children) {
@@ -1694,6 +1704,9 @@ function onMouseMove(event) {
             var node = nodes[nodeUid];
             var bounds = node.bounds;
             if (bounds.contains(p)) {
+                if(hoverNode && nodeUid != hoverNode.uid){
+                    redrawNode(hoverNode, true);
+                }
                 hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
                 // check for slots and gates
                 if ((i = testSlots(node, p)) >-1) {
@@ -1703,10 +1716,21 @@ function onMouseMove(event) {
                 }
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
+                if(isCompact(nodes[nodeUid])){
+                    hoverNode = nodes[nodeUid];
+                    nodes[nodeUid].renderCompact = false;
+                    redrawNode(nodes[nodeUid], true);
+                }
                 return;
             }
         }
     }
+    if(hoverNode && hoverNode.uid in nodes){
+        hoverNode.renderCompact = null;
+        redrawNode(hoverNode, true);
+    }
+    hoverNode = null;
+
     if (!hover) {
         // check for links
         var hitResult = linkLayer.hitTest(event.point, hitOptions);
@@ -2009,7 +2033,7 @@ function openContextMenu(menu_id, event) {
     if(!currentNodenet){
         return;
     }
-    clickPosition = new Point(event.offsetX, event.offsetY);
+    clickPosition = new Point(event.layerX, event.layerY);
     $(menu_id).css({
         position: "absolute",
         zIndex: 500,
@@ -2018,9 +2042,15 @@ function openContextMenu(menu_id, event) {
     if(menu_id == '#create_node_menu'){
         var list = $('[data-nodetype-entries]');
         html = '';
-        for(var key in nodetypes){
-            if(!(key in native_modules))
-                html += '<li><a data-create-node="' + key + '">Create ' + key +'</a></li>';
+        nodetype_keys = Object.keys(nodetypes);
+        nodetype_keys.sort(function(a, b){
+            if(a < b) return -1;
+            if(a > b) return 1;
+            return 0;
+        });
+        for(var idx in nodetype_keys){
+            if(!(nodetype_keys[idx] in native_modules))
+                html += '<li><a data-create-node="' + nodetype_keys[idx] + '">Create ' + nodetype_keys[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
             if(Object.keys(native_modules).length > 6 ){
@@ -2046,7 +2076,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
     menu.append('<li class="divider"></li>');
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
@@ -2057,6 +2086,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
                 menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
             }
         }
+        menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
         menu.append('<li class="divider"></li>');
     }
     if(node.type == "Sensor"){
@@ -2205,7 +2235,7 @@ function handleContextMenu(event) {
             break;
         case "gate":
             switch (menuText) {
-                case "Create link":
+                case "Draw link":
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":
@@ -3055,7 +3085,11 @@ function updateMonitorList(){
     var el = $('#monitor_list');
     var html = '<table class="table-striped table-condensed">';
     for(var uid in monitors){
-        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'" /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
+        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
+        if(currentMonitors.indexOf(uid) > -1){
+            html += ' checked="checked"';
+        }
+        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
     }
     html += '</table>';
     el.html(html);

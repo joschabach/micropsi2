@@ -470,9 +470,10 @@ class Nodenet(object):
     def step(self):
         """perform a simulation step"""
 
-        self.world.agents[self.uid].snapshot()      # world adapter snapshot
-                                                    # TODO: Not really sure why we don't just know our world adapter,
-                                                    # but instead the world object itself
+        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
+            self.world.agents[self.uid].snapshot()      # world adapter snapshot
+                                                        # TODO: Not really sure why we don't just know our world adapter,
+                                                        # but instead the world object itself
 
         self.propagate_link_activation(self.nodes.copy())
 
@@ -727,6 +728,29 @@ class NetAPI(object):
         with the given weight and certainty values (or the default 1 if not given)
         """
         self.__nodenet.create_link(source_node.uid, source_gate, target_node.uid, target_slot, weight, certainty)
+
+    def link_with_reciprocal(self, source_node, target_node, linktype, weight=1, certainty=1):
+        """
+        Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, and catexp
+        """
+        if linktype == "subsur":
+            self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, "sub", weight, certainty)
+            self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, "sur", weight, certainty)
+        elif linktype == "porret":
+            self.__nodenet.create_link(source_node.uid, "por", target_node.uid, "por", weight, certainty)
+            self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, "ret", weight, certainty)
+        elif linktype == "catexp":
+            self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, "cat", weight, certainty)
+            self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, "exp", weight, certainty)
+
+    def link_full(self, nodes, linktype="porret", weight=1, certainty=1):
+        """
+        Creates two (reciprocal) links between all nodes in the node list (every node to every node),
+        valid linktypes are subsur, porret, and catexp.
+        """
+        for source in nodes:
+            for target in nodes:
+                self.link_with_reciprocal(source, target, linktype, weight, certainty)
 
     def unlink(self, source_node, source_gate=None, target_node=None, target_slot=None):
         """

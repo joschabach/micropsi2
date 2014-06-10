@@ -573,8 +573,9 @@ def delete_node(nodenet_uid, node_uid):
     """Removes the node"""
     nodenet = nodenets[nodenet_uid]
     if node_uid in nodenet.nodespaces:
-        for uid, node in nodenet.nodes.items():
-            if node.parent_nodespace == node_uid:
+        node_uids = [key for key in nodenet.nodes]
+        for uid in node_uids:
+            if nodenet.nodes[uid].parent_nodespace == node_uid:
                 delete_node(nodenet_uid, uid)
         parent_nodespace = nodenet.nodespaces.get(nodenet.nodespaces[node_uid].parent_nodespace)
         if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:

@@ -17,7 +17,6 @@ class Minecraft(World):
     supported_worldadapters = ['MinecraftWorldadapter']
 
     assets = {
-    'js': "minecraft/minecraft.js",
     'x': 2048,
     'y': 2048,
     }

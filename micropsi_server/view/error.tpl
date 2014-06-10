@@ -13,17 +13,17 @@
             <h2>{{msg}}</h2>
             %end
         </div>
-        %if defined("error") and error.output:
+        %if defined("error"):
         <div class="row-fluid">
             <div class="alert alert-error">
-                {{error.output}}
+                {{error}}
             </div>
         </div>
         %end
         %if defined("error") and error.traceback:
         <div class="row-fluid">
             <div class="alert alert-error">
-                {{error.traceback}}
+                {{error}}
             </div>
         </div>
         %end

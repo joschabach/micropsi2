@@ -134,8 +134,6 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por > 0: por = 1
 
     ret += 1 if neighbors > 1 else -1
-    #if ret == 0: ret = -1
-    #ret = 0
 
     cat = sub
     if cat < 0: cat = 0
@@ -170,11 +168,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
     node.get_gate("ret").gate_function(ret, sheaf)
     node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
-
     node.get_gate("exp").gate_function(exp, sheaf)
-
-    # cats will be checked in their own sheaf
-    if cat > 0:
+    if cat > 0:     # cats will be checked in their own sheaf
         node.get_gate("cat").open_sheaf(cat, sheaf)
         node.get_gate("cat").gate_function(0, sheaf)
     else:

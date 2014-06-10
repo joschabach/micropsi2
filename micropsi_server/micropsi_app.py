@@ -27,9 +27,11 @@ import inspect
 import sys
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
+
 APP_PATH = os.path.dirname(__file__)
 
-bottle.debug(True)  # devV
+bottle.debug(False)  # devV
+
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
@@ -1087,7 +1089,7 @@ def reload_native_modules(nodenet_uid=None):
 # -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
-    run(host=host, port=port)  # devV
+    run(host=host, port=port, quiet=True)  # devV
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)

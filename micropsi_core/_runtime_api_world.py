@@ -171,7 +171,7 @@ def step_world(world_uid, return_world_view=False):
     micropsi_core.runtime.worlds[world_uid].step()
     if return_world_view:
         return get_world_view(world_uid)
-    return True
+    return {'step': micropsi_core.runtime.worlds[world_uid].current_step }
 
 
 def revert_world(world_uid):

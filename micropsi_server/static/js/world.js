@@ -9,7 +9,7 @@ wasRunning = false;
 $(window).focus(function() {
     worldRunning = wasRunning;
     if(wasRunning){
-        refreshWorldView();
+        if(refreshWorldView) refreshWorldView();
     }
 })
 .blur(function() {
@@ -41,7 +41,7 @@ function stepWorld(event){
         stopWorldrunner(event);
     }
     api.call('step_world', {world_uid: currentWorld}, function(){
-        refreshWorldView();
+        if(refreshWorldView) refreshWorldView();
     });
 }
 
@@ -49,7 +49,7 @@ function startWorldrunner(event){
     event.preventDefault();
     api.call('start_worldrunner', {world_uid: currentWorld}, function(){
         worldRunning = true;
-        refreshWorldView();
+        if(refreshWorldView) refreshWorldView();
     });
 }
 

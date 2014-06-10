@@ -36,8 +36,6 @@ objects = {};
 symbols = {};
 agents = {};
 
-currentWorld = $.cookie('selected_world') || null;
-
 objectLayer = new Layer();
 objectLayer.name = 'ObjectLayer';
 
@@ -49,27 +47,14 @@ if (currentWorld){
     setCurrentWorld(currentWorld);
 }
 
-worldRunning = false;
-
 var objectList = $('#world_objects_list table');
 var agentsList = $('#world_agents_list table');
 
 initializeControls();
 initializeMenus();
 
-wasRunning = false;
-$(window).focus(function() {
-    worldRunning = wasRunning;
-    if(wasRunning){
-        refreshWorldView();
-    }
-})
-.blur(function() {
-    wasRunning = worldRunning;
-    worldRunning = false;
-});
 
-function refreshWorldView(){
+refreshWorldView = function(){
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
         function(data){
@@ -132,7 +117,6 @@ function setCurrentWorld(uid){
     loadWorldInfo();
 }
 
-
 function loadWorldInfo(){
     api.call('get_world_properties', {
         world_uid: currentWorld
@@ -157,6 +141,7 @@ function loadWorldInfo(){
         dialogs.notification(data.Error, 'error');
     });
 }
+
 
 function updateViewSize() {
     view.draw(true);

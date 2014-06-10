@@ -61,5 +61,8 @@
 </div>
 
 
-%if world_js:
-    <script src="/static/{{world_js}}" type="text/paperscript" canvas="world"></script>
+<script src="/static/js/world.js" type="text/paperscript" canvas="world"></script>
+
+%if world_assets.get('js'):
+    <script src="/static/{{world_assets['js']}}" type="text/paperscript" canvas="world"></script>
+%end

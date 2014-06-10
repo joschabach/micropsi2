@@ -115,6 +115,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sub > 0: sub = 1
 
     sur += node.get_slot("sur").get_activation(sheaf)
+    if sur == 0: sur += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     sur += 0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1
     sur += node.get_slot("exp").get_activation(sheaf)
     if sur > 0:     # else: always propagate failure

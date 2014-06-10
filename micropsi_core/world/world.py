@@ -11,6 +11,7 @@ __date__ = '10.05.12'
 import json
 import os
 import warnings
+import sys
 from micropsi_core.world import worldadapter
 from micropsi_core.world import worldobject
 from micropsi_core import tools
@@ -97,6 +98,8 @@ class World(object):
         self.agents = {}
         self.objects = {}
 
+        #self.the_image = None
+
         self.load()
 
     def load(self, string=None):
@@ -142,7 +145,10 @@ class World(object):
         for uid, worldobject in self.data['objects'].items():
             self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
         for uid, agent in self.data.get('agents', {}).items():
-            self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
+            try:
+                self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
+            except KeyError:
+                warnings.warn('Worldadapter %s not found, can not spawn agent %s' % (agent['type'], agent['name']))
 
     def step(self):
         """ advance the simluation """
@@ -302,6 +308,23 @@ class World(object):
 
 
 # imports of individual world types:
-from micropsi_core.world.island import island
-from micropsi_core.world.island.structured_objects import structured_objects
-from micropsi_core.world.berlin import berlin
+try:
+    from micropsi_core.world.island import island
+except ImportError as e:
+    sys.stdout.write("Could not import island world.\nError: %s \n\n" % e.msg)
+
+try:
+    from micropsi_core.world.island.structured_objects import structured_objects
+except ImportError as e:
+    sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e.msg)
+
+try:
+    from micropsi_core.world.berlin import berlin
+except ImportError as e:
+    sys.stdout.write("Could not import berlin world.\nError: %s \n\n" % e.msg)
+
+try:
+    from micropsi_core.world.minecraft import minecraft
+    from micropsi_core.world.minecraft.minecraft import Minecraft
+except ImportError as e:
+    sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)

@@ -66,7 +66,8 @@ class ConfigurationManager(object):
     def __del__(self):
         """shut down user management"""
         if hasattr(self, "key"):
-            ConfigurationManager.instances.remove(self.key)
+            if ConfigurationManager:
+                ConfigurationManager.instances.remove(self.key)
 
     def load_configs(self):
         """load configuration data"""

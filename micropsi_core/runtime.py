@@ -9,7 +9,6 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
 
-
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
@@ -24,12 +23,14 @@ from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
 import os
+import sys
 from micropsi_core import tools
 import json
 import warnings
 from threading import Thread
 from datetime import datetime, timedelta
 import time
+import signal
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -45,15 +46,28 @@ runner = {
     'world': {'timestep': 5000, 'runner': None}
 }
 
+signal_handler_registry = []
+
+
+def add_signal_handler(handler):
+    signal_handler_registry.append(handler)
+
+
+def signal_handler(signal, frame):
+    print ("Shutting down")
+    for handler in signal_handler_registry:
+        handler(signal, frame)
+    sys.exit(0)
+
 
 def nodenetrunner():
     """Looping thread to simulate node nets continously"""
-    while True:
+    while runner['nodenet']['running']:
         step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
-                print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
+                #print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
         time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
@@ -61,7 +75,7 @@ def nodenetrunner():
 
 def worldrunner():
     """Looping thread to simulate worlds continously"""
-    while True:
+    while runner['world']['running']:
         if configs['worldrunner_timestep'] > 1000:
             step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
         else:
@@ -69,11 +83,18 @@ def worldrunner():
         start = datetime.now()
         for uid in worlds:
             if worlds[uid].is_active:
-                print("%s stepping world %s" % (str(start), worlds[uid].name))
+                #print("%s stepping world %s" % (str(start), worlds[uid].name))
                 worlds[uid].step()
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())
+
+
+def kill_runners(signal, frame):
+    runner['world']['running'] = False
+    runner['nodenet']['running'] = False
+    runner['world']['runner'].join()
+    runner['nodenet']['runner'].join()
 
 
 def _get_world_uid_for_nodenet_uid(nodenet_uid):
@@ -93,6 +114,13 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 
 # MicroPsi API
+
+# Minecraft Image
+def get_minecraft_image():
+    from micropsi_core.world.minecraft.minecraft import Minecraft
+    for uid in worlds:
+        if isinstance(worlds[uid], Minecraft):
+            return worlds[uid].the_image
 
 # Nodenet
 def get_available_nodenets(owner=None):
@@ -751,7 +779,6 @@ def align_nodes(nodenet_uid, nodespace):
         nodenets[nodenet_uid].update_node_positions()
     return result
 
-
 # --- end of API
 
 def crawl_definition_files(path, type="definition"):
@@ -871,9 +898,17 @@ if 'worldrunner_timestep' not in configs:
     configs['worldrunner_timestep'] = 5000
     configs['nodenetrunner_timestep'] = 1000
     configs.save_configs()
+runner['world']['running'] = True
 runner['world']['runner'] = Thread(target=worldrunner)
 runner['world']['runner'].daemon = True
+runner['nodenet']['running'] = True
 runner['nodenet']['runner'] = Thread(target=nodenetrunner)
 runner['nodenet']['runner'].daemon = True
 runner['world']['runner'].start()
 runner['nodenet']['runner'].start()
+
+add_signal_handler(kill_runners)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+

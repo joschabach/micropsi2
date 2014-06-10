@@ -24,13 +24,16 @@ import argparse
 import os
 import json
 import inspect
+import sys
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
 APP_PATH = os.path.dirname(__file__)
 
-bottle.debug(True)  # devV
+bottle.debug(False)  # devV
+
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
+bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
 
 # runtime = micropsi_core.runtime.MicroPsiRuntime()
 usermanager = usermanagement.UserManager()
@@ -79,10 +82,12 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 except ValueError as err:
                     response.status = 400
                     return {"Error": "Invalid arguments for remote procedure call: " + err.message}
-            elif request.json:
-                kwargs = request.json
-            elif len(request.params) > 0:
-                kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
+            else:
+                try:
+                    kwargs = request.json
+                except ValueError:
+                    if len(request.params) > 0:
+                        kwargs = dict((key.strip('[]'), json.loads(val)) for key, val in request.params.iteritems())
             user_id, permissions, token = get_request_data()
             if permission_required and permission_required not in permissions:
                 response.status = 401
@@ -120,15 +125,14 @@ def _add_world_list(template_name, **params):
         response.set_cookie('selected_world', current_world)
     else:
         current_world = request.get_cookie('selected_world')
-    if current_world in worlds and getattr(worlds[current_world], 'assets', None):
-        world_js = worlds[current_world].assets['js']
+    if current_world in worlds and hasattr(worlds[current_world], 'assets'):
+        world_assets = worlds[current_world].assets
     else:
-        world_js = ''
+        world_assets = {}
     return template(template_name, current=current_world,
         mine=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner == params['user_id']),
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
-        world_js=world_js, **params)
-
+        world_assets=world_assets, **params)
 
 @route('/static/<filepath:path>')
 def server_static(filepath):
@@ -152,7 +156,6 @@ def document(filepath):
     return template("minidoc",
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
-
 
 @route("/world")
 def world():
@@ -1086,7 +1089,7 @@ def reload_native_modules(nodenet_uid=None):
 # -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
-    run(host=host, port=port)  # devV
+    run(host=host, port=port, quiet=True)  # devV
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)

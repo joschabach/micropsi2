@@ -102,10 +102,10 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     neighbors = len(node.get_slot("por").incoming)
 
-    gen += node.get_slot("sur").get_activation(sheaf)
-    gen += node.get_slot("exp").get_activation(sheaf)
     gen += node.get_slot("gen").get_activation(sheaf)
     if gen < 0.1: gen = 0
+    gen += node.get_slot("sur").get_activation(sheaf)
+    gen += node.get_slot("exp").get_activation(sheaf)
     if gen > 1: gen = 1
 
     sub += max(node.get_slot("sur").get_activation(sheaf), 0)
@@ -120,9 +120,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur > 0:     # else: always propagate failure
         sur *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
         sur *= 0 if node.get_slot("ret").get_activation(sheaf) < 0 else 1
-    sur /= neighbors if neighbors > 1 else 1
     if sur < -1: sur = -1
     if sur > 1: sur = 1
+    sur /= neighbors if neighbors > 1 else 1
 
     por += node.get_slot("sur").get_activation(sheaf) * \
            (1+node.get_slot("por").get_activation(sheaf))
@@ -132,9 +132,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por <= 0: por = -1
     if por > 0: por = 1
 
-    #ret += 1 if neighbors > 1 else 0
+    ret += 1 if neighbors > 1 else -1
     #if ret == 0: ret = -1
-    ret = 0
+    #ret = 0
 
     cat = sub
     if cat < 0: cat = 0
@@ -163,7 +163,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
                 netapi.unlock(sub_lock_needed)
 
     # set gates
-    node.set_sheaf_activation(sur, sheaf)
+    node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)
     node.get_gate("por").gate_function(por, sheaf)
     node.get_gate("ret").gate_function(ret, sheaf)

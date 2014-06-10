@@ -152,16 +152,6 @@ def document(filepath):
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
-@route('/minecraft/screenshot.png')
-def deliver_image():
-    image = runtime.get_minecraft_image()
-    if image != None:
-        #image_value = image
-        response.headers['Content-Type'] = 'image/png'
-        return image.getvalue()
-    else:
-        return None
-
 @route("/world")
 def world():
     user_id, permissions, token = get_request_data()

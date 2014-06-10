@@ -14,7 +14,7 @@ run
 
 run with optional dependencies
 -----
-* To run micropsi with minecraft conectivity, you need to call `make` after checkout, and then follow the steps described above
+* To run micropsi with minecraft connectivity, you need to call `make` after checkout, and then follow the steps described above
 (Minecraft connectivtiy has an additional dependency on pycrypto)
 * Also see [micropsi_core/world/minecraft/README.md](/micropsi_core/world/minecraft/README.md) for setup instructions.
 

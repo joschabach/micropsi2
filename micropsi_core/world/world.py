@@ -310,25 +310,21 @@ class World(object):
 # imports of individual world types:
 try:
     from micropsi_core.world.island import island
-except:
-    e = sys.exc_info()[0]
-    sys.stdout.write("Could not import island world.\nError: %s \n\n" % e)
+except ImportError as e:
+    sys.stdout.write("Could not import island world.\nError: %s \n\n" % e.msg)
 
 try:
     from micropsi_core.world.island.structured_objects import structured_objects
-except:
-    e = sys.exc_info()[0]
-    sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e)
+except ImportError as e:
+    sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e.msg)
 
 try:
     from micropsi_core.world.berlin import berlin
-except:
-    e = sys.exc_info()[0]
-    sys.stdout.write("Could not import berlin world.\nError: %s \n\n" % e)
+except ImportError as e:
+    sys.stdout.write("Could not import berlin world.\nError: %s \n\n" % e.msg)
 
 try:
     from micropsi_core.world.minecraft import minecraft
     from micropsi_core.world.minecraft.minecraft import Minecraft
-except:
-    e = sys.exc_info()[0]
-    sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e)
+except ImportError as e:
+    sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)

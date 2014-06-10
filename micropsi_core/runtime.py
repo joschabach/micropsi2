@@ -46,6 +46,19 @@ runner = {
     'world': {'timestep': 5000, 'runner': None}
 }
 
+signal_handler_registry = []
+
+
+def add_signal_handler(handler):
+    signal_handler_registry.append(handler)
+
+
+def signal_handler(signal, frame):
+    print ("Shutting down")
+    for handler in signal_handler_registry:
+        handler(signal, frame)
+    sys.exit(0)
+
 
 def nodenetrunner():
     """Looping thread to simulate node nets continously"""
@@ -76,13 +89,13 @@ def worldrunner():
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())
 
+
 def kill_runners(signal, frame):
-    print("Killing runners")
     runner['world']['running'] = False
     runner['nodenet']['running'] = False
     runner['world']['runner'].join()
     runner['nodenet']['runner'].join()
-    sys.exit(0)
+
 
 def _get_world_uid_for_nodenet_uid(nodenet_uid):
     """ Temporary method to get the world uid to a given nodenet uid.
@@ -893,6 +906,8 @@ runner['nodenet']['runner'].daemon = True
 runner['world']['runner'].start()
 runner['nodenet']['runner'].start()
 
-signal.signal(signal.SIGINT, kill_runners)
-signal.signal(signal.SIGTERM, kill_runners)
+add_signal_handler(kill_runners)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 

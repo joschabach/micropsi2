@@ -1,5 +1,4 @@
 import warnings
-import signal
 from threading import Thread
 import configparser
 from micropsi_core.world.world import World
@@ -24,6 +23,7 @@ class Minecraft(World):
     }
 
     def __init__(self, filename, world_type="Minecraft", name="", owner="", uid=None, version=1):
+        from micropsi_core.runtime import add_signal_handler
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.current_step = 0
         self.data['assets'] = self.assets
@@ -60,8 +60,7 @@ class Minecraft(World):
         server_parameters = self.read_server_parameters()
         self.minecraft_communication_thread = Thread(target=self.spock.start, args=server_parameters)
         self.minecraft_communication_thread.start()
-        signal.signal(signal.SIGINT, self.kill_minecraft_thread)
-        signal.signal(signal.SIGTERM, self.kill_minecraft_thread)
+        add_signal_handler(self.kill_minecraft_thread)
 
     def step(self):
         World.step(self)

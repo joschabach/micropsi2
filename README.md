@@ -24,4 +24,5 @@ attribution
 Python MicroPsi uses 
 
 * [bottle](https://github.com/defnull/bottle)
-* [spock](https://github.com/nickelpro/spock).
+* [spock](https://github.com/nickelpro/spock)
+* [paperjs](http://github.com/paperjs/paper.js)

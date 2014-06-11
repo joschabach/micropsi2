@@ -70,7 +70,7 @@ def nodenetrunner():
                 #print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
-        time.sleep(float(str(left)[5:]))  # cut hours, minutes, convert to float.
+        time.sleep(float(str(left).split(':')[-1:][0]))  # cut hours, minutes, convert to float.
 
 
 def worldrunner():

@@ -8,7 +8,7 @@
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
-            <form class="form-horizontal">
+            <form class="form-horizontal scene_viewer_section">
                 <h4>Scene Viewer</h4>
                 <p>
                     <label for="scene_viewer_agent">Agent</label>

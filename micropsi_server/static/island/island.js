@@ -128,9 +128,15 @@ refreshWorldView = function(){
 function updateSceneViewer(){
     var selector = $('#scene_viewer_agent');
     var selected = selector.val();
-    var selector_html = '<option>choose...</option>';
+    var selector_html = '';
     for(var key in scenes){
         selector_html += '<option value="'+key+'">'+objects[key].name+'</option>';
+    }
+    if(selector_html){
+        selector_html = '<option>choose...</option>' + selector_html;
+        $('.scene_viewer_section').show();
+    } else{
+        $('.scene_viewer_section').hide();
     }
     selector.html(selector_html);
     selector.val(selected);

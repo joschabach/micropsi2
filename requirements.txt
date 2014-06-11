@@ -1,1 +1,4 @@
-pycrypto
+mock==1.0.1
+py==1.4.20
+pycrypto==2.6.1
+pytest==2.5.2

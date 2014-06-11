@@ -122,7 +122,7 @@ def delete_world(world_uid):
 
 def get_world_view(world_uid, step):
     """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
-    if step < micropsi_core.runtime.worlds[world_uid].current_step:
+    if step <= micropsi_core.runtime.worlds[world_uid].current_step:
         return micropsi_core.runtime.worlds[world_uid].get_world_view(step)
     return {}
 

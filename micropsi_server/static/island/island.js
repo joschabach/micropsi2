@@ -143,25 +143,27 @@ function refreshSceneView(event){
     var viewer = $('#scene_viewer');
     var html = '';
     var grid_factor = {};
-    grid_factor['y'] = scene.shape_grid.length - 1;
-    grid_factor['x'] = scene.shape_grid[0].length - 1;
-    for(var row_idx in scene.shape_grid){
-        for(var col_idx in scene.shape_grid[row_idx]){
-            if(scene.shape_grid[row_idx][col_idx]){
-                var classnames = [];
-                if((scene.fovea_x + (grid_factor.x/2) == col_idx) && 
-                    Math.abs(scene.fovea_y - (grid_factor.y/2)) == row_idx){
-                    classnames.push('active');
+    if(scene){
+        grid_factor['y'] = scene.shape_grid.length - 1;
+        grid_factor['x'] = scene.shape_grid[0].length - 1;
+        for(var row_idx in scene.shape_grid){
+            for(var col_idx in scene.shape_grid[row_idx]){
+                if(scene.shape_grid[row_idx][col_idx]){
+                    var classnames = [];
+                    if((scene.fovea_x + (grid_factor.x/2) == col_idx) && 
+                        Math.abs(scene.fovea_y - (grid_factor.y/2)) == row_idx){
+                        classnames.push('active');
+                    }
+                    for(var prop in scene.shape_grid[row_idx][col_idx]){
+                        classnames.push(scene.shape_grid[row_idx][col_idx][prop]);
+                    }
+                    html += '<b class="'+classnames.join(' ')+'"></b>';
+                } else {
+                    html += '<b>&nbsp;</b>';
                 }
-                for(var prop in scene.shape_grid[row_idx][col_idx]){
-                    classnames.push(scene.shape_grid[row_idx][col_idx][prop]);
-                }
-                html += '<b class="'+classnames.join(' ')+'"></b>';
-            } else {
-                html += '<b>&nbsp;</b>';
             }
+            html += '<br/>';
         }
-        html += '<br/>';
     }
     viewer.html(html);
 }

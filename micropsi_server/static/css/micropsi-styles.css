@@ -242,3 +242,31 @@ graphs
     top: 11px;
     left: -6px;
 }
+
+#scene_viewer b {
+  width: 2em;
+  font-family: monospace;
+  font-weight: bold;
+  display: inline-block;
+  text-align: center;
+  font-weight: 900;
+  border: 1px solid #ddd;
+}
+#scene_viewer b.active {
+  border: 1px solid #e07b81;
+}
+#scene_viewer b.green {
+  color: green;
+}
+#scene_viewer b.brown {
+  color: brown;
+}
+#scene_viewer b.com:after {
+  content: "*";
+}
+#scene_viewer b.hor:after {
+  content: "--"
+}
+#scene_viewer b.ver:after {
+  content: "|";
+}

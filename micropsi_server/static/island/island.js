@@ -47,6 +47,8 @@ if (currentWorld){
     setCurrentWorld(currentWorld);
 }
 
+var scenes = {};
+
 var objectList = $('#world_objects_list table');
 var agentsList = $('#world_agents_list table');
 
@@ -74,6 +76,9 @@ refreshWorldView = function(){
                     if(objects[key].representation){
                         objects[key].representation.remove();
                         delete objects[key];
+                        if(key in scenes){
+                            delete scenes[key]
+                        }
                     }
                 } else {
                     if(data.objects[key].position && data.objects[key].position.length == 2){
@@ -82,6 +87,9 @@ refreshWorldView = function(){
                         objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
                         objects[key].orientation = data.objects[key].orientation;
                         objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                        if(key in scenes){
+                            scenes[key] = objects[key].scene;
+                        }
                     } else {
                         console.log('obj has no pos: ' + key);
                     }
@@ -92,6 +100,9 @@ refreshWorldView = function(){
                 if(data.objects[key].position && data.objects[key].position.length == 2){
                     if(key in data.agents){
                         addAgent(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                        if('scene' in data.agents[key]){
+                            scenes[data.agents[key].uid] = data.agents[key].scene;
+                        }
                     } else {
                         addObject(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
                     }
@@ -100,6 +111,7 @@ refreshWorldView = function(){
                 }
             }
 
+            updateSceneViewer();
             updateViewSize();
             if(worldRunning){
                 refreshWorldView();
@@ -109,6 +121,49 @@ refreshWorldView = function(){
             dialogs.notification(data.Error, 'error');
         }
     );
+}
+
+function updateSceneViewer(){
+    var selector = $('#scene_viewer_agent');
+    var selected = selector.val();
+    var selector_html = '<option>choose...</option>';
+    for(var key in scenes){
+        selector_html += '<option value="'+key+'">'+objects[key].name+'</option>';
+    }
+    selector.html(selector_html);
+    selector.val(selected);
+    if(selected){
+        refreshSceneView();
+    }
+}
+
+function refreshSceneView(event){
+    var selector = $('#scene_viewer_agent');
+    var scene = scenes[selector.val()];
+    var viewer = $('#scene_viewer');
+    var html = '';
+    var grid_factor = {};
+    grid_factor['y'] = scene.shape_grid.length - 1;
+    grid_factor['x'] = scene.shape_grid[0].length - 1;
+    for(var row_idx in scene.shape_grid){
+        for(var col_idx in scene.shape_grid[row_idx]){
+            if(scene.shape_grid[row_idx][col_idx]){
+                var classnames = [];
+                if((scene.fovea_x + (grid_factor.x/2) == col_idx) && 
+                    Math.abs(scene.fovea_y - (grid_factor.y/2)) == row_idx){
+                    classnames.push('active');
+                }
+                for(var prop in scene.shape_grid[row_idx][col_idx]){
+                    classnames.push(scene.shape_grid[row_idx][col_idx][prop]);
+                }
+                html += '<b class="'+classnames.join(' ')+'"></b>';
+            } else {
+                html += '<b>&nbsp;</b>';
+            }
+        }
+        html += '<br/>';
+    }
+    viewer.html(html);
 }
 
 function setCurrentWorld(uid){
@@ -465,6 +520,7 @@ function initializeControls(){
             scrollToObject(objects[target.attr('data')]);
         }
     });
+    $('#scene_viewer_agent').on('change', refreshSceneView);
 }
 
 function resetWorld(event){

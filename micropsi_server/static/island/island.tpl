@@ -8,6 +8,14 @@
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
+            <form class="form-horizontal">
+                <h4>Scene Viewer</h4>
+                <p>
+                    <label for="scene_viewer_agent">Agent</label>
+                    <select id="scene_viewer_agent"></select>
+                <div id="scene_viewer">
+                </div>
+            </form>
             <form class="form-horizontal" id="world_objects">
                 <h4>Agents</h4>
                 <div id="world_agents_list">

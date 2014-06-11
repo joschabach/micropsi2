@@ -3,6 +3,19 @@ Central initialization of fixtures for Runtime etc.
 """
 import os
 import pytest
+
+try:
+    os.makedirs('/tmp/micropsi_tests/worlds')
+except OSError:
+    pass
+try:
+    os.makedirs('/tmp/micropsi_tests/nodenets')
+except OSError:
+    pass
+
+import configuration
+configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
+
 from micropsi_core import runtime as micropsi
 
 DELETE_TEST_FILES_ON_EXIT = True
@@ -13,8 +26,7 @@ nn_uid = None
 
 @pytest.fixture(scope="session")
 def resourcepath():
-    from configuration import RESOURCE_PATH
-    return RESOURCE_PATH
+    return micropsi.RESOURCE_PATH
 
 
 @pytest.fixture(scope="session")

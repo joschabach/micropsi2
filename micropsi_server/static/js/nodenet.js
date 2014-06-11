@@ -73,6 +73,8 @@ currentNodeSpace = $.cookie('current_nodespace') || 'Root';
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
+var currentSheaf = "default";
+
 var selectionRectangle = new Rectangle(1,1,1,1);
 selectionBox = new Path.Rectangle(selectionRectangle);
 selectionBox.strokeWidth = 0.5;
@@ -282,7 +284,7 @@ function setNodespaceData(data){
             }
         }
         for(uid in data.nodes){
-            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].activation, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
+            item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters);
             if(uid in nodes){
                 if(nodeRedrawNeeded(item)) {
                     nodes[uid].update(item);
@@ -420,11 +422,11 @@ function setNodeTypes(){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters, gate_activations, gate_parameters) {
+function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
-	this.activation = activation;
+	this.sheaves = sheaves || {"default": {"uid": "default", "name": "default", "activation": 0}};
     this.state = state;
 	this.name = name;
 	this.type = type;
@@ -452,9 +454,13 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         }
         for(i in nodetypes[type].gatetypes){
             parameters = {};
-            activation = this.gate_activations[nodetypes[type].gatetypes[i]];
-            if(nodetypes[type].gate_defaults){
-                parameters = nodetypes[type].gate_defaults[i];
+            sheaves = this.gate_activations[nodetypes[type].gatetypes[i]];
+            if(!sheaves) {
+                sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
+            }
+
+            if(nodetypes[type].gate_defaults) {
+                parameters = nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]];
             } else {
                 // mh. evil. where should this be defined?
                 parameters = {
@@ -469,7 +475,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];
             }
-            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, activation, parameters);
+            this.gates[nodetypes[type].gatetypes[i]] = new Gate(nodetypes[type].gatetypes[i], i, sheaves, parameters);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -482,20 +488,20 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
         this.y = item.y;
         this.parent = item.parent;
         this.name = item.name;
-        this.activation = item.activation;
+        this.sheaves = item.sheaves;
         this.state = item.state;
         this.parameters = item.parameters;
         this.gate_parameters = item.gate_parameters;
         this.gate_activations = item.gate_activations;
         for(var i in nodetypes[type].gatetypes){
-            this.gates[nodetypes[type].gatetypes[i]].activation = this.gate_activations[nodetypes[type].gatetypes[i]];
+            this.gates[nodetypes[type].gatetypes[i]].sheaves = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };
 
     this.gatechecksum = function(){
         var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
-            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].activation;
+            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].sheaves[currentSheaf].activation;
         }
         return gatechecksum;
     };
@@ -505,15 +511,15 @@ function Node(uid, x, y, nodeSpaceUid, name, type, activation, state, parameters
 function Slot(name) {
 	this.name = name;
 	this.incoming = {};
-	this.activation = 0;
+	this.sheaves = {"default": {"uid": "default", "name": "default", "activation": 0}};
 }
 
 // source for links, part of a net entity
-function Gate(name, index, activation, parameters) {
+function Gate(name, index, sheaves, parameters) {
 	this.name = name;
     this.index = index;
 	this.outgoing = {};
-	this.activation = activation;
+	this.sheaves = sheaves;
     if(parameters){
         this.parameters = parameters;
     } else {
@@ -578,8 +584,8 @@ function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || (oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
-        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].activation !=
-            nodes[link.sourceNodeUid].gates[link.gateName].activation)) {
+        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
+            nodes[link.sourceNodeUid].gates[link.gateName].sheaves[currentSheaf].activation)) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();
         }
@@ -725,6 +731,7 @@ function nodeRedrawNeeded(node){
             node.y == nodes[node.uid].y &&
             node.activation == nodes[node.uid].activation &&
             node.gatechecksum() == nodes[node.uid].gatechecksum() &&
+            Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){
             return false;
         }
@@ -968,7 +975,7 @@ function renderLink(link) {
     }
 
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
-    link.strokeColor = activationColor(gate.activation * link.weight, viewProperties.linkColor);
+    link.strokeColor = activationColor(gate.sheaves[currentSheaf].activation * link.weight, viewProperties.linkColor);
 
     var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
     var endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkEnd.angle);
@@ -1057,7 +1064,8 @@ function renderFullNode(node) {
     var skeleton = createFullNodeSkeleton(node);
     var activations = createFullNodeActivations(node);
     var titleBar = createFullNodeLabel(node);
-    var nodeItem = new Group([activations, skeleton, titleBar]);
+    var sheavesAnnotation = createSheavesAnnotation(node);
+    var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
@@ -1162,6 +1170,31 @@ function createFullNodeLabel(node) {
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
     };
     titleText.content = (node.name ? node.name : node.uid);
+    titleText.name = "text";
+    label.addChild(titleText);
+    return label;
+}
+
+// draw the sheaves annotation of a full node -- this is rather hacky, we will want to find
+// a better way of visualizing sheaves, including sheaf states
+function createSheavesAnnotation(node) {
+    var bounds = node.bounds;
+    var label = new Group();
+    label.name = "sheavesLabel";
+    var titleText = new PointText(new Point(bounds.x+ 80*viewProperties.zoomFactor +viewProperties.padding*viewProperties.zoomFactor,
+        bounds.y+viewProperties.lineHeight*0.8*viewProperties.zoomFactor));
+    titleText.characterStyle = {
+        fillColor: viewProperties.nodeFontColor,
+        fontSize: viewProperties.fontSize*viewProperties.zoomFactor
+    };
+    var sheavesText = "";
+    for(uid in node.sheaves) {
+        name = node.sheaves[uid].name;
+        if(name != "default") {
+            sheavesText += name + "\n";
+        }
+    }
+    titleText.content = sheavesText;
     titleText.name = "text";
     label.addChild(titleText);
     return label;
@@ -1380,19 +1413,19 @@ function setActivation(node) {
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
         node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-            activationColor(node.activation, viewProperties.nodeColor);
+            activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
         if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
             var i=0;
             var type;
             for (type in node.slots) {
                 nodeItem.children["activation"].children["slots"].children[i++].fillColor =
-                    activationColor(node.slots[type].activation,
+                    activationColor(node.slots[type].sheaves[currentSheaf].activation,
                     viewProperties.nodeColor);
             }
             i=0;
             for (type in node.gates) {
                 nodeItem.children["activation"].children["gates"].children[i++].fillColor =
-                    activationColor(node.gates[type].activation,
+                    activationColor(node.gates[type].sheaves[currentSheaf].activation,
                     viewProperties.nodeColor);
             }
         }
@@ -2291,7 +2324,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
         }
     }
-    addNode(new Node(uid, x, y, currentNodeSpace, name, type, 0, null, params));
+    addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
     view.draw();
     selectNode(uid);
     api.call("add_node", {
@@ -2604,7 +2637,7 @@ function handleEditNode(event){
     if(nodes[nodeUid].state != state){
         setNodeState(nodeUid, state);
     }
-    if(nodes[nodeUid].activation != activation){
+    if(nodes[nodeUid].sheaves[currentSheaf].activation != activation){
         setNodeActivation(nodeUid, activation);
     }
     redrawNode(nodes[nodeUid], true);
@@ -2651,10 +2684,10 @@ function handleEditGate(event){
 
 function setNodeActivation(nodeUid, activation){
     activation = activation || 0;
-    nodes[nodeUid].activation = activation;
+    nodes[nodeUid].sheaves[currentSheaf].activation = activation;
     //TODO not sure this is generic enough, should probably just take the 0th
     if(nodes[nodeUid].gates["gen"]) {
-        nodes[nodeUid].gates["gen"].activation = activation;
+        nodes[nodeUid].gates["gen"].sheaves[currentSheaf].activation = activation;
     }
     api.call('set_node_activation', {
         'nodenet_uid': currentNodenet,
@@ -2949,7 +2982,7 @@ function showNodeForm(nodeUid){
         $('tr.node', form).hide();
     } else {
         $('tr.node', form).show();
-        $('#node_activation_input').val(nodes[nodeUid].activation);
+        $('#node_activation_input').val(nodes[nodeUid].sheaves[currentSheaf].activation);
         $('#node_function_input').val("Todo");
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
@@ -3079,7 +3112,7 @@ function showGateForm(node, gate){
                 el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
             }
         } else if(el.name == 'activation'){
-            el.value = gate.activation || '0';
+            el.value = gate.sheaves[currentSheaf].activation || '0';
         } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }

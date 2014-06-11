@@ -176,26 +176,12 @@ def _add_nodes_horizontally(display_node, h_group, excluded_nodes):
 
     successor_nodes = [ node for node in display_node.directions.get("e", []) if node not in excluded_nodes ]
 
-    if len(successor_nodes) > 1:
-        # let us group these guys vertically
-        v_group = VerticalGroup()
-        for node in successor_nodes:
-            excluded_nodes.add(node)
-            if node.directions.get("e"):
-                local_h_group = HorizontalGroup([node])
-                _add_nodes_horizontally(node, local_h_group, excluded_nodes)
-                v_group.append(local_h_group)
-            else:
-                v_group.append(node)
-        h_group.append(v_group)
-
-    else:
-        if len(successor_nodes) == 1:
-            node = successor_nodes[0]
-            excluded_nodes.add(node)
-            h_group.append(node)
-            if node.directions.get("e"):
-                _add_nodes_horizontally(node, h_group, excluded_nodes)
+    if len(successor_nodes) == 1:
+        node = successor_nodes[0]
+        excluded_nodes.add(node)
+        h_group.append(node)
+        if node.directions.get("e"):
+            _add_nodes_horizontally(node, h_group, excluded_nodes)
 
 def group_other_links(all_groups):
     """group other horizontal links (native modules)"""

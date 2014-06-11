@@ -19,6 +19,16 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
+class SheafElement:
+    def __init__(self, uid="default", name="default", activation=0):
+        self.uid = uid
+        self.name = name
+        self.activation = activation
+
+    def copy(self):
+        return SheafElement(uid=self.uid, name=self.name)
+
+
 class Node(NetEntity):
     """A net entity with slots and gates and a node function.
 
@@ -35,14 +45,25 @@ class Node(NetEntity):
 
     @property
     def activation(self):
-        return self.data['activation']
+        return self.sheaves['default'].activation
 
     @activation.setter
     def activation(self, activation):
-        activation = float(activation)
-        self.data['activation'] = activation
+        self.set_sheaf_activation(activation)
+
+    def set_sheaf_activation(self, activation, sheaf="default"):
+        sheaves_to_calculate = self.get_sheaves_to_calculate()
+        if sheaf not in sheaves_to_calculate:
+            raise "Sheaf " + sheaf + " can not be set as it hasn't been propagated to any slot"
+
+        if activation is None: activation = 0
+
+        self.sheaves[sheaf].activation = float(activation)
+        if 'sheaves' not in self.data:
+            self.data['sheaves'] = {}
+        self.data['sheaves'][sheaf] = {"uid": sheaf, "name": sheaves_to_calculate[sheaf].name, "activation": activation}
         if len(self.nodetype.gatetypes):
-            self.set_gate_activation(self.nodetype.gatetypes[0], activation)
+            self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
 
     @property
     def type(self):
@@ -67,7 +88,7 @@ class Node(NetEntity):
         self.data['state'] = state
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, **_):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, **_):
         if not gate_parameters:
             gate_parameters = {}
 
@@ -84,15 +105,21 @@ class Node(NetEntity):
 
         self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters) if parameters is None else parameters
+        self.data['gate_parameters'] = {}
         for gate in self.nodetype.gatetypes:
-            self.gates[gate] = Gate(gate, self, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
+            if gate_activations is None or gate not in gate_activations:
+                sheaves_to_use = None
+            else:
+                sheaves_to_use = gate_activations[gate]
+            self.gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
+            self.data['gate_parameters'][gate] = self.gates[gate].parameters
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:
             self.state = state
             # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
         nodenet.nodes[self.uid] = self
-        self.activation = activation
+        self.sheaves = {"default": SheafElement(activation=activation)}
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
@@ -105,12 +132,12 @@ class Node(NetEntity):
         else:
             return None
 
-    def set_gate_activation(self, gate, activation):
+    def set_gate_activation(self, gate, activation, sheaf="default"):
         """ sets the activation of the given gate, and calls `report_gate_activation`"""
         activation = float(activation)
         if gate in self.gates:
-            self.gates[gate].activation = activation
-            self.report_gate_activation(gate, activation)
+            self.gates[gate].sheaves[sheaf].activation = activation
+            self.report_gate_activation(gate, self.gates[gate].sheaves[sheaf])
 
     def node_function(self):
         """Called whenever the node is activated or active.
@@ -126,23 +153,55 @@ class Node(NetEntity):
 
         # call nodefunction of my node type
         if self.nodetype and self.nodetype.nodefunction is not None:
-            try:
-                self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, **self.parameters)
-            except SyntaxError as err:
-                warnings.warn("Syntax error during node execution: %s" % err)
-                self.data["activation"] = "Syntax error"
-            except TypeError as err:
-                warnings.warn("Type error during node execution: %s" % err)
-                self.data["activation"] = "Parameter mismatch"
-            return
 
-        # default node function
-        if len(self.slots):
-            self.activation = sum([self.slots[slot].activation for slot in self.slots])
-            if len(self.gates):
-                for type, gate in self.gates.items():
-                    gate.gate_function(self.activation)
+            sheaves_to_calculate = self.get_sheaves_to_calculate()
 
+            # find node activation to carry over
+            node_activation_to_carry_over= {}
+            for id in self.sheaves.keys():
+                if id in sheaves_to_calculate:
+                    node_activation_to_carry_over[id] = self.sheaves[id]
+
+            # clear activation states
+            for gatename in self.gates:
+                gate = self.get_gate(gatename)
+                gate.sheaves = {}
+                self.data['gate_activations'][gatename] = {}
+            self.sheaves = {}
+            self.data['sheaves'] = {}
+
+            # calculate activation states for all open sheaves
+            for sheaf_id in sheaves_to_calculate.keys():
+
+                # prepare sheaves
+                for gatename in self.gates:
+                    gate = self.get_gate(gatename)
+                    gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
+                    gate.node.report_gate_activation(gate.type, gate.sheaves[sheaf_id])
+                if sheaf_id in node_activation_to_carry_over:
+                    self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
+                    self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id].activation, sheaf_id)
+                else:
+                    self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
+                    self.set_sheaf_activation(0, sheaf_id)
+
+
+                # and actually calculate new values for them
+                try:
+                    self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
+                except SyntaxError as err:
+                    warnings.warn("Syntax error during node execution: %s" % err)
+                    self.data["activation"] = "Syntax error"
+                except TypeError as err:
+                    warnings.warn("Type error during node execution: %s" % err)
+                    self.data["activation"] = "Parameter mismatch"
+        else:
+            # default node function (only using the "default" sheaf)
+            if len(self.slots):
+                self.activation = sum([self.slots[slot].activation for slot in self.slots])
+                if len(self.gates):
+                    for type, gate in self.gates.items():
+                        gate.gate_function(self.activation)
 
     def get_gate(self, gatename):
         return self.gates.get(gatename)
@@ -167,20 +226,55 @@ class Node(NetEntity):
                 nodes.append(self.nodenet.links[link].target_node.uid)
         return nodes
 
+    def get_sheaves_to_calculate(self):
+        sheaves_to_calculate = {}
+        for slotname in self.slots:
+            slot = self.get_slot(slotname)
+            for uid in slot.sheaves.keys():
+                sheaves_to_calculate[uid] = slot.sheaves[uid].copy()
+        if 'default' not in sheaves_to_calculate.keys():
+            sheaves_to_calculate['default'] = SheafElement()
+        return sheaves_to_calculate
+
     def set_gate_parameters(self, gate_type, parameters):
         if 'gate_parameters' not in self.data:
             self.data['gate_parameters'] = {}
-        self.data['gate_parameters'][gate_type] = parameters
-        self.gates[gate_type].parameters = parameters
+        for parameter, value in parameters.items():
+            self.data['gate_parameters'][gate_type][parameter] = value
+            self.gates[gate_type].parameters[parameter] = value
 
-    def report_gate_activation(self, gate_type, activation):
+    def report_gate_activation(self, gate_type, sheafelement):
         if 'gate_activations' not in self.data:
             self.data['gate_activations'] = {}
-        self.data['gate_activations'][gate_type] = activation
+        if gate_type not in self.data['gate_activations']:
+            self.data['gate_activations'][gate_type] = {}
+        if sheafelement.uid not in self.data['gate_activations'][gate_type]:
+            self.data['gate_activations'][gate_type][sheafelement.uid] = {}
+        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid": sheafelement.uid, "name": sheafelement.name, "activation": sheafelement.activation}
 
     def reset_slots(self):
         for slot in self.slots.keys():
-            self.slots[slot].activation = 0
+            self.slots[slot].sheaves = {"default": SheafElement()}
+
+    def get_parameter(self, parameter):
+        if parameter in self.parameters:
+            return self.parameters[parameter]
+        else:
+            return None
+
+    def set_parameter(self, parameter, value):
+        self.parameters[parameter] = value
+
+    def get_state(self, state_element):
+        if state_element in self.state:
+            return self.state[state_element]
+        else:
+            return None
+
+    def set_state(self, state_element, value):
+        if 'state' not in self.data:
+            self.data['state'] = {}
+        self.data['state'][state_element] = value
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
@@ -195,7 +289,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         outgoing: the set of links originating at the gate
     """
 
-    def __init__(self, type, node, gate_function=None, parameters=None, gate_defaults=None):
+    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
         """create a gate.
 
         Parameters:
@@ -205,8 +299,13 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         """
         self.type = type
         self.node = node
-        self.activation = 0
-        self.node.report_gate_activation(self.type, self.activation)
+        if sheaves is None:
+            self.sheaves = {"default": SheafElement()}
+        else:
+            self.sheaves = {}
+            for key in sheaves:
+                self.sheaves[key] = SheafElement(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
+        self.node.report_gate_activation(self.type, self.sheaves['default'])
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
@@ -220,13 +319,15 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
                     self.parameters[key] = parameters[key]
         self.monitor = None
 
-    def gate_function(self, input_activation):
+    def gate_function(self, input_activation, sheaf="default"):
         """This function sets the activation of the gate.
 
         The gate function should be called by the node function, and can be replaced by different functions
         if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
         You might want to replace it with a radial basis function, for instance.
         """
+        if input_activation is None: input_activation = 0
+
 
         # check if the current node space has an activator that would prevent the activity of this gate
         nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]
@@ -235,8 +336,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:
-            self.activation = 0
-            self.node.report_gate_activation(self.type, self.activation)
+            self.sheaves[sheaf].activation = 0
+            self.node.report_gate_activation(self.type, self.sheaves[sheaf])
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
@@ -253,8 +354,23 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             else:
                 activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
-        self.activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
-        self.node.report_gate_activation(self.type, self.activation)
+        self.sheaves[sheaf].activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.node.report_gate_activation(self.type, self.sheaves[sheaf])
+
+    def open_sheaf(self, input_activation, sheaf="default"):
+        """This function opens a new sheaf and calls the gate function for the newly opened sheaf
+        """
+        if sheaf is "default":
+            sheaf_uid_prefix = "default" + "-"
+            sheaf_name_prefix = ""
+        else:
+            sheaf_uid_prefix = sheaf + "-"
+            sheaf_name_prefix = self.sheaves[sheaf].name + "-"
+
+        new_sheaf = SheafElement(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name)
+        self.sheaves[new_sheaf.uid] = new_sheaf
+
+        self.gate_function(input_activation, new_sheaf.uid)
 
 
 class Slot(object):
@@ -279,13 +395,18 @@ class Slot(object):
         self.node = node
         self.incoming = {}
         self.current_step = -1
-        self.activation = 0
+        self.sheaves = {"default": SheafElement()}
 
     @property
-    def voted_activation(self):
+    def activation(self):
+        return self.get_activation("default")
+
+    def get_activation(self, sheaf="default"):
         if len(self.incoming) == 0:
-            return 0;
-        return self.activation / len(self.incoming)
+            return 0
+        if sheaf not in self.sheaves:
+            return 0
+        return self.sheaves[sheaf].activation
 
 
 STANDARD_NODETYPES = {
@@ -340,34 +461,51 @@ STANDARD_NODETYPES = {
     },
     "Pipe": {
         "name": "Pipe",
-        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "nodefunction_name": "pipe",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur"],
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "gate_defaults": {
             "gen": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             },
             "por": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             },
             "ret": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
             },
             "sub": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": True
             },
             "sur": {
                 "minimum": -100,
                 "maximum": 100,
-                "threshold": -100
+                "threshold": -100,
+                "spreadsheaves": False
+            },
+            "cat": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": True
+            },
+            "exp": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": False
             }
         },
         'symbol': 'πp',
@@ -509,7 +647,8 @@ class Nodetype(object):
                 "certainty": 1,
                 "amplification": 1,
                 "threshold": 0,
-                "decay": 0
+                "decay": 0,
+                "spreadsheaves": False
             }
 
         gate_defaults = self.data.get("gate_defaults") if gate_defaults is None else gate_defaults

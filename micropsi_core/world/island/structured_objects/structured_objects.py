@@ -1,5 +1,6 @@
 __author__ = 'rvuine'
 
+import logging
 from micropsi_core.world.island import island
 from micropsi_core.world.island.structured_objects.objects import *
 from micropsi_core.world.island.structured_objects.scene import Scene
@@ -40,12 +41,26 @@ class StructuredObjects(WorldAdapter):
         self.datasources["fov-x"] = 0
         self.datasources["fov-y"] = 0
 
+        self.datasources["major-newscene"] = 0
+
         self.scene = Scene(world, uid)
         self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
 
     def initialize_worldobject(self, data):
         if not "position" in data:
             self.position = self.world.groundmap['start_position']
+
+    def get_datasource(self, key):
+        """
+            allows the agent to read a value from a datasource.
+            overrides default to make sure newscene signals are picked up by the node net
+        """
+        if key == "major-newscene":
+            if self.datasource_snapshots[key] == 1:
+                self.datasources[key] = 0
+                return 1
+        else:
+            return WorldAdapter.get_datasource(self, key)
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
@@ -70,6 +85,9 @@ class StructuredObjects(WorldAdapter):
             self.currentobject = nearest_worldobject
             self.scene.load_object(self.currentobject.structured_object_type,
                                    OBJECTS[self.currentobject.structured_object_type]['shape_grid'])
+            self.datasources["major-newscene"] = 1
+            logging.getLogger("world").debug("StructuredObjects WA selected new scene: %s",
+                                             self.currentobject.structured_object_type)
 
         #manage the scene
         if self.datatargets['fov_reset'] > 0:

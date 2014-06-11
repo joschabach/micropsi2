@@ -9,8 +9,8 @@ import micropsi_core.tools
 import json
 import os
 import warnings
+from .node import Node, Nodetype, SheafElement, STANDARD_NODETYPES
 import logging
-from .node import Node, Nodetype, STANDARD_NODETYPES
 from .nodespace import Nodespace
 from .link import Link
 from .monitor import Monitor
@@ -20,6 +20,8 @@ __date__ = '09.05.12'
 
 NODENET_VERSION = 1
 
+class NodenetLockException(Exception):
+    pass
 
 class Nodenet(object):
     """Main data structure for MicroPsi agents,
@@ -134,6 +136,7 @@ class Nodenet(object):
         self.native_modules = native_modules
         self.nodespaces = {}
         self.monitors = {}
+        self.locks = {}
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
@@ -477,6 +480,8 @@ class Nodenet(object):
 
         self.propagate_link_activation(self.nodes.copy())
 
+        self.timeout_locks()
+
         activators = self.get_activators()
         nativemodules = self.get_nativemodules()
         everythingelse = self.nodes.copy()
@@ -486,6 +491,8 @@ class Nodenet(object):
         self.calculate_node_functions(activators)       # activators go first
         self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
         self.calculate_node_functions(everythingelse)   # then all the peasant nodes get calculated
+
+        self.netapi._step()
 
         self.state["step"] += 1
         for uid in self.monitors:
@@ -504,14 +511,47 @@ class Nodenet(object):
         for uid, node in nodes.items():
             node.reset_slots()
 
+        # propagate sheaf existence
         for uid, node in nodes.items():
             if limit_gatetypes is not None:
                 gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
             else:
                 gates = node.gates.items()
             for type, gate in gates:
+                if gate.parameters['spreadsheaves'] is True:
+                    for sheaf in gate.sheaves.keys():
+                        for uid, link in gate.outgoing.items():
+                            for slotname in link.target_node.slots.keys():
+                                if sheaf not in link.target_node.get_slot(slotname).sheaves:
+                                    link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
+
+        # propagate activation
+        for uid, node in nodes.items():
+            if limit_gatetypes is not None:
+                gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
+            else:
+                gates = node.gates.items()
+
+            for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    link.target_slot.activation += gate.activation * float(link.weight)  # TODO: where's the string coming from?
+                    for sheaf in gate.sheaves.keys():
+                        if sheaf in link.target_slot.sheaves:
+                            link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+                        elif sheaf.endswith(link.target_node.uid):
+                            upsheaf = sheaf[:-(len(link.target_node.uid)+1)]
+                            link.target_slot.sheaves[upsheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+
+    def timeout_locks(self):
+        """
+        Removes all locks that time out in the current step
+        """
+        locks_to_delete = []
+        for lock, data in self.locks.items():
+            self.locks[lock] = (data[0] + 1, data[1], data[2])
+            if data[0] + 1 >= data[1]:
+                locks_to_delete.append(lock)
+        for lock in locks_to_delete:
+            del self.locks[lock]
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions
@@ -520,7 +560,6 @@ class Nodenet(object):
         """
         for uid, node in nodes.copy().items():
             node.node_function()
-            node.data['activation'] = node.activation
 
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
@@ -628,11 +667,32 @@ class Nodenet(object):
         del self.state['links'][link_uid]
         return True
 
+    def is_locked(self, lock):
+        """Returns true if a lock of the given name exists"""
+        return lock in self.locks
+
+    def is_locked_by(self, lock, key):
+        """Returns true if a lock of the given name exists and the key used is the given one"""
+        return lock in self.locks and self.locks[lock][2] == key
+
+    def lock(self, lock, key, timeout=100):
+        """Creates a lock with the given name that will time out after the given number of steps
+        """
+        if self.is_locked(lock):
+            raise NodenetLockException("Lock %s is already locked." % lock)
+        self.locks[lock] = (0, timeout, key)
+
+    def unlock(self, lock):
+        """Removes the given lock
+        """
+        del self.locks[lock]
 
 class NetAPI(object):
     """
     Node Net API facade class for use from within the node net (in node functions)
     """
+
+    __locks_to_delete = []
 
     @property
     def uid(self):
@@ -687,7 +747,7 @@ class NetAPI(object):
                 nodes.append(link.target_node)
         return nodes
 
-    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None):
+    def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None, sheaf='default'):
         """
         Returns all nodes with a min activation, of the given type, active at the given gate, or with node.activation
         """
@@ -696,10 +756,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.gates:
-                        if node.get_gate(gate).activation >= min_activation:
+                        if node.get_gate(gate).sheaves[sheaf].activation >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.activation >= min_activation:
+                    if node.sheaves[sheaf].activation >= min_activation:
                         nodes.append(node)
         return nodes
 
@@ -760,8 +820,8 @@ class NetAPI(object):
         for gatetype, gateobject in source_node.gates.items():
             if source_gate is None or source_gate is gatetype:
                 for linkid, link in gateobject.outgoing.items():
-                    if target_node.uid is None or target_node.uid == link.target_node.uid:
-                        if target_slot is None or target_slot == link.target_slot:
+                    if target_node is None or target_node.uid == link.target_node.uid:
+                        if target_slot is None or target_slot == link.target_slot.type:
                             links_to_delete.append(linkid)
 
         for uid in links_to_delete:
@@ -783,7 +843,7 @@ class NetAPI(object):
             actor.parameters.update({'datatarget': datatarget})
 
         self.link(node, gate, actor, 'gen', weight, certainty)
-        self.link(actor, 'gen', node, slot)
+        #self.link(actor, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur'):
         """
@@ -831,3 +891,36 @@ class NetAPI(object):
                 if sensor is None:
                     sensor = self.create_node("Sensor", nodespace, datasource)
                     sensor.parameters.update({'datasource': datasource})
+
+    def is_locked(self, lock):
+        """Returns true if the given lock is locked in the current net step
+        """
+        return self.__nodenet.is_locked(lock)
+
+    def is_locked_by(self, lock, key):
+        """Returns true if the given lock is locked in the current net step, with the given key
+        """
+        return self.__nodenet.is_locked_by(lock, key)
+
+    def lock(self, lock, key, timeout=100):
+        """
+        Creates a lock with immediate effect.
+        If two nodes try to create the same lock in the same net step, the second call will fail.
+        As nodes need to check is_locked before acquiring locks anyway, this effectively means that if two
+        nodes attempt to acquire the same lock at the same time (in the same net step), the node to get the
+        lock will be chosen randomly.
+        """
+        self.__nodenet.lock(lock, key, timeout)
+
+    def unlock(self, lock):
+        """
+        Removes a lock by the end of the net step, after all node functions have been called.
+        Thus, locks can only be acquired in the next net step (no indeterminism based on node function execution
+        order as with creating locks).
+        """
+        self.__locks_to_delete.append(lock)
+
+    def _step(self):
+        for lock in self.__locks_to_delete:
+            self.__nodenet.unlock(lock)
+        self.__locks_to_delete = []

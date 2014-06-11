@@ -47,7 +47,7 @@ if (currentWorld){
     setCurrentWorld(currentWorld);
 }
 
-var scenes = {};
+scenes = {};
 
 var objectList = $('#world_objects_list table');
 var agentsList = $('#world_agents_list table');
@@ -90,7 +90,7 @@ refreshWorldView = function(){
                         objects[key].orientation = data.objects[key].orientation;
                         objects[key].representation.position = new Point(objects[key].x, objects[key].y);
                         if(key in scenes){
-                            scenes[key] = objects[key].scene;
+                            scenes[key] = data.objects[key].scene;
                         }
                     } else {
                         console.log('obj has no pos: ' + key);

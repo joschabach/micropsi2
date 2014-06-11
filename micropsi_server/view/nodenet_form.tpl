@@ -40,14 +40,10 @@
                     <div class="controls">
                         <select class="input-xlarge" id="nn_template" name="nn_template">
                             <option value="">None</option>
-                            % if defined("nodenets"):
-                                % for uid in nodenets:
+                            %if defined("nodenets"):
+                                %for uid in nodenets:
                                     %if nodenets[uid].owner == user_id:
-                                        % if defined("template") and template == uid:
-                            <option value="{{uid}}" selected="selected">{{nodenets[uid].name}</option>
-                                        %else:
-                            <option value="{{uid}}">{{nodenets[uid].name}}</option>
-                                        %end
+                                            <option value="{{uid}}">{{nodenets[uid].name}}</option>
                                     %end
                                 %end
                                 % for uid in nodenets:
@@ -106,10 +102,6 @@
                         </select>
                     </div>
                 </div>
-
-                %if defined("nodenet"):
-                    <input type="hidden" name="nn_uid" value="{{nodenet.uid}}" />
-                %end
 
             </fieldset>
     </div>

@@ -509,10 +509,8 @@ def export_nodenet(nodenet_uid):
 @route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
-    nodenet_id = request.params.get('id', None)
-    # nodenet_uid = request.params.get('nodenet_uid', None) @TODO to get this to work, we need to use rpc or another way of transferring the nodenet uid as a parameter; at the moment, this route is a static link
+    # nodenet_id = request.params.get('id', None)
     title = 'Edit Nodenet' if id is not None else 'New Nodenet'
-    print(nodenet_id)
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),

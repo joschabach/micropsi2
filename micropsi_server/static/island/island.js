@@ -84,7 +84,9 @@ refreshWorldView = function(){
                     if(data.objects[key].position && data.objects[key].position.length == 2){
                         objects[key].x = data.objects[key].position[0];
                         objects[key].y = data.objects[key].position[1];
-                        objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
+                        if(data.objects[key].orientation){
+                            objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
+                        }
                         objects[key].orientation = data.objects[key].orientation;
                         objects[key].representation.position = new Point(objects[key].x, objects[key].y);
                         if(key in scenes){
@@ -233,7 +235,7 @@ function addAgent(worldobject){
     } else {
         redrawObject(objects[worldobject.uid]);
     }
-    agents[worldobject.uid] = worldobject;
+    objects[worldobject.uid] = worldobject;
     agentsList.html(agentsList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="world_agent">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
     return worldobject;
 }

@@ -3128,7 +3128,7 @@ function updateMonitorList(){
         if(currentMonitors.indexOf(uid) > -1){
             html += ' checked="checked"';
         }
-        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (nodes[monitors[uid].node_uid].name || monitors[uid].node_uid) + '</label></td></tr>';
+        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label></td></tr>';
     }
     html += '</table>';
     el.html(html);

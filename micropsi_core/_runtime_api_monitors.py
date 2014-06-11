@@ -16,7 +16,7 @@ def add_gate_monitor(nodenet_uid, node_uid, gate):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
     value in every simulation step."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    monitor = Monitor(nodenet, node_uid, 'gate', gate)
+    monitor = Monitor(nodenet, node_uid, 'gate', gate, node_name=nodenet.nodes[node_uid].name)
     nodenet.monitors[monitor.uid] = monitor
     return monitor.data
 
@@ -25,7 +25,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot):
     """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
     value in every simulation step."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    monitor = Monitor(nodenet, node_uid, 'slot', slot)
+    monitor = Monitor(nodenet, node_uid, nodenet.nodes[node_uid].name, 'slot', slot, node_name=nodenet.nodes[node_uid].name)
     nodenet.monitors[monitor.uid] = monitor
     return monitor.data
 

@@ -20,7 +20,7 @@ class Monitor(object):
         target: the name of the observerd Slot or Gate
     """
 
-    def __init__(self, nodenet, node_uid, type, target, uid=None, **_):
+    def __init__(self, nodenet, node_uid, type, target, node_name='', uid=None, **_):
         if 'monitors' not in nodenet.state:
             nodenet.state['monitors'] = {}
         self.uid = uid or micropsi_core.tools.generate_uid()
@@ -29,6 +29,7 @@ class Monitor(object):
         nodenet.state['monitors'][self.uid] = self.data
         self.data['values'] = self.values = {}
         self.data['node_uid'] = self.node_uid = node_uid
+        self.data['node_name'] = self.node_name = node_name
         self.data['type'] = self.type = type
         self.data['target'] = self.target = target
 

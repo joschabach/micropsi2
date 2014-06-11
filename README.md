@@ -19,6 +19,11 @@ run with optional dependencies
 * Also see [micropsi_core/world/minecraft/README.md](/micropsi_core/world/minecraft/README.md) for setup instructions.
 
 
+tests
+-----
+* to run the tests simply type `make tests`
+
+
 attribution
 -----
 Python MicroPsi uses 

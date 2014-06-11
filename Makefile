@@ -17,5 +17,9 @@ all:
 clean:
 	rm -rf include lib .Python bin
 
+tests:
+	. bin/activate
+	bin/py.test micropsi_server
+	bin/py.test micropsi_core
 
 .PHONY: run

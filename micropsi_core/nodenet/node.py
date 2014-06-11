@@ -11,7 +11,6 @@ default Nodetypes
 
 """
 
-import json
 import warnings
 import micropsi_core.tools
 from .netentity import NetEntity

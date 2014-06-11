@@ -24,7 +24,6 @@ import argparse
 import os
 import json
 import inspect
-import sys
 from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
@@ -437,7 +436,7 @@ def nodenet_mgt():
 
 
 @route("/select_nodenet_from_console/<nodenet_uid>")
-def select_nodenet(nodenet_uid):
+def select_nodenet_from_console(nodenet_uid):
     user_id, permissions, token = get_request_data()
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
@@ -447,7 +446,7 @@ def select_nodenet(nodenet_uid):
 
 
 @route("/delete_nodenet_from_console/<nodenet_uid>")
-def delete_nodenet(nodenet_uid):
+def delete_nodenet_from_console(nodenet_uid):
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
         runtime.delete_nodenet(nodenet_uid)

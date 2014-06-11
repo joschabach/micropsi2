@@ -93,10 +93,7 @@ class MinecraftWorldadapter(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        x_coord = self.world.spockplugin.clientinfo.position['x'] * -1
-
         #find diamond
-
         x_chunk = self.world.spockplugin.clientinfo.position['x'] // 16
         z_chunk = self.world.spockplugin.clientinfo.position['z'] // 16
         bot_block = (self.world.spockplugin.clientinfo.position['x'], self.world.spockplugin.clientinfo.position['y'], self.world.spockplugin.clientinfo.position['z'])

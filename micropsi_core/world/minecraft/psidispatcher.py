@@ -3,8 +3,8 @@ from spock.mcp.mcpacket import Packet
 __author__ = 'jonas'
 
 STANCE_ADDITION = 1.620
-STEP_LENGTH = 0.2
-JUMPING_MAGIC_NUMBER = 2 # 2 used to work
+STEP_LENGTH = 1.0
+JUMPING_MAGIC_NUMBER = 0 # 2 used to work
 
 class PsiDispatcher():
     
@@ -21,24 +21,24 @@ class PsiDispatcher():
         current_section = current_column.chunks[int((bot_block[1]) // 16)]
 
         if self.micropsiplugin.move_z < 0:
-            target_coords = ((self.micropsiplugin.clientinfo.position['x'] + STEP_LENGTH),
+            target_coords = ((self.micropsiplugin.clientinfo.position['x'] + STEP_LENGTH) // 1 + 0.5,
                               self.micropsiplugin.clientinfo.position['y'],
-                              self.micropsiplugin.clientinfo.position['z'])
+                              self.micropsiplugin.clientinfo.position['z'] // 1 + 0.5)
             self.move(target_coords, current_section, "z+")
         if self.micropsiplugin.move_z > 0:
-            target_coords = ((self.micropsiplugin.clientinfo.position['x'] - STEP_LENGTH),
+            target_coords = ((self.micropsiplugin.clientinfo.position['x'] - STEP_LENGTH) // 1 + 0.5,
                               self.micropsiplugin.clientinfo.position['y'],
-                              self.micropsiplugin.clientinfo.position['z'])
+                              self.micropsiplugin.clientinfo.position['z'] // 1 + 0.5)
             self.move(target_coords, current_section, "z-")
         if self.micropsiplugin.move_x < 0:
-            target_coords = ((self.micropsiplugin.clientinfo.position['x']),
+            target_coords = (self.micropsiplugin.clientinfo.position['x'] // 1 + 0.5,
                               self.micropsiplugin.clientinfo.position['y'],
-                              self.micropsiplugin.clientinfo.position['z'] + STEP_LENGTH)
+                              (self.micropsiplugin.clientinfo.position['z'] + STEP_LENGTH) // 1 + 0.5)
             self.move(target_coords, current_section, "x+")
         if self.micropsiplugin.move_x > 0:
-            target_coords = ((self.micropsiplugin.clientinfo.position['x']),
+            target_coords = (self.micropsiplugin.clientinfo.position['x'] // 1 + 0.5,
                               self.micropsiplugin.clientinfo.position['y'],
-                              self.micropsiplugin.clientinfo.position['z'] - STEP_LENGTH)
+                              (self.micropsiplugin.clientinfo.position['z'] - STEP_LENGTH) // 1 + 0.5)
             self.move(target_coords, current_section, "x-")
 
 
@@ -62,7 +62,7 @@ class PsiDispatcher():
 
             target_block = current_section.get(*target_block_coords).id
             if target_block != 0:
-                 print("target_block != 0 ... preparing to jump!")
+                 #print("target_block != 0 ... preparing to jump!")
                  self.micropsiplugin.move(position = {
                 'x': target_coords[0],
                 'y': target_coords[1] + 1.0,

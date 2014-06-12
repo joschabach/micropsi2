@@ -133,13 +133,19 @@ function updateSceneViewer(){
         selector_html += '<option value="'+key+'">'+objects[key].name+'</option>';
     }
     if(selector_html){
-        selector_html = '<option>choose...</option>' + selector_html;
+        selector_html = '<option val="">choose...</option>' + selector_html;
         $('.scene_viewer_section').show();
     } else{
         $('.scene_viewer_section').hide();
     }
     selector.html(selector_html);
-    selector.val(selected);
+    var keys = Object.keys(scenes);
+    if(!selected && keys.length == 1){
+        selected = keys[0];
+        selector.val(selected);
+    } else {
+        selector.val(selected);
+    }
     if(selected){
         refreshSceneView();
     }

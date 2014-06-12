@@ -301,8 +301,8 @@ $(function() {
 
     // resize handler for nodenet viewer:
     var isDragging = false;
-    var container = $('.editor_field');
     var canvas = $('#nodenet');
+    var container = $('.section.nodenet .editor_field');
     var startHeight, startPos, newHeight;
     $("a#sizeHandle").mousedown(function(event) {
         startHeight = container.height();

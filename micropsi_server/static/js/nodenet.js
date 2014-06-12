@@ -650,7 +650,7 @@ function removeNode(node) {
 // rendering ------------------------------------------------------------------------
 
 // adapt the size of the current view to the contained nodes and the canvas size
-function updateViewSize() {
+updateViewSize = function() {
     var maxX = 0;
     var maxY = 0;
     var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;

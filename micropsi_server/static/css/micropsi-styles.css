@@ -270,3 +270,21 @@ graphs
 #scene_viewer b.ver:after {
   content: "|";
 }
+
+#sizeHandle {
+  display: inline-block;
+  width: 100px;
+  line-height: 3px;
+  height: 3px;
+  background: #bbb;
+  cursor: n-resize;
+}
+#sizeHandle:hover {
+  background:#ccc;
+}
+.seperator {
+  margin-top: 5px;
+  border-bottom: 1px solid #ccc;
+  padding: 0;
+  line-height: 3px;
+}

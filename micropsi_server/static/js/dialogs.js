@@ -299,6 +299,31 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
+    // resize handler for nodenet viewer:
+    var isDragging = false;
+    var container = $('.editor_field');
+    var canvas = $('#nodenet');
+    var startHeight, startPos, newHeight;
+    $("a#sizeHandle").mousedown(function(event) {
+        startHeight = container.height();
+        startPos = event.pageY;
+        $(window).mousemove(function(event) {
+            isDragging = true;
+            newHeight = startHeight + (event.pageY - startPos);
+            container.height(newHeight);
+            updateViewSize();
+            console.log('set height: ' + newHeight);
+        });
+    });
+    $(window).mouseup(function(event) {
+        console.log('mouseup');
+        var wasDragging = isDragging;
+        isDragging = false;
+        $(window).unbind("mousemove");
+        if (!wasDragging) { //was clicking
+        }
+    });
+
 });
 
 

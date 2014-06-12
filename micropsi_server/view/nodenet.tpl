@@ -70,7 +70,7 @@
 <div id="nodenet_editor" class="section-margin collapse in">
     <div class="nodenet section">
         <div class="editor_field span9">
-            <canvas id="nodenet" width="700" height="500" style="background:#eeeeee"></canvas>
+            <canvas id="nodenet" width="700" height="100%" style="background:#eeeeee"></canvas>
         </div>
         <div class="editor_field " id="nodenet_forms">
 

@@ -303,6 +303,12 @@ $(function() {
     var isDragging = false;
     var canvas = $('#nodenet');
     var container = $('.section.nodenet .editor_field');
+    if($.cookie('nodenet_editor_height')){
+        container.height($.cookie('nodenet_editor_height'));
+        try{
+            updateViewSize();
+        } catch(err){}
+    }
     var startHeight, startPos, newHeight;
     $("a#sizeHandle").mousedown(function(event) {
         startHeight = container.height();
@@ -312,16 +318,14 @@ $(function() {
             newHeight = startHeight + (event.pageY - startPos);
             container.height(newHeight);
             updateViewSize();
-            console.log('set height: ' + newHeight);
         });
     });
     $(window).mouseup(function(event) {
-        console.log('mouseup');
-        var wasDragging = isDragging;
+        if(isDragging){
+            $.cookie('nodenet_editor_height', container.height(), {expires:7, path:'/'});
+        }
         isDragging = false;
         $(window).unbind("mousemove");
-        if (!wasDragging) { //was clicking
-        }
     });
 
 });

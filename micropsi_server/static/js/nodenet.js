@@ -1827,6 +1827,8 @@ function onMouseDrag(event) {
         updateSelection(event);
     }
     function moveNode(uid){
+        var canvas = $('#nodenet')[0];
+        if(event.event.layerX < 0 || event.event.layerY < 0 || event.event.toElement != canvas) return false;
         nodeLayer.children[uid].position += event.delta;
         nodeLayer.children[uid].nodeMoved = true;
         var node = nodes[uid];

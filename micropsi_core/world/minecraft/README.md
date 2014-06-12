@@ -38,3 +38,38 @@ ReadMe for Running a Minecraft experiment under OS X (other OSes should also be 
 
 
 * Only needed for visualisation which is not part of the current master.
+
+
+
+# Known working Minecraft experiments:
+## With Pyglet Visualisation, 1.5.2 Server, Diamond finding experiment
+
+* https://github.com/joschabach/micropsi2/tree/minecraft_with_visualisation
+
+commit b62a506dc42dafc8bb661e5af59073833eaa4cc8
+
+* https://github.com/jonasrk/minecraft_servers
+
+commit 75e2cf65ba38efce8b8328106201df94a9e1a3ae
+cd 'minecraft server 1.5.2'; ./start.command
+
+* https://github.com/jonasrk/MicroPsi-2-Minecraft-Experiment
+
+commit 21e114f72364bfd4818debf1be28959b6424255a
+./micropsi2_data
+
+
+## Without Visualisation, 1.7.4 Server, Diamond finding experiment with jumping and gravity
+
+* https://github.com/joschabach/micropsi2/tree/master
+
+commit 0bf90d110ab24f22ccb07dc938cec6484475ac81
+
+* https://github.com/jonasrk/minecraft_servers
+
+commit e3c7ea937e027f1d87d5036ef07a3e73124fd8e8
+cd 1.7.4; ./start.command
+
+* https://github.com/jonasrk/MicroPsi-2-Minecraft-Experiment
+commit 9d7cb90f7420850afe13735e094501b9b72830a5
+./micropsi2_data/micropsi2_data_for_new_spock

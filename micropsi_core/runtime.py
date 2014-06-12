@@ -386,17 +386,18 @@ def import_nodenet(string, owner=None):
         nodenet_uid: the uid of the nodenet (may overwrite existing nodenet)
         string: a string that contains the nodenet state in JSON format.
     """
-    nodenet_data = json.loads(string)
-    if 'uid' not in nodenet_data:
-        nodenet_data['uid'] = tools.generate_uid()
+    global nodenet_data
+    import_data = json.loads(string)
+    if 'uid' not in import_data:
+        import_data['uid'] = tools.generate_uid()
     if 'owner':
-        nodenet_data['owner'] = owner
-    # assert nodenet_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_data['uid'] + '.json')
+        import_data['owner'] = owner
+    # assert import_data['world'] in worlds
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
-        fp.write(json.dumps(nodenet_data))
+        fp.write(json.dumps(import_data))
     fp.close()
-    nodenet_data[nodenet_data['uid']] = parse_definition(nodenet_data, filename)
+    nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
     return True
 
 

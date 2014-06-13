@@ -479,6 +479,7 @@ def import_nodenet_form():
 def import_nodenet():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
+    data = data.decode('utf-8')
     nodenet_uid = runtime.import_nodenet(data, owner=user_id)
     return dict(status='success', msg="Nodenet imported", nodenet_uid=nodenet_uid)
 
@@ -545,6 +546,7 @@ def import_world_form():
 def import_world():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
+    data = data.decode('utf-8')
     world_uid = runtime.import_world(data, owner=user_id)
     return dict(status='success', msg="World imported", world_uid=world_uid)
 

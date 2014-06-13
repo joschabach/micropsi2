@@ -109,8 +109,8 @@ class ChunkColumn:
         for i in range(16):
             if not mask&(1<<i):
                 # TODO: Hack to prevent excessive memory grabbing -- we need a solution for this
-                pass
-                #self.chunks[i] = Chunk()
+                #pass
+                self.chunks[i] = Chunk()
 
     def unpack_biome(self, buff):
         for idx, biome_id in enumerate(buff.recv(256)):

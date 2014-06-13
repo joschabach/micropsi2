@@ -21,6 +21,8 @@ class Minecraft(World):
     'y': 2048,
     }
 
+
+
     def __init__(self, filename, world_type="Minecraft", name="", owner="", uid=None, version=1):
         from micropsi_core.runtime import add_signal_handler
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
@@ -88,8 +90,9 @@ class Minecraft(World):
 
 class MinecraftWorldadapter(WorldAdapter):
 
-    datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0}
+    datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0, 'grd_stone': 0, 'grd_dirt': 0, 'grd_wood': 0, 'grd_coal': 0}
     datatargets = {'move_x': 0, 'move_z': 0}
+    current_step = 1
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
@@ -99,8 +102,7 @@ class MinecraftWorldadapter(WorldAdapter):
         bot_block = (self.world.spockplugin.clientinfo.position['x'], self.world.spockplugin.clientinfo.position['y'], self.world.spockplugin.clientinfo.position['z'])
         current_column = self.world.spockplugin.world.map.columns[(x_chunk, z_chunk)]
 
-        self.datasources['diamond_offset_x'] = 0
-        self.datasources['diamond_offset_z'] = 0
+        self.datasources = dict.fromkeys(self.datasources, 0) # set all entries to zero
 
         for y in range(0, 16):
             current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) // 16)] #TODO explain formula
@@ -113,7 +115,28 @@ class MinecraftWorldadapter(WorldAdapter):
                             self.datasources['diamond_offset_x'] = bot_block[0] - diamond_coords[0]
                             self.datasources['diamond_offset_z'] = bot_block[2] - diamond_coords[2]
 
+
+        #set groundtypes
+        current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] - 1) // 16)]
+        block_below = current_section.get(x, int((self.world.spockplugin.clientinfo.position['y'] - 1) % 16), z).id
+
+        print("block_below is " + str(block_below))
+        if (block_below == 3):
+            self.datasources['grd_dirt'] = 1
+        if (block_below == 1):
+            self.datasources['grd_stone'] = 1
+        if (block_below == 17):
+            self.datasources['grd_wood'] = 1
+        if (block_below == 173):
+            self.datasources['grd_coal'] = 1
+
+
+
         self.world.spockplugin.move_x = self.datatargets['move_x']
         self.world.spockplugin.move_z = self.datatargets['move_z']
 
-        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()
+
+        if self.current_step == 0:
+         self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()
+
+        self.current_step = (self.current_step + 1) % 4

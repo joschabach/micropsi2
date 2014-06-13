@@ -3,7 +3,7 @@ from spock.mcp.mcpacket import Packet
 __author__ = 'jonas'
 
 STANCE_ADDITION = 1.620
-STEP_LENGTH = 1.0
+STEP_LENGTH = 0.5
 JUMPING_MAGIC_NUMBER = 0 # 2 used to work
 
 class PsiDispatcher():
@@ -20,25 +20,51 @@ class PsiDispatcher():
         current_column = self.micropsiplugin.world.map.columns[(x_chunk, z_chunk)]
         current_section = current_column.chunks[int((bot_block[1]) // 16)]
 
-        if self.micropsiplugin.move_z < 0:
-            target_coords = ((self.micropsiplugin.clientinfo.position['x'] + STEP_LENGTH) // 1 + 0.5,
-                              self.micropsiplugin.clientinfo.position['y'],
-                              self.micropsiplugin.clientinfo.position['z'] // 1 + 0.5)
+        x = self.micropsiplugin.clientinfo.position['x']
+        y = self.micropsiplugin.clientinfo.position['y']
+        z = self.micropsiplugin.clientinfo.position['z']
+        move_x = self.micropsiplugin.move_x
+        move_z = self.micropsiplugin.move_z
+
+        if move_x < 0 and move_z < 0:
+            target_coords = (self.normalize_coordinate(x + STEP_LENGTH),
+                              y,
+                              self.normalize_coordinate(z + STEP_LENGTH))
+            self.move(target_coords, current_section, "x+z+")
+        elif move_x > 0 and move_z < 0:
+            target_coords = (self.normalize_coordinate(x + STEP_LENGTH),
+                              y,
+                              self.normalize_coordinate(z - STEP_LENGTH))
+            self.move(target_coords, current_section, "x-z+")
+        elif move_x < 0 and move_z > 0:
+            target_coords = (self.normalize_coordinate(x - STEP_LENGTH),
+                              y,
+                              self.normalize_coordinate(z + STEP_LENGTH))
+            self.move(target_coords, current_section, "x+z-")
+        elif move_x > 0 and move_z > 0:
+            target_coords = (self.normalize_coordinate(x - STEP_LENGTH),
+                              y,
+                              self.normalize_coordinate(z - STEP_LENGTH))
+            self.move(target_coords, current_section, "x-z-")
+        elif move_z < 0:
+            target_coords = (self.normalize_coordinate(x + STEP_LENGTH),
+                              y,
+                              self.normalize_coordinate(z))
             self.move(target_coords, current_section, "z+")
-        if self.micropsiplugin.move_z > 0:
-            target_coords = ((self.micropsiplugin.clientinfo.position['x'] - STEP_LENGTH) // 1 + 0.5,
-                              self.micropsiplugin.clientinfo.position['y'],
-                              self.micropsiplugin.clientinfo.position['z'] // 1 + 0.5)
+        elif move_z > 0:
+            target_coords = (self.normalize_coordinate(x - STEP_LENGTH),
+                              y,
+                              self.normalize_coordinate(z))
             self.move(target_coords, current_section, "z-")
-        if self.micropsiplugin.move_x < 0:
-            target_coords = (self.micropsiplugin.clientinfo.position['x'] // 1 + 0.5,
-                              self.micropsiplugin.clientinfo.position['y'],
-                              (self.micropsiplugin.clientinfo.position['z'] + STEP_LENGTH) // 1 + 0.5)
+        elif move_x < 0:
+            target_coords = (self.normalize_coordinate(x),
+                              y,
+                              self.normalize_coordinate(z + STEP_LENGTH))
             self.move(target_coords, current_section, "x+")
-        if self.micropsiplugin.move_x > 0:
-            target_coords = (self.micropsiplugin.clientinfo.position['x'] // 1 + 0.5,
-                              self.micropsiplugin.clientinfo.position['y'],
-                              (self.micropsiplugin.clientinfo.position['z'] - STEP_LENGTH) // 1 + 0.5)
+        elif move_x > 0:
+            target_coords = (self.normalize_coordinate(x),
+                              y,
+                              self.normalize_coordinate(z - STEP_LENGTH))
             self.move(target_coords, current_section, "x-")
 
 
@@ -57,6 +83,22 @@ class PsiDispatcher():
                                        int((1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[2]) // 1 % 16))
             if direction == "z-":
                 target_block_coords = (int(target_coords[0] // 1 % 16),
+                                       int(target_coords[1] // 1 % 16),
+                                       int((-1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[2]) // 1 % 16))
+            if direction == "x+z+":
+                target_block_coords = (int((1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[0]) // 1 % 16),
+                                       int(target_coords[1] // 1 % 16),
+                                       int((1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[2]) // 1 % 16))
+            if direction == "x-z+":
+                target_block_coords = (int((-1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[0]) // 1 % 16),
+                                       int(target_coords[1] // 1 % 16),
+                                       int((1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[2]) // 1 % 16))
+            if direction == "x+z-":
+                target_block_coords = (int((1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[0]) // 1 % 16),
+                                       int(target_coords[1] // 1 % 16),
+                                       int((-1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[2]) // 1 % 16))
+            if direction == "x-z-":
+                target_block_coords = (int((-1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[0]) // 1 % 16),
                                        int(target_coords[1] // 1 % 16),
                                        int((-1 * JUMPING_MAGIC_NUMBER * STEP_LENGTH + target_coords[2]) // 1 % 16))
 
@@ -80,10 +122,15 @@ class PsiDispatcher():
 
                 self.micropsiplugin.move(position = {
                     'x': target_coords[0],
-                    'y': target_coords[1] // 16 * 16 + highest_ground,
+                    #'y': target_coords[1] // 16 * 16 + highest_ground,
+                    'y': target_coords[1],
                     'z': target_coords[2],
                     'yaw': self.micropsiplugin.clientinfo.position['yaw'],
                     'pitch': self.micropsiplugin.clientinfo.position['pitch'],
                     'on_ground': self.micropsiplugin.clientinfo.position['on_ground'],
-                    'stance': target_coords[1] // 16 * 16 + highest_ground + STANCE_ADDITION
+                    #'stance': target_coords[1] // 16 * 16 + highest_ground + STANCE_ADDITION
+                    'stance': target_coords[1] + STANCE_ADDITION
                     })
+
+    def normalize_coordinate(self, coordinate):
+        return coordinate // 1 + 0.5

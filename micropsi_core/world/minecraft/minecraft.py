@@ -120,15 +120,19 @@ class MinecraftWorldadapter(WorldAdapter):
         current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] - 1) // 16)]
         block_below = current_section.get(x, int((self.world.spockplugin.clientinfo.position['y'] - 1) % 16), z).id
 
-        print("block_below is " + str(block_below))
-        if (block_below == 3):
+        #print("block_below is " + str(block_below))
+        if (block_below == 2):
             self.datasources['grd_dirt'] = 1
+            #print("self.datasources['grd_dirt'] is " + str(self.datasources['grd_dirt']))
         if (block_below == 1):
             self.datasources['grd_stone'] = 1
+            #print("self.datasources['grd_stone'] is " + str(self.datasources['grd_stone']))
         if (block_below == 17):
             self.datasources['grd_wood'] = 1
+            #print("self.datasources['grd_wood'] is " + str(self.datasources['grd_wood']))
         if (block_below == 173):
             self.datasources['grd_coal'] = 1
+            #print("self.datasources['grd_coal'] is " + str(self.datasources['grd_coal']))
 
 
 
@@ -136,7 +140,4 @@ class MinecraftWorldadapter(WorldAdapter):
         self.world.spockplugin.move_z = self.datatargets['move_z']
 
 
-        if self.current_step == 0:
-         self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()
-
-        self.current_step = (self.current_step + 1) % 4
+        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()

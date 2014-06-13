@@ -354,14 +354,16 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         if gatefunction:
             activation = gatefunction(self, self.parameters)
         else:
-            activation = max(input_activation,
-                self.parameters["threshold"]) * self.parameters["amplification"] * gate_factor
-
-        if self.parameters["decay"]:  # let activation decay gradually
-            if activation < 0:
-                activation = min(activation, self.activation * (1 - self.parameters["decay"]))
+            if input_activation < self.parameters['threshold']:
+                activation = 0
             else:
-                activation = max(activation, self.activation * (1 - self.parameters["decay"]))
+                activation = input_activation * self.parameters["amplification"] * gate_factor
+
+        # if self.parameters["decay"]:  # let activation decay gradually
+        #     if activation < 0:
+        #         activation = min(activation, self.activation * (1 - self.parameters["decay"]))
+        #     else:
+        #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
         self.sheaves[sheaf].activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
         self.node.report_gate_activation(self.type, self.sheaves[sheaf])

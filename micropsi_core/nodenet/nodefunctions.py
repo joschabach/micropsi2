@@ -16,15 +16,17 @@ def actor(netapi, node=None, datatarget=None, **params):
         return
     activation_to_set = node.get_slot("gen").activation
     netapi.world.set_datatarget(netapi.uid, datatarget, activation_to_set)
-    # TODO: check if we want to incorporate world feedback here instead of just confirming the write
-    if activation_to_set > 0:
-        node.activation = 1
+    # if activation_to_set > 0:
+        # node.activation = 1
+    feedback = netapi.world.get_datatarget_feedback(netapi.uid, datatarget)
+    node.get_gate('gen').activation = feedback if feedback else -1
 
 
 def concept(netapi, node=None, **params):
     node.activation = node.get_slot("gen").activation
     for type, gate in node.gates.items():
         gate.gate_function(node.get_slot("gen").activation)
+
 
 def script(netapi, node=None, **params):
     """ Script nodes are state machines that use the node activation for determining their behavior.

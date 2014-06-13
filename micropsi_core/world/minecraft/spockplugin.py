@@ -22,12 +22,7 @@ class MicropsiPlugin(object):
             self.subtract_stance
         )
 
-        #MicroPsi Datatargets
         self.psi_dispatcher = PsiDispatcher(self)
-        self.move_x = 0
-        self.move_z = 0
-        self.move_x_ = 0
-        self.move_z_ = 0
 
     def move(self, position=None):
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):

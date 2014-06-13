@@ -90,54 +90,59 @@ class Minecraft(World):
 
 class MinecraftWorldadapter(WorldAdapter):
 
-    datasources = {'diamond_offset_x': 0, 'diamond_offset_z': 0, 'grd_stone': 0, 'grd_dirt': 0, 'grd_wood': 0, 'grd_coal': 0}
-    datatargets = {'move_x': 0, 'move_z': 0}
-    current_step = 1
+    datasources = {'diamond_offset_x': 0,
+                   'diamond_offset_z': 0,
+                   'grd_stone': 0,
+                   'grd_dirt': 0,
+                   'grd_wood': 0,
+                   'grd_coal': 0}
+    datatargets = {'move_x': 0,
+                   'move_z': 0}
+
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
         #find diamond
-        x_chunk = self.world.spockplugin.clientinfo.position['x'] // 16
-        z_chunk = self.world.spockplugin.clientinfo.position['z'] // 16
-        bot_block = (self.world.spockplugin.clientinfo.position['x'], self.world.spockplugin.clientinfo.position['y'], self.world.spockplugin.clientinfo.position['z'])
+        bot_x = self.world.spockplugin.clientinfo.position['x']
+        bot_y = self.world.spockplugin.clientinfo.position['y']
+        bot_z = self.world.spockplugin.clientinfo.position['z']
+        x_chunk = bot_x // 16
+        z_chunk = bot_z // 16
         current_column = self.world.spockplugin.world.map.columns[(x_chunk, z_chunk)]
+        current_section = current_column.chunks[int((bot_y - 1) // 16)]
 
         self.datasources = dict.fromkeys(self.datasources, 0) # set all entries to zero
 
+        self.detect_groundtypes(bot_x, bot_y, bot_z, current_section)
+        self.detect_diamond(current_column, bot_x, bot_y, bot_z, x_chunk, z_chunk)
+
+        move_x = self.datatargets['move_x']
+        move_z = self.datatargets['move_z']
+
+        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands(bot_x, bot_y, bot_z, current_section, move_x, move_z)
+
+
+    def detect_diamond(self, current_column, bot_x, bot_y, bot_z, x_chunk, z_chunk):
         for y in range(0, 16):
-            current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) // 16)] #TODO explain formula
+            current_section = current_column.chunks[int((bot_y + y - 10 // 2) // 16)] #TODO explain formula
             if current_section != None:
                 for x in range(0, 16):
                     for z in range(0, 16):
-                        current_block = current_section.get(x, int((self.world.spockplugin.clientinfo.position['y'] + y - 10 // 2) % 16), z).id #TODO explain formula
+                        current_block = current_section.get(x, int((bot_y + y - 10 // 2) % 16), z).id #TODO explain formula
                         if current_block == 56:
                             diamond_coords = (x + x_chunk * 16,y,z + z_chunk * 16)
-                            self.datasources['diamond_offset_x'] = bot_block[0] - diamond_coords[0]
-                            self.datasources['diamond_offset_z'] = bot_block[2] - diamond_coords[2]
+                            self.datasources['diamond_offset_x'] = bot_x - diamond_coords[0]
+                            self.datasources['diamond_offset_z'] = bot_z - diamond_coords[2]
 
 
-        #set groundtypes
-        current_section = current_column.chunks[int((self.world.spockplugin.clientinfo.position['y'] - 1) // 16)]
-        block_below = current_section.get(x, int((self.world.spockplugin.clientinfo.position['y'] - 1) % 16), z).id
+    def detect_groundtypes(self, bot_x, bot_y, bot_z, current_section):
 
-        #print("block_below is " + str(block_below))
+        block_below = current_section.get(int(bot_x) % 16, int((bot_y - 1) % 16), int(bot_z) % 16).id
         if (block_below == 2):
             self.datasources['grd_dirt'] = 1
-            #print("self.datasources['grd_dirt'] is " + str(self.datasources['grd_dirt']))
         if (block_below == 1):
             self.datasources['grd_stone'] = 1
-            #print("self.datasources['grd_stone'] is " + str(self.datasources['grd_stone']))
         if (block_below == 17):
             self.datasources['grd_wood'] = 1
-            #print("self.datasources['grd_wood'] is " + str(self.datasources['grd_wood']))
         if (block_below == 173):
             self.datasources['grd_coal'] = 1
-            #print("self.datasources['grd_coal'] is " + str(self.datasources['grd_coal']))
-
-
-
-        self.world.spockplugin.move_x = self.datatargets['move_x']
-        self.world.spockplugin.move_z = self.datatargets['move_z']
-
-
-        self.world.spockplugin.psi_dispatcher.dispatchPsiCommands()

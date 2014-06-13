@@ -2687,6 +2687,7 @@ function handleEditGate(event){
         gate_type: gate.name,
         parameters: params
     });
+    gate.parameters = params;
 }
 
 function setNodeActivation(nodeUid, activation){

@@ -102,6 +102,7 @@ refreshWorldView = function(){
                 if(data.objects[key].position && data.objects[key].position.length == 2){
                     if(key in data.agents){
                         addAgent(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                        agents[key] = objects[key]
                         if('scene' in data.agents[key]){
                             scenes[data.agents[key].uid] = data.agents[key].scene;
                         }

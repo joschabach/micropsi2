@@ -333,7 +333,11 @@ function setNodespaceData(data){
             }
         }
         for(var index in outsideLinks){
-            addLink(outsideLinks[index]);
+            if(outsideLinks[index].uid in links){
+                redrawLink(outsideLinks[index]);
+            } else {
+                addLink(outsideLinks[index]);
+            }
         }
 
         if(data.monitors){

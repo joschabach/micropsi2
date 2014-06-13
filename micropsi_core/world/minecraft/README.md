@@ -73,3 +73,18 @@ cd 1.7.4; ./start.command
 * https://github.com/jonasrk/MicroPsi-2-Minecraft-Experiment
 commit 9d7cb90f7420850afe13735e094501b9b72830a5
 ./micropsi2_data/micropsi2_data_for_new_spock
+
+## Without Visualisation, 1.7.4 Server, Ground Types experiment with jumping and gravity
+
+* https://github.com/joschabach/micropsi2/tree/master
+
+commit ae8d9a378aa6a927ac923db2c0fca8267262da1c
+
+* https://github.com/jonasrk/minecraft_servers
+
+commit 53ac1b904e0ac7f85a36ef97f19123c1bc9159ed
+cd 1.7.4; ./start.command
+
+* https://github.com/jonasrk/MicroPsi-2-Minecraft-Experiment
+commit cc98943adbf3e82b99899e8ed6d3f2cbfb925993
+./micropsi2_data/micropsi2_data_for_new_spock

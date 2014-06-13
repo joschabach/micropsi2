@@ -306,6 +306,11 @@ class World(object):
         if nodenet_uid in self.agents:
             return self.agents[nodenet_uid].set_datatarget(key, value)
 
+    def get_datatarget_feedback(self, nodenet_uid, key):
+        """allows the nodenet to write a value to a datatarget"""
+        if nodenet_uid in self.agents:
+            return self.agents[nodenet_uid].get_datatarget_feedback(key)
+
 
 # imports of individual world types:
 try:

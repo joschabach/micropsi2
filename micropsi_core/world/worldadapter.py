@@ -32,6 +32,7 @@ class WorldAdapter(WorldObject):
 
     datasources = {}
     datatargets = {}
+    datatarget_feedback = {}
 
     datasource_lock = Lock()
     datasource_snapshots = {}
@@ -46,6 +47,7 @@ class WorldAdapter(WorldObject):
         for key in self.datatargets:
             if key in data.get('datatargets', {}):
                 self.datatargets[key] = data['datatargets'][key]
+                self.datatarget_feedback[key] = 0
 
     # agent facing methods:
     def snapshot(self):
@@ -63,15 +65,20 @@ class WorldAdapter(WorldObject):
 
     def get_datasource(self, key):
         """allows the agent to read a value from a datasource"""
-        if key in self.datasource_snapshots:
-            return self.datasource_snapshots[key]
-        return None
+        return self.datasource_snapshots.get(key)
 
     def set_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:
             self.datatargets[key] = value
 
+    def get_datatarget_feedback(self, key):
+        """get feedback whether the actor-induced action succeeded"""
+        return self.datatarget_feedback.get(key, 0)
+
+    def set_datatarget_feedback(self, key, value):
+        """set feedback for the given datatarget"""
+        self.datatarget_feedback[key] = value
 
     # world facing methods:
     def update(self):

@@ -157,6 +157,9 @@ class Braitenberg(WorldAdapter):
             r_wheel_speed *= f
             l_wheel_speed *= f
 
+        self.set_datatarget_feedback('engine_r', r_wheel_speed)
+        self.set_datatarget_feedback('engine_l', l_wheel_speed)
+
         rotation = math.degrees((l_wheel_speed - r_wheel_speed) / (self.diameter))
         translation = _2d_rotate((0, (r_wheel_speed + l_wheel_speed) / 2), rotation)
         self.orientation += rotation

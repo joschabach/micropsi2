@@ -88,3 +88,18 @@ cd 1.7.4; ./start.command
 * https://github.com/jonasrk/MicroPsi-2-Minecraft-Experiment
 commit cc98943adbf3e82b99899e8ed6d3f2cbfb925993
 ./micropsi2_data/micropsi2_data_for_new_spock
+
+## Without Visualisation, 1.7.4 Server, Obstacle experiment with jumping and gravity
+
+* https://github.com/joschabach/micropsi2/tree/master
+
+commit 88ce9c205451b2dffb39a156fbbd305719c0f3f6
+
+* https://github.com/jonasrk/minecraft_servers
+
+commit 268f9621bcfa95304600ed6fcbffb57674e0d153
+cd 1.7.4; ./start.command
+
+* https://github.com/jonasrk/MicroPsi-2-Minecraft-Experiment
+commit 1fad259cd1043983f4af8c3facd9730d1d7603dd
+./micropsi2_data/micropsi2_data_for_new_spock

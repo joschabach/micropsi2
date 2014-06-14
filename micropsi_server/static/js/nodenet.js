@@ -9,7 +9,7 @@
 // initialization ---------------------------------------------------------------------
 
 var viewProperties = {
-    zoomFactor: 1,
+    zoomFactor: 0.8,
     frameWidth: 50,
     activeColor: new Color("#009900"),
     inhibitedColor: new Color("#ff0000"),
@@ -65,7 +65,7 @@ prerenderLayer = new Layer();
 prerenderLayer.name = 'PrerenderLayer';
 prerenderLayer.visible = false;
 
-viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || 1;
+viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
 currentNodenet = $.cookie('selected_nodenet') || null;
 currentNodeSpace = $.cookie('current_nodespace') || 'Root';

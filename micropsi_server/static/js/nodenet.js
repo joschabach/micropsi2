@@ -733,7 +733,7 @@ function nodeRedrawNeeded(node){
     if(node.uid in nodeLayer.children){
         if(node.x == nodes[node.uid].x &&
             node.y == nodes[node.uid].y &&
-            node.activation == nodes[node.uid].activation &&
+            node.sheaves[currentSheaf].activation == nodes[node.uid].sheaves[currentSheaf].activation &&
             node.gatechecksum() == nodes[node.uid].gatechecksum() &&
             Object.keys(node.sheaves).length == Object.keys(nodes[node.uid].sheaves).length &&
             viewProperties.zoomFactor == nodes[node.uid].zoomFactor){

@@ -354,10 +354,12 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         if gatefunction:
             activation = gatefunction(self, self.parameters)
         else:
-            if input_activation < self.parameters['threshold']:
-                activation = 0
-            else:
-                activation = input_activation * self.parameters["amplification"] * gate_factor
+            activation = input_activation
+
+        if activation * gate_factor < self.parameters['threshold']:
+            activation = 0
+        else:
+            activation = activation * self.parameters["amplification"] * gate_factor
 
         # if self.parameters["decay"]:  # let activation decay gradually
         #     if activation < 0:

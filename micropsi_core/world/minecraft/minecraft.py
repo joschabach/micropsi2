@@ -116,8 +116,6 @@ class MinecraftWorldadapter(WorldAdapter):
         current_column = self.world.spockplugin.world.map.columns[(x_chunk, z_chunk)]
         current_section = current_column.chunks[int((bot_y - 1) // 16)]
 
-        self.datasources = dict.fromkeys(self.datasources, 0) # set all entries to zero
-
         self.detect_groundtypes(bot_coords, current_section)
         self.detect_diamond(current_column, bot_coords, x_chunk, z_chunk)
         self.detect_obstacles(bot_coords, current_section)
@@ -143,26 +141,14 @@ class MinecraftWorldadapter(WorldAdapter):
 
     def detect_groundtypes(self, bot_coords, current_section):
         block_below = current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] - 1) % 16), int(bot_coords[2]) % 16).id
-        if (block_below == 2):
-            self.datasources['grd_dirt'] = 1
-        if (block_below == 1):
-            self.datasources['grd_stone'] = 1
-        if (block_below == 17):
-            self.datasources['grd_wood'] = 1
-        if (block_below == 173):
-            self.datasources['grd_coal'] = 1
+        self.datasources['grd_dirt'] = 1 if (block_below == 2) else 0
+        self.datasources['grd_stone'] = 1 if (block_below == 1) else 0
+        self.datasources['grd_wood'] = 1 if (block_below == 17) else 0
+        self.datasources['grd_coal'] = 1 if (block_below == 173) else 0
+
 
     def detect_obstacles(self, bot_coords, current_section):
-        print("trying to detect obstacles")
-        if current_section.get(int(bot_coords[0] + 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0:
-            self.datasources['obstcl_x+'] = 1
-            print("obstacles found x+")
-        if current_section.get(int(bot_coords[0] - 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0:
-            self.datasources['obstcl_x-'] = 1
-            print("obstacles found x-")
-        if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] + 1) % 16).id != 0:
-            self.datasources['obstcl_z+'] = 1
-            print("obstacles found z+")
-        if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] - 1) % 16).id != 0:
-            self.datasources['obstcl_z-'] = 1
-            print("obstacles found z-")
+        self.datasources['obstcl_x+'] = 1 if current_section.get(int(bot_coords[0] + 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 else 0
+        self.datasources['obstcl_x-'] = 1 if current_section.get(int(bot_coords[0] - 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 else 0
+        self.datasources['obstcl_z+'] = 1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] + 1) % 16).id != 0 else 0
+        self.datasources['obstcl_z-'] = 1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] - 1) % 16).id != 0 else 0

@@ -326,7 +326,7 @@ function getLegend(worldobject){
         Math.max(height, bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
     var text = new PointText(point);
     text.justification = 'left';
-    text.content = (worldobject.name ? worldobject.name : worldobject.uid);
+    text.content = (worldobject.name ? worldobject.name : worldobject.uid) + '('+parseInt(worldobject.x)+'/'+parseInt(worldobject.y)+')';
     text.characterStyle = {
         fillColor: 'black',
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
@@ -367,6 +367,9 @@ function onMouseDown(event){
 
 function onMouseMove(event) {
     var p = event.point;
+
+    $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
+
     // hovering
     if (hoverUid) { // unhover
         if(hoverUid in objects){

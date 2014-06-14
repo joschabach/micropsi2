@@ -2021,6 +2021,15 @@ function initializeDialogs(){
         createLinkFromDialog(path.name, source_gate.val(), target_node.val(), target_slot.val());
         $("#create_link_modal").modal("hide");
     });
+    $('#create_link_modal select:last').on('change', function(){
+        $('#create_link_modal .btn-primary').focus();
+    });
+    $('#datatarget_select').on('change', function(){
+        $("#select_datatarget_modal .btn-primary").focus();
+    });
+    $('#datasource_select').on('change', function(){
+        $("#select_datasource_modal .btn-primary").focus();
+    });
 }
 
 function stepNodenet(event){

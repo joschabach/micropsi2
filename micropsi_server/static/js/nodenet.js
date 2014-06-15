@@ -245,7 +245,7 @@ function setCurrentNodenet(uid, nodespace){
         function(data) {
             currentNodenet = null;
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-            dialogs.notification(data.Error, "error");
+            dialogs.notification(data.Error, "information");
         });
 }
 
@@ -353,7 +353,6 @@ function setNodespaceData(data){
 function refreshNodespace(nodespace, coordinates, step, callback){
     if(coordinates)
         loaded_coordinates = coordinates;
-    method = "get_nodespace";
     nodespace = nodespace || currentNodeSpace;
     params = {
         nodenet_uid: currentNodenet,

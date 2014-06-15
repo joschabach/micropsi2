@@ -357,6 +357,41 @@ def test_node_pipe_logic_three_alternatives(fixed_nodenet):
     assert n_head.get_gate("gen").activation == 0
 
 
+def test_node_pipe_logic_feature_binding(fixed_nodenet):
+    # check if the same feature can be checked and bound twice
+    net, netapi, source = prepare(fixed_nodenet)
+    schema = netapi.create_node("Pipe", "Root", "Schema")
+    element1 = netapi.create_node("Pipe", "Root", "Element1")
+    element2 = netapi.create_node("Pipe", "Root", "Element2")
+    netapi.link_with_reciprocal(schema, element1, "subsur")
+    netapi.link_with_reciprocal(schema, element2, "subsur")
+    netapi.link_full([element1, element2])
+
+    concrete_feature1 = netapi.create_node("Pipe", "Root", "ConcreteFeature1")
+    concrete_feature2 = netapi.create_node("Pipe", "Root", "ConcreteFeature2")
+    netapi.link_with_reciprocal(element1, concrete_feature1, "subsur")
+    netapi.link_with_reciprocal(element2, concrete_feature2, "subsur")
+
+    abstract_feature = netapi.create_node("Pipe", "Root", "AbstractFeature")
+    netapi.link_with_reciprocal(concrete_feature1, abstract_feature, "catexp")
+    netapi.link_with_reciprocal(concrete_feature2, abstract_feature, "catexp")
+
+    netapi.link(source, "gen", schema, "sub")
+    netapi.link(source, "gen", abstract_feature, "sur")
+
+    net.step()
+    assert abstract_feature.get_gate("gen").activation == 1
+    assert abstract_feature.get_gate("exp").activation == 1
+
+    net.step()
+    assert concrete_feature1.get_gate("gen").activation == 1
+    assert concrete_feature2.get_gate("gen").activation == 1
+
+    net.step()
+    net.step()
+
+    assert schema.get_gate("gen").activation == 1
+
 def test_node_pipe_logic_search_sub(fixed_nodenet):
     # check if sub-searches work
     net, netapi, source = prepare(fixed_nodenet)

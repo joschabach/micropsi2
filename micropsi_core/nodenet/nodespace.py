@@ -61,6 +61,8 @@ class Nodespace(NetEntity):
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""
         if gatefunction:
+            if 'gatefunctions' not in self.data:
+                self.data['gatefunctions'] = {}
             if nodetype not in self.data['gatefunctions']:
                 self.data['gatefunctions'][nodetype] = {}
             self.data['gatefunctions'][nodetype][gatetype] = gatefunction

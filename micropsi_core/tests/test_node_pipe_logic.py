@@ -395,3 +395,43 @@ def test_node_pipe_logic_search_sur(fixed_nodenet):
 
     assert n_b.get_gate("sur").activation == 1
     assert n_a.get_gate("sur").activation == 1
+
+
+def test_node_pipe_logic_search_por(fixed_nodenet):
+    # check if por-searches work
+    net, netapi, source = prepare(fixed_nodenet)
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    netapi.link_with_reciprocal(n_a, n_b, "porret")
+
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    netapi.link(source, "gen", por_act, "gen")
+
+    netapi.link(source, "gen", n_a, "por")
+
+    net.step()
+    net.step()
+    net.step()
+
+    assert n_a.get_gate("por").activation == 1
+    assert n_b.get_gate("por").activation == 1
+
+
+def test_node_pipe_logic_search_ret(fixed_nodenet):
+    # check if ret-searches work
+    net, netapi, source = prepare(fixed_nodenet)
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    netapi.link_with_reciprocal(n_a, n_b, "porret")
+
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    netapi.link(source, "gen", ret_act, "gen")
+
+    netapi.link(source, "gen", n_b, "por")
+
+    net.step()
+    net.step()
+    net.step()
+
+    assert n_b.get_gate("ret").activation == 1
+    assert n_a.get_gate("ret").activation == 1

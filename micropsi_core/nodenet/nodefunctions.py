@@ -131,11 +131,14 @@ def pipe(netapi, node=None, sheaf="default", **params):
            (1+node.get_slot("por").get_activation(sheaf))
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
+    por += node.get_slot("por").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
     por += 1 if neighbors > 1 else 0
     if por <= 0: por = -1
     if por > 0: por = 1
 
-    ret += 1 if neighbors > 1 else -1
+    ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
+    ret += 1 if neighbors > 1 else 0
+    if ret <= 0: ret = -1
 
     cat = sub
     if cat < 0: cat = 0

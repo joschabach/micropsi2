@@ -145,6 +145,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     exp += node.get_slot("sur").get_activation(sheaf) * \
            node.get_slot("cat").get_activation(sheaf)
+    if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 
     # handle locking if configured for this node

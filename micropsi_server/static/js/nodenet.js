@@ -381,6 +381,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             linkLayer.removeChildren();
         }
         loaded_coordinates = coordinates;
+        nodenetRunning = data.is_active;
         if(jQuery.isEmptyObject(data)){
             if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;

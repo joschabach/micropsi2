@@ -99,12 +99,20 @@ var dialogs = {
         render a simple and temporary twitter bootstrap notification.
         Parameters:
             message - the message to display
-            status - one of ['error', 'info', 'success']
+            status - one of ['error', 'info', 'success', 'exception']
     */
     notification: function(message, status){
+        if(status == 'exception'){
+            var fadeOut = { enabled: false}
+            var content = { html: message }
+            status = 'error';
+        } else {
+            var fadeOut = { enabled: true, delay: 1000 };
+            var content = { text: message }
+        }
         $('#notification').notify({
-            message: { text: message },
-            fadeOut: { enabled: true, delay: 1000 },
+            message: content,
+            fadeOut: fadeOut,
             type: status || "info"
         }).show();
     }
@@ -143,9 +151,19 @@ var api = {
     defaultSuccessCallback: function (data){
         dialogs.notification("Changes saved", 'success');
     },
-    defaultErrorCallback: function (data){
-        var msg = data.Error || data.statusText;
-        dialogs.notification("Error: " + msg || "serverside exception", 'error');
+    defaultErrorCallback: function (data, outcome, type){
+        var msg = '';
+        try{
+            error = JSON.parse(data.responseText);
+            msg += '<strong>' + error.Error + '</strong>';
+            if(error.Traceback){
+                msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
+            }
+        } catch (err){}
+        if(!msg){
+            msg = type || "serverside exception";
+        }
+        dialogs.notification("Error: " + msg, 'exception');
     },
     EmptyCallback: function (){}
 };

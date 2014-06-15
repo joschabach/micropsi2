@@ -95,7 +95,14 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 #kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args if name in kwargs)
                 arguments.update(kwargs)
-                return json.dumps(func(**arguments))
+                try:
+                    return json.dumps(func(**arguments))
+                except Exception as err:
+                    response.status = 500
+                    response.content_type = 'application/json'
+                    import traceback
+                    return json.dumps({"Error": str(err), "Traceback": traceback.format_exc()})
+                
                 # except TypeError as err:
                 #     response.status = 400
                 #     return {"Error": "Bad parameters in remote procedure call: %s" % err}

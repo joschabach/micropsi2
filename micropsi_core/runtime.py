@@ -479,7 +479,7 @@ def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
     data = {}
     if step < nodenets[nodenet_uid].current_step:
         data = get_nodenet_area(nodenet_uid, nodespace, **coordinates)
-        data.update({'current_step': nodenets[nodenet_uid].current_step})
+        data.update({'current_step': nodenets[nodenet_uid].current_step, 'is_active': nodenet[nodenet_uid].is_active})
     return data
 
 

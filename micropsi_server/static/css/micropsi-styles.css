@@ -138,10 +138,10 @@
 }
 
 .notifications.top-center{
-  width: 400px;
+  width: 600px;
   left: 50%;
   top: 10px;
-  margin-left: -200px;
+  margin-left: -300px;
 }
 
 .notifications.bottom-left {
@@ -287,4 +287,9 @@ graphs
   border-bottom: 1px solid #ccc;
   padding: 0;
   line-height: 3px;
+}
+.exception {
+  word-break: normal;
+  word-wrap: normal;
+  font-size: 10px;
 }

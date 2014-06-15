@@ -189,12 +189,10 @@ class Node(NetEntity):
                 # and actually calculate new values for them
                 try:
                     self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
-                except SyntaxError as err:
-                    warnings.warn("Syntax error during node execution: %s" % err)
-                    self.data["activation"] = "Syntax error"
-                except TypeError as err:
-                    warnings.warn("Type error during node execution: %s" % err)
-                    self.data["activation"] = "Parameter mismatch"
+                except Exception as err:
+                    self.nodenet.is_active = False
+                    self.data["activation"] = -1
+                    raise err
         else:
             # default node function (only using the "default" sheaf)
             if len(self.slots):

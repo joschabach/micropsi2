@@ -29,8 +29,22 @@ var viewProperties = {
     }
 };
 
-// TDOD: this really should be loaded from the server
-var available_object_types = ['Lightsource', 'Tree', 'Pole'];
+// TODO: this really should be loaded from the server
+var available_object_types = [
+    'Lightsource',
+    'PalmTree',
+    'Maple',
+    'Braintree',
+    'Wirselkraut',
+    'Thornbush',
+    'Juniper',
+    'Champignon',
+    'FlyAgaric',
+    'Stone',
+    'Boulder',
+    'Menhir',
+    'Waterhole'
+];
 
 objects = {};
 symbols = {};

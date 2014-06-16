@@ -44,7 +44,7 @@ class StructuredObjects(WorldAdapter):
         self.datasources["major-newscene"] = 0
 
         self.scene = Scene(world, uid)
-        self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
+        self.scene.load_object("PalmTree", OBJECTS["PalmTree"]["shape_grid"])
 
     def initialize_worldobject(self, data):
         if not "position" in data:

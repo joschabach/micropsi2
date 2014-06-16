@@ -130,6 +130,156 @@ class Lightsource(WorldObject):
         (we are using the square to avoid a math.sqr elsewhere)"""
         return self.intensity * self.diameter * self.diameter / distance_squared
 
+    def action_eat(self):
+        return True, 0, 0, -0.7
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class PalmTree(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "PalmTree"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Maple(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Maple"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Braintree(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Braintree"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Wirselkraut(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Wirselkraut"
+
+    def action_eat(self):
+        return True, 0, 0, 0.5
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Thornbush(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Thornbush"
+
+    def action_eat(self):
+        return True, 0, 0, -0.1
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Juniper(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Juniper"
+
+    def action_eat(self):
+        return True, 0.1, 0.1, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Champignon(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Champignon"
+
+    def action_eat(self):
+        return True, 0.3, 0, 0
+
+    def action_drink(self):
+        return True, 0, 0, 0
+
+
+class FlyAgaric(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "FlyAgaric"
+
+    def action_eat(self):
+        return True, 0.1, 0, -0.9
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Stone(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Stone"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Boulder(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Boulder"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Menhir(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Menhir"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Waterhole(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Waterhole"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return True, 0, 1, 0
+
 
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""

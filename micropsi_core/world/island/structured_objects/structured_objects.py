@@ -14,7 +14,7 @@ class StructuredObjects(WorldAdapter):
     shapecolors = []
 
     datasources = {}
-    datatargets = {'fov_x': 0, 'fov_y': 0, 'fov_reset': 0, 'action_eat': 0, 'action_drink': 0}
+    datatargets = {'fov_x': 0, 'fov_y': 0, 'fov_reset': 0}
 
     currentobject = None
     scene = None
@@ -43,17 +43,6 @@ class StructuredObjects(WorldAdapter):
 
         self.datasources["major-newscene"] = 0
 
-        self.energy = 1.0
-        self.water = 1.0
-        self.integrity = 1.0
-        self.is_dead = False
-
-        self.action_cooloff = 5
-
-        self.datasources['body-energy'] = self.energy
-        self.datasources['body-water'] = self.water
-        self.datasources['body-integrity'] = self.integrity
-
         self.scene = Scene(world, uid)
         self.scene.load_object("PalmTree", OBJECTS["PalmTree"]["shape_grid"])
 
@@ -75,11 +64,6 @@ class StructuredObjects(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-
-        if self.is_dead:
-            return
-
-        ourname = self.name
 
         # we don't move, for now
         self.position = self.world.get_movement_result(self.position, (0, 0))
@@ -119,53 +103,3 @@ class StructuredObjects(WorldAdapter):
         for shapecolor in self.shapecolors:
             self.datasources["fovea-"+shapecolor] = 1 if self.scene.is_fovea_on_shape_color(shapecolor) else 0
             self.datasources["presence-"+shapecolor] = 1 if self.scene.is_shapecolor_in_scene(shapecolor) else 0
-
-        # manage body parameters
-        for datatarget in self.datatargets.keys():
-            if datatarget.startswith("action_"):
-                self.datatarget_feedback[datatarget] = 0
-                if self.datatargets[datatarget] >= 1 and self.action_cooloff <= 0:
-                    self.datatargets[datatarget] = 0
-                    if hasattr(nearest_worldobject, datatarget):
-                        cando, delta_energy, delta_water, delta_integrity = nearest_worldobject.action_eat()
-                    else:
-                        cando, delta_energy, delta_water, delta_integrity = False, 0, 0, 0
-                    if cando:
-                        self.action_cooloff = 6
-                        self.energy += delta_energy
-                        self.water += delta_water
-                        self.integrity += delta_integrity
-                        self.datatarget_feedback[datatarget] = 1
-                        logging.getLogger("world").debug("Agent "+ourname+" "+ datatarget +
-                                                         "("+nearest_worldobject.data["type"]+") result: "+
-                                                         " energy "+str(delta_energy)+
-                                                         " water "+str(delta_water)+
-                                                         " integrity "+str(delta_integrity))
-                    else:
-                        logging.getLogger("world").debug("Agent "+ourname+" "+ datatarget +
-                                                         "("+nearest_worldobject.data["type"]+") result: "+
-                                                         "cannot do.")
-
-        self.action_cooloff -= 1
-        self.energy -= 0.005
-        self.water -= 0.005
-
-        if self.energy > 1: self.energy = 1
-        if self.water > 1: self.water = 1
-        if self.integrity > 1: self.integrity = 1
-
-        if self.energy <= 0 or self.water <= 0 or self.integrity <= 0:
-            self.is_dead = True
-            logging.getLogger("world").debug("Agent "+ourname+" has died:"+
-                    " energy "+str(self.energy)+
-                    " water "+str(self.water)+
-                    " integrity "+str(self.integrity))
-
-        self.datasources["body-energy"] = self.energy
-        self.datasources["body-water"] = self.water
-        self.datasources["body-integrity"] = self.integrity
-
-    def is_alive(self):
-        """called by the world to check whether the agent has died and should be removed"""
-        return not self.is_dead
-

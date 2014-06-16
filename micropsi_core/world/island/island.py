@@ -10,7 +10,7 @@ from micropsi_core.world.island import png
 class Island(World):
 
     """ mandatory: list of world adapters that are supported"""
-    supported_worldadapters = ['Braitenberg', 'StructuredObjects']
+    supported_worldadapters = ['Braitenberg', 'Survivor', 'StructuredObjects']
 
     groundmap = {
         'image': "psi_1.png",
@@ -281,6 +281,107 @@ class Waterhole(WorldObject):
 
     def action_drink(self):
         return True, 0, 1, 0
+
+
+class Survivor(WorldAdapter):
+
+    datatargets = {'action_eat': 0, 'action_drink': 0}
+
+    currentobject = None
+
+    def __init__(self, world, uid=None, **data):
+        super(Survivor, self).__init__(world, uid, **data)
+
+        self.energy = 1.0
+        self.water = 1.0
+        self.integrity = 1.0
+        self.is_dead = False
+
+        self.action_cooloff = 5
+
+        self.datasources['body-energy'] = self.energy
+        self.datasources['body-water'] = self.water
+        self.datasources['body-integrity'] = self.integrity
+
+    def initialize_worldobject(self, data):
+        if not "position" in data:
+            self.position = self.world.groundmap['start_position']
+
+    def update(self):
+        """called on every world simulation step to advance the life of the agent"""
+
+        if self.is_dead:
+            return
+
+        # we don't move, for now
+        self.position = self.world.get_movement_result(self.position, (0, 0))
+
+        #find nearest object to load into the scene
+        lowest_distance_to_worldobject = float("inf")
+        nearest_worldobject = None
+        for key, worldobject in self.world.objects.items():
+            # TODO: use a proper 2D geometry library
+            distance = _2d_distance_squared(self.position, worldobject.position)
+            if distance < lowest_distance_to_worldobject:
+                lowest_distance_to_worldobject = distance
+                nearest_worldobject = worldobject
+
+        if self.currentobject is not nearest_worldobject and nearest_worldobject.structured_object_type is not None:
+            self.currentobject = nearest_worldobject
+            logging.getLogger("world").debug("Survivor WA selected new scene: %s",
+                                             self.currentobject.structured_object_type)
+        self.manage_body_parameters(nearest_worldobject)
+
+    def manage_body_parameters(self, nearest_worldobject):
+        """called by update() to update energy, water and integrity"""
+
+        for datatarget in self.datatargets.keys():
+            if datatarget.startswith("action_"):
+                self.datatarget_feedback[datatarget] = 0
+                if self.datatargets[datatarget] >= 1 and self.action_cooloff <= 0:
+                    self.datatargets[datatarget] = 0
+                    if hasattr(nearest_worldobject, datatarget):
+                        cando, delta_energy, delta_water, delta_integrity = nearest_worldobject.action_eat()
+                    else:
+                        cando, delta_energy, delta_water, delta_integrity = False, 0, 0, 0
+                    if cando:
+                        self.action_cooloff = 6
+                        self.energy += delta_energy
+                        self.water += delta_water
+                        self.integrity += delta_integrity
+                        self.datatarget_feedback[datatarget] = 1
+                        logging.getLogger("world").debug("Agent "+self.name+" "+ datatarget +
+                                                         "("+nearest_worldobject.data["type"]+") result: "+
+                                                         " energy "+str(delta_energy)+
+                                                         " water "+str(delta_water)+
+                                                         " integrity "+str(delta_integrity))
+                    else:
+                        logging.getLogger("world").debug("Agent "+self.name+" "+ datatarget +
+                                                         "("+nearest_worldobject.data["type"]+") result: "+
+                                                         "cannot do.")
+
+        self.action_cooloff -= 1
+        self.energy -= 0.005
+        self.water -= 0.005
+
+        if self.energy > 1: self.energy = 1
+        if self.water > 1: self.water = 1
+        if self.integrity > 1: self.integrity = 1
+
+        if self.energy <= 0 or self.water <= 0 or self.integrity <= 0:
+            self.is_dead = True
+            logging.getLogger("world").debug("Agent "+self.name+" has died:"+
+                    " energy "+str(self.energy)+
+                    " water "+str(self.water)+
+                    " integrity "+str(self.integrity))
+
+        self.datasources["body-energy"] = self.energy
+        self.datasources["body-water"] = self.water
+        self.datasources["body-integrity"] = self.integrity
+
+    def is_alive(self):
+        """called by the world to check whether the agent has died and should be removed"""
+        return not self.is_dead
 
 
 class Braitenberg(WorldAdapter):

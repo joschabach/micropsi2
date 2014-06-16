@@ -14,7 +14,7 @@ class Island(World):
 
     groundmap = {
         'image': "psi_1.png",
-        'start_position': (100, 100),
+        'start_position': (700, 400),
         'scaling': (8, 8)
     }
 

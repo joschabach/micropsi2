@@ -157,6 +157,10 @@ class World(object):
         for uid in self.agents:
             with self.agents[uid].datasource_lock:
                 self.agents[uid].update()
+        for uid in self.agents.copy():
+            if not self.agents[uid].is_alive():
+                self.unregister_nodenet(uid)
+                #TODO: stop nodenet and disconnect, prevent respawn
         self.current_step += 1
 
     def get_world_view(self, step):

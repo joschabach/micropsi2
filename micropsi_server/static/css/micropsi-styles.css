@@ -255,12 +255,30 @@ graphs
 #scene_viewer b.active {
   border: 1px solid #e07b81;
 }
+
 #scene_viewer b.green {
   color: green;
 }
 #scene_viewer b.brown {
   color: brown;
 }
+#scene_viewer b.purple {
+  color: purple;
+}
+#scene_viewer b.red {
+  color: red;
+}
+#scene_viewer b.charcoal {
+  color: #444444;
+}
+#scene_viewer b.navy {
+  color: navy;
+}
+#scene_viewer b.white {
+  color: white;
+}
+
+
 #scene_viewer b.com:after {
   content: "*";
 }
@@ -269,6 +287,9 @@ graphs
 }
 #scene_viewer b.ver:after {
   content: "|";
+}
+#scene_viewer b.cir:after {
+  content: "O";
 }
 
 #sizeHandle {

@@ -16,8 +16,19 @@ CIR_B = Shape("cir", "brown")
 CIR_R = Shape("cir", "red")
 COM_C = Shape("com", "charcoal")
 COM_N = Shape("com", "navy")
+CIR_W = Shape("cir", "white")
 
 OBJECTS = {
+    "Lightsource": {
+        "type": "Lightsource",
+        "shape_grid": [
+        [None,      None,       CIR_W,      None,       None],
+        [None,      None,       VER_B,      None,       None],
+        [None,      None,       VER_B,      None,       None],
+        [None,      None,       VER_B,      None,       None],
+        [None,      None,       VER_B,      None,       None]
+        ]
+    },
     "PalmTree": {
         "type": "PalmTree",
         "shape_grid": [

@@ -285,7 +285,7 @@ class Waterhole(WorldObject):
 
 class Survivor(WorldAdapter):
 
-    datatargets = {'action_eat': 0, 'action_drink': 0}
+    datatargets = {'action_eat': 0, 'action_drink': 0, 'loco_north': 0, 'loco_south': 0, 'loco_east': 0, 'loco_west': 0}
 
     currentobject = None
 
@@ -313,8 +313,16 @@ class Survivor(WorldAdapter):
         if self.is_dead:
             return
 
-        # we don't move, for now
-        self.position = self.world.get_movement_result(self.position, (0, 0))
+        effortvector = ((50*self.datatargets['loco_east'])+(50 * -self.datatargets['loco_west']),
+                        (50*self.datatargets['loco_north'])-(50* -self.datatargets['loco_south']))
+        desired_position = (self.position[0] + effortvector[0], self.position[1] + effortvector[1])
+        self.datatargets['loco_east'] = 0
+        self.datatargets['loco_west'] = 0
+        self.datatargets['loco_north'] = 0
+        self.datatargets['loco_south'] = 0
+
+        if ground_types[self.world.get_ground_at(desired_position[0], desired_position[1])]['agent_allowed']:
+            self.position = desired_position
 
         #find nearest object to load into the scene
         lowest_distance_to_worldobject = float("inf")
@@ -326,7 +334,7 @@ class Survivor(WorldAdapter):
                 lowest_distance_to_worldobject = distance
                 nearest_worldobject = worldobject
 
-        if self.currentobject is not nearest_worldobject and nearest_worldobject.structured_object_type is not None:
+        if self.currentobject is not nearest_worldobject and hasattr(nearest_worldobject, "structured_object_type"):
             self.currentobject = nearest_worldobject
             logging.getLogger("world").debug("Survivor WA selected new scene: %s",
                                              self.currentobject.structured_object_type)

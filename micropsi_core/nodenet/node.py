@@ -590,8 +590,9 @@ class Nodetype(object):
                 parameters="nodenet, node, " + args)
         except SyntaxError as err:
             warnings.warn("Syntax error while compiling node function: %s", err.message)
-            self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-                parameters="nodenet, node, " + args)
+            raise err
+            # self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
+            #     parameters="nodenet, node, " + args)
 
     @property
     def nodefunction_name(self):
@@ -610,8 +611,9 @@ class Nodetype(object):
 
         except (ImportError, AttributeError) as err:
             warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err))
-            self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-                parameters="nodenet, node")
+            raise err
+            # self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
+            #     parameters="nodenet, node")
 
     def reload_nodefunction(self):
         from micropsi_core.nodenet import nodefunctions

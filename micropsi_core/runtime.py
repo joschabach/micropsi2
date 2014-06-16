@@ -58,7 +58,7 @@ logging_levels = {
 set_logging_level = logging_levels.get(LOGGING_LEVEL, logging.INFO)
 logging.basicConfig(level=logging_levels.get('logging_level', logging.INFO))
 
-system_logger = logging.getLogger('system')
+system_logger = logging.getLogger("system")
 nodenet_logger = logging.getLogger("nodenet")
 world_logger = logging.getLogger("world")
 
@@ -494,7 +494,7 @@ def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
     data = {}
     if step < nodenets[nodenet_uid].current_step:
         data = get_nodenet_area(nodenet_uid, nodespace, **coordinates)
-        data.update({'current_step': nodenets[nodenet_uid].current_step, 'is_active': nodenet[nodenet_uid].is_active})
+        data.update({'current_step': nodenets[nodenet_uid].current_step, 'is_active': nodenets[nodenet_uid].is_active})
     return data
 
 

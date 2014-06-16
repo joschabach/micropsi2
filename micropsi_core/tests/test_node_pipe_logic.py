@@ -40,7 +40,7 @@ def add_directional_activators(fixed_nodenet):
     net.nodes[cat_act.uid].parameters = {"type": "cat"}
 
     exp_act = netapi.create_node("Activator", "Root", "exp-activator")
-    net.nodes[cat_act.uid].parameters = {"type": "exp"}
+    net.nodes[exp_act.uid].parameters = {"type": "exp"}
 
     return sub_act, sur_act, por_act, ret_act, cat_act, exp_act
 
@@ -428,8 +428,8 @@ def test_node_pipe_logic_search_sur(fixed_nodenet):
     net.step()
     net.step()
 
-    assert n_b.get_gate("sur").activation == 1
-    assert n_a.get_gate("sur").activation == 1
+    assert n_b.get_gate("sur").activation > 0
+    assert n_a.get_gate("sur").activation > 0
 
 
 def test_node_pipe_logic_search_por(fixed_nodenet):
@@ -470,3 +470,43 @@ def test_node_pipe_logic_search_ret(fixed_nodenet):
 
     assert n_b.get_gate("ret").activation == 1
     assert n_a.get_gate("ret").activation == 1
+
+
+def test_node_pipe_logic_search_cat(fixed_nodenet):
+    # check if cat-searches work
+    net, netapi, source = prepare(fixed_nodenet)
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    netapi.link_with_reciprocal(n_a, n_b, "catexp")
+
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    netapi.link(source, "gen", cat_act, "gen")
+
+    netapi.link(source, "gen", n_a, "cat")
+
+    net.step()
+    net.step()
+    net.step()
+
+    assert n_a.get_gate("cat").activation == 1
+    assert n_b.get_gate("cat").activation == 1
+
+
+def test_node_pipe_logic_search_exp(fixed_nodenet):
+    # check if exp-searches work
+    net, netapi, source = prepare(fixed_nodenet)
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    netapi.link_with_reciprocal(n_a, n_b, "catexp")
+
+    sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
+    netapi.link(source, "gen", exp_act, "gen")
+
+    netapi.link(source, "gen", n_b, "exp")
+
+    net.step()
+    net.step()
+    net.step()
+
+    assert n_b.get_gate("exp").activation > 0
+    assert n_a.get_gate("exp").activation > 0

@@ -197,7 +197,7 @@ def load_nodenet(nodenet_uid):
         if world:
             world.register_nodenet(worldadapter, nodenets[nodenet_uid])
         return True, nodenet_uid
-    return False, "no such nodenet"
+    return False, "Nodenet "+nodenet_uid+" not found in "+RESOURCE_PATH
 
 
 def get_nodenet_data(nodenet_uid, **coordinates):

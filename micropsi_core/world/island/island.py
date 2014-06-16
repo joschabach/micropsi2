@@ -1,5 +1,6 @@
 import math
 import os
+import logging
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
@@ -9,11 +10,11 @@ from micropsi_core.world.island import png
 class Island(World):
 
     """ mandatory: list of world adapters that are supported"""
-    supported_worldadapters = ['Braitenberg', 'StructuredObjects']
+    supported_worldadapters = ['Braitenberg', 'Survivor', 'StructuredObjects']
 
     groundmap = {
         'image': "psi_1.png",
-        'start_position': (100, 100),
+        'start_position': (700, 400),
         'scaling': (8, 8)
     }
 
@@ -26,7 +27,19 @@ class Island(World):
         'icons': {
             'Lightsource': 'island/lamp.png',
             'Braitenberg': 'island/braitenberg.png',
-            'Tree': 'island/tree_small.png'
+            'Survivor': 'island/Micropsi.png',
+            'PalmTree': 'island/palm-tree.png',
+            'Maple': 'island/maple.png',
+            'Braintree': 'island/braintree.png',
+            'Wirselkraut': 'island/wirselkraut.png',
+            'Thornbush': 'island/unknownbox.png',
+            'Juniper': 'island/juniper-berries.png',
+            'Champignon': 'island/boletus-edulis.png',
+            'FlyAgaric': 'island/fly-agaris.png',
+            'Stone': 'island/rock.png',
+            'Boulder': 'island/boulder.png',
+            'Menhir': 'island/menhir.png',
+            'Waterhole': 'island/well.png'
         }
     }
 
@@ -118,6 +131,266 @@ class Lightsource(WorldObject):
         """returns the strength of the light, depending on the square of the distance
         (we are using the square to avoid a math.sqr elsewhere)"""
         return self.intensity * self.diameter * self.diameter / distance_squared
+
+    def action_eat(self):
+        return True, 0, 0, -0.7
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class PalmTree(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "PalmTree"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Maple(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Maple"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Braintree(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Braintree"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Wirselkraut(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Wirselkraut"
+
+    def action_eat(self):
+        return True, 0, 0, 0.5
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Thornbush(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Thornbush"
+
+    def action_eat(self):
+        logging.getLogger("world").debug("... and the whirlwind is in the thorn tree...")
+        return True, 0, 0, -0.1
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Juniper(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Juniper"
+
+    def action_eat(self):
+        return True, 0.1, 0.1, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Champignon(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Champignon"
+
+    def action_eat(self):
+        return True, 0.3, 0, 0
+
+    def action_drink(self):
+        return True, 0, 0, 0
+
+
+class FlyAgaric(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "FlyAgaric"
+
+    def action_eat(self):
+        return True, 0.1, 0, -0.9
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Stone(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Stone"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Boulder(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Boulder"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Menhir(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Menhir"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return False, 0, 0, 0
+
+
+class Waterhole(WorldObject):
+    def __init__(self, world, uid=None, **data):
+        WorldObject.__init__(self, world, category="objects", uid=uid, **data)
+        self.structured_object_type = "Waterhole"
+
+    def action_eat(self):
+        return False, 0, 0, 0
+
+    def action_drink(self):
+        return True, 0, 1, 0
+
+
+class Survivor(WorldAdapter):
+
+    datatargets = {'action_eat': 0, 'action_drink': 0, 'loco_north': 0, 'loco_south': 0, 'loco_east': 0, 'loco_west': 0}
+
+    currentobject = None
+
+    def __init__(self, world, uid=None, **data):
+        super(Survivor, self).__init__(world, uid, **data)
+
+        self.energy = 1.0
+        self.water = 1.0
+        self.integrity = 1.0
+        self.is_dead = False
+
+        self.action_cooloff = 5
+
+        self.datasources['body-energy'] = self.energy
+        self.datasources['body-water'] = self.water
+        self.datasources['body-integrity'] = self.integrity
+
+    def initialize_worldobject(self, data):
+        if not "position" in data:
+            self.position = self.world.groundmap['start_position']
+
+    def update(self):
+        """called on every world simulation step to advance the life of the agent"""
+
+        if self.is_dead:
+            return
+
+        effortvector = ((50*self.datatargets['loco_east'])+(50 * -self.datatargets['loco_west']),
+                        (50*self.datatargets['loco_north'])-(50* -self.datatargets['loco_south']))
+        desired_position = (self.position[0] + effortvector[0], self.position[1] + effortvector[1])
+        self.datatargets['loco_east'] = 0
+        self.datatargets['loco_west'] = 0
+        self.datatargets['loco_north'] = 0
+        self.datatargets['loco_south'] = 0
+
+        if ground_types[self.world.get_ground_at(desired_position[0], desired_position[1])]['agent_allowed']:
+            self.position = desired_position
+
+        #find nearest object to load into the scene
+        lowest_distance_to_worldobject = float("inf")
+        nearest_worldobject = None
+        for key, worldobject in self.world.objects.items():
+            # TODO: use a proper 2D geometry library
+            distance = _2d_distance_squared(self.position, worldobject.position)
+            if distance < lowest_distance_to_worldobject:
+                lowest_distance_to_worldobject = distance
+                nearest_worldobject = worldobject
+
+        if self.currentobject is not nearest_worldobject and hasattr(nearest_worldobject, "structured_object_type"):
+            self.currentobject = nearest_worldobject
+            logging.getLogger("world").debug("Survivor WA selected new scene: %s",
+                                             self.currentobject.structured_object_type)
+        self.manage_body_parameters(nearest_worldobject)
+
+    def manage_body_parameters(self, nearest_worldobject):
+        """called by update() to update energy, water and integrity"""
+
+        for datatarget in self.datatargets.keys():
+            if datatarget.startswith("action_"):
+                self.datatarget_feedback[datatarget] = 0
+                if self.datatargets[datatarget] >= 1 and self.action_cooloff <= 0:
+                    self.datatargets[datatarget] = 0
+                    if hasattr(nearest_worldobject, datatarget):
+                        cando, delta_energy, delta_water, delta_integrity = nearest_worldobject.action_eat()
+                    else:
+                        cando, delta_energy, delta_water, delta_integrity = False, 0, 0, 0
+                    if cando:
+                        self.action_cooloff = 6
+                        self.energy += delta_energy
+                        self.water += delta_water
+                        self.integrity += delta_integrity
+                        self.datatarget_feedback[datatarget] = 1
+                        logging.getLogger("world").debug("Agent "+self.name+" "+ datatarget +
+                                                         "("+nearest_worldobject.data["type"]+") result: "+
+                                                         " energy "+str(delta_energy)+
+                                                         " water "+str(delta_water)+
+                                                         " integrity "+str(delta_integrity))
+                    else:
+                        logging.getLogger("world").debug("Agent "+self.name+" "+ datatarget +
+                                                         "("+nearest_worldobject.data["type"]+") result: "+
+                                                         "cannot do.")
+
+        self.action_cooloff -= 1
+        self.energy -= 0.005
+        self.water -= 0.005
+
+        if self.energy > 1: self.energy = 1
+        if self.water > 1: self.water = 1
+        if self.integrity > 1: self.integrity = 1
+
+        if self.energy <= 0 or self.water <= 0 or self.integrity <= 0:
+            self.is_dead = True
+            logging.getLogger("world").debug("Agent "+self.name+" has died:"+
+                    " energy "+str(self.energy)+
+                    " water "+str(self.water)+
+                    " integrity "+str(self.integrity))
+
+        self.datasources["body-energy"] = self.energy
+        self.datasources["body-water"] = self.water
+        self.datasources["body-integrity"] = self.integrity
+
+    def is_alive(self):
+        """called by the world to check whether the agent has died and should be removed"""
+        return not self.is_dead
 
 
 class Braitenberg(WorldAdapter):

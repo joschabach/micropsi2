@@ -29,8 +29,22 @@ var viewProperties = {
     }
 };
 
-// TDOD: this really should be loaded from the server
-var available_object_types = ['Lightsource', 'Tree', 'Pole'];
+// TODO: this really should be loaded from the server
+var available_object_types = [
+    'Lightsource',
+    'PalmTree',
+    'Maple',
+    'Braintree',
+    'Wirselkraut',
+    'Thornbush',
+    'Juniper',
+    'Champignon',
+    'FlyAgaric',
+    'Stone',
+    'Boulder',
+    'Menhir',
+    'Waterhole'
+];
 
 objects = {};
 symbols = {};
@@ -277,20 +291,103 @@ function createObjectShape(worldobject, bounds){
     var raster;
     switch(worldobject.type){
         case "Lightsource":
-            raster = new Raster('icon_Lightsource');
+            raster = new Raster('icon_' + worldobject.type);
             raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
             raster.rotate(worldobject.orientation);
         return raster;
 
         case "Braitenberg":
-            raster = new Raster('icon_Braitenberg');
+            raster = new Raster('icon_' + worldobject.type);
             raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
             raster.rotate(worldobject.orientation);
         return raster;
 
-        case "Tree":
-            raster = new Raster('icon_Tree');
-            raster.scale(0.8);
+        case "Survivor":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "PalmTree":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.5);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Maple":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.7);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Braintree":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.5);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Wirselkraut":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.2);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Thornbush":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(1);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Juniper":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.4);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Champignon":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.125);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "FlyAgaric":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.2);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Stone":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.2);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Boulder":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.6);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Menhir":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.4);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
+        case "Waterhole":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(0.4);
             raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
             raster.rotate(worldobject.orientation);
         return raster;

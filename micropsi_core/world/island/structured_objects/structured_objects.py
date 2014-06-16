@@ -44,7 +44,7 @@ class StructuredObjects(WorldAdapter):
         self.datasources["major-newscene"] = 0
 
         self.scene = Scene(world, uid)
-        self.scene.load_object("Tree", OBJECTS["Tree"]["shape_grid"])
+        self.scene.load_object("PalmTree", OBJECTS["PalmTree"]["shape_grid"])
 
     def initialize_worldobject(self, data):
         if not "position" in data:
@@ -71,15 +71,12 @@ class StructuredObjects(WorldAdapter):
         #find nearest object to load into the scene
         lowest_distance_to_worldobject = float("inf")
         nearest_worldobject = None
-        for key, worldobject in self.world.get_world_objects().items():
-            # TODO: WTF world API? why do I get a dict instead of the actual objects?
-            # I understand hating OOP is very fashionable and all, but this might be overdoing it slightly :-)
-            non_bullshit_world_object = self.world.objects[key]
+        for key, worldobject in self.world.objects.items():
             # TODO: use a proper 2D geometry library
-            distance = island._2d_distance_squared(self.position, non_bullshit_world_object.position)
+            distance = island._2d_distance_squared(self.position, worldobject.position)
             if distance < lowest_distance_to_worldobject:
                 lowest_distance_to_worldobject = distance
-                nearest_worldobject = non_bullshit_world_object
+                nearest_worldobject = worldobject
 
         if self.currentobject is not nearest_worldobject and nearest_worldobject.structured_object_type is not None:
             self.currentobject = nearest_worldobject

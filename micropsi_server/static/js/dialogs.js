@@ -155,7 +155,8 @@ var api = {
         var msg = '';
         try{
             error = JSON.parse(data.responseText);
-            msg += '<strong>' + error.Error + '</strong>';
+            var errtext = $('<div/>').text(error.Error).html();
+            msg += '<strong>' + errtext + '</strong>';
             if(error.Traceback){
                 msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
             }

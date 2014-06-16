@@ -475,19 +475,20 @@ def get_nodespace_list(nodenet_uid):
     nodenet = nodenets[nodenet_uid]
     data = {}
     for uid, nodespace in nodenet.nodespaces.items():
-        nodedata = {}
+        data[uid] = {
+            'name': nodespace.name,
+            'parent': nodespace.parent_nodespace,
+            'nodes': {},
+            'gatefunctions': {}
+        }
         for nid in nodespace.netentities.get('nodes', []):
-            nodedata[nid] = {
+            data[uid]['nodes'][nid] = {
                 'name': nodenet.nodes[nid].name,
                 'type': nodenet.nodes[nid].type,
                 'gates': nodenet.get_nodetype(nodenet.nodes[nid].type).gatetypes,
                 'slots': nodenet.get_nodetype(nodenet.nodes[nid].type).slottypes
             }
-        data[uid] = {
-            'name': nodespace.name,
-            'parent': nodespace.parent_nodespace,
-            'nodes': nodedata
-        }
+        data['gatefunctions'] = nodespace.data.get('gatefunctions', {})
     return data
 
 

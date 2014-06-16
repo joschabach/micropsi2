@@ -21,7 +21,7 @@
                             <td style="white-space:nowrap;">
                                 <div id="nodespace_control" class="btn-group">
                                     <a href="#" class="btn dropdown-toggle" data-toggle="dropdown" data-nodenet-control>
-                                        <span id="nodespace_name">Root</span>
+                                        <span id="current_nodespace_name">Root</span>
                                         <b class="caret"></b>
                                     </a>
                                     <ul class="dropdown-menu">
@@ -74,7 +74,7 @@
         </div>
         <div class="editor_field " id="nodenet_forms">
 
-            <form class="form-horizontal hide" id="edit_nodenet_form">
+            <form class="form-horizontal default_form hide" id="edit_nodenet_form">
                 <h4>Nodenet</h4>
                 <table>
                     <tr>
@@ -93,27 +93,39 @@
                         <td><label for="nodenet_worldadapter">Worldadapter</label></td>
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>
+                </table>
+                <div class="controls">
+                    <button type="submit" class="btn btn-primary">Apply</button>
+                </div>
+            </form>
+
+            <form class="form-horizontal default_form hide" id="edit_nodespace_form">
+                <h4>Nodespace</h4>
+                <table>
                     <tr>
-                        <td><label>Nodetypes</label></td>
-                        <td>
-                            <table id="nodenet_nodetypes" class="table-striped table-condensed"></table>
-                        </td>
+                        <td><label for="nodespace_uid">UID</label></td>
+                        <td><input type="text" name="nodespace_uid" disabled="disabled" id="nodespace_uid"></td>
                     </tr>
                     <tr>
-                        <td><label>Datasources</label></td>
-                        <td><table id="nodenet_datasources" class="table-striped table-condensed"></table>
-                        </td>
+                        <td><label for="nodespace_name">Name</label></td>
+                        <td><input type="text" name="nodespace_name" id="nodespace_name"></td>
                     </tr>
                     <tr>
-                        <td><label>Datatargets</label></td>
-                        <td><table id="nodenet_datatargets" class="table-striped table-condensed"></table>
-                        </td>
+                        <td><label for="nodespace_gatefunction_nodetype">Gatefunction</label></td>
+                        <td><select name="nodespace_gatefunction_nodetype" id="nodespace_gatefunction_nodetype"></select></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td><select name="nodespace_gatefunction_gate" id="nodespace_gatefunction_gate"></select></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td><textarea name="nodespace_gatefunction" id="nodespace_gatefunction"></textarea></td>
                     </tr>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
-
             </form>
 
             <form class="form-horizontal hide" id="edit_link_form">
@@ -173,15 +185,9 @@
                         <td><input type="text" class="" name="decay" id="gate_decay"></td>
                     </tr>
                     <tr>
-                        <td><label for="gate_gatefunction">Gatefunction</label></td>
+                        <td><label for="">Gatefunction</label></td>
                         <td>
-                            <code>def gatefunction(<span id="params"></span>):
-                            </code><br/>
-                           <textarea name="gatefunction" id="gate_gatefunction"></textarea>
-                           <br/>
-                           <span class="helptext">
-                            (the gatefunction is valid for all gates of type <br/><span class="gate_nodetype"></span>.<span class="gate_gatetype"></span> in this nodespace)
-                            </span>
+                           <textarea name="gatefunction" id="" disabled="disabled"></textarea>
                         </td>
                     </tr>
                 </table>

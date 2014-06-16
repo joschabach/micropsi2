@@ -1037,7 +1037,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
 @rpc("set_gate_function", permission_required="manage nodenets", method="POST")
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
     try:
-        runtime.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
+        return runtime.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
     except KeyError:
         return dict(status='error', msg='Unknown nodenet or nodespace')
 

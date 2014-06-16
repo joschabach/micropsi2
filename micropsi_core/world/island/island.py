@@ -26,7 +26,18 @@ class Island(World):
         'icons': {
             'Lightsource': 'island/lamp.png',
             'Braitenberg': 'island/braitenberg.png',
-            'Tree': 'island/tree_small.png'
+            'PalmTree': 'island/palm-tree.png',
+            'Maple': 'island/maple.png',
+            'Braintree': 'island/braintree.png',
+            'Wirselkraut': 'island/wirselkraut.png',
+            'Thornbush': 'island/unknownbox.png',
+            'Juniper': 'island/juniper-berries.png',
+            'Champignon': 'island/boletus-edulis.png',
+            'FlyAgaric': 'island/fly-agaris.png',
+            'Stone': 'island/rock.png',
+            'Boulder': 'island/boulder.png',
+            'Menhir': 'island/menhir.png',
+            'Waterhole': 'island/well.png'
         }
     }
 

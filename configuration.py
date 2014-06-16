@@ -34,6 +34,8 @@ RESOURCE_PATH = os.path.join(os.path.dirname(__file__), data_path)
 USERMANAGER_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
 SERVER_SETTINGS_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')
 
+LOGGING_LEVEL = config['micropsi2']['logging_level']
+
 DEFAULT_PORT = config['micropsi2']['port']
 
 DEFAULT_HOST = config['micropsi2']['host']

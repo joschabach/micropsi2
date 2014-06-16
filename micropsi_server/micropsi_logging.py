@@ -46,10 +46,6 @@ system_record_storage = []
 
 logging.captureWarnings(True)
 
-logging.getLogger("nodenet").setLevel(logging.DEBUG)
-logging.getLogger("world").setLevel(logging.DEBUG)
-logging.getLogger("system").setLevel(logging.DEBUG)
-
 logging.getLogger("nodenet").addHandler(RecordWebStorageHandler(nodenet_record_storage))
 logging.getLogger("world").addHandler(RecordWebStorageHandler(world_record_storage))
 

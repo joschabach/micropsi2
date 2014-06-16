@@ -12,8 +12,7 @@ from micropsi_core._runtime_api_monitors import *
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import RESOURCE_PATH
-from configuration import SERVER_SETTINGS_PATH
+from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING_LEVEL
 
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet
@@ -32,6 +31,8 @@ from datetime import datetime, timedelta
 import time
 import signal
 
+import logging
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
@@ -46,15 +47,29 @@ runner = {
     'world': {'timestep': 5000, 'runner': None}
 }
 
-signal_handler_registry = []
+logging_levels = {
+    'CRITICAL': logging.CRITICAL,
+    'ERROR': logging.ERROR,
+    'WARNING': logging.WARNING,
+    'INFO': logging.INFO,
+    'DEBUG': logging.DEBUG
+}
 
+set_logging_level = logging_levels.get(LOGGING_LEVEL, logging.INFO)
+logging.basicConfig(level=logging_levels.get('logging_level', logging.INFO))
+
+system_logger = logging.getLogger('system')
+nodenet_logger = logging.getLogger("nodenet")
+world_logger = logging.getLogger("world")
+
+signal_handler_registry = []
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
 
 
 def signal_handler(signal, frame):
-    print ("Shutting down")
+    system_logger.info("Shutting down")
     for handler in signal_handler_registry:
         handler(signal, frame)
     sys.exit(0)
@@ -67,7 +82,7 @@ def nodenetrunner():
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
-                #print("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
+                nodenet_logger.debug("%s stepping nodenet %s" % (str(start), nodenets[uid].name))
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
         time.sleep(float(str(left).split(':')[-1:][0]))  # cut hours, minutes, convert to float.
@@ -83,7 +98,7 @@ def worldrunner():
         start = datetime.now()
         for uid in worlds:
             if worlds[uid].is_active:
-                #print("%s stepping world %s" % (str(start), worlds[uid].name))
+                world_logger.debug("%s stepping world %s" % (str(start), worlds[uid].name))
                 worlds[uid].step()
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:

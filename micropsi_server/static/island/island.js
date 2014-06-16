@@ -302,6 +302,12 @@ function createObjectShape(worldobject, bounds){
             raster.rotate(worldobject.orientation);
         return raster;
 
+        case "Survivor":
+            raster = new Raster('icon_' + worldobject.type);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
+
         case "PalmTree":
             raster = new Raster('icon_' + worldobject.type);
             raster.scale(0.5);

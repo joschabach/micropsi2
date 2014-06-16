@@ -27,6 +27,7 @@ class Island(World):
         'icons': {
             'Lightsource': 'island/lamp.png',
             'Braitenberg': 'island/braitenberg.png',
+            'Survivor': 'island/Micropsi.png',
             'PalmTree': 'island/palm-tree.png',
             'Maple': 'island/maple.png',
             'Braintree': 'island/braintree.png',

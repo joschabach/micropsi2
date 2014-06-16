@@ -28,8 +28,8 @@ OBJECTS = {
         [None,      None,       VER_B,      None,       None]       #                   0/ 2
         ]
     },
-    "MapleTree": {
-        "type": "MapleTree",
+    "Maple": {
+        "type": "Maple",
         "shape_grid": [
         [None,      None,       COM_G,      None,       None],
         [None,      COM_G,      COM_G,      COM_G,      None],
@@ -38,8 +38,8 @@ OBJECTS = {
         [None,      None,       VER_B,      None,       None]
         ]
     },
-    "BrainTree": {
-        "type": "BrainTree",
+    "Braintree": {
+        "type": "Braintree",
         "shape_grid": [
         [None,      None,       None,       None,       None],
         [None,      COM_G,      COM_G,      COM_G,      None],

@@ -31,7 +31,7 @@ class Nodespace(NetEntity):
         nodenet.nodespaces[uid] = self
         if not gatefunctions:
             gatefunctions = dict()
-        self.gatefunctions = gatefunctions
+        self.gatefunctions = {}
         for nodetype in gatefunctions:
             for gatetype in gatefunctions[nodetype]:
                 self.set_gate_function(nodetype, gatetype, gatefunctions[nodetype][gatetype])
@@ -69,7 +69,7 @@ class Nodespace(NetEntity):
             if nodetype not in self.gatefunctions:
                 self.gatefunctions[nodetype] = {}
             try:
-                self.gatefunctions[nodetype] = micropsi_core.tools.create_function(gatefunction,
+                self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction,
                     parameters="gate, params")
             except SyntaxError as err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))

@@ -86,6 +86,7 @@ nodetypes = {};
 native_modules = {};
 available_gatetypes = [];
 nodespaces = {};
+sorted_nodetypes = [];
 
 initializeMenus();
 initializeDialogs();
@@ -177,7 +178,6 @@ function setNodenetValues(data){
     $('#nodenet_world').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
-    setNodeTypes();
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -185,7 +185,6 @@ function setNodenetValues(data){
             dialogs.notification("The worldadapter of this nodenet is not compatible to the world. Please choose a worldadapter from the list", 'Error');
         }
     }
-    showDataSourcesTargetsForWorldadapter(data.worldadapter);
 }
 
 function setCurrentNodenet(uid, nodespace){
@@ -204,12 +203,12 @@ function setCurrentNodenet(uid, nodespace){
             toggleButtons(true);
 
             var nodenetChanged = (uid != currentNodenet);
+            var nodespaceChanged = (nodespace != currentNodeSpace);
 
             nodenet_data = data;
 
             showDefaultForm();
             $('#nodenet_step').val(data.step);
-
             currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
@@ -222,6 +221,12 @@ function setCurrentNodenet(uid, nodespace){
             $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
+                sorted_nodetypes = Object.keys(nodetypes);
+                sorted_nodetypes.sort(function(a, b){
+                    if(a < b) return -1;
+                    if(a > b) return 1;
+                    return 0;
+                });
                 native_modules = data.native_modules;
                 for(var key in native_modules){
                     nodetypes[key] = native_modules[key];
@@ -235,17 +240,17 @@ function setCurrentNodenet(uid, nodespace){
                     setNodenetValues(nodenet_data);
                     showDefaultForm();
                 });
-                setNodespaceData(data);
+                setNodespaceData(data, true);
                 getNodespaceList();
             } else {
-                setNodespaceData(data);
+                setNodespaceData(data, (nodespaceChanged));
             }
             refreshNodenetList();
         },
         function(data) {
             currentNodenet = null;
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-            dialogs.notification(data.Error, "information");
+            dialogs.notification(data.Error, "Error");
         });
 }
 
@@ -257,12 +262,13 @@ function getNodespaceList(){
             html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
         }
         $('#nodespace_control ul').html(html);
-        $("#nodespace_name").text(nodespaces[currentNodeSpace].name);
+        $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);
+        updateNodespaceForm();
     });
 }
 
 // set visible nodes and links
-function setNodespaceData(data){
+function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.step || 0;
@@ -343,9 +349,11 @@ function setNodespaceData(data){
         if(data.monitors){
             monitors = data.monitors;
         }
-        gatefunctions[currentNodeSpace] = {};
         updateMonitorList();
         updateMonitorGraphs();
+        if(changed){
+            updateNodespaceForm();
+        }
     }
     updateViewSize();
 }
@@ -372,10 +380,11 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     params.y1 = parseInt(coordinates.y[0]);
     params.y2 = parseInt(coordinates.y[1]);
     api.call('get_nodespace', params , success=function(data){
-        if(nodespace != currentNodeSpace){
+        var changed = nodespace != currentNodeSpace;
+        if(changed){
             currentNodeSpace = nodespace;
             $.cookie('current_nodespace', nodespace, { expires: 7, path: '/' });
-            $("#nodespace_name").text(nodespaces[nodespace].name);
+            $("#current_nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
@@ -385,7 +394,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;
         }
-        setNodespaceData(data);
+        setNodespaceData(data, changed);
         if(callback){
             callback(data);
         }
@@ -410,16 +419,6 @@ function refreshViewPortData(){
             y:[Math.max(0, top-height), top + 2*height]
         }, currentSimulationStep - 1);
     }
-}
-
-
-function setNodeTypes(){
-    var str = '';
-    for (var key in nodetypes){
-        str += '<tr><td>' + key + '</td></tr>';
-    }
-    $('#nodenet_nodetypes').html(str);
-    $('.delete_nodetype').on('click', delete_nodetype);
 }
 
 // data structures ----------------------------------------------------------------------
@@ -2097,15 +2096,9 @@ function openContextMenu(menu_id, event) {
     if(menu_id == '#create_node_menu'){
         var list = $('[data-nodetype-entries]');
         html = '';
-        nodetype_keys = Object.keys(nodetypes);
-        nodetype_keys.sort(function(a, b){
-            if(a < b) return -1;
-            if(a > b) return 1;
-            return 0;
-        });
-        for(var idx in nodetype_keys){
-            if(!(nodetype_keys[idx] in native_modules))
-                html += '<li><a data-create-node="' + nodetype_keys[idx] + '">Create ' + nodetype_keys[idx] +'</a></li>';
+        for(var idx in sorted_nodetypes){
+            if(!(sorted_nodetypes[idx] in native_modules))
+                html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
             if(Object.keys(native_modules).length > 6 ){
@@ -2669,26 +2662,8 @@ function handleEditGate(event){
     }
     var data = $(event.target).serializeArray();
     var params = {};
-    var gatefunction = null;
     for(var i in data){
-        if(data[i].name == 'gatefunction'){
-            gatefunction = data[i].value;
-        } else {
-            params[data[i].name] = parseFloat(data[i].value);
-        }
-    }
-    if(gatefunction && (!(node.type in gatefunctions[currentNodeSpace]) || gatefunctions[currentNodeSpace][node.type][gate.name] != gatefunction)){
-        if(!(node.type in gatefunctions[currentNodeSpace])){
-            gatefunctions[currentNodeSpace][node.type] = {};
-        }
-        gatefunctions[currentNodeSpace][node.type][gate.name] = gatefunction;
-        api.call('set_gate_function', {
-            nodenet_uid: currentNodenet,
-            nodespace: currentNodeSpace,
-            node_type: node.type,
-            gate_type: gate.name,
-            gate_function: gatefunction
-        }, api.defaultSuccessCallback, api.defaultErrorCallback, method="POST");
+        params[data[i].name] = parseFloat(data[i].value);
     }
     api.call('set_gate_parameters', {
         nodenet_uid: currentNodenet,
@@ -2738,7 +2713,9 @@ function updateNodeParameters(nodeUid, parameters){
 
 // handler for renaming the node
 function renameNode(nodeUid, name) {
-    nodes[nodeUid].name = name;
+    if(nodes[nodeUid]) {
+        nodes[nodeUid].name = name;
+    }
     api.call("set_node_name", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
@@ -2819,6 +2796,31 @@ function handleEditNodenet(event){
     );
 }
 
+function handleEditNodespace(event){
+    event.preventDefault();
+    var name = $('#nodespace_name').val();
+    if(name != nodespaces[currentNodeSpace].name){
+        renameNode(currentNodeSpace, name);
+    }
+    var nodetype = $('#nodespace_gatefunction_nodetype').val();
+    var gatename = $('#nodespace_gatefunction_gate').val();
+    var gatefunc = $('#nodespace_gatefunction').val();
+    if(gatefunc && (!(nodetype in nodespaces.gatefunctions) || nodespaces.gatefunctions[nodetype][gatename] != gatefunc)){
+        if(!(nodetype in nodespaces.gatefunctions)){
+            nodespaces.gatefunctions[nodetype] = {};
+        }
+        nodespaces.gatefunctions[nodetype][gatename] = gatefunc;
+        api.call('set_gate_function', {
+            nodenet_uid: currentNodenet,
+            nodespace: currentNodeSpace,
+            node_type: nodetype,
+            gate_type: gatename,
+            gate_function: gatefunc
+        }, api.defaultSuccessCallback, api.defaultErrorCallback, method="POST");
+    }
+
+}
+
 function addSlotMonitor(node, index){
     api.call('add_slot_monitor', {
         nodenet_uid: currentNodenet,
@@ -2849,20 +2851,6 @@ function removeMonitor(node, target, type){
     }, function(data){
         delete monitors[monitor];
         updateMonitorList();
-    });
-}
-
-function delete_nodetype(event){
-    event.preventDefault();
-    var name = $(event.target).attr('data');
-    for(var uid in nodes){
-        if(nodes[uid].type == name){
-            return dialogs.notification("There are still nodes registered to this nodetype. It can not be deleted");
-        }
-    }
-    api.call('delete_node_type', {'nodenet_uid': currentNodenet, 'node_type': name}, function(data){
-        delete nodetypes[name];
-        setNodeTypes();
     });
 }
 
@@ -2942,40 +2930,39 @@ function initializeSidebarForms(){
     $('#edit_node_form').submit(handleEditNode);
     $('#edit_gate_form').submit(handleEditGate);
     $('#edit_nodenet_form').submit(handleEditNodenet);
+    $('#edit_nodespace_form').submit(handleEditNodespace);
     $('#native_module_form').submit(createNativeModuleHandler);
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
     var world_selector = $("#nodenet_world");
-    var worldadapter_selector = $('#nodenet_worldadapter');
     world_selector.on('change', function(){
         get_available_worldadapters(world_selector.val(), function(){
             $('#nodenet_worldadapter').val(nodenet_data.worldadapter);
-            showDataSourcesTargetsForWorldadapter(worldadapter_selector.val());
         });
     });
-    worldadapter_selector.on('change', function(){
-        showDataSourcesTargetsForWorldadapter(worldadapter_selector.val());
+    var nodespace_gatefunction_gate = $('#nodespace_gatefunction_gate');
+    var nodespace_gatefunction_nodetype = $('#nodespace_gatefunction_nodetype');
+    var nodespace_gatefunction = $('#nodespace_gatefunction');
+    nodespace_gatefunction_gate.on('change', function(event){
+        var value = '';
+        var node = nodespace_gatefunction_nodetype.val();
+        if(node in nodespaces.gatefunctions){
+            var gate = nodespace_gatefunction_gate.val();
+            if(nodespaces.gatefunctions[node][gate]){
+                value = nodespaces.gatefunctions[node][gate];
+            }
+        }
+        nodespace_gatefunction.val(value);
     });
-}
-
-function showDataSourcesTargetsForWorldadapter(worldadapter){
-    var i;
-    var datatargets, datasources = '';
-    if(worldadapter && $('#nodenet_world').val()){
-        if (worldadapters[worldadapter].datatargets) {
-            for (i in worldadapters[worldadapter].datatargets){
-                datatargets += '<tr><td>'+worldadapters[worldadapter].datatargets[i]+'</td></tr>';
-            }
+    nodespace_gatefunction_nodetype.on('change', function(event){
+        var gatehtml = '';
+        for(var idx in nodetypes[nodespace_gatefunction_nodetype.val()].gatetypes){
+            gatehtml += '<option>' + nodetypes[nodespace_gatefunction_nodetype.val()].gatetypes[idx] + '</option>';
         }
-        if (worldadapters[worldadapter].datasources){
-            for (i in worldadapters[worldadapter].datasources){
-                datasources += '<tr><td>'+worldadapters[worldadapter].datasources[i]+'</td></tr>';
-            }
-        }
-    }
-    $('#nodenet_datatargets').html(datatargets || '<tr><td>No datatargets defined</td></tr>');
-    $('#nodenet_datasources').html(datasources || '<tr><td>No datasources defined</td></tr>');
+        $('#nodespace_gatefunction_gate').html(gatehtml);
+        nodespace_gatefunction_gate.trigger('change');
+    })
 }
 
 function showLinkForm(linkUid){
@@ -3112,7 +3099,7 @@ function showNativeModuleForm(nodeUid){
 
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
-    $('#edit_nodenet_form').show();
+    $('#nodenet_forms .default_form').show();
 }
 
 function showGateForm(node, gate){
@@ -3125,8 +3112,8 @@ function showGateForm(node, gate){
         if(el.name in gate.parameters){
             el.value = gate.parameters[el.name];
         } else if(el.name == 'gatefunction'){
-            if(gatefunctions[currentNodeSpace] && node.type in gatefunctions[currentNodeSpace]){
-                el.value = gatefunctions[currentNodeSpace][node.type][gate.name] || '';
+            if(nodespaces.gatefunctions && nodespaces.gatefunctions[node.type]){
+                el.value = nodespaces.gatefunctions[node.type][gate.name] || '';
             }
         } else if(el.name == 'activation'){
             el.value = gate.sheaves[currentSheaf].activation || '0';
@@ -3150,6 +3137,25 @@ function updateMonitorList(){
     html += '</table>';
     el.html(html);
     $('.monitor_checkbox', el).on('change', updateMonitorSelection);
+}
+
+function updateNodespaceForm(){
+    if(Object.keys(nodespaces).length){
+        $('#nodespace_uid').val(currentNodeSpace);
+        $('#nodespace_name').val(nodespaces[currentNodeSpace].name);
+        if(currentNodeSpace == 'Root'){
+            $('#nodespace_name').attr('disabled', 'disabled');
+        } else {
+            $('#nodespace_name').removeAttr('disabled');
+        }
+        var nodetypehtml = '';
+        for(var idx in sorted_nodetypes){
+            if(nodetypes[sorted_nodetypes[idx]].gatetypes && nodetypes[sorted_nodetypes[idx]].gatetypes.length > 0){
+                nodetypehtml += '<option>' + sorted_nodetypes[idx] + '</option>';
+            }
+        }
+        $('#nodespace_gatefunction_nodetype').html(nodetypehtml).trigger('change');
+    }
 }
 
 

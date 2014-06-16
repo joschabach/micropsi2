@@ -19,5 +19,10 @@ port = 6543
 # 0.0.0.0 serves for everybody
 host = localhost
 
-# the logging level. one of CRITICAL, ERROR, WARNING, INFO, DEBUG;
-logging_level = WARNING
+[logging]
+
+# the logging level for system, world and nodenet.
+# must be one of CRITICAL, ERROR, WARNING, INFO, DEBUG;
+level_system = WARNING
+level_world = WARNING
+level_nodenet = WARNING

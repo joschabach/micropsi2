@@ -30,11 +30,10 @@ else:
     data_path = config['micropsi2']['data_directory']
 
 RESOURCE_PATH = os.path.join(os.path.dirname(__file__), data_path)
-
 USERMANAGER_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
 SERVER_SETTINGS_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')
 
-LOGGING_LEVEL = config['micropsi2']['logging_level']
+LOGGING = config['logging']
 
 DEFAULT_PORT = config['micropsi2']['port']
 

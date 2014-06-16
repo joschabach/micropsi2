@@ -12,7 +12,7 @@ from micropsi_core._runtime_api_monitors import *
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING_LEVEL
+from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING
 
 from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet
@@ -55,12 +55,16 @@ logging_levels = {
     'DEBUG': logging.DEBUG
 }
 
-set_logging_level = logging_levels.get(LOGGING_LEVEL, logging.INFO)
 logging.basicConfig(level=logging_levels.get('logging_level', logging.INFO))
 
 system_logger = logging.getLogger("system")
-nodenet_logger = logging.getLogger("nodenet")
 world_logger = logging.getLogger("world")
+nodenet_logger = logging.getLogger("nodenet")
+
+system_logger.setLevel(logging_levels.get(LOGGING['level_system'], logging.WARNING))
+world_logger.setLevel(logging_levels.get(LOGGING['level_world'], logging.WARNING))
+nodenet_logger.setLevel(logging_levels.get(LOGGING['level_nodenet'], logging.WARNING))
+
 
 signal_handler_registry = []
 

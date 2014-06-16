@@ -80,7 +80,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     kwargs = dict((n.strip(), json.loads(v)) for n, v in (item.split('=') for item in kwargs))
                 except ValueError as err:
                     response.status = 400
-                    return {"Error": "Invalid arguments for remote procedure call: " + err.message}
+                    return {"Error": "Invalid arguments for remote procedure call: " + str(err)}
             else:
                 try:
                     kwargs = request.json

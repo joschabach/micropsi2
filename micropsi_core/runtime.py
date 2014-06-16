@@ -864,7 +864,7 @@ def init_worlds(world_data):
             except TypeError:
                 worlds[uid] = world.World(**world_data[uid])
             except AttributeError as err:
-                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, err.message))
+                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
         else:
             worlds[uid] = world.World(**world_data[uid])
     return worlds

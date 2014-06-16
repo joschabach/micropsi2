@@ -16,6 +16,7 @@ from micropsi_core.world import worldadapter
 from micropsi_core.world import worldobject
 from micropsi_core import tools
 from micropsi_core.tools import generate_uid
+import logging
 
 
 WORLD_VERSION = 1.0
@@ -75,6 +76,8 @@ class World(object):
             owner (optional): the user that created this environment
             uid (optional): unique handle of the world; if none is given, it will be generated
         """
+
+        self.logger = logging.getLogger('world_logger');
 
         # persistent data
         self.data = {
@@ -142,8 +145,12 @@ class World(object):
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, worldobject in self.data['objects'].items():
-            self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
+        for uid, worldobject in self.data['objects'].copy().items():
+            if worldobject['type'] in self.supported_worldobjects:
+                self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
+            else:
+                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % worldobject['type'])
+                del self.data['objects'][uid]
         for uid, agent in self.data.get('agents', {}).items():
             try:
                 self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)

@@ -589,7 +589,7 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function(string,
                 parameters="nodenet, node, " + args)
         except SyntaxError as err:
-            warnings.warn("Syntax error while compiling node function: %s", err.message)
+            warnings.warn("Syntax error while compiling node function: %s", str(err))
             raise err
             # self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
             #     parameters="nodenet, node, " + args)

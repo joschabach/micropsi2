@@ -72,7 +72,7 @@ class Nodespace(NetEntity):
                 self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction,
                     parameters="gate, params")
             except SyntaxError as err:
-                warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, err.message))
+                warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, str(err)))
                 self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
                     parameters="gate, params")
         else:

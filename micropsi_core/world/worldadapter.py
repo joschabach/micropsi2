@@ -85,6 +85,10 @@ class WorldAdapter(WorldObject):
         """called by the world to update datasources"""
         pass
 
+    def is_alive(self):
+        """called by the world to check whether the agent has died and should be removed"""
+        pass
+
 
 class Default(WorldAdapter):
     datasources = {'default': 1}

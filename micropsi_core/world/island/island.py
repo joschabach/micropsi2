@@ -1,5 +1,6 @@
 import math
 import os
+import logging
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.worldobject import WorldObject
@@ -191,6 +192,7 @@ class Thornbush(WorldObject):
         self.structured_object_type = "Thornbush"
 
     def action_eat(self):
+        logging.getLogger("world").debug("... and the whirlwind is in the thorn tree...")
         return True, 0, 0, -0.1
 
     def action_drink(self):

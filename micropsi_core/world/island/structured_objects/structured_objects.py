@@ -79,7 +79,7 @@ class StructuredObjects(WorldAdapter):
         if self.is_dead:
             return
 
-        ourname = self.world.agents[self.uid].name
+        ourname = self.name
 
         # we don't move, for now
         self.position = self.world.get_movement_result(self.position, (0, 0))
@@ -164,3 +164,8 @@ class StructuredObjects(WorldAdapter):
         self.datasources["body-energy"] = self.energy
         self.datasources["body-water"] = self.water
         self.datasources["body-integrity"] = self.integrity
+
+    def is_alive(self):
+        """called by the world to check whether the agent has died and should be removed"""
+        return not self.is_dead
+

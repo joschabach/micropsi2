@@ -141,10 +141,11 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if ret <= 0: ret = -1
 
     cat = sub
+    if cat == 0: cat += node.get_slot("cat").get_activation(sheaf)
     if cat < 0: cat = 0
 
-    exp += node.get_slot("sur").get_activation(sheaf) * \
-           node.get_slot("cat").get_activation(sheaf)
+    exp += node.get_slot("sur").get_activation(sheaf)
+    exp += node.get_slot("exp").get_activation(sheaf) * 0.1                 # magic priming number
     if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 
@@ -175,7 +176,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
     node.get_gate("exp").gate_function(exp, sheaf)
-    if cat > 0:     # cats will be checked in their own sheaf
+    if cat > 0 and sub > 0:     # cats will be checked in their own sheaf
         node.get_gate("cat").open_sheaf(cat, sheaf)
         node.get_gate("cat").gate_function(0, sheaf)
     else:

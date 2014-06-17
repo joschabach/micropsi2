@@ -885,6 +885,7 @@ class NetAPI(object):
         Makes sure an actor for all datatargets whose names start with the given prefix, or all datatargets,
         exists in the given nodespace.
         """
+        all_actors = []
         for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
             if datatarget_prefix is None or datatarget.startwith(datatarget_prefix):
                 actor = None
@@ -894,12 +895,15 @@ class NetAPI(object):
                 if actor is None:
                     actor = self.create_node("Actor", nodespace, datatarget)
                     actor.parameters.update({'datatarget': datatarget})
+                all_actors.append(actor)
+        return all_actors
 
     def import_sensors(self, nodespace, datasource_prefix=None):
         """
         Makes sure a sensor for all datasources whose names start with the given prefix, or all datasources,
         exists in the given nodespace.
         """
+        all_sensors = []
         for datasource in self.world.get_available_datasources(self.__nodenet.uid):
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None
@@ -909,6 +913,8 @@ class NetAPI(object):
                 if sensor is None:
                     sensor = self.create_node("Sensor", nodespace, datasource)
                     sensor.parameters.update({'datasource': datasource})
+                all_sensors.append(sensor)
+        return all_sensors
 
     def is_locked(self, lock):
         """Returns true if the given lock is locked in the current net step

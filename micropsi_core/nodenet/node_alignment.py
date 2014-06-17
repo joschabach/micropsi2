@@ -69,6 +69,7 @@ class DisplayNode(object):
         self.uid = uid
         self.directions = directions or {}
         self.parent = parent
+        self.stackable = False
 
     def __repr__(self):
         params = "%s" % str(self.uid)
@@ -113,9 +114,10 @@ def unify_links(nodenet, node_id_list):
 
     for node_id in node_id_list:
         node = nodenet.nodes[node_id]
+        vertical_only = True
         for gate_type in node.gates:
             direction = {"sub": "s", "ret": "w", "cat": "ne", "sym":"nw",
-                         "sur": "n", "por": "e", "exp": "sw", "ref":"se", "gen": "b"}.get(gate_type, "o")
+                         "sur": "n", "por": "e", "exp": "sw", "ref":"se", "gen": "n"}.get(gate_type, "o")
             if direction:
                 # "o" is for unknown gate types
                 link_ids = node.gates[gate_type].outgoing
@@ -130,6 +132,9 @@ def unify_links(nodenet, node_id_list):
                         if not inverse in node_index[target_node_id].directions:
                             node_index[target_node_id].directions[inverse]=OrderedSet()
                         node_index[target_node_id].directions[inverse].add(node_index[node_id])
+            if direction != 'n' and direction != 's':
+                vertical_only = False
+        node_index[node_id].stackable = vertical_only
 
     # finally, let us sort all node_id_list in the direction groups
     for node_id in node_index:
@@ -260,6 +265,13 @@ def _fix_link_inheritance(group, excluded_nodes):
 
 class UnorderedGroup(list):
 
+    @property
+    def stackable(self):
+        for i in self:
+            if not i.stackable:
+                return False
+        return True
+
     def __init__(self, elements = None, parent = None):
         self.directions = {}
         self.parent = parent
@@ -336,7 +348,8 @@ class HorizontalGroup(UnorderedGroup):
         x, y = start_position
         for i in self:
             i.arrange(nodenet, (x, y))
-            x += i.width()*GRID
+            xshift = 1 if self.stackable else i.width()
+            x += xshift*GRID
 
 class VerticalGroup(UnorderedGroup):
 

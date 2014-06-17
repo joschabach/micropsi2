@@ -2523,78 +2523,90 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
             case "por/ret":
                 // the por link
                 if (targetSlots > 2) {
-                    newlinks.push(new Link(makeUuid(), sourceUid, "por", targetUid, "por", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceUid, "por", targetUid, "por", 1, 1));
                 } else {
-                    newlinks.push(new Link(makeUuid(), sourceUid, "por", targetUid, "gen", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceUid, "por", targetUid, "gen", 1, 1));
                 }
                 // the ret link
                 if (targetGates > 2) {
                     if(sourceSlots > 2) {
-                        newlinks.push(new Link(makeUuid(), targetUid, "ret", sourceUid, "ret", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetUid, "ret", sourceUid, "ret", 1, 1));
                     } else {
-                        newlinks.push(new Link(makeUuid(), targetUid, "ret", sourceUid, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetUid, "ret", sourceUid, "gen", 1, 1));
                     }
                 }
                 break;
             case "sub/sur":
                 // the sub link
                 if (targetSlots > 4) {
-                    newlinks.push(new Link(makeUuid(), sourceUid, "sub", targetUid, "sub", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceUid, "sub", targetUid, "sub", 1, 1));
                 } else {
-                    newlinks.push(new Link(makeUuid(), sourceUid, "sub", targetUid, "gen", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceUid, "sub", targetUid, "gen", 1, 1));
                 }
                 // the sur link
                 if (targetGates > 4) {
                     if(sourceSlots > 4) {
-                        newlinks.push(new Link(makeUuid(), targetUid, "sur", sourceUid, "sur", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetUid, "sur", sourceUid, "sur", 1, 1));
                     } else {
-                        newlinks.push(new Link(makeUuid(), targetUid, "sur", sourceUid, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetUid, "sur", sourceUid, "gen", 1, 1));
                     }
                 }
                 break;
             case "cat/exp":
                 // the cat link
                 if (targetSlots > 6) {
-                    newlinks.push(new Link(makeUuid(), sourceUid, "cat", targetUid, "cat", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceUid, "cat", targetUid, "cat", 1, 1));
                 } else {
-                    newlinks.push(new Link(makeUuid(), sourceUid, "cat", targetUid, "gen", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceUid, "cat", targetUid, "gen", 1, 1));
                 }
                 // the exp link
                 if (targetGates > 6) {
                     if(sourceSlots > 6) {
-                        newlinks.push(new Link(makeUuid(), targetUid, "cat", sourceUid, "cat", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetUid, "cat", sourceUid, "cat", 1, 1));
                     } else {
-                        newlinks.push(new Link(makeUuid(), targetUid, "exp", sourceUid, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetUid, "exp", sourceUid, "gen", 1, 1));
                     }
                 }
                 break;
             default:
-                newlinks.push(new Link(makeUuid(), sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
+                newlinks.push(createLinkIfNotExists(sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
         }
 
         for (i=0;i<newlinks.length;i++) {
 
             var link = newlinks[i];
+            if(link){
+                addLink(link);
+                if(nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                    nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                    nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                }
 
-            addLink(link);
-            if(nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                api.call("add_link", {
+                    nodenet_uid: currentNodenet,
+                    source_node_uid: link.sourceNodeUid,
+                    gate_type: link.gateName,
+                    target_node_uid: link.targetNodeUid,
+                    slot_type: link.slotName,
+                    weight: link.weight,
+                    uid: link.uid
+                });
             }
-
-            api.call("add_link", {
-                nodenet_uid: currentNodenet,
-                source_node_uid: link.sourceNodeUid,
-                gate_type: link.gateName,
-                target_node_uid: link.targetNodeUid,
-                slot_type: link.slotName,
-                weight: link.weight,
-                uid: link.uid
-            });
         }
 
         cancelLinkCreationHandler();
     }
+}
+
+function createLinkIfNotExists(sourceUid, sourceGate, targetUid, targetSlot, weight, certainty){
+    for(var uid in nodes[sourceUid].gates[sourceGate].outgoing){
+        var link = nodes[sourceUid].gates[sourceGate].outgoing[uid];
+        if(link.targetNodeUid == targetUid && link.slotName == targetSlot){
+            return false;
+        }
+    }
+    var newlink = new Link(makeUuid(), sourceUid, sourceGate, targetUid, targetSlot, weight || 1, certainty || 1);
+    return newlink;
 }
 
 // cancel link creation

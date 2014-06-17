@@ -4,11 +4,11 @@
         </div>
 
         <div class="editor_field " id="world_forms">
-            <form class="form-horizontal">
+            <form class="form-horizontal form-default">
                 <h4>World Status</h4>
                 <textarea disabled="disabled" id="world_status" rows="4" cols="60" class="input-xlarge"></textarea>
             </form>
-            <form class="form-horizontal scene_viewer_section">
+            <form class="form-horizontal form-default scene_viewer_section">
                 <h4>Scene Viewer</h4>
                 <p>
                     <label for="scene_viewer_agent">Agent</label>
@@ -16,7 +16,7 @@
                 <div id="scene_viewer">
                 </div>
             </form>
-            <form class="form-horizontal" id="world_objects">
+            <form class="form-horizontal form-default" id="world_objects">
                 <h4>Agents</h4>
                 <div id="world_agents_list">
                     <table class="table-striped table-condensed"></table>

@@ -465,8 +465,11 @@ function onMouseDown(event){
 function onMouseMove(event) {
     var p = event.point;
 
-    $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
-
+    if(event.event.target == canvas){
+        $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
+    } else {
+        $('#world_status').val('Pos: ');
+    }
     // hovering
     if (hoverUid) { // unhover
         if(hoverUid in objects){
@@ -679,8 +682,7 @@ function stopWorldrunner(event){
 
 function showDefaultForm(){
     $('#world_forms .form-horizontal').hide();
-    $('#world_status').show();
-    $('#world_objects').show();
+    $('#world_forms .form-default').show();
 }
 
 function showObjectForm(worldobject){

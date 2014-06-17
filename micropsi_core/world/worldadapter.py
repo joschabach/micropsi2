@@ -87,7 +87,7 @@ class WorldAdapter(WorldObject):
 
     def is_alive(self):
         """called by the world to check whether the agent has died and should be removed"""
-        pass
+        return True
 
 
 class Default(WorldAdapter):

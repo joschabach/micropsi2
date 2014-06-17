@@ -733,7 +733,8 @@ class NetAPI(object):
 
     def get_nodes_field(self, node, gate, no_links_to=None, nodespace=None):
         """
-        Returns all nodes linked to a given node on the gate
+        Returns all nodes linked to a given node on the gate, excluding the ones that have
+        links of any of the given types
         """
         nodes = []
         for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
@@ -744,7 +745,24 @@ class NetAPI(object):
                     linked_gates.append(candidate_gate_name)
             if ((nodespace is None or nodespace is link.target_node.parent_nodespace) and
                 (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
-                nodes.append(link.target_node)
+                nodes.append(candidate)
+        return nodes
+
+    def get_nodes_feed(self, node, slot, no_links_to=None, nodespace=None):
+        """
+        Returns all nodes linking to a given node on the given slot, excluding the ones that
+        have links of any of the given types
+        """
+        nodes = []
+        for link_uid, link in self.__nodenet.nodes[node.uid].get_slot(slot).incoming.items():
+            candidate = link.source_node
+            linked_gates = []
+            for candidate_gate_name, candidate_gate in candidate.gates.items():
+                if len(candidate_gate.outgoing) > 0:
+                    linked_gates.append(candidate_gate_name)
+            if ((nodespace is None or nodespace is link.source_node.parent_nodespace) and
+                (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                nodes.append(candidate)
         return nodes
 
     def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None, sheaf='default'):

@@ -92,7 +92,7 @@ def create_function(source_string, parameters = "", additional_symbols = None):
 
     # Include the sourcecode as the code of a function __my_function__:
     s = "def __my_function__(%s):\n" % parameters
-    s += "\timport math\n\t" + "\n\t".join(source_string.split('\n')) + "\n"
+    s += "\t" + "\n\t".join(source_string.split('\n')) + "\n"
 
     # Byte-compilation (optional)
     bytecode = compile(s, "<string>", 'exec')

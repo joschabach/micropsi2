@@ -350,7 +350,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
             self.type)
         if gatefunction:
-            activation = gatefunction(self, self.parameters)
+            activation = gatefunction(input_activation)
         else:
             activation = input_activation
 

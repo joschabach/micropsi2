@@ -69,12 +69,11 @@ class Nodespace(NetEntity):
             if nodetype not in self.gatefunctions:
                 self.gatefunctions[nodetype] = {}
             try:
-                self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction,
-                    parameters="gate, params")
+                import math
+                self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction, parameters="x", additional_symbols={'math': math})
             except SyntaxError as err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, str(err)))
-                self.nodefunction = micropsi_core.tools.create_function("""gate.activation = 'Syntax error'""",
-                    parameters="gate, params")
+                raise err
         else:
             if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
                 del self.gatefunctions[nodetype][gatetype]

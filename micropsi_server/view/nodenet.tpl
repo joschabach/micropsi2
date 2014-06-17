@@ -120,7 +120,16 @@
                     </tr>
                     <tr>
                         <td>&nbsp;</td>
-                        <td><textarea name="nodespace_gatefunction" id="nodespace_gatefunction"></textarea></td>
+                        <td><div class="pythoncode">
+                                <div class="textareafake">
+                                    <span class="loc">def gatefunction(x):</span>
+                                    <span class="loc indent">import math</span>
+                                    <div class="textarea indent1">
+                                        <textarea class="loc" name="nodespace_gatefunction" id="nodespace_gatefunction"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 </table>
                 <div class="controls">

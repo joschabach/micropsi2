@@ -276,7 +276,7 @@ def test_node_netapi_get_nodes_feed(fixed_nodenet):
 
 
 def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
-    # test get_nodes_feed
+    # test get_nodes_feed with nodespace limitation
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
     node1 = netapi.create_node("Register", "Root", "TestName1")
@@ -292,3 +292,55 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
     assert len(nodes) == 2
     assert node2 in nodes
     assert node3 in nodes
+
+
+def test_node_netapi_get_nodes_active(fixed_nodenet):
+    # test get_nodes_active
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    node3 = netapi.create_node("Register", "Root", "TestName3")
+    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    netapi.link(node2, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node4, "gen", node1, "gen")
+    netapi.link(source, "gen", node2, "gen", 0.5)
+    netapi.link(source, "gen", node4, "gen", 0.5)
+
+    net.step()
+    net.step()
+
+    nodes = netapi.get_nodes_active("Root", "Register", 0.7, "gen")
+    assert len(nodes) == 2
+    assert node1 in nodes
+    assert source in nodes
+
+    nodes = netapi.get_nodes_active("Root", "Register")
+    assert len(nodes) == 2
+    assert node1 in nodes
+    assert source in nodes
+
+
+def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
+    # test get_nodes_active with nodespace filtering
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    node3 = netapi.create_node("Register", "Root", "TestName3")
+    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    netapi.link(node2, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node4, "gen", node1, "gen")
+    netapi.link(source, "gen", node2, "gen", 0.5)
+    netapi.link(source, "gen", node4, "gen", 0.5)
+
+    net.step()
+    net.step()
+
+    nodes = netapi.get_nodes_active(nodespace.uid, "Register", 0.4)
+    assert len(nodes) == 1
+    assert node4 in nodes

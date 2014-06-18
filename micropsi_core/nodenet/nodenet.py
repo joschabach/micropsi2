@@ -916,6 +916,13 @@ class NetAPI(object):
                 all_sensors.append(sensor)
         return all_sensors
 
+    def set_gatefunction(self, nodespace, nodetype, gatetype, gatefunction):
+        """Sets the gatefunction for gates of type gatetype of nodes of type nodetype, in the given
+            nodespace.
+            The gatefunction needs to be given as a string.
+        """
+        self.__nodenet.nodespaces[nodespace].set_gate_function(nodetype, gatetype, gatefunction)
+
     def is_locked(self, lock):
         """Returns true if the given lock is locked in the current net step
         """

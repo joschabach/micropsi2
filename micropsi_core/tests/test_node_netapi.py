@@ -132,7 +132,7 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
 
 
 def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
-    # test register node creation
+    # test register node in nodespace creation
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
     node = netapi.create_node("Register", nodespace.uid, "TestName")
@@ -151,3 +151,51 @@ def test_node_netapi_get_node(fixed_nodenet):
     assert queried_node.name == node.name
     assert queried_node.data == node.data
     assert queried_node.type == node.type
+
+
+def test_node_netapi_get_nodes(fixed_nodenet):
+    # test get_nodes plain
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+
+    nodes = netapi.get_nodes("Root")
+    assert node1 in nodes
+    assert node2 in nodes
+
+
+def test_node_netapi_get_nodes_by_name(fixed_nodenet):
+    # test get_nodes by name
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+
+    nodes = netapi.get_nodes("Root", "TestName")
+    assert len(nodes) == 2
+    assert node1 in nodes
+    assert node2 in nodes
+
+
+def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
+    # test get_nodes by name and nodespace
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Register", nodespace.uid, "TestName1")
+    node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
+
+    nodes = netapi.get_nodes(nodespace.uid)
+    assert len(nodes) == 2
+    assert node1 in nodes
+    assert node2 in nodes
+
+
+def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
+    # test get_nodes by name and nodespace
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
+
+    nodes = netapi.get_nodes(nodespace.uid, "TestName")
+    assert len(nodes) == 1
+    assert node2 in nodes

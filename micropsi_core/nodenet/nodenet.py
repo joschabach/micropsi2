@@ -743,7 +743,7 @@ class NetAPI(object):
             for candidate_gate_name, candidate_gate in candidate.gates.items():
                 if len(candidate_gate.outgoing) > 0:
                     linked_gates.append(candidate_gate_name)
-            if ((nodespace is None or nodespace is link.target_node.parent_nodespace) and
+            if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
                 (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
                 nodes.append(candidate)
         return nodes
@@ -760,7 +760,7 @@ class NetAPI(object):
             for candidate_gate_name, candidate_gate in candidate.gates.items():
                 if len(candidate_gate.outgoing) > 0:
                     linked_gates.append(candidate_gate_name)
-            if ((nodespace is None or nodespace is link.source_node.parent_nodespace) and
+            if ((nodespace is None or nodespace == link.source_node.parent_nodespace) and
                 (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
                 nodes.append(candidate)
         return nodes
@@ -792,6 +792,8 @@ class NetAPI(object):
         Creates a new node or node space of the given type, with the given name and in the given nodespace.
         Returns the newly created entity.
         """
+        if name is None:
+            name = ""   #TODO: empty names crash the client right now, but really shouldn't
         pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)

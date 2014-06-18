@@ -254,3 +254,41 @@ def test_node_netapi_get_nodes_field_with_limitations_and_nodespace(fixed_nodene
     nodes = netapi.get_nodes_field(node1, "sub", ["por"], "Root")
     assert len(nodes) == 1
     assert node3 in nodes
+
+
+def test_node_netapi_get_nodes_feed(fixed_nodenet):
+    # test get_nodes_feed
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    node3 = netapi.create_node("Register", "Root", "TestName3")
+    node4 = netapi.create_node("Register", "Root", "TestName4")
+    netapi.link(node2, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node4, "gen", node1, "gen")
+
+    nodes = netapi.get_nodes_feed(node1, "gen")
+    assert len(nodes) == 3
+    assert node2 in nodes
+    assert node3 in nodes
+    assert node4 in nodes
+
+
+def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
+    # test get_nodes_feed
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    node3 = netapi.create_node("Register", "Root", "TestName3")
+    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    netapi.link(node2, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node4, "gen", node1, "gen")
+
+    nodes = netapi.get_nodes_feed(node1, "gen", None, "Root")
+    assert len(nodes) == 2
+    assert node2 in nodes
+    assert node3 in nodes

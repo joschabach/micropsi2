@@ -1970,6 +1970,17 @@ function initializeMenus() {
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
     $("#nodespace_up").on('click', handleNodespaceUp);
+    gate_form_trigger = $('.gate_additional_trigger');
+    gate_params = $('.gate_additional');
+    gate_form_trigger.on('click', function(){
+        if(gate_params.hasClass('hide')){
+            gate_form_trigger.text("Hide additional parameters");
+            gate_params.removeClass('hide');
+        } else {
+            gate_form_trigger.text("Show additional parameters");
+            gate_params.addClass('hide');
+        }
+    });
 }
 
 function initializeControls(){

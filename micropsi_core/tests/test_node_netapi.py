@@ -199,3 +199,22 @@ def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
     nodes = netapi.get_nodes(nodespace.uid, "TestName")
     assert len(nodes) == 1
     assert node2 in nodes
+
+
+def test_node_netapi_get_nodes_field(fixed_nodenet):
+    # test get_nodes_field
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Concept", "Root", "TestName1")
+    node2 = netapi.create_node("Concept", "Root", "TestName2")
+    node3 = netapi.create_node("Concept", "Root", "TestName3")
+    node4 = netapi.create_node("Concept", "Root", "TestName3")
+    netapi.link_with_reciprocal(node1, node2, "subsur")
+    netapi.link_with_reciprocal(node1, node3, "subsur")
+    netapi.link_with_reciprocal(node1, node4, "subsur")
+    netapi.link_with_reciprocal(node2, node3, "porret")
+
+    nodes = netapi.get_nodes_field(node1, "sub")
+    assert len(nodes) == 3
+    assert node2 in nodes
+    assert node3 in nodes
+    assert node4 in nodes

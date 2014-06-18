@@ -207,7 +207,7 @@ def test_node_netapi_get_nodes_field(fixed_nodenet):
     node1 = netapi.create_node("Concept", "Root", "TestName1")
     node2 = netapi.create_node("Concept", "Root", "TestName2")
     node3 = netapi.create_node("Concept", "Root", "TestName3")
-    node4 = netapi.create_node("Concept", "Root", "TestName3")
+    node4 = netapi.create_node("Concept", "Root", "TestName4")
     netapi.link_with_reciprocal(node1, node2, "subsur")
     netapi.link_with_reciprocal(node1, node3, "subsur")
     netapi.link_with_reciprocal(node1, node4, "subsur")
@@ -218,3 +218,39 @@ def test_node_netapi_get_nodes_field(fixed_nodenet):
     assert node2 in nodes
     assert node3 in nodes
     assert node4 in nodes
+
+
+def test_node_netapi_get_nodes_field_with_limitations(fixed_nodenet):
+    # test get_nodes_field with limitations: no por links
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Concept", "Root", "TestName1")
+    node2 = netapi.create_node("Concept", "Root", "TestName2")
+    node3 = netapi.create_node("Concept", "Root", "TestName3")
+    node4 = netapi.create_node("Concept", "Root", "TestName4")
+    netapi.link_with_reciprocal(node1, node2, "subsur")
+    netapi.link_with_reciprocal(node1, node3, "subsur")
+    netapi.link_with_reciprocal(node1, node4, "subsur")
+    netapi.link_with_reciprocal(node2, node3, "porret")
+
+    nodes = netapi.get_nodes_field(node1, "sub", ["por"])
+    assert len(nodes) == 2
+    assert node3 in nodes
+    assert node4 in nodes
+
+
+def test_node_netapi_get_nodes_field_with_limitations_and_nodespace(fixed_nodenet):
+    # test get_nodes_field with limitations: no por links
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Concept", "Root", "TestName1")
+    node2 = netapi.create_node("Concept", "Root", "TestName2")
+    node3 = netapi.create_node("Concept", "Root", "TestName3")
+    node4 = netapi.create_node("Concept", nodespace.uid, "TestName4")
+    netapi.link_with_reciprocal(node1, node2, "subsur")
+    netapi.link_with_reciprocal(node1, node3, "subsur")
+    netapi.link_with_reciprocal(node1, node4, "subsur")
+    netapi.link_with_reciprocal(node2, node3, "porret")
+
+    nodes = netapi.get_nodes_field(node1, "sub", ["por"], "Root")
+    assert len(nodes) == 1
+    assert node3 in nodes

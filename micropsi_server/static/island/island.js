@@ -96,13 +96,15 @@ refreshWorldView = function(){
                     }
                 } else {
                     if(data.objects[key].position && data.objects[key].position.length == 2){
-                        objects[key].x = data.objects[key].position[0];
-                        objects[key].y = data.objects[key].position[1];
+                        if(!(path && path.objectMoved && path.name == key)){
+                            objects[key].x = data.objects[key].position[0];
+                            objects[key].y = data.objects[key].position[1];
+                            objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                        }
                         if(data.objects[key].orientation){
                             objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
                         }
                         objects[key].orientation = data.objects[key].orientation;
-                        objects[key].representation.position = new Point(objects[key].x, objects[key].y);
                         if(key in scenes){
                             scenes[key] = data.objects[key].scene;
                         }

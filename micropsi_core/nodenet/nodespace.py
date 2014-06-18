@@ -28,7 +28,7 @@ class Nodespace(NetEntity):
         self.activators = {}
         self.netentities = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
-        nodenet.nodespaces[uid] = self
+        nodenet.nodespaces[self.uid] = self
         if not gatefunctions:
             gatefunctions = dict()
         self.gatefunctions = {}

@@ -345,7 +345,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
             self.type)
         if gatefunction:
-            activation = gatefunction(input_activation, self.parameters.get('ro', 0), self.parameters.get('theta', 0))
+            activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
         else:
             activation = input_activation
 
@@ -657,7 +657,7 @@ class Nodetype(object):
                 "threshold": 0,
                 "decay": 0,
                 "theta": 0,
-                "ro": 0,
+                "rho": 0,
                 "spreadsheaves": False
             }
 

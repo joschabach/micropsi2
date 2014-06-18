@@ -197,8 +197,8 @@
                         <td colspan="2"><a href="#" class="gate_additional_trigger">Show additional parameters</a> (for gatefunction)</td>
                     </tr>
                     <tr class="gate_additional hide">
-                        <td><label for="gate_ro">Ro</label></td>
-                        <td><input type="text" class="" name="ro" id="gate_ro"></td>
+                        <td><label for="gate_rho">Rho</label></td>
+                        <td><input type="text" class="" name="rho" id="gate_rho"></td>
                     </tr>
                     <tr class="gate_additional hide">
                         <td><label for="gate_theta">Theta</label></td>

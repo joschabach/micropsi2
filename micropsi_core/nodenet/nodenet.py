@@ -645,9 +645,8 @@ class Nodenet(object):
             source_node_uid, gate_type,
             target_node_uid, slot_type)
         if existing_uid:
+            self.set_link_weight(existing_uid, weight, certainty)
             link = self.links[existing_uid]
-            link.weight = weight
-            link.certainty = certainty
         else:
             link = Link(
                 self.nodes[source_node_uid],

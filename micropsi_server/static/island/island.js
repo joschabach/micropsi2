@@ -151,9 +151,9 @@ function updateSceneViewer(){
     }
     if(selector_html != ''){
         selector_html = '<option val="">choose...</option>' + selector_html;
-        $('.scene_viewer_section').show();
+        $('.scene_viewer_section').addClass('form-default').show();
     } else{
-        $('.scene_viewer_section').hide();
+        $('.scene_viewer_section').removeClass('form-default').hide();
     }
     selector.html(selector_html);
     var keys = Object.keys(scenes);

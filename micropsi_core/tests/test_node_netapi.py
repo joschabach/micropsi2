@@ -344,3 +344,58 @@ def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
     nodes = netapi.get_nodes_active(nodespace.uid, "Register", 0.4)
     assert len(nodes) == 1
     assert node4 in nodes
+
+
+def test_node_netapi_delete_node(fixed_nodenet):
+    # test simple delete node case
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    node3 = netapi.create_node("Register", "Root", "TestName3")
+    netapi.link(node2, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+
+    olduid = node1.uid
+    netapi.delete_node(node1)
+    error_raised = False
+    try:
+        netapi.get_node(olduid)
+    except KeyError:
+        error_raised = True
+    assert error_raised
+    assert len(node2.get_gate("gen").outgoing) == 0
+
+
+def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
+    # test delete node case deleting a nodespace
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    node3 = netapi.create_node("Register", "Root", "TestName3")
+    node4 = netapi.create_node("Register", nodespace.uid, "TestName4")
+    netapi.link(node2, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node3, "gen", node1, "gen")
+    netapi.link(node4, "gen", node1, "gen")
+
+    #TODO: netapi cannot delete nodespaces right now, because nodenet can't. It's done by runtime.
+    #The code should be moved, the test then re-enabled.
+#    spaceuid = nodespace.uid
+#    node4uid = node4.uid
+#    netapi.delete_node(nodespace)
+#    error_raised = False
+#    try:
+#        netapi.get_node(spaceuid)
+#    except KeyError:
+#        error_raised = True
+#    assert error_raised
+#    error_raised = False
+#    try:
+#        netapi.get_node(node4uid)
+#    except KeyError:
+#        error_raised = True
+#    assert error_raised
+#    assert error_raised
+#    assert len(node1.get_slot("gen").incoming) == 3

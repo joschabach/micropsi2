@@ -149,7 +149,7 @@ function updateSceneViewer(){
     for(var key in scenes){
         selector_html += '<option value="'+key+'">'+objects[key].name+'</option>';
     }
-    if(selector_html){
+    if(selector_html != ''){
         selector_html = '<option val="">choose...</option>' + selector_html;
         $('.scene_viewer_section').show();
     } else{
@@ -466,8 +466,7 @@ function onMouseDown(event){
 
 function onMouseMove(event) {
     var p = event.point;
-
-    if(event.event.target == canvas){
+    if(event.event.target == canvas[0]){
         $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
     } else {
         $('#world_status').val('Pos: ');
@@ -509,6 +508,12 @@ function onMouseMove(event) {
 }
 
 function onMouseDrag(event) {
+    var p = event.point;
+    if(event.event.target == canvas[0]){
+        $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
+    } else {
+        $('#world_status').val('Pos: ');
+    }
     if (movePath) {
         path.objectMoved = true;
         path.position += event.delta;

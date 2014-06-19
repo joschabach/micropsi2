@@ -218,7 +218,7 @@ function loadWorldInfo(){
         worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
         if('assets' in data){
-            var iconhtml = '';
+            var iconhtml = '<img src="/static/island/unknownbox.png" id="icon_default_object" /><img src="/static/island/Micropsi.png" id="icon_default_agent" />';
             for(var key in data.assets.icons){
                 iconhtml += '<img src="/static/'+data.assets.icons[key]+'" id="icon_' + key + '" /> ';
             }
@@ -293,118 +293,39 @@ function renderObject(worldobject){
 }
 
 function createObjectShape(worldobject, bounds){
-    var raster = null;
+    var raster = new Raster(getObjectIcon(worldobject));
+    if(worldobject.type in scale_factors){
+        raster.scale(scale_factors[worldobject.type]);
+    }
+    raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+    raster.rotate(worldobject.orientation);
+    return raster;
+}
+
+function getObjectIcon(worldobject){
     switch(worldobject.type){
         case "Lightsource":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Braitenberg":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Survivor":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "PalmTree":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Maple":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Braintree":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Wirselkraut":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Thornbush":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Juniper":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Champignon":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "FlyAgaric":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Stone":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Boulder":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Menhir":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
-        case "Waterhole":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(scale_factors[worldobject.type]);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
+        case "Waterhole";
+            return 'icon_'+worldobject.type;
         default:
-            var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
-            if (worldobject.type in viewProperties.typeColors){
-                shape.fillColor = viewProperties.typeColors[worldobject.type];
+            if(worldobject.uid in agents){
+                return 'icon_default_agent';
             } else {
-                shape.fillColor = viewProperties.typeColors['other'];
+                return 'icon_default_object';
             }
-        return shape;
     }
 }
 
@@ -469,7 +390,7 @@ selected = null;
 
 function setAddObjectMode(objecttype){
     addObjectMode = objecttype;
-    addObjectGhost = new Raster('icon_' + addObjectMode);
+    addObjectGhost = new Raster(getObjectIcon(addObjectMode));
     addObjectGhost.scale(scale_factors[addObjectMode] / 2);
     addObject.position = new Point(-100, -100);
     objectLayer.addChild(addObjectGhost);

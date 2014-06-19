@@ -248,9 +248,13 @@ function setCurrentNodenet(uid, nodespace){
             refreshNodenetList();
         },
         function(data) {
-            currentNodenet = null;
-            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-            dialogs.notification(data.Error, "Error");
+            if(data.status == 500){
+                api.defaultErrorCallback(data);
+            } else {
+                currentNodenet = null;
+                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+                dialogs.notification(data.Error, "Error");
+            }
         });
 }
 
@@ -2801,6 +2805,7 @@ function handleNodespaceUp() {
 function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
+    var reload = false;
     var params = {
         nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val()
@@ -2809,6 +2814,11 @@ function handleEditNodenet(event){
     if(nodenet_world){
         params.world_uid = nodenet_world;
     }
+    if(nodenet_world != nodenet_data.world){
+        if(nodenet_data.world == currentWorld || nodenet_world == currentWorld){
+            reload = true;
+        }
+    }
     var worldadapter = $('#nodenet_worldadapter', form).val();
     if(worldadapter){
         params.worldadapter = worldadapter;
@@ -2816,7 +2826,11 @@ function handleEditNodenet(event){
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
-            setCurrentNodenet(currentNodenet);
+            if(reload){
+                window.location.reload();
+            } else {
+                setCurrentNodenet(currentNodenet);
+            }
         }
     );
 }

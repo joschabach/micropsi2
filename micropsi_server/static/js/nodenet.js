@@ -469,7 +469,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
                 sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
             }
 
-            if(nodetypes[type].gate_defaults) {
+            if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]]) {
                 parameters = nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]];
             } else {
                 // mh. evil. where should this be defined?

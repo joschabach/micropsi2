@@ -507,15 +507,12 @@ function onMouseDown(event){
     }
     var hit = false;
     for (var uid in objects) {
-        if(objects[uid].representation){
-            var bounds = objects[uid].representation.bounds;
-            if (bounds.contains(p)) {
-                selected = objects[uid];
-                selectObject(objects[uid]);
-                showObjectForm(objects[uid]);
-                hit = true;
-                break;
-            }
+        if(objects[uid].representation && objects[uid].representation.hitTest(p)){
+            selected = objects[uid];
+            selectObject(objects[uid]);
+            showObjectForm(objects[uid]);
+            hit = true;
+            break;
         }
     }
     if(!hit){

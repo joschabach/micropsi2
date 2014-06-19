@@ -291,11 +291,6 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
     def activation(self):
         return self.sheaves['default'].activation
 
-    @activation.setter
-    def activation(self, activation):
-        self.sheaves['default'].activation = activation
-        self.node.report_gate_activation('gen', self.sheaves['default'])
-
     def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
         """create a gate.
 
@@ -350,7 +345,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
             self.type)
         if gatefunction:
-            activation = gatefunction(input_activation)
+            activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
         else:
             activation = input_activation
 
@@ -661,6 +656,8 @@ class Nodetype(object):
                 "amplification": 1,
                 "threshold": 0,
                 "decay": 0,
+                "theta": 0,
+                "rho": 0,
                 "spreadsheaves": False
             }
 

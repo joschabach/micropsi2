@@ -28,7 +28,7 @@ class Nodespace(NetEntity):
         self.activators = {}
         self.netentities = {}
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
-        nodenet.nodespaces[uid] = self
+        nodenet.nodespaces[self.uid] = self
         if not gatefunctions:
             gatefunctions = dict()
         self.gatefunctions = {}
@@ -70,7 +70,7 @@ class Nodespace(NetEntity):
                 self.gatefunctions[nodetype] = {}
             try:
                 import math
-                self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction, parameters="x", additional_symbols={'math': math})
+                self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction, parameters="x, r, t", additional_symbols={'math': math})
             except SyntaxError as err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, str(err)))
                 raise err

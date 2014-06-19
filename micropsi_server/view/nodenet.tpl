@@ -122,7 +122,7 @@
                         <td>&nbsp;</td>
                         <td><div class="pythoncode">
                                 <div class="textareafake">
-                                    <span class="loc">def gatefunction(x):</span>
+                                    <span class="loc">def gatefunction(x, r, t):</span>
                                     <span class="loc indent">import math</span>
                                     <div class="textarea indent1">
                                         <textarea class="loc" name="nodespace_gatefunction" id="nodespace_gatefunction"></textarea>
@@ -192,6 +192,17 @@
                     <tr>
                         <td><label for="gate_decay">Decay</label></td>
                         <td><input type="text" class="" name="decay" id="gate_decay"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><a href="#" class="gate_additional_trigger">Show additional parameters</a> (for gatefunction)</td>
+                    </tr>
+                    <tr class="gate_additional hide">
+                        <td><label for="gate_rho">Rho</label></td>
+                        <td><input type="text" class="" name="rho" id="gate_rho"></td>
+                    </tr>
+                    <tr class="gate_additional hide">
+                        <td><label for="gate_theta">Theta</label></td>
+                        <td><input type="text" class="" name="theta" id="gate_theta"></td>
                     </tr>
                     <tr>
                         <td><label for="">Gatefunction</label></td>

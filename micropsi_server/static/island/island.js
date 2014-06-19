@@ -47,6 +47,24 @@ var available_object_types = [
     'Waterhole'
 ];
 
+var scale_factors = {
+    'Lightsource': 1,
+    'Braitenberg': 1,
+    'Survivor': 1,
+    'PalmTree': 0.5,
+    'Maple': 0.7,
+    'Braintree': 0.5,
+    'Wirselkraut': 0.2,
+    'Thornbush': 1,
+    'Juniper': 0.4,
+    'Champignon': 0.125,
+    'FlyAgaric': 0.2,
+    'Stone': 0.2,
+    'Boulder': 0.6,
+    'Menhir': 0.4,
+    'Waterhole': 0.4
+}
+
 objects = {};
 symbols = {};
 agents = {};
@@ -64,7 +82,9 @@ if (currentWorld){
 
 scenes = {};
 
-var objectList = $('#world_objects_list table');
+addObjectMode = null;
+addObjectGhost = null;
+
 var agentsList = $('#world_agents_list table');
 
 initializeControls();
@@ -254,7 +274,6 @@ function addObject(worldobject){
     } else {
         redrawObject(objects[worldobject.uid]);
     }
-    objectList.html(objectList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="worldobject_edit">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
     return worldobject;
 }
 
@@ -313,84 +332,84 @@ function createObjectShape(worldobject, bounds){
 
         case "PalmTree":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.5);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Maple":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.7);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Braintree":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.5);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Wirselkraut":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.2);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Thornbush":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(1);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Juniper":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.4);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Champignon":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.125);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "FlyAgaric":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.2);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Stone":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.2);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Boulder":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.6);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Menhir":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.4);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
 
         case "Waterhole":
             worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(0.4);
+            worldobject.raster.scale(scale_factors[worldobject.type]);
             worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
             worldobject.raster.rotate(worldobject.orientation);
         return worldobject.raster;
@@ -471,6 +490,10 @@ function onKeyDown(event) {
                 }
             }
         }
+    } else if(event.key == 'escape'){
+        addObjectMode = null;
+        addObjectGhost.remove();
+        addObjectGhost = null;
     }
 }
 
@@ -478,6 +501,10 @@ function onMouseDown(event){
     clickPosition = null;
     showDefaultForm();
     var p = event.point;
+    if(addObjectMode){
+        createWorldObject(addObjectMode, p);
+        return;
+    }
     var hit = false;
     for (var uid in objects) {
         if(objects[uid].representation){
@@ -507,6 +534,11 @@ function onMouseMove(event) {
     } else {
         $('#world_status').val('Pos: ');
     }
+
+    if(addObjectMode && addObjectGhost){
+        addObjectGhost.position = p;
+    }
+
     // hovering
     if (hoverUid) { // unhover
         if(hoverUid in objects){
@@ -592,7 +624,7 @@ function selectObject(worldobject){
     if(selectionBorder){
         unselectObject();
     }
-    selectionBorder = new Path.Rectangle(worldobject.x - (worldobject.raster.width/2), worldobject.y - (worldobject.raster.height/2), worldobject.raster.width, worldobject.raster.height);
+    selectionBorder = new Path.Rectangle(worldobject.x - (worldobject.raster.width * scale_factors[worldobject.type] / 2), worldobject.y - (worldobject.raster.height * scale_factors[worldobject.type] /2), worldobject.raster.width * scale_factors[worldobject.type], worldobject.raster.height * scale_factors[worldobject.type]);
     selectionBorder.strokeWidth = 1;
     selectionBorder.name = 'selectionBorder'
     selectionBorder.strokeColor = viewProperties.selectionColor;
@@ -689,7 +721,7 @@ function initializeControls(){
         html += '<tr><td><input type="text" name="param_key" class="param_key inplace" /></td><td><input type="text" name="new_param_val" class="param_val inplace" /></td></tr>';
         param_table.html(html);
     });
-    $('#wo_type_input').html('<option>' + available_object_types.join('</option><option>')+'</option>');
+    $('#available_worldobjects').html('<option>' + available_object_types.join('</option><option>')+'</option>');
     $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
     agentsList.on('click', function(event){
         event.preventDefault();
@@ -699,16 +731,16 @@ function initializeControls(){
             scrollToObject(agents[target.attr('data')]);
         }
     });
-    objectList.on('click', function(event){
-        event.preventDefault();
-        var target = $(event.target);
-        if(target.attr('class') == 'worldobject_edit' && target.attr('data')){
-            showObjectForm(objects[target.attr('data')]);
-            highlightObject(target.attr('data'));
-            scrollToObject(objects[target.attr('data')]);
-        }
-    });
     $('#scene_viewer_agent').on('change', refreshSceneView);
+
+    $('#set_worldobject_sprinkle_mode').on('click', function(event){
+        event.preventDefault();
+        addObjectMode = $('#available_worldobjects').val();
+        addObjectGhost = new Raster('icon_' + addObjectMode);
+        addObjectGhost.scale(scale_factors[addObjectMode] / 2);
+        addObject.position = new Point(-100, -100);
+        objectLayer.addChild(addObjectGhost);
+    });
 }
 
 function resetWorld(event){
@@ -761,7 +793,6 @@ function showObjectForm(worldobject){
     $('#world_forms .form-horizontal').hide();
     $('#wo_uid_input').val(worldobject.uid);
     $('#wo_name_input').val(worldobject.name);
-    $('#wo_type_input').val(worldobject.type);
     var param_table = $('#wo_parameter_list');
     var param_html = '';
     for(var key in worldobject.parameters){
@@ -774,12 +805,21 @@ function showObjectForm(worldobject){
 
 // ------------------------ API Communication --------------------------------------------------- //
 
+function createWorldObject(type, pos){
+    api.call('add_worldobject', {world_uid: currentWorld, type: type, position: [pos.x, pos.y]}, function(result){
+        if(result.status =='success'){
+            addObject(new WorldObject(result.uid, pos.x, pos.y, 0, '', type, {}));
+        }
+        updateViewSize();
+    });
+}
+
 function deleteWorldObject(worldobject){
     objects[worldobject.uid].representation.remove();
     delete objects[worldobject.uid];
     api.call('delete_worldobject', {'world_uid': currentWorld, 'object_uid': worldobject.uid}, function(){
         dialogs.notification("worldobject deleted");
-    })
+    });
 }
 
 
@@ -789,7 +829,7 @@ function handleSubmitWorldobject(event){
     data = {
         'world_uid': currentWorld,
         'name': $('#wo_name_input').val(),
-        'type': $('#wo_type_input').val(),
+        'type': objects[uid].type,
         'position': [10, 10],
         'parameters': {}
     };
@@ -801,21 +841,6 @@ function handleSubmitWorldobject(event){
     }
     if(uid){
         setObjectProperties(objects[uid], null, null, data.name, null, data.parameters);
-    } else {
-        var pos;
-        if(clickPosition){
-            pos = clickPosition;
-        } else {
-            var parent = canvas.parent();
-            pos = new Point(parent.scrollTop() + (parent.innerHeight() / 2), parent.scrollLeft() + (parent.innerWidth()/2));
-        }
-        data.position = [pos.x, pos.y];
-        api.call('add_worldobject', data, function(result){
-            if(result.status =='success'){
-                addObject(new WorldObject(result.uid, pos.x, pos.y, 0, data.name, data.type, data.parameters));
-            }
-            updateViewSize();
-        }, api.defaultErrorCallback);
     }
 }
 

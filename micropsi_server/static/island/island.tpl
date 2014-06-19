@@ -23,10 +23,11 @@
                 </div>
                 <h4>World Objects</h4>
                 <div id="world_objects_list">
-                    <a href="#" id="add_object_link" class="add_link">+ add Object</a>
-                    <table class="table-striped table-condensed"></table>
+                    <select id="available_worldobjects">
+                    </select>
+                    <button id="set_worldobject_sprinkle_mode">add Objects</button>
                 </div>
-                <div id="world_objects_icons" style="visibility:hidden;"></div>
+                <div id="world_objects_icons" style="height:0; overflow:hidden;"></div>
             </form>
 
             <form class="form-horizontal hide" id="edit_worldobject">
@@ -39,10 +40,6 @@
                     <tr>
                         <td><label for="wo_name_input">Name</label></td>
                         <td><input type="text" class="" name="wo_name" id="wo_name_input" /></td>
-                    </tr>
-                    <tr>
-                        <td><label for="wo_type">Type</label></td>
-                        <td><select type="text" class="" name="wo_type" id="wo_type_input"></select></td>
                     </tr>
                     <tr>
                         <td><label>Parameters</label></td>

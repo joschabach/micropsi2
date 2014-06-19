@@ -205,7 +205,7 @@ class OrderedSet(collections.OrderedDict, collections.MutableSet):
     symmetric_difference_update = property(lambda self: self.__ixor__)
     union = property(lambda self: self.__or__)
 
-def itersubclasses(cls, _seen=None):
+def itersubclasses(cls, folder=None, _seen=None):
     """
     Generator over all subclasses of a given class, in depth first order.
 
@@ -223,7 +223,8 @@ def itersubclasses(cls, _seen=None):
         subs = cls.__subclasses__(cls)
     for sub in subs:
         if sub not in _seen:
-            _seen.add(sub)
-            yield sub
-            for sub in itersubclasses(sub, _seen):
+            if folder is None or sub.__module__.startswith(folder):
+                _seen.add(sub)
                 yield sub
+                for sub in itersubclasses(sub, folder=folder, _seen=_seen):
+                    yield sub

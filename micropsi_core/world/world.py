@@ -237,6 +237,8 @@ class World(object):
         """
         if nodenet_uid in self.agents:
             del self.agents[nodenet_uid]
+        if nodenet_uid in self.data['agents']:
+            del self.data['agents'][nodenet_uid]
 
     def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
         """Creates an agent object,

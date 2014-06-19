@@ -248,9 +248,13 @@ function setCurrentNodenet(uid, nodespace){
             refreshNodenetList();
         },
         function(data) {
-            currentNodenet = null;
-            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-            dialogs.notification(data.Error, "Error");
+            if(data.status == 500){
+                api.defaultErrorCallback(data);
+            } else {
+                currentNodenet = null;
+                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+                dialogs.notification(data.Error, "Error");
+            }
         });
 }
 

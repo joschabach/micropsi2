@@ -318,7 +318,7 @@ function getObjectIcon(worldobject){
         case "Stone":
         case "Boulder":
         case "Menhir":
-        case "Waterhole";
+        case "Waterhole":
             return 'icon_'+worldobject.type;
         default:
             if(worldobject.uid in agents){

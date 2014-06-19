@@ -698,6 +698,10 @@ class NetAPI(object):
         return self.__nodenet.uid
 
     @property
+    def step(self):
+        return self.__nodenet.current_step
+
+    @property
     def world(self):
         return self.__nodenet.world
 

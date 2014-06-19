@@ -389,7 +389,7 @@ clickPosition = null;
 selected = null;
 
 $('body').mousedown(function(event){
-    if(addObjectMode && event.target != canvas[0]){
+    if(addObjectMode && event.target != canvas[0] && event.target != $('#set_worldobject_sprinkle_mode')[0]){
         unsetAddObjectMode();
     }
 });
@@ -407,7 +407,7 @@ function unsetAddObjectMode(){
     addObjectMode = null;
     addObjectGhost.remove();
     addObjectGhost = null;
-    $('#set_worldobject_sprinkle_mode').text("Add objects").removeClass('active').blur();
+    $('#set_worldobject_sprinkle_mode').text("add objects").removeClass('active').blur();
 }
 
 function onKeyDown(event) {

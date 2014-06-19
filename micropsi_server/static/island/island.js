@@ -30,22 +30,7 @@ var viewProperties = {
     }
 };
 
-// TODO: this really should be loaded from the server
-var available_object_types = [
-    'Lightsource',
-    'PalmTree',
-    'Maple',
-    'Braintree',
-    'Wirselkraut',
-    'Thornbush',
-    'Juniper',
-    'Champignon',
-    'FlyAgaric',
-    'Stone',
-    'Boulder',
-    'Menhir',
-    'Waterhole'
-];
+available_object_types = [];
 
 var scale_factors = {
     'Lightsource': 1,
@@ -230,6 +215,8 @@ function loadWorldInfo(){
     api.call('get_world_properties', {
         world_uid: currentWorld
     }, success=function(data){
+        available_object_types = data.available_worldobjects.sort();
+        initializeControls();
         refreshWorldView();
         world_data = data;
         worldRunning = data.is_active;

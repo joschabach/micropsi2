@@ -44,6 +44,7 @@ def get_world_properties(world_uid):
 
     data = micropsi_core.runtime.worlds[world_uid].data
     data['worldadapters'] = get_worldadapters(world_uid)
+    data['available_worldobjects'] = [key for key in micropsi_core.runtime.worlds[world_uid].supported_worldobjects]
     return data
 
 

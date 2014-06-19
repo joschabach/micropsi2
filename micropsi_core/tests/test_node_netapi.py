@@ -446,3 +446,64 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
         assert link.data['uid'] == link.uid
         assert link.data['source_node_uid'] == node2.uid
         assert link.data['target_node_uid'] == node1.uid
+
+
+def test_node_netapi_link_with_reciprocal(fixed_nodenet):
+    # test linking pipe and concept nodes with reciprocal links
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_d = netapi.create_node("Concept", "Root", "D")
+    n_e = netapi.create_node("Concept", "Root", "E")
+    netapi.link_with_reciprocal(n_head, n_a, "subsur")
+    netapi.link_with_reciprocal(n_head, n_b, "subsur")
+    netapi.link_with_reciprocal(n_head, n_c, "subsur")
+    netapi.link_with_reciprocal(n_a, n_b, "porret", 0.5)
+    netapi.link_with_reciprocal(n_b, n_c, "porret", 0.5)
+    netapi.link_with_reciprocal(n_head, n_d, "catexp")
+    netapi.link_with_reciprocal(n_d, n_e, "symref")
+
+    assert len(n_head.get_gate("sub").outgoing) == 3
+    assert len(n_head.get_slot("sur").incoming) == 3
+    assert len(n_a.get_gate("sur").outgoing) == 1
+    assert len(n_a.get_slot("sub").incoming) == 1
+    assert len(n_b.get_gate("sur").outgoing) == 1
+    assert len(n_b.get_slot("sub").incoming) == 1
+    assert len(n_c.get_gate("sur").outgoing) == 1
+    assert len(n_c.get_slot("sub").incoming) == 1
+    assert len(n_a.get_gate("por").outgoing) == 1
+    assert len(n_a.get_slot("ret").incoming) == 1
+    assert len(n_a.get_slot("por").incoming) == 0
+    assert len(n_b.get_gate("por").outgoing) == 1
+    assert len(n_b.get_slot("ret").incoming) == 1
+    assert len(n_b.get_gate("ret").outgoing) == 1
+    assert len(n_b.get_slot("por").incoming) == 1
+    assert len(n_c.get_gate("por").outgoing) == 0
+    assert len(n_c.get_slot("ret").incoming) == 0
+    for linkuid, link in n_b.get_gate("por").outgoing.items():
+        assert link.weight == 0.5
+
+    assert len(n_head.get_gate("cat").outgoing) == 1
+    assert len(n_head.get_slot("exp").incoming) == 1
+
+    assert len(n_d.get_gate("sym").outgoing) == 1
+    assert len(n_d.get_slot("gen").incoming) == 2
+
+
+def test_node_netapi_link_full(fixed_nodenet):
+    # test linking pipe and concept nodes with reciprocal links
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_d = netapi.create_node("Pipe", "Root", "D")
+
+    netapi.link_full([n_a, n_b, n_c, n_d])
+
+    assert len(n_a.get_slot('por').incoming) == 4
+    assert len(n_b.get_slot('por').incoming) == 4
+    assert len(n_c.get_slot('por').incoming) == 4
+    assert len(n_d.get_slot('por').incoming) == 4

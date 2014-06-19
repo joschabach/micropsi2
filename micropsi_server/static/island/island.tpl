@@ -25,7 +25,7 @@
                 <div id="world_objects_list">
                     <select id="available_worldobjects">
                     </select>
-                    <button id="set_worldobject_sprinkle_mode">add Objects</button>
+                    <button id="set_worldobject_sprinkle_mode" class="btn">add Objects</button>
                 </div>
                 <div id="world_objects_icons" style="height:0; overflow:hidden;"></div>
             </form>

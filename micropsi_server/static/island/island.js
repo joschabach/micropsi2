@@ -72,10 +72,6 @@ addObjectGhost = null;
 
 var agentsList = $('#world_agents_list table');
 
-initializeControls();
-initializeMenus();
-
-
 refreshWorldView = function(){
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
@@ -464,6 +460,21 @@ clickPosition = null;
 
 selected = null;
 
+function setAddObjectMode(objecttype){
+    addObjectMode = objecttype;
+    addObjectGhost = new Raster('icon_' + addObjectMode);
+    addObjectGhost.scale(scale_factors[addObjectMode] / 2);
+    addObject.position = new Point(-100, -100);
+    objectLayer.addChild(addObjectGhost);
+    $('#set_worldobject_sprinkle_mode').text("Done").addClass('active');;
+}
+
+function unsetAddObjectMode(){
+    addObjectMode = null;
+    addObjectGhost.remove();
+    addObjectGhost = null;
+    $('#set_worldobject_sprinkle_mode').text("Add objects").removeClass('active');
+}
 
 function onKeyDown(event) {
     if (event.key == "backspace" || event.key == "delete") {
@@ -478,9 +489,7 @@ function onKeyDown(event) {
             }
         }
     } else if(event.key == 'escape'){
-        addObjectMode = null;
-        addObjectGhost.remove();
-        addObjectGhost = null;
+        unsetAddObjectMode();
     }
 }
 
@@ -489,8 +498,13 @@ function onMouseDown(event){
     showDefaultForm();
     var p = event.point;
     if(addObjectMode){
-        createWorldObject(addObjectMode, p);
-        return;
+        if(event.event.button == 2){
+            unsetAddObjectMode();
+            return;
+        } else {
+            createWorldObject(addObjectMode, p);
+            return;
+        }
     }
     var hit = false;
     for (var uid in objects) {
@@ -504,10 +518,6 @@ function onMouseDown(event){
     }
     if(!hit){
         unselectObject();
-    }
-    // context menus:
-    if (event.modifiers.control || event.event.button == 2){
-        openContextMenu("#create_object_menu", event);
     }
 }
 
@@ -663,31 +673,6 @@ function scrollToObject(obj){
     else if (bounds.x + bounds.width >= (parent.innerWidth() + parent.scrollLeft())) parent.scrollLeft(bounds.x - parent.innerWidth() + bounds.width + 50);
 }
 
-// --------------------------- menus -------------------------------------------------------- //
-
-function initializeMenus(){
-    $('#create_object_menu li').on('click', handleContextMenu);
-}
-
-function openContextMenu(menu_id, event){
-    event.event.cancelBubble = true;
-    clickPosition = event.point;
-    $(menu_id).css({
-        position: "absolute",
-        zIndex: 500,
-        marginLeft: -5, marginTop: -5,
-        top: event.event.pageY, left: event.event.pageX });
-    $(menu_id+" .dropdown-toggle").dropdown("toggle");
-}
-
-function handleContextMenu(event){
-    var item = $(event.target);
-    event.preventDefault();
-    switch(item.attr('data')){
-        case 'add_worldobject':
-            showObjectForm();
-    }
-}
 
 // --------------------------- controls -------------------------------------------------------- //
 
@@ -720,11 +705,11 @@ function initializeControls(){
 
     $('#set_worldobject_sprinkle_mode').on('click', function(event){
         event.preventDefault();
-        addObjectMode = $('#available_worldobjects').val();
-        addObjectGhost = new Raster('icon_' + addObjectMode);
-        addObjectGhost.scale(scale_factors[addObjectMode] / 2);
-        addObject.position = new Point(-100, -100);
-        objectLayer.addChild(addObjectGhost);
+        if(addObjectMode){
+            unsetAddObjectMode();
+        } else {
+            setAddObjectMode($('#available_worldobjects').val());
+        }
     });
 }
 

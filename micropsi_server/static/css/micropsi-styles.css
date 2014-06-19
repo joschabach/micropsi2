@@ -292,7 +292,7 @@ graphs
   content: "O";
 }
 
-#sizeHandle {
+.resizeHandle {
   display: inline-block;
   width: 100px;
   line-height: 3px;
@@ -300,7 +300,7 @@ graphs
   background: #bbb;
   cursor: n-resize;
 }
-#sizeHandle:hover {
+.resizeHandle:hover {
   background:#ccc;
 }
 .seperator {

@@ -318,34 +318,7 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
-    // resize handler for nodenet viewer:
-    var isDragging = false;
-    var canvas = $('#nodenet');
-    var container = $('.section.nodenet .editor_field');
-    if($.cookie('nodenet_editor_height')){
-        container.height($.cookie('nodenet_editor_height'));
-        try{
-            updateViewSize();
-        } catch(err){}
-    }
-    var startHeight, startPos, newHeight;
-    $("a#sizeHandle").mousedown(function(event) {
-        startHeight = container.height();
-        startPos = event.pageY;
-        $(window).mousemove(function(event) {
-            isDragging = true;
-            newHeight = startHeight + (event.pageY - startPos);
-            container.height(newHeight);
-            updateViewSize();
-        });
-    });
-    $(window).mouseup(function(event) {
-        if(isDragging){
-            $.cookie('nodenet_editor_height', container.height(), {expires:7, path:'/'});
-        }
-        isDragging = false;
-        $(window).unbind("mousemove");
-    });
+
 
 });
 

@@ -342,7 +342,7 @@
 
         </div>
     </div>
-    <div class="seperator" style="text-align:center;"><a id="sizeHandle"> </a></div>
+    <div class="seperator" style="text-align:center;"><a class="resizeHandle" id="nodenetSizeHandle"> </a></div>
 </div>
 <div class="sectionbar">
     <form class="navbar-form">

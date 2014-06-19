@@ -44,6 +44,8 @@ def get_world_properties(world_uid):
 
     data = micropsi_core.runtime.worlds[world_uid].data
     data['worldadapters'] = get_worldadapters(world_uid)
+    data['available_worldobjects'] = [key for key in micropsi_core.runtime.worlds[world_uid].supported_worldobjects]
+    data['available_worldadapters'] = [key for key in micropsi_core.runtime.worlds[world_uid].supported_worldadapters]
     return data
 
 
@@ -64,6 +66,10 @@ def get_world_objects(world_uid, type=None):
     if world_uid in micropsi_core.runtime.worlds:
         return micropsi_core.runtime.worlds[world_uid].get_world_objects(type)
     return False
+
+
+def delete_worldobject(world_uid, object_uid):
+    return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid);
 
 
 def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):

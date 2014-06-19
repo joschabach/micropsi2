@@ -200,6 +200,13 @@ class World(object):
             return True, uid
         return False, "type not supported"
 
+    def delete_object(self, object_uid):
+        if object_uid in self.objects:
+            del self.objects[object_uid]
+            del self.data['objects'][object_uid]
+            return True
+        return False
+
     def get_world_objects(self, type=None):
         """ returns a dictionary of world objects. """
         objects = {}

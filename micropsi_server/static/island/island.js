@@ -464,8 +464,11 @@ function onKeyDown(event) {
         if (event.event.target.tagName == "BODY") {
             event.preventDefault(); // browser-back
             if(selected){
-                console.log('HA ');
-                console.log(selected);
+                if(!(selected.uid in agents)){
+                    deleteWorldObject(selected);
+                    unselectObject();
+                    selected = null;
+                }
             }
         }
     }
@@ -770,6 +773,15 @@ function showObjectForm(worldobject){
 
 
 // ------------------------ API Communication --------------------------------------------------- //
+
+function deleteWorldObject(worldobject){
+    objects[worldobject.uid].representation.remove();
+    delete objects[worldobject.uid];
+    api.call('delete_worldobject', {'world_uid': currentWorld, 'object_uid': worldobject.uid}, function(){
+        dialogs.notification("worldobject deleted");
+    })
+}
+
 
 function handleSubmitWorldobject(event){
     event.preventDefault();

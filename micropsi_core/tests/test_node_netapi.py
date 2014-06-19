@@ -399,3 +399,50 @@ def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
 #    assert error_raised
 #    assert error_raised
 #    assert len(node1.get_slot("gen").incoming) == 3
+
+
+def test_node_netapi_link(fixed_nodenet):
+    # test linking nodes
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    netapi.link(node2, "gen", node1, "gen")
+
+    assert len(node2.get_gate("gen").outgoing) == 1
+    for linkuid, link in node2.get_gate("gen").outgoing.items():
+        # basic internal logic
+        assert link.source_node is node2
+        assert link.target_node is node1
+        assert link.weight == 1
+        assert link.uid in node1.get_slot("gen").incoming
+
+        # frontend/persistency-facing
+        assert link.data['weight'] == link.weight
+        assert link.data['uid'] == link.uid
+        assert link.data['source_node_uid'] == node2.uid
+        assert link.data['target_node_uid'] == node1.uid
+
+def test_node_netapi_link_change_weight(fixed_nodenet):
+    # test linking nodes, the changing weights
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Register", "Root", "TestName1")
+    node2 = netapi.create_node("Register", "Root", "TestName2")
+    netapi.link(node2, "gen", node1, "gen")
+
+    net.step()
+
+    netapi.link(node2, "gen", node1, "gen", 0.8)
+
+    assert len(node2.get_gate("gen").outgoing) == 1
+    for linkuid, link in node2.get_gate("gen").outgoing.items():
+        # basic internal logic
+        assert link.source_node is node2
+        assert link.target_node is node1
+        assert link.weight == 0.8
+        assert link.uid in node1.get_slot("gen").incoming
+
+        # frontend/persistency-facing
+        assert link.data['weight'] == link.weight
+        assert link.data['uid'] == link.uid
+        assert link.data['source_node_uid'] == node2.uid
+        assert link.data['target_node_uid'] == node1.uid

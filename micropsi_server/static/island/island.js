@@ -321,7 +321,7 @@ function getObjectIcon(worldobject){
         case "Waterhole":
             return 'icon_'+worldobject.type;
         default:
-            if(worldobject.uid in agents){
+            if(worldobject.uid  && worldobject.uid in agents){
                 return 'icon_default_agent';
             } else {
                 return 'icon_default_object';
@@ -390,7 +390,7 @@ selected = null;
 
 function setAddObjectMode(objecttype){
     addObjectMode = objecttype;
-    addObjectGhost = new Raster(getObjectIcon(addObjectMode));
+    addObjectGhost = new Raster(getObjectIcon({type:addObjectMode}));
     addObjectGhost.scale(scale_factors[addObjectMode] / 2);
     addObject.position = new Point(-100, -100);
     objectLayer.addChild(addObjectGhost);

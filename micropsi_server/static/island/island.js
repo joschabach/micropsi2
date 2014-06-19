@@ -428,7 +428,14 @@ function getLegend(worldobject){
         Math.max(height, bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
     var text = new PointText(point);
     text.justification = 'left';
-    text.content = (worldobject.name ? worldobject.name : worldobject.uid) + '('+parseInt(worldobject.x)+'/'+parseInt(worldobject.y)+')';
+    var content = '';
+    if(worldobject.uid in agents){
+        content = (worldobject.name) ? worldobject.name : worldobject.uid;
+    } else {
+        content = worldobject.type;
+    }
+    content += ' ('+parseInt(worldobject.x)+'/'+parseInt(worldobject.y)+')';
+    text.content = content;
     text.characterStyle = {
         fillColor: 'black',
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
@@ -511,7 +518,6 @@ function onMouseDown(event){
         if(objects[uid].representation && objects[uid].representation.hitTest(p)){
             selected = objects[uid];
             selectObject(objects[uid]);
-            showObjectForm(objects[uid]);
             hit = true;
             break;
         }
@@ -535,9 +541,6 @@ function onMouseMove(event) {
 
     // hovering
     if (hoverUid) { // unhover
-        if(hoverUid in objects){
-            //objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
-        }
         hoverUid = null;
     }
     // first, check for nodes
@@ -678,21 +681,8 @@ function scrollToObject(obj){
 
 function initializeControls(){
     $('.editor_field form .controls button[type="reset"]').on('click', showDefaultForm);
-    $('#add_object_link').on('click', function(event){
-        event.preventDefault();
-        $('#wo_uid_input').attr('disabled', 'disabled');
-        showObjectForm();
-    });
 
-    $('#add_object_param').on('click', function(event){
-        event.preventDefault();
-        var param_table = $('#wo_parameter_list');
-        var html = param_table.html();
-        html += '<tr><td><input type="text" name="param_key" class="param_key inplace" /></td><td><input type="text" name="new_param_val" class="param_val inplace" /></td></tr>';
-        param_table.html(html);
-    });
     $('#available_worldobjects').html('<option>' + available_object_types.join('</option><option>')+'</option>');
-    $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
     agentsList.on('click', function(event){
         event.preventDefault();
         var target = $(event.target);
@@ -790,28 +780,6 @@ function deleteWorldObject(worldobject){
     api.call('delete_worldobject', {'world_uid': currentWorld, 'object_uid': worldobject.uid}, function(){
         dialogs.notification("worldobject deleted");
     });
-}
-
-
-function handleSubmitWorldobject(event){
-    event.preventDefault();
-    var uid = $('#wo_uid_input').val();
-    data = {
-        'world_uid': currentWorld,
-        'name': $('#wo_name_input').val(),
-        'type': objects[uid].type,
-        'position': [10, 10],
-        'parameters': {}
-    };
-    var param_fields = $('input[name^="param_"]', $('#edit_worldobject'));
-    for(var i in param_fields){
-        if(param_fields[i].name == "param_name"){
-            data.parameters[param_fields[i].value] = param_fields[++i].value;
-        }
-    }
-    if(uid){
-        setObjectProperties(objects[uid], null, null, data.name, null, data.parameters);
-    }
 }
 
 function setObjectProperties(worldobject, x, y, name, orientation, parameters){

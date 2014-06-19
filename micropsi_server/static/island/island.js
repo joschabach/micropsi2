@@ -282,6 +282,9 @@ function renderObject(worldobject){
         //objectLayer.addChild(symbols[worldobject.type]);
     }
     worldobject.representation = symbols[worldobject.type].place();
+    if(worldobject.orientation){
+        worldobject.representation.rotate(worldobject.orientation);
+    }
     worldobject.representation.position = new Point(worldobject.x, worldobject.y);
     worldobject.representation.name = worldobject.uid;
     objectLayer.addChild(worldobject.representation);

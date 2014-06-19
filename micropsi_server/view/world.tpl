@@ -42,7 +42,7 @@
 </div>
 
 <div id="world_editor" class="section-margin collapse in">
-    <div class="section">
+    <div class="world section">
         %if world_assets.get('template'):
             %include(world_assets['template'], assets=world_assets)
         %else:
@@ -51,6 +51,7 @@
             </div>
         %end
     </div>
+    <div class="seperator" style="text-align:center;"><a class="resizeHandle" id="worldSizeHandle"> </a></div>
 </div>
 
 <div class="dropdown" id="create_object_menu">

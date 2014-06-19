@@ -493,7 +493,7 @@ def test_node_netapi_link_with_reciprocal(fixed_nodenet):
 
 
 def test_node_netapi_link_full(fixed_nodenet):
-    # test linking pipe and concept nodes with reciprocal links
+    # test fully reciprocal-linking groups of nodes
     net, netapi, source = prepare(fixed_nodenet)
     n_head = netapi.create_node("Pipe", "Root", "Head")
     n_a = netapi.create_node("Pipe", "Root", "A")
@@ -507,3 +507,60 @@ def test_node_netapi_link_full(fixed_nodenet):
     assert len(n_b.get_slot('por').incoming) == 4
     assert len(n_c.get_slot('por').incoming) == 4
     assert len(n_d.get_slot('por').incoming) == 4
+
+
+def test_node_netapi_unlink(fixed_nodenet):
+    # test completely unlinking a node
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_d = netapi.create_node("Pipe", "Root", "D")
+
+    netapi.link_full([n_a, n_b, n_c, n_d])
+
+    netapi.unlink(n_b)
+
+    assert len(n_a.get_slot('por').incoming) == 3
+    assert len(n_b.get_slot('por').incoming) == 3
+    assert len(n_c.get_slot('por').incoming) == 3
+    assert len(n_d.get_slot('por').incoming) == 3
+
+
+def test_node_netapi_unlink_specific_link(fixed_nodenet):
+    # test removing a specific link
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_d = netapi.create_node("Pipe", "Root", "D")
+
+    netapi.link_full([n_a, n_b, n_c, n_d])
+
+    netapi.unlink(n_b, "por", n_c, "por")
+
+    assert len(n_a.get_slot('por').incoming) == 4
+    assert len(n_b.get_slot('por').incoming) == 4
+    assert len(n_c.get_slot('por').incoming) == 3
+    assert len(n_d.get_slot('por').incoming) == 4
+
+
+def test_node_netapi_unlink_gate(fixed_nodenet):
+    # test unlinking a gate
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_d = netapi.create_node("Pipe", "Root", "D")
+
+    netapi.link_full([n_a, n_b, n_c, n_d])
+
+    netapi.unlink(n_b, "por")
+
+    assert len(n_a.get_slot('por').incoming) == 3
+    assert len(n_b.get_slot('por').incoming) == 3
+    assert len(n_c.get_slot('por').incoming) == 3
+    assert len(n_d.get_slot('por').incoming) == 3

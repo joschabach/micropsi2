@@ -310,109 +310,109 @@ function renderObject(worldobject){
 }
 
 function createObjectShape(worldobject, bounds){
-    worldobject.raster = null;
+    var raster = null;
     switch(worldobject.type){
         case "Lightsource":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Braitenberg":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Survivor":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "PalmTree":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Maple":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Braintree":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Wirselkraut":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Thornbush":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Juniper":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Champignon":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "FlyAgaric":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Stone":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Boulder":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Menhir":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         case "Waterhole":
-            worldobject.raster = new Raster('icon_' + worldobject.type);
-            worldobject.raster.scale(scale_factors[worldobject.type]);
-            worldobject.raster.position = new Point(bounds.x + worldobject.raster.width/2, bounds.y+bounds.height/2);
-            worldobject.raster.rotate(worldobject.orientation);
-        return worldobject.raster;
+            raster = new Raster('icon_' + worldobject.type);
+            raster.scale(scale_factors[worldobject.type]);
+            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+            raster.rotate(worldobject.orientation);
+        return raster;
 
         default:
             var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
@@ -624,7 +624,8 @@ function selectObject(worldobject){
     if(selectionBorder){
         unselectObject();
     }
-    selectionBorder = new Path.Rectangle(worldobject.x - (worldobject.raster.width * scale_factors[worldobject.type] / 2), worldobject.y - (worldobject.raster.height * scale_factors[worldobject.type] /2), worldobject.raster.width * scale_factors[worldobject.type], worldobject.raster.height * scale_factors[worldobject.type]);
+    var bounds = worldobject.representation.bounds;
+    selectionBorder = new Path.Rectangle(worldobject.x - (bounds.width / 2), worldobject.y - (bounds.height  /2), bounds.width , bounds.height );
     selectionBorder.strokeWidth = 1;
     selectionBorder.name = 'selectionBorder'
     selectionBorder.strokeColor = viewProperties.selectionColor;

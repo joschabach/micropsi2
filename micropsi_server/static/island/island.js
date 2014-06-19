@@ -388,6 +388,12 @@ clickPosition = null;
 
 selected = null;
 
+$('body').mousedown(function(event){
+    if(addObjectMode && event.target != canvas[0]){
+        unsetAddObjectMode();
+    }
+});
+
 function setAddObjectMode(objecttype){
     addObjectMode = objecttype;
     addObjectGhost = new Raster(getObjectIcon({type:addObjectMode}));

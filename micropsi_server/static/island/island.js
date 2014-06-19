@@ -407,18 +407,20 @@ function unsetAddObjectMode(){
     addObjectMode = null;
     addObjectGhost.remove();
     addObjectGhost = null;
-    $('#set_worldobject_sprinkle_mode').text("Add objects").removeClass('active');
+    $('#set_worldobject_sprinkle_mode').text("Add objects").removeClass('active').blur();
 }
 
 function onKeyDown(event) {
-    if (event.key == "backspace" || event.key == "delete") {
-        if (event.event.target.tagName == "BODY") {
-            event.preventDefault(); // browser-back
-            if(selected){
-                if(!(selected.uid in agents)){
-                    deleteWorldObject(selected);
-                    unselectObject();
-                    selected = null;
+    if(!addObjectMode){
+        if (event.key == "backspace" || event.key == "delete") {
+            if (event.event.target.tagName == "BODY") {
+                event.preventDefault(); // browser-back
+                if(selected){
+                    if(!(selected.uid in agents)){
+                        deleteWorldObject(selected);
+                        unselectObject();
+                        selected = null;
+                    }
                 }
             }
         }

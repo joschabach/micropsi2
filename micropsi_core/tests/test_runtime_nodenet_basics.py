@@ -33,29 +33,6 @@ def test_new_nodenet(test_nodenet, resourcepath):
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
 
-
-def test_activators_inhibit_nodenet_propagation(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
-    nodenet.nodes['A1'].get_gate("por").gate_function(0.5)
-    nodenet.nodes['B1'].get_gate("por").gate_function(0.5)
-    micropsi.add_link(fixed_nodenet, 'B1', 'gen', 'ACTB', 'gen')
-    micropsi.step_nodenet(fixed_nodenet) # Sensor active
-    micropsi.step_nodenet(fixed_nodenet) # A1,A2 active
-    micropsi.step_nodenet(fixed_nodenet) # activator now active
-    micropsi.step_nodenet(fixed_nodenet)
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
-    assert nodenet.nodes['A2'].activation == 0
-    assert nodenet.nodes['B2'].activation > 0
-
-
-def test_activators_are_optional(fixed_nodenet):
-    micropsi.delete_node(fixed_nodenet, 'ACTB') # remove B activator
-    micropsi.step_nodenet(fixed_nodenet) # Sensor
-    micropsi.step_nodenet(fixed_nodenet) # A1, B1
-    micropsi.step_nodenet(fixed_nodenet) # B2
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
-    assert nodenet.nodes['B2'].activation > 0
-
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):
     assert 0

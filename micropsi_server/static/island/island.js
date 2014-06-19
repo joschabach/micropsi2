@@ -754,7 +754,7 @@ function showDefaultForm(){
 }
 
 function showObjectForm(worldobject){
-    if(worldobject.uid in agents){
+    if(worldobject && worldobject.uid in agents){
         return false;
     }
     if(!worldobject) worldobject = {};

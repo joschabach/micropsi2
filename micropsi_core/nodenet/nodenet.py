@@ -852,7 +852,7 @@ class NetAPI(object):
         """
         links_to_delete = []
         for gatetype, gateobject in source_node.gates.items():
-            if source_gate is None or source_gate is gatetype:
+            if source_gate is None or source_gate == gatetype:
                 for linkid, link in gateobject.outgoing.items():
                     if target_node is None or target_node.uid == link.target_node.uid:
                         if target_slot is None or target_slot == link.target_slot.type:

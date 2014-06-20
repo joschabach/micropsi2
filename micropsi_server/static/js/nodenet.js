@@ -2959,9 +2959,11 @@ function followgate(event){
     var node = nodes[$(event.target).attr('data-node')];
     var gate = node.gates[$(event.target).attr('data-gate')];
     deselectAll();
-    if(gate){
+    if(!isCompact(node)){
         selectGate(node, gate);
         view.draw();
+    } else {
+        selectNode(node.uid);
     }
     showGateForm(node, gate);
 }

@@ -2959,8 +2959,10 @@ function followgate(event){
     var node = nodes[$(event.target).attr('data-node')];
     var gate = node.gates[$(event.target).attr('data-gate')];
     deselectAll();
-    selectGate(node, gate);
-    view.draw();
+    if(gate){
+        selectGate(node, gate);
+        view.draw();
+    }
     showGateForm(node, gate);
 }
 

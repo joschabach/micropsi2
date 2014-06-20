@@ -206,7 +206,9 @@ def load_nodenet(nodenet_uid):
 
 def get_nodenet_data(nodenet_uid, **coordinates):
     """ returns the current state of the nodenet """
-    data = get_nodenet(nodenet_uid).state.copy()
+    nodenet = get_nodenet(nodenet_uid)
+    with nodenet.netlock:
+        data = nodenet.state.copy()
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
     data.update({
         'nodetypes': nodetypes,
@@ -236,12 +238,13 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
     """
     if nodespace not in nodenets[nodenet_uid].nodespaces:
         nodespace = "Root"
-    if x2 < 0 or y2 < 0:
-        data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
-    else:
-        data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
-    data['nodespace'] = nodespace
-    return data
+    with nodenets[nodenet_uid].netlock:
+        if x2 < 0 or y2 < 0:
+            data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
+        else:
+            data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+        data['nodespace'] = nodespace
+        return data
 
 
 def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):

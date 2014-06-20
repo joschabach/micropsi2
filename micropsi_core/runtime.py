@@ -82,13 +82,17 @@ def signal_handler(signal, frame):
 def nodenetrunner():
     """Looping thread to simulate node nets continously"""
     while runner['nodenet']['running']:
-        step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
+        if configs['nodenetrunner_timestep'] > 1000:
+            step = timedelta(seconds=configs['nodenetrunner_timestep'] / 1000)
+        else:
+            step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
-        time.sleep(float(str(left).split(':')[-1:][0]))  # cut hours, minutes, convert to float.
+        if left.total_seconds() > 0:
+            time.sleep(left.total_seconds())
 
 
 def worldrunner():

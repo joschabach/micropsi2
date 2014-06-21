@@ -8,8 +8,23 @@
 }
 
 .monitor_field {
-    height: 330px;
-    overflow: scroll;
+}
+
+#monitor_list {
+  margin: 10px 0 10px 55px;
+  list-style-type: none;
+}
+
+.contentbox {
+  background: white;
+  height: 100%;
+}
+
+.section.multiple {
+  padding: 0 10px 10px 10px;
+}
+.section.multiple h4 {
+  margin: 10px 0px;
 }
 
 .sectionbar {

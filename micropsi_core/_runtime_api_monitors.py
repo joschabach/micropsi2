@@ -51,7 +51,21 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
         return micropsi_core.runtime.nodenets[nodenet_uid].state.get('monitors', {})
 
 
-def get_monitor_data(nodenet_uid, step):
-    """Returns a dictionary of monitor_uid: [node_name/node_uid, slot_type/gate_type, activation_value] for
-    the current step, it the current step is newer than the supplied simulation step."""
-    pass
+def get_monitor_data(nodenet_uid, step=0):
+    """Returns monitor and nodenet data for drawing monitor plots for the current step,
+    if the current step is newer than the supplied simulation step."""
+    data = {
+        'nodenet_running': micropsi_core.runtime.nodenets[nodenet_uid].is_active,
+        'current_step': micropsi_core.runtime.nodenets[nodenet_uid].current_step
+    }
+    if step > data['current_step']:
+        return data
+    else:
+        data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid)
+        return data
+
+
+
+
+
+

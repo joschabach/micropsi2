@@ -7,11 +7,16 @@
 %if mode == "nodenet":
     %include nodenet
 % end
+%if mode == "monitors":
+	%include monitors
+%end
 %if mode == "world":
     %include world  mine=mine,others=others,current=current,world_assets=world_assets
 % end
+
 %if mode == "all":
     %include nodenet
+    %include monitors
     %include world  mine=mine,others=others,current=current,world_assets=world_assets
 % end
 </div>

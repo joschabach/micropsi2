@@ -157,6 +157,12 @@ def nodenet():
     return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
 
 
+@route("/monitors")
+def monitors():
+    user_id, permissions, token = get_request_data()
+    return template("viewer", mode="monitors", version=VERSION, user_id=user_id, permissions=permissions)
+
+
 @route('/minidoc/<filepath:path>')
 def document(filepath):
     return template("minidoc",
@@ -717,7 +723,7 @@ def get_nodenetrunner_timestep():
 
 @rpc("get_is_nodenet_running")
 def get_is_nodenet_running(nodenet_uid):
-    return runtime.get_is_nodenet_running(nodenet_uid)
+    return {'nodenet_running': runtime.get_is_nodenet_running(nodenet_uid)}
 
 
 @rpc("stop_nodenetrunner", permission_required="manage nodenets")

@@ -356,7 +356,9 @@ function setNodespaceData(data, changed){
             monitors = data.monitors;
         }
         updateMonitorList();
-        updateMonitorGraphs();
+        if(typeof updateMonitorGraphs != 'undefined'){
+            updateMonitorGraphs();
+        }
         if(changed){
             updateNodespaceForm();
         }
@@ -3171,17 +3173,19 @@ function showGateForm(node, gate){
 
 function updateMonitorList(){
     var el = $('#monitor_list');
-    var html = '<table class="table-striped table-condensed">';
-    for(var uid in monitors){
-        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
-        if(currentMonitors.indexOf(uid) > -1){
-            html += ' checked="checked"';
+    if(el.length){
+        var html = '<table class="table-striped table-condensed">';
+        for(var uid in monitors){
+            html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
+            if(currentMonitors.indexOf(uid) > -1){
+                html += ' checked="checked"';
+            }
+            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label></td></tr>';
         }
-        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label></td></tr>';
+        html += '</table>';
+        el.html(html);
+        $('.monitor_checkbox', el).on('change', updateMonitorSelection);
     }
-    html += '</table>';
-    el.html(html);
-    $('.monitor_checkbox', el).on('change', updateMonitorSelection);
 }
 
 function updateNodespaceForm(){

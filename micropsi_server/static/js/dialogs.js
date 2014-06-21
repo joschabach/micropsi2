@@ -153,16 +153,20 @@ var api = {
     },
     defaultErrorCallback: function (data, outcome, type){
         var msg = '';
-        try{
-            error = JSON.parse(data.responseText);
-            var errtext = $('<div/>').text(error.Error).html();
-            msg += '<strong>' + errtext + '</strong>';
-            if(error.Traceback){
-                msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
+        if(data.status == 0){
+            msg = "Server not reachable.";
+        } else {
+            try{
+                error = JSON.parse(data.responseText);
+                var errtext = $('<div/>').text(error.Error).html();
+                msg += '<strong>' + errtext + '</strong>';
+                if(error.Traceback){
+                    msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
+                }
+            } catch (err){}
+            if(!msg){
+                msg = type || "serverside exception";
             }
-        } catch (err){}
-        if(!msg){
-            msg = type || "serverside exception";
         }
         dialogs.notification("Error: " + msg, 'exception');
     },

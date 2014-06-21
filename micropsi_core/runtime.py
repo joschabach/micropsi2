@@ -31,6 +31,8 @@ from datetime import datetime, timedelta
 import time
 import signal
 
+from io import StringIO
+
 import logging
 
 NODENET_DIRECTORY = "nodenets"
@@ -65,6 +67,11 @@ system_logger.setLevel(logging_levels.get(LOGGING['level_system'], logging.WARNI
 world_logger.setLevel(logging_levels.get(LOGGING['level_world'], logging.WARNING))
 nodenet_logger.setLevel(logging_levels.get(LOGGING['level_nodenet'], logging.WARNING))
 
+frontend_loggers = {
+    'system': {},
+    'world': {},
+    'nodenet': {}
+}
 
 signal_handler_registry = []
 
@@ -133,8 +140,60 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
     return None
     '''
 
-
 # MicroPsi API
+
+# loggers
+
+def start_capture_logger(name, level):
+    if name not in frontend_loggers:
+        return False, "Invalid logger"
+    if level not in logging_levels:
+        return False, "Invalid logging level"
+    log_buffer = frontend_loggers[name].get('buffer', StringIO())
+    frontend_loggers[name]['buffer'] = log_buffer
+    logger = logging.getLogger(name)
+    if 'oldLevel' not in frontend_loggers:
+        frontend_loggers[name]['oldLevel'] = logger.getEffectiveLevel()
+    logger.setLevel(level)
+    handler = logging.StreamHandler(log_buffer)
+    frontend_loggers[name]['handler'] = handler
+    logger.addHandler(handler)
+    return True, name
+
+
+def get_logger_messages(name):
+    if name not in frontend_loggers:
+        return False, 'Invalid logger'
+
+    if 'handler' not in frontend_loggers[name]:
+        return False, 'Logger not captured'
+
+    frontend_loggers[name]['handler'].flush()
+    frontend_loggers[name]['buffer'].flush()
+    out = frontend_loggers[name]['buffer'].getvalue()
+    return True, out
+
+
+def stop_capture_logger(name):
+    logger = logging.getLogger(name)
+
+    if name not in frontend_loggers:
+        return False, 'Invalid logger'
+
+    if 'handler' not in frontend_loggers[name]:
+        return False, 'Logger not captured'
+
+    # Restore logging level (if any)
+    if frontend_loggers[name].get('oldLevel'):
+        logger.setLevel(frontend_loggers[name]['oldLevel'])
+
+    logger.removeHandler(frontend_loggers[name]['handler'])
+    frontend_loggers[name]['handler'].flush()
+    frontend_loggers[name]['buffer'].flush()
+    out = frontend_loggers[name]['buffer'].getvalue()
+    frontend_loggers[name] = {}
+    return True, out
+
 
 # Minecraft Image
 def get_minecraft_image():

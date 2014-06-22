@@ -899,16 +899,6 @@ def export_world_rpc(world_uid):
 def import_world_rpc(world_uid, worlddata):
     return runtime.import_world(world_uid, worlddata)
 
-
-# Logging
-#@rpc("get_logs")
-@route("/get_logs")
-@route("/get_logs/<logger>")
-@route("/get_logs/<logger>/<after>")
-def get_logs(logger="*", after=0):
-    return micropsi_logging.get_logs(logger, int(after))
-
-
 # Monitor
 
 @rpc("add_gate_monitor")
@@ -1107,34 +1097,15 @@ def reload_native_modules(nodenet_uid=None):
     return runtime.reload_native_modules(nodenet_uid)
 
 
-# -------- loggers ------------
-
-
-@rpc("start_capture_logger")
-def start_capture_logger(name, level):
-    res, msg = runtime.start_capture_logger(name, level)
-    if res:
-        return dict(status='success')
-    else:
-        return dict(status='error', msg=msg)
+@rpc("set_logging_levels")
+def set_logging_levels(system=None, world=None, nodenet=None):
+    runtime.set_logging_levels(system, world, nodenet)
+    return dict(status="success")
 
 
 @rpc("get_logger_messages")
-def get_logger_messages(name):
-    res, msg = runtime.get_logger_messages(name)
-    if res:
-        return dict(status='success', log=msg)
-    else:
-        return dict(status='error', msg='unknown logger')
-
-
-@rpc("stop_capture_logger")
-def stop_capture_logger(name):
-    res, msg = runtime.stop_capture_logger(name)
-    if res:
-        return dict(status='success', log=msg)
-    else:
-        return dict(status='error', msg=msg)
+def get_logger_messages(logger=[], after=0):
+    return runtime.get_logs(logger, after)
 
 
 # -----------------------------------------------------------------------------------------------

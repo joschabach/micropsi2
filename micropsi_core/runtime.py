@@ -31,9 +31,9 @@ from datetime import datetime, timedelta
 import time
 import signal
 
-from io import StringIO
-
 import logging
+
+from .micropsi_logger import MicropsiLogger
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -49,38 +49,21 @@ runner = {
     'world': {'timestep': 5000, 'runner': None}
 }
 
-logging_levels = {
-    'CRITICAL': logging.CRITICAL,
-    'ERROR': logging.ERROR,
-    'WARNING': logging.WARNING,
-    'INFO': logging.INFO,
-    'DEBUG': logging.DEBUG
-}
-
-logging.basicConfig(level=logging_levels.get('logging_level', logging.INFO))
-
-system_logger = logging.getLogger("system")
-world_logger = logging.getLogger("world")
-nodenet_logger = logging.getLogger("nodenet")
-
-system_logger.setLevel(logging_levels.get(LOGGING['level_system'], logging.WARNING))
-world_logger.setLevel(logging_levels.get(LOGGING['level_world'], logging.WARNING))
-nodenet_logger.setLevel(logging_levels.get(LOGGING['level_nodenet'], logging.WARNING))
-
-frontend_loggers = {
-    'system': {},
-    'world': {},
-    'nodenet': {}
-}
-
 signal_handler_registry = []
+
+logger = MicropsiLogger({
+    'system': LOGGING['level_system'],
+    'world': LOGGING['level_world'],
+    'nodenet': LOGGING['level_nodenet']
+})
+
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
 
 
 def signal_handler(signal, frame):
-    system_logger.info("Shutting down")
+    logging.getLogger('system').info("Shutting down")
     for handler in signal_handler_registry:
         handler(signal, frame)
     sys.exit(0)
@@ -144,55 +127,20 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 # loggers
 
-def start_capture_logger(name, level):
-    if name not in frontend_loggers:
-        return False, "Invalid logger"
-    if level not in logging_levels:
-        return False, "Invalid logging level"
-    log_buffer = frontend_loggers[name].get('buffer', StringIO())
-    frontend_loggers[name]['buffer'] = log_buffer
-    logger = logging.getLogger(name)
-    if 'oldLevel' not in frontend_loggers:
-        frontend_loggers[name]['oldLevel'] = logger.getEffectiveLevel()
-    logger.setLevel(level)
-    handler = logging.StreamHandler(log_buffer)
-    frontend_loggers[name]['handler'] = handler
-    logger.addHandler(handler)
-    return True, name
+def set_logging_levels(system=None, world=None, nodenet=None):
+    if system is not None and system in logger.logging_levels:
+        logger.set_logging_level('system', system)
+    if world is not None and world in logger.logging_levels:
+        logger.set_logging_level('world', world)
+    if nodenet is not None and nodenet in logger.logging_levels:
+        logger.set_logging_level('nodenet', nodenet)
+    return True
 
 
-def get_logger_messages(name):
-    if name not in frontend_loggers:
-        return False, 'Invalid logger'
-
-    if 'handler' not in frontend_loggers[name]:
-        return False, 'Logger not captured'
-
-    frontend_loggers[name]['handler'].flush()
-    frontend_loggers[name]['buffer'].flush()
-    out = frontend_loggers[name]['buffer'].getvalue()
-    return True, out
-
-
-def stop_capture_logger(name):
-    logger = logging.getLogger(name)
-
-    if name not in frontend_loggers:
-        return False, 'Invalid logger'
-
-    if 'handler' not in frontend_loggers[name]:
-        return False, 'Logger not captured'
-
-    # Restore logging level (if any)
-    if frontend_loggers[name].get('oldLevel'):
-        logger.setLevel(frontend_loggers[name]['oldLevel'])
-
-    logger.removeHandler(frontend_loggers[name]['handler'])
-    frontend_loggers[name]['handler'].flush()
-    frontend_loggers[name]['buffer'].flush()
-    out = frontend_loggers[name]['buffer'].getvalue()
-    frontend_loggers[name] = {}
-    return True, out
+def get_logger_messages(loggers=[], after=0):
+    if not isinstance(loggers, list):
+        loggers = [loggers]
+    return logger.get_logs(loggers, after)
 
 
 # Minecraft Image

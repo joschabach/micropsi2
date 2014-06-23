@@ -317,10 +317,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             self.parameters = gate_defaults.copy()
         if parameters is not None:
             for key in parameters:
-                if key in self.parameters:
-                    self.parameters[key] = float(parameters[key])
-                else:
-                    self.parameters[key] = parameters[key]
+                self.parameters[key] = parameters[key]
         self.monitor = None
 
     def gate_function(self, input_activation, sheaf="default"):

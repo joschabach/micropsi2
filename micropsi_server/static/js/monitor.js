@@ -120,16 +120,14 @@ $(function(){
     }
 
     function setLoggingData(data){
-        var html = log_container.html();
         var height = log_container.height();
         var scrollHeight = log_container[0].scrollHeight;
         var st = log_container.scrollTop();
         var doscroll = (st >= (scrollHeight - height));
         last_logger_call = data.logs.servertime;
         for(var idx in data.logs.logs){
-            html += '<span class="logentry log_'+data.logs.logs[idx].level+'">'+data.logs.logs[idx].logger+' | ' + data.logs.logs[idx].msg +'</span>'
+            log_container.append($('<span class="logentry log_'+data.logs.logs[idx].level+'">'+data.logs.logs[idx].logger+' | ' + data.logs.logs[idx].msg +'</span>'));
         }
-        log_container.html(html);
         if(doscroll){
             log_container.scrollTop(log_container[0].scrollHeight);
         }

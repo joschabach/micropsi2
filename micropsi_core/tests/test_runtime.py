@@ -19,6 +19,16 @@ def test_set_logging_level():
     assert logging.getLogger('nodenet').getEffectiveLevel() == logging.DEBUG
 
 
+def test_get_logging_levels():
+    logging.getLogger('system').setLevel(logging.INFO)
+    logging.getLogger('world').setLevel(logging.WARNING)
+    logging.getLogger('nodenet').setLevel(logging.DEBUG)
+    res = micropsi.get_logging_levels()
+    assert res['system'] == 'INFO'
+    assert res['world'] == 'WARNING'
+    assert res['nodenet'] == 'DEBUG'
+
+
 def test_get_logger_messages():
     msg = "Attention passengers. The next redline train to braintree is now arriving!"
     micropsi.set_logging_levels(system='INFO')

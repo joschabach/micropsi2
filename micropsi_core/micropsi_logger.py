@@ -33,7 +33,7 @@ class RecordWebStorageHandler(logging.Handler):
             del self.record_storage[0]
         dictrecord = {
             "logger": record.name,
-            "time": int(round(record.created * 1000)),
+            "time": record.created * 1000,
             "level": record.levelname,
             "msg": record.message
         }

@@ -17,6 +17,20 @@ $(function(){
 
     var nodenet_running = false;
 
+    var capturedLoggers = {
+        'system': false,
+        'world': false,
+        'nodenet': false
+    };
+
+    if($.cookie('capturedLoggers')){
+        capturedLoggers = JSON.parse($.cookie('capturedLoggers'));
+    }
+
+    var last_logger_call = 0;
+
+    var log_container = $('#logs');
+
     init();
 
     function pollActive(){
@@ -24,6 +38,7 @@ $(function(){
             nodenet_running = data.nodenet_running;
             if(nodenet_running){
                 pollMonitors();
+                pollLogs();
             }
             if(!nodenet_running){
                 window.setTimeout(pollActive, 2000);
@@ -47,7 +62,7 @@ $(function(){
             nodenet_running = data.nodenet_running;
             currentSimulationStep = data.current_step;
             if(nodenet_running){
-                window.setTimeout(pollMonitors, 100);
+                window.setTimeout(pollMonitors, 500);
             } else {
                 pollActive();
             }
@@ -55,6 +70,7 @@ $(function(){
     }
 
     function init() {
+        bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
             api.call('load_nodenet', {
                 nodenet_uid: currentNodenet,
@@ -68,14 +84,62 @@ $(function(){
                 currentSimulationStep = data.step;
                 nodenet_running = data.is_active;
                 pollMonitors();
-                pollActive();
+                pollLogs();
+                if(!nodenet_running){
+                    pollActive();
+                }
                 // drawGraph(currentMonitors);
             });
         }
     }
 
+    function bindEvents(){
+        $('.log_switch').on('change', function(event){
+            var el = $(event.target);
+            capturedLoggers[el.attr('data')] = el.attr('checked')
+            $.cookie('capturedLoggers', JSON.stringify(capturedLoggers), {path:'/', expires:7})
+        });
+        $('.log_level_switch').on('change', function(event){
+            var el = $(event.target);
+            var data = {}
+            data[el.attr('data')] = el.val();
+            api.call('set_logging_levels', data);
+        });
+        $('.log_switch').each(function(idx, el){
+            if(capturedLoggers[$(el).attr('data')]){
+                el.checked=true;
+            }
+        })
+    }
+
+    function pollLogs(){
+        var poll = [];
+        for(var logger in capturedLoggers){
+            if(capturedLoggers[logger]){
+                poll.push(logger);
+            }
+        }
+        if(logger.length){
+            api.call('get_logger_messages', {
+                logger: poll,
+                after: last_logger_call
+            }, function(data){
+                var html = log_container.html();
+                last_logger_call = data.servertime;
+                for(var idx in data.logs){
+                    html += '<span class="logentry '+data.logs[idx].logger+'_log">'+data.logs[idx].level+' | ' + data.logs[idx].msg +'</span>'
+                }
+                log_container.html(html);
+                log_container.scrollTop(log_container[0].scrollHeight);
+                if(nodenet_running){
+                    window.setTimeout(pollLogs, 500);
+                }
+            });
+        }
+    }
+
     function updateMonitorList(monitors){
-        var list = $('#monitor_list');
+        var list = $('#monitor_selector');
         var html = '';
         for(var uid in monitors){
             html += '<li><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';

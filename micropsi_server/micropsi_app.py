@@ -16,7 +16,6 @@ __date__ = '15.05.12'
 from micropsi_core import runtime
 
 import micropsi_core.tools
-from micropsi_server import micropsi_logging
 from micropsi_server import usermanagement
 from micropsi_server import bottle
 from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error
@@ -148,7 +147,7 @@ def server_static(filepath):
 @route("/")
 def index():
     user_id, permissions, token = get_request_data()
-    return _add_world_list("viewer", mode="all", version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="all", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @route("/nodenet")
@@ -160,7 +159,7 @@ def nodenet():
 @route("/monitors")
 def monitors():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="monitors", version=VERSION, user_id=user_id, permissions=permissions)
+    return template("viewer", mode="monitors", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @route('/minidoc/<filepath:path>')
@@ -1105,7 +1104,7 @@ def set_logging_levels(system=None, world=None, nodenet=None):
 
 @rpc("get_logger_messages")
 def get_logger_messages(logger=[], after=0):
-    return runtime.get_logs(logger, after)
+    return runtime.get_logger_messages(logger, after)
 
 
 # -----------------------------------------------------------------------------------------------

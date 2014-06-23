@@ -57,7 +57,6 @@ logger = MicropsiLogger({
     'nodenet': LOGGING['level_nodenet']
 })
 
-
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
 
@@ -142,6 +141,22 @@ def get_logger_messages(loggers=[], after=0):
         loggers = [loggers]
     return logger.get_logs(loggers, after)
 
+
+def get_logging_levels():
+    inverse_map = {
+        50: 'CRITICAL',
+        40: 'ERROR',
+        30: 'WARNING',
+        20: 'INFO',
+        10: 'DEBUG',
+        0:'NOTSET'
+    }
+    levels = {
+        'system': inverse_map[logging.getLogger('system').getEffectiveLevel()],
+        'world': inverse_map[logging.getLogger('world').getEffectiveLevel()],
+        'nodenet': inverse_map[logging.getLogger('nodenet').getEffectiveLevel()],
+    }
+    return levels
 
 # Minecraft Image
 def get_minecraft_image():

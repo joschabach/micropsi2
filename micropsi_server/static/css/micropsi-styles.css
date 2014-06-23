@@ -10,14 +10,35 @@
 .monitor_field {
 }
 
-#monitor_list {
+.monitor_list {
   margin: 10px 0 10px 55px;
   list-style-type: none;
 }
+.monitor_list input {display:inline;}
+.monitor_list label {display:inline;}
+.monitor_list li {padding: 2px 0;}
+
+#graph, #logs {
+  overflow: auto;
+  font-family: monospace;
+  line-height: 1.1em;
+  height: 400px;
+  background: #fff;
+}
+
+.system_log { color: #3366CC;}
+.world_log { color: #33CC66;}
+.nodenet_log { color: #CC6633;}
+
+.logentry{ display:block;}
 
 .contentbox {
   background: white;
   height: 100%;
+}
+
+.monitor_seperator{
+  border-top: 6px solid #eee;
 }
 
 .section.multiple {

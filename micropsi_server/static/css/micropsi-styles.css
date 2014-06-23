@@ -26,14 +26,15 @@
   background: #fff;
 }
 
+.log_DEBUG {color: #9c9c9c;}
+.log_INFO {color: #4b4b4b;}
+.log_WARNING{color: #942628;}
+.log_ERROR {color: #e12628;}
+
 .delete_monitor i { opacity: 0.5; }
 .delete_monitor:hover i { opacity: 1; }
 
-.system_log { color: #3366CC;}
-.world_log { color: #33CC66;}
-.nodenet_log { color: #CC6633;}
-
-.logentry{ display:block;}
+.logentry{ display:block; white-space: nowrap;}
 
 .contentbox {
   background: white;

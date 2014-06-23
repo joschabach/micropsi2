@@ -123,7 +123,7 @@ $(function(){
         var html = log_container.html();
         last_logger_call = data.logs.servertime;
         for(var idx in data.logs.logs){
-            html += '<span class="logentry '+data.logs.logs[idx].logger+'_log">'+data.logs.logs[idx].level+' | ' + data.logs.logs[idx].msg +'</span>'
+            html += '<span class="logentry log_'+data.logs.logs[idx].level+'">'+data.logs.logs[idx].logger+' | ' + data.logs.logs[idx].msg +'</span>'
         }
         log_container.html(html);
         log_container.scrollTop(log_container[0].scrollHeight);

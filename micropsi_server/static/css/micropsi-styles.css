@@ -26,6 +26,9 @@
   background: #fff;
 }
 
+.delete_monitor i { opacity: 0.5; }
+.delete_monitor:hover i { opacity: 1; }
+
 .system_log { color: #3366CC;}
 .world_log { color: #33CC66;}
 .nodenet_log { color: #CC6633;}

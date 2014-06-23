@@ -143,10 +143,21 @@ $(function(){
             if(currentMonitors.indexOf(uid) > -1){
                 html += ' checked="checked"';
             }
-            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label></li>';
+            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);
+        $('.delete_monitor', list).on('click', function(event){
+            event.preventDefault();
+            api.call(
+                'remove_monitor',
+                {nodenet_uid: currentNodenet, monitor_uid: $(event.delegateTarget).attr('data')},
+                function(){
+                    delete monitors[uid];
+                    updateMonitorList();
+                }
+            );
+        });
     }
 
     function updateMonitorSelection() {

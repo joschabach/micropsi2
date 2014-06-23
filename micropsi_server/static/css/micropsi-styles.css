@@ -8,8 +8,47 @@
 }
 
 .monitor_field {
-    height: 330px;
-    overflow: scroll;
+}
+
+.monitor_list {
+  margin: 10px 0 10px 55px;
+  list-style-type: none;
+}
+.monitor_list input {display:inline;}
+.monitor_list label {display:inline;}
+.monitor_list li {padding: 2px 0;}
+
+#graph, #logs {
+  overflow: auto;
+  font-family: monospace;
+  line-height: 1.1em;
+  height: 400px;
+}
+
+.log_DEBUG {color: #9c9c9c;}
+.log_INFO {color: #4b4b4b;}
+.log_WARNING{color: #942628;}
+.log_ERROR {color: #e12628;}
+
+.delete_monitor i { opacity: 0.5; }
+.delete_monitor:hover i { opacity: 1; }
+
+.logentry{ display:block; white-space: nowrap;}
+
+.contentbox {
+  height: 100%;
+  border: 1px solid #ccc;
+}
+
+.monitor_seperator{
+  border-top: 2px solid #eee;
+}
+
+.section.multiple {
+  padding: 0 10px 10px 10px;
+}
+.section.multiple h4 {
+  margin: 10px 0px;
 }
 
 .sectionbar {

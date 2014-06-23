@@ -344,40 +344,6 @@
     </div>
     <div class="seperator" style="text-align:center;"><a class="resizeHandle" id="nodenetSizeHandle"> </a></div>
 </div>
-<div class="sectionbar">
-    <form class="navbar-form">
-        <table>
-            <tr>
-                <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
-                        class="icon-chevron-right"></i></span></td>
-
-                <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
-
-                <td><div class="collapse" id="monitor_controls">
-                    <button class="btn">Clear</button>
-                </div></td>
-
-            </tr>
-        </table>
-    </form>
-</div>
-
-<div id="monitor" class="section-margin collapse">
-    <div class="section">
-        <div class="monitor_field span9">
-            <div id="graph"></div>
-        </div>
-        <div class="editor_field monitor_field " id="monitor_legend">
-            <form class="form-horizontal">
-                <h4>Current Monitors</h4>
-                <div id="monitor_list">
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-
 
 <div class="dropdown" id="node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#node_menu"></a>
@@ -564,6 +530,4 @@
     </div>
 </div>
 
-<script src="/static/js/d3.v2.min.js" type="text/javascript"></script>
-<script src="/static/js/monitor.js" type="text/javascript"></script>
 <script src="/static/js/nodenet.js" type="text/paperscript" canvas="nodenet"></script>

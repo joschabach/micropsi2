@@ -207,6 +207,10 @@ function setCurrentNodenet(uid, nodespace){
             var nodenetChanged = (uid != currentNodenet);
             var nodespaceChanged = (nodespace != currentNodeSpace);
 
+            if(nodenetChanged){
+                $(document).trigger('nodenetChanged', uid);
+            }
+
             nodenet_data = data;
 
             showDefaultForm();
@@ -355,8 +359,6 @@ function setNodespaceData(data, changed){
         if(data.monitors){
             monitors = data.monitors;
         }
-        updateMonitorList();
-        updateMonitorGraphs();
         if(changed){
             updateNodespaceForm();
         }
@@ -2060,6 +2062,7 @@ function stepNodenet(event){
             {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
             success=function(data){
                 refreshNodespace();
+                $(document).trigger('nodenetStepped');
                 dialogs.notification("Nodenet stepped", "success");
             });
     } else {
@@ -2869,7 +2872,6 @@ function addSlotMonitor(node, index){
         slot: node.slotIndexes[index]
     }, function(data){
         monitors[data.uid] = data;
-        updateMonitorList();
     });
 }
 
@@ -2879,8 +2881,8 @@ function addGateMonitor(node, index){
         node_uid: node.uid,
         gate: node.gateIndexes[index]
     }, function(data){
+        $(document).trigger('monitorsChanged');
         monitors[data.uid] = data;
-        updateMonitorList();
     });
 }
 
@@ -2890,8 +2892,8 @@ function removeMonitor(node, target, type){
         nodenet_uid: currentNodenet,
         monitor_uid: monitor
     }, function(data){
+        $(document).trigger('monitorsChanged');
         delete monitors[monitor];
-        updateMonitorList();
     });
 }
 
@@ -3162,26 +3164,11 @@ function showGateForm(node, gate){
             }
         } else if(el.name == 'activation'){
             el.value = gate.sheaves[currentSheaf].activation || '0';
-        } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
+        } else if(nodetypes[node.type].gate_defaults && el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }
     });
     form.show();
-}
-
-function updateMonitorList(){
-    var el = $('#monitor_list');
-    var html = '<table class="table-striped table-condensed">';
-    for(var uid in monitors){
-        html += '<tr><td><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
-        if(currentMonitors.indexOf(uid) > -1){
-            html += ' checked="checked"';
-        }
-        html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label></td></tr>';
-    }
-    html += '</table>';
-    el.html(html);
-    $('.monitor_checkbox', el).on('change', updateMonitorSelection);
 }
 
 function updateNodespaceForm(){

@@ -64,6 +64,7 @@ def test_nodenet(request):
 def pytest_runtest_call(item):
     if 'fixed_test_nodenet' in micropsi.nodenets:
         micropsi.revert_nodenet("fixed_test_nodenet")
+    micropsi.logger.clear_logs()
 
 
 @pytest.fixture(scope="function")

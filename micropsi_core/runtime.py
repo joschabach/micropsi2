@@ -33,6 +33,8 @@ import signal
 
 import logging
 
+from .micropsi_logger import MicropsiLogger
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
@@ -47,33 +49,20 @@ runner = {
     'world': {'timestep': 5000, 'runner': None}
 }
 
-logging_levels = {
-    'CRITICAL': logging.CRITICAL,
-    'ERROR': logging.ERROR,
-    'WARNING': logging.WARNING,
-    'INFO': logging.INFO,
-    'DEBUG': logging.DEBUG
-}
-
-logging.basicConfig(level=logging_levels.get('logging_level', logging.INFO))
-
-system_logger = logging.getLogger("system")
-world_logger = logging.getLogger("world")
-nodenet_logger = logging.getLogger("nodenet")
-
-system_logger.setLevel(logging_levels.get(LOGGING['level_system'], logging.WARNING))
-world_logger.setLevel(logging_levels.get(LOGGING['level_world'], logging.WARNING))
-nodenet_logger.setLevel(logging_levels.get(LOGGING['level_nodenet'], logging.WARNING))
-
-
 signal_handler_registry = []
+
+logger = MicropsiLogger({
+    'system': LOGGING['level_system'],
+    'world': LOGGING['level_world'],
+    'nodenet': LOGGING['level_nodenet']
+})
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
 
 
 def signal_handler(signal, frame):
-    system_logger.info("Shutting down")
+    logging.getLogger('system').info("Shutting down")
     for handler in signal_handler_registry:
         handler(signal, frame)
     sys.exit(0)
@@ -133,8 +122,41 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
     return None
     '''
 
-
 # MicroPsi API
+
+# loggers
+
+def set_logging_levels(system=None, world=None, nodenet=None):
+    if system is not None and system in logger.logging_levels:
+        logger.set_logging_level('system', system)
+    if world is not None and world in logger.logging_levels:
+        logger.set_logging_level('world', world)
+    if nodenet is not None and nodenet in logger.logging_levels:
+        logger.set_logging_level('nodenet', nodenet)
+    return True
+
+
+def get_logger_messages(loggers=[], after=0):
+    if not isinstance(loggers, list):
+        loggers = [loggers]
+    return logger.get_logs(loggers, after)
+
+
+def get_logging_levels():
+    inverse_map = {
+        50: 'CRITICAL',
+        40: 'ERROR',
+        30: 'WARNING',
+        20: 'INFO',
+        10: 'DEBUG',
+        0:'NOTSET'
+    }
+    levels = {
+        'system': inverse_map[logging.getLogger('system').getEffectiveLevel()],
+        'world': inverse_map[logging.getLogger('world').getEffectiveLevel()],
+        'nodenet': inverse_map[logging.getLogger('nodenet').getEffectiveLevel()],
+    }
+    return levels
 
 # Minecraft Image
 def get_minecraft_image():

@@ -157,7 +157,7 @@ class Nodenet(object):
             if string:
                 self.logger.info("Loading nodenet %s from string", self.name)
                 try:
-                    self.state = json.loads(string)
+                    self.state.update(json.loads(string))
                 except ValueError:
                     warnings.warn("Could not read nodenet data from string")
                     return False
@@ -165,7 +165,7 @@ class Nodenet(object):
                 try:
                     self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
                     with open(self.filename) as file:
-                        self.state = json.load(file)
+                        self.state.update(json.load(file))
                 except ValueError:
                     warnings.warn("Could not read nodenet data")
                     return False
@@ -185,9 +185,9 @@ class Nodenet(object):
             while id != 'Root' and data[id].get('parent_nodespace') not in self.nodespaces:
                 self.initialize_nodespace(data[id]['parent_nodespace'], data)
             self.nodespaces[id] = Nodespace(self,
-                data[id]['parent_nodespace'],
-                data[id]['position'],
-                name=data[id]['name'],
+                data[id].get('parent_nodespace'),
+                data[id].get('position'),
+                name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'),
                 gatefunctions=data[id].get('gatefunctions', {}))

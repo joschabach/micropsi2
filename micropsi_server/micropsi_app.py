@@ -16,7 +16,6 @@ __date__ = '15.05.12'
 from micropsi_core import runtime
 
 import micropsi_core.tools
-from micropsi_server import micropsi_logging
 from micropsi_server import usermanagement
 from micropsi_server import bottle
 from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error
@@ -148,13 +147,19 @@ def server_static(filepath):
 @route("/")
 def index():
     user_id, permissions, token = get_request_data()
-    return _add_world_list("viewer", mode="all", version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="all", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @route("/nodenet")
 def nodenet():
     user_id, permissions, token = get_request_data()
     return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
+
+
+@route("/monitors")
+def monitors():
+    user_id, permissions, token = get_request_data()
+    return template("viewer", mode="monitors", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @route('/minidoc/<filepath:path>')
@@ -717,7 +722,7 @@ def get_nodenetrunner_timestep():
 
 @rpc("get_is_nodenet_running")
 def get_is_nodenet_running(nodenet_uid):
-    return runtime.get_is_nodenet_running(nodenet_uid)
+    return {'nodenet_running': runtime.get_is_nodenet_running(nodenet_uid)}
 
 
 @rpc("stop_nodenetrunner", permission_required="manage nodenets")
@@ -892,16 +897,6 @@ def export_world_rpc(world_uid):
 @rpc("import_world", permission_required="manage worlds")
 def import_world_rpc(world_uid, worlddata):
     return runtime.import_world(world_uid, worlddata)
-
-
-# Logging
-#@rpc("get_logs")
-@route("/get_logs")
-@route("/get_logs/<logger>")
-@route("/get_logs/<logger>/<after>")
-def get_logs(logger="*", after=0):
-    return micropsi_logging.get_logs(logger, int(after))
-
 
 # Monitor
 
@@ -1099,6 +1094,26 @@ def delete_link(nodenet_uid, link_uid):
 @rpc("reload_native_modules", permission_required="manage nodenets")
 def reload_native_modules(nodenet_uid=None):
     return runtime.reload_native_modules(nodenet_uid)
+
+# --------- logging --------
+
+
+@rpc("set_logging_levels")
+def set_logging_levels(system=None, world=None, nodenet=None):
+    runtime.set_logging_levels(system, world, nodenet)
+    return dict(status="success")
+
+
+@rpc("get_logger_messages")
+def get_logger_messages(logger=[], after=0):
+    return runtime.get_logger_messages(logger, after)
+
+
+@rpc("get_monitoring_info")
+def get_monitoring_info(nodenet_uid, logger=[], after=0):
+    data = runtime.get_monitor_data(nodenet_uid, 0)
+    data['logs'] = runtime.get_logger_messages(logger, after)
+    return data
 
 
 # -----------------------------------------------------------------------------------------------

@@ -575,3 +575,26 @@ def test_node_netapi_import_sensors(fixed_nodenet):
     netapi.import_sensors("Root", "test_")
     sensors = netapi.get_nodes("Root", "test_")
     assert len(sensors) == 1
+
+
+def test_set_gate_function(fixed_nodenet):
+    # test setting a custom gate function
+    net, netapi, source = prepare(fixed_nodenet)
+
+    some_other_node_type = netapi.create_node("Concept", "Root")
+    netapi.unlink(source, "gen")
+
+    net.step()
+    assert source.get_gate("gen").activation == 0
+
+    netapi.set_gatefunction("Root", "Register", "gen", "return 1/(1+math.exp(-t*x))")
+
+    source.parameters["theta"] = 1
+
+    net.step()
+
+    assert source.get_gate("gen").activation == 0.5
+    assert some_other_node_type.get_gate("gen").activation == 0
+
+
+#TODO: Add locking tests once we're sure we'll keep locking, and like it is implemented now

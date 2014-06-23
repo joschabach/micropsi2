@@ -23,7 +23,6 @@
   font-family: monospace;
   line-height: 1.1em;
   height: 400px;
-  background: #fff;
 }
 
 .log_DEBUG {color: #9c9c9c;}
@@ -37,12 +36,12 @@
 .logentry{ display:block; white-space: nowrap;}
 
 .contentbox {
-  background: white;
   height: 100%;
+  border: 1px solid #ccc;
 }
 
 .monitor_seperator{
-  border-top: 6px solid #eee;
+  border-top: 2px solid #eee;
 }
 
 .section.multiple {

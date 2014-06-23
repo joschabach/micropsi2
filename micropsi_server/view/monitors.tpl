@@ -23,7 +23,7 @@
         <div class="section multiple">
             <div class="monitor_field span6">
                 <h4>Monitors</h4>
-                <div class="contentbox">
+                <div class="contentbox section">
                     <div id="graph"></div>
                     <div class="monitor_seperator">
                         <ul id="monitor_selector" class="monitor_list">
@@ -33,7 +33,7 @@
             </div>
             <div class="logger_field span6">
                 <h4>Logs</h4>
-                <div class="contentbox">
+                <div class="contentbox section">
                     <div id="logs"></div>
                     <form class="form-horizontal monitor_seperator">
                         <ul id="log_selector" class="monitor_list">

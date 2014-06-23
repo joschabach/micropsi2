@@ -2,7 +2,7 @@
 $(function(){
 
     var viewProperties = {
-        height: 300,
+        height: 420,
         padding: 20,
         xvalues: 100
     };

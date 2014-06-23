@@ -908,6 +908,9 @@ class NetAPI(object):
         exists in the given nodespace.
         """
         all_actors = []
+        if self.world is None:
+            return all_actors
+
         for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
@@ -926,6 +929,9 @@ class NetAPI(object):
         exists in the given nodespace.
         """
         all_sensors = []
+        if self.world is None:
+            return all_sensors
+
         for datasource in self.world.get_available_datasources(self.__nodenet.uid):
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None

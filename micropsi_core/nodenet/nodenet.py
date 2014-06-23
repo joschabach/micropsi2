@@ -909,7 +909,7 @@ class NetAPI(object):
         """
         all_actors = []
         for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
-            if datatarget_prefix is None or datatarget.startwith(datatarget_prefix):
+            if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
                 for uid, candidate in self.__nodenet.get_actors(nodespace).items():
                     if candidate.parameters['datatarget'] == datatarget:

@@ -199,6 +199,24 @@ def test_node_netapi_get_nodes_field(fixed_nodenet):
     assert node4 in nodes
 
 
+def test_node_netapi_get_nodes_field_all_links(fixed_nodenet):
+    # test get_nodes_field without specifying a gate parameter
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Concept", "Root", "TestName1")
+    node2 = netapi.create_node("Concept", "Root", "TestName2")
+    node3 = netapi.create_node("Concept", "Root", "TestName3")
+    node4 = netapi.create_node("Concept", "Root", "TestName4")
+    netapi.link_with_reciprocal(node1, node2, "subsur")
+    netapi.link_with_reciprocal(node1, node3, "subsur")
+    netapi.link_with_reciprocal(node1, node4, "subsur")
+    netapi.link_with_reciprocal(node2, node3, "porret")
+
+    nodes = netapi.get_nodes_field(node2)
+    assert len(nodes) == 2
+    assert node1 in nodes
+    assert node3 in nodes
+
+
 def test_node_netapi_get_nodes_field_with_limitations(fixed_nodenet):
     # test get_nodes_field with limitations: no por links
     net, netapi, source = prepare(fixed_nodenet)
@@ -248,6 +266,26 @@ def test_node_netapi_get_nodes_feed(fixed_nodenet):
     netapi.link(node4, "gen", node1, "gen")
 
     nodes = netapi.get_nodes_feed(node1, "gen")
+    assert len(nodes) == 3
+    assert node2 in nodes
+    assert node3 in nodes
+    assert node4 in nodes
+
+
+def test_node_netapi_get_nodes_feed_all_links(fixed_nodenet):
+    # test get_nodes_feed without a gate parameter
+    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(fixed_nodenet)
+    node1 = netapi.create_node("Concept", "Root", "TestName1")
+    node2 = netapi.create_node("Concept", "Root", "TestName2")
+    node3 = netapi.create_node("Concept", "Root", "TestName3")
+    node4 = netapi.create_node("Concept", "Root", "TestName4")
+    netapi.link_with_reciprocal(node1, node2, "subsur")
+    netapi.link_with_reciprocal(node1, node3, "subsur")
+    netapi.link_with_reciprocal(node1, node4, "subsur")
+    netapi.link_with_reciprocal(node2, node3, "porret")
+
+    nodes = netapi.get_nodes_feed(node1)
     assert len(nodes) == 3
     assert node2 in nodes
     assert node3 in nodes

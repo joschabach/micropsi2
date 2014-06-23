@@ -1095,6 +1095,8 @@ def delete_link(nodenet_uid, link_uid):
 def reload_native_modules(nodenet_uid=None):
     return runtime.reload_native_modules(nodenet_uid)
 
+# --------- logging --------
+
 
 @rpc("set_logging_levels")
 def set_logging_levels(system=None, world=None, nodenet=None):
@@ -1105,6 +1107,13 @@ def set_logging_levels(system=None, world=None, nodenet=None):
 @rpc("get_logger_messages")
 def get_logger_messages(logger=[], after=0):
     return runtime.get_logger_messages(logger, after)
+
+
+@rpc("get_monitoring_info")
+def get_monitoring_info(nodenet_uid, logger=[], after=0):
+    data = runtime.get_monitor_data(nodenet_uid, 0)
+    data['logs'] = runtime.get_logger_messages(logger, after)
+    return data
 
 
 # -----------------------------------------------------------------------------------------------

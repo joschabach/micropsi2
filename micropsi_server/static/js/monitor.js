@@ -33,42 +33,6 @@ $(function(){
 
     init();
 
-    function pollActive(){
-        api.call('get_is_nodenet_running', {nodenet_uid: currentNodenet}, function(data){
-            nodenet_running = data.nodenet_running;
-            if(nodenet_running){
-                pollMonitors();
-                pollLogs();
-            }
-            if(!nodenet_running){
-                window.setTimeout(pollActive, 2000);
-            }
-        }, function(){
-            console.warn('server offline. can not determine nodenet state');
-        });
-    }
-
-    function pollMonitors(){
-        api.call('get_monitor_data', { nodenet_uid: currentNodenet, step: 0 }, function(data) {
-            updateMonitorList(data.monitors);
-            nodenetMonitors = data.monitors;
-            var m = {};
-            for (var uid in nodenetMonitors) {
-                if (currentMonitors.indexOf(uid) >= 0) {
-                    m[uid] = nodenetMonitors[uid];
-                }
-            }
-            drawGraph(m);
-            nodenet_running = data.nodenet_running;
-            currentSimulationStep = data.current_step;
-            if(nodenet_running){
-                window.setTimeout(pollMonitors, 500);
-            } else {
-                pollActive();
-            }
-        });
-    }
-
     function init() {
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
@@ -83,14 +47,73 @@ $(function(){
                 currentMonitors = Object.keys(nodenetMonitors);
                 currentSimulationStep = data.step;
                 nodenet_running = data.is_active;
-                pollMonitors();
-                pollLogs();
+                pollMonitoringData();
                 if(!nodenet_running){
                     pollActive();
                 }
-                // drawGraph(currentMonitors);
             });
         }
+    }
+
+    function pollMonitoringData(){
+        var poll = [];
+        for(var logger in capturedLoggers){
+            if(capturedLoggers[logger]){
+                poll.push(logger);
+            }
+        }
+        api.call('get_monitoring_info', {
+            nodenet_uid: currentNodenet,
+            logger: poll,
+            after: last_logger_call
+        }, function(data){
+            setMonitorData(data);
+            setLoggingData(data);
+            nodenet_running = data.nodenet_running;
+            currentSimulationStep = data.current_step;
+            if(nodenet_running){
+                window.setTimeout(pollMonitoringData, 500);
+            } else {
+                pollActive();
+            }
+
+        })
+    }
+
+    function pollActive(){
+        api.call('get_is_nodenet_running', {nodenet_uid: currentNodenet}, function(data){
+            nodenet_running = data.nodenet_running;
+            if(nodenet_running){
+                pollMonitoringData();
+            }
+            if(!nodenet_running){
+                window.setTimeout(pollActive, 2000);
+            }
+        }, function(){
+            console.warn('server offline. can not determine nodenet state');
+        });
+    }
+
+    function setMonitorData(data){
+        updateMonitorList(data.monitors);
+        nodenetMonitors = data.monitors;
+        var m = {};
+        for (var uid in nodenetMonitors) {
+            if (currentMonitors.indexOf(uid) >= 0) {
+                m[uid] = nodenetMonitors[uid];
+            }
+        }
+        drawGraph(m);
+    }
+
+    function setLoggingData(data){
+        var html = log_container.html();
+        last_logger_call = data.logs.servertime;
+        for(var idx in data.logs.logs){
+            html += '<span class="logentry '+data.logs.logs[idx].logger+'_log">'+data.logs.logs[idx].level+' | ' + data.logs.logs[idx].msg +'</span>'
+        }
+        log_container.html(html);
+        log_container.scrollTop(log_container[0].scrollHeight);
     }
 
     function bindEvents(){
@@ -110,32 +133,6 @@ $(function(){
                 el.checked=true;
             }
         })
-    }
-
-    function pollLogs(){
-        var poll = [];
-        for(var logger in capturedLoggers){
-            if(capturedLoggers[logger]){
-                poll.push(logger);
-            }
-        }
-        if(logger.length){
-            api.call('get_logger_messages', {
-                logger: poll,
-                after: last_logger_call
-            }, function(data){
-                var html = log_container.html();
-                last_logger_call = data.servertime;
-                for(var idx in data.logs){
-                    html += '<span class="logentry '+data.logs[idx].logger+'_log">'+data.logs[idx].level+' | ' + data.logs[idx].msg +'</span>'
-                }
-                log_container.html(html);
-                log_container.scrollTop(log_container[0].scrollHeight);
-                if(nodenet_running){
-                    window.setTimeout(pollLogs, 500);
-                }
-            });
-        }
     }
 
     function updateMonitorList(monitors){
@@ -159,7 +156,6 @@ $(function(){
                 currentMonitors.push(el.value);
             }
         });
-        pollMonitors();
     }
 
     function drawGraph(currentMonitors) {

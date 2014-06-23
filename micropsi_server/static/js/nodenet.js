@@ -3164,7 +3164,7 @@ function showGateForm(node, gate){
             }
         } else if(el.name == 'activation'){
             el.value = gate.sheaves[currentSheaf].activation || '0';
-        } else if(el.name in nodetypes[node.type].gate_defaults[gate.name]){
+        } else if(nodetypes[node.type].gate_defaults && el.name in nodetypes[node.type].gate_defaults[gate.name]){
             el.value = nodetypes[node.type].gate_defaults[gate.name][el.name];
         }
     });

@@ -33,6 +33,22 @@ $(function(){
 
     init();
 
+    $(document).on('monitorsChanged', function(){
+        if(!nodenet_running){
+            pollMonitoringData();
+        }
+    });
+    $(document).on('nodenetStepped', function(){
+        if(!nodenet_running){
+            pollMonitoringData();
+        }
+    });
+    $(document).on('nodenetChanged', function(data, newNodenet){
+        currentNodenet = newNodenet;
+        pollMonitoringData();
+    });
+
+
     function init() {
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
@@ -48,9 +64,6 @@ $(function(){
                 currentSimulationStep = data.step;
                 nodenet_running = data.is_active;
                 pollMonitoringData();
-                if(!nodenet_running){
-                    pollActive();
-                }
             });
         }
     }
@@ -132,7 +145,7 @@ $(function(){
             if(capturedLoggers[$(el).attr('data')]){
                 el.checked=true;
             }
-        })
+        });
     }
 
     function updateMonitorList(monitors){

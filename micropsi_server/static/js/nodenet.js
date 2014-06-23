@@ -207,6 +207,10 @@ function setCurrentNodenet(uid, nodespace){
             var nodenetChanged = (uid != currentNodenet);
             var nodespaceChanged = (nodespace != currentNodeSpace);
 
+            if(nodenetChanged){
+                $(document).trigger('nodenetChanged', uid);
+            }
+
             nodenet_data = data;
 
             showDefaultForm();
@@ -2058,6 +2062,7 @@ function stepNodenet(event){
             {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
             success=function(data){
                 refreshNodespace();
+                $(document).trigger('nodenetStepped');
                 dialogs.notification("Nodenet stepped", "success");
             });
     } else {
@@ -2876,6 +2881,7 @@ function addGateMonitor(node, index){
         node_uid: node.uid,
         gate: node.gateIndexes[index]
     }, function(data){
+        $(document).trigger('monitorsChanged');
         monitors[data.uid] = data;
     });
 }
@@ -2886,6 +2892,7 @@ function removeMonitor(node, target, type){
         nodenet_uid: currentNodenet,
         monitor_uid: monitor
     }, function(data){
+        $(document).trigger('monitorsChanged');
         delete monitors[monitor];
     });
 }

@@ -18,6 +18,7 @@ var viewProperties = {
     shadowColor: new Color ("#000000"),
     shadowStrokeWidth: 0,
     shadowDisplacement: new Point(0.5,1.5),
+    selectionColor: new Color("#99ccff"),
     innerShadowDisplacement: new Point(0.2,0.7),
     padding: 3,
     typeColors: {
@@ -29,22 +30,25 @@ var viewProperties = {
     }
 };
 
-// TODO: this really should be loaded from the server
-var available_object_types = [
-    'Lightsource',
-    'PalmTree',
-    'Maple',
-    'Braintree',
-    'Wirselkraut',
-    'Thornbush',
-    'Juniper',
-    'Champignon',
-    'FlyAgaric',
-    'Stone',
-    'Boulder',
-    'Menhir',
-    'Waterhole'
-];
+available_object_types = [];
+
+var scale_factors = {
+    'Lightsource': 1,
+    'Braitenberg': 1,
+    'Survivor': 1,
+    'PalmTree': 0.5,
+    'Maple': 0.7,
+    'Braintree': 0.5,
+    'Wirselkraut': 0.2,
+    'Thornbush': 1,
+    'Juniper': 0.4,
+    'Champignon': 0.125,
+    'FlyAgaric': 0.2,
+    'Stone': 0.2,
+    'Boulder': 0.6,
+    'Menhir': 0.4,
+    'Waterhole': 0.4
+}
 
 objects = {};
 symbols = {};
@@ -63,12 +67,10 @@ if (currentWorld){
 
 scenes = {};
 
-var objectList = $('#world_objects_list table');
+addObjectMode = null;
+addObjectGhost = null;
+
 var agentsList = $('#world_agents_list table');
-
-initializeControls();
-initializeMenus();
-
 
 refreshWorldView = function(){
     api.call('get_world_view',
@@ -96,13 +98,15 @@ refreshWorldView = function(){
                     }
                 } else {
                     if(data.objects[key].position && data.objects[key].position.length == 2){
-                        objects[key].x = data.objects[key].position[0];
-                        objects[key].y = data.objects[key].position[1];
+                        if(!(path && path.objectMoved && path.name == key)){
+                            objects[key].x = data.objects[key].position[0];
+                            objects[key].y = data.objects[key].position[1];
+                            objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                        }
                         if(data.objects[key].orientation){
                             objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
                         }
                         objects[key].orientation = data.objects[key].orientation;
-                        objects[key].representation.position = new Point(objects[key].x, objects[key].y);
                         if(key in scenes){
                             scenes[key] = data.objects[key].scene;
                         }
@@ -147,11 +151,11 @@ function updateSceneViewer(){
     for(var key in scenes){
         selector_html += '<option value="'+key+'">'+objects[key].name+'</option>';
     }
-    if(selector_html){
+    if(selector_html != ''){
         selector_html = '<option val="">choose...</option>' + selector_html;
-        $('.scene_viewer_section').show();
+        $('.scene_viewer_section').addClass('form-default').show();
     } else{
-        $('.scene_viewer_section').hide();
+        $('.scene_viewer_section').removeClass('form-default').hide();
     }
     selector.html(selector_html);
     var keys = Object.keys(scenes);
@@ -207,12 +211,14 @@ function loadWorldInfo(){
     api.call('get_world_properties', {
         world_uid: currentWorld
     }, success=function(data){
+        available_object_types = data.available_worldobjects.sort();
+        initializeControls();
         refreshWorldView();
         world_data = data;
         worldRunning = data.is_active;
         currentWorldSimulationStep = data.step;
         if('assets' in data){
-            var iconhtml = '';
+            var iconhtml = '<img src="/static/island/unknownbox.png" id="icon_default_object" /><img src="/static/island/Micropsi.png" id="icon_default_agent" />';
             for(var key in data.assets.icons){
                 iconhtml += '<img src="/static/'+data.assets.icons[key]+'" id="icon_' + key + '" /> ';
             }
@@ -251,7 +257,6 @@ function addObject(worldobject){
     } else {
         redrawObject(objects[worldobject.uid]);
     }
-    objectList.html(objectList.html() + '<tr><td><a href="#" data="'+worldobject.uid+'" class="worldobject_edit">'+worldobject.name+' ('+worldobject.type+')</a></td></tr>');
     return worldobject;
 }
 
@@ -282,124 +287,48 @@ function renderObject(worldobject){
         //objectLayer.addChild(symbols[worldobject.type]);
     }
     worldobject.representation = symbols[worldobject.type].place();
+    if(worldobject.orientation){
+        worldobject.representation.rotate(worldobject.orientation);
+    }
     worldobject.representation.position = new Point(worldobject.x, worldobject.y);
     worldobject.representation.name = worldobject.uid;
     objectLayer.addChild(worldobject.representation);
 }
 
 function createObjectShape(worldobject, bounds){
-    var raster;
+    var raster = new Raster(getObjectIcon(worldobject));
+    if(worldobject.type in scale_factors){
+        raster.scale(scale_factors[worldobject.type]);
+    }
+    raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
+    raster.rotate(worldobject.orientation);
+    return raster;
+}
+
+function getObjectIcon(worldobject){
     switch(worldobject.type){
         case "Lightsource":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Braitenberg":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Survivor":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "PalmTree":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.5);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Maple":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.7);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Braintree":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.5);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Wirselkraut":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.2);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Thornbush":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(1);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Juniper":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.4);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Champignon":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.125);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "FlyAgaric":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.2);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Stone":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.2);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Boulder":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.6);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Menhir":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.4);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
         case "Waterhole":
-            raster = new Raster('icon_' + worldobject.type);
-            raster.scale(0.4);
-            raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-            raster.rotate(worldobject.orientation);
-        return raster;
-
+            return 'icon_'+worldobject.type;
         default:
-            var shape = new Path.Circle(new Point(bounds.x + bounds.width/2, bounds.y+bounds.height/2), bounds.width/2);
-            if (worldobject.type in viewProperties.typeColors){
-                shape.fillColor = viewProperties.typeColors[worldobject.type];
+            if(worldobject.uid  && worldobject.uid in agents){
+                return 'icon_default_agent';
             } else {
-                shape.fillColor = viewProperties.typeColors['other'];
+                return 'icon_default_object';
             }
-        return shape;
     }
 }
 
@@ -423,7 +352,14 @@ function getLegend(worldobject){
         Math.max(height, bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
     var text = new PointText(point);
     text.justification = 'left';
-    text.content = (worldobject.name ? worldobject.name : worldobject.uid) + '('+parseInt(worldobject.x)+'/'+parseInt(worldobject.y)+')';
+    var content = '';
+    if(worldobject.uid in agents){
+        content = (worldobject.name) ? worldobject.name : worldobject.uid;
+    } else {
+        content = worldobject.type;
+    }
+    content += ' ('+parseInt(worldobject.x)+'/'+parseInt(worldobject.y)+')';
+    text.content = content;
     text.characterStyle = {
         fillColor: 'black',
         fontSize: viewProperties.fontSize*viewProperties.zoomFactor
@@ -453,25 +389,90 @@ clickLabel = false;
 clickHighlight = false;
 clickPosition = null;
 
+selected = null;
+
+$('body').mousedown(function(event){
+    if(addObjectMode && event.target != canvas[0] && event.target != $('#set_worldobject_sprinkle_mode')[0]){
+        unsetAddObjectMode();
+    }
+});
+
+function setAddObjectMode(objecttype){
+    addObjectMode = objecttype;
+    addObjectGhost = new Raster(getObjectIcon({type:addObjectMode}));
+    addObjectGhost.scale(scale_factors[addObjectMode] / 2);
+    addObject.position = new Point(-100, -100);
+    objectLayer.addChild(addObjectGhost);
+    $('#set_worldobject_sprinkle_mode').text("Done").addClass('active');;
+}
+
+function unsetAddObjectMode(){
+    addObjectMode = null;
+    addObjectGhost.remove();
+    addObjectGhost = null;
+    $('#set_worldobject_sprinkle_mode').text("add objects").removeClass('active').blur();
+}
+
+function onKeyDown(event) {
+    if(!addObjectMode){
+        if (event.key == "backspace" || event.key == "delete") {
+            if (event.event.target.tagName == "BODY") {
+                event.preventDefault(); // browser-back
+                if(selected){
+                    if(!(selected.uid in agents)){
+                        deleteWorldObject(selected);
+                        unselectObject();
+                        selected = null;
+                    }
+                }
+            }
+        }
+    } else if(event.key == 'escape'){
+        unsetAddObjectMode();
+    }
+}
+
 function onMouseDown(event){
     clickPosition = null;
     showDefaultForm();
-    // context menus:
-    if (event.modifiers.control || event.event.button == 2){
-        openContextMenu("#create_object_menu", event);
+    var p = event.point;
+    if(addObjectMode){
+        if(event.event.button == 2){
+            unsetAddObjectMode();
+            return;
+        } else {
+            createWorldObject(addObjectMode, p);
+            return;
+        }
+    }
+    var hit = false;
+    for (var uid in objects) {
+        if(objects[uid].representation && objects[uid].representation.hitTest(p)){
+            selected = objects[uid];
+            selectObject(objects[uid]);
+            hit = true;
+            break;
+        }
+    }
+    if(!hit){
+        unselectObject();
     }
 }
 
 function onMouseMove(event) {
     var p = event.point;
+    if(event.event.target == canvas[0]){
+        $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
+    } else {
+        $('#world_status').val('Pos: ');
+    }
 
-    $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
+    if(addObjectMode && addObjectGhost){
+        addObjectGhost.position = p;
+    }
 
     // hovering
     if (hoverUid) { // unhover
-        if(hoverUid in objects){
-            //objects[hoverUid].representation.scale((1/viewProperties.hoverScale));
-        }
         hoverUid = null;
     }
     // first, check for nodes
@@ -504,6 +505,12 @@ function onMouseMove(event) {
 }
 
 function onMouseDrag(event) {
+    var p = event.point;
+    if(event.event.target == canvas[0]){
+        $('#world_status').val('Pos: ' + p.x + ' / ' + p.y);
+    } else {
+        $('#world_status').val('Pos: ');
+    }
     if (movePath) {
         path.objectMoved = true;
         path.position += event.delta;
@@ -517,10 +524,14 @@ function onMouseDrag(event) {
                 obj.bounds.x + (viewProperties.label.x * viewProperties.zoomFactor),
                 Math.max(height, obj.bounds.y + (viewProperties.label.y * viewProperties.zoomFactor)));
         }
+        if(selectionBorder){
+            selectionBorder.position += event.delta;
+        }
     }
 }
 
 function onMouseUp(event) {
+    var p = event.point;
     if (movePath) {
         if(path.objectMoved && objects[path.name]){
             // update position on server
@@ -530,6 +541,28 @@ function onMouseUp(event) {
             updateViewSize();
         }
     }
+}
+
+selectionBorder = null;
+function unselectObject(){
+    if(selectionBorder){
+        selectionBorder.remove();
+    }
+}
+function selectObject(worldobject){
+    if(selectionBorder){
+        unselectObject();
+    }
+    var bounds = worldobject.representation.bounds;
+    selectionBorder = new Path.Rectangle(worldobject.x - (bounds.width / 2), worldobject.y - (bounds.height  /2), bounds.width , bounds.height );
+    selectionBorder.strokeWidth = 1;
+    selectionBorder.name = 'selectionBorder'
+    selectionBorder.strokeColor = viewProperties.selectionColor;
+    if(worldobject.orientation){
+        selectionBorder.rotate(worldobject.orientation);
+    }
+    objectLayer.addChild(selectionBorder);
+
 }
 
 function highlightObject(uid){
@@ -575,51 +608,13 @@ function scrollToObject(obj){
     else if (bounds.x + bounds.width >= (parent.innerWidth() + parent.scrollLeft())) parent.scrollLeft(bounds.x - parent.innerWidth() + bounds.width + 50);
 }
 
-// --------------------------- menus -------------------------------------------------------- //
-
-function initializeMenus(){
-    $('#create_object_menu li').on('click', handleContextMenu);
-}
-
-function openContextMenu(menu_id, event){
-    event.event.cancelBubble = true;
-    clickPosition = event.point;
-    $(menu_id).css({
-        position: "absolute",
-        zIndex: 500,
-        marginLeft: -5, marginTop: -5,
-        top: event.event.pageY, left: event.event.pageX });
-    $(menu_id+" .dropdown-toggle").dropdown("toggle");
-}
-
-function handleContextMenu(event){
-    var item = $(event.target);
-    event.preventDefault();
-    switch(item.attr('data')){
-        case 'add_worldobject':
-            showObjectForm();
-    }
-}
 
 // --------------------------- controls -------------------------------------------------------- //
 
 function initializeControls(){
     $('.editor_field form .controls button[type="reset"]').on('click', showDefaultForm);
-    $('#add_object_link').on('click', function(event){
-        event.preventDefault();
-        $('#wo_uid_input').attr('disabled', 'disabled');
-        showObjectForm();
-    });
 
-    $('#add_object_param').on('click', function(event){
-        event.preventDefault();
-        var param_table = $('#wo_parameter_list');
-        var html = param_table.html();
-        html += '<tr><td><input type="text" name="param_key" class="param_key inplace" /></td><td><input type="text" name="new_param_val" class="param_val inplace" /></td></tr>';
-        param_table.html(html);
-    });
-    $('#wo_type_input').html('<option>' + available_object_types.join('</option><option>')+'</option>');
-    $('#edit_worldobject .btn-primary').on('click', handleSubmitWorldobject);
+    $('#available_worldobjects').html('<option>' + available_object_types.join('</option><option>')+'</option>');
     agentsList.on('click', function(event){
         event.preventDefault();
         var target = $(event.target);
@@ -628,16 +623,16 @@ function initializeControls(){
             scrollToObject(agents[target.attr('data')]);
         }
     });
-    objectList.on('click', function(event){
+    $('#scene_viewer_agent').on('change', refreshSceneView);
+
+    $('#set_worldobject_sprinkle_mode').on('click', function(event){
         event.preventDefault();
-        var target = $(event.target);
-        if(target.attr('class') == 'worldobject_edit' && target.attr('data')){
-            showObjectForm(objects[target.attr('data')]);
-            highlightObject(target.attr('data'));
-            scrollToObject(objects[target.attr('data')]);
+        if(addObjectMode){
+            unsetAddObjectMode();
+        } else {
+            setAddObjectMode($('#available_worldobjects').val());
         }
     });
-    $('#scene_viewer_agent').on('change', refreshSceneView);
 }
 
 function resetWorld(event){
@@ -679,16 +674,17 @@ function stopWorldrunner(event){
 
 function showDefaultForm(){
     $('#world_forms .form-horizontal').hide();
-    $('#world_status').show();
-    $('#world_objects').show();
+    $('#world_forms .form-default').show();
 }
 
 function showObjectForm(worldobject){
+    if(worldobject && worldobject.uid in agents){
+        return false;
+    }
     if(!worldobject) worldobject = {};
     $('#world_forms .form-horizontal').hide();
     $('#wo_uid_input').val(worldobject.uid);
     $('#wo_name_input').val(worldobject.name);
-    $('#wo_type_input').val(worldobject.type);
     var param_table = $('#wo_parameter_list');
     var param_html = '';
     for(var key in worldobject.parameters){
@@ -701,40 +697,21 @@ function showObjectForm(worldobject){
 
 // ------------------------ API Communication --------------------------------------------------- //
 
-function handleSubmitWorldobject(event){
-    event.preventDefault();
-    var uid = $('#wo_uid_input').val();
-    data = {
-        'world_uid': currentWorld,
-        'name': $('#wo_name_input').val(),
-        'type': $('#wo_type_input').val(),
-        'position': [10, 10],
-        'parameters': {}
-    };
-    var param_fields = $('input[name^="param_"]', $('#edit_worldobject'));
-    for(var i in param_fields){
-        if(param_fields[i].name == "param_name"){
-            data.parameters[param_fields[i].value] = param_fields[++i].value;
+function createWorldObject(type, pos){
+    api.call('add_worldobject', {world_uid: currentWorld, type: type, position: [pos.x, pos.y]}, function(result){
+        if(result.status =='success'){
+            addObject(new WorldObject(result.uid, pos.x, pos.y, 0, '', type, {}));
         }
-    }
-    if(uid){
-        setObjectProperties(objects[uid], null, null, data.name, null, data.parameters);
-    } else {
-        var pos;
-        if(clickPosition){
-            pos = clickPosition;
-        } else {
-            var parent = canvas.parent();
-            pos = new Point(parent.scrollTop() + (parent.innerHeight() / 2), parent.scrollLeft() + (parent.innerWidth()/2));
-        }
-        data.position = [pos.x, pos.y];
-        api.call('add_worldobject', data, function(result){
-            if(result.status =='success'){
-                addObject(new WorldObject(result.uid, pos.x, pos.y, 0, data.name, data.type, data.parameters));
-            }
-            updateViewSize();
-        }, api.defaultErrorCallback);
-    }
+        updateViewSize();
+    });
+}
+
+function deleteWorldObject(worldobject){
+    objects[worldobject.uid].representation.remove();
+    delete objects[worldobject.uid];
+    api.call('delete_worldobject', {'world_uid': currentWorld, 'object_uid': worldobject.uid}, function(){
+        dialogs.notification("worldobject deleted");
+    });
 }
 
 function setObjectProperties(worldobject, x, y, name, orientation, parameters){

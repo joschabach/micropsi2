@@ -122,6 +122,8 @@ nodenetRunning = false;
 get_available_worlds();
 refreshNodenetList();
 
+registerResizeHandler();
+
 function toggleButtons(on){
     if(on)
         $('[data-nodenet-control]').removeAttr('disabled');
@@ -248,9 +250,13 @@ function setCurrentNodenet(uid, nodespace){
             refreshNodenetList();
         },
         function(data) {
-            currentNodenet = null;
-            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-            dialogs.notification(data.Error, "Error");
+            if(data.status == 500){
+                api.defaultErrorCallback(data);
+            } else {
+                currentNodenet = null;
+                $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+                dialogs.notification(data.Error, "Error");
+            }
         });
 }
 
@@ -463,7 +469,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
                 sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
             }
 
-            if(nodetypes[type].gate_defaults) {
+            if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]]) {
                 parameters = nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]];
             } else {
                 // mh. evil. where should this be defined?
@@ -2801,6 +2807,7 @@ function handleNodespaceUp() {
 function handleEditNodenet(event){
     event.preventDefault();
     var form = event.target;
+    var reload = false;
     var params = {
         nodenet_uid: currentNodenet,
         nodenet_name: $('#nodenet_name', form).val()
@@ -2809,6 +2816,11 @@ function handleEditNodenet(event){
     if(nodenet_world){
         params.world_uid = nodenet_world;
     }
+    if(nodenet_world != nodenet_data.world){
+        if(nodenet_data.world == currentWorld || nodenet_world == currentWorld){
+            reload = true;
+        }
+    }
     var worldadapter = $('#nodenet_worldadapter', form).val();
     if(worldadapter){
         params.worldadapter = worldadapter;
@@ -2816,7 +2828,11 @@ function handleEditNodenet(event){
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
-            setCurrentNodenet(currentNodenet);
+            if(reload){
+                window.location.reload();
+            } else {
+                setCurrentNodenet(currentNodenet);
+            }
         }
     );
 }
@@ -2943,8 +2959,12 @@ function followgate(event){
     var node = nodes[$(event.target).attr('data-node')];
     var gate = node.gates[$(event.target).attr('data-gate')];
     deselectAll();
-    selectGate(node, gate);
-    view.draw();
+    if(!isCompact(node)){
+        selectGate(node, gate);
+        view.draw();
+    } else {
+        selectNode(node.uid);
+    }
     showGateForm(node, gate);
 }
 
@@ -3181,6 +3201,36 @@ function updateNodespaceForm(){
         }
         $('#nodespace_gatefunction_nodetype').html(nodetypehtml).trigger('change');
     }
+}
+
+function registerResizeHandler(){
+    // resize handler for nodenet viewer:
+    var isDragging = false;
+    var container = $('.section.nodenet .editor_field');
+    if($.cookie('nodenet_editor_height')){
+        container.height($.cookie('nodenet_editor_height'));
+        try{
+            updateViewSize();
+        } catch(err){}
+    }
+    var startHeight, startPos, newHeight;
+    $("a#nodenetSizeHandle").mousedown(function(event) {
+        startHeight = container.height();
+        startPos = event.pageY;
+        $(window).mousemove(function(event) {
+            isDragging = true;
+            newHeight = startHeight + (event.pageY - startPos);
+            container.height(newHeight);
+            updateViewSize();
+        });
+    });
+    $(window).mouseup(function(event) {
+        if(isDragging){
+            $.cookie('nodenet_editor_height', container.height(), {expires:7, path:'/'});
+        }
+        isDragging = false;
+        $(window).unbind("mousemove");
+    });
 }
 
 

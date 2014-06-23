@@ -8,8 +8,10 @@ from copy import deepcopy
 import micropsi_core.tools
 import json
 import os
+
 import warnings
 from .node import Node, Nodetype, SheafElement, STANDARD_NODETYPES
+from threading import Lock
 import logging
 from .nodespace import Nodespace
 from .link import Link
@@ -141,6 +143,8 @@ class Nodenet(object):
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
 
+        self.netlock = Lock()
+
         self.logger = logging.getLogger("nodenet")
         self.logger.info("Setting up nodenet %s", self.name)
 
@@ -149,30 +153,31 @@ class Nodenet(object):
     def load(self, string=None):
         """Load the node net from a file"""
         # try to access file
-        if string:
-            self.logger.info("Loading nodenet %s from string", self.name)
-            try:
-                self.state = json.loads(string)
-            except ValueError:
-                warnings.warn("Could not read nodenet data from string")
-                return False
-        else:
-            try:
-                self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
-                with open(self.filename) as file:
-                    self.state = json.load(file)
-            except ValueError:
-                warnings.warn("Could not read nodenet data")
-                return False
-            except IOError:
-                warnings.warn("Could not open nodenet file")
+        with self.netlock:
+            if string:
+                self.logger.info("Loading nodenet %s from string", self.name)
+                try:
+                    self.state = json.loads(string)
+                except ValueError:
+                    warnings.warn("Could not read nodenet data from string")
+                    return False
+            else:
+                try:
+                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
+                    with open(self.filename) as file:
+                        self.state = json.load(file)
+                except ValueError:
+                    warnings.warn("Could not read nodenet data")
+                    return False
+                except IOError:
+                    warnings.warn("Could not open nodenet file")
 
-        if "version" in self.state and self.state["version"] == NODENET_VERSION:
-            self.initialize_nodenet()
-            return True
-        else:
-            warnings.warn("Wrong version of the nodenet data; starting new nodenet")
-            return False
+            if "version" in self.state and self.state["version"] == NODENET_VERSION:
+                self.initialize_nodenet()
+                return True
+            else:
+                warnings.warn("Wrong version of the nodenet data; starting new nodenet")
+                return False
 
     def initialize_nodespace(self, id, data):
         if id not in self.nodespaces:
@@ -478,27 +483,28 @@ class Nodenet(object):
                                                         # TODO: Not really sure why we don't just know our world adapter,
                                                         # but instead the world object itself
 
-        self.propagate_link_activation(self.nodes.copy())
+        with self.netlock:
+            self.propagate_link_activation(self.nodes.copy())
 
-        self.timeout_locks()
+            self.timeout_locks()
 
-        activators = self.get_activators()
-        nativemodules = self.get_nativemodules()
-        everythingelse = self.nodes.copy()
-        for key in nativemodules.keys():
-            del everythingelse[key]
+            activators = self.get_activators()
+            nativemodules = self.get_nativemodules()
+            everythingelse = self.nodes.copy()
+            for key in nativemodules.keys():
+                del everythingelse[key]
 
-        self.calculate_node_functions(activators)       # activators go first
-        self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
-        self.calculate_node_functions(everythingelse)   # then all the peasant nodes get calculated
+            self.calculate_node_functions(activators)       # activators go first
+            self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
+            self.calculate_node_functions(everythingelse)   # then all the peasant nodes get calculated
 
-        self.netapi._step()
+            self.netapi._step()
 
-        self.state["step"] += 1
-        for uid in self.monitors:
-            self.monitors[uid].step(self.state["step"])
-        for uid, node in activators.items():
-            node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+            self.state["step"] += 1
+            for uid in self.monitors:
+                self.monitors[uid].step(self.state["step"])
+            for uid, node in activators.items():
+                node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
@@ -698,6 +704,10 @@ class NetAPI(object):
         return self.__nodenet.uid
 
     @property
+    def step(self):
+        return self.__nodenet.current_step
+
+    @property
     def world(self):
         return self.__nodenet.world
 
@@ -848,7 +858,7 @@ class NetAPI(object):
         """
         links_to_delete = []
         for gatetype, gateobject in source_node.gates.items():
-            if source_gate is None or source_gate is gatetype:
+            if source_gate is None or source_gate == gatetype:
                 for linkid, link in gateobject.outgoing.items():
                     if target_node is None or target_node.uid == link.target_node.uid:
                         if target_slot is None or target_slot == link.target_slot.type:
@@ -899,7 +909,7 @@ class NetAPI(object):
         """
         all_actors = []
         for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
-            if datatarget_prefix is None or datatarget.startwith(datatarget_prefix):
+            if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
                 for uid, candidate in self.__nodenet.get_actors(nodespace).items():
                     if candidate.parameters['datatarget'] == datatarget:

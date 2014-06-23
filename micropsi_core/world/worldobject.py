@@ -10,6 +10,10 @@ from micropsi_core.tools import generate_uid
 class WorldObject(object):
 
     @property
+    def diameter(self):
+        return self.data.get('diameter', 1)
+
+    @property
     def position(self):
         return self.data.get('position', 0)
 

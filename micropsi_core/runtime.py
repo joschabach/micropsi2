@@ -82,13 +82,17 @@ def signal_handler(signal, frame):
 def nodenetrunner():
     """Looping thread to simulate node nets continously"""
     while runner['nodenet']['running']:
-        step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
+        if configs['nodenetrunner_timestep'] > 1000:
+            step = timedelta(seconds=configs['nodenetrunner_timestep'] / 1000)
+        else:
+            step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
                 nodenets[uid].step()
         left = step - (datetime.now() - start)
-        time.sleep(float(str(left).split(':')[-1:][0]))  # cut hours, minutes, convert to float.
+        if left.total_seconds() > 0:
+            time.sleep(left.total_seconds())
 
 
 def worldrunner():
@@ -202,7 +206,9 @@ def load_nodenet(nodenet_uid):
 
 def get_nodenet_data(nodenet_uid, **coordinates):
     """ returns the current state of the nodenet """
-    data = get_nodenet(nodenet_uid).state.copy()
+    nodenet = get_nodenet(nodenet_uid)
+    with nodenet.netlock:
+        data = nodenet.state.copy()
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
     data.update({
         'nodetypes': nodetypes,
@@ -232,12 +238,13 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
     """
     if nodespace not in nodenets[nodenet_uid].nodespaces:
         nodespace = "Root"
-    if x2 < 0 or y2 < 0:
-        data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
-    else:
-        data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
-    data['nodespace'] = nodespace
-    return data
+    with nodenets[nodenet_uid].netlock:
+        if x2 < 0 or y2 < 0:
+            data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
+        else:
+            data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+        data['nodespace'] = nodespace
+        return data
 
 
 def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):
@@ -306,10 +313,9 @@ def delete_nodenet(nodenet_uid):
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
     nodenet = nodenets[nodenet_uid]
-    if world_uid is None:
-        world_uid = nodenet.world
-    elif nodenet.world:
+    if nodenet.world and nodenet.world.uid != world_uid:
         nodenet.world.unregister_nodenet(nodenet_uid)
+        nodenet.world = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:

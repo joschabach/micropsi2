@@ -153,16 +153,20 @@ var api = {
     },
     defaultErrorCallback: function (data, outcome, type){
         var msg = '';
-        try{
-            error = JSON.parse(data.responseText);
-            var errtext = $('<div/>').text(error.Error).html();
-            msg += '<strong>' + errtext + '</strong>';
-            if(error.Traceback){
-                msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
+        if(data.status == 0){
+            msg = "Server not reachable.";
+        } else {
+            try{
+                error = JSON.parse(data.responseText);
+                var errtext = $('<div/>').text(error.Error).html();
+                msg += '<strong>' + errtext + '</strong>';
+                if(error.Traceback){
+                    msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
+                }
+            } catch (err){}
+            if(!msg){
+                msg = type || "serverside exception";
             }
-        } catch (err){}
-        if(!msg){
-            msg = type || "serverside exception";
         }
         dialogs.notification("Error: " + msg, 'exception');
     },
@@ -318,34 +322,7 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
-    // resize handler for nodenet viewer:
-    var isDragging = false;
-    var canvas = $('#nodenet');
-    var container = $('.section.nodenet .editor_field');
-    if($.cookie('nodenet_editor_height')){
-        container.height($.cookie('nodenet_editor_height'));
-        try{
-            updateViewSize();
-        } catch(err){}
-    }
-    var startHeight, startPos, newHeight;
-    $("a#sizeHandle").mousedown(function(event) {
-        startHeight = container.height();
-        startPos = event.pageY;
-        $(window).mousemove(function(event) {
-            isDragging = true;
-            newHeight = startHeight + (event.pageY - startPos);
-            container.height(newHeight);
-            updateViewSize();
-        });
-    });
-    $(window).mouseup(function(event) {
-        if(isDragging){
-            $.cookie('nodenet_editor_height', container.height(), {expires:7, path:'/'});
-        }
-        isDragging = false;
-        $(window).unbind("mousemove");
-    });
+
 
 });
 

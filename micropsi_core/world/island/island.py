@@ -77,7 +77,12 @@ class Island(World):
         brightness = 0
         for key in self.objects:
             if hasattr(self.objects[key], "get_intensity"):
-                brightness += self.objects[key].get_intensity(_2d_distance_squared(self.objects[key].position, position))
+                # adapted from micropsi1
+                pos = self.objects[key].position
+                diff = (pos[0] - position[0], pos[1] - position[1])
+                dist = _2d_vector_norm(diff) + 1
+                lightness = self.objects[key].get_intensity()
+                brightness += (lightness /dist /dist)
         return brightness
 
     def get_movement_result(self, start_position, effort_vector, diameter=0):
@@ -110,7 +115,7 @@ class Lightsource(WorldObject):
 
     @property
     def diameter(self):
-        return self.data.get('diameter', 0.6)
+        return self.data.get('diameter', 1.)
 
     @diameter.setter
     def diameter(self, diameter):
@@ -118,7 +123,7 @@ class Lightsource(WorldObject):
 
     @property
     def intensity(self):
-        return self.data.get('intensity', 0.6)
+        return self.data.get('intensity', 10000.)
 
     @intensity.setter
     def intensity(self, intensity):
@@ -127,10 +132,9 @@ class Lightsource(WorldObject):
     def __init__(self, world, uid=None, **data):
         WorldObject.__init__(self, world, category="objects", uid=uid, **data)
 
-    def get_intensity(self, distance_squared):
-        """returns the strength of the light, depending on the square of the distance
-        (we are using the square to avoid a math.sqr elsewhere)"""
-        return self.intensity * self.diameter * self.diameter / distance_squared
+    def get_intensity(self, falloff_func=1.):
+        """returns the strength of the light, optionally depending on a given fall-off function"""
+        return self.intensity * self.diameter * self.diameter / falloff_func
 
     def action_eat(self):
         return True, 0, 0, -0.7
@@ -396,22 +400,24 @@ class Survivor(WorldAdapter):
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
-    datasources = {'brightness_l': 1.7, 'brightness_r': 1.7}
+    datasources = {'brightness_l': 0, 'brightness_r': 0}
     datatargets = {'engine_l': 0, 'engine_r': 0}
+    datatarget_feedback = {'engine_l': 0, 'engine_r': 0}
 
     # positions of sensors, relative to origin of agent center
-    brightness_l_offset = (-0.25, 0.25)
-    brightness_r_offset = (0.25, 0.25)
+    brightness_l_offset = (-25, -50)
+    brightness_r_offset = (+25, -50)
 
     # positions of engines, relative to origin of agent center
-    engine_l_offset = (-0.3, 0)
-    engine_r_offset = (0.3, 0)
+    engine_l_offset = (-25, 0)
+    engine_r_offset = (+25, 0)
 
     # agent diameter
-    diameter = 0.6
+    diameter = 50  # note: this is also used as the distance between the wheels
+    radius = 25
 
     # maximum speed
-    speed_limit = 1.5
+    speed_limit = 1.
 
     def initialize_worldobject(self, data):
         if not "position" in data:
@@ -430,17 +436,16 @@ class Braitenberg(WorldAdapter):
             r_wheel_speed *= f
             l_wheel_speed *= f
 
-        self.set_datatarget_feedback('engine_r', r_wheel_speed)
-        self.set_datatarget_feedback('engine_l', l_wheel_speed)
-
-        rotation = math.degrees((l_wheel_speed - r_wheel_speed) / (self.diameter))
-        translation = _2d_rotate((0, (r_wheel_speed + l_wheel_speed) / 2), rotation)
+        # (left - right) because inverted rotation circle ( doesn't change x because cosine, does change y because sine :)
+        rotation = math.degrees((self.radius * l_wheel_speed - self.radius * r_wheel_speed) / self.diameter)
         self.orientation += rotation
+        avg_velocity = (self.radius * r_wheel_speed + self.radius * l_wheel_speed) / 2
+        translation = _2d_rotate((0, avg_velocity), self.orientation + rotation)
+
         # you may decide how far you want to go, but it is up the world to decide how far you make it
-        self.position = self.world.get_movement_result(self.position, translation)
+        self.position = self.world.get_movement_result(self.position, translation, self.diameter)
 
         # sense light sources
-
         brightness_l_position = _2d_translate(_2d_rotate(self.brightness_l_offset, self.orientation), self.position)
         brightness_r_position = _2d_translate(_2d_rotate(self.brightness_r_offset, self.orientation), self.position)
 
@@ -454,8 +459,9 @@ class Braitenberg(WorldAdapter):
 def _2d_rotate(position, angle_degrees):
     """rotate a 2d vector around an angle (in degrees)"""
     radians = math.radians(angle_degrees)
-    cos = math.cos(radians)
-    sin = math.sin(radians)
+    # take the negative of the angle because the orientation circle works clockwise in this world
+    cos = math.cos(-radians)
+    sin = math.sin(-radians)
     x, y = position
     return x * cos - y * sin, - (x * sin + y * cos)
 
@@ -468,6 +474,11 @@ def _2d_distance_squared(position1, position2):
 def _2d_translate(position1, position2):
     """add two 2d vectors"""
     return (position1[0] + position2[0], position1[1] + position2[1])
+
+
+def _2d_vector_norm(vector):
+    """Calculates the length /norm of a given vector."""
+    return math.sqrt(sum(i**2 for i in vector))
 
 
 # the indices of ground types correspond to the color numbers in the groundmap png

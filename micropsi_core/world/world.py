@@ -86,12 +86,16 @@ class World(object):
             "agents": {},
             "step": 0
         }
-        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter) if cls.__name__ in self.supported_worldadapters }
 
-        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject)
-                                        if cls not in self.supported_worldadapters}
+        folder = self.__module__.split('.')
+        folder.pop()
+        folder = '.'.join(folder)
+        self.supported_worldadapters = { cls.__name__:cls for cls in tools.itersubclasses(worldadapter.WorldAdapter, folder=folder) if cls.__name__ in self.supported_worldadapters }
+
+        self.supported_worldobjects = { cls.__name__:cls for cls in tools.itersubclasses(worldobject.WorldObject, folder=folder)
+                                        if cls.__name__ not in self.supported_worldadapters}
         # freaky hack.
-        self.supported_worldobjects.pop('WorldAdapter')
+        self.supported_worldobjects.pop('WorldAdapter', None)
         self.supported_worldobjects['Default'] = worldobject.WorldObject
 
         self.uid = uid or generate_uid()
@@ -200,6 +204,13 @@ class World(object):
             return True, uid
         return False, "type not supported"
 
+    def delete_object(self, object_uid):
+        if object_uid in self.objects:
+            del self.objects[object_uid]
+            del self.data['objects'][object_uid]
+            return True
+        return False
+
     def get_world_objects(self, type=None):
         """ returns a dictionary of world objects. """
         objects = {}
@@ -237,6 +248,8 @@ class World(object):
         """
         if nodenet_uid in self.agents:
             del self.agents[nodenet_uid]
+        if nodenet_uid in self.data['agents']:
+            del self.data['agents'][nodenet_uid]
 
     def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
         """Creates an agent object,

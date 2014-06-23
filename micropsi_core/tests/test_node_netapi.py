@@ -9,29 +9,8 @@ from micropsi_core import runtime as micropsi
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter, WorldObject
 
-
-class DummyWorld(World):
-
-    supported_worldadapters = ['DummyWorldAdapter']
-
-    def __init__(self, filename, world_type="DummyWorld", name="", owner="", uid=None, version=1):
-        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
-        self.current_step = 0
-        self.data['assets'] = {}
-
-
-class DummyWorldAdapter(WorldAdapter):
-
-    datasources = {'test_source': 0.7}
-    datatargets = {'test_target': 0}
-    datatarget_feedback = {'test_target': 0.3}
-
-    def __init__(self, world, uid=None, **data):
-        WorldObject.__init__(self, world, category='agents', uid=uid, **data)
-
-    def update(self):
-        self.world.test_target_value = self.datatargets['test_target']
-
+from micropsi_core.tests.test_node_logic import DummyWorld, DummyWorldAdapter
+from micropsi_core.tests import test_node_logic
 
 def prepare(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
@@ -564,3 +543,35 @@ def test_node_netapi_unlink_gate(fixed_nodenet):
     assert len(n_b.get_slot('por').incoming) == 3
     assert len(n_c.get_slot('por').incoming) == 3
     assert len(n_d.get_slot('por').incoming) == 3
+
+
+def test_node_netapi_import_actors(fixed_nodenet):
+    # test importing data targets as actors
+    net, netapi, source = prepare(fixed_nodenet)
+    world = test_node_logic.add_dummyworld(fixed_nodenet)
+
+    netapi.import_actors("Root", "test_")
+    actors = netapi.get_nodes("Root", "test_")
+    assert len(actors) == 1
+    assert actors[0].parameters['datatarget'] == "test_target"
+
+    # do it again, make sure we can call import multiple times
+    netapi.import_actors("Root", "test_")
+    actors = netapi.get_nodes("Root", "test_")
+    assert len(actors) == 1
+
+
+def test_node_netapi_import_sensors(fixed_nodenet):
+    # test importing data sources as sensors
+    net, netapi, source = prepare(fixed_nodenet)
+    world = test_node_logic.add_dummyworld(fixed_nodenet)
+
+    netapi.import_sensors("Root", "test_")
+    sensors = netapi.get_nodes("Root", "test_")
+    assert len(sensors) == 1
+    assert sensors[0].parameters['datasource'] == "test_source"
+
+    # do it again, make sure we can call import multiple times
+    netapi.import_sensors("Root", "test_")
+    sensors = netapi.get_nodes("Root", "test_")
+    assert len(sensors) == 1

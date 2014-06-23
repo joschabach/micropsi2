@@ -770,7 +770,7 @@ class NetAPI(object):
         """
         nodes = []
         slots = []
-        if slots is not None:
+        if slot is not None:
             slots.append(slot)
         else:
             slots.extend(self.__nodenet.nodes[node.uid].slots.keys())

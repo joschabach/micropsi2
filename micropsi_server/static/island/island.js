@@ -301,7 +301,6 @@ function createObjectShape(worldobject, bounds){
         raster.scale(scale_factors[worldobject.type]);
     }
     raster.position = new Point(bounds.x + raster.width/2, bounds.y+bounds.height/2);
-    raster.rotate(worldobject.orientation);
     return raster;
 }
 

@@ -14,6 +14,7 @@ default Nodetypes
 import warnings
 import micropsi_core.tools
 from .netentity import NetEntity
+import logging
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -240,6 +241,11 @@ class Node(NetEntity):
         if 'gate_parameters' not in self.data:
             self.data['gate_parameters'] = {}
         for parameter, value in parameters.items():
+            if(parameter in Gate.StandardGateParams):
+                try:
+                    value = float(value)
+                except:
+                    raise Exception("Standard gate parameters must be numeric")
             self.data['gate_parameters'][gate_type][parameter] = value
             self.gates[gate_type].parameters[parameter] = value
 
@@ -289,6 +295,8 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         outgoing: the set of links originating at the gate
     """
 
+    StandardGateParams = ['maximum', 'minimum', 'certainty', 'amplification', 'threshold', 'decay']
+
     @property
     def activation(self):
         return self.sheaves['default'].activation
@@ -317,7 +325,14 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             self.parameters = gate_defaults.copy()
         if parameters is not None:
             for key in parameters:
-                self.parameters[key] = parameters[key]
+                if key in self.StandardGateParams:
+                    try:
+                        self.parameters[key] = float(parameters[key])
+                    except:
+                        logging.getLogger('nodenet').warn('Invalid gate parameter value for gate %s, param %s, node %s' % (type, key, node.uid))
+                        self.parameters[key] = Nodetype.GATE_DEFAULTS.get(key, 0)
+                else:
+                    self.parameters[key] = float(parameters[key])
         self.monitor = None
 
     def gate_function(self, input_activation, sheaf="default"):
@@ -530,6 +545,18 @@ class Nodetype(object):
     """Every node has a type, which is defined by its slot types, gate types, its node function and a list of
     node parameteres."""
 
+    GATE_DEFAULTS = {
+        "minimum": -1,
+        "maximum": 1,
+        "certainty": 1,
+        "amplification": 1,
+        "threshold": 0,
+        "decay": 0,
+        "theta": 0,
+        "rho": 0,
+        "spreadsheaves": False
+    }
+
     @property
     def name(self):
         return self.data["name"]
@@ -648,17 +675,7 @@ class Nodetype(object):
 
         self.gate_defaults = {}
         for g in self.gatetypes:
-            self.gate_defaults[g] = {
-                "minimum": -1,
-                "maximum": 1,
-                "certainty": 1,
-                "amplification": 1,
-                "threshold": 0,
-                "decay": 0,
-                "theta": 0,
-                "rho": 0,
-                "spreadsheaves": False
-            }
+            self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
 
         gate_defaults = self.data.get("gate_defaults") if gate_defaults is None else gate_defaults
         if gate_defaults is not None:

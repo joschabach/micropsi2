@@ -269,9 +269,7 @@ function getNodespaceList(){
         nodespaces = nodespacedata;
         html = '';
         for(var uid in nodespaces){
-            if(uid != 'gatefunctions'){
-                html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
-            }
+            html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
         }
         $('#nodespace_control ul').html(html);
         $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);
@@ -2282,9 +2280,7 @@ function handleContextMenu(event) {
                         $('#link_target_slot').html('');
                         var html = '';
                         for(var key in nodespaces){
-                            if(key != 'gatefunctions'){
-                                html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
-                            }
+                            html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
                         }
                         $('#link_target_nodespace').html(html);
                         html = '';
@@ -2853,11 +2849,11 @@ function handleEditNodespace(event){
     var nodetype = $('#nodespace_gatefunction_nodetype').val();
     var gatename = $('#nodespace_gatefunction_gate').val();
     var gatefunc = $('#nodespace_gatefunction').val();
-    if(gatefunc && (!(nodetype in nodespaces.gatefunctions) || nodespaces.gatefunctions[nodetype][gatename] != gatefunc)){
-        if(!(nodetype in nodespaces.gatefunctions)){
-            nodespaces.gatefunctions[nodetype] = {};
+    if(gatefunc && (!(nodetype in nodespaces[currentNodeSpace].gatefunctions) || nodespaces[currentNodeSpace].gatefunctions[nodetype][gatename] != gatefunc)){
+        if(!(nodetype in nodespaces[currentNodeSpace].gatefunctions)){
+            nodespaces[currentNodeSpace].gatefunctions[nodetype] = {};
         }
-        nodespaces.gatefunctions[nodetype][gatename] = gatefunc;
+        nodespaces[currentNodeSpace].gatefunctions[nodetype][gatename] = gatefunc;
         api.call('set_gate_function', {
             nodenet_uid: currentNodenet,
             nodespace: currentNodeSpace,
@@ -2998,10 +2994,10 @@ function initializeSidebarForms(){
     nodespace_gatefunction_gate.on('change', function(event){
         var value = '';
         var node = nodespace_gatefunction_nodetype.val();
-        if(node in nodespaces.gatefunctions){
+        if(node in nodespaces[currentNodeSpace].gatefunctions){
             var gate = nodespace_gatefunction_gate.val();
-            if(nodespaces.gatefunctions[node][gate]){
-                value = nodespaces.gatefunctions[node][gate];
+            if(nodespaces[currentNodeSpace].gatefunctions[node][gate]){
+                value = nodespaces[currentNodeSpace].gatefunctions[node][gate];
             }
         }
         nodespace_gatefunction.val(value);
@@ -3163,8 +3159,8 @@ function showGateForm(node, gate){
         if(el.name in gate.parameters){
             el.value = gate.parameters[el.name];
         } else if(el.name == 'gatefunction'){
-            if(nodespaces.gatefunctions && nodespaces.gatefunctions[node.type]){
-                el.value = nodespaces.gatefunctions[node.type][gate.name] || '';
+            if(nodespaces[currentNodeSpace].gatefunctions && nodespaces[currentNodeSpace].gatefunctions[node.type]){
+                el.value = nodespaces[currentNodeSpace].gatefunctions[node.type][gate.name] || '';
             }
         } else if(el.name == 'activation'){
             el.value = gate.sheaves[currentSheaf].activation || '0';

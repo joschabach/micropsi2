@@ -208,7 +208,7 @@ def import_world(worlddata, owner=None):
         data['uid'] = tools.generate_uid()
     if owner is not None:
         data['owner'] = owner
-    filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'])
+    filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')
     data['filename'] = filename
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(data))

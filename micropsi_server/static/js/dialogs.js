@@ -197,6 +197,9 @@ $(function() {
     });
 
     $('.navbar a.nodenet_delete').on('click', function(){
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         dialogs.confirm("Do you really want to delete this nodenet?", function(){
             api.call('delete_nodenet', {nodenet_uid: currentNodenet}, function(data){
                 currentNodenet=null;
@@ -210,16 +213,25 @@ $(function() {
 
     $('.navbar a.nodenet_edit').on('click', function(event){
         event.preventDefault();
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         api.call('edit_nodenet', {nodenet_uid: currentNodenet});
     });
 
     $('.navbar a.nodenet_save').on('click', function(event){
         event.preventDefault();
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         api.call('save_nodenet', {nodenet_uid: currentNodenet});
     });
 
     $('.navbar a.nodenet_revert').on('click', function(event){
         event.preventDefault();
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(data){
             dialogs.notification("nodenet reverted");
             //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
@@ -229,6 +241,9 @@ $(function() {
 
     $('.navbar a.reload_native_modules').on('click', function(event){
         event.preventDefault();
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         api.call('reload_native_modules', {nodenet_uid: currentNodenet}, function(){
             dialogs.notification("reload successful");
             window.location.reload();
@@ -245,6 +260,9 @@ $(function() {
     });
     $('.navbar a.nodenet_merge').on('click', function(event){
         event.preventDefault();
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         dialogs.remote_form_dialog(event.target.href + '/' + currentNodenet, function(){
             window.location.reload();
         });
@@ -263,7 +281,11 @@ $(function() {
     });
     $('.navbar a.world_edit').on('click', remote_form);
 
-    $('.navbar a.world_delete').on('click', function(){
+    $('.navbar a.world_delete').on('click', function(event){
+        event.preventDefault();
+        if(typeof currentWorld == 'undefined'){
+            return dialogs.notification("there is no current world selected");
+        }
         dialogs.confirm("Do you really want to delete this world?", function(){
             api.call('delete_world',
                 {world_uid: currentWorld},
@@ -278,10 +300,17 @@ $(function() {
 
     $('.navbar a.world_save').on('click', function(event){
         event.preventDefault();
+        if(typeof currentWorld == 'undefined'){
+            return dialogs.notification("there is no current world selected");
+        }
         api.call('save_world', {world_uid: currentWorld});
     });
 
-    $('.navbar a.world_revert').on('click', function(){
+    $('.navbar a.world_revert').on('click', function(event){
+        event.preventDefault()
+        if(typeof currentWorld == 'undefined'){
+            return dialogs.notification("there is no current world selected");
+        }
         api.call('revert_world', {world_uid: currentWorld},
             function(){
                 dialogs.notification("World state reverted");
@@ -314,11 +343,17 @@ $(function() {
 
     $('.nodenet_export').on('click', function(event){
         event.preventDefault();
+        if(typeof currentNodenet == 'undefined'){
+            return dialogs.notification("there is no current nodenet selected");
+        }
         window.location.replace(event.target.href + '/' + currentNodenet);
     });
 
     $('.world_export').on('click', function(event){
         event.preventDefault();
+        if(typeof currentWorld == 'undefined'){
+            return dialogs.notification("there is no current world selected");
+        }
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 

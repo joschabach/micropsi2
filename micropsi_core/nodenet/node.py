@@ -241,7 +241,7 @@ class Node(NetEntity):
         if 'gate_parameters' not in self.data:
             self.data['gate_parameters'] = {}
         for parameter, value in parameters.items():
-            if(parameter in Gate.StandardGateParams):
+            if(parameter in Nodetype.GATE_DEFAULTS.keys()):
                 try:
                     value = float(value)
                 except:
@@ -295,8 +295,6 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         outgoing: the set of links originating at the gate
     """
 
-    StandardGateParams = ['maximum', 'minimum', 'certainty', 'amplification', 'threshold', 'decay']
-
     @property
     def activation(self):
         return self.sheaves['default'].activation
@@ -325,7 +323,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             self.parameters = gate_defaults.copy()
         if parameters is not None:
             for key in parameters:
-                if key in self.StandardGateParams:
+                if key in Nodetype.GATE_DEFAULTS.keys():
                     try:
                         self.parameters[key] = float(parameters[key])
                     except:

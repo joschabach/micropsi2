@@ -664,6 +664,8 @@ class Nodetype(object):
         if gate_defaults is not None:
             for g in gate_defaults:
                 for key in gate_defaults[g]:
+                    if g not in self.gate_defaults:
+                        raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
                     self.gate_defaults[g][key] = gate_defaults[g][key]
 
         self.parameters = self.data.get("parameters", []) if parameters is None else parameters

@@ -401,8 +401,8 @@
         </form>
     </div>
     <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Apply changes</a>
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Apply changes</button>
     </div>
 </div>
 
@@ -447,8 +447,8 @@
         </form>
     </div>
     <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-        <a href="#" class="btn btn-primary">Create</a>
+        <button class="btn" data-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary">Create</button>
     </div>
 </div>
 
@@ -472,8 +472,8 @@
         </form>
     </div>
     <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Apply</a>
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Apply</button>
     </div>
 </div>
 <div class="modal hide" id="select_datatarget_modal">
@@ -495,8 +495,8 @@
         </form>
     </div>
     <div class="modal-footer">
-        <a href="#" class="btn" data-dismiss="modal">Close</a>
-        <a href="#" class="btn btn-primary">Apply</a>
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Apply</button>
     </div>
 </div>
 
@@ -525,8 +525,8 @@
         </form>
     </div>
     <div class="modal-footer native-default">
-        <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-        <a href="#" class="btn btn-primary">Create</a>
+        <button class="btn" data-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary">Create</button>
     </div>
 </div>
 

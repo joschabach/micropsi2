@@ -78,7 +78,11 @@ def nodenetrunner():
         start = datetime.now()
         for uid in nodenets:
             if nodenets[uid].is_active:
-                nodenets[uid].step()
+                try:
+                    nodenets[uid].step()
+                except:
+                    e = sys.exc_info()[1]
+                    logging.getLogger("nodenet").error("Exception in NodenetRunner: %s", str(e))
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())
@@ -94,7 +98,11 @@ def worldrunner():
         start = datetime.now()
         for uid in worlds:
             if worlds[uid].is_active:
-                worlds[uid].step()
+                try:
+                    worlds[uid].step()
+                except:
+                    e = sys.exc_info()[1]
+                    logging.getLogger("world").error("Exception in WorldRunner: %s", str(e))
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())

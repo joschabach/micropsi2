@@ -85,6 +85,8 @@ class MicropsiLogger():
             'nodenet': RecordWebStorageHandler(self.nodenet_record_storage)
         }
 
+        logging.getLogger("py.warnings").addHandler(self.handlers['system'])
+
         logging.getLogger("system").addHandler(self.handlers['system'])
         logging.getLogger("world").addHandler(self.handlers['world'])
         logging.getLogger("nodenet").addHandler(self.handlers['nodenet'])

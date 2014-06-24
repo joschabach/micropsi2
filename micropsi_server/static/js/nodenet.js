@@ -269,7 +269,9 @@ function getNodespaceList(){
         nodespaces = nodespacedata;
         html = '';
         for(var uid in nodespaces){
-            html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
+            if(uid != 'gatefunctions'){
+                html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
+            }
         }
         $('#nodespace_control ul').html(html);
         $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);

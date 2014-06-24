@@ -2282,7 +2282,9 @@ function handleContextMenu(event) {
                         $('#link_target_slot').html('');
                         var html = '';
                         for(var key in nodespaces){
-                            html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
+                            if(key != 'gatefunctions'){
+                                html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
+                            }
                         }
                         $('#link_target_nodespace').html(html);
                         html = '';

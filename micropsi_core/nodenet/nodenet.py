@@ -148,6 +148,8 @@ class Nodenet(object):
         self.logger = logging.getLogger("nodenet")
         self.logger.info("Setting up nodenet %s", self.name)
 
+        self.user_prompt = None
+
         self.load()
 
     def load(self, string=None):
@@ -280,6 +282,9 @@ class Nodenet(object):
             'world': self.state["world"],
             'worldadapter': self.worldadapter
         }
+        if self.user_prompt is not None:
+            data['user_prompt'] = self.user_prompt.copy()
+            self.user_prompt = None
         links = []
         followupnodes = []
         for x in range(*x_range):
@@ -339,6 +344,9 @@ class Nodenet(object):
     def get_nodespace(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""
         data = {'nodes': {}, 'links': {}, 'nodespaces': {}}
+        if self.user_prompt is not None:
+            data['user_prompt'] = self.user_prompt.copy()
+            self.user_prompt = None
         for key in self.state:
             if key in ['uid', 'links', 'nodespaces', 'monitors']:
                 data[key] = self.state[key]
@@ -477,7 +485,7 @@ class Nodenet(object):
 
     def step(self):
         """perform a simulation step"""
-
+        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
@@ -990,6 +998,30 @@ class NetAPI(object):
         order as with creating locks).
         """
         self.__locks_to_delete.append(lock)
+
+    def notify_user(self, node, msg):
+        """
+        Stops the nodenetrunner for this nodenet, and displays an information to the user,
+        who can then choose to continue or suspend the runner
+        """
+        self.__nodenet.is_active = False
+        self.__nodenet.user_prompt = {
+            'node': node.data,
+            'msg': msg,
+            'options': None
+        }
+
+    def ask_user_for_parameter(self, node, msg, options):
+        """
+        Stops the nodenetrunner for this nodenet, and displays an information to the user,
+        who can then choose to continue or suspend the runner
+        """
+        self.__nodenet.is_active = False
+        self.__nodenet.user_prompt = {
+            'node': node.data,
+            'msg': msg,
+            'options': options
+        }
 
     def _step(self):
         for lock in self.__locks_to_delete:

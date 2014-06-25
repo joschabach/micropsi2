@@ -362,6 +362,9 @@ function setNodespaceData(data, changed){
         if(changed){
             updateNodespaceForm();
         }
+        if(data.user_prompt){
+            promptUser(data.user_prompt);
+        }
     }
     updateViewSize();
 }
@@ -2050,6 +2053,29 @@ function initializeDialogs(){
     $('#datasource_select').on('change', function(){
         $("#select_datasource_modal .btn-primary").focus();
     });
+    $('#nodenet_user_prompt .btn-primary').on('click', function(event){
+        event.preventDefault();
+        var form = $('#nodenet_user_prompt form');
+        values = {};
+        var startnet = false;
+        var fields = form.serializeArray();
+        for(var idx in fields){
+            if(fields[idx].name == 'run_nodenet'){
+                startnet = true;
+            } else {
+                values[fields[idx].name] = fields[idx].value;
+            }
+        }
+        api.call('user_prompt_response', {
+            nodenet_uid: currentNodenet,
+            node_uid: $('#user_prompt_node_uid').val(),
+            values: values,
+            resume_nodenet: startnet
+        }, function(data){
+            refreshNodespace();
+        })
+        $('#nodenet_user_prompt').modal('hide');
+    });
 }
 
 function stepNodenet(event){
@@ -3218,6 +3244,33 @@ function registerResizeHandler(){
         isDragging = false;
         $(window).unbind("mousemove");
     });
+}
+
+function promptUser(data){
+    var html = '';
+    html += '<p>Nodenet interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
+    html += "<p>" + data.msg +"</p>";
+    html += '<form class="well form-horizontal">';
+    if (data.options){
+        for(var key in data.options){
+            html += '<div class="control-group"><label class="control-label">' + key + '</label>';
+            if(data.node.type in nodetypes && nodetypes[data.node.type].parameter_values && key in nodetypes[data.node.type].parameter_values){
+                html += '<div class="controls"><select name="'+key+'">';
+                for(var idx in nodetypes[data.node.type].parameter_values[key]){
+                    html += '<option>'+nodetypes[data.node.type].parameter_values[key][idx]+'</option>';
+                }
+                html += '</select></div></div>';
+            } else {
+                html += '<div class="controls"><input name="'+key+'" value="'+data.options[key]+'" /></div></div>';
+            }
+        }
+    }
+    html += '<div class="control-group"><label class="control-label">Continue running nodenet?</label>';
+    html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
+    html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
+    html += '</form>';
+    $('#nodenet_user_prompt .modal-body').html(html);
+    $('#nodenet_user_prompt').modal("show");
 }
 
 

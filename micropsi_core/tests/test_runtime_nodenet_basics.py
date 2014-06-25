@@ -33,6 +33,22 @@ def test_new_nodenet(test_nodenet, resourcepath):
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
 
+def test_user_prompt(fixed_nodenet):
+    micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(
+        micropsi.nodenets[fixed_nodenet].nodes['A1'],
+        "foobar",
+        {'foo_parameter': 23}
+    )
+    data = micropsi.get_nodespace(fixed_nodenet, 'Root', -1)
+    assert 'user_prompt' in data
+    assert data['user_prompt']['msg'] == 'foobar'
+    assert data['user_prompt']['node']['uid'] == 'A1'
+    assert data['user_prompt']['options'] == {'foo_parameter':23}
+    # response
+    micropsi.user_prompt_response(fixed_nodenet, 'A1', {'foo_parameter': 42}, True)
+    assert micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters['foo_parameter'] == 42
+    assert micropsi.nodenets[fixed_nodenet].is_active
+
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):
     assert 0

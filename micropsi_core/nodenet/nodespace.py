@@ -27,6 +27,7 @@ class Nodespace(NetEntity):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
+        uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet.nodespaces[uid] = self
         if not gatefunctions:

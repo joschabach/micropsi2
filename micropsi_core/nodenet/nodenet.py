@@ -1002,7 +1002,10 @@ class NetAPI(object):
     def notify_user(self, node, msg):
         """
         Stops the nodenetrunner for this nodenet, and displays an information to the user,
-        who can then choose to continue or suspend the runner
+        who can then choose to continue or suspend running nodenet
+        Parameters:
+            node: the node object that emits this message
+            msg: a string to display to the user
         """
         self.__nodenet.is_active = False
         self.__nodenet.user_prompt = {
@@ -1013,8 +1016,13 @@ class NetAPI(object):
 
     def ask_user_for_parameter(self, node, msg, options):
         """
-        Stops the nodenetrunner for this nodenet, and displays an information to the user,
-        who can then choose to continue or suspend the runner
+        Stops the nodenetrunner for this nodenet, and asks the user for values to the given parameters.
+        These parameters will be passed into the nodefunction in the next step of the nodenet.
+        The user can choose to either continue or suspend running the nodenet
+        Parameters:
+            node: the node object that emits this message
+            msg: a string to display to the user
+            options: a map of parameter name and current values.
         """
         self.__nodenet.is_active = False
         self.__nodenet.user_prompt = {

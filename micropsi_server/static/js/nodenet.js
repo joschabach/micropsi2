@@ -1114,8 +1114,11 @@ function calculateNodeBounds(node) {
 
 // determine shape of a full node
 function createFullNodeShape(node) {
-    if (node.type == "Nodespace") return new Path.Rectangle(node.bounds);
-    else return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+    if (node.type == "Nodespace" || node.type == "Comment"){
+        return new Path.Rectangle(node.bounds);
+    } else {
+        return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+    }
 }
 
 // determine shape of a compact node
@@ -1124,6 +1127,7 @@ function createCompactNodeShape(node) {
     var shape;
     switch (node.type) {
         case "Nodespace":
+        case "Comment":
             shape = new Path.Rectangle(bounds);
             break;
         case "Sensor":
@@ -2669,6 +2673,8 @@ function handleEditNode(event){
             case "node_activation":
                 activation = fields[i].value;
                 break;
+            case "node_comment":
+                parameters['comment'] = fields[i].value;
         }
     }
     if(name && nodes[nodeUid].name != name){
@@ -3029,12 +3035,14 @@ function showNodeForm(nodeUid){
     $('#node_name_input', form).val(nodes[nodeUid].name);
     $('#node_uid_input', form).val(nodeUid);
     $('#node_type_input', form).val(nodes[nodeUid].type);
-    if(nodes[nodeUid].type == 'Nodespace'){
+    if(nodes[nodeUid].type == 'Nodespace' || nodes[nodeUid].type == 'Comment'){
         $('tr.node', form).hide();
+        $('tr.comment', form).show();
+        $('#node_comment_input').val(nodes[nodeUid].parameters.comment || '');
     } else {
         $('tr.node', form).show();
+        $('tr.comment', form).show();
         $('#node_activation_input').val(nodes[nodeUid].sheaves[currentSheaf].activation);
-        $('#node_function_input').val("Todo");
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
         $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);

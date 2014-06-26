@@ -429,7 +429,14 @@ class Slot(object):
 
 STANDARD_NODETYPES = {
     "Nodespace": {
-        "name": "Nodespace",
+        "name": "Nodespace"
+    },
+
+    "Comment": {
+        "name": "Comment",
+        "symbol": "#",
+        'parameters': ['comment'],
+        "shape": "Rectangle"
     },
 
     "Register": {

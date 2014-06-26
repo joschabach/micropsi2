@@ -343,7 +343,6 @@ class Nodenet(object):
             parent_nodespace.netentities["nodes"].remove(node_uid)
             if self.nodes[node_uid].type == "Activator":
                 parent_nodespace.activators.pop(self.nodes[node_uid].parameters["type"], None)
-            print ('del node ' + node_uid)
             del self.nodes[node_uid]
             del self.state['nodes'][node_uid]
             self.update_node_positions()

@@ -1078,7 +1078,17 @@ function renderFullNode(node) {
     var activations = createFullNodeActivations(node);
     var titleBar = createFullNodeLabel(node);
     var sheavesAnnotation = createSheavesAnnotation(node);
-    var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
+    if(node.type == 'Comment'){
+        var commentText = new PointText(node.bounds.x + (viewProperties.nodeWidth * viewProperties.zoomFactor) + 10, node.bounds.y + 10);
+        commentText.content = node.parameters.comment;
+        commentText.name = "comment";
+        commentText.fillColor = viewProperties.nodeFontColor;
+        commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
+        commentText.paragraphStyle.justification = 'left';
+        var nodeItem = new Group([activations, skeleton, titleBar, commentText, sheavesAnnotation]);
+    } else {
+        var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
+    }
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
@@ -1103,7 +1113,9 @@ function calculateNodeBounds(node) {
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
-        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
+        if (node.type == "Nodespace"){
+            height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
+        }
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
     }

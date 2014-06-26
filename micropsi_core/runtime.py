@@ -626,19 +626,7 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 
 def delete_node(nodenet_uid, node_uid):
     """Removes the node"""
-    nodenet = nodenets[nodenet_uid]
-    if node_uid in nodenet.nodespaces:
-        node_uids = [key for key in nodenet.nodes]
-        for uid in node_uids:
-            if nodenet.nodes[uid].parent_nodespace == node_uid:
-                delete_node(nodenet_uid, uid)
-        parent_nodespace = nodenet.nodespaces.get(nodenet.nodespaces[node_uid].parent_nodespace)
-        if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:
-            parent_nodespace.netentities["nodespaces"].remove(node_uid)
-        del nodenet.nodespaces[node_uid]
-        del nodenet.state['nodespaces'][node_uid]
-    else:
-        nodenet.delete_node(node_uid)
+    nodenets[nodenet_uid].delete_node(node_uid)
     return True
 
 

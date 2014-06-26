@@ -33,6 +33,27 @@ def test_new_nodenet(test_nodenet, resourcepath):
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
 
+
+def test_nodespace_removal(fixed_nodenet):
+    res, uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace="Root", name="testspace", uid='ns1')
+    res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100,100], nodespace=uid, name="sub1", uid='sub1')
+    res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100,200], nodespace=uid, name="sub2", uid='sub2')
+    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1, uid='sub1-sub2')
+    res, sub_uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace=uid, name="subsubspace", uid='ns2')
+    micropsi.delete_node(fixed_nodenet, uid)
+    assert uid not in micropsi.nodenets[fixed_nodenet].nodespaces
+    assert uid not in micropsi.nodenets[fixed_nodenet].state['nodespaces']
+    assert n1_uid not in micropsi.nodenets[fixed_nodenet].nodes
+    assert n1_uid not in micropsi.nodenets[fixed_nodenet].state['nodes']
+    assert n2_uid not in micropsi.nodenets[fixed_nodenet].nodes
+    assert n2_uid not in micropsi.nodenets[fixed_nodenet].state['nodes']
+    assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].links
+    assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].state['links']
+    assert sub_uid not in micropsi.nodenets[fixed_nodenet].nodespaces
+    assert sub_uid not in micropsi.nodenets[fixed_nodenet].state['nodespaces']
+
+
+
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):
     assert 0

@@ -19,7 +19,7 @@ def actor(netapi, node=None, datatarget=None, **params):
     # if activation_to_set > 0:
         # node.activation = 1
     feedback = netapi.world.get_datatarget_feedback(netapi.uid, datatarget)
-    node.get_gate('gen').activation = feedback if feedback else -1
+    node.get_gate('gen').gate_function(feedback if feedback else -1)
 
 
 def concept(netapi, node=None, **params):

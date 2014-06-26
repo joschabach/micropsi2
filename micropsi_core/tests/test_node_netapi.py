@@ -397,26 +397,6 @@ def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node4, "gen", node1, "gen")
 
-    #TODO: netapi cannot delete nodespaces right now, because nodenet can't. It's done by runtime.
-    #The code should be moved, the test then re-enabled.
-#    spaceuid = nodespace.uid
-#    node4uid = node4.uid
-#    netapi.delete_node(nodespace)
-#    error_raised = False
-#    try:
-#        netapi.get_node(spaceuid)
-#    except KeyError:
-#        error_raised = True
-#    assert error_raised
-#    error_raised = False
-#    try:
-#        netapi.get_node(node4uid)
-#    except KeyError:
-#        error_raised = True
-#    assert error_raised
-#    assert error_raised
-#    assert len(node1.get_slot("gen").incoming) == 3
-
 
 def test_node_netapi_link(fixed_nodenet):
     # test linking nodes

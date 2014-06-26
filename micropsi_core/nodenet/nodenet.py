@@ -322,24 +322,35 @@ class Nodenet(object):
             self.nodes_by_coords[xpos][ypos].append(uid)
 
     def delete_node(self, node_uid):
-        link_uids = []
-        for key, gate in self.nodes[node_uid].gates.items():
-            link_uids.extend(gate.outgoing.keys())
-        for key, slot in self.nodes[node_uid].slots.items():
-            link_uids.extend(slot.incoming.keys())
-        for uid in link_uids:
-            if uid in self.links:
-                self.links[uid].remove()
-                del self.links[uid]
-            if uid in self.state['links']:
-                del self.state['links'][uid]
-        parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
-        parent_nodespace.netentities["nodes"].remove(node_uid)
-        if self.nodes[node_uid].type == "Activator":
-            parent_nodespace.activators.pop(self.nodes[node_uid].parameters["type"], None)
-        del self.nodes[node_uid]
-        del self.state['nodes'][node_uid]
-        self.update_node_positions()
+        if node_uid in self.nodespaces:
+            affected_entities = self.nodespaces[node_uid].get_contents()
+            for key in affected_entities:
+                for uid in affected_entities[key][:]:
+                    self.delete_node(uid)
+            parent_nodespace = self.nodespaces.get(self.nodespaces[node_uid].parent_nodespace)
+            if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:
+                parent_nodespace.netentities["nodespaces"].remove(node_uid)
+            del self.nodespaces[node_uid]
+            del self.state['nodespaces'][node_uid]
+        else:
+            link_uids = []
+            for key, gate in self.nodes[node_uid].gates.items():
+                link_uids.extend(gate.outgoing.keys())
+            for key, slot in self.nodes[node_uid].slots.items():
+                link_uids.extend(slot.incoming.keys())
+            for uid in link_uids:
+                if uid in self.links:
+                    self.links[uid].remove()
+                    del self.links[uid]
+                if uid in self.state['links']:
+                    del self.state['links'][uid]
+            parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
+            parent_nodespace.netentities["nodes"].remove(node_uid)
+            if self.nodes[node_uid].type == "Activator":
+                parent_nodespace.activators.pop(self.nodes[node_uid].parameters["type"], None)
+            del self.nodes[node_uid]
+            del self.state['nodes'][node_uid]
+            self.update_node_positions()
 
     def get_nodespace(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""

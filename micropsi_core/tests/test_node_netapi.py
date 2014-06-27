@@ -397,6 +397,15 @@ def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node4, "gen", node1, "gen")
 
+    node4uid = node4.uid
+    netapi.delete_node(nodespace)
+    error_raised = False
+    try:
+        netapi.get_node(node4uid)
+    except KeyError:
+        error_raised = True
+    assert error_raised
+
 
 def test_node_netapi_link(fixed_nodenet):
     # test linking nodes

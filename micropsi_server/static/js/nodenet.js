@@ -2694,8 +2694,10 @@ function handleEditGate(event){
         node = nodes[clickOriginUid];
         gate = node.gates[node.gateIndexes[clickIndex]];
     }
-    var data = $(event.target).serializeArray();
+    var form = $(event.target)
+    var data = form.serializeArray();
     var params = {};
+    var old_params = gate.parameters;
     for(var i in data){
         params[data[i].name] = parseFloat(data[i].value);
     }
@@ -2704,6 +2706,12 @@ function handleEditGate(event){
         node_uid: node.uid,
         gate_type: gate.name,
         parameters: params
+    }, api.defaultSuccessCallback, function(err){
+        api.defaultErrorCallback(err);
+        gate.parameters = old_params;
+        if(form.css('display') == 'block'){
+            showGateForm(node, gate);
+        }
     });
     gate.parameters = params;
 }

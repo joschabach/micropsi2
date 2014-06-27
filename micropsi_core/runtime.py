@@ -665,7 +665,7 @@ def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
 
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
-    nodenets[nodenet_uid].nodes[node_uid].parameters = parameters
+    nodenets[nodenet_uid].nodes[node_uid].set_parameters(parameters)
     return True
 
 

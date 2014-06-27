@@ -1079,7 +1079,11 @@ function renderFullNode(node) {
     var titleBar = createFullNodeLabel(node);
     var sheavesAnnotation = createSheavesAnnotation(node);
     if(node.type == 'Comment'){
-        var commentText = new PointText(node.bounds.x + (viewProperties.nodeWidth * viewProperties.zoomFactor) + 10, node.bounds.y + 10);
+        if(view.viewSize.width - 150 > node.bounds.x ){
+            var commentText = new PointText(node.bounds.x + (viewProperties.nodeWidth * viewProperties.zoomFactor) + 10, node.bounds.y + 10);
+        } else {
+            var commentText = new PointText(node.bounds.x - 120, node.bounds.y + 10);
+        }
         commentText.content = node.parameters.comment;
         commentText.name = "comment";
         commentText.fillColor = viewProperties.nodeFontColor;
@@ -2661,6 +2665,7 @@ function moveNode(nodeUid, x, y){
 
 function handleEditNode(event){
     event.preventDefault();
+    ApplyLineBreaks('node_comment_input');
     form = $(event.target);
     var nodeUid = $('#node_uid_input').val();
     if($(".modal")) $(".modal").modal("hide");
@@ -3240,6 +3245,81 @@ function registerResizeHandler(){
     });
 }
 
+
+// hack. credits: http://stackoverflow.com/a/19743610
+// this is a workaround, until paper.js supports AreaText
+// (--> see https://groups.google.com/forum/#!topic/paperjs/PvvRV0hkC94)
+function ApplyLineBreaks(strTextAreaId) {
+    var oTextarea = document.getElementById(strTextAreaId);
+    if (oTextarea.wrap) {
+        oTextarea.setAttribute("wrap", "off");
+    }
+    else {
+        oTextarea.setAttribute("wrap", "off");
+        var newArea = oTextarea.cloneNode(true);
+        newArea.value = oTextarea.value;
+        oTextarea.parentNode.replaceChild(newArea, oTextarea);
+        oTextarea = newArea;
+    }
+
+    var strRawValue = oTextarea.value;
+    oTextarea.value = "";
+    var nEmptyWidth = oTextarea.scrollWidth;
+
+    function testBreak(strTest) {
+        oTextarea.value = strTest;
+        return oTextarea.scrollWidth > nEmptyWidth;
+    }
+    function findNextBreakLength(strSource, nLeft, nRight) {
+        var nCurrent;
+        if(typeof(nLeft) == 'undefined') {
+            nLeft = 0;
+            nRight = -1;
+            nCurrent = 64;
+        }
+        else {
+            if (nRight == -1)
+                nCurrent = nLeft * 2;
+            else if (nRight - nLeft <= 1)
+                return Math.max(2, nRight);
+            else
+                nCurrent = nLeft + (nRight - nLeft) / 2;
+        }
+        var strTest = strSource.substr(0, nCurrent);
+        var bLonger = testBreak(strTest);
+        if(bLonger)
+            nRight = nCurrent;
+        else
+        {
+            if(nCurrent >= strSource.length)
+                return null;
+            nLeft = nCurrent;
+        }
+        return findNextBreakLength(strSource, nLeft, nRight);
+    }
+
+    var i = 0, j;
+    var strNewValue = "";
+    while (i < strRawValue.length) {
+        var breakOffset = findNextBreakLength(strRawValue.substr(i));
+        if (breakOffset === null) {
+            strNewValue += strRawValue.substr(i);
+            break;
+        }
+        var nLineLength = breakOffset - 1;
+        for (j = nLineLength - 1; j >= 0; j--) {
+            var curChar = strRawValue.charAt(i + j);
+            if (curChar == ' ' || curChar == '-' || curChar == '+') {
+                nLineLength = j + 1;
+                break;
+            }
+        }
+        strNewValue += strRawValue.substr(i, nLineLength) + "\n";
+        i += nLineLength;
+    }
+    oTextarea.value = strNewValue;
+    oTextarea.setAttribute("wrap", "");
+}
 
 /* todo:
 

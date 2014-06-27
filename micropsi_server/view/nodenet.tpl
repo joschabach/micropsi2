@@ -233,7 +233,7 @@
                     </tr>
                     <tr class="comment">
                         <td><label for="node_comment_input">Content</label></td>
-                        <td><textarea name="node_comment" id="node_comment_input" rows="5"></textarea></td>
+                        <td><textarea name="node_comment" id="node_comment_input" rows="5" cols="25"></textarea></td>
                     </tr>
                     <tr class="state node">
                         <td><label for="node_state_input">State</label></td>

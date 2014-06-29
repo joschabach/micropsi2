@@ -1079,16 +1079,7 @@ function renderFullNode(node) {
     var titleBar = createFullNodeLabel(node);
     var sheavesAnnotation = createSheavesAnnotation(node);
     if(node.type == 'Comment'){
-        if(view.viewSize.width - 150 > node.bounds.x ){
-            var commentText = new PointText(node.bounds.x + (viewProperties.nodeWidth * viewProperties.zoomFactor) + 10, node.bounds.y + 10);
-        } else {
-            var commentText = new PointText(node.bounds.x - 120, node.bounds.y + 10);
-        }
-        commentText.content = node.parameters.comment;
-        commentText.name = "comment";
-        commentText.fillColor = viewProperties.nodeFontColor;
-        commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
-        commentText.paragraphStyle.justification = 'left';
+        var commentText = renderComment(node);
         var nodeItem = new Group([activations, skeleton, titleBar, commentText, sheavesAnnotation]);
     } else {
         var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
@@ -1098,13 +1089,43 @@ function renderFullNode(node) {
     nodeLayer.addChild(nodeItem);
 }
 
+function renderComment(node){
+    var compactNodeDiff = (viewProperties.nodeWidth - viewProperties.compactNodeWidth) / 2;
+    var bounds = {};
+    if(view.viewSize.width - 150 > node.bounds.x ){
+        bounds.x = node.bounds.x + (viewProperties.nodeWidth * viewProperties.zoomFactor) + 10;
+        bounds.y = node.bounds.y + 10;
+        if(isCompact(node)){
+            bounds.x -= compactNodeDiff + 10;
+        }
+    } else {
+        bounds.x = node.bounds.x - 120;
+        bounds.y = node.bounds.y + 10;
+        if(isCompact(node)){
+            bounds.x += compactNodeDiff;
+        }
+    }
+    commentText = new PointText(bounds.x, bounds.y);
+    commentText.content = node.parameters.comment;
+    commentText.name = "comment";
+    commentText.fillColor = viewProperties.nodeFontColor;
+    commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
+    commentText.paragraphStyle.justification = 'left';
+    return commentText;
+}
+
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
     var skeleton = createCompactNodeSkeleton(node);
     var activations = createCompactNodeActivations(node);
     var label = createCompactNodeLabel(node);
-    var nodeItem = new Group([activations, skeleton]);
+    if(node.type == "Comment"){
+        var commentText = renderComment(node);
+        var nodeItem = new Group([activations, skeleton, commentText])
+    } else {
+        var nodeItem = new Group([activations, skeleton]);
+    }
     if (label) nodeItem.addChild(label);
     nodeItem.name = node.uid;
     nodeItem.isCompact = true;

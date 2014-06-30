@@ -1018,12 +1018,12 @@ class NetAPI(object):
             node: the node object that emits this message
             msg: a string to display to the user
         """
-        self.__nodenet.is_active = False
         self.__nodenet.user_prompt = {
             'node': node.data,
             'msg': msg,
             'options': None
         }
+        self.__nodenet.is_active = False
 
     def ask_user_for_parameter(self, node, msg, options):
         """
@@ -1035,12 +1035,12 @@ class NetAPI(object):
             msg: a string to display to the user
             options: a map of parameter name and current values.
         """
-        self.__nodenet.is_active = False
         self.__nodenet.user_prompt = {
             'node': node.data,
             'msg': msg,
             'options': options
         }
+        self.__nodenet.is_active = False
 
     def _step(self):
         for lock in self.__locks_to_delete:

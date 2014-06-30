@@ -2072,6 +2072,7 @@ function initializeDialogs(){
             values: values,
             resume_nodenet: startnet
         }, function(data){
+            currentSimulationStep -= 1
             refreshNodespace();
         })
         $('#nodenet_user_prompt').modal('hide');
@@ -3254,10 +3255,14 @@ function promptUser(data){
     if (data.options){
         for(var key in data.options){
             html += '<div class="control-group"><label class="control-label">' + key + '</label>';
-            if(data.node.type in nodetypes && nodetypes[data.node.type].parameter_values && key in nodetypes[data.node.type].parameter_values){
+            if(typeof data.options[key] == 'object'){
                 html += '<div class="controls"><select name="'+key+'">';
-                for(var idx in nodetypes[data.node.type].parameter_values[key]){
-                    html += '<option>'+nodetypes[data.node.type].parameter_values[key][idx]+'</option>';
+                for(var val in data.options[key]){
+                    if(data.options[key] instanceof Array){
+                        html += '<option>'+data.options[key][val]+'</option>';
+                    } else {
+                        html += '<option value="'+val+'">'+data.options[key][val]+'</option>';
+                    }
                 }
                 html += '</select></div></div>';
             } else {

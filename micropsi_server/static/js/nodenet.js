@@ -3253,20 +3253,21 @@ function promptUser(data){
     html += "<p>" + data.msg +"</p>";
     html += '<form class="well form-horizontal">';
     if (data.options){
-        for(var key in data.options){
-            html += '<div class="control-group"><label class="control-label">' + key + '</label>';
-            if(typeof data.options[key] == 'object'){
-                html += '<div class="controls"><select name="'+key+'">';
-                for(var val in data.options[key]){
-                    if(data.options[key] instanceof Array){
-                        html += '<option>'+data.options[key][val]+'</option>';
+        for(var idx in data.options){
+            var item = data.options[idx];
+            html += '<div class="control-group"><label class="control-label">' + item.label + '</label>';
+            if(item.values && typeof item.values == 'object'){
+                html += '<div class="controls"><select name="'+item.key+'">';
+                for(var val in item.values){
+                    if(item.values instanceof Array){
+                        html += '<option>'+item.values[val]+'</option>';
                     } else {
-                        html += '<option value="'+val+'">'+data.options[key][val]+'</option>';
+                        html += '<option value="'+val+'">'+item.values[val]+'</option>';
                     }
                 }
                 html += '</select></div></div>';
             } else {
-                html += '<div class="controls"><input name="'+key+'" value="'+data.options[key]+'" /></div></div>';
+                html += '<div class="controls"><input name="'+item.key+'" value="'+(item.values || '')+'" /></div></div>';
             }
         }
     }

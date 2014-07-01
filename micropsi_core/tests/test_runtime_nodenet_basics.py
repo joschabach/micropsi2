@@ -36,16 +36,17 @@ def test_new_nodenet(test_nodenet, resourcepath):
 
 
 def test_user_prompt(fixed_nodenet):
+    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values':  [23, 42]}]
     micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(
         micropsi.nodenets[fixed_nodenet].nodes['A1'],
         "foobar",
-        {'foo_parameter': 23}
+        options
     )
     data = micropsi.get_nodespace(fixed_nodenet, 'Root', -1)
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
     assert data['user_prompt']['node']['uid'] == 'A1'
-    assert data['user_prompt']['options'] == {'foo_parameter':23}
+    assert data['user_prompt']['options'] == options
     # response
     micropsi.user_prompt_response(fixed_nodenet, 'A1', {'foo_parameter': 42}, True)
     assert micropsi.nodenets[fixed_nodenet].nodes['A1'].user_feedback['foo_parameter'] == 42

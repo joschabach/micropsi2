@@ -1033,7 +1033,18 @@ class NetAPI(object):
         Parameters:
             node: the node object that emits this message
             msg: a string to display to the user
-            options: a map of parameter name and current values.
+            options: an array of objects representing the variables to set by the user. Needs key, label. Optional: array or object of values
+
+        example usage:
+            options = [{
+                'key': 'where',
+                'label': 'Where should I go next?',
+                'values': {'north': 'North', 'east': 'East', 'south': 'South', 'west': 'west'}
+            }, {
+                'key': 'wait':
+                'label': 'How long should I wait until I go there?',
+            }]
+            netapi.ask_user_for_parameter(node, "Please decide what to do next", options)
         """
         self.__nodenet.user_prompt = {
             'node': node.data,

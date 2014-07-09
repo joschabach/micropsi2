@@ -751,7 +751,7 @@ class NetAPI(object):
                 nodes.append(node)
         return nodes
 
-    def get_nodes_field(self, node, gate=None, no_links_to=None, nodespace=None):
+    def get_nodes_in_gate_field(self, node, gate=None, no_links_to=None, nodespace=None):
         """
         Returns all nodes linked to a given node on the gate, excluding the ones that have
         links of any of the given types
@@ -774,7 +774,7 @@ class NetAPI(object):
                     nodes.append(candidate)
         return nodes
 
-    def get_nodes_feed(self, node, slot=None, no_links_to=None, nodespace=None):
+    def get_nodes_in_slot_field(self, node, slot=None, no_links_to=None, nodespace=None):
         """
         Returns all nodes linking to a given node on the given slot, excluding the ones that
         have links of any of the given types

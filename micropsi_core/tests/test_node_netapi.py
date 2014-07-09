@@ -180,8 +180,8 @@ def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
     assert node2 in nodes
 
 
-def test_node_netapi_get_nodes_field(fixed_nodenet):
-    # test get_nodes_field
+def test_node_netapi_get_nodes_in_gate_field(fixed_nodenet):
+    # test get_nodes_in_gate_field
     net, netapi, source = prepare(fixed_nodenet)
     node1 = netapi.create_node("Concept", "Root", "TestName1")
     node2 = netapi.create_node("Concept", "Root", "TestName2")
@@ -192,15 +192,15 @@ def test_node_netapi_get_nodes_field(fixed_nodenet):
     netapi.link_with_reciprocal(node1, node4, "subsur")
     netapi.link_with_reciprocal(node2, node3, "porret")
 
-    nodes = netapi.get_nodes_field(node1, "sub")
+    nodes = netapi.get_nodes_in_gate_field(node1, "sub")
     assert len(nodes) == 3
     assert node2 in nodes
     assert node3 in nodes
     assert node4 in nodes
 
 
-def test_node_netapi_get_nodes_field_all_links(fixed_nodenet):
-    # test get_nodes_field without specifying a gate parameter
+def test_node_netapi_get_nodes_in_gate_field_all_links(fixed_nodenet):
+    # test get_nodes_in_gate_field without specifying a gate parameter
     net, netapi, source = prepare(fixed_nodenet)
     node1 = netapi.create_node("Concept", "Root", "TestName1")
     node2 = netapi.create_node("Concept", "Root", "TestName2")
@@ -211,14 +211,14 @@ def test_node_netapi_get_nodes_field_all_links(fixed_nodenet):
     netapi.link_with_reciprocal(node1, node4, "subsur")
     netapi.link_with_reciprocal(node2, node3, "porret")
 
-    nodes = netapi.get_nodes_field(node2)
+    nodes = netapi.get_nodes_in_gate_field(node2)
     assert len(nodes) == 2
     assert node1 in nodes
     assert node3 in nodes
 
 
-def test_node_netapi_get_nodes_field_with_limitations(fixed_nodenet):
-    # test get_nodes_field with limitations: no por links
+def test_node_netapi_get_nodes_in_gate_field_with_limitations(fixed_nodenet):
+    # test get_nodes_in_gate_field with limitations: no por links
     net, netapi, source = prepare(fixed_nodenet)
     node1 = netapi.create_node("Concept", "Root", "TestName1")
     node2 = netapi.create_node("Concept", "Root", "TestName2")
@@ -229,14 +229,14 @@ def test_node_netapi_get_nodes_field_with_limitations(fixed_nodenet):
     netapi.link_with_reciprocal(node1, node4, "subsur")
     netapi.link_with_reciprocal(node2, node3, "porret")
 
-    nodes = netapi.get_nodes_field(node1, "sub", ["por"])
+    nodes = netapi.get_nodes_in_gate_field(node1, "sub", ["por"])
     assert len(nodes) == 2
     assert node3 in nodes
     assert node4 in nodes
 
 
-def test_node_netapi_get_nodes_field_with_limitations_and_nodespace(fixed_nodenet):
-    # test get_nodes_field with limitations: no por links
+def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(fixed_nodenet):
+    # test get_nodes_in_gate_field with limitations: no por links
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
     node1 = netapi.create_node("Concept", "Root", "TestName1")
@@ -248,13 +248,13 @@ def test_node_netapi_get_nodes_field_with_limitations_and_nodespace(fixed_nodene
     netapi.link_with_reciprocal(node1, node4, "subsur")
     netapi.link_with_reciprocal(node2, node3, "porret")
 
-    nodes = netapi.get_nodes_field(node1, "sub", ["por"], "Root")
+    nodes = netapi.get_nodes_in_gate_field(node1, "sub", ["por"], "Root")
     assert len(nodes) == 1
     assert node3 in nodes
 
 
-def test_node_netapi_get_nodes_feed(fixed_nodenet):
-    # test get_nodes_feed
+def test_node_netapi_get_nodes_in_slot_field(fixed_nodenet):
+    # test get_nodes_in_slot_field
     net, netapi, source = prepare(fixed_nodenet)
     node1 = netapi.create_node("Register", "Root", "TestName1")
     node2 = netapi.create_node("Register", "Root", "TestName2")
@@ -265,15 +265,15 @@ def test_node_netapi_get_nodes_feed(fixed_nodenet):
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node4, "gen", node1, "gen")
 
-    nodes = netapi.get_nodes_feed(node1, "gen")
+    nodes = netapi.get_nodes_in_slot_field(node1, "gen")
     assert len(nodes) == 3
     assert node2 in nodes
     assert node3 in nodes
     assert node4 in nodes
 
 
-def test_node_netapi_get_nodes_feed_all_links(fixed_nodenet):
-    # test get_nodes_feed without a gate parameter
+def test_node_netapi_get_nodes_in_slot_field_all_links(fixed_nodenet):
+    # test get_nodes_in_slot_field without a gate parameter
     net, netapi, source = prepare(fixed_nodenet)
     net, netapi, source = prepare(fixed_nodenet)
     node1 = netapi.create_node("Concept", "Root", "TestName1")
@@ -285,7 +285,7 @@ def test_node_netapi_get_nodes_feed_all_links(fixed_nodenet):
     netapi.link_with_reciprocal(node1, node4, "subsur")
     netapi.link_with_reciprocal(node2, node3, "porret")
 
-    nodes = netapi.get_nodes_feed(node1)
+    nodes = netapi.get_nodes_in_slot_field(node1)
     assert len(nodes) == 3
     assert node2 in nodes
     assert node3 in nodes
@@ -305,7 +305,7 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
     netapi.link(node3, "gen", node1, "gen")
     netapi.link(node4, "gen", node1, "gen")
 
-    nodes = netapi.get_nodes_feed(node1, "gen", None, "Root")
+    nodes = netapi.get_nodes_in_slot_field(node1, "gen", None, "Root")
     assert len(nodes) == 2
     assert node2 in nodes
     assert node3 in nodes

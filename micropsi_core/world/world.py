@@ -12,6 +12,7 @@ import json
 import os
 import warnings
 import sys
+import micropsi_core
 from micropsi_core.world import worldadapter
 from micropsi_core.world import worldobject
 from micropsi_core import tools
@@ -171,7 +172,7 @@ class World(object):
         for uid in self.agents.copy():
             if not self.agents[uid].is_alive():
                 self.unregister_nodenet(uid)
-                #TODO: stop nodenet and disconnect, prevent respawn
+                #TODO: prevent respawn?
         self.current_step += 1
 
     def get_world_view(self, step):
@@ -247,6 +248,11 @@ class World(object):
         agent object
         """
         if nodenet_uid in self.agents:
+            # stop corresponding nodenet
+            micropsi_core.runtime.stop_nodenetrunner(nodenet_uid)
+
+            # remove agent
+            del self.data['agents'][nodenet_uid]
             del self.agents[nodenet_uid]
         if nodenet_uid in self.data['agents']:
             del self.data['agents'][nodenet_uid]

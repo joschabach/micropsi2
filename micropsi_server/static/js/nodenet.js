@@ -141,6 +141,10 @@ function refreshNodenetList(){
         });
     });
 }
+// make function available in global javascript scope
+window.refreshNodenetList = function(){
+    refreshNodenetList();
+}
 
 function get_available_worlds(){
     api.call('get_available_worlds', {}, success=function(data){

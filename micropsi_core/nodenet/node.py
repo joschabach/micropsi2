@@ -188,17 +188,11 @@ class Node(NetEntity):
                     self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                     self.set_sheaf_activation(0, sheaf_id)
 
-
                 # and actually calculate new values for them
                 try:
                     if hasattr(self, 'user_feedback') and self.user_feedback is not None:
                         self.parameters.update(self.user_feedback)
                     self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
-                    if hasattr(self, 'user_feedback'):
-                        for key in self.parameters.copy():
-                            if key not in self.nodetype.parameters:
-                                del self.parameters[key]
-                        self.user_feedback = None
                 except Exception as err:
                     self.nodenet.is_active = False
                     self.data["activation"] = -1

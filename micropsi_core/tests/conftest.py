@@ -3,6 +3,7 @@ Central initialization of fixtures for Runtime etc.
 """
 import os
 import pytest
+import logging
 
 try:
     os.makedirs('/tmp/micropsi_tests/worlds')
@@ -22,6 +23,12 @@ DELETE_TEST_FILES_ON_EXIT = True
 
 world_uid = None
 nn_uid = None
+
+
+def set_logging_levels():
+    logging.getLogger('system').setLevel(logging.WARNING)
+    logging.getLogger('world').setLevel(logging.WARNING)
+    logging.getLogger('nodenet').setLevel(logging.WARNING)
 
 
 @pytest.fixture(scope="session")
@@ -65,6 +72,7 @@ def pytest_runtest_call(item):
     if 'fixed_test_nodenet' in micropsi.nodenets:
         micropsi.revert_nodenet("fixed_test_nodenet")
     micropsi.logger.clear_logs()
+    set_logging_levels()
 
 
 @pytest.fixture(scope="function")

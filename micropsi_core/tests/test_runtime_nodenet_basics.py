@@ -49,14 +49,17 @@ def test_user_prompt(fixed_nodenet):
     assert data['user_prompt']['options'] == options
     # response
     micropsi.user_prompt_response(fixed_nodenet, 'A1', {'foo_parameter': 42}, True)
-    assert micropsi.nodenets[fixed_nodenet].nodes['A1'].user_feedback['foo_parameter'] == 42
+    assert micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters['foo_parameter'] == 42
     assert micropsi.nodenets[fixed_nodenet].is_active
     from micropsi_core.nodenet import nodefunctions
     nodefunc = mock.Mock()
     nodefunctions.concept = nodefunc
     micropsi.nodenets[fixed_nodenet].step()
-    foo = micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters.update({'foo_parameter': 42})
+    foo = micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters.copy()
+    foo.update({'foo_parameter': 42})
     assert nodefunc.called_with(micropsi.nodenets[fixed_nodenet].netapi, micropsi.nodenets[fixed_nodenet].nodes['A1'], foo)
+    micropsi.nodenets[fixed_nodenet].nodes['A1'].clear_parameter('foo_parameter')
+    assert 'foo_parameter' not in micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters
 
 
 def test_nodespace_removal(fixed_nodenet):

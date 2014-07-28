@@ -824,7 +824,7 @@ def align_nodes(nodenet_uid, nodespace):
 
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
-    nodenets[nodenet_uid].nodes[node_uid].user_feedback = values
+    nodenets[nodenet_uid].nodes[node_uid].parameters.update(values)
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 

@@ -190,8 +190,6 @@ class Node(NetEntity):
 
                 # and actually calculate new values for them
                 try:
-                    if hasattr(self, 'user_feedback') and self.user_feedback is not None:
-                        self.parameters.update(self.user_feedback)
                     self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
                 except Exception as err:
                     self.nodenet.is_active = False
@@ -268,6 +266,13 @@ class Node(NetEntity):
             return self.parameters[parameter]
         else:
             return None
+
+    def clear_parameter(self, parameter):
+        if parameter in self.parameters:
+            if parameter not in self.nodetype.parameters:
+                del self.data['parameters'][parameter]
+            else:
+                self.data['parameters'][parameter] = None
 
     def set_parameter(self, parameter, value):
         self.parameters[parameter] = value

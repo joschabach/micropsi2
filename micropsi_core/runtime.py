@@ -822,6 +822,12 @@ def align_nodes(nodenet_uid, nodespace):
         nodenets[nodenet_uid].update_node_positions()
     return result
 
+
+def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+    nodenets[nodenet_uid].nodes[node_uid].parameters.update(values)
+    nodenets[nodenet_uid].is_active = resume_nodenet
+
+
 # --- end of API
 
 def crawl_definition_files(path, type="definition"):

@@ -15,6 +15,7 @@ except OSError:
     pass
 
 import configuration
+import logging
 configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
 
 from micropsi_core import runtime as micropsi
@@ -23,6 +24,10 @@ DELETE_TEST_FILES_ON_EXIT = True
 
 world_uid = None
 nn_uid = None
+
+logging.getLogger('system').setLevel(logging.WARNING)
+logging.getLogger('world').setLevel(logging.WARNING)
+logging.getLogger('nodenet').setLevel(logging.WARNING)
 
 
 def set_logging_levels():

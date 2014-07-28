@@ -17,3 +17,16 @@
 
 <div id="notification" class="notifications top-center">
 </div>
+
+
+<div id="nodenet_user_prompt" class="modal hide">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>Nodenet interrupted</h3>
+    </div>
+    <div class="modal-body">
+    </div>
+    <div class="modal-footer">
+      <a href="#" class="btn-confirm btn btn-primary">Confirm</a>
+    </div>
+</div>

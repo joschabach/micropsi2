@@ -188,7 +188,6 @@ class Node(NetEntity):
                     self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                     self.set_sheaf_activation(0, sheaf_id)
 
-
                 # and actually calculate new values for them
                 try:
                     self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
@@ -267,6 +266,13 @@ class Node(NetEntity):
             return self.parameters[parameter]
         else:
             return None
+
+    def clear_parameter(self, parameter):
+        if parameter in self.parameters:
+            if parameter not in self.nodetype.parameters:
+                del self.data['parameters'][parameter]
+            else:
+                self.data['parameters'][parameter] = None
 
     def set_parameter(self, parameter, value):
         self.parameters[parameter] = value

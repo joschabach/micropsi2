@@ -7,6 +7,7 @@
 import os
 from micropsi_core import runtime
 from micropsi_core import runtime as micropsi
+import mock
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -32,6 +33,33 @@ def test_new_nodenet(test_nodenet, resourcepath):
     micropsi.delete_nodenet(nodenet_uid)
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
+
+
+def test_user_prompt(fixed_nodenet):
+    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values':  [23, 42]}]
+    micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(
+        micropsi.nodenets[fixed_nodenet].nodes['A1'],
+        "foobar",
+        options
+    )
+    data = micropsi.get_nodespace(fixed_nodenet, 'Root', -1)
+    assert 'user_prompt' in data
+    assert data['user_prompt']['msg'] == 'foobar'
+    assert data['user_prompt']['node']['uid'] == 'A1'
+    assert data['user_prompt']['options'] == options
+    # response
+    micropsi.user_prompt_response(fixed_nodenet, 'A1', {'foo_parameter': 42}, True)
+    assert micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters['foo_parameter'] == 42
+    assert micropsi.nodenets[fixed_nodenet].is_active
+    from micropsi_core.nodenet import nodefunctions
+    nodefunc = mock.Mock()
+    nodefunctions.concept = nodefunc
+    micropsi.nodenets[fixed_nodenet].step()
+    foo = micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters.copy()
+    foo.update({'foo_parameter': 42})
+    assert nodefunc.called_with(micropsi.nodenets[fixed_nodenet].netapi, micropsi.nodenets[fixed_nodenet].nodes['A1'], foo)
+    micropsi.nodenets[fixed_nodenet].nodes['A1'].clear_parameter('foo_parameter')
+    assert 'foo_parameter' not in micropsi.nodenets[fixed_nodenet].nodes['A1'].parameters
 
 
 def test_nodespace_removal(fixed_nodenet):

@@ -1095,6 +1095,12 @@ def delete_link(nodenet_uid, link_uid):
 def reload_native_modules(nodenet_uid=None):
     return runtime.reload_native_modules(nodenet_uid)
 
+
+@rpc("user_prompt_response")
+def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+    runtime.user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet);
+    return dict(status='success')
+
 # --------- logging --------
 
 

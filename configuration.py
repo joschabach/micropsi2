@@ -19,8 +19,8 @@ except OSError:
     warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
     raise
 
-VERSION = "0.2"
-APPTITLE = "Micropsi"
+VERSION = "0.3-alpha1"
+APPTITLE = "Microsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')
 

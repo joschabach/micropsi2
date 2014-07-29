@@ -348,11 +348,6 @@ except ImportError as e:
     sys.stdout.write("Could not import island world / structured objects.\nError: %s \n\n" % e.msg)
 
 try:
-    from micropsi_core.world.berlin import berlin
-except ImportError as e:
-    sys.stdout.write("Could not import berlin world.\nError: %s \n\n" % e.msg)
-
-try:
     from micropsi_core.world.minecraft import minecraft
     from micropsi_core.world.minecraft.minecraft import Minecraft
 except ImportError as e:

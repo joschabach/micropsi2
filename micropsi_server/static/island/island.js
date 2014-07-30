@@ -61,6 +61,8 @@ currentWorldSimulationStep = -1;
 
 var world_data = null;
 
+var worldscope = paper;
+
 if (currentWorld){
     setCurrentWorld(currentWorld);
 }
@@ -82,6 +84,7 @@ refreshWorldView = function(){
                 }
                 return null;
             }
+            worldscope.activate();
             currentWorldSimulationStep = data.current_step;
             $('#world_step').val(currentWorldSimulationStep);
             $('#world_status').val(data.status_message);

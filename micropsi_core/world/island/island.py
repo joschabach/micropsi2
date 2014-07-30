@@ -105,9 +105,10 @@ class Island(World):
                     target_position = None
                     break
 
-        if target_position is None:
+        if target_position is not None and ground_types[self.get_ground_at(target_position[0], target_position[1])]['agent_allowed']:
+            return target_position
+        else:
             return start_position
-        return target_position
 
 
 class Lightsource(WorldObject):

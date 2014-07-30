@@ -100,7 +100,7 @@ $(function(){
                 pollMonitoringData();
             }
             if(!nodenet_running){
-                window.setTimeout(pollActive, 2000);
+                window.setTimeout(pollActive, 4000);
             }
         }, function(){
             console.warn('server offline. can not determine nodenet state');

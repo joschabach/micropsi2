@@ -699,7 +699,7 @@ updateViewSize = function() {
     for(var uid in nodes){
         redrawNode(nodes[uid]);
     }
-}
+};
 
 // complete redraw of the current node space
 function redrawNodeNet() {
@@ -1062,8 +1062,11 @@ function renderLinkDuringCreation(endPoint) {
 
 // draw net entity
 function renderNode(node) {
-    if (isCompact(node)) renderCompactNode(node);
-    else renderFullNode(node);
+    if (isCompact(node)){
+        renderCompactNode(node);
+    } else {
+        renderFullNode(node);
+    }
     setActivation(node);
     if(node.uid in selection){
         selectNode(node.uid);
@@ -1078,11 +1081,11 @@ function renderFullNode(node) {
     var activations = createFullNodeActivations(node);
     var titleBar = createFullNodeLabel(node);
     var sheavesAnnotation = createSheavesAnnotation(node);
+    var nodeItem;
     if(node.type == 'Comment'){
-        var commentText = renderComment(node);
-        var nodeItem = new Group([activations, skeleton, titleBar, commentText, sheavesAnnotation]);
+        nodeItem = renderComment(node);
     } else {
-        var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
+        nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
     }
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
@@ -1090,43 +1093,40 @@ function renderFullNode(node) {
 }
 
 function renderComment(node){
-    var compactNodeDiff = (viewProperties.nodeWidth - viewProperties.compactNodeWidth) / 2;
-    var bounds = {};
-    if(view.viewSize.width - 150 > node.bounds.x ){
-        bounds.x = node.bounds.x + (viewProperties.nodeWidth * viewProperties.zoomFactor) + 10;
-        bounds.y = node.bounds.y + 10;
-        if(isCompact(node)){
-            bounds.x -= compactNodeDiff + 10;
-        }
-    } else {
-        bounds.x = node.bounds.x - 120;
-        bounds.y = node.bounds.y + 10;
-        if(isCompact(node)){
-            bounds.x += compactNodeDiff;
-        }
-    }
+    var bounds = node.bounds;
+    var commentGroup = new Group();
     commentText = new PointText(bounds.x, bounds.y);
     commentText.content = node.parameters.comment;
     commentText.name = "comment";
     commentText.fillColor = viewProperties.nodeFontColor;
     commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
     commentText.paragraphStyle.justification = 'left';
-    return commentText;
+    node.bounds.width = commentText.bounds.width;
+    node.bounds.height = commentText.bounds.height;
+    var commentBox = new Path.Rectangle(bounds.x - 10, bounds.y - (commentText.fontSize * 2), commentText.bounds.width+20, commentText.bounds.height+20);
+    commentBox.fillColor = new Color('yellow');
+    var boxgroup = new Group([commentBox]);
+    boxgroup.name = 'body';
+    commentGroup.addChild(boxgroup);
+    commentGroup.addChild(commentText);
+    return commentGroup;
 }
 
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
-    var skeleton = createCompactNodeSkeleton(node);
-    var activations = createCompactNodeActivations(node);
-    var label = createCompactNodeLabel(node);
+    var nodeItem;
     if(node.type == "Comment"){
-        var commentText = renderComment(node);
-        var nodeItem = new Group([activations, skeleton, commentText])
+        nodeItem = renderComment(node);
     } else {
-        var nodeItem = new Group([activations, skeleton]);
+        var skeleton = createCompactNodeSkeleton(node);
+        var activations = createCompactNodeActivations(node);
+        var label = createCompactNodeLabel(node);
+        nodeItem = new Group([activations, skeleton]);
+        if (label){
+            nodeItem.addChild(label);
+        }
     }
-    if (label) nodeItem.addChild(label);
     nodeItem.name = node.uid;
     nodeItem.isCompact = true;
     nodeLayer.addChild(nodeItem);
@@ -1464,6 +1464,9 @@ function createCompactNodeLabel(node) {
 
 // update activation in node background, slots and gates
 function setActivation(node) {
+    if(node.type == 'Comment'){
+        return;
+    }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
         node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
@@ -1489,7 +1492,12 @@ function setActivation(node) {
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
     selection[nodeUid] = nodes[nodeUid];
-    var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+    var outline;
+    if(nodes[nodeUid].type == 'Comment'){
+        outline = nodeLayer.children[nodeUid].children["body"];
+    } else {
+        outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+    }
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
 }
@@ -1499,7 +1507,12 @@ function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
         if(nodeUid in nodeLayer.children){
-            var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+            var outline;
+            if(nodes[nodeUid].type == 'Comment'){
+                outline = nodeLayer.children[nodeUid].children["body"];
+            } else {
+                outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+            }
             outline.strokeColor = null;
             outline.strokeWidth = viewProperties.outlineWidth;
         }
@@ -1795,12 +1808,16 @@ function onMouseMove(event) {
                     hoverNode.renderCompact = null;
                     redrawNode(hoverNode, true);
                 }
-                hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
-                // check for slots and gates
-                if ((i = testSlots(node, p)) >-1) {
-                    hover = nodeLayer.children[nodeUid].children["activation"].children["slots"].children[i];
-                } else if ((i = testGates(node, p)) > -1) {
-                    hover = nodeLayer.children[nodeUid].children["activation"].children["gates"].children[i];
+                if(node.type == 'Comment'){
+                    hover = nodeLayer.children[nodeUid].children['body'];
+                } else {
+                    hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
+                    // check for slots and gates
+                    if ((i = testSlots(node, p)) >-1) {
+                        hover = nodeLayer.children[nodeUid].children["activation"].children["slots"].children[i];
+                    } else if ((i = testGates(node, p)) > -1) {
+                        hover = nodeLayer.children[nodeUid].children["activation"].children["gates"].children[i];
+                    }
                 }
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
@@ -1889,8 +1906,13 @@ function onMouseDrag(event) {
         var node = nodes[uid];
         node.x += event.delta.x/viewProperties.zoomFactor;
         node.y += event.delta.y/viewProperties.zoomFactor;
-        node.bounds = calculateNodeBounds(node);
-        redrawNodeLinks(node);
+        if(node.type == 'Comment'){
+            node.bounds.x = node.x;
+            node.bounds.y = node.y;
+        } else {
+            node.bounds = calculateNodeBounds(node);
+            redrawNodeLinks(node);
+        }
     }
     if (movePath) {
         if(dragMultiples){

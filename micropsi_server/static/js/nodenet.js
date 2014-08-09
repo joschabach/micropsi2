@@ -1095,16 +1095,17 @@ function renderFullNode(node) {
 function renderComment(node){
     var bounds = node.bounds;
     var commentGroup = new Group();
-    commentText = new PointText(bounds.x, bounds.y);
+    commentText = new PointText(bounds.x + 10, bounds.y + viewProperties.lineHeight * viewProperties.zoomFactor);
     commentText.content = node.parameters.comment;
     commentText.name = "comment";
     commentText.fillColor = viewProperties.nodeFontColor;
     commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
     commentText.paragraphStyle.justification = 'left';
-    node.bounds.width = commentText.bounds.width;
-    node.bounds.height = commentText.bounds.height;
-    var commentBox = new Path.Rectangle(bounds.x - 10, bounds.y - (commentText.fontSize * 2), commentText.bounds.width+20, commentText.bounds.height+20);
+    bounds.width = Math.max(commentText.bounds.width, viewProperties.nodeWidth);
+    bounds.height = Math.max(commentText.bounds.height, viewProperties.lineHeight);
+    var commentBox = new Path.Rectangle(bounds.x, bounds.y, bounds.width+20, bounds.height+20);
     commentBox.fillColor = new Color('yellow');
+    node.bounds = commentBox.bounds;
     var boxgroup = new Group([commentBox]);
     boxgroup.name = 'body';
     commentGroup.addChild(boxgroup);
@@ -1909,6 +1910,7 @@ function onMouseDrag(event) {
         if(node.type == 'Comment'){
             node.bounds.x = node.x;
             node.bounds.y = node.y;
+            redrawNode(node, true);
         } else {
             node.bounds = calculateNodeBounds(node);
             redrawNodeLinks(node);

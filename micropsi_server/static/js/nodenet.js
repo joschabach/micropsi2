@@ -1077,14 +1077,14 @@ function renderNode(node) {
 // draw net entity with slots and gates
 function renderFullNode(node) {
     node.bounds = calculateNodeBounds(node);
-    var skeleton = createFullNodeSkeleton(node);
-    var activations = createFullNodeActivations(node);
-    var titleBar = createFullNodeLabel(node);
-    var sheavesAnnotation = createSheavesAnnotation(node);
     var nodeItem;
     if(node.type == 'Comment'){
         nodeItem = renderComment(node);
     } else {
+        var skeleton = createFullNodeSkeleton(node);
+        var activations = createFullNodeActivations(node);
+        var titleBar = createFullNodeLabel(node);
+        var sheavesAnnotation = createSheavesAnnotation(node);
         nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
     }
     nodeItem.name = node.uid;
@@ -1101,8 +1101,8 @@ function renderComment(node){
     commentText.fillColor = viewProperties.nodeFontColor;
     commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
     commentText.paragraphStyle.justification = 'left';
-    bounds.width = Math.max(commentText.bounds.width, viewProperties.nodeWidth);
-    bounds.height = Math.max(commentText.bounds.height, viewProperties.lineHeight);
+    bounds.width = Math.max(commentText.bounds.width, bounds.width);
+    bounds.height = Math.max(commentText.bounds.height, bounds.height);
     var commentBox = new Path.Rectangle(bounds.x, bounds.y, bounds.width+20, bounds.height+20);
     commentBox.fillColor = new Color('yellow');
     node.bounds = commentBox.bounds;
@@ -1136,6 +1136,13 @@ function renderCompactNode(node) {
 // calculate the dimensions of a node in the current rendering
 function calculateNodeBounds(node) {
     var width, height;
+    if(node.type == 'Comment'){
+        return new Rectangle(
+            node.x * viewProperties.zoomFactor,
+            node.y * viewProperties.zoomFactor,
+            viewProperties.nodeWidth * viewProperties.zoomFactor,
+            viewProperties.lineHeight * viewProperties.zoomFactor);
+    }
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;

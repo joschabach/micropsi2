@@ -5,6 +5,7 @@
 
 """
 import os
+import mock
 from micropsi_core import runtime
 from micropsi_core import runtime as micropsi
 
@@ -111,6 +112,20 @@ def test_set_agent_properties(test_world, test_nodenet):
     assert world.agents[test_nodenet].position == (5, 5)
     assert world.data['agents'][test_nodenet]['position'] == (5, 5)
 
+
+def test_agent_dying_unregisters_agent(test_world, test_nodenet):
+    world = runtime.worlds[test_world]
+    nodenet = runtime.get_nodenet(test_nodenet)
+    runtime.load_nodenet(test_nodenet)
+    nodenet.world = world
+    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
+    assert nodenet.uid in world.data['agents']
+    assert nodenet.uid in world.agents
+    mockdead = mock.Mock(return_value=False)
+    world.agents[nodenet.uid].is_alive = mockdead
+    world.step()
+    assert nodenet.uid not in world.data['agents']
+    assert nodenet.uid not in world.agents
 
 """
 def test_get_world_view(micropsi, test_world):

@@ -702,7 +702,7 @@ updateViewSize = function() {
     for(var uid in nodes){
         redrawNode(nodes[uid]);
     }
-}
+};
 
 // complete redraw of the current node space
 function redrawNodeNet() {
@@ -1065,8 +1065,11 @@ function renderLinkDuringCreation(endPoint) {
 
 // draw net entity
 function renderNode(node) {
-    if (isCompact(node)) renderCompactNode(node);
-    else renderFullNode(node);
+    if (isCompact(node)){
+        renderCompactNode(node);
+    } else {
+        renderFullNode(node);
+    }
     setActivation(node);
     if(node.uid in selection){
         selectNode(node.uid);
@@ -1077,24 +1080,57 @@ function renderNode(node) {
 // draw net entity with slots and gates
 function renderFullNode(node) {
     node.bounds = calculateNodeBounds(node);
-    var skeleton = createFullNodeSkeleton(node);
-    var activations = createFullNodeActivations(node);
-    var titleBar = createFullNodeLabel(node);
-    var sheavesAnnotation = createSheavesAnnotation(node);
-    var nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
+    var nodeItem;
+    if(node.type == 'Comment'){
+        nodeItem = renderComment(node);
+    } else {
+        var skeleton = createFullNodeSkeleton(node);
+        var activations = createFullNodeActivations(node);
+        var titleBar = createFullNodeLabel(node);
+        var sheavesAnnotation = createSheavesAnnotation(node);
+        nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
+    }
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
     nodeLayer.addChild(nodeItem);
 }
 
+function renderComment(node){
+    var bounds = node.bounds;
+    var commentGroup = new Group();
+    commentText = new PointText(bounds.x + 10, bounds.y + viewProperties.lineHeight * viewProperties.zoomFactor);
+    commentText.content = node.parameters.comment;
+    commentText.name = "comment";
+    commentText.fillColor = viewProperties.nodeFontColor;
+    commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
+    commentText.paragraphStyle.justification = 'left';
+    bounds.width = Math.max(commentText.bounds.width, bounds.width);
+    bounds.height = Math.max(commentText.bounds.height, bounds.height);
+    var commentBox = new Path.Rectangle(bounds.x, bounds.y, bounds.width+20, bounds.height+20);
+    commentBox.fillColor = new Color('yellow');
+    node.bounds = commentBox.bounds;
+    var boxgroup = new Group([commentBox]);
+    boxgroup.name = 'body';
+    commentGroup.addChild(boxgroup);
+    commentGroup.addChild(commentText);
+    return commentGroup;
+}
+
 // render compact version of a net entity
 function renderCompactNode(node) {
     node.bounds = calculateNodeBounds(node);
-    var skeleton = createCompactNodeSkeleton(node);
-    var activations = createCompactNodeActivations(node);
-    var label = createCompactNodeLabel(node);
-    var nodeItem = new Group([activations, skeleton]);
-    if (label) nodeItem.addChild(label);
+    var nodeItem;
+    if(node.type == "Comment"){
+        nodeItem = renderComment(node);
+    } else {
+        var skeleton = createCompactNodeSkeleton(node);
+        var activations = createCompactNodeActivations(node);
+        var label = createCompactNodeLabel(node);
+        nodeItem = new Group([activations, skeleton]);
+        if (label){
+            nodeItem.addChild(label);
+        }
+    }
     nodeItem.name = node.uid;
     nodeItem.isCompact = true;
     nodeLayer.addChild(nodeItem);
@@ -1103,10 +1139,19 @@ function renderCompactNode(node) {
 // calculate the dimensions of a node in the current rendering
 function calculateNodeBounds(node) {
     var width, height;
+    if(node.type == 'Comment'){
+        return new Rectangle(
+            node.x * viewProperties.zoomFactor,
+            node.y * viewProperties.zoomFactor,
+            viewProperties.nodeWidth * viewProperties.zoomFactor,
+            viewProperties.lineHeight * viewProperties.zoomFactor);
+    }
     if (!isCompact(node)) {
         width = viewProperties.nodeWidth * viewProperties.zoomFactor;
         height = viewProperties.lineHeight*(Math.max(node.slotIndexes.length, node.gateIndexes.length)+2)*viewProperties.zoomFactor;
-        if (node.type == "Nodespace") height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
+        if (node.type == "Nodespace"){
+            height = Math.max(height, viewProperties.lineHeight*4*viewProperties.zoomFactor);
+        }
     } else {
         width = height = viewProperties.compactNodeWidth * viewProperties.zoomFactor;
     }
@@ -1117,8 +1162,11 @@ function calculateNodeBounds(node) {
 
 // determine shape of a full node
 function createFullNodeShape(node) {
-    if (node.type == "Nodespace") return new Path.Rectangle(node.bounds);
-    else return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+    if (node.type == "Nodespace" || node.type == "Comment"){
+        return new Path.Rectangle(node.bounds);
+    } else {
+        return new Path.RoundRectangle(node.bounds, viewProperties.cornerWidth*viewProperties.zoomFactor);
+    }
 }
 
 // determine shape of a compact node
@@ -1127,6 +1175,7 @@ function createCompactNodeShape(node) {
     var shape;
     switch (node.type) {
         case "Nodespace":
+        case "Comment":
             shape = new Path.Rectangle(bounds);
             break;
         case "Sensor":
@@ -1426,6 +1475,9 @@ function createCompactNodeLabel(node) {
 
 // update activation in node background, slots and gates
 function setActivation(node) {
+    if(node.type == 'Comment'){
+        return;
+    }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
         node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
@@ -1451,7 +1503,12 @@ function setActivation(node) {
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
     selection[nodeUid] = nodes[nodeUid];
-    var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+    var outline;
+    if(nodes[nodeUid].type == 'Comment'){
+        outline = nodeLayer.children[nodeUid].children["body"];
+    } else {
+        outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+    }
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
 }
@@ -1461,7 +1518,12 @@ function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
         if(nodeUid in nodeLayer.children){
-            var outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+            var outline;
+            if(nodes[nodeUid].type == 'Comment'){
+                outline = nodeLayer.children[nodeUid].children["body"];
+            } else {
+                outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
+            }
             outline.strokeColor = null;
             outline.strokeWidth = viewProperties.outlineWidth;
         }
@@ -1757,12 +1819,16 @@ function onMouseMove(event) {
                     hoverNode.renderCompact = null;
                     redrawNode(hoverNode, true);
                 }
-                hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
-                // check for slots and gates
-                if ((i = testSlots(node, p)) >-1) {
-                    hover = nodeLayer.children[nodeUid].children["activation"].children["slots"].children[i];
-                } else if ((i = testGates(node, p)) > -1) {
-                    hover = nodeLayer.children[nodeUid].children["activation"].children["gates"].children[i];
+                if(node.type == 'Comment'){
+                    hover = nodeLayer.children[nodeUid].children['body'];
+                } else {
+                    hover = nodeLayer.children[nodeUid].children["activation"].children["body"];
+                    // check for slots and gates
+                    if ((i = testSlots(node, p)) >-1) {
+                        hover = nodeLayer.children[nodeUid].children["activation"].children["slots"].children[i];
+                    } else if ((i = testGates(node, p)) > -1) {
+                        hover = nodeLayer.children[nodeUid].children["activation"].children["gates"].children[i];
+                    }
                 }
                 oldHoverColor = hover.fillColor;
                 hover.fillColor = viewProperties.hoverColor;
@@ -1851,8 +1917,14 @@ function onMouseDrag(event) {
         var node = nodes[uid];
         node.x += event.delta.x/viewProperties.zoomFactor;
         node.y += event.delta.y/viewProperties.zoomFactor;
-        node.bounds = calculateNodeBounds(node);
-        redrawNodeLinks(node);
+        if(node.type == 'Comment'){
+            node.bounds.x = node.x;
+            node.bounds.y = node.y;
+            redrawNode(node, true);
+        } else {
+            node.bounds = calculateNodeBounds(node);
+            redrawNodeLinks(node);
+        }
     }
     if (movePath) {
         if(dragMultiples){
@@ -2672,6 +2744,7 @@ function moveNode(nodeUid, x, y){
 
 function handleEditNode(event){
     event.preventDefault();
+    ApplyLineBreaks('node_comment_input');
     form = $(event.target);
     var nodeUid = $('#node_uid_input').val();
     if($(".modal")) $(".modal").modal("hide");
@@ -2696,6 +2769,8 @@ function handleEditNode(event){
             case "node_activation":
                 activation = fields[i].value;
                 break;
+            case "node_comment":
+                parameters['comment'] = fields[i].value;
         }
     }
     if(name && nodes[nodeUid].name != name){
@@ -3064,12 +3139,14 @@ function showNodeForm(nodeUid){
     $('#node_name_input', form).val(nodes[nodeUid].name);
     $('#node_uid_input', form).val(nodeUid);
     $('#node_type_input', form).val(nodes[nodeUid].type);
-    if(nodes[nodeUid].type == 'Nodespace'){
+    if(nodes[nodeUid].type == 'Nodespace' || nodes[nodeUid].type == 'Comment'){
         $('tr.node', form).hide();
+        $('tr.comment', form).show();
+        $('#node_comment_input').val(nodes[nodeUid].parameters.comment || '');
     } else {
         $('tr.node', form).show();
+        $('tr.comment', form).show();
         $('#node_activation_input').val(nodes[nodeUid].sheaves[currentSheaf].activation);
-        $('#node_function_input').val("Todo");
         $('#node_parameters').html(getNodeParameterHTML(nodes[nodeUid].parameters, nodetypes[nodes[nodeUid].type].parameter_values));
         $('#node_datatarget').val(nodes[nodeUid].parameters['datatarget']);
         $('#node_datasource').val(nodes[nodeUid].parameters['datasource']);
@@ -3287,6 +3364,81 @@ function promptUser(data){
     $('#nodenet_user_prompt').modal("show");
 }
 
+
+// hack. credits: http://stackoverflow.com/a/19743610
+// this is a workaround, until paper.js supports AreaText
+// (--> see https://groups.google.com/forum/#!topic/paperjs/PvvRV0hkC94)
+function ApplyLineBreaks(strTextAreaId) {
+    var oTextarea = document.getElementById(strTextAreaId);
+    if (oTextarea.wrap) {
+        oTextarea.setAttribute("wrap", "off");
+    }
+    else {
+        oTextarea.setAttribute("wrap", "off");
+        var newArea = oTextarea.cloneNode(true);
+        newArea.value = oTextarea.value;
+        oTextarea.parentNode.replaceChild(newArea, oTextarea);
+        oTextarea = newArea;
+    }
+
+    var strRawValue = oTextarea.value;
+    oTextarea.value = "";
+    var nEmptyWidth = oTextarea.scrollWidth;
+
+    function testBreak(strTest) {
+        oTextarea.value = strTest;
+        return oTextarea.scrollWidth > nEmptyWidth;
+    }
+    function findNextBreakLength(strSource, nLeft, nRight) {
+        var nCurrent;
+        if(typeof(nLeft) == 'undefined') {
+            nLeft = 0;
+            nRight = -1;
+            nCurrent = 64;
+        }
+        else {
+            if (nRight == -1)
+                nCurrent = nLeft * 2;
+            else if (nRight - nLeft <= 1)
+                return Math.max(2, nRight);
+            else
+                nCurrent = nLeft + (nRight - nLeft) / 2;
+        }
+        var strTest = strSource.substr(0, nCurrent);
+        var bLonger = testBreak(strTest);
+        if(bLonger)
+            nRight = nCurrent;
+        else
+        {
+            if(nCurrent >= strSource.length)
+                return null;
+            nLeft = nCurrent;
+        }
+        return findNextBreakLength(strSource, nLeft, nRight);
+    }
+
+    var i = 0, j;
+    var strNewValue = "";
+    while (i < strRawValue.length) {
+        var breakOffset = findNextBreakLength(strRawValue.substr(i));
+        if (breakOffset === null) {
+            strNewValue += strRawValue.substr(i);
+            break;
+        }
+        var nLineLength = breakOffset - 1;
+        for (j = nLineLength - 1; j >= 0; j--) {
+            var curChar = strRawValue.charAt(i + j);
+            if (curChar == ' ' || curChar == '-' || curChar == '+') {
+                nLineLength = j + 1;
+                break;
+            }
+        }
+        strNewValue += strRawValue.substr(i, nLineLength) + "\n";
+        i += nLineLength;
+    }
+    oTextarea.value = strNewValue;
+    oTextarea.setAttribute("wrap", "");
+}
 
 /* todo:
 

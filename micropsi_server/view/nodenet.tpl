@@ -231,6 +231,10 @@
                         <td><label for="node_type_input">Type</label></td>
                         <td><input type="text" name="node_type" disabled="disabled" id="node_type_input" /></td>
                     </tr>
+                    <tr class="comment">
+                        <td><label for="node_comment_input">Content</label></td>
+                        <td><textarea name="node_comment" id="node_comment_input" rows="5" cols="25"></textarea></td>
+                    </tr>
                     <tr class="state node">
                         <td><label for="node_state_input">State</label></td>
                         <td><select type="text" name="node_state" id="node_state_input"></select></td>

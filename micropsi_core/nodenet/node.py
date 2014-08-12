@@ -277,6 +277,10 @@ class Node(NetEntity):
     def set_parameter(self, parameter, value):
         self.parameters[parameter] = value
 
+    def set_parameters(self, parameters):
+        for key in parameters:
+            self.set_parameter(key, parameters[key])
+
     def get_state(self, state_element):
         if state_element in self.state:
             return self.state[state_element]
@@ -435,7 +439,14 @@ class Slot(object):
 
 STANDARD_NODETYPES = {
     "Nodespace": {
-        "name": "Nodespace",
+        "name": "Nodespace"
+    },
+
+    "Comment": {
+        "name": "Comment",
+        "symbol": "#",
+        'parameters': ['comment'],
+        "shape": "Rectangle"
     },
 
     "Register": {

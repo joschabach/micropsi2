@@ -67,7 +67,7 @@
 </div>
 
 
-<div id="nodenet_editor" class="section-margin collapse in">
+<div id="nodenet_editor" class="section-margin frontend_section collapse in">
     <div class="nodenet section">
         <div class="editor_field span9">
             <canvas id="nodenet" width="700" height="100%" style="background:#eeeeee"></canvas>

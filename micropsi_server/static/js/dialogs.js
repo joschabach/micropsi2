@@ -383,3 +383,33 @@ $(document).ready(function() {
     } );
     $('textarea.loc').autogrow();
 } );
+
+
+// section collapse bindings
+function cookiebindings(index, name){
+    var last = $.cookie('section_state_'+name);
+    var el = $('#' + name);
+    if (last === "false" && el) {
+        el.removeClass('in');
+    } else {
+        el.addClass('in');
+    }
+    if(el){
+        el.bind('shown', function() {
+            $.cookie('section_state_'+name, true);
+        });
+        el.bind('hidden', function() {
+            $.cookie('section_state_'+name, false);
+        });
+    }
+}
+
+var sections = ['nodenet_editor', 'monitor', 'world_editor'];
+
+$(document).ready(function() {
+    if($('.frontend_section').length == 1){
+        $('.frontend_section').addClass('in');
+    } else {
+        $.each(sections, cookiebindings);
+    }
+});

@@ -41,7 +41,7 @@
     </form>
 </div>
 
-<div id="world_editor" class="section-margin collapse in">
+<div id="world_editor" class="frontend_section section-margin collapse in">
     <div class="world section">
         %if world_assets.get('template'):
             %include(world_assets['template'], assets=world_assets)

@@ -10,7 +10,7 @@
 
                     <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
 
-                    <td><div class="" id="monitor_controls">
+                    <td><div class="" id="monitor_controls collapse in">
                         <button class="btn">Clear</button>
                     </div></td>
 
@@ -19,7 +19,7 @@
         </form>
     </div>
 
-    <div id="monitor" class="section-margin">
+    <div id="monitor" class="section-margin frontend_section collapse in">
         <div class="section multiple">
             <div class="monitor_field span6">
                 <h4>Monitors</h4>

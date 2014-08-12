@@ -134,9 +134,16 @@ refreshWorldView = function(){
                     console.log('obj has no pos ' + key);
                 }
             }
+            // purge agent list
+            for(var key in agents){
+                if(!(key in data.agents)){
+                    $("#world_agents_list a[data='" + key + "']").parent().parent().remove()
+                }
+            }
 
             updateSceneViewer();
             updateViewSize();
+            refreshNodenetList(); // in case new nodenets were created on the serverside
             if(worldRunning){
                 refreshWorldView();
             }

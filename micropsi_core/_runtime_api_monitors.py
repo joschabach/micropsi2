@@ -39,7 +39,7 @@ def remove_monitor(nodenet_uid, monitor_uid):
 
 def clear_monitor(nodenet_uid, monitor_uid):
     """Leaves the monitor intact, but deletes the current list of stored values."""
-    micropsi_core.runtime.nodenets[nodenet_uid].monitors(monitor_uid).clear()
+    micropsi_core.runtime.nodenets[nodenet_uid].monitors[monitor_uid].clear()
     return True
 
 

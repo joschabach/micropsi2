@@ -33,3 +33,40 @@ def test_remove_monitor(fixed_nodenet):
     micropsi.remove_monitor(fixed_nodenet, data['uid'])
     assert data['uid'] not in micropsi.nodenets[fixed_nodenet].monitors
 
+
+def test_get_monitor_data(fixed_nodenet):
+    monitor = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    micropsi.step_nodenet(fixed_nodenet)
+    data = micropsi.get_monitor_data(fixed_nodenet)
+    assert data['current_step'] == 1
+    assert data['monitors'][monitor['uid']]['node_name'] == 'A1'
+    values = data['monitors'][monitor['uid']]['values']
+    assert len([k for k in values.keys()]) == 1
+
+
+def test_export_monitor_data(fixed_nodenet):
+    monitor1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    monitor2 = micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
+    micropsi.step_nodenet(fixed_nodenet)
+    data = micropsi.export_monitor_data(fixed_nodenet)
+    assert monitor1['uid'] in data
+    assert 'values' in data[monitor1['uid']]
+    assert monitor2['uid'] in data
+
+
+def test_export_monitor_data_with_id(fixed_nodenet):
+    monitor1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
+    micropsi.step_nodenet(fixed_nodenet)
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=monitor1['uid'])
+    assert data['node_name'] == 'A1'
+    assert 'values' in data
+
+
+def test_clear_monitor(fixed_nodenet):
+    monitor = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    micropsi.step_nodenet(fixed_nodenet)
+    micropsi.clear_monitor(fixed_nodenet, monitor['uid'])
+    data = micropsi.get_monitor_data(fixed_nodenet)
+    values = data['monitors'][monitor['uid']]['values']
+    assert len([k for k in values.keys()]) == 0

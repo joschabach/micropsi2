@@ -5,8 +5,6 @@
 Tests for node activation propagation and gate arithmetic
 """
 
-from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
-from micropsi_core.nodenet.nodefunctions import concept
 from micropsi_core import runtime as micropsi
 
 

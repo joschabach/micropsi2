@@ -10,7 +10,6 @@ from micropsi_core import runtime as micropsi
 import logging
 
 
-
 def test_set_logging_level():
     assert logging.getLogger('system').getEffectiveLevel() == logging.WARNING
     micropsi.set_logging_levels(system='DEBUG', world='DEBUG', nodenet='DEBUG')

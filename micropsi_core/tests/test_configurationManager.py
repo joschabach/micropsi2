@@ -18,25 +18,28 @@ __date__ = '29.10.12'
 def path():
     return os.path.join(tempfile.gettempdir(), "configs.json")
 
+
 @pytest.fixture(scope="session")
 def path2():
     return os.path.join(tempfile.gettempdir(), "configs2.json")
+
 
 def test_create_configs(path, path2):
     conf_mgr = ConfigurationManager(path)
     try:
         os.remove(path)
         os.remove(path2)
-    except: pass
+    except:
+        pass
     assert not os.path.exists(path)
     conf_mgr.save_configs()
     assert os.path.exists(path)
 
-    conf2 = ConfigurationManager(path2) # we can have two config managers
+    conf2 = ConfigurationManager(path2)  # we can have two config managers
 
     conf_mgr["height"] = 20
     conf_mgr["name"] = "Klaus"
-    conf_mgr["record"] = { "i":12 }
+    conf_mgr["record"] = {"i": 12}
     conf2["color"] = "blue"
 
     assert "color" not in conf_mgr
@@ -62,4 +65,4 @@ def test_create_configs(path, path2):
     assert conf2["color"] == "blue"
 
     with pytest.raises(RuntimeError):
-        conf3 = ConfigurationManager(path) # we cannot have more than one config manager at a single path
+        ConfigurationManager(path)  # we cannot have more than one config manager at a single path

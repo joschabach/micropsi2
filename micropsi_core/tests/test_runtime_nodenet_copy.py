@@ -4,12 +4,11 @@
 """
 
 """
-import os
-from micropsi_core.nodenet.nodenet import Nodespace, Node, Link
 from micropsi_core import runtime as micropsi
 
 __author__ = 'joscha'
 __date__ = '12.11.12'
+
 
 def test_copy_nodes():
     success, nodenet_uid1 = micropsi.new_nodenet("Origin_Nodenet", "Default", owner="tester")
@@ -45,7 +44,7 @@ def test_copy_nodes():
     micropsi.add_link(nodenet_uid2, "n1", "gen", "nt2", "gen", uid="l1")
 
     # now copy stuff between nodespaces
-    micropsi.copy_nodes( ["n1", "n2", "n3", "n5", "ns1", "confl"], nodenet_uid1, nodenet_uid2)
+    micropsi.copy_nodes(["n1", "n2", "n3", "n5", "ns1", "confl"], nodenet_uid1, nodenet_uid2)
 
     micropsi.save_nodenet(nodenet_uid1)
     micropsi.save_nodenet(nodenet_uid2)
@@ -74,13 +73,10 @@ def test_copy_nodes():
 
     # we should also test for parentage and link connectivity
 
-
     # TODO now test copying within the same nodenet
 
-    micropsi.copy_nodes( ["n1", "n2", "n3", "n5", "ns1", "confl"], nodenet_uid1, nodenet_uid1, target_nodespace_uid="ns2" )
+    micropsi.copy_nodes(["n1", "n2", "n3", "n5", "ns1", "confl"], nodenet_uid1, nodenet_uid1, target_nodespace_uid="ns2")
     micropsi.save_nodenet(nodenet_uid1)
     # delete_nodenets
     micropsi.delete_nodenet(nodenet_uid1)
     micropsi.delete_nodenet(nodenet_uid2)
-
-

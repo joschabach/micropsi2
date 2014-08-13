@@ -15,7 +15,6 @@ except OSError:
     pass
 
 import configuration
-import logging
 configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
 
 from micropsi_core import runtime as micropsi
@@ -49,6 +48,7 @@ def test_world(request):
         world_uid = list(worlds.keys())[0]
     else:
         success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User")
+
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_world(world_uid)
@@ -86,6 +86,7 @@ def fixed_nodenet(request, test_world):
     success, uid = micropsi.new_nodenet("Fixednet", "Braitenberg", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
     micropsi.get_nodenet(uid)
     micropsi.merge_nodenet(uid, fixed_nodenet_data)
+
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
             micropsi.delete_nodenet(uid)

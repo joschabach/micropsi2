@@ -5,12 +5,14 @@
 Tests for netapi, i.e. the interface native modules will be developed against
 """
 
+import pytest
 from micropsi_core import runtime as micropsi
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter, WorldObject
 
 from micropsi_core.tests.test_node_logic import DummyWorld, DummyWorldAdapter
 from micropsi_core.tests import test_node_logic
+
 
 def prepare(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
@@ -375,12 +377,8 @@ def test_node_netapi_delete_node(fixed_nodenet):
 
     olduid = node1.uid
     netapi.delete_node(node1)
-    error_raised = False
-    try:
+    with pytest.raises(KeyError):
         netapi.get_node(olduid)
-    except KeyError:
-        error_raised = True
-    assert error_raised
     assert len(node2.get_gate("gen").outgoing) == 0
 
 
@@ -399,12 +397,8 @@ def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
 
     node4uid = node4.uid
     netapi.delete_node(nodespace)
-    error_raised = False
-    try:
+    with pytest.raises(KeyError):
         netapi.get_node(node4uid)
-    except KeyError:
-        error_raised = True
-    assert error_raised
 
 
 def test_node_netapi_link(fixed_nodenet):
@@ -427,6 +421,7 @@ def test_node_netapi_link(fixed_nodenet):
         assert link.data['uid'] == link.uid
         assert link.data['source_node_uid'] == node2.uid
         assert link.data['target_node_uid'] == node1.uid
+
 
 def test_node_netapi_link_change_weight(fixed_nodenet):
     # test linking nodes, the changing weights

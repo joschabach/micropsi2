@@ -307,7 +307,7 @@ $(function() {
     });
 
     $('.navbar a.world_revert').on('click', function(event){
-        event.preventDefault()
+        event.preventDefault();
         if(typeof currentWorld == 'undefined'){
             return dialogs.notification("there is no current world selected");
         }

@@ -6,8 +6,6 @@ Tests for node activation propagation and gate arithmetic
 """
 
 from micropsi_core import runtime as micropsi
-from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import WorldAdapter, WorldObject
 
 
 def prepare(fixed_nodenet):
@@ -20,6 +18,7 @@ def prepare(fixed_nodenet):
     source.activation = 1
     nodenet.step()
     return nodenet, netapi, source
+
 
 def add_directional_activators(fixed_nodenet):
     net = micropsi.get_nodenet(fixed_nodenet)
@@ -66,7 +65,8 @@ def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_full([n_a, n_b])
 
-    for i in range(1,3): net.step()
+    for i in range(1, 3):
+        net.step()
     assert n_head.get_gate("gen").activation == 0
 
 
@@ -82,12 +82,14 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
 
     netapi.link(source, "gen", n_a, "sur")
 
-    for i in range(1,3): net.step()
-    assert n_head.get_gate("gen").activation == 1/2
+    for i in range(1, 3):
+        net.step()
+    assert n_head.get_gate("gen").activation == 1 / 2
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1,3): net.step()
+    for i in range(1, 3):
+        net.step()
     assert n_head.get_gate("gen").activation == 1
 
 
@@ -103,12 +105,14 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
-    for i in range(1,3): net.step()
-    assert n_head.get_gate("gen").activation == - 1/2
+    for i in range(1, 3):
+        net.step()
+    assert n_head.get_gate("gen").activation == - 1 / 2
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1,3): net.step()
+    for i in range(1, 3):
+        net.step()
     assert n_head.get_gate("gen").activation == 0
 
 
@@ -124,7 +128,8 @@ def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
     netapi.link_full([n_a, n_b, n_c])
 
-    for i in range(1,3): net.step()
+    for i in range(1, 3):
+        net.step()
     assert n_head.get_gate("gen").activation == 0
 
 
@@ -142,17 +147,20 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
 
     netapi.link(source, "gen", n_a, "sur")
 
-    for i in range(1,3): net.step()
-    assert n_head.get_gate("gen").activation == 1/3
+    for i in range(1, 3):
+        net.step()
+    assert n_head.get_gate("gen").activation == 1 / 3
 
     netapi.link(source, "gen", n_c, "sur")
 
-    for i in range(1,3): net.step()
-    assert n_head.get_gate("gen").activation == 2/3
+    for i in range(1, 3):
+        net.step()
+    assert n_head.get_gate("gen").activation == 2 / 3
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1,3): net.step()
+    for i in range(1, 3):
+        net.step()
     assert n_head.get_gate("gen").activation == 1
 
 
@@ -170,18 +178,21 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
-    for i in range(1,3): net.step()
-    assert n_head.get_gate("gen").activation == - 1/3
+    for i in range(1, 3):
+        net.step()
+    assert n_head.get_gate("gen").activation == - 1 / 3
 
     netapi.link(source, "gen", n_c, "sur")
 
-    for i in range(1,3): net.step()
+    for i in range(1, 3):
+        net.step()
     assert n_head.get_gate("gen").activation == 0
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1,3): net.step()
-    assert n_head.get_gate("gen").activation == 1/3
+    for i in range(1, 3):
+        net.step()
+    assert n_head.get_gate("gen").activation == 1 / 3
 
 
 def test_node_pipe_logic_two_script(fixed_nodenet):
@@ -391,6 +402,7 @@ def test_node_pipe_logic_feature_binding(fixed_nodenet):
     net.step()
 
     assert schema.get_gate("gen").activation == 1
+
 
 def test_node_pipe_logic_search_sub(fixed_nodenet):
     # check if sub-searches work

@@ -20,7 +20,7 @@ except OSError:
     raise
 
 VERSION = "0.3-alpha1"
-APPTITLE = "Microsi"
+APPTITLE = "MicroPsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')
 

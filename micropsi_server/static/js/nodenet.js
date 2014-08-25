@@ -3132,9 +3132,16 @@ function showLinkForm(linkUid){
     $('#edit_link_form').show();
     $('#link_weight_input').val(links[linkUid].weight);
     $('#link_certainty_input').val(links[linkUid].certainty);
-    $('.link_source_node').html('<a href="#follownode" class="follownode" data="'+links[linkUid].sourceNodeUid+'">'+(nodes[links[linkUid].sourceNodeUid].name || nodes[links[linkUid].sourceNodeUid].uid.substr(0,8))+'</a>');
-    $('.link_target_node').html('<a href="#follownode" class="follownode" data="'+links[linkUid].targetNodeUid+'">'+(nodes[links[linkUid].targetNodeUid].name || nodes[links[linkUid].targetNodeUid].uid.substr(0,8))+'</a>');
+    $('.link_source_node').html(
+        '<a href="#follownode" class="follownode" data="'+links[linkUid].sourceNodeUid+'">'+(nodes[links[linkUid].sourceNodeUid].name || nodes[links[linkUid].sourceNodeUid].uid.substr(0,8))+'</a> : ' +
+        '<a href="#followgate" class="followgate" data-node="'+links[linkUid].sourceNodeUid+'" data-gate="'+links[linkUid].gateName+'">'+links[linkUid].gateName+'</a>'
+    );
+    $('.link_target_node').html(
+        '<a href="#follownode" class="follownode" data="'+links[linkUid].targetNodeUid+'">'+(nodes[links[linkUid].targetNodeUid].name || nodes[links[linkUid].targetNodeUid].uid.substr(0,8))+'</a> : ' +
+        links[linkUid].slotName
+    );
     $('a.follownode').on('click', follownode);
+    $('a.followgate').on('click', followgate);
 }
 
 function showNodeForm(nodeUid){

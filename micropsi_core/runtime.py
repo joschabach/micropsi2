@@ -588,7 +588,20 @@ def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, nam
     return True, uid
 
 
-def clone_nodes(nodenet_uid, node_uids, clonemode):
+def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None):
+    """
+    Clones a bunch of nodes. The nodes will get new unique node ids,
+    a "copy" suffix to their name, and a slight positional offset.
+    To specify whether the links should be copied too, you can give the following clone-modes:
+    * "all" to clone all links
+    * "internal" to only clone links within the clone set of nodes
+    * "none" to not clone links at all.
+
+    Per default, a clone of a node will appear in the same nodespace, slightly below the original node.
+
+    If you however specify a nodespace, all clones will be copied to the given nodespace.
+    """
+
     nodenet = get_nodenet(nodenet_uid)
     result = {'nodes': [], 'links': []}
     copynodes = {uid: nodenet.nodes[uid] for uid in node_uids}
@@ -607,7 +620,8 @@ def clone_nodes(nodenet_uid, node_uids, clonemode):
                             copylinks[uid] = nodenet.links[uid]
 
     for _, n in copynodes.items():
-        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + 50, n.position[1] + 50), nodespace=n.parent_nodespace, state=n.state, uid=None, name=n.name + '_copy', parameters=n.parameters)
+        target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
+        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + 50, n.position[1] + 50), nodespace=target_nodespace, state=n.state, uid=None, name=n.name + '_copy', parameters=n.parameters)
         if success:
             uidmap[n.uid] = uid
             result['nodes'].append(nodenet.nodes[uid].data)

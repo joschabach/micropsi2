@@ -965,8 +965,8 @@ def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", p
 
 
 @rpc("clone_nodes", permission_required="manage nodenets")
-def clone_nodes(nodenet_uid, nodes, clonemode="all"):
-    added, result = runtime.clone_nodes(nodenet_uid, nodes, clonemode)
+def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None):
+    added, result = runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace)
     if added:
         return dict(status="success", result=result)
     else:

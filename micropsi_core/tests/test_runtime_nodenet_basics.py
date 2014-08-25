@@ -143,6 +143,23 @@ def test_clone_nodes_internal_links(fixed_nodenet):
     assert nodenet.links[l1_uid].target_slot.type == 'gen'
 
 
+def test_clone_nodes_to_new_nodespace(fixed_nodenet):
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+
+    micropsi.add_node(fixed_nodenet, 'Nodespace', [100, 100], nodespace="Root", name="testspace", uid='ns1')
+
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'internal', nodespace='ns1')
+
+    assert success
+    assert len(result['nodes']) == 2
+    assert len(result['links']) == 1
+
+    a1_copy = nodenet.nodes[result['nodes'][0]['uid']]
+    a2_copy = nodenet.nodes[result['nodes'][1]['uid']]
+
+    assert a1_copy.parent_nodespace == 'ns1'
+    assert a2_copy.parent_nodespace == 'ns1'
+
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):
     assert 0

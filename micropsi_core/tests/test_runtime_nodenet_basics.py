@@ -81,6 +81,67 @@ def test_nodespace_removal(fixed_nodenet):
     assert sub_uid not in micropsi.nodenets[fixed_nodenet].state['nodespaces']
 
 
+def test_clone_nodes_nolinks(fixed_nodenet):
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'none')
+    assert success
+    assert result['nodes'][0]['uid'] in nodenet.nodes
+    assert result['nodes'][0]['name'] == nodenet.nodes['A1'].name + '_copy'
+    assert result['nodes'][0]['uid'] != 'A1'
+    assert result['nodes'][0]['type'] == nodenet.nodes['A1'].type
+    assert result['nodes'][0]['parameters'] == nodenet.nodes['A1'].parameters
+    assert result['nodes'][0]['position'][0] == nodenet.nodes['A1'].position[0] + 50
+    assert result['nodes'][0]['position'][1] == nodenet.nodes['A1'].position[1] + 50
+    assert result['nodes'][1]['uid'] in nodenet.nodes
+    assert result['nodes'][1]['name'] == nodenet.nodes['A2'].name + '_copy'
+    assert result['nodes'][1]['uid'] != 'A2'
+    assert len(result['nodes']) == 2
+    assert len(result['links']) == 0
+
+
+def test_clone_nodes_all_links(fixed_nodenet):
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'all')
+    assert success
+    assert len(result['nodes']) == 2
+    assert len(result['links']) == 2
+
+    a1_copy = nodenet.nodes[result['nodes'][0]['uid']]
+    a2_copy = nodenet.nodes[result['nodes'][1]['uid']]
+    l1_uid = [uid for uid in a1_copy.gates['por'].outgoing.keys()][0]
+    l2_uid = [uid for uid in a1_copy.slots['gen'].incoming.keys()][0]
+
+    assert nodenet.links[l1_uid].source_node.uid == a1_copy.uid
+    assert nodenet.links[l1_uid].target_node.uid == a2_copy.uid
+    assert nodenet.links[l1_uid].source_gate.type == 'por'
+    assert nodenet.links[l1_uid].target_slot.type == 'gen'
+
+    assert l1_uid in [l['uid'] for l in result['links']]
+
+    assert nodenet.links[l2_uid].source_node.uid == 'S'
+    assert nodenet.links[l2_uid].target_node.uid == a1_copy.uid
+    assert nodenet.links[l2_uid].source_gate.type == 'gen'
+    assert nodenet.links[l2_uid].target_slot.type == 'gen'
+
+    assert l2_uid in [l['uid'] for l in result['links']]
+
+
+def test_clone_nodes_internal_links(fixed_nodenet):
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'internal')
+    assert success
+    assert len(result['nodes']) == 2
+    assert len(result['links']) == 1
+
+    a1_copy = nodenet.nodes[result['nodes'][0]['uid']]
+    a2_copy = nodenet.nodes[result['nodes'][1]['uid']]
+    l1_uid = result['links'][0]['uid']
+
+    assert nodenet.links[l1_uid].source_node.uid == a1_copy.uid
+    assert nodenet.links[l1_uid].target_node.uid == a2_copy.uid
+    assert nodenet.links[l1_uid].source_gate.type == 'por'
+    assert nodenet.links[l1_uid].target_slot.type == 'gen'
+
 
 """
 def test_set_nodenet_properties(micropsi, test_nodenet):

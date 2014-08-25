@@ -85,16 +85,22 @@ def test_clone_nodes_nolinks(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'none')
     assert success
-    assert result['nodes'][0]['uid'] in nodenet.nodes
-    assert result['nodes'][0]['name'] == nodenet.nodes['A1'].name + '_copy'
-    assert result['nodes'][0]['uid'] != 'A1'
-    assert result['nodes'][0]['type'] == nodenet.nodes['A1'].type
-    assert result['nodes'][0]['parameters'] == nodenet.nodes['A1'].parameters
-    assert result['nodes'][0]['position'][0] == nodenet.nodes['A1'].position[0] + 50
-    assert result['nodes'][0]['position'][1] == nodenet.nodes['A1'].position[1] + 50
-    assert result['nodes'][1]['uid'] in nodenet.nodes
-    assert result['nodes'][1]['name'] == nodenet.nodes['A2'].name + '_copy'
-    assert result['nodes'][1]['uid'] != 'A2'
+    if result['nodes'][0]['name'] == 'A1_copy':
+        a1_copy = result['nodes'][0]
+        a2_copy = result['nodes'][1]
+    else:
+        a1_copy = result['nodes'][1]
+        a2_copy = result['nodes'][0]
+
+    assert a1_copy['uid'] in nodenet.nodes
+    assert a1_copy['uid'] != 'A1'
+    assert a1_copy['type'] == nodenet.nodes['A1'].type
+    assert a1_copy['parameters'] == nodenet.nodes['A1'].parameters
+    assert a1_copy['position'][0] == nodenet.nodes['A1'].position[0] + 50
+    assert a1_copy['position'][1] == nodenet.nodes['A1'].position[1] + 50
+    assert a2_copy['uid'] in nodenet.nodes
+    assert a2_copy['name'] == nodenet.nodes['A2'].name + '_copy'
+    assert a2_copy['uid'] != 'A2'
     assert len(result['nodes']) == 2
     assert len(result['links']) == 0
 
@@ -106,8 +112,15 @@ def test_clone_nodes_all_links(fixed_nodenet):
     assert len(result['nodes']) == 2
     assert len(result['links']) == 2
 
-    a1_copy = nodenet.nodes[result['nodes'][0]['uid']]
-    a2_copy = nodenet.nodes[result['nodes'][1]['uid']]
+    if result['nodes'][0]['name'] == 'A1_copy':
+        a1_copy = result['nodes'][0]
+        a2_copy = result['nodes'][1]
+    else:
+        a1_copy = result['nodes'][1]
+        a2_copy = result['nodes'][0]
+
+    a1_copy = nodenet.nodes[a1_copy['uid']]
+    a2_copy = nodenet.nodes[a2_copy['uid']]
     l1_uid = [uid for uid in a1_copy.gates['por'].outgoing.keys()][0]
     l2_uid = [uid for uid in a1_copy.slots['gen'].incoming.keys()][0]
 
@@ -133,8 +146,15 @@ def test_clone_nodes_internal_links(fixed_nodenet):
     assert len(result['nodes']) == 2
     assert len(result['links']) == 1
 
-    a1_copy = nodenet.nodes[result['nodes'][0]['uid']]
-    a2_copy = nodenet.nodes[result['nodes'][1]['uid']]
+    if result['nodes'][0]['name'] == 'A1_copy':
+        a1_copy = result['nodes'][0]
+        a2_copy = result['nodes'][1]
+    else:
+        a1_copy = result['nodes'][1]
+        a2_copy = result['nodes'][0]
+
+    a1_copy = nodenet.nodes[a1_copy['uid']]
+    a2_copy = nodenet.nodes[a2_copy['uid']]
     l1_uid = result['links'][0]['uid']
 
     assert nodenet.links[l1_uid].source_node.uid == a1_copy.uid
@@ -154,8 +174,15 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
     assert len(result['nodes']) == 2
     assert len(result['links']) == 1
 
-    a1_copy = nodenet.nodes[result['nodes'][0]['uid']]
-    a2_copy = nodenet.nodes[result['nodes'][1]['uid']]
+    if result['nodes'][0]['name'] == 'A1_copy':
+        a1_copy = result['nodes'][0]
+        a2_copy = result['nodes'][1]
+    else:
+        a1_copy = result['nodes'][1]
+        a2_copy = result['nodes'][0]
+
+    a1_copy = nodenet.nodes[a1_copy['uid']]
+    a2_copy = nodenet.nodes[a2_copy['uid']]
 
     assert a1_copy.parent_nodespace == 'ns1'
     assert a2_copy.parent_nodespace == 'ns1'

@@ -398,3 +398,9 @@ graphs
 
 }
 
+label input[type="radio"] {
+  padding: 0;
+  vertical-align: middle;
+  margin: 0;
+}
+

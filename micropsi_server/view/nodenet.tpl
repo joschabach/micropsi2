@@ -504,6 +504,39 @@
     </div>
 </div>
 
+<div class="modal hide" id="paste_mode_selection_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Paste Nodes</h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="paste_mode_selection">Do you also want to copy the links?</label>
+                    <div class="controls">
+                        <label for="past_mode_all">
+                            <input type="radio" name="past_mode" class="input-xlarge" value="all" id="past_mode_all"/>
+                            Copy all links
+                        </label>
+                        <label for="past_mode_internal">
+                            <input type="radio" name="past_mode" class="input-xlarge" value="internal" id="past_mode_internal"/>
+                            Copy links within selection only
+                        </label>
+                        <label for="past_mode_none">
+                            <input type="radio" name="past_mode" class="input-xlarge" value="none" id="past_mode_none"/>
+                            Do not copy links
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary">Apply</button>
+    </div>
+</div>
 <div class="modal hide" id="edit_native_modal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>

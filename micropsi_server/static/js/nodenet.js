@@ -101,6 +101,8 @@ loaded_coordinates = {
 max_coordinates = {};
 canvas_container.on('scroll', refreshViewPortData);
 
+var clipboard = {};
+
 // hm. not really nice. but let's see if we got other pairs, or need them configurable:
 var inverse_link_map = {'por':'ret', 'sub':'sur', 'cat':'exp'};
 var inverse_link_targets = ['ret', 'sur', 'exp'];
@@ -1982,22 +1984,47 @@ function onMouseUp(event) {
 
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
-    if (event.character == "+" && event.event.target.tagName == "BODY") {
-        zoomIn(event);
-    }
-    else if (event.character == "-" && event.event.target.tagName == "BODY") {
-        zoomOut(event);
-    }
-    // delete nodes and links
-    else if (event.key == "backspace" || event.key == "delete") {
-        if (event.event.target.tagName == "BODY") {
-            event.preventDefault(); // browser-back
-            deleteNodeHandler();
-            deleteLinkHandler();
-        }
-    }
-    else if (event.key == "escape") {
-        if (linkCreationStart) cancelLinkCreationHandler();
+    var modifier_key = /macintosh/.test(navigator.userAgent.toLowerCase()) ? event.modifiers.command : event.modifiers.control;
+    switch(event.key){
+        case "+":
+            if(event.event.target.tagName == "BODY"){
+                zoomIn(event);
+            }
+            break;
+        case "-":
+            if(event.event.target.tagName == "BODY"){
+                zoomOut(event);
+            }
+            break;
+        case "backspace":
+        case "delete":
+            if (event.event.target.tagName == "BODY") {
+                event.preventDefault(); // browser-back
+                deleteNodeHandler();
+                deleteLinkHandler();
+            }
+            break;
+        case "escape":
+            if (linkCreationStart){
+                cancelLinkCreationHandler();
+            }
+            break;
+        case "c":
+            if(modifier_key){
+                clipboard = {};
+                for(var uid in selection){
+                    if(uid in nodes){
+                        clipboard[uid] = nodes[uid];
+                    }
+                }
+            }
+            break;
+        case "v":
+            if(modifier_key){
+                // paste selected. ask for links.
+                $('#paste_mode_selection_modal').modal('show');
+            }
+            break;
     }
 }
 
@@ -2152,6 +2179,13 @@ function initializeDialogs(){
             refreshNodespace();
         })
         $('#nodenet_user_prompt').modal('hide');
+    });
+
+    $('#paste_mode_selection_modal .btn-primary').on('click', function(event){
+        event.preventDefault();
+        var form = $('#paste_mode_selection_modal form');
+        handlePasteNodes(form.serializeArray()[0].value);
+        $('#paste_mode_selection_modal').modal('hide');
     });
 }
 
@@ -2499,6 +2533,26 @@ function createNativeModuleHandler(event){
     }
 }
 
+function handlePasteNodes(pastemode){
+    // none;
+    copy_ids = Object.keys(clipboard);
+    api.call('clone_nodes', {
+        nodenet_uid: currentNodenet,
+        node_uids: copy_ids,
+        clone_mode: pastemode,
+        nodespace: currentNodeSpace
+    }, success = function(data){
+        for(var i = 0; i < data.result.nodes.length; i++){
+            var n = data.result.nodes[i];
+            addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
+        }
+        for(i = 0; i < data.result.links.length; i++){
+            var l = data.result.links[i];
+            addLink(new Link(l.uid, l.source_node_uid, l.source_gate_name, l.target_node_uid, l.target_slot_name, l.weight, l.certainty));
+        }
+        view.draw();
+    });
+}
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {

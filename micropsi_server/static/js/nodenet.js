@@ -2175,9 +2175,9 @@ function initializeDialogs(){
             values: values,
             resume_nodenet: startnet
         }, function(data){
-            currentSimulationStep -= 1
+            currentSimulationStep -= 1;
             refreshNodespace();
-        })
+        });
         $('#nodenet_user_prompt').modal('hide');
     });
 
@@ -3178,7 +3178,7 @@ function initializeSidebarForms(){
         }
         $('#nodespace_gatefunction_gate').html(gatehtml);
         nodespace_gatefunction_gate.trigger('change');
-    })
+    });
 }
 
 function showLinkForm(linkUid){

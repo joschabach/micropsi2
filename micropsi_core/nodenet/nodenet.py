@@ -898,6 +898,24 @@ class NetAPI(object):
         for uid in links_to_delete:
             self.__nodenet.delete_link(uid)
 
+    def unlink_direction(self, node, gateslot=None):
+        """
+        Deletes all links from a node ending at the given gate or originating at the given slot
+        Read this as 'delete all por linkage from this node'
+        """
+        links_to_delete = set()
+        for gatetype, gateobject in node.gates.items():
+            if gateslot is None or gateslot == gatetype:
+                for linkid, link in gateobject.outgoing.items():
+                    links_to_delete.add(linkid)
+        for slottype, slotobject in node.slots.items():
+            if gateslot is None or gateslot == slottype:
+                for linkid, link in slotobject.incoming.items():
+                    links_to_delete.add(linkid)
+
+        for uid in links_to_delete:
+            self.__nodenet.delete_link(uid)
+
     def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
         """
         Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,

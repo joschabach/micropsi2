@@ -144,7 +144,7 @@ function refreshNodenetList(){
 // make function available in global javascript scope
 window.refreshNodenetList = function(){
     refreshNodenetList();
-}
+};
 
 function get_available_worlds(){
     api.call('get_available_worlds', {}, success=function(data){
@@ -374,6 +374,9 @@ function setNodespaceData(data, changed){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
+    if(!currentNodenet){
+        return;
+    }
     if(coordinates)
         loaded_coordinates = coordinates;
     nodespace = nodespace || currentNodeSpace;
@@ -408,7 +411,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             if(nodenetRunning) setTimeout(refreshNodespace, 100);
             return null;
         } else {
-            nodenetRunning = data.is_active
+            nodenetRunning = data.is_active;
         }
         setNodespaceData(data, changed);
         if(callback){
@@ -417,6 +420,10 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         if(nodenetRunning){
             refreshNodespace();
         }
+    }, error=function(data){
+        currentNodeSpace = null;
+        $.cookie('current_nodespace', '', { expires: -1, path: '/' });
+        dialogs.notification(data.Error, "Error");
     });
 }
 

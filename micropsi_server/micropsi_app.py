@@ -101,7 +101,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     response.content_type = 'application/json'
                     import traceback
                     return json.dumps({"Error": str(err), "Traceback": traceback.format_exc()})
-                
+
                 # except TypeError as err:
                 #     response.status = 400
                 #     return {"Error": "Bad parameters in remote procedure call: %s" % err}

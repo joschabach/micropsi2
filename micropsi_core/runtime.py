@@ -57,6 +57,7 @@ logger = MicropsiLogger({
     'nodenet': LOGGING['level_nodenet']
 })
 
+
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
 
@@ -130,8 +131,8 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 # MicroPsi API
 
-# loggers
 
+# loggers
 def set_logging_levels(system=None, world=None, nodenet=None):
     if system is not None and system in logger.logging_levels:
         logger.set_logging_level('system', system)
@@ -155,7 +156,7 @@ def get_logging_levels():
         30: 'WARNING',
         20: 'INFO',
         10: 'DEBUG',
-        0:'NOTSET'
+        0: 'NOTSET'
     }
     levels = {
         'system': inverse_map[logging.getLogger('system').getEffectiveLevel()],
@@ -164,12 +165,14 @@ def get_logging_levels():
     }
     return levels
 
+
 # Minecraft Image
 def get_minecraft_image():
     from micropsi_core.world.minecraft.minecraft import Minecraft
     for uid in worlds:
         if isinstance(worlds[uid], Minecraft):
             return worlds[uid].the_image
+
 
 # Nodenet
 def get_available_nodenets(owner=None):
@@ -229,7 +232,7 @@ def load_nodenet(nodenet_uid):
         if world:
             world.register_nodenet(worldadapter, nodenets[nodenet_uid])
         return True, nodenet_uid
-    return False, "Nodenet "+nodenet_uid+" not found in "+RESOURCE_PATH
+    return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
 
 
 def get_nodenet_data(nodenet_uid, **coordinates):

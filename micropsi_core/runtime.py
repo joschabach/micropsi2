@@ -81,8 +81,7 @@ def nodenetrunner():
                 try:
                     nodenets[uid].step()
                 except:
-                    e = sys.exc_info()[1]
-                    logging.getLogger("nodenet").error("Exception in NodenetRunner: %s", str(e))
+                    logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())
@@ -101,8 +100,7 @@ def worldrunner():
                 try:
                     worlds[uid].step()
                 except:
-                    e = sys.exc_info()[1]
-                    logging.getLogger("world").error("Exception in WorldRunner: %s", str(e))
+                    logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())

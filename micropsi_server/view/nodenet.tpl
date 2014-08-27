@@ -358,8 +358,9 @@
 <div class="dropdown" id="multi_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#multi_node_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
-        <li data-copy-nodes><a href="#">Copy Nodes</a></li>
-        <li data-paste-nodes><a href="#">Paste Nodes</a></li>
+        <li data-copy-nodes><a href="#">Copy nodes</a></li>
+        <li data-paste-nodes><a href="#">Paste nodes</a></li>
+        <li data-delete-nodes><a href="#">Delete nodes</a></li>
     </ul>
 </div>
 
@@ -528,7 +529,7 @@
                             Copy all links
                         </label>
                         <label for="past_mode_internal">
-                            <input type="radio" name="past_mode" class="input-xlarge" value="internal" id="past_mode_internal"/>
+                            <input type="radio" checked="checked" name="past_mode" class="input-xlarge" value="internal" id="past_mode_internal"/>
                             Copy links within selection only
                         </label>
                         <label for="past_mode_none">

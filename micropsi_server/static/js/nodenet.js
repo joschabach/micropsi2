@@ -2265,7 +2265,7 @@ function openContextMenu(menu_id, event) {
         if(Object.keys(clipboard).length === 0){
             html += ' class="disabled"';
         }
-        html += '><a href="#">Paste Nodes</a></li>';
+        html += '><a href="#">Paste nodes</a></li>';
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
@@ -2287,7 +2287,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.append('<li class="divider"></li>');
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
             if(gateName in inverse_link_map){
@@ -2308,6 +2307,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     }
     menu.append('<li><a href="#">Rename node</a></li>');
     menu.append('<li><a href="#">Delete node</a></li>');
+    menu.append('<li data-copy-nodes><a href="#">Copy node</a></li>');
     menu.on('click', 'li', handleContextMenu);
     openContextMenu(menu_id, event);
 }
@@ -2319,9 +2319,11 @@ function handleContextMenu(event) {
     $el = $(event.target);
     if($el.parent().attr('data-copy-nodes') === ""){
         copyNodes();
+        clickType = null;
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
     } else if($el.parent().attr('data-paste-nodes') === ""){
         pasteNodes(clickPosition);
+        clickType = null;
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
     }
     switch (clickType) {
@@ -2391,6 +2393,7 @@ function handleContextMenu(event) {
                     }
                     break;
                 case "Delete node":
+                case "Delete nodes":
                     deleteNodeHandler(clickOriginUid);
                     break;
                 case "Select datasource":

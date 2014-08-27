@@ -547,7 +547,7 @@ class Nodenet(object):
                     for sheaf in gate.sheaves.keys():
                         for uid, link in gate.outgoing.items():
                             for slotname in link.target_node.slots.keys():
-                                if sheaf not in link.target_node.get_slot(slotname).sheaves:
+                                if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
                                     link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
 
         # propagate activation
@@ -560,6 +560,9 @@ class Nodenet(object):
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
                     for sheaf in gate.sheaves.keys():
+                        if link.target_node.type == "Actor":
+                            shef = "default"
+
                         if sheaf in link.target_slot.sheaves:
                             link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
                         elif sheaf.endswith(link.target_node.uid):

@@ -2549,11 +2549,13 @@ function createNativeModuleHandler(event){
 
 copyPosition = null;
 function copyNodes(event){
-    copyPosition = {'x': nodes[clickOriginUid].x, 'y':nodes[clickOriginUid].y};
+    copyPosition = {'x': nodes[clickOriginUid].x, 'y': nodes[clickOriginUid].y};
     clipboard = {};
     for(var uid in selection){
         if(uid in nodes){
             clipboard[uid] = nodes[uid];
+            copyPosition.x = Math.min(nodes[uid].x, copyPosition.x);
+            copyPosition.y = Math.min(nodes[uid].y, copyPosition.y);
         }
     }
 }

@@ -83,7 +83,7 @@ def test_nodespace_removal(fixed_nodenet):
 
 def test_clone_nodes_nolinks(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'none')
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['A1', 'A2'], 'none', offset=[10, 20])
     assert success
     if result['nodes'][0]['name'] == 'A1_copy':
         a1_copy = result['nodes'][0]
@@ -96,8 +96,8 @@ def test_clone_nodes_nolinks(fixed_nodenet):
     assert a1_copy['uid'] != 'A1'
     assert a1_copy['type'] == nodenet.nodes['A1'].type
     assert a1_copy['parameters'] == nodenet.nodes['A1'].parameters
-    assert a1_copy['position'][0] == nodenet.nodes['A1'].position[0] + 50
-    assert a1_copy['position'][1] == nodenet.nodes['A1'].position[1] + 50
+    assert a1_copy['position'][0] == nodenet.nodes['A1'].position[0] + 10
+    assert a1_copy['position'][1] == nodenet.nodes['A1'].position[1] + 20
     assert a2_copy['uid'] in nodenet.nodes
     assert a2_copy['name'] == nodenet.nodes['A2'].name + '_copy'
     assert a2_copy['uid'] != 'A2'

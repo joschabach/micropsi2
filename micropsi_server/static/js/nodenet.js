@@ -45,7 +45,8 @@ var viewProperties = {
     arrowLength: 10,
     rasterize: true,
     yMax: 13500,
-    xMax: 13500
+    xMax: 13500,
+    copyPasteOffset: 50
 };
 
 var nodenetscope = paper;
@@ -1698,6 +1699,10 @@ function onMouseDown(event) {
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
                 }
+                else if(clickedSelected && Object.keys(selection).length > 1 && event.event.button == 2){
+                    openMultipleNodesContextMenu(event.event);
+                    return;
+                }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
                     if(nodes[nodeUid].type == "Native"){
@@ -2009,22 +2014,6 @@ function onKeyDown(event) {
                 cancelLinkCreationHandler();
             }
             break;
-        case "c":
-            if(modifier_key){
-                clipboard = {};
-                for(var uid in selection){
-                    if(uid in nodes){
-                        clipboard[uid] = nodes[uid];
-                    }
-                }
-            }
-            break;
-        case "v":
-            if(modifier_key){
-                // paste selected. ask for links.
-                $('#paste_mode_selection_modal').modal('show');
-            }
-            break;
     }
 }
 
@@ -2265,16 +2254,31 @@ function openContextMenu(menu_id, event) {
             } else {
                 html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
                 html += '<ul class="sub-menu dropdown-menu">';
-                for(key in native_modules){
+                for(var key in native_modules){
                     html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
                 }
                 html += '</ul></li>';
             }
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
+        html += '<li class="divider"></li><li data-paste-nodes';
+        if(Object.keys(clipboard).length === 0){
+            html += ' class="disabled"';
+        }
+        html += '><a href="#">Paste Nodes</a></li>';
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
+}
+
+function openMultipleNodesContextMenu(event){
+    var menu = $('#multi_node_menu .dropdown-menu');
+    if(Object.keys(clipboard).length === 0){
+        $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
+    } else {
+        $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
+    }
+    openContextMenu('#multi_node_menu', event);
 }
 
 // build the node menu
@@ -2313,6 +2317,13 @@ function handleContextMenu(event) {
     event.preventDefault();
     var menuText = event.target.text;
     $el = $(event.target);
+    if($el.parent().attr('data-copy-nodes') === ""){
+        copyNodes();
+        $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+    } else if($el.parent().attr('data-paste-nodes') === ""){
+        pasteNodes(clickPosition);
+        $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+    }
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
@@ -2533,14 +2544,34 @@ function createNativeModuleHandler(event){
     }
 }
 
+copyPosition = null;
+function copyNodes(event){
+    copyPosition = {'x': nodes[clickOriginUid].x, 'y':nodes[clickOriginUid].y};
+    clipboard = {};
+    for(var uid in selection){
+        if(uid in nodes){
+            clipboard[uid] = nodes[uid];
+        }
+    }
+}
+
+function pasteNodes(clickPos){
+    $('#paste_mode_selection_modal').modal('show');
+}
+
 function handlePasteNodes(pastemode){
     // none;
+    var offset = [viewProperties.copyPasteOffset, viewProperties.copyPasteOffset];
+    if(clickPosition && copyPosition){
+        offset = [clickPosition.x - copyPosition.x, clickPosition.y - copyPosition.y];
+    }
     copy_ids = Object.keys(clipboard);
     api.call('clone_nodes', {
         nodenet_uid: currentNodenet,
         node_uids: copy_ids,
         clone_mode: pastemode,
-        nodespace: currentNodeSpace
+        nodespace: currentNodeSpace,
+        offset: offset
     }, success = function(data){
         for(var i = 0; i < data.result.nodes.length; i++){
             var n = data.result.nodes[i];

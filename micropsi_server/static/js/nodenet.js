@@ -2568,7 +2568,7 @@ function handlePasteNodes(pastemode){
     // none;
     var offset = [viewProperties.copyPasteOffset, viewProperties.copyPasteOffset];
     if(clickPosition && copyPosition){
-        offset = [clickPosition.x - copyPosition.x, clickPosition.y - copyPosition.y];
+        offset = [(clickPosition.x / viewProperties.zoomFactor) - (copyPosition.x), (clickPosition.y / viewProperties.zoomFactor) - (copyPosition.y)];
     }
     copy_ids = Object.keys(clipboard);
     api.call('clone_nodes', {
@@ -2891,7 +2891,7 @@ function handleEditGate(event){
         node = nodes[clickOriginUid];
         gate = node.gates[node.gateIndexes[clickIndex]];
     }
-    var form = $(event.target)
+    var form = $(event.target);
     var data = form.serializeArray();
     var params = {};
     var old_params = gate.parameters;

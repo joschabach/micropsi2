@@ -2578,9 +2578,11 @@ function handlePasteNodes(pastemode){
         nodespace: currentNodeSpace,
         offset: offset
     }, success = function(data){
+        deselectAll();
         for(var i = 0; i < data.result.nodes.length; i++){
             var n = data.result.nodes[i];
             addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
+            selectNode(n.uid);
         }
         for(i = 0; i < data.result.links.length; i++){
             var l = data.result.links[i];

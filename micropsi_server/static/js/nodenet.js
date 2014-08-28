@@ -2320,19 +2320,24 @@ function handleContextMenu(event) {
     $el = $(event.target);
     if($el.parent().attr('data-copy-nodes') === ""){
         copyNodes();
-        clickType = null;
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
     } else if($el.parent().attr('data-paste-nodes') === ""){
         pasteNodes(clickPosition);
-        clickType = null;
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
     }
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
             var autoalign = $el.attr("data-auto-align");
             if(!type && !autoalign){
-                return false;
+                if(menuText == "Delete nodes"){
+                    deleteNodeHandler(clickOriginUid);
+                    return;
+                } else {
+                    return false;
+                }
             }
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
@@ -2394,7 +2399,6 @@ function handleContextMenu(event) {
                     }
                     break;
                 case "Delete node":
-                case "Delete nodes":
                     deleteNodeHandler(clickOriginUid);
                     break;
                 case "Select datasource":

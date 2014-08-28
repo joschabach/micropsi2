@@ -360,7 +360,7 @@
     <ul class="nodenet_menu dropdown-menu">
         <li data-copy-nodes><a href="#">Copy nodes</a></li>
         <li data-paste-nodes><a href="#">Paste nodes</a></li>
-        <li data-delete-nodes><a href="#">Delete nodes</a></li>
+        <li><a href="#">Delete nodes</a></li>
     </ul>
 </div>
 

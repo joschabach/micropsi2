@@ -964,6 +964,15 @@ def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", p
         return dict(status="error", msg=uid)
 
 
+@rpc("clone_nodes", permission_required="manage nodenets")
+def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset=[50, 50]):
+    added, result = runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)
+    if added:
+        return dict(status="success", result=result)
+    else:
+        return dict(status="error", msg=result)
+
+
 @rpc("set_node_position", permission_required="manage nodenets")
 def set_node_position(nodenet_uid, node_uid, pos):
     return runtime.set_node_position(nodenet_uid, node_uid, pos)
@@ -1073,7 +1082,11 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
 
 @rpc("add_link", permission_required="manage nodenets")
 def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, uid):
-    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid)
+    res, uid = runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid)
+    if res:
+        return {'status': 'success', 'uid': uid}
+    else:
+        return {'status': 'error', 'msg': uid}
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")

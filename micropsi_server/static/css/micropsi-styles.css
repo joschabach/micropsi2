@@ -398,3 +398,22 @@ graphs
 
 }
 
+label input[type="radio"] {
+  padding: 0;
+  vertical-align: middle;
+  margin: 0;
+}
+
+.dropdown li.disabled {
+  background: transparent;
+}
+.dropdown li.disabled:hover {
+  background: transparent;
+  cursor: default;
+}
+.dropdown li.disabled a, .dropdown li.disabled a:hover {
+  color: #999;
+  cursor: default;
+  background-color: transparent;
+}
+

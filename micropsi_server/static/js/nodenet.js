@@ -45,7 +45,8 @@ var viewProperties = {
     arrowLength: 10,
     rasterize: true,
     yMax: 13500,
-    xMax: 13500
+    xMax: 13500,
+    copyPasteOffset: 50
 };
 
 var nodenetscope = paper;
@@ -100,6 +101,8 @@ loaded_coordinates = {
 };
 max_coordinates = {};
 canvas_container.on('scroll', refreshViewPortData);
+
+var clipboard = {};
 
 // hm. not really nice. but let's see if we got other pairs, or need them configurable:
 var inverse_link_map = {'por':'ret', 'sub':'sur', 'cat':'exp'};
@@ -213,6 +216,7 @@ function setCurrentNodenet(uid, nodespace){
 
             if(nodenetChanged){
                 $(document).trigger('nodenetChanged', uid);
+                clipboard = {};
             }
 
             nodenet_data = data;
@@ -1703,6 +1707,10 @@ function onMouseDown(event) {
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
                 }
+                else if(clickedSelected && Object.keys(selection).length > 1 && event.event.button == 2){
+                    openMultipleNodesContextMenu(event.event);
+                    return;
+                }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
                     if(nodes[nodeUid].type == "Native"){
@@ -1989,22 +1997,31 @@ function onMouseUp(event) {
 
 function onKeyDown(event) {
     // support zooming via view.zoom using characters + and -
-    if (event.character == "+" && event.event.target.tagName == "BODY") {
-        zoomIn(event);
-    }
-    else if (event.character == "-" && event.event.target.tagName == "BODY") {
-        zoomOut(event);
-    }
-    // delete nodes and links
-    else if (event.key == "backspace" || event.key == "delete") {
-        if (event.event.target.tagName == "BODY") {
-            event.preventDefault(); // browser-back
-            deleteNodeHandler();
-            deleteLinkHandler();
-        }
-    }
-    else if (event.key == "escape") {
-        if (linkCreationStart) cancelLinkCreationHandler();
+    var modifier_key = /macintosh/.test(navigator.userAgent.toLowerCase()) ? event.modifiers.command : event.modifiers.control;
+    switch(event.key){
+        case "+":
+            if(event.event.target.tagName == "BODY"){
+                zoomIn(event);
+            }
+            break;
+        case "-":
+            if(event.event.target.tagName == "BODY"){
+                zoomOut(event);
+            }
+            break;
+        case "backspace":
+        case "delete":
+            if (event.event.target.tagName == "BODY") {
+                event.preventDefault(); // browser-back
+                deleteNodeHandler();
+                deleteLinkHandler();
+            }
+            break;
+        case "escape":
+            if (linkCreationStart){
+                cancelLinkCreationHandler();
+            }
+            break;
     }
 }
 
@@ -2155,10 +2172,17 @@ function initializeDialogs(){
             values: values,
             resume_nodenet: startnet
         }, function(data){
-            currentSimulationStep -= 1
+            currentSimulationStep -= 1;
             refreshNodespace();
-        })
+        });
         $('#nodenet_user_prompt').modal('hide');
+    });
+
+    $('#paste_mode_selection_modal .btn-primary').on('click', function(event){
+        event.preventDefault();
+        var form = $('#paste_mode_selection_modal form');
+        handlePasteNodes(form.serializeArray()[0].value);
+        $('#paste_mode_selection_modal').modal('hide');
     });
 }
 
@@ -2238,16 +2262,31 @@ function openContextMenu(menu_id, event) {
             } else {
                 html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
                 html += '<ul class="sub-menu dropdown-menu">';
-                for(key in native_modules){
+                for(var key in native_modules){
                     html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
                 }
                 html += '</ul></li>';
             }
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
+        html += '<li class="divider"></li><li data-paste-nodes';
+        if(Object.keys(clipboard).length === 0){
+            html += ' class="disabled"';
+        }
+        html += '><a href="#">Paste nodes</a></li>';
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
+}
+
+function openMultipleNodesContextMenu(event){
+    var menu = $('#multi_node_menu .dropdown-menu');
+    if(Object.keys(clipboard).length === 0){
+        $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
+    } else {
+        $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
+    }
+    openContextMenu('#multi_node_menu', event);
 }
 
 // build the node menu
@@ -2256,7 +2295,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.append('<li class="divider"></li>');
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
             if(gateName in inverse_link_map){
@@ -2277,6 +2315,7 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     }
     menu.append('<li><a href="#">Rename node</a></li>');
     menu.append('<li><a href="#">Delete node</a></li>');
+    menu.append('<li data-copy-nodes><a href="#">Copy node</a></li>');
     menu.on('click', 'li', handleContextMenu);
     openContextMenu(menu_id, event);
 }
@@ -2286,12 +2325,29 @@ function handleContextMenu(event) {
     event.preventDefault();
     var menuText = event.target.text;
     $el = $(event.target);
+    if($el.parent().hasClass('disabled')){
+        return false;
+    }
+    if($el.parent().attr('data-copy-nodes') === ""){
+        copyNodes();
+        $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
+    } else if($el.parent().attr('data-paste-nodes') === ""){
+        pasteNodes(clickPosition);
+        $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
+    }
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
             var autoalign = $el.attr("data-auto-align");
             if(!type && !autoalign){
-                return false;
+                if(menuText == "Delete nodes"){
+                    deleteNodeHandler(clickOriginUid);
+                    return;
+                } else {
+                    return false;
+                }
             }
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
@@ -2506,6 +2562,50 @@ function createNativeModuleHandler(event){
     }
 }
 
+copyPosition = null;
+function copyNodes(event){
+    copyPosition = {'x': nodes[clickOriginUid].x, 'y': nodes[clickOriginUid].y};
+    clipboard = {};
+    for(var uid in selection){
+        if(uid in nodes){
+            clipboard[uid] = nodes[uid];
+            copyPosition.x = Math.min(nodes[uid].x, copyPosition.x);
+            copyPosition.y = Math.min(nodes[uid].y, copyPosition.y);
+        }
+    }
+}
+
+function pasteNodes(clickPos){
+    $('#paste_mode_selection_modal').modal('show');
+}
+
+function handlePasteNodes(pastemode){
+    // none;
+    var offset = [viewProperties.copyPasteOffset, viewProperties.copyPasteOffset];
+    if(clickPosition && copyPosition){
+        offset = [(clickPosition.x / viewProperties.zoomFactor) - (copyPosition.x), (clickPosition.y / viewProperties.zoomFactor) - (copyPosition.y)];
+    }
+    copy_ids = Object.keys(clipboard);
+    api.call('clone_nodes', {
+        nodenet_uid: currentNodenet,
+        node_uids: copy_ids,
+        clone_mode: pastemode,
+        nodespace: currentNodeSpace,
+        offset: offset
+    }, success = function(data){
+        deselectAll();
+        for(var i = 0; i < data.result.nodes.length; i++){
+            var n = data.result.nodes[i];
+            addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
+            selectNode(n.uid);
+        }
+        for(i = 0; i < data.result.links.length; i++){
+            var l = data.result.links[i];
+            addLink(new Link(l.uid, l.source_node_uid, l.source_gate_name, l.target_node_uid, l.target_slot_name, l.weight, l.certainty));
+        }
+        view.draw();
+    });
+}
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
@@ -2808,7 +2908,7 @@ function handleEditGate(event){
         node = nodes[clickOriginUid];
         gate = node.gates[node.gateIndexes[clickIndex]];
     }
-    var form = $(event.target)
+    var form = $(event.target);
     var data = form.serializeArray();
     var params = {};
     var old_params = gate.parameters;
@@ -3131,7 +3231,7 @@ function initializeSidebarForms(){
         }
         $('#nodespace_gatefunction_gate').html(gatehtml);
         nodespace_gatefunction_gate.trigger('change');
-    })
+    });
 }
 
 function showLinkForm(linkUid){

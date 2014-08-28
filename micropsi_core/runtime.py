@@ -589,6 +589,61 @@ def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, nam
     return True, uid
 
 
+def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 50]):
+    """
+    Clones a bunch of nodes. The nodes will get new unique node ids,
+    a "copy" suffix to their name, and a slight positional offset.
+    To specify whether the links should be copied too, you can give the following clone-modes:
+    * "all" to clone all links
+    * "internal" to only clone links within the clone set of nodes
+    * "none" to not clone links at all.
+
+    Per default, a clone of a node will appear in the same nodespace, slightly below the original node.
+
+    If you however specify a nodespace, all clones will be copied to the given nodespace.
+    """
+
+    nodenet = get_nodenet(nodenet_uid)
+    result = {'nodes': [], 'links': []}
+    copynodes = {uid: nodenet.nodes[uid] for uid in node_uids}
+    copylinks = {}
+    uidmap = {}
+    if clonemode != 'none':
+        for _, n in copynodes.items():
+            for g in n.gates:
+                for uid in n.gates[g].outgoing:
+                    if clonemode == 'all' or n.gates[g].outgoing[uid].target_node.uid in copynodes:
+                        copylinks[uid] = nodenet.links[uid]
+            if clonemode == 'all':
+                for s in n.slots:
+                    for uid in n.slots[s].incoming:
+                        if uid not in copylinks:
+                            copylinks[uid] = nodenet.links[uid]
+
+    for _, n in copynodes.items():
+        target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
+        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.state, uid=None, name=n.name + '_copy', parameters=n.parameters)
+        if success:
+            uidmap[n.uid] = uid
+            result['nodes'].append(nodenet.nodes[uid].data)
+        else:
+            logger.warning('Could not clone node: ' + uid)
+
+    for uid, l in copylinks.items():
+        source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
+        target_uid = uidmap.get(l.target_node.uid, l.target_node.uid)
+        success, l_uid = add_link(nodenet_uid, source_uid, l.source_gate.type, target_uid, l.target_slot.type, l.weight, l.certainty)
+        if success:
+            result['links'].append(nodenet.links[l_uid].data)
+        else:
+            logger.warning('Could not duplicate link: ' + l_uid)
+
+    if len(result['nodes']) or len(nodes) == 0:
+        return True, result
+    else:
+        return False, "Could not clone nodes. See log for details."
+
+
 def set_node_position(nodenet_uid, node_uid, pos):
     """Positions the specified node at the given coordinates."""
     nodenet = nodenets[nodenet_uid]
@@ -783,8 +838,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         None if failure
     """
     nodenet = nodenets[nodenet_uid]
-    nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
-    return True
+    return nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):

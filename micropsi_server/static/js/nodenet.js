@@ -216,6 +216,7 @@ function setCurrentNodenet(uid, nodespace){
 
             if(nodenetChanged){
                 $(document).trigger('nodenetChanged', uid);
+                clipboard = {};
             }
 
             nodenet_data = data;

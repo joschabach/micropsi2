@@ -147,7 +147,7 @@ function refreshNodenetList(){
 // make function available in global javascript scope
 window.refreshNodenetList = function(){
     refreshNodenetList();
-}
+};
 
 function get_available_worlds(){
     api.call('get_available_worlds', {}, success=function(data){
@@ -2318,6 +2318,9 @@ function handleContextMenu(event) {
     event.preventDefault();
     var menuText = event.target.text;
     $el = $(event.target);
+    if($el.parent().hasClass('disabled')){
+        return false;
+    }
     if($el.parent().attr('data-copy-nodes') === ""){
         copyNodes();
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');

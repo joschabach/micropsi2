@@ -96,7 +96,7 @@ refreshWorldView = function(){
                         objects[key].representation.remove();
                         delete objects[key];
                         if(key in scenes){
-                            delete scenes[key]
+                            delete scenes[key];
                         }
                     }
                 } else {
@@ -123,7 +123,7 @@ refreshWorldView = function(){
                 if(data.objects[key].position && data.objects[key].position.length == 2){
                     if(key in data.agents){
                         addAgent(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
-                        agents[key] = objects[key]
+                        agents[key] = objects[key];
                         if('scene' in data.agents[key]){
                             scenes[data.agents[key].uid] = data.agents[key].scene;
                         }
@@ -135,15 +135,17 @@ refreshWorldView = function(){
                 }
             }
             // purge agent list
-            for(var key in agents){
+            for(key in agents){
                 if(!(key in data.agents)){
-                    $("#world_agents_list a[data='" + key + "']").parent().parent().remove()
+                    $("#world_agents_list a[data='" + key + "']").parent().parent().remove();
                 }
             }
 
             updateSceneViewer();
             updateViewSize();
-            refreshNodenetList(); // in case new nodenets were created on the serverside
+            if(typeof refreshNodenetList == 'function'){
+                refreshNodenetList(); // in case new nodenets were created on the serverside
+            }
             if(worldRunning){
                 refreshWorldView();
             }
@@ -152,7 +154,7 @@ refreshWorldView = function(){
             dialogs.notification(data.Error, 'error');
         }
     );
-}
+};
 
 function updateSceneViewer(){
     var selector = $('#scene_viewer_agent');
@@ -192,7 +194,7 @@ function refreshSceneView(event){
         for(var row in scene.shape_grid){
             for(var col in scene.shape_grid[row]){
                 var classnames = [];
-                if((scene.fovea_x + (grid_factor.x/2) == col) && 
+                if((scene.fovea_x + (grid_factor.x/2) == col) &&
                     Math.abs(scene.fovea_y - (grid_factor.y/2)) == row){
                     classnames.push('active');
                 }
@@ -412,7 +414,7 @@ function setAddObjectMode(objecttype){
     addObjectGhost.scale(scale_factors[addObjectMode] / 2);
     addObject.position = new Point(-100, -100);
     objectLayer.addChild(addObjectGhost);
-    $('#set_worldobject_sprinkle_mode').text("Done").addClass('active');;
+    $('#set_worldobject_sprinkle_mode').text("Done").addClass('active');
 }
 
 function unsetAddObjectMode(){
@@ -565,7 +567,7 @@ function selectObject(worldobject){
     var bounds = worldobject.representation.bounds;
     selectionBorder = new Path.Rectangle(worldobject.x - (bounds.width / 2), worldobject.y - (bounds.height  /2), bounds.width , bounds.height );
     selectionBorder.strokeWidth = 1;
-    selectionBorder.name = 'selectionBorder'
+    selectionBorder.name = 'selectionBorder';
     selectionBorder.strokeColor = viewProperties.selectionColor;
     if(worldobject.orientation){
         selectionBorder.rotate(worldobject.orientation);

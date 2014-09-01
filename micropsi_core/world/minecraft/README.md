@@ -8,7 +8,7 @@ ReadMe for Running a Minecraft experiment under OS X (other OSes should also be 
 
 2. brew install python3
 
-2.5. brew install mercurial *
+2.5.* brew install mercurial
 
 [3. pip3 install pycrypto (might not be necessary anymore because new makefile installs it)]
 
@@ -37,7 +37,7 @@ ReadMe for Running a Minecraft experiment under OS X (other OSes should also be 
 14. Press "Play" next to the nodenet. The minecraft bot will hopefully move.
 
 
-* Only needed for visualisation which is not part of the current master.
+\* Only needed for visualisation which is not part of the current master.
 
 
 

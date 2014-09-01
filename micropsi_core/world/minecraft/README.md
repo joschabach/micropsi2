@@ -24,7 +24,7 @@ ReadMe for Running a Minecraft experiment under OS X (other OSes should also be 
 
 8. edit config.ini in a way, that it points to the data directory from point 7
 
-9. Server: ./minecraft-servers/1.7.4/start_command
+9. Server: ./minecraft_servers/1.7.4/start.command
 
 10. Micropsi ./run.sh
 

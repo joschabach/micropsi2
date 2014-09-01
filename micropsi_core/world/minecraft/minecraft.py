@@ -113,6 +113,10 @@ class MinecraftWorldadapter(WorldAdapter):
         bot_coords = (bot_x, bot_y, bot_z)
         x_chunk = bot_x // 16
         z_chunk = bot_z // 16
+    
+        # from IPython import embed
+        # embed()
+
         current_column = self.world.spockplugin.world.map.columns[(x_chunk, z_chunk)]
         current_section = current_column.chunks[int((bot_y - 1) // 16)]
 
@@ -148,7 +152,15 @@ class MinecraftWorldadapter(WorldAdapter):
 
 
     def detect_obstacles(self, bot_coords, current_section):
-        self.datasources['obstcl_x+'] = 1 if current_section.get(int(bot_coords[0] + 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 else 0
-        self.datasources['obstcl_x-'] = 1 if current_section.get(int(bot_coords[0] - 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 else 0
-        self.datasources['obstcl_z+'] = 1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] + 1) % 16).id != 0 else 0
-        self.datasources['obstcl_z-'] = 1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] - 1) % 16).id != 0 else 0
+        self.datasources['obstcl_x+'] = \
+            1 if current_section.get(int(bot_coords[0] + 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 \
+            else 0
+        self.datasources['obstcl_x-'] = \
+            1 if current_section.get(int(bot_coords[0] - 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 \
+            else 0
+        self.datasources['obstcl_z+'] = \
+            1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] + 1) % 16).id != 0 \
+            else 0
+        self.datasources['obstcl_z-'] = \
+            1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] - 1) % 16).id != 0 \
+            else 0

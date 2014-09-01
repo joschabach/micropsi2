@@ -40,14 +40,14 @@ class Minecraft(World):
 
         settings = {
             'username': 'bot',          #minecraft.net username or name for unauthenticated servers
-		    'password': '',             #Password for account, ignored if not authenticated
-		    'authenticated': False,     #Authenticate with authserver.mojang.com
-		    'bufsize': 4096,            #Size of socket buffer
-		    'sock_quit': True,          #Stop bot on socket error or hangup
-		    'sess_quit': True,          #Stop bot on failed session login
-		    'thread_workers': 5,        #Number of workers in the thread pool
-		    'plugins': plugins,
-		    'plugin_settings': {
+            'password': '',             #Password for account, ignored if not authenticated
+            'authenticated': False,     #Authenticate with authserver.mojang.com
+            'bufsize': 4096,            #Size of socket buffer
+            'sock_quit': True,          #Stop bot on socket error or hangup
+            'sess_quit': True,          #Stop bot on failed session login
+            'thread_workers': 5,        #Number of workers in the thread pool
+            'plugins': plugins,
+            'plugin_settings': {
             spockplugin.MicropsiPlugin: {"worldadapter": self},
             EventPlugin: {"killsignals": False}
             },                          #Extra settings for plugins

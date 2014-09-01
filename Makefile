@@ -2,8 +2,7 @@
 
 venv: pip requirements.txt
 	test -d bin || virtualenv ./ --python=python3
-	source bin/activate; pip install -Ur requirements.txt
-	touch bin/activate
+	bin/pip install -Ur requirements.txt
 
 pip:
 	virtualenv --version >/dev/null || pip install virtualenv
@@ -18,7 +17,6 @@ clean:
 	rm -rf include lib .Python bin
 
 tests:
-	source bin/activate
 	bin/py.test micropsi_server
 	bin/py.test micropsi_core
 

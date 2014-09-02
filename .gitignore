@@ -11,6 +11,7 @@
 /.installed.cfg
 *.pyc
 /resources/server-config.json
+/share/
 /dist/
 /include/
 /lib/

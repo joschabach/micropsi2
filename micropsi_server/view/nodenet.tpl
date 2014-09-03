@@ -93,6 +93,14 @@
                         <td><label for="nodenet_worldadapter">Worldadapter</label></td>
                         <td><select name="nodenet_worldadapter" id="nodenet_worldadapter"></select></td>
                     </tr>
+                    <tr>
+                        <td><label for="nodenet_renderlinks">render links</label></td>
+                        <td><select name="nodenet_renderlinks" type="checkbox" name="nodenet_renderlinks" id="nodenet_renderlinks">
+                            <option value="always">always</option>
+                            <option value="hover">on node hover</option>
+                            <option value="no">never</opeion>
+                        </select></td>
+                    </tr>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>

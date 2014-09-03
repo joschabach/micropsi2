@@ -220,6 +220,10 @@ function setCurrentNodenet(uid, nodespace){
             }
 
             nodenet_data = data;
+            if(!nodenet_data.settings['renderlinks']){
+                // default nodenet settings
+                nodenet_data.settings['renderlinks'] = 'always';
+            }
 
             showDefaultForm();
             $('#nodenet_step').val(data.step);
@@ -978,6 +982,14 @@ function createPlaceholder(node, direction, point){
 
 // draw link
 function renderLink(link) {
+    if(nodenet_data.settings.renderlinks == 'no'){
+        return;
+    }
+    if(nodenet_data.settings.renderlinks == 'hover'){
+        if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
+            return;
+        }
+    }
     var sourceNode = nodes[link.sourceNodeUid];
     var targetNode = nodes[link.targetNodeUid];
     var gate;
@@ -1861,8 +1873,10 @@ function onMouseMove(event) {
         }
     }
     if(hoverNode && hoverNode.uid in nodes){
-        hoverNode.renderCompact = null;
-        redrawNode(hoverNode, true);
+        var oldHover = hoverNode.uid;
+        hoverNode = null;
+        nodes[oldHover].renderCompact = null;
+        redrawNode(nodes[oldHover], true);
     }
     hoverNode = null;
 
@@ -3050,6 +3064,9 @@ function handleEditNodenet(event){
     if(worldadapter){
         params.worldadapter = worldadapter;
     }
+    nodenet_data.settings['renderlinks'] = $('#nodenet_renderlinks').val();
+    params.settings = nodenet_data.settings;
+
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
@@ -3380,6 +3397,7 @@ function showNativeModuleForm(nodeUid){
 
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
+    $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
     $('#nodenet_forms .default_form').show();
 }
 

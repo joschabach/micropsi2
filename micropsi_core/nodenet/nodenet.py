@@ -122,7 +122,8 @@ class Nodenet(object):
             "monitors": {},
             "nodespaces": {'Root': {}},
             "activatortypes": list(nodetypes.keys()),
-            "step": 0
+            "step": 0,
+            "settings": {}
         }
 
         self.world = world

@@ -139,6 +139,7 @@ def _add_world_list(template_name, **params):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != params['user_id']),
         world_assets=world_assets, **params)
 
+
 @route('/static/<filepath:path>')
 def server_static(filepath):
     return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
@@ -689,8 +690,8 @@ def delete_nodenet(nodenet_uid):
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner)
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, settings={}):
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, settings=settings)
 
 
 @rpc("set_node_state")

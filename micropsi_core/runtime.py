@@ -83,6 +83,7 @@ def nodenetrunner():
                     nodenets[uid].step()
                 except:
                     logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
+                    nodenetrunner.last_exception = sys.exc_info()
         left = step - (datetime.now() - start)
         if left.total_seconds() > 0:
             time.sleep(left.total_seconds())
@@ -533,6 +534,10 @@ def get_nodespace_list(nodenet_uid):
 def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}
+    if hasattr(nodenetrunner, 'last_exception'):
+        e = nodenetrunner.last_exception
+        del nodenetrunner.last_exception
+        raise Exception("Error during stepping nodenet").with_traceback(e[2]) from e[1]
     if step < nodenets[nodenet_uid].current_step:
         data = get_nodenet_area(nodenet_uid, nodespace, **coordinates)
         data.update({'current_step': nodenets[nodenet_uid].current_step, 'is_active': nodenets[nodenet_uid].is_active})

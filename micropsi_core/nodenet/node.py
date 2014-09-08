@@ -191,10 +191,10 @@ class Node(NetEntity):
                 # and actually calculate new values for them
                 try:
                     self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
-                except Exception as err:
+                except Exception:
                     self.nodenet.is_active = False
                     self.data["activation"] = -1
-                    raise err
+                    raise
         else:
             # default node function (only using the "default" sheaf)
             if len(self.slots):

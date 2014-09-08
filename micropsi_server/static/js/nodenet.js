@@ -271,7 +271,7 @@ function setCurrentNodenet(uid, nodespace){
             } else {
                 currentNodenet = null;
                 $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.Error, "Error");
+                dialogs.notification(data.Error, "Info");
             }
         });
 }
@@ -428,10 +428,6 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         if(nodenetRunning){
             refreshNodespace();
         }
-    }, error=function(data){
-        currentNodeSpace = null;
-        $.cookie('current_nodespace', '', { expires: -1, path: '/' });
-        dialogs.notification(data.Error, "Error");
     });
 }
 

@@ -840,10 +840,7 @@ def delete_world(world_uid):
 
 @rpc("get_world_view")
 def get_world_view(world_uid, step):
-    try:
-        return runtime.get_world_view(world_uid, step)
-    except KeyError:
-        return {'Error': 'World %s not found' % world_uid}
+    return runtime.get_world_view(world_uid, step)
 
 
 @rpc("set_world_properties", permission_required="manage worlds")

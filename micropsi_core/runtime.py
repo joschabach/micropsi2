@@ -991,10 +991,9 @@ def load_user_files(do_reload=False):
 def reload_native_modules(nodenet_uid=None):
     load_user_files(True)
     if nodenet_uid:
+        nodenets[nodenet_uid].native_modules = {}
         for key in native_modules:
-            if key not in nodenets[nodenet_uid].native_modules:
-                nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
-            nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
+            nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
     return True
 
 

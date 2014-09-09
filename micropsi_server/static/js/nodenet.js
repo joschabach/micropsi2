@@ -266,7 +266,7 @@ function setCurrentNodenet(uid, nodespace){
             refreshNodenetList();
         },
         function(data) {
-            if(data.status == 500){
+            if(data.status == 500 || data.status === 0){
                 api.defaultErrorCallback(data);
             } else {
                 currentNodenet = null;

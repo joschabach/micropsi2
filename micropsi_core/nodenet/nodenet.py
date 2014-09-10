@@ -511,7 +511,7 @@ class Nodenet(object):
             activators = self.get_activators()
             nativemodules = self.get_nativemodules()
             everythingelse = self.nodes.copy()
-            for key in nativemodules.keys():
+            for key in nativemodules:
                 del everythingelse[key]
 
             self.calculate_node_functions(activators)       # activators go first
@@ -545,9 +545,9 @@ class Nodenet(object):
                 gates = node.gates.items()
             for type, gate in gates:
                 if gate.parameters['spreadsheaves'] is True:
-                    for sheaf in gate.sheaves.keys():
+                    for sheaf in gate.sheaves:
                         for uid, link in gate.outgoing.items():
-                            for slotname in link.target_node.slots.keys():
+                            for slotname in link.target_node.slots:
                                 if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
                                     link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
 
@@ -560,7 +560,7 @@ class Nodenet(object):
 
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    for sheaf in gate.sheaves.keys():
+                    for sheaf in gate.sheaves:
                         if link.target_node.type == "Actor":
                             shef = "default"
 
@@ -595,7 +595,7 @@ class Nodenet(object):
         nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
         nativemodules = {}
         for uid in nodes:
-            if self.nodes[uid].type not in STANDARD_NODETYPES.keys():
+            if self.nodes[uid].type not in STANDARD_NODETYPES:
                 nativemodules.update({uid: self.nodes[uid]})
         return nativemodules
 

@@ -162,7 +162,7 @@ class Node(NetEntity):
 
             # find node activation to carry over
             node_activation_to_carry_over= {}
-            for id in self.sheaves.keys():
+            for id in self.sheaves:
                 if id in sheaves_to_calculate:
                     node_activation_to_carry_over[id] = self.sheaves[id]
 
@@ -175,11 +175,11 @@ class Node(NetEntity):
             self.data['sheaves'] = {}
 
             # calculate activation states for all open sheaves
-            for sheaf_id in sheaves_to_calculate.keys():
+            for sheaf_id in sheaves_to_calculate:
 
                 # prepare sheaves
                 for gatename in self.gates:
-                    gate = self.get_gate(gatename)
+                    gate = self.gates[gatename]
                     gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                     gate.node.report_gate_activation(gate.type, gate.sheaves[sheaf_id])
                 if sheaf_id in node_activation_to_carry_over:
@@ -236,9 +236,8 @@ class Node(NetEntity):
     def get_sheaves_to_calculate(self):
         sheaves_to_calculate = {}
         for slotname in self.slots:
-            slot = self.get_slot(slotname)
-            for uid in slot.sheaves.keys():
-                sheaves_to_calculate[uid] = slot.sheaves[uid].copy()
+            for uid in self.slots[slotname].sheaves:
+                sheaves_to_calculate[uid] = self.slots[slotname].sheaves[uid].copy()
         if 'default' not in sheaves_to_calculate:
             sheaves_to_calculate['default'] = SheafElement()
         return sheaves_to_calculate
@@ -247,7 +246,7 @@ class Node(NetEntity):
         if 'gate_parameters' not in self.data:
             self.data['gate_parameters'] = {}
         for parameter, value in parameters.items():
-            if(parameter in Nodetype.GATE_DEFAULTS.keys()):
+            if parameter in Nodetype.GATE_DEFAULTS:
                 try:
                     value = float(value)
                 except:
@@ -340,7 +339,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             self.parameters = gate_defaults.copy()
         if parameters is not None:
             for key in parameters:
-                if key in Nodetype.GATE_DEFAULTS.keys():
+                if key in Nodetype.GATE_DEFAULTS:
                     try:
                         self.parameters[key] = float(parameters[key])
                     except:

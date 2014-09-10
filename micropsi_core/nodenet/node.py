@@ -57,7 +57,8 @@ class Node(NetEntity):
         if sheaf not in sheaves_to_calculate:
             raise "Sheaf " + sheaf + " can not be set as it hasn't been propagated to any slot"
 
-        if activation is None: activation = 0
+        if activation is None:
+            activation = 0
 
         self.sheaves[sheaf].activation = float(activation)
         if 'sheaves' not in self.data:
@@ -204,10 +205,16 @@ class Node(NetEntity):
                         gate.gate_function(self.activation)
 
     def get_gate(self, gatename):
-        return self.gates.get(gatename)
+        try:
+            return self.gates[gatename]
+        except KeyError:
+            return None
 
     def get_slot(self, slotname):
-        return self.slots.get(slotname)
+        try:
+            return self.slots[slotname]
+        except KeyError:
+            return None
 
     def get_associated_link_ids(self):
         links = []
@@ -232,7 +239,7 @@ class Node(NetEntity):
             slot = self.get_slot(slotname)
             for uid in slot.sheaves.keys():
                 sheaves_to_calculate[uid] = slot.sheaves[uid].copy()
-        if 'default' not in sheaves_to_calculate.keys():
+        if 'default' not in sheaves_to_calculate:
             sheaves_to_calculate['default'] = SheafElement()
         return sheaves_to_calculate
 
@@ -258,7 +265,7 @@ class Node(NetEntity):
         self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid": sheafelement.uid, "name": sheafelement.name, "activation": sheafelement.activation}
 
     def reset_slots(self):
-        for slot in self.slots.keys():
+        for slot in self.slots:
             self.slots[slot].sheaves = {"default": SheafElement()}
 
     def get_parameter(self, parameter):

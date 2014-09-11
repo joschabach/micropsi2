@@ -343,7 +343,7 @@ def user_mgt():
 def set_permissions(user_key, role):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        if user_key in usermanager.users.keys() and role in usermanagement.USER_ROLES.keys():
+        if user_key in usermanager.users and role in usermanagement.USER_ROLES:
             usermanager.set_user_role(user_key, role)
         redirect('/user_mgt')
     return template("error", msg="Insufficient rights to access user console")
@@ -405,7 +405,7 @@ def set_password_submit():
     if "manage users" in permissions:
         userid = request.forms.userid
         password = request.forms.password
-        if userid in usermanager.users.keys():
+        if userid in usermanager.users:
             usermanager.set_user_password(userid, password)
         return dict(status='success', msg="New password saved")
     return dict(status="error", msg="Insufficient rights to access user console")
@@ -415,7 +415,7 @@ def set_password_submit():
 def delete_user(userid):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        if userid in usermanager.users.keys():
+        if userid in usermanager.users:
             usermanager.delete_user(userid)
         redirect("/user_mgt")
     return template("error", msg="Insufficient rights to access user console")

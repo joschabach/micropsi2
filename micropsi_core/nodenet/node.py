@@ -20,14 +20,14 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-class SheafElement:
-    def __init__(self, uid="default", name="default", activation=0):
-        self.uid = uid
-        self.name = name
-        self.activation = activation
+# class SheafElement(micropsi_core.tools.Bunch):
+#     def __init__(self, uid="default", name="default", activation=0):
+#         super().__init__(uid=uid, name=name, activation=activation)
 
-    def copy(self):
-        return SheafElement(uid=self.uid, name=self.name)
+#     def copy(self):
+#         return SheafElement(uid=self.uid, name=self.name)
+
+sheafElement = dict(uid="default", name="default", activation=0)
 
 
 class Node(NetEntity):
@@ -46,7 +46,7 @@ class Node(NetEntity):
 
     @property
     def activation(self):
-        return self.sheaves['default'].activation
+        return self.sheaves['default']['activation']
 
     @activation.setter
     def activation(self, activation):
@@ -60,10 +60,10 @@ class Node(NetEntity):
         if activation is None:
             activation = 0
 
-        self.sheaves[sheaf].activation = float(activation)
+        self.sheaves[sheaf]['activation'] = float(activation)
         if 'sheaves' not in self.data:
             self.data['sheaves'] = {}
-        self.data['sheaves'][sheaf] = {"uid": sheaf, "name": sheaves_to_calculate[sheaf].name, "activation": activation}
+        self.data['sheaves'][sheaf] = {"uid": sheaf, "name": sheaves_to_calculate[sheaf]['name'], "activation": activation}
         if len(self.nodetype.gatetypes):
             self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
 
@@ -121,9 +121,8 @@ class Node(NetEntity):
             self.slots[slot] = Slot(slot, self)
         if state:
             self.state = state
-            # TODO: @doik: before, you explicitly added the state to nodenet.nodes[uid], too (in Runtime). Any reason?
         nodenet.nodes[self.uid] = self
-        self.sheaves = {"default": SheafElement(activation=activation)}
+        self.sheaves = {"default": sheafElement.copy()}
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
@@ -140,7 +139,7 @@ class Node(NetEntity):
         """ sets the activation of the given gate, and calls `report_gate_activation`"""
         activation = float(activation)
         if gate in self.gates:
-            self.gates[gate].sheaves[sheaf].activation = activation
+            self.gates[gate].sheaves[sheaf]['activation'] = activation
             self.report_gate_activation(gate, self.gates[gate].sheaves[sheaf])
 
     def node_function(self):
@@ -184,7 +183,7 @@ class Node(NetEntity):
                     gate.node.report_gate_activation(gate.type, gate.sheaves[sheaf_id])
                 if sheaf_id in node_activation_to_carry_over:
                     self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
-                    self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id].activation, sheaf_id)
+                    self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id]['activation'], sheaf_id)
                 else:
                     self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                     self.set_sheaf_activation(0, sheaf_id)
@@ -239,7 +238,7 @@ class Node(NetEntity):
             for uid in self.slots[slotname].sheaves:
                 sheaves_to_calculate[uid] = self.slots[slotname].sheaves[uid].copy()
         if 'default' not in sheaves_to_calculate:
-            sheaves_to_calculate['default'] = SheafElement()
+            sheaves_to_calculate['default'] = sheafElement.copy()
         return sheaves_to_calculate
 
     def set_gate_parameters(self, gate_type, parameters):
@@ -259,13 +258,13 @@ class Node(NetEntity):
             self.data['gate_activations'] = {}
         if gate_type not in self.data['gate_activations']:
             self.data['gate_activations'][gate_type] = {}
-        if sheafelement.uid not in self.data['gate_activations'][gate_type]:
-            self.data['gate_activations'][gate_type][sheafelement.uid] = {}
-        self.data['gate_activations'][gate_type][sheafelement.uid] = {"uid": sheafelement.uid, "name": sheafelement.name, "activation": sheafelement.activation}
+        if sheafelement['uid'] not in self.data['gate_activations'][gate_type]:
+            self.data['gate_activations'][gate_type][sheafelement['uid']] = {}
+        self.data['gate_activations'][gate_type][sheafelement['uid']] = {"uid": sheafelement['uid'], "name": sheafelement['name'], "activation": sheafelement['activation']}
 
     def reset_slots(self):
         for slot in self.slots:
-            self.slots[slot].sheaves = {"default": SheafElement()}
+            self.slots[slot].sheaves = {"default": sheafElement.copy()}
 
     def get_parameter(self, parameter):
         if parameter in self.parameters:
@@ -313,7 +312,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
 
     @property
     def activation(self):
-        return self.sheaves['default'].activation
+        return self.sheaves['default']['activation']
 
     def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
         """create a gate.
@@ -326,11 +325,11 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.type = type
         self.node = node
         if sheaves is None:
-            self.sheaves = {"default": SheafElement()}
+            self.sheaves = {"default": sheafElement.copy()}
         else:
             self.sheaves = {}
             for key in sheaves:
-                self.sheaves[key] = SheafElement(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
+                self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
         self.node.report_gate_activation(self.type, self.sheaves['default'])
         self.outgoing = {}
         self.gate_function = gate_function or self.gate_function
@@ -366,7 +365,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:
-            self.sheaves[sheaf].activation = 0
+            self.sheaves[sheaf]['activation'] = 0
             self.node.report_gate_activation(self.type, self.sheaves[sheaf])
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
@@ -388,7 +387,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         #     else:
         #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
 
-        self.sheaves[sheaf].activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.sheaves[sheaf]['activation'] = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
         self.node.report_gate_activation(self.type, self.sheaves[sheaf])
 
     def open_sheaf(self, input_activation, sheaf="default"):
@@ -401,10 +400,10 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
             sheaf_uid_prefix = sheaf + "-"
             sheaf_name_prefix = self.sheaves[sheaf].name + "-"
 
-        new_sheaf = SheafElement(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name)
-        self.sheaves[new_sheaf.uid] = new_sheaf
+        new_sheaf = dict(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name, activation=0)
+        self.sheaves[new_sheaf['uid']] = new_sheaf
 
-        self.gate_function(input_activation, new_sheaf.uid)
+        self.gate_function(input_activation, new_sheaf['uid'])
 
 
 class Slot(object):
@@ -429,7 +428,7 @@ class Slot(object):
         self.node = node
         self.incoming = {}
         self.current_step = -1
-        self.sheaves = {"default": SheafElement()}
+        self.sheaves = {"default": sheafElement.copy()}
 
     @property
     def activation(self):
@@ -440,7 +439,7 @@ class Slot(object):
             return 0
         if sheaf not in self.sheaves:
             return 0
-        return self.sheaves[sheaf].activation
+        return self.sheaves[sheaf]['activation']
 
 
 STANDARD_NODETYPES = {

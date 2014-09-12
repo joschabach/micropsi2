@@ -769,13 +769,12 @@ class NetAPI(object):
         links of any of the given types
         """
         nodes = []
-        gates = []
         if gate is not None:
-            gates.append(gate)
+            gates = [gate]
         else:
-            gates.extend(self.__nodenet.nodes[node.uid].gates.keys())
+            gates = self.__nodenet.nodes[node.uid].gates.keys()
         for gate in gates:
-            for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].gates[gate].outgoing.items():
                 candidate = link.target_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -792,13 +791,12 @@ class NetAPI(object):
         have links of any of the given types
         """
         nodes = []
-        slots = []
         if slot is not None:
-            slots.append(slot)
+            slots = [slot]
         else:
-            slots.extend(self.__nodenet.nodes[node.uid].slots.keys())
+            slots = self.__nodenet.nodes[node.uid].slots.keys()
         for slot in slots:
-            for link_uid, link in self.__nodenet.nodes[node.uid].get_slot(slot).incoming.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].slots[slot].incoming.items():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():

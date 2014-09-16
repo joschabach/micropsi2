@@ -85,6 +85,10 @@ class Node(NetEntity):
     def state(self):
         return self.data.get("state", None)
 
+    @property
+    def nodetype(self):
+        return self.nodenet.get_nodetype(self.data['type'])
+
     @state.setter
     def state(self, state):
         self.data['state'] = state
@@ -103,9 +107,8 @@ class Node(NetEntity):
         self.gates = {}
         self.slots = {}
         self.data["type"] = type
-        self.nodetype = None
 
-        self.nodetype = self.nodenet.get_nodetype(type)
+        #self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
             self.parameters.update(parameters)
@@ -161,7 +164,7 @@ class Node(NetEntity):
             sheaves_to_calculate = self.get_sheaves_to_calculate()
 
             # find node activation to carry over
-            node_activation_to_carry_over= {}
+            node_activation_to_carry_over = {}
             for id in self.sheaves:
                 if id in sheaves_to_calculate:
                     node_activation_to_carry_over[id] = self.sheaves[id]

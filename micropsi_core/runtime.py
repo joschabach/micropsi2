@@ -1003,6 +1003,7 @@ def reload_native_modules(nodenet_uid=None):
         nodenets[nodenet_uid].native_modules = {}
         for key in native_modules:
             nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
+            nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
     return True
 
 

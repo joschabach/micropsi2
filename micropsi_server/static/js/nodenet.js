@@ -3108,6 +3108,7 @@ function addSlotMonitor(node, index){
         node_uid: node.uid,
         slot: node.slotIndexes[index]
     }, function(data){
+        $(document).trigger('monitorsChanged');
         monitors[data.uid] = data;
     });
 }

@@ -98,8 +98,7 @@ $(function(){
             } else {
                 pollActive();
             }
-
-        })
+        });
     }
 
     function pollActive(){
@@ -180,7 +179,7 @@ $(function(){
                 {nodenet_uid: currentNodenet, monitor_uid: $(event.delegateTarget).attr('data')},
                 function(){
                     delete monitors[uid];
-                    updateMonitorList();
+                    pollMonitoringData();
                 }
             );
         });

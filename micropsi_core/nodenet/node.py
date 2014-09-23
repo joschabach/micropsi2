@@ -69,11 +69,14 @@ class Node(NetEntity):
 
     @property
     def type(self):
-        return self.data.get("type")
+        return self.data["type"]
 
     @property
     def parameters(self):
-        return self.data.get("parameters", {})
+        try:
+            return self.data['parameters']
+        except KeyError:
+            return {}
 
     @parameters.setter
     def parameters(self, dictionary):

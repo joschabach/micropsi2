@@ -2205,7 +2205,7 @@ function stepNodenet(event){
     }
     if(currentNodenet){
         api.call("step_nodenet",
-            {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
+            {nodenet_uid: currentNodenet},
             success=function(data){
                 refreshNodespace();
                 $(document).trigger('nodenetStepped');

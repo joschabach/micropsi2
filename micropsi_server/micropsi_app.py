@@ -732,8 +732,8 @@ def stop_nodenetrunner(nodenet_uid):
 
 
 @rpc("step_nodenet", permission_required="manage nodenets")
-def step_nodenet(nodenet_uid, nodespace=None):
-    return runtime.step_nodenet(nodenet_uid, nodespace)
+def step_nodenet(nodenet_uid):
+    return runtime.step_nodenet(nodenet_uid)
 
 
 @rpc("revert_nodenet", permission_required="manage nodenets")

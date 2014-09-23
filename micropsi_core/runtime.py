@@ -457,16 +457,12 @@ def stop_nodenetrunner(nodenet_uid):
     return True
 
 
-def step_nodenet(nodenet_uid, nodespace=None):
+def step_nodenet(nodenet_uid):
     """Advances the given nodenet by one simulation step.
 
     Arguments:
         nodenet_uid: The uid of the nodenet
-        nodespace (optional): when supplied, returns the contents of the nodespace after the simulation step
     """
-    # if nodespace is not None:
-    #     nodenets[nodenet_uid].step_nodespace(nodespace)
-    # else:
     nodenets[nodenet_uid].step()
     return nodenets[nodenet_uid].current_step
 

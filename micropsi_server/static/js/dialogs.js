@@ -247,8 +247,6 @@ $(function() {
         api.call('reload_native_modules', {nodenet_uid: currentNodenet}, function(){
             dialogs.notification("reload successful");
             window.location.reload();
-        }, function(){
-            dialogs.notification("Error reloading. Please check for syntax errors/import errors in console", 'error');
         });
     });
 

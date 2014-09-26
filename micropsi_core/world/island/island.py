@@ -349,7 +349,7 @@ class Survivor(WorldAdapter):
     def manage_body_parameters(self, nearest_worldobject):
         """called by update() to update energy, water and integrity"""
 
-        for datatarget in self.datatargets.keys():
+        for datatarget in self.datatargets:
             if datatarget.startswith("action_"):
                 self.datatarget_feedback[datatarget] = 0
                 if self.datatargets[datatarget] >= 1 and self.action_cooloff <= 0:

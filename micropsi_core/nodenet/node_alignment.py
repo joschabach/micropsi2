@@ -258,7 +258,7 @@ def _fix_link_inheritance(group, excluded_nodes):
                 excluded_nodes.add(i)
         # now delete all links to excluded nodes
         dirs_copy = group.directions.copy()
-        for d in dirs_copy.keys():
+        for d in dirs_copy:
             for node in dirs_copy[d]:
                 if node in excluded_nodes: group.directions[d].remove(node)
             if not group.directions[d]: del group.directions[d]

@@ -73,9 +73,9 @@ class Minecraft(World):
         try:
             config = configparser.ConfigParser()
             config.read_file(open('config.ini'))
-            if 'minecraft_server' in config.keys():
+            if 'minecraft_server' in config:
                 server = config['minecraft_server']
-            if 'minecraft_port' in config.keys():
+            if 'minecraft_port' in config:
                 port = config['minecraft_port']
         except OSError:
             warnings.warn('Could not read config.ini, falling back to defaults for minecraft server configuration.')

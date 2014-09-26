@@ -2,6 +2,7 @@ import logging
 from spock.mcp import mcdata, mcpacket
 from spock.mcmap import smpmap
 from micropsi_core.world.minecraft.psidispatcher import PsiDispatcher, STANCE_ADDITION
+from spock.mcp.mcpacket import Packet
 from spock.utils import pl_announce
 
 @pl_announce('Micropsi')
@@ -28,6 +29,9 @@ class MicropsiPlugin(object):
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):
             return
         self.clientinfo.position = position
+
+    def chat(self, message):
+        self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
 
     def subtract_stance(self, name, packet):
         # this is to correctly calculate a y value -- the server seems to deliver the value with stance addition,

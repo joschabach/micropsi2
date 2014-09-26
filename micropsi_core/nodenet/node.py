@@ -309,6 +309,10 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
     def activation(self):
         return self.sheaves['default'].activation
 
+    @activation.setter
+    def activation(self, activation):
+        self.sheaves['default'].activation = activation
+
     def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
         """create a gate.
 

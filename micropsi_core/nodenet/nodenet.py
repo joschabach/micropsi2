@@ -10,7 +10,7 @@ import json
 import os
 
 import warnings
-from .node import Node, Nodetype, SheafElement, STANDARD_NODETYPES
+from .node import Node, Nodetype, sheafElement, STANDARD_NODETYPES
 from threading import Lock
 import logging
 from .nodespace import Nodespace
@@ -549,7 +549,7 @@ class Nodenet(object):
                         for uid, link in gate.outgoing.items():
                             for slotname in link.target_node.slots:
                                 if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
-                                    link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
+                                    link.target_node.get_slot(slotname).sheaves[sheaf] = dict(uid=gate.sheaves[sheaf]['uid'], name=gate.sheaves[sheaf]['name'], activation=0)
 
         # propagate activation
         for uid, node in nodes.items():
@@ -565,10 +565,10 @@ class Nodenet(object):
                             shef = "default"
 
                         if sheaf in link.target_slot.sheaves:
-                            link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+                            link.target_slot.sheaves[sheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
                         elif sheaf.endswith(link.target_node.uid):
-                            upsheaf = sheaf[:-(len(link.target_node.uid)+1)]
-                            link.target_slot.sheaves[upsheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
+                            upsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
+                            link.target_slot.sheaves[upsheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
 
     def timeout_locks(self):
         """
@@ -769,13 +769,12 @@ class NetAPI(object):
         links of any of the given types
         """
         nodes = []
-        gates = []
         if gate is not None:
-            gates.append(gate)
+            gates = [gate]
         else:
-            gates.extend(self.__nodenet.nodes[node.uid].gates.keys())
+            gates = self.__nodenet.nodes[node.uid].gates.keys()
         for gate in gates:
-            for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].gates[gate].outgoing.items():
                 candidate = link.target_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -792,13 +791,12 @@ class NetAPI(object):
         have links of any of the given types
         """
         nodes = []
-        slots = []
         if slot is not None:
-            slots.append(slot)
+            slots = [slot]
         else:
-            slots.extend(self.__nodenet.nodes[node.uid].slots.keys())
+            slots = self.__nodenet.nodes[node.uid].slots.keys()
         for slot in slots:
-            for link_uid, link in self.__nodenet.nodes[node.uid].get_slot(slot).incoming.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].slots[slot].incoming.items():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -818,10 +816,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.gates:
-                        if node.get_gate(gate).sheaves[sheaf].activation >= min_activation:
+                        if node.get_gate(gate).sheaves[sheaf]['activation'] >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.sheaves[sheaf].activation >= min_activation:
+                    if node.sheaves[sheaf]['activation'] >= min_activation:
                         nodes.append(node)
         return nodes
 

@@ -27,7 +27,7 @@ __date__ = '09.05.12'
 #     def copy(self):
 #         return SheafElement(uid=self.uid, name=self.name)
 
-sheafElement = dict(uid="default", name="default", activation=0)
+emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
 class Node(NetEntity):
@@ -125,7 +125,7 @@ class Node(NetEntity):
         if state:
             self.state = state
         nodenet.nodes[self.uid] = self
-        self.sheaves = {"default": sheafElement.copy()}
+        self.sheaves = {"default": emptySheafElement.copy()}
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
@@ -241,7 +241,7 @@ class Node(NetEntity):
             for uid in self.slots[slotname].sheaves:
                 sheaves_to_calculate[uid] = self.slots[slotname].sheaves[uid].copy()
         if 'default' not in sheaves_to_calculate:
-            sheaves_to_calculate['default'] = sheafElement.copy()
+            sheaves_to_calculate['default'] = emptySheafElement.copy()
         return sheaves_to_calculate
 
     def set_gate_parameters(self, gate_type, parameters):
@@ -267,7 +267,7 @@ class Node(NetEntity):
 
     def reset_slots(self):
         for slot in self.slots:
-            self.slots[slot].sheaves = {"default": sheafElement.copy()}
+            self.slots[slot].sheaves = {"default": emptySheafElement.copy()}
 
     def get_parameter(self, parameter):
         if parameter in self.parameters:
@@ -328,7 +328,7 @@ class Gate(object):  # todo: take care of gate functions at the level of nodespa
         self.type = type
         self.node = node
         if sheaves is None:
-            self.sheaves = {"default": sheafElement.copy()}
+            self.sheaves = {"default": emptySheafElement.copy()}
         else:
             self.sheaves = {}
             for key in sheaves:
@@ -431,7 +431,7 @@ class Slot(object):
         self.node = node
         self.incoming = {}
         self.current_step = -1
-        self.sheaves = {"default": sheafElement.copy()}
+        self.sheaves = {"default": emptySheafElement.copy()}
 
     @property
     def activation(self):

@@ -343,7 +343,7 @@ def user_mgt():
 def set_permissions(user_key, role):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        if user_key in usermanager.users and role in usermanagement.USER_ROLES:
+        if user_key in usermanager.users.keys() and role in usermanagement.USER_ROLES.keys():
             usermanager.set_user_role(user_key, role)
         redirect('/user_mgt')
     return template("error", msg="Insufficient rights to access user console")
@@ -405,7 +405,7 @@ def set_password_submit():
     if "manage users" in permissions:
         userid = request.forms.userid
         password = request.forms.password
-        if userid in usermanager.users:
+        if userid in usermanager.users.keys():
             usermanager.set_user_password(userid, password)
         return dict(status='success', msg="New password saved")
     return dict(status="error", msg="Insufficient rights to access user console")
@@ -415,7 +415,7 @@ def set_password_submit():
 def delete_user(userid):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        if userid in usermanager.users:
+        if userid in usermanager.users.keys():
             usermanager.delete_user(userid)
         redirect("/user_mgt")
     return template("error", msg="Insufficient rights to access user console")
@@ -732,8 +732,8 @@ def stop_nodenetrunner(nodenet_uid):
 
 
 @rpc("step_nodenet", permission_required="manage nodenets")
-def step_nodenet(nodenet_uid):
-    return runtime.step_nodenet(nodenet_uid)
+def step_nodenet(nodenet_uid, nodespace=None):
+    return runtime.step_nodenet(nodenet_uid, nodespace)
 
 
 @rpc("revert_nodenet", permission_required="manage nodenets")
@@ -840,7 +840,10 @@ def delete_world(world_uid):
 
 @rpc("get_world_view")
 def get_world_view(world_uid, step):
-    return runtime.get_world_view(world_uid, step)
+    try:
+        return runtime.get_world_view(world_uid, step)
+    except KeyError:
+        return {'Error': 'World %s not found' % world_uid}
 
 
 @rpc("set_world_properties", permission_required="manage worlds")

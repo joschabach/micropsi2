@@ -10,7 +10,7 @@ import json
 import os
 
 import warnings
-from .node import Node, Nodetype, sheafElement, STANDARD_NODETYPES
+from .node import Node, Nodetype, SheafElement, STANDARD_NODETYPES
 from threading import Lock
 import logging
 from .nodespace import Nodespace
@@ -511,7 +511,7 @@ class Nodenet(object):
             activators = self.get_activators()
             nativemodules = self.get_nativemodules()
             everythingelse = self.nodes.copy()
-            for key in nativemodules:
+            for key in nativemodules.keys():
                 del everythingelse[key]
 
             self.calculate_node_functions(activators)       # activators go first
@@ -545,11 +545,11 @@ class Nodenet(object):
                 gates = node.gates.items()
             for type, gate in gates:
                 if gate.parameters['spreadsheaves'] is True:
-                    for sheaf in gate.sheaves:
+                    for sheaf in gate.sheaves.keys():
                         for uid, link in gate.outgoing.items():
-                            for slotname in link.target_node.slots:
+                            for slotname in link.target_node.slots.keys():
                                 if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
-                                    link.target_node.get_slot(slotname).sheaves[sheaf] = dict(uid=gate.sheaves[sheaf]['uid'], name=gate.sheaves[sheaf]['name'], activation=0)
+                                    link.target_node.get_slot(slotname).sheaves[sheaf] = SheafElement(uid=gate.sheaves[sheaf].uid, name=gate.sheaves[sheaf].name)
 
         # propagate activation
         for uid, node in nodes.items():
@@ -560,15 +560,15 @@ class Nodenet(object):
 
             for type, gate in gates:
                 for uid, link in gate.outgoing.items():
-                    for sheaf in gate.sheaves:
+                    for sheaf in gate.sheaves.keys():
                         if link.target_node.type == "Actor":
                             shef = "default"
 
                         if sheaf in link.target_slot.sheaves:
-                            link.target_slot.sheaves[sheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
+                            link.target_slot.sheaves[sheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
                         elif sheaf.endswith(link.target_node.uid):
-                            upsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
-                            link.target_slot.sheaves[upsheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
+                            upsheaf = sheaf[:-(len(link.target_node.uid)+1)]
+                            link.target_slot.sheaves[upsheaf].activation += float(gate.sheaves[sheaf].activation) * float(link.weight)  # TODO: where's the string coming from?
 
     def timeout_locks(self):
         """
@@ -595,7 +595,7 @@ class Nodenet(object):
         nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
         nativemodules = {}
         for uid in nodes:
-            if self.nodes[uid].type not in STANDARD_NODETYPES:
+            if self.nodes[uid].type not in STANDARD_NODETYPES.keys():
                 nativemodules.update({uid: self.nodes[uid]})
         return nativemodules
 
@@ -769,12 +769,13 @@ class NetAPI(object):
         links of any of the given types
         """
         nodes = []
+        gates = []
         if gate is not None:
-            gates = [gate]
+            gates.append(gate)
         else:
-            gates = self.__nodenet.nodes[node.uid].gates.keys()
+            gates.extend(self.__nodenet.nodes[node.uid].gates.keys())
         for gate in gates:
-            for link_uid, link in self.__nodenet.nodes[node.uid].gates[gate].outgoing.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
                 candidate = link.target_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -791,12 +792,13 @@ class NetAPI(object):
         have links of any of the given types
         """
         nodes = []
+        slots = []
         if slot is not None:
-            slots = [slot]
+            slots.append(slot)
         else:
-            slots = self.__nodenet.nodes[node.uid].slots.keys()
+            slots.extend(self.__nodenet.nodes[node.uid].slots.keys())
         for slot in slots:
-            for link_uid, link in self.__nodenet.nodes[node.uid].slots[slot].incoming.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].get_slot(slot).incoming.items():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -816,10 +818,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.gates:
-                        if node.get_gate(gate).sheaves[sheaf]['activation'] >= min_activation:
+                        if node.get_gate(gate).sheaves[sheaf].activation >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.sheaves[sheaf]['activation'] >= min_activation:
+                    if node.sheaves[sheaf].activation >= min_activation:
                         nodes.append(node)
         return nodes
 

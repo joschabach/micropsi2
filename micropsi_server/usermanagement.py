@@ -254,7 +254,7 @@ class UserManager(object):
     def end_all_sessions(self):
         """useful during a reset of the runtime, because all open user sessions will persist during shutdown"""
         sessions = self.sessions.copy()
-        for session_token in sessions:
+        for session_token in sessions.keys():
             self.end_session(session_token)
 
     def refresh_session(self, session_token):
@@ -271,7 +271,7 @@ class UserManager(object):
         change_flag = False
         now = datetime.datetime.now().isoformat()
         sessions = self.sessions.copy()
-        for session_token in sessions:
+        for session_token in sessions.keys():
             user_id = self.sessions[session_token]
             if self.users[user_id]["session_expires"]:
                 if self.users[user_id]["session_expires"] < now:

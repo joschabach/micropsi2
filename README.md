@@ -2,7 +2,7 @@ About
 -----
 A Python implementation of the cognitive architecture MicroPsi.
 
-For more information visit [micropsi.com](http://www.micropsi.com), for instance, the [publications ](http://www.micropsi.com/publications/publications.html) page. For a one-paper introduction see [The AEP Toolkit for Agent Design and Simulation](http://www.micropsi.com/publications/assets/BachVuineMates2003.pdf)
+For more information visit [micropsi.com](http://www.micropsi.com).
 
 
 Prerequisites

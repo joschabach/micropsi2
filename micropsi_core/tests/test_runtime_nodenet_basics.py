@@ -121,8 +121,8 @@ def test_clone_nodes_all_links(fixed_nodenet):
 
     a1_copy = nodenet.nodes[a1_copy['uid']]
     a2_copy = nodenet.nodes[a2_copy['uid']]
-    l1_uid = list(a1_copy.gates['por'].outgoing.keys())[0]
-    l2_uid = list(a1_copy.slots['gen'].incoming.keys())[0]
+    l1_uid = [uid for uid in a1_copy.gates['por'].outgoing.keys()][0]
+    l2_uid = [uid for uid in a1_copy.slots['gen'].incoming.keys()][0]
 
     assert nodenet.links[l1_uid].source_node.uid == a1_copy.uid
     assert nodenet.links[l1_uid].target_node.uid == a2_copy.uid

@@ -36,7 +36,7 @@ class Monitor(object):
     def step(self, step):
         if self.node_uid in self.nodenet.nodes:
             if self.target in getattr(self.nodenet.nodes[self.node_uid], self.type + 's'):
-                self.values[step] = getattr(self.nodenet.nodes[self.node_uid], self.type + 's')[self.target].sheaves['default']['activation']
+                self.values[step] = getattr(self.nodenet.nodes[self.node_uid], self.type + 's')[self.target].sheaves['default'].activation
 
     def clear(self):
         self.data['values'] = {}

@@ -10,7 +10,7 @@ import json
 import os
 
 import warnings
-from .node import Node, Nodetype, sheafElement, STANDARD_NODETYPES
+from .node import Node, Nodetype, emptySheafElement, STANDARD_NODETYPES
 from threading import Lock
 import logging
 from .nodespace import Nodespace

@@ -266,12 +266,12 @@ function setCurrentNodenet(uid, nodespace){
             refreshNodenetList();
         },
         function(data) {
-            if(data.status == 500){
+            if(data.status == 500 || data.status === 0){
                 api.defaultErrorCallback(data);
             } else {
                 currentNodenet = null;
                 $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.Error, "Error");
+                dialogs.notification(data.Error, "Info");
             }
         });
 }
@@ -428,10 +428,6 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         if(nodenetRunning){
             refreshNodespace();
         }
-    }, error=function(data){
-        currentNodeSpace = null;
-        $.cookie('current_nodespace', '', { expires: -1, path: '/' });
-        dialogs.notification(data.Error, "Error");
     });
 }
 
@@ -2209,7 +2205,7 @@ function stepNodenet(event){
     }
     if(currentNodenet){
         api.call("step_nodenet",
-            {nodenet_uid: currentNodenet, nodespace:currentNodeSpace},
+            {nodenet_uid: currentNodenet},
             success=function(data){
                 refreshNodespace();
                 $(document).trigger('nodenetStepped');
@@ -3112,6 +3108,7 @@ function addSlotMonitor(node, index){
         node_uid: node.uid,
         slot: node.slotIndexes[index]
     }, function(data){
+        $(document).trigger('monitorsChanged');
         monitors[data.uid] = data;
     });
 }

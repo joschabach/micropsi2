@@ -352,6 +352,8 @@ graphs
   word-break: normal;
   word-wrap: normal;
   font-size: 10px;
+  max-height: 500px;
+  overflow: auto;
 }
 
 

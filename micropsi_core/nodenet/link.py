@@ -42,15 +42,16 @@ class Link(object):
 
     @property
     def source_node(self):
-        return self.nodenet.nodes.get(self.data['source_node_uid'])
+        return self.source_node_pointer
 
     @source_node.setter
     def source_node(self, node):
         self.data["source_node_uid"] = node.uid
+        self.source_node_pointer = node
 
     @property
     def source_gate(self):
-        return self.source_node.gates.get(self.data.get("source_gate_name"))
+        return self.source_node_pointer.gates[self.data["source_gate_name"]]
 
     @source_gate.setter
     def source_gate(self, gate):
@@ -58,15 +59,16 @@ class Link(object):
 
     @property
     def target_node(self):
-        return self.nodenet.nodes.get(self.data['target_node_uid'])
+        return self.target_node_pointer
 
     @target_node.setter
     def target_node(self, node):
         self.data["target_node_uid"] = node.uid
+        self.target_node_pointer = node
 
     @property
     def target_slot(self):
-        return self.target_node.slots.get(self.data.get("target_slot_name"))
+        return self.target_node_pointer.slots[self.data["target_slot_name"]]
 
     @target_slot.setter
     def target_slot(self, slot):
@@ -82,6 +84,8 @@ class Link(object):
 
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = source_node.nodenet
+        self.source_node_pointer = source_node
+        self.target_node_pointer = target_node
         if not uid in self.nodenet.state["links"]:
             self.nodenet.state["links"][uid] = {}
         self.data = source_node.nodenet.state["links"][uid]

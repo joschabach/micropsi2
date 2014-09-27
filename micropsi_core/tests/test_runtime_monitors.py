@@ -41,7 +41,7 @@ def test_get_monitor_data(fixed_nodenet):
     assert data['current_step'] == 1
     assert data['monitors'][monitor['uid']]['node_name'] == 'A1'
     values = data['monitors'][monitor['uid']]['values']
-    assert len([k for k in values.keys()]) == 1
+    assert len(values.keys()) == 1
 
 
 def test_export_monitor_data(fixed_nodenet):
@@ -69,4 +69,4 @@ def test_clear_monitor(fixed_nodenet):
     micropsi.clear_monitor(fixed_nodenet, monitor['uid'])
     data = micropsi.get_monitor_data(fixed_nodenet)
     values = data['monitors'][monitor['uid']]['values']
-    assert len([k for k in values.keys()]) == 0
+    assert len(values.keys()) == 0

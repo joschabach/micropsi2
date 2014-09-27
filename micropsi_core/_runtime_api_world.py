@@ -128,6 +128,12 @@ def delete_world(world_uid):
 
 def get_world_view(world_uid, step):
     """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
+    if world_uid not in micropsi_core.runtime.worlds:
+        raise KeyError("World not found")
+    if world_uid in micropsi_core.runtime.WorldRunner.last_exception:
+        e = micropsi_core.runtime.WorldRunner.last_exception[world_uid]
+        del micropsi_core.runtime.WorldRunner.last_exception[world_uid]
+        raise Exception("Error while stepping world").with_traceback(e[2]) from e[1]
     if step <= micropsi_core.runtime.worlds[world_uid].current_step:
         return micropsi_core.runtime.worlds[world_uid].get_world_view(step)
     return {}
@@ -141,6 +147,8 @@ def set_world_properties(world_uid, world_name=None, world_type=None, owner=None
 def start_worldrunner(world_uid):
     """Starts a thread that regularly advances the world simulation."""
     micropsi_core.runtime.worlds[world_uid].is_active = True
+    if micropsi_core.runtime.runner['world']['runner'].paused:
+        micropsi_core.runtime.runner['world']['runner'].resume()
     return True
 
 
@@ -163,6 +171,10 @@ def set_worldrunner_timestep(timestep):
 def stop_worldrunner(world_uid):
     """Ends the thread of the continuous world simulation."""
     micropsi_core.runtime.worlds[world_uid].is_active = False
+    test = {micropsi_core.runtime.worlds[uid].is_active for uid in micropsi_core.runtime.worlds}
+    if True not in test:
+        micropsi_core.runtime.runner['world']['runner'].pause()
+
     return True
 
 
@@ -224,12 +236,11 @@ def get_world_class_from_name(world_type):
     """Returns the class from a world type, if it is known"""
     from micropsi_core.world.world import World
 
-    worldclasses = {cls.__name__: cls for cls in vars()['World'].__subclasses__()}
+    worldclasses = {cls.__name__: cls for cls in tools.itersubclasses(vars()['World'])}
     return worldclasses.get(world_type, World)
 
 
 def get_available_world_types():
     """Returns the names of the available world types"""
     from micropsi_core.world.world import World
-
-    return [cls.__name__ for cls in vars()['World'].__subclasses__()]
+    return [cls.__name__ for cls in tools.itersubclasses(vars()['World'])]

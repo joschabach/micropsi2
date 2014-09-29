@@ -19,6 +19,18 @@ port = 6543
 # 0.0.0.0 serves for everybody
 host = localhost
 
+[minecraft]
+
+# use your minecraft.net username with password, respective
+# server address, and authenticated = True
+# or else use some name, no password, and
+# authenticated = False for unauthenticated servers
+username = bot
+password = 
+authenticated = False
+server = localhost
+port = 25565
+
 [logging]
 
 # the logging level for system, world and nodenet.

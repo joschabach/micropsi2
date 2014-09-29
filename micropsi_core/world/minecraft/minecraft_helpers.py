@@ -1,7 +1,8 @@
 __author__ = 'jonas'
 
+
 def get_voxel_blocktype(self, x, y, z):
-    
+
     key = (x // 16, z // 16)
     columns = self.world.spockplugin.world.map.columns
     if key not in columns:

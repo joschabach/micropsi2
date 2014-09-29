@@ -4,8 +4,6 @@ from spock.mcp import mcdata, mcpacket
 from spock.mcp.mcpacket import Packet
 from spock.utils import pl_announce
 from micropsi_core.world.minecraft.psidispatcher import PsiDispatcher, STANCE_ADDITION
-from micropsi_core.world.minecraft.psidispatcher import PsiDispatcher, STANCE_ADDITION
-from micropsi_core.world.minecraft.psidispatcher import PsiDispatcher, STANCE_ADDITION
 
 @pl_announce('Micropsi')
 class MicropsiPlugin(object):

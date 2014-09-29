@@ -259,23 +259,6 @@ class MinecraftWorldAdapter(WorldAdapter):
     def update(self):
         """ Advances the agent's life on every cycle of the world simulation. """
 
-        # for now, as a reminder, some spock variables with contents:
-        # self.world.spockplugin.clientinfo.position = {
-        #     'x': -149.5,
-        #     'y': 61.000000004768374,
-        #     'z': 31.5,
-        #     'on_ground': False
-        #     'stance': 62.62000000476837,
-        #     'pitch': 0.0,
-        #     'yaw': 0.0,
-        # }
-        # self.world.spockplugin.clientinfo.health = {'food': 20, 'health': 20.0, 'saturation': 5.0}
-        # self.world.spockplugin.clientinfo.spawn_position = {'y': 64, 'z': -404, 'x': -52}
-        # self.world.spockplugin.clientinfo.reset()
-
-        # { 'x': 76.5, 'y': 63.0,  'z': -355.5, 'on_ground': False, 'pitch': 4.50, 'stance': 64.62, 'yaw': 110.55 }
-        # < consider for spawn position
-
         # translate data targets
         self.position = (self.datasources['x'], self.datasources['y'], self.datasources['z'])
         section = self.get_current_section()
@@ -285,10 +268,13 @@ class MinecraftWorldAdapter(WorldAdapter):
             self.world.spockplugin.psi_dispatcher.dispatchPsiCommands(self.position, section, movement[0], movement[1])
 
         position = self.world.spockplugin.clientinfo.position
-        position['yaw'] = self.datatargets['yaw'] # (self.datatargets['yaw'] + 5) % 360
-        # sign = lambda x: x and (1, -1)[x<0]
-        sign = lambda x: (1, -1)[x<0]
-        position['pitch'] = (self.datatargets['pitch'] + 5) % 90 * sign(self.datatargets['pitch'])
+        position['yaw'] = self.datatargets['yaw']
+        position['pitch'] = self.datatargets['pitch']
+        # to look around, change yaw; eg. position['yaw'] = (self.datatargets['yaw'] + 5) % 360
+        # to look up and down, change pitch; 
+        # eg. sign = lambda x: (1, -1)[x<0] or sign = lambda x: x and (1, -1)[x<0] and
+        # position['pitch'] = (self.datatargets['pitch'] + 5) % 90 * sign(self.datatargets['pitch'])
+
         self.world.spockplugin.psi_dispatcher.micropsiplugin.move(position=position)
 
         # get new datasources

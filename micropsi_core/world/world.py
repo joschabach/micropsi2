@@ -354,6 +354,5 @@ except ImportError as e:
 
 try:
     from micropsi_core.world.minecraft import minecraft
-    from micropsi_core.world.minecraft.minecraft import Minecraft
 except ImportError as e:
     sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)

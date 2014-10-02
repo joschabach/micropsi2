@@ -20,6 +20,21 @@ class MapBlock:
     def calc_light(self, time):
         self.light = max(self.block_light, self.sky_light)
 
+emptyBlock = MapBlock()
+
+class EmptyChunk:
+    def __init__(self):
+        self.length = 16*16*16
+        self.time = 0
+
+    def get(self, x, y, z):
+        return emptyBlock
+
+    def unpack_biome(self, x, z, biome_id):
+        # unpack_biome gets called and needs to be present, but we're not really very
+        # interested in biome data for empty chunks
+        pass
+
 class Chunk:
     def __init__(self):
         self.length = 16*16*16
@@ -108,9 +123,7 @@ class ChunkColumn:
     def fill(self, mask):
         for i in range(16):
             if not mask&(1<<i):
-                # TODO: Hack to prevent excessive memory grabbing -- we need a solution for this
-                #pass
-                self.chunks[i] = Chunk()
+                self.chunks[i] = EmptyChunk()
 
     def unpack_biome(self, buff):
         for idx, biome_id in enumerate(buff.recv(256)):

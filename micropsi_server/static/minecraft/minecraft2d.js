@@ -46,18 +46,24 @@ refreshWorldView = function () {
                     firstLayer.activate();
                 }
 
-                var height = data.misc.height;
-                var width = data.misc.width;
+                var height = data.assets.height;
+                var width = data.assets.width;
 
                 for (var x = 0; x < width; x++) {
                     for (var y = 0; y < height; y++) {
-
                         var raster = new Raster('mc_block_img_' + data.projection[(y + x * height) * 2]);
+                        // is there a problem if x or y are 0 !? how does js or paper.js handle this ??
                         raster.position = new Point(world.width / width * x, world.height / height * y);
                         var distance = data.projection[(y + x * height) * 2 + 1];
-                        raster.scale((world.width / width) / 64 * (1 / Math.pow(distance, 1 / 5)), (world.height / height) / 64 * (1 / Math.pow(distance, 1 / 5)));
+                        // distance = 1;
+                        // texture images are 64 pixels long; 1/5 is a heuristic
+                        raster.scale(
+                            (world.width / width) / 64 * (1 / Math.pow(distance, 1/5)),
+                            (world.height / height) / 64 * (1 / Math.pow(distance, 1/5))
+                        );
                     }
                 }
+
                 if (current_layer == 1) {
                     console.log("removing frist layer children ...");
                     firstLayer.removeChildren();

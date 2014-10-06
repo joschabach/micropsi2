@@ -132,11 +132,6 @@ class Minecraft2D(Minecraft):
         """
         World.step(self)
 
-    def project_and_render(self, columns, agent_info):
-        """ """
-        import math
-        from micropsi_core.world.minecraft import structs
-
         # "Yaw is measured in degrees, and does not follow classical trigonometry rules. The unit circle of yaw on
         #  the XZ-plane starts at (0, 1) and turns counterclockwise, with 90 at (-1, 0), 180 at (0,-1) and 270 at
         #  (1, 0). Additionally, yaw is not clamped to between 0 and 360 degrees; any number is valid, including
@@ -159,20 +154,16 @@ class Minecraft2D(Minecraft):
         from math import pi, sin, cos, tan
         from micropsi_core.world.minecraft import structs
 
-        height = self.assets['height']
-        width = self.assets['width']
+        width = 700
+        height = 500
+        self.assets['width'] = width
+        self.assets['height'] = height
 
         x = int(agent_info['x'])
         z = int(agent_info['z'])
         y = int(agent_info['y'] + 2)    # +2 to move reference point to head ?
         yaw = agent_info['yaw']         # rotation around the x axis, in degrees
         pitch = agent_info['pitch']     # rotation around the y axis, in degrees
-
-        side_relation = self.assets['x'] / self.assets['y']
-        height = self.assets['height']
-        width = int(height * side_relation)
-
-        self.data['misc'] = {'side_relation': side_relation, 'height': height, 'width': width}
 
         projection = ()
         intersection = 0
@@ -184,13 +175,12 @@ class Minecraft2D(Minecraft):
         for x_pixel in range(-width // 2, width // 2):
             for y_pixel in range(height // 2, -height // 2, -1):
 
-                #
                 x_angle = x_pixel * pitch // -height
                 x_angle = x_angle / 360
                 y_angle = y_pixel * pitch // -height
 
-                # x_blocks_per_distance = math.tan(x_angle)
-                y_blocks_per_distance = math.tan(y_angle)
+                # x_blocks_per_distance = tan(x_angle)
+                y_blocks_per_distance = tan(y_angle)
 
                 intersection = 0
                 distance = 0

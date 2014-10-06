@@ -132,6 +132,11 @@ class Minecraft2D(Minecraft):
         """
         World.step(self)
 
+    def project_and_render(self, columns, agent_info):
+        """ """
+        import math
+        from micropsi_core.world.minecraft import structs
+
         # "Yaw is measured in degrees, and does not follow classical trigonometry rules. The unit circle of yaw on
         #  the XZ-plane starts at (0, 1) and turns counterclockwise, with 90 at (-1, 0), 180 at (0,-1) and 270 at
         #  (1, 0). Additionally, yaw is not clamped to between 0 and 360 degrees; any number is valid, including
@@ -163,6 +168,12 @@ class Minecraft2D(Minecraft):
         yaw = agent_info['yaw']         # rotation around the x axis, in degrees
         pitch = agent_info['pitch']     # rotation around the y axis, in degrees
 
+        side_relation = self.assets['x'] / self.assets['y']
+        height = self.assets['height']
+        width = int(height * side_relation)
+
+        self.data['misc'] = {'side_relation': side_relation, 'height': height, 'width': width}
+
         projection = ()
         intersection = 0
 
@@ -173,12 +184,13 @@ class Minecraft2D(Minecraft):
         for x_pixel in range(-width // 2, width // 2):
             for y_pixel in range(height // 2, -height // 2, -1):
 
+                #
                 x_angle = x_pixel * pitch // -height
                 x_angle = x_angle / 360
                 y_angle = y_pixel * pitch // -height
 
-                # x_blocks_per_distance = tan(x_angle)
-                y_blocks_per_distance = tan(y_angle)
+                # x_blocks_per_distance = math.tan(x_angle)
+                y_blocks_per_distance = math.tan(y_angle)
 
                 intersection = 0
                 distance = 0
@@ -547,11 +559,11 @@ class MinecraftBraitenberg(WorldAdapter):
 
     def detect_diamond(self, current_column, bot_coords, x_chunk, z_chunk):
         for y in range(0, 16):
-            current_section = current_column.chunks[int((bot_coords[1] + y - 10 // 2) // 16)]
-            if current_section != None:
+            current_section = current_column.chunks[int((bot_coords[1] + y - 10 // 2) // 16)]  # TODO explain formula
+            if current_section is not None:
                 for x in range(0, 16):
                     for z in range(0, 16):
-                        current_block = current_section.get(x, int((bot_coords[1] + y - 10 // 2) % 16), z).id
+                        current_block = current_section.get(x, int((bot_coords[1] + y - 10 // 2) % 16), z).id  # TODO explain formula
                         if current_block == 56:
                             diamond_coords = (x + x_chunk * 16, y, z + z_chunk * 16)
                             self.datasources['diamond_offset_x'] = bot_coords[0] - diamond_coords[0]

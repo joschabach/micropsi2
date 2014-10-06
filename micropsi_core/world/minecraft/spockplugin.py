@@ -5,19 +5,20 @@ from spock.mcp.mcpacket import Packet
 from spock.utils import pl_announce
 from micropsi_core.world.minecraft.psidispatcher import PsiDispatcher, STANCE_ADDITION
 
+
 @pl_announce('Micropsi')
 class MicropsiPlugin(object):
 
     def __init__(self, ploader, settings):
 
         # register required plugins
-        self.net        = ploader.requires('Net')
-        self.event      = ploader.requires('Event')
-        self.world      = ploader.requires('World')
+        self.net = ploader.requires('Net')
+        self.event = ploader.requires('Event')
+        self.world = ploader.requires('World')
         self.clientinfo = ploader.requires('ClientInfo')
         self.threadpool = ploader.requires('ThreadPool')
-        
-        # 
+
+        #
         self.event.reg_event_handler(
             'cl_position_update',
             self.subtract_stance

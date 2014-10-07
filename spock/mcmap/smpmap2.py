@@ -29,9 +29,23 @@ emptyBlock = MapBlock()
 class EmptyChunk:
     def __init__(self):
         self.time = 0
+        self.updated_blocks = {}
 
     def get(self, x, y, z):
-        return emptyBlock
+        key = str(x)+"-"+str(y)+"-"+str(z)
+        if key in self.updated_blocks:
+            return self.updated_blocks[key]
+        else:
+            return emptyBlock
+
+    def put(self, x, y, z, data):
+        key = str(x)+"-"+str(y)+"-"+str(z)
+        block = MapBlock()
+        block.base_id = data['block_id']&0xFF
+        block.add_id = data['block_id']>>8
+        block.meta = data['metadata']
+        self.updated_blocks[key] = block
+        return block
 
     def unpack_biome(self, x, z, biome_id):
         # unpack_biome gets called and needs to be present, but we're not really very

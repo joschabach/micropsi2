@@ -207,15 +207,15 @@ class Minecraft2D(Minecraft):
         from micropsi_core.world.minecraft import structs
 
         # specs
-        visual_angle = 90       # angle that defines the agent's visual field
-        focal_length = 2        # distance of image plane from projective point
+        horizontal_angle = 90   # angle that defines the agent's visual field
+        vertical_angle = 60     # angle that defines the agent's visual field
+        focal_length = 1        # distance of image plane from projective point
         resolution = 40         # camera resolution for a specific visual field
-        aspect_ratio = 1 / 3    # ratio of height to width
         max_dist = 150          # maximum distance for raytracing
 
         # compute parameters from specs
-        width = 2 * tan(radians(visual_angle / 2)) * focal_length
-        height = width * aspect_ratio
+        width = 2 * tan(radians(horizontal_angle / 2)) * focal_length
+        height = 2 * tan(radians(vertical_angle / 2)) * focal_length
 
         # save parameters for frontend
         self.assets['width'] = ceil(width * resolution)
@@ -302,14 +302,13 @@ class Minecraft2D(Minecraft):
                     )
 
                     distance += 1
-                    if distance > 150:
+                    if distance > max_dist:
                         break
 
                 # add block name, distance to projection plane
-                block_name = 'blockGold'  # hack to prevent exceptions for unknown block types
+                # hm, if block_type unknown, expect an exception
                 if structs.block_names.get(str(block_type)):
                     block_name = structs.block_names[str(block_type)]
-
                 projection += (block_name, distance)
 
         self.data['projection'] = projection

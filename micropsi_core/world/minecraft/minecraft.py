@@ -10,13 +10,15 @@ from spock.plugins.helpers.world import WorldPlugin
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.spockplugin import MicropsiPlugin
+from micropsi_core.world.minecraft.minecraftvision import MinecraftVision
+from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 
 
 class Minecraft(World):
     """
     mandatory: list of world adapters that are supported
     """
-    supported_worldadapters = ['MinecraftWorldAdapter', 'MinecraftBraitenberg', 'MinecraftVision']
+    supported_worldadapters = ['MinecraftWorldAdapter', 'MinecraftBraitenberg', 'MinecraftVision', 'MinecraftGraphLocomotion']
 
     assets = {
         'template': 'minecraft/minecraft.tpl',

@@ -126,11 +126,6 @@ class Minecraft2D(Minecraft):
         'js': "minecraft/minecraft2d.js",
     }
 
-    def __init__(self, filename, world_type="Minecraft2D", name="", owner="", uid=None, version=1):
-        viewfn = "/Users/pi/data/micropsi/views.csv"
-        self.viewf = open(viewfn, 'a', encoding='utf-8')
-        super().__init__(filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
-
     def step(self):
         """
         Is called on every world step to advance the simulation.
@@ -261,7 +256,6 @@ class Minecraft2D(Minecraft):
 
         # compute pixel values of image plane
         projection = tuple()
-        view = list()
 
         x0, y0, z0 = position   # agent's position aka projective point
         zi = z0 + focal_length
@@ -316,12 +310,8 @@ class Minecraft2D(Minecraft):
                 if structs.block_names.get(str(block_type)):
                     block_name = structs.block_names[str(block_type)]
                 projection += (block_name, distance)
-                view.append((block_type, distance))
 
         self.data['projection'] = projection
-
-        # write view as list of tuples (block type, distance of block) to file
-        self.viewf.write("%s\n" % (view))
 
         # problems:
         # depending on the depth to compute there's considerable perceptual delay
@@ -450,13 +440,13 @@ class MinecraftWorldAdapter(WorldAdapter):
         section = self.get_current_section()
         if section:
             movement = self.translate_datatargets_to_xz()
-            # note: movement info is sent if if not change
+            # note: movement info is sent regardless of change
             self.world.spockplugin.dispatchMovement(self.position, section, movement[0], movement[1])
 
         position = self.world.spockplugin.clientinfo.position
         amp = random.choice([-4, -3, 2, 3, 4])
         position['yaw'] = (position['yaw'] + amp * self.datatargets['yaw']) % 360
-        # not used yet but data target gets activation every once in a ranodm while
+        # not used yet but data target gets activation every once in a random while
         # position['pitch'] = (position['pitch'] + self.datatargets['pitch'])
         # position['pitch'] = 0
         self.world.spockplugin.move(position=position)

@@ -11,12 +11,6 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.spockplugin import MicropsiPlugin
 
-try:
-    import IPython
-    from IPython import embed
-except:
-    pass
-
 
 class Minecraft(World):
     """

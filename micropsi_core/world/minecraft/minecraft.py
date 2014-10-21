@@ -126,6 +126,11 @@ class Minecraft2D(Minecraft):
         'js': "minecraft/minecraft2d.js",
     }
 
+    def __init__(self, filename, world_type="Minecraft2D", name="", owner="", uid=None, version=1):
+        viewfn = "/Users/pi/data/micropsi/views.csv"
+        self.viewf = open(viewfn, 'a', encoding='utf-8')
+        super().__init__(filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
+
     def step(self):
         """
         Is called on every world step to advance the simulation.
@@ -256,6 +261,7 @@ class Minecraft2D(Minecraft):
 
         # compute pixel values of image plane
         projection = tuple()
+        view = list()
 
         x0, y0, z0 = position   # agent's position aka projective point
         zi = z0 + focal_length
@@ -302,7 +308,7 @@ class Minecraft2D(Minecraft):
                     )
 
                     distance += 1
-                    if distance > max_dist:
+                    if distance >= max_dist:
                         break
 
                 # add block name, distance to projection plane
@@ -310,8 +316,12 @@ class Minecraft2D(Minecraft):
                 if structs.block_names.get(str(block_type)):
                     block_name = structs.block_names[str(block_type)]
                 projection += (block_name, distance)
+                view.append((block_type, distance))
 
         self.data['projection'] = projection
+
+        # write view as list of tuples (block type, distance of block) to file
+        self.viewf.write("%s\n" % (view))
 
         # problems:
         # depending on the depth to compute there's considerable perceptual delay
@@ -433,26 +443,23 @@ class MinecraftWorldAdapter(WorldAdapter):
 
     def update(self):
         """ Advances the agent's life on every cycle of the world simulation. """
+        import random
 
         # translate data targets
         self.position = (self.datasources['x'], self.datasources['y'], self.datasources['z'])
         section = self.get_current_section()
         if section:
             movement = self.translate_datatargets_to_xz()
-            # change the next line, don't use PsiDispatcher, use MicropsiPlugin instead
-            self.world.spockplugin.psi_dispatcher.dispatchPsiCommands(self.position, section, movement[0], movement[1])
+            # note: movement info is sent if if not change
+            self.world.spockplugin.dispatchMovement(self.position, section, movement[0], movement[1])
 
         position = self.world.spockplugin.clientinfo.position
-        position['yaw'] = self.datatargets['yaw']
-        # position['yaw'] = (self.datatargets['yaw'] + 5) % 360
-        position['pitch'] = self.datatargets['pitch']
-        # to look around, change yaw; eg. position['yaw'] = (self.datatargets['yaw'] + 5) % 360
-        # to look up and down, change pitch;
-
-        # self.world.spockplugin.clientinfo.position['yaw'] = position['yaw']
-        # self.world.spockplugin.clientinfo.position['pitch'] = position['pitch']
-        # self.world.spockplugin.psi_dispatcher.micropsiplugin.move(position=self.world.spockplugin.clientinfo.position)
-        # self.world.spockplugin.psi_dispatcher.micropsiplugin.move(position=position)
+        amp = random.choice([-4, -3, 2, 3, 4])
+        position['yaw'] = (position['yaw'] + amp * self.datatargets['yaw']) % 360
+        # not used yet but data target gets activation every once in a ranodm while
+        # position['pitch'] = (position['pitch'] + self.datatargets['pitch'])
+        # position['pitch'] = 0
+        self.world.spockplugin.move(position=position)
 
         # get new datasources
         self.datasources['x'] = self.world.spockplugin.clientinfo.position['x']

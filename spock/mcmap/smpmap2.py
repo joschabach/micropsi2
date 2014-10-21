@@ -1,68 +1,95 @@
 import struct
 from spock import utils
 
+CHUNKLENGTH = 16*16*16
+
 class MapBlock:
     def __init__(self, base_id = 0, add_id = 0):
         self.base_id = base_id
         self.add_id = add_id
-        self.id = self.calc_id()
         self.meta = 0
-        self.light = 0
         self.sky_light = 0
         self.block_light = 0
         self.biome = 0
 
-    def calc_id(self):
-        self.id = (self.add_id<<8)+self.base_id
-        return self.id
+    @property
+    def id(self):
+        return (self.add_id<<8)+self.base_id
+
+    @property
+    def light(self):
+        return max(self.block_light, self.sky_light)
 
     #Needs to do proper light calc based on time_of_day
     def calc_light(self, time):
-        self.light = max(self.block_light, self.sky_light)
+        pass
+
+emptyBlock = MapBlock()
+
+class EmptyChunk:
+    def __init__(self):
+        self.time = 0
+        self.updated_blocks = {}
+
+    def get(self, x, y, z):
+        key = str(x)+"-"+str(y)+"-"+str(z)
+        if key in self.updated_blocks:
+            return self.updated_blocks[key]
+        else:
+            return emptyBlock
+
+    def put(self, x, y, z, data):
+        key = str(x)+"-"+str(y)+"-"+str(z)
+        block = MapBlock()
+        block.base_id = data['block_id']&0xFF
+        block.add_id = data['block_id']>>8
+        block.meta = data['metadata']
+        self.updated_blocks[key] = block
+        return block
+
+    def unpack_biome(self, x, z, biome_id):
+        # unpack_biome gets called and needs to be present, but we're not really very
+        # interested in biome data for empty chunks
+        pass
 
 class Chunk:
     def __init__(self):
-        self.length = 16*16*16
         self.time = 0
-        self.blocks = [MapBlock() for i in range(self.length)]
+        self.blocks = [MapBlock() for i in range(CHUNKLENGTH)]
 
     def get(self, x, y, z):
         return self.blocks[x+((y*16)+z)*16]
 
     def put(self, x, y, z, data):
         block = self.blocks[x+((y*16)+z)*16]
-        block.id = data['block_id']
         block.base_id = data['block_id']&0xFF
         block.add_id = data['block_id']>>8
         block.meta = data['metadata']
         return block
 
     def unpack_data(self, buff):
-        for idx, i in enumerate(buff.recv(self.length)):
-            self.blocks[idx].id = i
+        for idx, i in enumerate(buff.recv(CHUNKLENGTH)):
             self.blocks[idx].base_id = i
             self.blocks[idx].add_id = 0
 
     def unpack_meta(self, buff):
-        for idx, i in enumerate(buff.recv(self.length>>1)):
+        for idx, i in enumerate(buff.recv(CHUNKLENGTH>>1)):
             self.blocks[idx*2].meta = i>>4
             self.blocks[idx*2+1].meta = i&0x0F
 
     def unpack_add(self, buff):
-        for idx, i in enumerate(buff.recv(self.length>>1)):
+        for idx, i in enumerate(buff.recv(CHUNKLENGTH>>1)):
             self.blocks[idx*2].add_id = i>>4
-            self.blocks[idx*2].calc_id()
             self.blocks[idx*2+1].add_id = i&0x0F
-            self.blocks[idx*2+1].calc_id()
 
     def unpack_blight(self, buff):
-        for idx, i in enumerate(buff.recv(self.length>>1)):
+        for idx, i in enumerate(buff.recv(CHUNKLENGTH>>1)):
             self.blocks[idx*2].block_light = i>>4
             self.blocks[idx*2+1].block_light = i&0x0F
         self.update_light()
 
     def unpack_slight(self, buff):
-        for idx, i in enumerate(buff.recv(self.length>>1)):
+        for idx, i in enumerate(buff.recv(CHUNKLENGTH>>1)):
             self.blocks[idx*2].sky_light = i>>4
             self.blocks[idx*2+1].sky_light = i&0x0F
         self.update_light()
@@ -108,9 +135,7 @@ class ChunkColumn:
     def fill(self, mask):
         for i in range(16):
             if not mask&(1<<i):
-                # TODO: Hack to prevent excessive memory grabbing -- we need a solution for this
-                #pass
-                self.chunks[i] = Chunk()
+                self.chunks[i] = EmptyChunk()
 
     def unpack_biome(self, buff):
         for idx, biome_id in enumerate(buff.recv(256)):

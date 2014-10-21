@@ -46,18 +46,26 @@ refreshWorldView = function () {
                     firstLayer.activate();
                 }
 
-                var height = data.misc.height;
-                var width = data.misc.width;
+                var height = data.assets.height;
+                var width = data.assets.width;
+                var num_pix = 20  // 64 for jonas' textures, 25 for gamepedia
 
                 for (var x = 0; x < width; x++) {
                     for (var y = 0; y < height; y++) {
-
                         var raster = new Raster('mc_block_img_' + data.projection[(y + x * height) * 2]);
+                        // is there a problem if x or y are 0 !? how does js or paper.js handle this ??
                         raster.position = new Point(world.width / width * x, world.height / height * y);
                         var distance = data.projection[(y + x * height) * 2 + 1];
-                        raster.scale((world.width / width) / 64 * (1 / Math.pow(distance, 1 / 5)), (world.height / height) / 64 * (1 / Math.pow(distance, 1 / 5)));
+                        // texture images are num_pix pixels long; 1/5 is a heuristic
+                        // consider defining a different distance function that allows for
+                        // better distinction of small distances
+                        raster.scale(
+                            (world.width / width) / num_pix * (1 / Math.pow(distance, 1/5)),
+                            (world.height / height) / num_pix * (1 / Math.pow(distance, 1/5))
+                        );
                     }
                 }
+
                 if (current_layer == 1) {
                     console.log("removing frist layer children ...");
                     firstLayer.removeChildren();
@@ -98,13 +106,11 @@ function setCurrentWorld(uid) {
 function loadWorldInfo() {
 
     var all_images = ""
-
     var editor_div = $("#world_forms");
 
     $.getScript('/static/minecraft/minecraft_struct.js', function () {
-        for (var i = -1; i < 173; i++) {
-
-            var block_name = block_names["" + i];
+        for (var key in block_names) {
+            var block_name = block_names[key];
             all_images = all_images + '<img id="mc_block_img_' + block_name + '" src="/static/minecraft/block_textures/' + block_name + '.png">';
 
             editor_div.html('<div style="height:0; overflow: hidden">' + all_images + '</div>');

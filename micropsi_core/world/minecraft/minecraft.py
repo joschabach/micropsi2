@@ -10,7 +10,6 @@ from spock.plugins.helpers.world import WorldPlugin
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.spockplugin import MicropsiPlugin
-from micropsi_core.world.minecraft.minecraftvision import MinecraftVision
 
 
 class Minecraft(World):
@@ -35,8 +34,9 @@ class Minecraft(World):
         # do spock things first, then initialize micropsi world because the latter requires self.spockplugin
 
         # register all necessary spock plugins
-        plugins = DefaultPlugins    # contains EventPlugin, NetPlugin, TimerPlugin, AuthPlugin
-                                    # ThreadPoolPlugin, StartPlugin and KeepalivePlugin
+        # DefaultPlugins contain EventPlugin, NetPlugin, TimerPlugin, AuthPlugin,
+        # ThreadPoolPlugin, StartPlugin and KeepalivePlugin
+        plugins = DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
         plugins.append(WorldPlugin)
@@ -94,7 +94,7 @@ class Minecraft(World):
             'bufsize': 4096,  # size of socket buffer
             'sock_quit': True,  # stop bot on socket error or hangup
             'sess_quit': True,  # stop bot on failed session login
-            'thread_workers': 5,   # number of workers in the thread pool
+            'thread_workers': 5,     # number of workers in the thread pool
             'packet_trace': False,
             'mc_username': "test",
             "mc_password": "test",
@@ -118,9 +118,6 @@ class Minecraft2D(Minecraft):
     assets = {
         'template': 'minecraft/minecraft.tpl',
         'js': "minecraft/minecraft2d.js",
-        'x': 800,
-        'y': 600,
-        'height': 20
     }
 
     def step(self):
@@ -128,32 +125,39 @@ class Minecraft2D(Minecraft):
         Is called on every world step to advance the simulation.
         """
         World.step(self)
-        self.project_and_render(self.spockplugin.world.map.columns, self.spockplugin.clientinfo.position)
-
-    def project_and_render(self, columns, agent_info):
-        """ """
-        import math
-        from micropsi_core.world.minecraft import structs
 
         # "Yaw is measured in degrees, and does not follow classical trigonometry rules. The unit circle of yaw on
         #  the XZ-plane starts at (0, 1) and turns counterclockwise, with 90 at (-1, 0), 180 at (0,-1) and 270 at
         #  (1, 0). Additionally, yaw is not clamped to between 0 and 360 degrees; any number is valid, including
         #  negative numbers and numbers greater than 360."
 
-        # "Pitch is measured in degrees, where 0 is looking straight ahead, -90 is looking straight up, and 90 is
-        #  looking straight down. "
+        # "Pitch is measured in degrees, where 0 is looking straight ahead,
+        # -90 is looking straight up, and 90 is looking straight down. "
 
-        side_relation = self.assets['x'] / self.assets['y']
-        height = self.assets['height']
-        width = int(height * side_relation)
+        # different projections of the Minecraft block world:
 
-        self.data['misc'] = {'side_relation': side_relation, 'height': height, 'width': width}
+        # Jonas' projection ( slightly adapted )
+        # self.get_minecraft_vision(self.spockplugin.clientinfo.position)
+
+        # attempt at a 2D perspective projection
+        self.get_perspective_projection(self.spockplugin.clientinfo.position)
+
+    def get_minecraft_vision(self, agent_info):
+        """
+        """
+        from math import pi, sin, cos, tan
+        from micropsi_core.world.minecraft import structs
+
+        width = 700
+        height = 500
+        self.assets['width'] = width
+        self.assets['height'] = height
 
         x = int(agent_info['x'])
-        y = int(agent_info['y'] + 2)  # +2 to move reference point to head ?
         z = int(agent_info['z'])
-        yaw = agent_info['yaw']         # rotation on the x axis, in degrees
-        pitch = agent_info['pitch']       # rotation on the y axis, in degrees
+        y = int(agent_info['y'] + 2)    # +2 to move reference point to head ?
+        yaw = agent_info['yaw']         # rotation around the x axis, in degrees
+        pitch = agent_info['pitch']     # rotation around the y axis, in degrees
 
         projection = ()
         intersection = 0
@@ -161,20 +165,16 @@ class Minecraft2D(Minecraft):
         # orientation = self.datatargets['orientation'] # x_axis + 360 / orientation  degrees
         # currently: orientation = yaw #TOOD: fix this.
 
-        # get agent's coordinates and orientation
-        fpoint = (x, y, z)  # focal point
-
         # for every pixel in the image plane
         for x_pixel in range(-width // 2, width // 2):
             for y_pixel in range(height // 2, -height // 2, -1):
 
-                #
                 x_angle = x_pixel * pitch // -height
                 x_angle = x_angle / 360
                 y_angle = y_pixel * pitch // -height
 
-                # x_blocks_per_distance = math.tan(x_angle)
-                y_blocks_per_distance = math.tan(y_angle)
+                # x_blocks_per_distance = tan(x_angle)
+                y_blocks_per_distance = tan(y_angle)
 
                 intersection = 0
                 distance = 0
@@ -183,15 +183,137 @@ class Minecraft2D(Minecraft):
                 while intersection == 0:
 
                     intersection = self.get_blocktype(
-                        x + int(distance * math.cos((yaw + x_angle) * 2 * math.pi)),
+                        x + int(distance * cos((yaw + x_angle) * 2 * pi)),
                         y + int(y_blocks_per_distance * distance),
-                        z + int(distance * math.sin((yaw + x_angle) * 2 * math.pi)))
+                        z + int(distance * sin((yaw + x_angle) * 2 * pi)))
 
                     distance += 1
 
+                # is a tuple of ( block name, distance, block name, distance, .. )
                 projection = projection + (structs.block_names[str(intersection)], distance)
 
         self.data['projection'] = projection
+
+    def get_perspective_projection(self, agent_info):
+        """
+        """
+        from math import ceil, radians, sqrt, tan
+        from micropsi_core.world.minecraft import structs
+
+        # specs
+        horizontal_angle = 90   # angle that defines the agent's visual field
+        vertical_angle = 60     # angle that defines the agent's visual field
+        focal_length = 1        # distance of image plane from projective point
+        resolution = 40         # camera resolution for a specific visual field
+        max_dist = 150          # maximum distance for raytracing
+
+        # compute parameters from specs
+        width = 2 * tan(radians(horizontal_angle / 2)) * focal_length
+        height = 2 * tan(radians(vertical_angle / 2)) * focal_length
+
+        # save parameters for frontend
+        self.assets['width'] = ceil(width * resolution)
+        self.assets['height'] = ceil(height * resolution)
+
+        # get agent's position, yaw, and pitch
+        position = (
+            int(agent_info['x']),
+            int(agent_info['y']),
+            int(agent_info['z'])
+        )
+        yaw = 360 - float(agent_info['yaw']) % 360    # given in degrees
+        # check which yaw value is straight forward, potentially it's 90, ie. mc yaw + 90
+        pitch = float(agent_info['pitch'])      # given in degrees
+
+        # perspective of particular yaw values
+        # i get the impression that while the agent turns to the right at eg. 90 degrees yaw
+        # the proejection i get is turned left #doublecheck!
+        #   0 -
+        #  90 -
+        # 180 -
+        # 270 -
+
+        # perspective of particular pitch values
+        #   0 - straight ahead
+        #  90 - straight down
+        # 180 - upside down straight backwards
+        # 270 - straight up
+
+        # span image plane
+        # such that height is mostly above y and width is to left and right of x in equal shares
+        tick = 1. / resolution
+        # split height 95 to 5
+        h_low = height * 0.5 / 10
+        h_up = height - h_low
+        h_line = [i for i in self.frange(position[0] - width / 2, position[0] + width / 2, tick)]
+        v_line = [i for i in self.frange(position[1] - h_low, position[1] + h_up, tick)]
+
+        # compute pixel values of image plane
+        projection = tuple()
+
+        x0, y0, z0 = position   # agent's position aka projective point
+        zi = z0 + focal_length
+
+        for xi in reversed(h_line):
+            for yi in reversed(v_line):
+
+                distance = 0    # just a counter
+                block_type = 0
+                xb, yb, zb = xi, yi, zi
+
+                # compute difference vector between projective point and image point
+                diff = (xi - x0, yi - y0, zi - z0)
+
+                # normalize difference vector
+                magnitude = sqrt(diff[0] ** 2 + diff[1] ** 2 + diff[2] ** 2)
+                if magnitude == 0.:
+                    magnitude = 1.
+                norm = (diff[0] / magnitude, diff[1] / magnitude, diff[2] / magnitude)
+
+                # rotate norm vector
+                norm = self.rotate_around_x_axis(norm, pitch)
+                norm = self.rotate_around_y_axis(norm, yaw)
+
+                # rotate diff vector
+                diff = self.rotate_around_x_axis(diff, pitch)
+                diff = self.rotate_around_y_axis(diff, yaw)
+
+                # add diff to projection point aka agent's position
+                xb, yb, zb = x0 + diff[0], y0 + diff[1], z0 + diff[2]
+
+                while block_type <= 0:  # which is air
+
+                    # check block type of next distance point along ray
+                    # aka add normalized difference vector to image point
+                    xb = xb + norm[0]
+                    yb = yb + norm[1]
+                    zb = zb + norm[2]
+
+                    block_type = self.get_blocktype(
+                        int(xb),
+                        int(yb),
+                        int(zb),
+                    )
+
+                    distance += 1
+                    if distance >= max_dist:
+                        break
+
+                # add block name, distance to projection plane
+                # hm, if block_type unknown, expect an exception
+                if structs.block_names.get(str(block_type)):
+                    block_name = structs.block_names[str(block_type)]
+                projection += (block_name, distance)
+
+        self.data['projection'] = projection
+
+        # problems:
+        # depending on the depth to compute there's considerable perceptual delay
+        # things that aren't part of the world cannot be seen from the world data
+
+        # ideas:
+        # increase number of rays per pixel with increasing distance
+        # make a non-linear image plane, eg. with higher resolution in the middle
 
     def get_blocktype(self, x, y, z):
         """ """
@@ -211,6 +333,56 @@ class Minecraft2D(Minecraft):
         else:
             return current_section.get(x % 16, y % 16, z % 16).id
 
+    def rotate_around_x_axis(self, pos, angle):
+        """ Rotate a 3D point around the x-axis given a specific angle. """
+        from math import radians, cos, sin
+
+        # convert angle in degrees to radians
+        theta = radians(angle)
+
+        # rotate vector
+        x = pos[0]
+        y = pos[1] * cos(theta) - pos[2] * sin(theta)
+        z = pos[1] * sin(theta) + pos[2] * cos(theta)
+
+        return (x, y, z)
+
+    def rotate_around_y_axis(self, pos, angle):
+        """ Rotate a 3D point around the y-axis given a specific angle. """
+        from math import radians, cos, sin
+
+        # convert angle in degrees to radians
+        theta = radians(angle)
+
+        # rotate vector
+        x = pos[0] * cos(theta) + pos[2] * sin(theta)
+        y = pos[1]
+        z = - pos[0] * sin(theta) + pos[2] * cos(theta)
+
+        return (x, y, z)
+
+    def rotate_around_z_axis(self, pos, angle):
+        """ Rotate a 3D point around the z-axis given a specific angle. """
+        from math import radians, cos, sin
+
+        # convert angle in degrees to radians
+        theta = radians(angle)
+
+        # rotate vector
+        x = pos[0] * cos(theta) - pos[1] * sin(theta)
+        y = pos[0] * sin(theta) + pos[1] * cos(theta)
+        z = pos[2]
+
+        return (x, y, z)
+
+    def frange(self, start, end, step):
+        """
+        Range for floats.
+        """
+        while start < end:
+            yield start
+            start += step
+
 
 class MinecraftWorldAdapter(WorldAdapter):
     """
@@ -218,13 +390,12 @@ class MinecraftWorldAdapter(WorldAdapter):
     the ground type of the block it is standing on as sensory input, and randomly
     moves into one of the four cardinal directions ( until it dies ).
     """
-
     datasources = {
         'x': 0.,  # increases East, decreases West
         'y': 0.,  # increases upwards, decreases downwards
         'z': 0.,  # increases South, decreases North
-        'yaw': 0.,
-        'pitch': 0.,
+        'yaw': 0.,  # measured in degrees
+        'pitch': 0.,  # measured in degrees between -90 (up) and 90 (down)
         'groundtype': 0,
     }
     datatargets = {
@@ -256,24 +427,23 @@ class MinecraftWorldAdapter(WorldAdapter):
 
     def update(self):
         """ Advances the agent's life on every cycle of the world simulation. """
+        import random
 
         # translate data targets
         self.position = (self.datasources['x'], self.datasources['y'], self.datasources['z'])
         section = self.get_current_section()
         if section:
             movement = self.translate_datatargets_to_xz()
-            # change the next line, don't use PsiDispatcher, use MicropsiPlugin instead
-            self.world.spockplugin.psi_dispatcher.dispatchPsiCommands(self.position, section, movement[0], movement[1])
+            # note: movement info is sent regardless of change
+            self.world.spockplugin.dispatchMovement(self.position, section, movement[0], movement[1])
 
         position = self.world.spockplugin.clientinfo.position
-        position['yaw'] = self.datatargets['yaw']
-        position['pitch'] = self.datatargets['pitch']
-        # to look around, change yaw; eg. position['yaw'] = (self.datatargets['yaw'] + 5) % 360
-        # to look up and down, change pitch;
-        # eg. sign = lambda x: (1, -1)[x<0] or sign = lambda x: x and (1, -1)[x<0] and
-        # position['pitch'] = (self.datatargets['pitch'] + 5) % 90 * sign(self.datatargets['pitch'])
-
-        self.world.spockplugin.psi_dispatcher.micropsiplugin.move(position=position)
+        amp = random.choice([-4, -3, 2, 3, 4])
+        position['yaw'] = (position['yaw'] + amp * self.datatargets['yaw']) % 360
+        # not used yet but data target gets activation every once in a random while
+        # position['pitch'] = (position['pitch'] + self.datatargets['pitch'])
+        # position['pitch'] = 0
+        self.world.spockplugin.move(position=position)
 
         # get new datasources
         self.datasources['x'] = self.world.spockplugin.clientinfo.position['x']
@@ -285,16 +455,13 @@ class MinecraftWorldAdapter(WorldAdapter):
 
     def get_current_section(self):
         """ Given a yzx position returns the current section. """
-
         try:
-
             chunk_x = self.datasources['x'] // 16
             chunk_z = self.datasources['z'] // 16
             column = self.world.spockplugin.world.map.columns[(chunk_x, chunk_z)]
             section = column.chunks[int((self.datasources['y'] - 1) // 16)]
 
         except KeyError:
-
             section = None
 
         return section
@@ -302,7 +469,8 @@ class MinecraftWorldAdapter(WorldAdapter):
     def translate_datatargets_to_xz(self):
         """ Translates movements in cardinal directions to x,z coordinates. """
 
-        # Reminder: x increases East, decreases West; z increases South, decreases North
+        # Reminder: x increases East, decreases West,
+        #           z increases South, decreases North
         x, z = 0., 0.
         if self.datatargets['go_north'] > 0:
             z = -1.
@@ -318,13 +486,12 @@ class MinecraftWorldAdapter(WorldAdapter):
         """
         """
         try:
-
             section = self.get_current_section()
             groundtype = section.get(int(self.datasources['x']) % 16,
-                int((self.datasources['y'] - 1) % 16), int(self.datasources['z']) % 16).id
+                                     int((self.datasources['y'] - 1) % 16),
+                                     int(self.datasources['z']) % 16).id
 
         except AttributeError:
-
             groundtype = None
 
         return groundtype
@@ -332,22 +499,26 @@ class MinecraftWorldAdapter(WorldAdapter):
 
 class MinecraftBraitenberg(WorldAdapter):
 
-    datasources = {'diamond_offset_x': 0,
-                   'diamond_offset_z': 0,
-                   'grd_stone': 0,
-                   'grd_dirt': 0,
-                   'grd_wood': 0,
-                   'grd_coal': 0,
-                   'obstcl_x+': 0,
-                   'obstcl_x-': 0,
-                   'obstcl_z+': 0,
-                   'obstcl_z-': 0}
-    datatargets = {'move_x': 0,
-                   'move_z': 0}
+    datasources = {
+        'diamond_offset_x': 0,
+        'diamond_offset_z': 0,
+        'grd_stone': 0,
+        'grd_dirt': 0,
+        'grd_wood': 0,
+        'grd_coal': 0,
+        'obstcl_x+': 0,
+        'obstcl_x-': 0,
+        'obstcl_z+': 0,
+        'obstcl_z-': 0
+    }
+    datatargets = {
+        'move_x': 0,
+        'move_z': 0
+    }
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-        #find diamond
+        # find diamond
         bot_x = self.world.spockplugin.clientinfo.position['x']
         bot_y = self.world.spockplugin.clientinfo.position['y']
         bot_z = self.world.spockplugin.clientinfo.position['z']

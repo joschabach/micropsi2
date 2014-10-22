@@ -40,7 +40,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[home_uid]['z'] = 59
     loco_nodes[home_uid]['exit_one_uid'] = cloud_uid
     loco_nodes[home_uid]['exit_two_uid'] = cathedral_uid
-    loco_nodes[cloud_uid]['exit_three_uid'] = village_uid
+    loco_nodes[home_uid]['exit_three_uid'] = village_uid
 
     # assuming we start at the home position
     current_loco_node = loco_nodes[home_uid]
@@ -79,7 +79,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[summit_uid]['x'] = -233
     loco_nodes[summit_uid]['y'] = 102
     loco_nodes[summit_uid]['z'] = 307
-    loco_nodes[forest_uid]['exit_one_uid'] = swamp_uid
+    loco_nodes[summit_uid]['exit_one_uid'] = swamp_uid
 
     loco_nodes[cloud_uid] = loco_node_template.copy()
     loco_nodes[cloud_uid]['name'] = "cloud"

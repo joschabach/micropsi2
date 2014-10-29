@@ -14,11 +14,12 @@ __date__ = '15.05.12'
 
 
 from micropsi_core import runtime
+from micropsi_core import tools
 
 import micropsi_core.tools
 from micropsi_server import usermanagement
 from micropsi_server import bottle
-from micropsi_server.bottle import route, post, run, request, response, template, static_file, redirect, error
+from micropsi_server.bottle import Bottle, route, post, run, request, response, template, static_file, redirect, error
 import argparse
 import os
 import json
@@ -27,6 +28,8 @@ from micropsi_server import minidoc
 from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
 
 APP_PATH = os.path.dirname(__file__)
+
+micropsi_app = Bottle()
 
 bottle.debug(False)  # devV
 
@@ -60,9 +63,9 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
             if omitted, permissions won't be tested by the decorator
     """
     def _decorator(func):
-        @route(route_prefix + command, "POST")
-        @route(route_prefix + command + "()", method)
-        @route(route_prefix + command + "(:argument#.+#)", method)
+        @micropsi_app.route(route_prefix + command, "POST")
+        @micropsi_app.route(route_prefix + command + "()", method)
+        @micropsi_app.route(route_prefix + command + "(:argument#.+#)", method)
         def _wrapper(argument=None):
             response.content_type = 'application/json; charset=utf8'
             kwargs = {}
@@ -140,73 +143,73 @@ def _add_world_list(template_name, **params):
         world_assets=world_assets, **params)
 
 
-@route('/static/<filepath:path>')
+@micropsi_app.route('/static/<filepath:path>')
 def server_static(filepath):
     return static_file(filepath, root=os.path.join(APP_PATH, 'static'))
 
 
-@route("/")
+@micropsi_app.route("/")
 def index():
     user_id, permissions, token = get_request_data()
     return _add_world_list("viewer", mode="all", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@route("/nodenet")
+@micropsi_app.route("/nodenet")
 def nodenet():
     user_id, permissions, token = get_request_data()
     return template("viewer", mode="nodenet", version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@route("/monitors")
+@micropsi_app.route("/monitors")
 def monitors():
     user_id, permissions, token = get_request_data()
     return template("viewer", mode="monitors", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@route('/minidoc/<filepath:path>')
+@micropsi_app.route('/minidoc/<filepath:path>')
 def document(filepath):
     return template("minidoc",
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
-@route("/world")
+@micropsi_app.route("/world")
 def world():
     user_id, permissions, token = get_request_data()
     return _add_world_list("viewer", mode="world", version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@error(404)
+@micropsi_app.error(404)
 def error_page(error):
     return template("error.tpl", error=error, msg="Page not found.", img="/static/img/brazil.gif")
 
 
-@error(405)
+@micropsi_app.error(405)
 def error_page_405(error):
     return template("error.tpl", error=error, msg="Method not allowed.", img="/static/img/strangelove.gif")
 
 
-@error(500)
+@micropsi_app.error(500)
 def error_page_500(error):
     return template("error.tpl", error=error, msg="Internal server error.", img="/static/img/brainstorm.gif")
 
 
-@route("/about")
+@micropsi_app.route("/about")
 def about():
     user_id, permissions, token = get_request_data()
     return template("about", version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@route("/docs")
+@micropsi_app.route("/docs")
 def documentation():
     return template("documentation", version=VERSION)
 
 
-@route("/contact")
+@micropsi_app.route("/contact")
 def contact():
     return template("contact", version=VERSION)
 
 
-@route("/logout")
+@micropsi_app.route("/logout")
 def logout():
     user_id, permissions, token = get_request_data()
     usermanager.end_session(token)
@@ -214,7 +217,7 @@ def logout():
     redirect("/")
 
 
-@route("/login")
+@micropsi_app.route("/login")
 def login():
     if not usermanager.users:  # create first user
         return template("signup", version=VERSION, first_user=True, userid="admin",
@@ -227,7 +230,7 @@ def login():
         permissions=usermanager.get_permissions_for_session_token(None))
 
 
-@post("/login_submit")
+@micropsi_app.post("/login_submit")
 def login_submit():
     user_id = request.forms.userid
     password = request.forms.password
@@ -256,7 +259,7 @@ def login_submit():
                 permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@route("/signup")
+@micropsi_app.route("/signup")
 def signup():
     if request.get_cookie("token"):
         token = request.get_cookie("token")
@@ -274,7 +277,7 @@ def signup():
         cookie_warning=(token is None))
 
 
-@post("/signup_submit")
+@micropsi_app.post("/signup_submit")
 def signup_submit():
     user_id, permissions, token = get_request_data()
     userid = request.forms.userid
@@ -303,7 +306,7 @@ def signup_submit():
             user_id=user_id, permissions=permissions, cookie_warning=(token is None))
 
 
-@route("/change_password")
+@micropsi_app.route("/change_password")
 def change_password():
     user_id, permissions, token = get_request_data()
     if token:
@@ -312,7 +315,7 @@ def change_password():
         return dict(status="error", msg="Cannot change password outside of a session")
 
 
-@post("/change_password_submit")
+@micropsi_app.post("/change_password_submit")
 def change_password_submit():
     user_id, permissions, token = get_request_data()
     if token:
@@ -329,7 +332,7 @@ def change_password_submit():
         return dict(status="error", msg="Cannot change password outside of a session")
 
 
-@route("/user_mgt")
+@micropsi_app.route("/user_mgt")
 def user_mgt():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -339,7 +342,7 @@ def user_mgt():
     return template("error", msg="Insufficient rights to access user console")
 
 
-@route("/set_permissions/<user_key>/<role>")
+@micropsi_app.route("/set_permissions/<user_key>/<role>")
 def set_permissions(user_key, role):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -349,7 +352,7 @@ def set_permissions(user_key, role):
     return template("error", msg="Insufficient rights to access user console")
 
 
-@route("/create_user")
+@micropsi_app.route("/create_user")
 def create_user():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -358,7 +361,7 @@ def create_user():
     return template("error", msg="Insufficient rights to access user console")
 
 
-@post("/create_user_submit")
+@micropsi_app.post("/create_user_submit")
 def create_user_submit():
     user_id, permissions, token = get_request_data()
     userid = request.forms.userid
@@ -388,7 +391,7 @@ def create_user_submit():
     return dict(status="error", msg="Insufficient rights to access user console")
 
 
-@route("/set_password/<userid>")
+@micropsi_app.route("/set_password/<userid>")
 def set_password(userid):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -399,7 +402,7 @@ def set_password(userid):
     return template("error", msg="Insufficient rights to access user console")
 
 
-@post("/set_password_submit")
+@micropsi_app.post("/set_password_submit")
 def set_password_submit():
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -411,7 +414,7 @@ def set_password_submit():
     return dict(status="error", msg="Insufficient rights to access user console")
 
 
-@route("/delete_user/<userid>")
+@micropsi_app.route("/delete_user/<userid>")
 def delete_user(userid):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -421,7 +424,7 @@ def delete_user(userid):
     return template("error", msg="Insufficient rights to access user console")
 
 
-@route("/login_as/<userid>")
+@micropsi_app.route("/login_as/<userid>")
 def login_as_user(userid):
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
@@ -434,7 +437,7 @@ def login_as_user(userid):
     return template("error", msg="Insufficient rights to access user console")
 
 
-@route("/nodenet_mgt")
+@micropsi_app.route("/nodenet_mgt")
 def nodenet_mgt():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
@@ -448,7 +451,7 @@ def nodenet_mgt():
     return template("error", msg="Insufficient rights to access nodenet console")
 
 
-@route("/select_nodenet_from_console/<nodenet_uid>")
+@micropsi_app.route("/select_nodenet_from_console/<nodenet_uid>")
 def select_nodenet_from_console(nodenet_uid):
     user_id, permissions, token = get_request_data()
     result, uid = runtime.load_nodenet(nodenet_uid)
@@ -458,7 +461,7 @@ def select_nodenet_from_console(nodenet_uid):
     redirect("/")
 
 
-@route("/delete_nodenet_from_console/<nodenet_uid>")
+@micropsi_app.route("/delete_nodenet_from_console/<nodenet_uid>")
 def delete_nodenet_from_console(nodenet_uid):
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
@@ -468,7 +471,7 @@ def delete_nodenet_from_console(nodenet_uid):
     return template("error", msg="Insufficient rights to access nodenet console")
 
 
-@route("/save_all_nodenets")
+@micropsi_app.route("/save_all_nodenets")
 def save_all_nodenets():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
@@ -479,7 +482,7 @@ def save_all_nodenets():
     return template("error", msg="Insufficient rights to access nodenet console")
 
 
-@route("/nodenet/import")
+@micropsi_app.route("/nodenet/import")
 def import_nodenet_form():
     token = request.get_cookie("token")
     return template("upload.tpl", title='Import Nodenet', message='Select a file to upload and use for importing', action='/nodenet/import',
@@ -488,7 +491,7 @@ def import_nodenet_form():
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@route("/nodenet/import", method="POST")
+@micropsi_app.route("/nodenet/import", method="POST")
 def import_nodenet():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
@@ -497,7 +500,7 @@ def import_nodenet():
     return dict(status='success', msg="Nodenet imported", nodenet_uid=nodenet_uid)
 
 
-@route("/nodenet/merge/<nodenet_uid>")
+@micropsi_app.route("/nodenet/merge/<nodenet_uid>")
 def merge_nodenet_form(nodenet_uid):
     token = request.get_cookie("token")
     return template("upload.tpl", title='Merge Nodenet', message='Select a file to upload and use for merging',
@@ -507,20 +510,20 @@ def merge_nodenet_form(nodenet_uid):
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@route("/nodenet/merge/<nodenet_uid>", method="POST")
+@micropsi_app.route("/nodenet/merge/<nodenet_uid>", method="POST")
 def merge_nodenet(nodenet_uid):
     runtime.merge_nodenet(nodenet_uid, request.files['file_upload'].file.read())
     return dict(status='success', msg="Nodenet merged")
 
 
-@route("/nodenet/export/<nodenet_uid>")
+@micropsi_app.route("/nodenet/export/<nodenet_uid>")
 def export_nodenet(nodenet_uid):
     response.set_header('Content-type', 'application/json')
     response.set_header('Content-Disposition', 'attachment; filename="nodenet.json"')
     return runtime.export_nodenet(nodenet_uid)
 
 
-@route("/nodenet/edit")
+@micropsi_app.route("/nodenet/edit")
 def edit_nodenet():
     user_id, permissions, token = get_request_data()
     # nodenet_id = request.params.get('id', None)
@@ -533,7 +536,7 @@ def edit_nodenet():
         version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@route("/nodenet/edit", method="POST")
+@micropsi_app.route("/nodenet/edit", method="POST")
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
@@ -545,7 +548,7 @@ def write_nodenet():
     return dict(status="error", msg="Insufficient rights to write nodenet")
 
 
-@route("/world/import")
+@micropsi_app.route("/world/import")
 def import_world_form():
     token = request.get_cookie("token")
     return template("upload.tpl", title='World import', message='Select a file to upload and use for importing',
@@ -555,7 +558,7 @@ def import_world_form():
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@route("/world/import", method="POST")
+@micropsi_app.route("/world/import", method="POST")
 def import_world():
     user_id, p, t = get_request_data()
     data = request.files['file_upload'].file.read()
@@ -564,14 +567,14 @@ def import_world():
     return dict(status='success', msg="World imported", world_uid=world_uid)
 
 
-@route("/world/export/<world_uid>")
+@micropsi_app.route("/world/export/<world_uid>")
 def export_world(world_uid):
     response.set_header('Content-type', 'application/json')
     response.set_header('Content-Disposition', 'attachment; filename="world.json"')
     return runtime.export_world(world_uid)
 
 
-@route("/world/edit")
+@micropsi_app.route("/world/edit")
 def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
@@ -582,7 +585,7 @@ def edit_world_form():
         permissions=usermanager.get_permissions_for_session_token(token))
 
 
-@route("/world/edit", method="POST")
+@micropsi_app.route("/world/edit", method="POST")
 def edit_world():
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
@@ -594,8 +597,8 @@ def edit_world():
     return dict(status="error", msg="Insufficient rights to create world")
 
 
-@route("/nodenet_list/")
-@route("/nodenet_list/<current_nodenet>")
+@micropsi_app.route("/nodenet_list/")
+@micropsi_app.route("/nodenet_list/<current_nodenet>")
 def nodenet_list(current_nodenet=None):
     user_id, permissions, token = get_request_data()
     nodenets = runtime.get_available_nodenets()
@@ -605,8 +608,8 @@ def nodenet_list(current_nodenet=None):
         others=dict((uid, nodenets[uid]) for uid in nodenets if nodenets[uid].owner != user_id))
 
 
-@route("/world_list/")
-@route("/world_list/<current_world>")
+@micropsi_app.route("/world_list/")
+@micropsi_app.route("/world_list/<current_world>")
 def world_list(current_world=None):
     user_id, permissions, token = get_request_data()
     worlds = runtime.get_available_worlds()
@@ -616,8 +619,8 @@ def world_list(current_world=None):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
-@route("/config/nodenet/runner")
-@route("/config/nodenet/runner", method="POST")
+@micropsi_app.route("/config/nodenet/runner")
+@micropsi_app.route("/config/nodenet/runner", method="POST")
 def edit_nodenetrunner():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
@@ -627,8 +630,8 @@ def edit_nodenetrunner():
         return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=runtime.get_nodenetrunner_timestep())
 
 
-@route("/config/world/runner")
-@route("/config/world/runner", method="POST")
+@micropsi_app.route("/config/world/runner")
+@micropsi_app.route("/config/world/runner", method="POST")
 def edit_worldrunner():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
@@ -667,7 +670,7 @@ def get_available_nodenets(user_id):
     return runtime.get_available_nodenets(user_id)
 
 
-@route("/create_new_nodenet_form")
+@micropsi_app.route("/create_new_nodenet_form")
 def create_new_nodenet_form():
     user_id, permissions, token = get_request_data()
     nodenets = runtime.get_available_nodenets()
@@ -676,7 +679,7 @@ def create_new_nodenet_form():
         nodenets=nodenets, worlds=worlds)
 
 
-@route("/create_worldadapter_selector/<world_uid>")
+@micropsi_app.route("/create_worldadapter_selector/<world_uid>")
 def create_worldadapter_selector(world_uid):
     nodenets = runtime.get_available_nodenets()
     worlds = runtime.get_available_worlds()
@@ -1136,7 +1139,7 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0):
 # -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
-    run(host=host, port=port, quiet=True)  # devV
+    run(micropsi_app, host=host, port=port, quiet=True)  # devV
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)

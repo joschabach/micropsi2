@@ -18,11 +18,16 @@ class Minecraft(World):
     """
     mandatory: list of world adapters that are supported
     """
-    supported_worldadapters = ['MinecraftWorldAdapter', 'MinecraftBraitenberg', 'MinecraftVision', 'MinecraftGraphLocomotion']
+    supported_worldadapters = [
+        'MinecraftWorldAdapter',
+        'MinecraftBraitenberg',
+        'MinecraftVision',
+        'MinecraftGraphLocomotion'
+    ]
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': "minecraft/minecraft.js",
+        'js': 'minecraft/minecraft.js',
         'x': 256,
         'y': 256,
     }
@@ -99,7 +104,7 @@ class Minecraft(World):
             'thread_workers': 5,     # number of workers in the thread pool
             'packet_trace': False,
             'mc_username': "test",
-            "mc_password": "test",
+            'mc_password': "test",
             'server': cfg['minecraft']['server'],
             'port': int(cfg['minecraft']['port'])
         }
@@ -115,11 +120,14 @@ class Minecraft(World):
 
 class Minecraft2D(Minecraft):
     """ mandatory: list of world adapters that are supported"""
-    supported_worldadapters = ['MinecraftWorldAdapter']
+    supported_worldadapters = [
+        'MinecraftWorldAdapter',
+        'MinecraftGraphLocomotion'
+    ]
 
     assets = {
         'template': 'minecraft/minecraft.tpl',
-        'js': "minecraft/minecraft2d.js",
+        'js': 'minecraft/minecraft2d.js',
     }
 
     def step(self):
@@ -545,14 +553,18 @@ class MinecraftBraitenberg(WorldAdapter):
             if current_section is not None:
                 for x in range(0, 16):
                     for z in range(0, 16):
-                        current_block = current_section.get(x, int((bot_coords[1] + y - 10 // 2) % 16), z).id  # TODO explain formula
+                        # TODO explain formula
+                        current_block = current_section.get(x, int((bot_coords[1] + y - 10 // 2) % 16), z).id
                         if current_block == 56:
                             diamond_coords = (x + x_chunk * 16, y, z + z_chunk * 16)
                             self.datasources['diamond_offset_x'] = bot_coords[0] - diamond_coords[0]
                             self.datasources['diamond_offset_z'] = bot_coords[2] - diamond_coords[2]
 
     def detect_groundtypes(self, bot_coords, current_section):
-        block_below = current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] - 1) % 16), int(bot_coords[2]) % 16).id
+        block_below = current_section.get(
+            int(bot_coords[0]) % 16,
+            int((bot_coords[1] - 1) % 16),
+            int(bot_coords[2]) % 16).id
         self.datasources['grd_dirt'] = 1 if (block_below == 2) else 0
         self.datasources['grd_stone'] = 1 if (block_below == 1) else 0
         self.datasources['grd_wood'] = 1 if (block_below == 17) else 0
@@ -560,14 +572,26 @@ class MinecraftBraitenberg(WorldAdapter):
 
     def detect_obstacles(self, bot_coords, current_section):
         self.datasources['obstcl_x+'] = \
-            1 if current_section.get(int(bot_coords[0] + 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 \
+            1 if current_section.get(
+                int(bot_coords[0] + 1) % 16,
+                int((bot_coords[1] + 1) % 16),
+                int(bot_coords[2]) % 16).id != 0 \
             else 0
         self.datasources['obstcl_x-'] = \
-            1 if current_section.get(int(bot_coords[0] - 1) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2]) % 16).id != 0 \
+            1 if current_section.get(
+                int(bot_coords[0] - 1) % 16,
+                int((bot_coords[1] + 1) % 16),
+                int(bot_coords[2]) % 16).id != 0 \
             else 0
         self.datasources['obstcl_z+'] = \
-            1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] + 1) % 16).id != 0 \
+            1 if current_section.get(
+                int(bot_coords[0]) % 16,
+                int((bot_coords[1] + 1) % 16),
+                int(bot_coords[2] + 1) % 16).id != 0 \
             else 0
         self.datasources['obstcl_z-'] = \
-            1 if current_section.get(int(bot_coords[0]) % 16, int((bot_coords[1] + 1) % 16), int(bot_coords[2] - 1) % 16).id != 0 \
+            1 if current_section.get(
+                int(bot_coords[0]) % 16,
+                int((bot_coords[1] + 1) % 16),
+                int(bot_coords[2] - 1) % 16).id != 0 \
             else 0

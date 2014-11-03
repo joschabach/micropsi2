@@ -5,10 +5,23 @@ from micropsi_core import tools
 class MinecraftGraphLocomotion(WorldAdapter):
 
     datasources = {}
-    datatargets = {'orientation': 0, 'take_exit_one': 0, 'take_exit_two': 0, 'take_exit_three':0}
-    datatarget_feedback = {'orientation': 0, 'take_exit_one': 0, 'take_exit_two': 0, 'take_exit_three':0}
+
+    datatargets = {
+        'orientation': 0,
+        'take_exit_one': 0,
+        'take_exit_two': 0,
+        'take_exit_three': 0
+    }
+
+    datatarget_feedback = {
+        'orientation': 0,
+        'take_exit_one': 0,
+        'take_exit_two': 0,
+        'take_exit_three': 0
+    }
 
     loco_nodes = {}
+
     loco_node_template = {
         'uid': "",
         'name': "",
@@ -136,7 +149,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[swamp_uid]['exit_one_uid'] = forest_uid
     loco_nodes[swamp_uid]['exit_two_uid'] = summit_uid
 
-
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
         self.spockplugin = self.world.spockplugin
@@ -166,7 +178,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
             else:
                 self.datatarget_feedback['take_exit_two'] = -1
 
-
         if self.datatargets['take_exit_three'] >= 1:
             if self.current_loco_node['exit_three_uid'] is not None:
                 self.locomote(self.current_loco_node['exit_three_uid'])
@@ -178,7 +189,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datatargets['take_exit_one'] = 0
         self.datatargets['take_exit_two'] = 0
         self.datatargets['take_exit_three'] = 0
-
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]

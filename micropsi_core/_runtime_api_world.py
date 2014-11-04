@@ -86,7 +86,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner=""):
+def new_world(world_name, world_type, owner="", uid=None):
     """Creates a new world  and registers it.
 
     Arguments:
@@ -98,7 +98,8 @@ def new_world(world_name, world_type, owner=""):
         world_uid if successful,
         None if failure
     """
-    uid = tools.generate_uid()
+    if uid is None:
+        uid = tools.generate_uid()
 
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,

@@ -500,8 +500,7 @@ def test_revert_world(app, test_world):
     assert data['current_step'] == 0
 
 
-@pytest.mark.xfail(reason="UNKNOWN!")
-def xxx_test_save_world(app, test_world):
+def test_save_world(app, test_world):
     app.set_auth()
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': test_world,
@@ -512,7 +511,6 @@ def xxx_test_save_world(app, test_world):
     uid = response.json_body['data']
     response = app.get_json('/rpc/step_world(world_uid="%s")' % test_world)
     response = app.get_json('/rpc/save_world(world_uid="%s")' % test_world)
-    print("WORLD SAVED!@")
     assert_success(response)
     response = app.get_json('/rpc/revert_world(world_uid="%s")' % test_world)
     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)

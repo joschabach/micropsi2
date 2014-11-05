@@ -87,7 +87,10 @@ def test_world(request):
         success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User", uid=world_uid)
 
     def fin():
-        micropsi.revert_world(world_uid)
+        try:
+            micropsi.revert_world(world_uid)
+        except KeyError:
+            pass  # world was deleted in test
     request.addfinalizer(fin)
     return world_uid
 

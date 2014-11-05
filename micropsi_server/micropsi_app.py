@@ -791,11 +791,14 @@ def export_nodenet_rpc(nodenet_uid):
 
 
 @rpc("import_nodenet", permission_required="manage nodenets")
-def import_nodenet(nodenet_uid, nodenet): return runtime.import_nodenet
+def import_nodenet(nodenet_data):
+    user_id, _, _ = get_request_data()
+    return runtime.import_nodenet(nodenet_data, user_id)
 
 
 @rpc("merge_nodenet", permission_required="manage nodenets")
-def merge_nodenet(nodenet_uid, nodenet): return runtime.merge_nodenet
+def merge_nodenet(nodenet_uid, nodenet_data):
+    return runtime.merge_nodenet(nodenet_uid, nodenet_data)
 
 
 # World

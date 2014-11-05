@@ -400,7 +400,6 @@ def test_new_world(app):
     assert uid in response.json_body['data']
 
 
-@pytest.mark.xfail(reason="Obviously never implemented")
 def test_get_available_world_types(app):
     response = app.get_json('/rpc/get_available_world_types()')
     assert_success(response)

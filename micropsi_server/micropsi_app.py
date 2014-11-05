@@ -871,7 +871,7 @@ def new_world(world_name, world_type, owner=""):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return runtime.get_available_worldtypes()
+    return True, runtime.get_available_world_types()
 
 
 @rpc("delete_world", permission_required="manage worlds")

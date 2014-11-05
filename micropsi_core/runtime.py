@@ -621,7 +621,7 @@ def get_node(nodenet_uid, node_uid):
             parameters (optional): a dict of arbitrary parameters that can make nodes stateful
         }
      """
-    return nodenets[nodenet_uid].nodes[node_uid]
+    return nodenets[nodenet_uid].nodes[node_uid].data
 
 
 def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
@@ -923,7 +923,7 @@ def get_link(nodenet_uid, link_uid):
             certainty: probabilistic weight of the link (float value),
         }
     """
-    return nodenets[nodenet_uid].links[link_uid]
+    return nodenets[nodenet_uid].links[link_uid].data
 
 
 def delete_link(nodenet_uid, link_uid):

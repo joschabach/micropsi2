@@ -690,7 +690,6 @@ def test_get_nodespace(app, test_nodenet):
     assert 'N1' in response.json_body['data']['nodes']
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_get_node(app, test_nodenet):
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
     assert_success(response)
@@ -730,7 +729,6 @@ def test_clone_nodes(app, test_nodenet):
 
 
 # TODO: pos vs position
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_set_node_position(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_node_position', params={
@@ -743,7 +741,6 @@ def test_set_node_position(app, test_nodenet):
     assert response.json_body['data']['position'] == [42, 23]
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_set_node_name(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_node_name', params={
@@ -767,7 +764,6 @@ def test_delete_node(app, test_nodenet):
     assert response.json_body['data']['nodes'] == {}
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_align_nodes(app, test_nodenet):
     response = app.post_json('/rpc/align_nodes', params={
         'nodenet_uid': test_nodenet,
@@ -816,7 +812,6 @@ def test_set_nodefunction(app, test_nodenet):
     assert response.json_body['data'] == 'return 1'
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_set_node_parameters(app, test_nodenet):
     app.set_auth()
     # add activator
@@ -914,7 +909,6 @@ def test_set_gate_function(app, test_nodenet):
     assert response.json_body['data'] == 'return -0.5'
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_set_gate_parameters(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_gate_parameters', params={
@@ -949,7 +943,6 @@ def test_get_available_datatargets(app, test_nodenet):
     assert 'engine_r' in response.json_body['data']
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_bind_datasource_to_sensor(app, test_nodenet):
     app.set_auth()
     app.post_json('/rpc/add_node', params={
@@ -969,7 +962,6 @@ def test_bind_datasource_to_sensor(app, test_nodenet):
     assert response.json_body['data']['parameters']['datasource'] == 'brightness_l'
 
 
-@pytest.mark.xfail(reason="runtime.get_node implementation error: does not return dict")
 def test_bind_datatarget_to_actor(app, test_nodenet):
     app.set_auth()
     app.post_json('/rpc/add_node', params={
@@ -1007,7 +999,6 @@ def test_add_link(app, test_nodenet):
     assert uid in data['links']
 
 
-@pytest.mark.xfail(reason="runtime.get_link implementation error: does not return dict")
 def test_get_link(app, test_nodenet):
     response = app.get_json('/rpc/get_link(nodenet_uid="%s",link_uid="N1-N1")' % test_nodenet)
     assert_success(response)
@@ -1016,7 +1007,6 @@ def test_get_link(app, test_nodenet):
     assert response.json_body['data']['target_node_uid'] == 'N1'
 
 
-@pytest.mark.xfail(reason="runtime.get_link implementation error: does not return dict")
 def test_set_link_weight(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_link_weight', params={

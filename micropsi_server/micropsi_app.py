@@ -699,6 +699,18 @@ def load_nodenet(nodenet_uid, **coordinates):
         return False, uid
 
 
+@rpc("new_nodenet")
+def new_nodenet(name, owner=None, template=None, worldadapter=None, world_uid=None, uid=None):
+    if owner is None:
+        owner, _, _ = get_request_data()
+    return runtime.new_nodenet(
+        name,
+        worldadapter,
+        template=template,
+        owner=owner,
+        world_uid=world_uid,
+        uid=uid)
+
 @rpc("generate_uid")
 def generate_uid():
     return True, tools.generate_uid()

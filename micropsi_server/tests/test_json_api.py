@@ -38,10 +38,9 @@ def test_load_nodenet(app, test_nodenet):
     assert data['uid'] == test_nodenet
 
 
-@pytest.mark.xfail(reason="Not implemented yet.")
 def test_new_nodenet(app):
     app.set_auth()
-    response = app.get_json('/rpc/new_nodenet', params={
+    response = app.post_json('/rpc/new_nodenet', params={
         'name': 'FooBarTestNet',
         'worldadapter': 'Braitenberg',
         'owner': 'Pytest User'

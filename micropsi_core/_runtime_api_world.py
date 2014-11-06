@@ -77,8 +77,8 @@ def add_worldobject(world_uid, type, position, orientation=0.0, name="", paramet
                                                               parameters=parameters, uid=uid)
 
 
-def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
-    return micropsi_core.runtime.worlds[world_uid].set_object_properties(uid, type, position, orientation, name,
+def set_worldobject_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
+    return micropsi_core.runtime.worlds[world_uid].set_object_properties(uid, position, orientation, name,
                                                                          parameters)
 
 
@@ -140,9 +140,13 @@ def get_world_view(world_uid, step):
     return {}
 
 
-def set_world_properties(world_uid, world_name=None, world_type=None, owner=None):
+def set_world_properties(world_uid, world_name=None, owner=None):
     """Sets the supplied parameters (and only those) for the world with the given uid."""
-    pass
+    if world_uid not in micropsi_core.runtime.worlds:
+        raise KeyError("World not found")
+    micropsi_core.runtime.worlds[world_uid].name = world_name
+    micropsi_core.runtime.worlds[world_uid].owner = owner
+    return True
 
 
 def start_worldrunner(world_uid):

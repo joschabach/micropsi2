@@ -270,12 +270,11 @@ class World(object):
         except KeyError:
             return False, "Incompatible Worldadapter for this World."
 
-    def set_object_properties(self, uid, type=None, position=None, orientation=None, name=None, parameters=None):
+    def set_object_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         """set attributes of the world object 'uid'; only supplied attributes will be changed.
 
        Arguments:
            uid: the uid of the worldobject. Mandatory.
-           type: a new type for the object. Optional
            position: a new position for the object. Optional
            orientation: a new orientation for the object. Optional
            name: a new name for the object. Optional
@@ -283,8 +282,6 @@ class World(object):
 
         Returns True if object exists, otherwise False"""
         if uid in self.objects:
-            if type:
-                self.objects[uid].type = type
             if position:
                 self.objects[uid].position = position
             if orientation:

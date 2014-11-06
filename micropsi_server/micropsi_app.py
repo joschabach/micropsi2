@@ -849,8 +849,8 @@ def delete_worldobject(world_uid, object_uid):
 
 
 @rpc("set_worldobject_properties")
-def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
-    if runtime.set_worldobject_properties(world_uid, uid, type, position, int(orientation), name, parameters):
+def set_worldobject_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
+    if runtime.set_worldobject_properties(world_uid, uid, position, int(orientation), name, parameters):
         return dict(status="success")
     else:
         return dict(status="error", msg="unknown world or world object")
@@ -885,7 +885,8 @@ def get_world_view(world_uid, step):
 
 
 @rpc("set_world_properties", permission_required="manage worlds")
-def set_world_data(world_uid, world_name=None, world_type=None, owner=None): return runtime.set_world_properties
+def set_world_data(world_uid, world_name=None, owner=None):
+    return runtime.set_world_properties(world_uid, world_name, owner)
 
 
 @rpc("start_worldrunner", permission_required="manage worlds")

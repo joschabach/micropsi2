@@ -312,32 +312,6 @@ def test_delete_worldobject(app, test_world):
     assert uid not in response.json_body['data']
 
 
-@pytest.mark.xfail(reason="changing object types is not implemented correcly")
-def test_change_worldobject_type(app, test_world):
-    response = app.post_json('/rpc/add_worldobject', params={
-        'world_uid': test_world,
-        'type': 'Braintree',
-        'position': [10, 10],
-        'name': 'Testtree'
-    })
-    uid = response.json_body['data']
-    response = app.post_json('/rpc/set_worldobject_properties', params={
-        'world_uid': test_world,
-        'uid': uid,
-        'type': 'Wirselkraut',
-        'position': [20, 20],
-        'orientation': 27,
-        'name': 'edited'
-    })
-    assert_success(response)
-    response = app.get_json('/rpc/get_world_objects(world_uid="%s")' % test_world)
-    data = response.json_body['data']
-    assert data[uid]['position'] == [20, 20]
-    assert data[uid]['orientation'] == 27
-    assert data[uid]['name'] == 'edited'
-    assert data[uid]['type'] == 'Wirselkraut'
-
-
 def test_set_worldobject_properties(app, test_world):
     response = app.post_json('/rpc/add_worldobject', params={
         'world_uid': test_world,
@@ -421,13 +395,11 @@ def test_delete_world(app, test_world):
     assert world_uid not in response.json_body['data']
 
 
-@pytest.mark.xfail(reason="Not Implemented (switching world types?)")
 def test_set_world_properties(app, test_world):
     app.set_auth()
     response = app.post_json('/rpc/set_world_properties', params={
         'world_uid': test_world,
         'world_name': 'asdf',
-        'world_type': 'Island',
         'owner': 'Pytest User'
     })
     assert_success(response)

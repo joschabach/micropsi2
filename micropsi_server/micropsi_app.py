@@ -1051,16 +1051,6 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return runtime.set_node_parameters(nodenet_uid, node_uid, parameters)
 
 
-@rpc("add_node_type", permission_required="manage nodenets")
-def add_node_type(nodenet_uid, node_type, slots=[], gates=[], node_function=None, parameters=[]):
-    return runtime.add_node_type(nodenet_uid, node_type, slots, gates, node_function, parameters)
-
-
-@rpc("delete_node_type", permission_required="manage nodenets")
-def delete_node_type(nodenet_uid, node_type):
-    return runtime.delete_node_type(nodenet_uid, node_type)
-
-
 @rpc("get_slot_types")
 def get_slot_types(nodenet_uid, node_type):
     return True, runtime.get_slot_types(nodenet_uid, node_type)

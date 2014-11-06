@@ -787,37 +787,6 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return True
 
 
-def add_node_type(nodenet_uid, node_type, slots=None, gates=None, node_function=None, parameters=None):
-    """Adds or modifies a native module.
-
-    Arguments:
-        nodenet_uid: the nodenet into which the native module will be saved
-        node_type: the identifier of the native module. If it already exists for another user, the new definition
-            will hide the old one from view.
-        node_function (optional): the program code of the native module. The native module is defined as a
-            python function that takes the current node, the nodenet manager and the node parameters as arguments.
-            The default node function takes the slot activations and calls all gatefunctions with
-            it as an argument.
-        slots (optional): the list of slot types for this node type
-        gates (optional): the list of gate types for this node type
-        parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
-    """
-    nodenet = nodenets[nodenet_uid]
-    nodenet.native_modules[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
-        nodefunction_definition=node_function)
-    native_modules[node_type] = nodenet.native_modules[node_type].state.copy()
-    return True
-
-
-def delete_node_type(nodenet_uid, node_type):
-    """Remove the node type from the current nodenet definition, if it is part of it."""
-    # try:
-    #     del nodenets[nodenet_uid].state['nodetypes'][node_type]
-    #     return True
-    # except KeyError:
-    return False
-
-
 def get_slot_types(nodenet_uid, node_type):
     """Returns the list of slot types for the given node type."""
     return nodenets[nodenet_uid].get_nodetype(node_type).slottypes

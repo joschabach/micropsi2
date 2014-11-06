@@ -798,40 +798,6 @@ def test_set_node_parameters(app, test_nodenet):
     assert response.json_body['data']['parameters']['type'] == 'sub'
 
 
-@pytest.mark.xfail(reason="incoherent implementation in runtime.py:809: Nodetype has no attribute `state`")
-def test_add_node_type(app, test_nodenet):
-    app.set_auth()
-    response = app.post_json('/rpc/add_node_type', params={
-        'nodenet_uid': test_nodenet,
-        'node_type': 'Testtype',
-        'slots': ['gen', 'sub', 'sur'],
-        'gates': ['gen', 'sub', 'sur'],
-        'node_function': 'return 0.5',
-    })
-    assert_success(response)
-    response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
-    assert 'Testtype' in response.json_body['data']
-
-
-@pytest.mark.xfail(reason="incoherent implementation in runtime.py:809: Nodetype has no attribute `state`")
-def test_delete_node_type(app, test_nodenet):
-    app.set_auth()
-    response = app.post_json('/rpc/add_node_type', params={
-        'nodenet_uid': test_nodenet,
-        'node_type': 'Testtype',
-        'slots': ['gen', 'sub', 'sur'],
-        'gates': ['gen', 'sub', 'sur'],
-        'node_function': 'return 0.5',
-    })
-    response = app.post_json('/rpc/delete_node_type', params={
-        'nodenet_uid': test_nodenet,
-        'node_type': 'Testtype'
-    })
-    assert_success(response)
-    response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
-    assert 'Testtype' not in response.json_body['data']
-
-
 def test_get_slot_types(app, test_nodenet):
     response = app.get_json('/rpc/get_slot_types(nodenet_uid="%s",node_type="Concept")' % test_nodenet)
     assert_success(response)

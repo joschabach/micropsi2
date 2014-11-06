@@ -810,7 +810,6 @@ def test_get_gate_types(app, test_nodenet):
     assert response.json_body['data'] == ['gen']
 
 
-@pytest.mark.xfail(reason="Implementation: nodenet.state is not initialized with gatefunctions in root-nodespace")
 def test_get_gate_function(app, test_nodenet):
     response = app.post_json('/rpc/get_gate_function', params={
         'nodenet_uid': test_nodenet,
@@ -819,7 +818,7 @@ def test_get_gate_function(app, test_nodenet):
         'gate_type': 'sub'
     })
     assert_success(response)
-    assert response.json_body['data'] is not None
+    assert response.json_body['data'] == ''
 
 
 def test_set_gate_function(app, test_nodenet):

@@ -32,6 +32,7 @@ class Nodespace(NetEntity):
         nodenet.nodespaces[self.uid] = self
         if not gatefunctions:
             gatefunctions = dict()
+        self.data['gatefunctions'] = gatefunctions
         self.gatefunctions = {}
         for nodetype in gatefunctions:
             for gatetype in gatefunctions[nodetype]:

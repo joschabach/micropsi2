@@ -802,7 +802,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
     """
     return nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(
-        gate_type)
+        gate_type, '')
 
 
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):

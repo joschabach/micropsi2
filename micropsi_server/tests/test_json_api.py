@@ -506,7 +506,6 @@ def test_export_world(app, test_world):
     assert export_data['world_type'] == 'Island'
 
 
-@pytest.mark.xfail(reason="obviously wrong api signature")
 def test_import_world(app, test_world):
     response = app.get_json('/rpc/export_world(world_uid="%s")' % test_world)
     data = json.loads(response.json_body['data'])

@@ -935,8 +935,9 @@ def export_world_rpc(world_uid):
 
 
 @rpc("import_world", permission_required="manage worlds")
-def import_world_rpc(world_uid, worlddata):
-    return True, runtime.import_world(world_uid, worlddata)
+def import_world_rpc(worlddata):
+    user_id, _, _ = get_request_data()
+    return True, runtime.import_world(worlddata, user_id)
 
 # Monitor
 

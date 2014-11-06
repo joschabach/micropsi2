@@ -219,10 +219,13 @@ def export_world(world_uid):
 
 
 def import_world(worlddata, owner=None):
-    """Imports a JSON string with world data. May overwrite an existing world."""
+    """Imports a JSON string with world data. May not overwrite an existing world."""
     data = json.loads(worlddata)
     if not 'uid' in data:
         data['uid'] = tools.generate_uid()
+    else:
+        if data['uid'] in micropsi_core.runtime.worlds:
+            raise RuntimeError("A world with this ID already exists.")
     if owner is not None:
         data['owner'] = owner
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')

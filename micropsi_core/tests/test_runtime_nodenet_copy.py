@@ -15,10 +15,6 @@ def test_copy_nodes():
     success, nodenet_uid2 = micropsi.new_nodenet("Target_Nodenet", "Default", owner="tester")
 
     # create a few nodes
-    assert nodenet_uid1 not in micropsi.nodenets
-    micropsi.load_nodenet(nodenet_uid1)
-    assert nodenet_uid1 in micropsi.nodenets
-    micropsi.load_nodenet(nodenet_uid2)
     assert nodenet_uid1 in micropsi.nodenets
     assert nodenet_uid2 in micropsi.nodenets
 

@@ -198,17 +198,13 @@ def test_import_nodenet(app, test_nodenet):
     app.set_auth()
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
-    response = app.post_json('/rpc/new_nodenet', params={
-        'name': 'ImporterNet',
-        'worldadapter': 'Braitenberg',
-        'owner': 'Pytest User'
-    })
-    uid = response.json_body['data']
-    data['uid'] = uid
+    del data['uid']
     response = app.post_json('/rpc/import_nodenet', params={
         'nodenet_data': json.dumps(data)
     })
     assert_success(response)
+    uid = response.json_body['data']
+    assert uid is not None
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % uid)
     assert list(response.json_body['data']['nodes'].keys()) == ['N1']
     assert response.json_body['data']['name'] == 'Testnet'
@@ -225,7 +221,7 @@ def test_merge_nodenet(app, test_nodenet):
         'owner': 'Pytest User'
     })
     uid = response.json_body['data']
-    app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % uid)
+
     data['uid'] = uid
     response = app.post_json('/rpc/merge_nodenet', params={
         'nodenet_uid': uid,

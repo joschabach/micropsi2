@@ -372,7 +372,7 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
     fp.close()
-    #load_nodenet(data['uid'])
+    load_nodenet(data['uid'])
     return True, data['uid']
 
 
@@ -502,6 +502,9 @@ def import_nodenet(string, owner=None):
     import_data = json.loads(string)
     if 'uid' not in import_data:
         import_data['uid'] = tools.generate_uid()
+    else:
+        if import_data['uid'] in nodenets:
+            raise RuntimeError("A nodenet with this ID already exists.")
     if 'owner':
         import_data['owner'] = owner
     # assert import_data['world'] in worlds
@@ -510,7 +513,8 @@ def import_nodenet(string, owner=None):
         fp.write(json.dumps(import_data))
     fp.close()
     nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
-    return True
+    load_nodenet(import_data['uid'])
+    return import_data['uid']
 
 
 def merge_nodenet(nodenet_uid, string):

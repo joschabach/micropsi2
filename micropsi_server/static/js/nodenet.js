@@ -271,7 +271,7 @@ function setCurrentNodenet(uid, nodespace){
             } else {
                 currentNodenet = null;
                 $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.Error, "Info");
+                dialogs.notification(data.data, "Info");
             }
         });
 }

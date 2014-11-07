@@ -535,7 +535,6 @@ def test_export_monitor_data_all(app, test_nodenet):
     assert response.json_body['data'] == {}
 
 
-@pytest.mark.xfail(reason="add_monitor returns the whole monitor data, not just the ID")
 def test_add_gate_monitor(app, test_nodenet):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -549,12 +548,11 @@ def test_add_gate_monitor(app, test_nodenet):
         'monitor_uid': uid
     })
     assert response.json_body['data']['node_uid'] == 'N1'
-    assert response.json_body['data']['gate'] == 'sub'
+    assert response.json_body['data']['target'] == 'sub'
     assert response.json_body['data']['type'] == 'gate'
     assert response.json_body['data']['values'] == {}
 
 
-@pytest.mark.xfail(reason="add_monitor returns the whole monitor data, not just the ID")
 def test_add_slot_monitor(app, test_nodenet):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -568,12 +566,11 @@ def test_add_slot_monitor(app, test_nodenet):
         'monitor_uid': uid
     })
     assert response.json_body['data']['node_uid'] == 'N1'
-    assert response.json_body['data']['slot'] == 'gen'
+    assert response.json_body['data']['target'] == 'gen'
     assert response.json_body['data']['type'] == 'slot'
     assert response.json_body['data']['values'] == {}
 
 
-@pytest.mark.xfail(reason="add_monitor returns the whole monitor data, not just the ID")
 def test_remove_monitor(app, test_nodenet):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -587,13 +584,11 @@ def test_remove_monitor(app, test_nodenet):
     })
     assert_success(response)
     response = app.post_json('/rpc/export_monitor_data', params={
-        'nodenet_uid': test_nodenet,
-        'monitor_uid': uid
+        'nodenet_uid': test_nodenet
     })
-    assert_failure(response)
+    assert uid not in response.json_body['data']
 
 
-@pytest.mark.xfail(reason="add_monitor returns the whole monitor data, not just the ID")
 def test_clear_monitor(app, test_nodenet):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -608,7 +603,6 @@ def test_clear_monitor(app, test_nodenet):
     assert_success(response)
 
 
-@pytest.mark.xfail(reason="add_monitor returns the whole monitor data, not just the ID")
 def test_get_monitor_data(app, test_nodenet):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -621,7 +615,7 @@ def test_get_monitor_data(app, test_nodenet):
         'step': 0
     })
     assert_success(response)
-    assert uid in response.json_body['data']
+    assert uid in response.json_body['data']['monitors']
 
 
 ###################################################

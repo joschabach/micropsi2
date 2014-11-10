@@ -69,7 +69,7 @@ def get_world_objects(world_uid, type=None):
 
 
 def delete_worldobject(world_uid, object_uid):
-    return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid);
+    return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid)
 
 
 def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):

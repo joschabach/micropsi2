@@ -42,7 +42,6 @@ def test_new_nodenet(app):
     app.set_auth()
     response = app.post_json('/rpc/new_nodenet', params={
         'name': 'FooBarTestNet',
-        'worldadapter': 'Braitenberg',
         'owner': 'Pytest User'
     })
     assert_success(response)
@@ -843,21 +842,19 @@ def test_set_gate_parameters(app, test_nodenet):
     assert response.json_body['data']['gate_parameters']['gen']['minimum'] == -2
 
 
-@pytest.mark.xfail(reason="runtime presumes a world for the nodenet, which is not needed")
-def test_get_available_datasources(app, test_nodenet):
+def test_get_available_datasources(app, test_nodenet, test_world):
     app.set_auth()
     # set worldadapter
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Braitenberg"))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
     response = app.get_json('/rpc/get_available_datasources(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert 'brightness_l' in response.json_body['data']
     assert 'brightness_l' in response.json_body['data']
 
 
-@pytest.mark.xfail(reason="runtime presumes a world for the nodenet, which is not needed")
-def test_get_available_datatargets(app, test_nodenet):
+def test_get_available_datatargets(app, test_nodenet, test_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Braitenberg"))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
     response = app.get_json('/rpc/get_available_datatargets(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert 'engine_l' in response.json_body['data']

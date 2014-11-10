@@ -332,11 +332,11 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         return data
 
 
-def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):
+def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_uid=None, uid=None):
     """Creates a new node net manager and registers it.
 
     Arguments:
-        worldadapter: the type of the world adapter supported by this nodenet. Also used to determine the set of
+        worldadapter(optional): the type of the world adapter supported by this nodenet. Also used to determine the set of
             gate types supported for directional activation spreading of this nodenet, and the initial node types
         owner (optional): the creator of this nodenet
         world_uid (optional): if submitted, attempts to bind the nodenet to this world

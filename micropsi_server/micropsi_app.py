@@ -705,11 +705,12 @@ def new_nodenet(name, owner=None, template=None, worldadapter=None, world_uid=No
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
         name,
-        worldadapter,
+        worldadapter=worldadapter,
         template=template,
         owner=owner,
         world_uid=world_uid,
         uid=uid)
+
 
 @rpc("generate_uid")
 def generate_uid():

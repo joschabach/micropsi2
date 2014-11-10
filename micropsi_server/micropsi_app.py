@@ -842,11 +842,7 @@ def add_worldobject(world_uid, type, position, orientation=0.0, name="", paramet
 
 @rpc("delete_worldobject")
 def delete_worldobject(world_uid, object_uid):
-    result = runtime.delete_worldobject(world_uid, object_uid)
-    if result:
-        return dict(status="success")
-    else:
-        return dict(status="error")
+    return runtime.delete_worldobject(world_uid, object_uid)
 
 
 @rpc("set_worldobject_properties")
@@ -866,7 +862,9 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
 
 
 @rpc("new_world", permission_required="manage worlds")
-def new_world(world_name, world_type, owner=""):
+def new_world(world_name, world_type, owner=None):
+    if owner is None:
+        owner, _, _ = get_request_data()
     return runtime.new_world(world_name, world_type, owner)
 
 

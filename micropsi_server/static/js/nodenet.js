@@ -2539,7 +2539,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     api.call("add_node", {
         nodenet_uid: currentNodenet,
         type: type,
-        pos: [x,y],
+        position: [x,y],
         nodespace: currentNodeSpace,
         uid: uid,
         name: name,
@@ -2862,7 +2862,7 @@ function moveNode(nodeUid, x, y){
     api.call("set_node_position", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
-        pos: [x,y]});
+        position: [x,y]});
 }
 
 function handleEditNode(event){

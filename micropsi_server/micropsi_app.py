@@ -998,8 +998,8 @@ def get_node(nodenet_uid, node_uid):
 
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(nodenet_uid, type, pos, nodespace, state=None, uid=None, name="", parameters={}):
-    return runtime.add_node(nodenet_uid, type, pos, nodespace, state=state, uid=uid, name=name, parameters=parameters)
+def add_node(nodenet_uid, type, position, nodespace, state=None, uid=None, name="", parameters={}):
+    return runtime.add_node(nodenet_uid, type, position, nodespace, state=state, uid=uid, name=name, parameters=parameters)
 
 
 @rpc("clone_nodes", permission_required="manage nodenets")
@@ -1008,8 +1008,8 @@ def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset
 
 
 @rpc("set_node_position", permission_required="manage nodenets")
-def set_node_position(nodenet_uid, node_uid, pos):
-    return runtime.set_node_position(nodenet_uid, node_uid, pos)
+def set_node_position(nodenet_uid, node_uid, position):
+    return runtime.set_node_position(nodenet_uid, node_uid, position)
 
 
 @rpc("set_node_name", permission_required="manage nodenets")

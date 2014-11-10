@@ -655,7 +655,7 @@ def test_add_node(app, test_nodenet):
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Register',
-        'pos': [23, 42],
+        'position': [23, 42],
         'nodespace': "Root",
         'uid': "N2",
         'name': 'N2'
@@ -682,13 +682,12 @@ def test_clone_nodes(app, test_nodenet):
     assert link['target_node_uid'] == node['uid']
 
 
-# TODO: pos vs position
 def test_set_node_position(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_node_position', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'pos': [42, 23]
+        'position': [42, 23]
     })
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
@@ -774,7 +773,7 @@ def test_set_node_parameters(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Activator',
         'nodespace': 'Root',
-        'pos': [23, 42],
+        'position': [23, 42],
         'uid': "A"
     })
     response = app.post_json('/rpc/set_node_parameters', params={
@@ -866,7 +865,7 @@ def test_bind_datasource_to_sensor(app, test_nodenet):
     app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Sensor',
-        'pos': [23, 42],
+        'position': [23, 42],
         'nodespace': 'Root',
         'uid': 'S'
     })
@@ -885,7 +884,7 @@ def test_bind_datatarget_to_actor(app, test_nodenet):
     app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Actor',
-        'pos': [23, 42],
+        'position': [23, 42],
         'nodespace': 'Root',
         'uid': 'A'
     })

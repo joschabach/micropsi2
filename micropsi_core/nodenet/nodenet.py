@@ -277,7 +277,7 @@ class Nodenet(object):
             'name': self.name,
             'max_coords': self.max_coords,
             'is_active': self.is_active,
-            'step': self.current_step,
+            'current_step': self.current_step,
             'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
                            if self.state['nodespaces'][i]["parent_nodespace"] == nodespace},
             'world': self.state["world"],

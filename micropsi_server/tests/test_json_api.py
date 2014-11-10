@@ -147,11 +147,11 @@ def test_stop_nodenetrunner(app, test_nodenet):
 def test_step_nodenet(app, test_nodenet):
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
-    assert response.json_body['data']['step'] == 0
+    assert response.json_body['data']['current_step'] == 0
     response = app.get_json('/rpc/step_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
-    assert response.json_body['data']['step'] == 1
+    assert response.json_body['data']['current_step'] == 1
 
 
 def test_revert_nodenet(app, test_nodenet, test_world):
@@ -439,7 +439,6 @@ def test_stop_worldrunner(app, test_world):
     assert not response.json_body['data']
 
 
-# TODO: current_step in nodenet vs step in world
 def test_step_world(app, test_world):
     app.set_auth()
     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
@@ -497,7 +496,7 @@ def test_export_world(app, test_world):
     assert export_data['objects'] == {}
     assert export_data['agents'] == {}
     assert export_data['owner'] == 'Pytest User'
-    assert export_data['step'] == 0  # step? current step? TODO
+    assert export_data['step'] == 0
     assert export_data['world_type'] == 'Island'
 
 

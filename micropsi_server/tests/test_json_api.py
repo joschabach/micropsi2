@@ -953,9 +953,26 @@ def test_delete_link(app, test_nodenet):
     data['links'] == {}
 
 
-def test_reload_native_modules(app):
+def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
+    app.set_auth()
+    # create a native module:
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t"}}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
     assert_success(response)
+    response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']['Testnode']
+    assert data['nodefunction_name'] == "testnodefunc"
+    assert data['gatetypes'] == ['gen', 'foo', 'bar']
+    assert data['slottypes'] == ['gen', 'foo', 'bar']
+    assert data['name'] == 'Testnode'
 
 
 def test_user_prompt_response(app, test_nodenet):

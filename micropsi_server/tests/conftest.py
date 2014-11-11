@@ -8,7 +8,6 @@ from webtest import TestApp
 import configuration
 configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
 
-
 from micropsi_core import runtime as micropsi
 
 try:
@@ -31,6 +30,16 @@ nn_uid = 'Testnet'
 logging.getLogger('system').setLevel(logging.WARNING)
 logging.getLogger('world').setLevel(logging.WARNING)
 logging.getLogger('nodenet').setLevel(logging.WARNING)
+
+
+@pytest.fixture
+def nodetype_def():
+    return os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json')
+
+
+@pytest.fixture
+def nodefunc_def():
+    return os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
 
 
 def set_logging_levels():

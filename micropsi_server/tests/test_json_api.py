@@ -1019,6 +1019,13 @@ def test_get_monitoring_info(app, test_nodenet):
     assert response.json_body['data']['logs']['logs'] == []
 
 
+def test_400(app):
+    app.set_auth()
+    response = app.get_json('/rpc/save_nodenet("foobar")', expect_errors=True)
+    assert_failure(response)
+    assert "Malformed arguments" in response.json_body['data']
+
+
 def test_401(app, test_nodenet):
     app.unset_auth()
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet, expect_errors=True)

@@ -49,7 +49,8 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
         def this_is_my_method(arg1, arg2):
             pass
 
-    This will either return a JSON object with the result, or {"Error": <error message>}
+    This will return a JSON object, containing `status` and `data`
+    status will either be "success" or "error", and data can be either empty, contain the requested information, or the error message, if status==error
     The decorated function can optionally import the following parameters (by specifying them in its signature):
         argument: the original argument string
         token: the current session token
@@ -69,7 +70,6 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
         def _wrapper(argument=None):
             response.content_type = 'application/json; charset=utf8'
             kwargs = {}
-
             if argument:
                 try:
                     # split at commas and correct illegaly split lists:
@@ -81,9 +81,9 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                         else:
                             kwargs.append(val)
                     kwargs = dict((n.strip(), json.loads(v)) for n, v in (item.split('=') for item in kwargs))
-                except ValueError as err:
+                except (IndexError, ValueError) as err:
                     response.status = 400
-                    return {'status': 'error', 'data': "Invalid arguments for remote procedure call: %s" % str(err)}
+                    return {'status': 'error', 'data': "Malformed arguments for remote procedure call: %s" % str(err)}
             else:
                 try:
                     kwargs = request.json
@@ -113,9 +113,8 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                     })
                 except Exception as err:
                     response.status = 500
-                    response.content_type = 'application/json'
                     import traceback
-                    return json.dumps({'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()})
+                    return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
 
                 # except TypeError as err:
                 #     response.status = 400

@@ -2,4 +2,5 @@ mock==1.0.1
 py==1.4.20
 pycrypto==2.6.1
 pytest==2.5.2
+pytest-cov==1.8.0
 WebTest==2.0.16

@@ -1,0 +1,4 @@
+[run]
+omit =
+    */tests/*
+    micropsi_server/bottle.py

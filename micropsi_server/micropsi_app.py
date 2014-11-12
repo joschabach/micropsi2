@@ -184,6 +184,7 @@ def document(filepath):
         navi=minidoc.get_navigation(),
         content=minidoc.get_documentation_body(filepath), title="Minidoc: " + filepath)
 
+
 @micropsi_app.route("/world")
 def world():
     user_id, permissions, token = get_request_data()
@@ -192,11 +193,23 @@ def world():
 
 @micropsi_app.error(404)
 def error_page(error):
+    if request.is_xhr:
+        response.content_type = "application/json"
+        return json.dumps({
+            "status": "error",
+            "data": "Function not found"
+        })
     return template("error.tpl", error=error, msg="Page not found.", img="/static/img/brazil.gif")
 
 
 @micropsi_app.error(405)
 def error_page_405(error):
+    if request.is_xhr:
+        response.content_type = "application/json"
+        return json.dumps({
+            "status": "error",
+            "data": "Method not allowed"
+        })
     return template("error.tpl", error=error, msg="Method not allowed.", img="/static/img/strangelove.gif")
 
 
@@ -792,13 +805,13 @@ def export_nodenet_rpc(nodenet_uid):
 
 
 @rpc("import_nodenet", permission_required="manage nodenets")
-def import_nodenet(nodenet_data):
+def import_nodenet_rpc(nodenet_data):
     user_id, _, _ = get_request_data()
     return True, runtime.import_nodenet(nodenet_data, user_id)
 
 
 @rpc("merge_nodenet", permission_required="manage nodenets")
-def merge_nodenet(nodenet_uid, nodenet_data):
+def merge_nodenet_rpc(nodenet_uid, nodenet_data):
     return runtime.merge_nodenet(nodenet_uid, nodenet_data)
 
 

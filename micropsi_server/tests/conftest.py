@@ -56,6 +56,7 @@ class MicropsiTestApp(TestApp):
 
     def unset_auth(self):
         self.auth = None
+        self.reset()
 
     def get_json(self, *args, **kwargs):
         headers = kwargs.setdefault("headers", {})

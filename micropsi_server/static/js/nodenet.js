@@ -1685,6 +1685,10 @@ var clickIndex = -1;
 var selectionStart = null;
 var dragMultiples = false;
 
+function isRightClick(event){
+    return event.modifiers.control || event.event.button == 2
+}
+
 function onMouseDown(event) {
     path = hoverPath = null;
     var p = event.point;
@@ -1709,13 +1713,13 @@ function onMouseDown(event) {
                 nodeLayer.addChild(path); // bring to front
                 clickedSelected = nodeUid in selection;
                 if ( !clickedSelected && !event.modifiers.shift &&
-                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) {
+                     !event.modifiers.command && !isRightClick(event)) {
                          deselectAll();
                 }
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
                 }
-                else if(clickedSelected && Object.keys(selection).length > 1 && event.event.button == 2){
+                else if(clickedSelected && Object.keys(selection).length > 1 && isRightClick(event)){
                     openMultipleNodesContextMenu(event.event);
                     return;
                 }
@@ -1732,7 +1736,7 @@ function onMouseDown(event) {
                 if ((i = testSlots(node, p)) >-1) {
                     clickType = "slot";
                     clickIndex = i;
-                    if (event.modifiers.control || event.event.button == 2){
+                    if (isRightClick(event)){
                         var monitor = getMonitor(node, node.slotIndexes[clickIndex], 'slot');
                         $('#slot_menu [data-add-monitor]').toggle(monitor == false);
                         $('#slot_menu [data-remove-monitor]').toggle(monitor != false);
@@ -1749,7 +1753,7 @@ function onMouseDown(event) {
                     deselectGate();
                     selectGate(node, gate);
                     showGateForm(node, gate);
-                    if (event.modifiers.control || event.event.button == 2) {
+                    if (isRightClick(event)) {
                         deselectOtherNodes(node.uid);
                         var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
                         $('#gate_menu [data-add-monitor]').toggle(monitor == false);
@@ -1759,7 +1763,7 @@ function onMouseDown(event) {
                     return;
                 }
                 clickType = "node";
-                if (event.modifiers.control || event.event.button == 2) {
+                if (isRightClick(event)) {
                     deselectOtherNodes(nodeUid);
                     openNodeContextMenu("#node_menu", event.event, nodeUid);
                     return;
@@ -1793,7 +1797,7 @@ function onMouseDown(event) {
         selectionStart = p;
         selectionRectangle.x = p.x;
         selectionRectangle.y = p.y;
-        if (event.modifiers.control || event.event.button == 2) openContextMenu("#create_node_menu", event.event);
+        if (isRightClick(event)) openContextMenu("#create_node_menu", event.event);
         showDefaultForm();
     }
     else {
@@ -1808,7 +1812,7 @@ function onMouseDown(event) {
                 else selectLink(path.name);
                 clickType = "link";
                 clickOriginUid = path.name;
-                if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
+                if (isRightClick(event)) openContextMenu("#link_menu", event.event);
                 showLinkForm(path.name);
             }
         }

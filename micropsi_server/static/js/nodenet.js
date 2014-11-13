@@ -1685,6 +1685,10 @@ var clickIndex = -1;
 var selectionStart = null;
 var dragMultiples = false;
 
+function isRightClick(event){
+    return event.modifiers.control || event.event.button == 2
+}
+
 function onMouseDown(event) {
     path = hoverPath = null;
     var p = event.point;
@@ -1709,13 +1713,13 @@ function onMouseDown(event) {
                 nodeLayer.addChild(path); // bring to front
                 clickedSelected = nodeUid in selection;
                 if ( !clickedSelected && !event.modifiers.shift &&
-                     !event.modifiers.control && !event.modifiers.command && event.event.button != 2) {
+                     !event.modifiers.command && !isRightClick(event)) {
                          deselectAll();
                 }
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
                 }
-                else if(clickedSelected && Object.keys(selection).length > 1 && event.event.button == 2){
+                else if(clickedSelected && Object.keys(selection).length > 1 && isRightClick(event)){
                     openMultipleNodesContextMenu(event.event);
                     return;
                 }
@@ -1732,7 +1736,7 @@ function onMouseDown(event) {
                 if ((i = testSlots(node, p)) >-1) {
                     clickType = "slot";
                     clickIndex = i;
-                    if (event.modifiers.control || event.event.button == 2){
+                    if (isRightClick(event)){
                         var monitor = getMonitor(node, node.slotIndexes[clickIndex], 'slot');
                         $('#slot_menu [data-add-monitor]').toggle(monitor == false);
                         $('#slot_menu [data-remove-monitor]').toggle(monitor != false);
@@ -1749,7 +1753,7 @@ function onMouseDown(event) {
                     deselectGate();
                     selectGate(node, gate);
                     showGateForm(node, gate);
-                    if (event.modifiers.control || event.event.button == 2) {
+                    if (isRightClick(event)) {
                         deselectOtherNodes(node.uid);
                         var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
                         $('#gate_menu [data-add-monitor]').toggle(monitor == false);
@@ -1759,7 +1763,7 @@ function onMouseDown(event) {
                     return;
                 }
                 clickType = "node";
-                if (event.modifiers.control || event.event.button == 2) {
+                if (isRightClick(event)) {
                     deselectOtherNodes(nodeUid);
                     openNodeContextMenu("#node_menu", event.event, nodeUid);
                     return;
@@ -1793,7 +1797,7 @@ function onMouseDown(event) {
         selectionStart = p;
         selectionRectangle.x = p.x;
         selectionRectangle.y = p.y;
-        if (event.modifiers.control || event.event.button == 2) openContextMenu("#create_node_menu", event.event);
+        if (isRightClick(event)) openContextMenu("#create_node_menu", event.event);
         showDefaultForm();
     }
     else {
@@ -1808,7 +1812,7 @@ function onMouseDown(event) {
                 else selectLink(path.name);
                 clickType = "link";
                 clickOriginUid = path.name;
-                if (event.modifiers.control || event.event.button == 2) openContextMenu("#link_menu", event.event);
+                if (isRightClick(event)) openContextMenu("#link_menu", event.event);
                 showLinkForm(path.name);
             }
         }
@@ -3155,34 +3159,38 @@ function followlink(event){
 function follownode(event){
     event.preventDefault();
     var id = $(event.target).attr('data');
+    scrollToNode(nodes[id], true);
+}
+
+function scrollToNode(node, doShowNodeForm){
     var width = canvas_container.width();
     var height = canvas_container.height();
-    var x = Math.max(0, nodes[id].x*viewProperties.zoomFactor-width/2);
-    var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
-    if(isOutsideNodespace(nodes[id])){
-        refreshNodespace(nodes[id].parent, {
+    var x = Math.max(0, node.x*viewProperties.zoomFactor-width/2);
+    var y = Math.max(0, node.y*viewProperties.zoomFactor-height/2);
+    if(isOutsideNodespace(node)){
+        refreshNodespace(node.parent, {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
         }, -1, function(){
             deselectAll();
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);
-            selectNode(id);
+            selectNode(node.uid);
             view.draw();
-            showNodeForm(id);
+            if(doShowNodeForm) showNodeForm(id);
         });
     } else {
         deselectAll();
-        selectNode(id);
-        if(nodes[id].y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
-            nodes[id].y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
-            nodes[id].x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
-            nodes[id].x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
+        selectNode(node.uid);
+        if(node.y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
+            node.y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
+            node.x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
+            node.x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);
         }
         view.draw();
-        showNodeForm(id);
+        if(doShowNodeForm) showNodeForm(node.uid);
     }
 }
 
@@ -3205,6 +3213,7 @@ function followgate(event){
     } else {
         selectNode(node.uid);
     }
+    scrollToNode(node, false)
     showGateForm(node, gate);
 }
 

@@ -3159,34 +3159,38 @@ function followlink(event){
 function follownode(event){
     event.preventDefault();
     var id = $(event.target).attr('data');
+    scrollToNode(nodes[id], true);
+}
+
+function scrollToNode(node, doShowNodeForm){
     var width = canvas_container.width();
     var height = canvas_container.height();
-    var x = Math.max(0, nodes[id].x*viewProperties.zoomFactor-width/2);
-    var y = Math.max(0, nodes[id].y*viewProperties.zoomFactor-height/2);
-    if(isOutsideNodespace(nodes[id])){
-        refreshNodespace(nodes[id].parent, {
+    var x = Math.max(0, node.x*viewProperties.zoomFactor-width/2);
+    var y = Math.max(0, node.y*viewProperties.zoomFactor-height/2);
+    if(isOutsideNodespace(node)){
+        refreshNodespace(node.parent, {
             x: [0, canvas_container.width() * 2],
             y: [0, canvas_container.height() * 2]
         }, -1, function(){
             deselectAll();
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);
-            selectNode(id);
+            selectNode(node.uid);
             view.draw();
-            showNodeForm(id);
+            if(doShowNodeForm) showNodeForm(id);
         });
     } else {
         deselectAll();
-        selectNode(id);
-        if(nodes[id].y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
-            nodes[id].y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
-            nodes[id].x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
-            nodes[id].x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
+        selectNode(node.uid);
+        if(node.y*viewProperties.zoomFactor < canvas_container.scrollTop() ||
+            node.y*viewProperties.zoomFactor > canvas_container.scrollTop() + height ||
+            node.x*viewProperties.zoomFactor < canvas_container.scrollLeft() ||
+            node.x*viewProperties.zoomFactor > canvas_container.scrollLeft() + width) {
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);
         }
         view.draw();
-        showNodeForm(id);
+        if(doShowNodeForm) showNodeForm(node.uid);
     }
 }
 
@@ -3209,6 +3213,7 @@ function followgate(event){
     } else {
         selectNode(node.uid);
     }
+    scrollToNode(node, false)
     showGateForm(node, gate);
 }
 

@@ -277,7 +277,7 @@ class Nodenet(object):
             'name': self.name,
             'max_coords': self.max_coords,
             'is_active': self.is_active,
-            'step': self.current_step,
+            'current_step': self.current_step,
             'nodespaces': {i: self.state['nodespaces'][i] for i in self.state['nodespaces']
                            if self.state['nodespaces'][i]["parent_nodespace"] == nodespace},
             'world': self.state["world"],
@@ -382,15 +382,6 @@ class Nodenet(object):
 
         self.nodespaces = {}
         Nodespace(self, None, (0, 0), "Root", "Root")
-
-    # add functions for exporting and importing node nets
-    def export_data(self):
-        """serializes and returns the nodenet state for export to a end user"""
-        pass
-
-    def import_data(self, nodenet_data):
-        """imports nodenet state as the current node net"""
-        pass
 
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -562,7 +553,7 @@ class Nodenet(object):
                 for uid, link in gate.outgoing.items():
                     for sheaf in gate.sheaves:
                         if link.target_node.type == "Actor":
-                            shef = "default"
+                            sheaf = "default"
 
                         if sheaf in link.target_slot.sheaves:
                             link.target_slot.sheaves[sheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?

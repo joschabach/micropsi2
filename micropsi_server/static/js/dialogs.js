@@ -121,7 +121,7 @@ var dialogs = {
 
 var api = {
 
-    call: function(functionname, params, success, error, method){
+    call: function(functionname, params, success_cb, error_cb, method){
         var url = '/rpc/'+functionname;
         if(method != "post"){
             args = '';
@@ -136,16 +136,16 @@ var api = {
             type: method || "get",
             processData: (method == "get"),
             contentType: "application/json",
-            success: function(data){
-                if(data.Error){
-                    if(error) error(data);
-                    else api.defaultErrorCallback(data);
+            success: function(response){
+                if(response.status == 'success'){
+                    if(success_cb) success_cb(response.data);
+                    else api.defaultSuccessCallback(response.data);
                 } else{
-                    if(success) success(data);
-                    else api.defaultSuccessCallback(data);
+                    if(error_cb) error_cb(response);
+                    else api.defaultErrorCallback(response);
                 }
             },
-            error: error || api.defaultErrorCallback
+            error: error_cb || api.defaultErrorCallback
         });
     },
     defaultSuccessCallback: function (data){
@@ -158,10 +158,10 @@ var api = {
         } else {
             try{
                 error = JSON.parse(data.responseText);
-                var errtext = $('<div/>').text(error.Error).html();
+                var errtext = $('<div/>').text(error.data).html();
                 msg += '<strong>' + errtext + '</strong>';
-                if(error.Traceback){
-                    msg += '<p><pre class="exception">'+error.Traceback+'</pre></p>';
+                if(error.traceback){
+                    msg += '<p><pre class="exception">'+error.traceback+'</pre></p>';
                 }
             } catch (err){}
             if(!msg){

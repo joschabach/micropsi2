@@ -69,7 +69,7 @@ def get_world_objects(world_uid, type=None):
 
 
 def delete_worldobject(world_uid, object_uid):
-    return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid);
+    return micropsi_core.runtime.worlds[world_uid].delete_object(object_uid)
 
 
 def add_worldobject(world_uid, type, position, orientation=0.0, name="", parameters=None, uid=None):
@@ -77,8 +77,8 @@ def add_worldobject(world_uid, type, position, orientation=0.0, name="", paramet
                                                               parameters=parameters, uid=uid)
 
 
-def set_worldobject_properties(world_uid, uid, type=None, position=None, orientation=None, name=None, parameters=None):
-    return micropsi_core.runtime.worlds[world_uid].set_object_properties(uid, type, position, orientation, name,
+def set_worldobject_properties(world_uid, uid, position=None, orientation=None, name=None, parameters=None):
+    return micropsi_core.runtime.worlds[world_uid].set_object_properties(uid, position, orientation, name,
                                                                          parameters)
 
 
@@ -86,7 +86,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner=""):
+def new_world(world_name, world_type, owner="", uid=None):
     """Creates a new world  and registers it.
 
     Arguments:
@@ -98,7 +98,8 @@ def new_world(world_name, world_type, owner=""):
         world_uid if successful,
         None if failure
     """
-    uid = tools.generate_uid()
+    if uid is None:
+        uid = tools.generate_uid()
 
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
@@ -139,9 +140,13 @@ def get_world_view(world_uid, step):
     return {}
 
 
-def set_world_properties(world_uid, world_name=None, world_type=None, owner=None):
+def set_world_properties(world_uid, world_name=None, owner=None):
     """Sets the supplied parameters (and only those) for the world with the given uid."""
-    pass
+    if world_uid not in micropsi_core.runtime.worlds:
+        raise KeyError("World not found")
+    micropsi_core.runtime.worlds[world_uid].name = world_name
+    micropsi_core.runtime.worlds[world_uid].owner = owner
+    return True
 
 
 def start_worldrunner(world_uid):
@@ -214,10 +219,13 @@ def export_world(world_uid):
 
 
 def import_world(worlddata, owner=None):
-    """Imports a JSON string with world data. May overwrite an existing world."""
+    """Imports a JSON string with world data. May not overwrite an existing world."""
     data = json.loads(worlddata)
     if not 'uid' in data:
         data['uid'] = tools.generate_uid()
+    else:
+        if data['uid'] in micropsi_core.runtime.worlds:
+            raise RuntimeError("A world with this ID already exists.")
     if owner is not None:
         data['owner'] = owner
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')

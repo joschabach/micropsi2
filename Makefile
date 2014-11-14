@@ -17,7 +17,9 @@ clean:
 	rm -rf include lib .Python bin
 
 tests:
-	bin/py.test micropsi_server
-	bin/py.test micropsi_core
+	bin/py.test micropsi_core micropsi_server
+
+test-coverage:
+	bin/py.test micropsi_core micropsi_server --cov micropsi_core --cov micropsi_server --cov-report html
 
 .PHONY: run

@@ -51,7 +51,10 @@ def test_world(request):
 
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
-            micropsi.delete_world(world_uid)
+            try:
+                micropsi.delete_world(world_uid)
+            except:
+                pass
     request.addfinalizer(fin)
     return world_uid
 
@@ -68,7 +71,10 @@ def test_nodenet(request):
 
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
-            micropsi.delete_nodenet(nn_uid)
+            try:
+                micropsi.delete_nodenet(nn_uid)
+            except:
+                pass
     request.addfinalizer(fin)
     return nn_uid
 
@@ -89,8 +95,16 @@ def fixed_nodenet(request, test_world):
 
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
-            micropsi.delete_nodenet(uid)
+            try:
+                micropsi.delete_nodenet(uid)
+            except:
+                pass
     request.addfinalizer(fin)
     return uid
 
-#test_nodenet(micropsi())
+
+def pytest_runtest_teardown(item, nextitem):
+    if nextitem is None:
+        print("DELETING ALL STUFF")
+        import shutil
+        shutil.rmtree(configuration.RESOURCE_PATH)

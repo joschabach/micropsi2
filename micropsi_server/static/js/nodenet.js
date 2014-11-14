@@ -271,7 +271,7 @@ function setCurrentNodenet(uid, nodespace){
             } else {
                 currentNodenet = null;
                 $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                dialogs.notification(data.Error, "Info");
+                dialogs.notification(data.data, "Info");
             }
         });
 }
@@ -2543,7 +2543,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     api.call("add_node", {
         nodenet_uid: currentNodenet,
         type: type,
-        pos: [x,y],
+        position: [x,y],
         nodespace: currentNodeSpace,
         uid: uid,
         name: name,
@@ -2866,7 +2866,7 @@ function moveNode(nodeUid, x, y){
     api.call("set_node_position", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
-        pos: [x,y]});
+        position: [x,y]});
 }
 
 function handleEditNode(event){

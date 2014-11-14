@@ -66,12 +66,13 @@ $(function(){
                 pollMonitoringData();
             },
             function(data) {
+
                 if(data.status == 500){
                     api.defaultErrorCallback(data);
                 } else {
                     currentNodenet = null;
                     $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                    dialogs.notification(data.Error, "Info");
+                    dialogs.notification(data.data, "Info");
                 }
             });
         }

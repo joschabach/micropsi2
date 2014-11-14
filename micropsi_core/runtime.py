@@ -332,11 +332,11 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         return data
 
 
-def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=None, uid=None):
+def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_uid=None, uid=None):
     """Creates a new node net manager and registers it.
 
     Arguments:
-        worldadapter: the type of the world adapter supported by this nodenet. Also used to determine the set of
+        worldadapter(optional): the type of the world adapter supported by this nodenet. Also used to determine the set of
             gate types supported for directional activation spreading of this nodenet, and the initial node types
         owner (optional): the creator of this nodenet
         world_uid (optional): if submitted, attempts to bind the nodenet to this world
@@ -372,7 +372,7 @@ def new_nodenet(nodenet_name, worldadapter, template=None, owner="", world_uid=N
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(data, sort_keys=True, indent=4))
     fp.close()
-    #load_nodenet(data['uid'])
+    load_nodenet(data['uid'])
     return True, data['uid']
 
 
@@ -502,6 +502,9 @@ def import_nodenet(string, owner=None):
     import_data = json.loads(string)
     if 'uid' not in import_data:
         import_data['uid'] = tools.generate_uid()
+    else:
+        if import_data['uid'] in nodenets:
+            raise RuntimeError("A nodenet with this ID already exists.")
     if 'owner':
         import_data['owner'] = owner
     # assert import_data['world'] in worlds
@@ -510,7 +513,8 @@ def import_nodenet(string, owner=None):
         fp.write(json.dumps(import_data))
     fp.close()
     nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
-    return True
+    load_nodenet(import_data['uid'])
+    return import_data['uid']
 
 
 def merge_nodenet(nodenet_uid, string):
@@ -621,7 +625,7 @@ def get_node(nodenet_uid, node_uid):
             parameters (optional): a dict of arbitrary parameters that can make nodes stateful
         }
      """
-    return nodenets[nodenet_uid].nodes[node_uid]
+    return nodenets[nodenet_uid].nodes[node_uid].data
 
 
 def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
@@ -787,37 +791,6 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return True
 
 
-def add_node_type(nodenet_uid, node_type, slots=None, gates=None, node_function=None, parameters=None):
-    """Adds or modifies a native module.
-
-    Arguments:
-        nodenet_uid: the nodenet into which the native module will be saved
-        node_type: the identifier of the native module. If it already exists for another user, the new definition
-            will hide the old one from view.
-        node_function (optional): the program code of the native module. The native module is defined as a
-            python function that takes the current node, the nodenet manager and the node parameters as arguments.
-            The default node function takes the slot activations and calls all gatefunctions with
-            it as an argument.
-        slots (optional): the list of slot types for this node type
-        gates (optional): the list of gate types for this node type
-        parameters (optional): a dict of arbitrary parameters that can be used by the nodefunction to store states
-    """
-    nodenet = nodenets[nodenet_uid]
-    nodenet.native_modules[node_type] = Nodetype(node_type, nodenet, slots, gates, [], parameters,
-        nodefunction_definition=node_function)
-    native_modules[node_type] = nodenet.native_modules[node_type].state.copy()
-    return True
-
-
-def delete_node_type(nodenet_uid, node_type):
-    """Remove the node type from the current nodenet definition, if it is part of it."""
-    # try:
-    #     del nodenets[nodenet_uid].state['nodetypes'][node_type]
-    #     return True
-    # except KeyError:
-    return False
-
-
 def get_slot_types(nodenet_uid, node_type):
     """Returns the list of slot types for the given node type."""
     return nodenets[nodenet_uid].get_nodetype(node_type).slottypes
@@ -833,7 +806,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
     """
     return nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(
-        gate_type)
+        gate_type, '')
 
 
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
@@ -923,7 +896,7 @@ def get_link(nodenet_uid, link_uid):
             certainty: probabilistic weight of the link (float value),
         }
     """
-    return nodenets[nodenet_uid].links[link_uid]
+    return nodenets[nodenet_uid].links[link_uid].data
 
 
 def delete_link(nodenet_uid, link_uid):

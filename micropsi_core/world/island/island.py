@@ -46,7 +46,7 @@ class Island(World):
     def __init__(self, filename, world_type="Island", name="", owner="", uid=None, version=1):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.load_groundmap()
-        self.current_step = 0
+        # self.current_step = 0
         self.data['assets'] = self.assets
 
     def load_groundmap(self):

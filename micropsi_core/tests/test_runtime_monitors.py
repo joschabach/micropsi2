@@ -8,65 +8,63 @@ from micropsi_core import runtime as micropsi
 
 
 def test_add_gate_monitor(fixed_nodenet):
-    data = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
-    assert data['uid'] is not None
-    assert data['node_name'] == 'A1'
-    assert data['node_uid'] == 'A1'
-    assert data['target'] == 'gen'
-    assert data['type'] == 'gate'
-    assert data['uid'] in micropsi.nodenets[fixed_nodenet].monitors
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    monitor = micropsi.nodenets[fixed_nodenet].monitors[uid]
+    assert monitor.node_name == 'A1'
+    assert monitor.node_uid == 'A1'
+    assert monitor.target == 'gen'
+    assert monitor.type == 'gate'
 
 
 def test_add_slot_monitor(fixed_nodenet):
-    data = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
-    assert data['uid'] is not None
-    assert data['node_name'] == 'A1'
-    assert data['node_uid'] == 'A1'
-    assert data['target'] == 'gen'
-    assert data['type'] == 'slot'
-    assert data['uid'] in micropsi.nodenets[fixed_nodenet].monitors
+    uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
+    monitor = micropsi.nodenets[fixed_nodenet].monitors[uid]
+    assert monitor.node_name == 'A1'
+    assert monitor.node_uid == 'A1'
+    assert monitor.target == 'gen'
+    assert monitor.type == 'slot'
 
 
 def test_remove_monitor(fixed_nodenet):
-    data = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
-    assert data['uid'] in micropsi.nodenets[fixed_nodenet].monitors
-    micropsi.remove_monitor(fixed_nodenet, data['uid'])
-    assert data['uid'] not in micropsi.nodenets[fixed_nodenet].monitors
+    uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
+    assert uid in micropsi.nodenets[fixed_nodenet].monitors
+    micropsi.remove_monitor(fixed_nodenet, uid)
+    assert uid not in micropsi.nodenets[fixed_nodenet].monitors
 
 
 def test_get_monitor_data(fixed_nodenet):
-    monitor = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.get_monitor_data(fixed_nodenet)
     assert data['current_step'] == 1
-    assert data['monitors'][monitor['uid']]['node_name'] == 'A1'
-    values = data['monitors'][monitor['uid']]['values']
+    assert data['monitors'][uid]['node_name'] == 'A1'
+    values = data['monitors'][uid]['values']
     assert len(values.keys()) == 1
 
 
 def test_export_monitor_data(fixed_nodenet):
-    monitor1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
-    monitor2 = micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
+    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid2 = micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.export_monitor_data(fixed_nodenet)
-    assert monitor1['uid'] in data
-    assert 'values' in data[monitor1['uid']]
-    assert monitor2['uid'] in data
+    assert uid1 in data
+    assert 'values' in data[uid1]
+    assert uid2 in data
 
 
 def test_export_monitor_data_with_id(fixed_nodenet):
-    monitor1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
     micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
-    data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=monitor1['uid'])
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid1)
     assert data['node_name'] == 'A1'
     assert 'values' in data
 
 
 def test_clear_monitor(fixed_nodenet):
-    monitor = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
-    micropsi.clear_monitor(fixed_nodenet, monitor['uid'])
+    micropsi.clear_monitor(fixed_nodenet, uid)
     data = micropsi.get_monitor_data(fixed_nodenet)
-    values = data['monitors'][monitor['uid']]['values']
+    values = data['monitors'][uid]['values']
     assert len(values.keys()) == 0

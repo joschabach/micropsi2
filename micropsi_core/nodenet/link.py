@@ -21,58 +21,17 @@ class Link(object):
     """
 
     @property
-    def uid(self):
-        return self.data.get("uid")
-
-    @property
-    def weight(self):
-        return self.data.get("weight")
-
-    @weight.setter
-    def weight(self, value):
-        self.data["weight"] = value
-
-    @property
-    def certainty(self):
-        return self.data.get("certainty")
-
-    @certainty.setter
-    def certainty(self, value):
-        self.data["certainty"] = value
-
-    @property
-    def source_node(self):
-        return self.source_node_pointer
-
-    @source_node.setter
-    def source_node(self, node):
-        self.data["source_node_uid"] = node.uid
-        self.source_node_pointer = node
-
-    @property
-    def source_gate(self):
-        return self.source_node_pointer.gates[self.data["source_gate_name"]]
-
-    @source_gate.setter
-    def source_gate(self, gate):
-        self.data["source_gate_name"] = gate.type
-
-    @property
-    def target_node(self):
-        return self.target_node_pointer
-
-    @target_node.setter
-    def target_node(self, node):
-        self.data["target_node_uid"] = node.uid
-        self.target_node_pointer = node
-
-    @property
-    def target_slot(self):
-        return self.target_node_pointer.slots[self.data["target_slot_name"]]
-
-    @target_slot.setter
-    def target_slot(self, slot):
-        self.data["target_slot_name"] = slot.type
+    def data(self):
+        data = {
+            "uid": self.uid,
+            "weight": self.weight,
+            "certainty": self.weight,
+            "source_gate_name": self.source_gate.type,
+            "source_node_uid": self.source_node.uid,
+            "target_slot_name": self.target_slot.type,
+            "target_node_uid": self.target_node.uid,
+        }
+        return data
 
     def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1, uid=None):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot.
@@ -83,15 +42,16 @@ class Link(object):
         """
 
         uid = uid or micropsi_core.tools.generate_uid()
+        self.uid = uid
+        self.weight = weight
+        self.certainty = certainty
         self.nodenet = source_node.nodenet
-        self.source_node_pointer = source_node
-        self.target_node_pointer = target_node
+        self.source_node = source_node
+        self.target_node = target_node
+        self.source_gate = source_node.get_gate(source_gate_name)
+        self.target_slot = target_node.get_slot(target_slot_name)
         if not uid in self.nodenet.state["links"]:
             self.nodenet.state["links"][uid] = {}
-        self.data = source_node.nodenet.state["links"][uid]
-        self.data["uid"] = uid
-        self.data["source_node_uid"] = source_node.uid
-        self.data["target_node_uid"] = target_node.uid
         self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
 
     def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
@@ -114,6 +74,8 @@ class Link(object):
         self.certainty = certainty
         self.source_gate.outgoing[self.uid] = self
         self.target_slot.incoming[self.uid] = self
+
+        self.nodenet.state["links"][self.uid] = self.data
 
     def remove(self):
         """unplug the link from the node net

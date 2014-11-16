@@ -50,8 +50,6 @@ class Link(object):
         self.target_node = target_node
         self.source_gate = source_node.get_gate(source_gate_name)
         self.target_slot = target_node.get_slot(target_slot_name)
-        if not uid in self.nodenet.state["links"]:
-            self.nodenet.state["links"][uid] = {}
         self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
 
     def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
@@ -75,7 +73,7 @@ class Link(object):
         self.source_gate.outgoing[self.uid] = self
         self.target_slot.incoming[self.uid] = self
 
-        self.nodenet.state["links"][self.uid] = self.data
+        self.nodenet.links[self.uid] = self
 
     def remove(self):
         """unplug the link from the node net

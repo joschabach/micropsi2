@@ -69,18 +69,16 @@ class NetEntity(object):
     def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities",
                  uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
-        if uid in nodenet.state.get("entitytype", []):
-            raise KeyError("Netentity already exists")
 
         uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
-        if not entitytype in nodenet.state:
-            nodenet.state[entitytype] = {}
-        if not uid in nodenet.state[entitytype]:
-            nodenet.state[entitytype][uid] = {}
-        self.data = nodenet.state[entitytype][uid]
+        if not entitytype in nodenet.entitytypes:
+            nodenet.entitytypes[entitytype] = {}
+        if not uid in nodenet.entitytypes[entitytype]:
+            nodenet.entitytypes[entitytype][uid] = {}
+        self.data = nodenet.entitytypes[entitytype][uid]
         self.data["uid"] = uid
-        self.data["index"] = index or len(nodenet.state.get("nodes", [])) + len(nodenet.state.get("nodespaces", []))
+        self.data["index"] = index or len(nodenet.nodes) + len(nodenet.nodespaces)
         self.entitytype = entitytype
         self.name = name
         self.position = position

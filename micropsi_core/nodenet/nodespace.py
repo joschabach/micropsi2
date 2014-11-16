@@ -86,3 +86,10 @@ class Nodespace(NetEntity):
         """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
         if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
             return self.gatefunctions[nodetype][gatetype]
+
+    def get_gatefunction_string(self, nodetype, gatetype):
+        """Retrieve a string gatefunction for a given node- and gatetype"""
+        if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+            return self.data['gatefunctions'][nodetype][gatetype]
+        else:
+            return ''

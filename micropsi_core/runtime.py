@@ -297,7 +297,7 @@ def get_nodenet_data(nodenet_uid, **coordinates):
     """ returns the current state of the nodenet """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
-        data = nodenet.data.copy()
+        data = nodenet.data
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
     data.update({
         'nodetypes': nodetypes,
@@ -352,9 +352,9 @@ def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_
     """
     if template is not None and template in nodenet_data:
         if template in nodenets:
-            data = nodenets[template].data.copy()
+            data = nodenets[template].data
         else:
-            data = nodenet_data[template].copy()
+            data = nodenet_data[template]
     else:
         data = dict(
             nodes=dict(),

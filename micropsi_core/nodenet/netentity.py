@@ -56,8 +56,6 @@ class NetEntity(object):
                 nodespace.netentities[self.entitytype] = []
             if self.uid not in nodespace.netentities[self.entitytype]:
                 nodespace.netentities[self.entitytype].append(self.uid)
-                #if uid in self.nodenet.state["nodespaces"][uid][self.entitytype]:
-                #    self.nodenet.state["nodespaces"][uid][self.entitytype] = self.uid
                 # tell my old parent that I move out
                 if self.__parent_nodespace is not None:
                     old_parent = self.nodenet.nodespaces.get(self.__parent_nodespace)

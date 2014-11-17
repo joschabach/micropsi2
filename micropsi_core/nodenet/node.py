@@ -302,7 +302,7 @@ class Node(NetEntity):
         return data
 
 
-class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params
+class Gate(object):
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
 
     Attributes:
@@ -660,16 +660,6 @@ class Nodetype(object):
         If a nodetype with the same name is already defined in the nodenet, it is overwritten. Parameters that
         are not given here will be taken from the original definition. Thus, you may use this initializer to
         set up the nodetypes after loading new nodenet state (by using it without parameters).
-
-        Within the nodenet, the nodenet state dict stores the whole nodenet definition. The part that defines
-        nodetypes is structured as follows:
-
-            { "slots": list of slot types or None,
-              "gates": list of gate types or None,
-              "parameters": string of parameters to store values in or read values from
-              "nodefunction": <a string that stores a sequence of python statements, and gets the node and the
-                    nodenet as arguments>
-            }
         """
         self.name = name
         self.states = states or {}

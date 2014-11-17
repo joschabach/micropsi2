@@ -209,11 +209,7 @@ class Nodenet(object):
                 self.initialize_nodenet(initfrom)
                 return True
             else:
-                warnings.warn("Wrong version of the nodenet data; starting new nodenet")
-                # TODO: No, you're not. This has obviously not been tested. initialize_nodenet is not being called
-                # The contents of self.nodetypes do not change their types as the Gods of Horrible Typeless Programming
-                # demand, and all hell breaks loose.
-                raise NotImplementedError
+                raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
     def initialize_nodespace(self, id, data):
         if id not in self.nodespaces:

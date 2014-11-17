@@ -116,7 +116,7 @@ def test_nodenet(request):
         micropsi.save_nodenet(nn_uid)
 
     def fin():
-        micropsi.revert_nodenet(nn_uid)
+            micropsi.revert_nodenet(nn_uid)
     request.addfinalizer(fin)
     return nn_uid
 

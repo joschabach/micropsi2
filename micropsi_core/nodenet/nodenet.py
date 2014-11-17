@@ -247,51 +247,10 @@ class Nodenet(object):
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.nodespaces = {}
-
-        nodespaces_to_initialize = set(initfrom.get('nodespaces', {}).keys())
-        for next_nodespace in nodespaces_to_initialize:
-            self.initialize_nodespace(next_nodespace, initfrom['nodespaces'])
-
-        nodespaces_to_initialize = []
         self.nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        # set up nodes
-        for uid in initfrom.get('nodes', {}):
-            data = initfrom['nodes'][uid]
-            if data['type'] in nodetypes or data['type'] in native_modules:
-                self.nodes[uid] = Node(self, **data)
-                pos = self.nodes[uid].position
-                xpos = int(pos[0] - (pos[0] % 100))
-                ypos = int(pos[1] - (pos[1] % 100))
-                if xpos not in self.nodes_by_coords:
-                    self.nodes_by_coords[xpos] = {}
-                    if xpos > self.max_coords['x']:
-                        self.max_coords['x'] = xpos
-                if ypos not in self.nodes_by_coords[xpos]:
-                    self.nodes_by_coords[xpos][ypos] = []
-                    if ypos > self.max_coords['y']:
-                        self.max_coords['y'] = ypos
-                self.nodes_by_coords[xpos][ypos].append(uid)
-            else:
-                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
-            # set up links
-        for uid in initfrom.get('links', {}):
-            data = initfrom['links'][uid]
-            if data['source_node_uid'] in self.nodes and \
-                    data['source_gate_name'] in self.nodes[data['source_node_uid']].gates and\
-                    data['target_node_uid'] in self.nodes and\
-                    data['target_slot_name'] in self.nodes[data['target_node_uid']].slots:
-                self.links[uid] = Link(
-                    self.nodes[data['source_node_uid']], data['source_gate_name'],
-                    self.nodes[data['target_node_uid']], data['target_slot_name'],
-                    weight=data['weight'], certainty=data['certainty'],
-                    uid=uid)
-            else:
-                warnings.warn("Slot or gatetype for link %s invalid" % uid)
-        for uid in initfrom.get('monitors', {}):
-            self.monitors[uid] = Monitor(self, **initfrom['monitors'][uid])
-
-            # TODO: check if data sources and data targets match
+        # now merge in all init data (from the persisted file typically)
+        self.merge_data(initfrom)
 
     def construct_links_dict(self):
         data = {}
@@ -442,25 +401,8 @@ class Nodenet(object):
         # called whenever new data needs to be merged in, initially or later on.
         # Potentially, initialize_nodenet can be replaced with merge_data.
 
-        # TODO: find out how to merge these
-        """
-        for type, data in self.nodetypes.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.nodetypes = nodetypes
-
-        native_modules = {}
-        for type, data in self.native_modules.items():
-            native_modules[type] = Nodetype(nodenet=self, **data)
-        self.native_modules = native_modules
-        """
-
         # net will have the name of the one to be merged into us
         self.name = nodenet_data['name']
-
-        # merge in node types
-        #for type, data in nodenet_data.get('nodetypes', {}).items():
-        #    if type not in self.nodetypes:
-        #        self.nodetypes[type] = Nodetype(nodenet=self, **data)
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())

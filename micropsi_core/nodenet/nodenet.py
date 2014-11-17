@@ -76,14 +76,6 @@ class Nodenet(object):
         return data
 
     @property
-    def state(self):
-        raise RuntimeError("State is deprecated and not to be used any more")
-
-    @state.setter
-    def name(self, identifier):
-        raise RuntimeError("State is deprecated and not to be used any more")
-
-    @property
     def uid(self):
         return self.__uid
 

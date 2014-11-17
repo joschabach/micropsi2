@@ -57,9 +57,9 @@ class Node(NetEntity):
             "state": self.state,
             "gate_parameters": self.gate_parameters, # still a redundant field, get rid of it
             "sheaves": self.sheaves,
-            "activation": self.activation
+            "activation": self.activation,
+            "gate_activations": self.construct_gates_dict()
         })
-
         return data
 
     @property
@@ -294,6 +294,12 @@ class Node(NetEntity):
 
     def set_state(self, state_element, value):
         self.state[state_element] = value
+
+    def construct_gates_dict(self):
+        data = {}
+        for gate_id, gate in self.gates.items():
+            data[gate_id] = gate.sheaves
+        return data
 
 
 class Gate(object):  # todo: take care of gate functions at the level of nodespaces, handle gate params

@@ -65,12 +65,13 @@ class Nodenet(object):
             'name': self.name,
             'max_coords': self.max_coords,
             'is_active': self.is_active,
-            'current_step': self.current_step,
+            'step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict("Root"),
             'world': self.__world_id,
             'worldadapter': self.__worldadapter_id,
             'settings': self.settings,
-            'monitors': self.construct_monitors_dict()
+            'monitors': self.construct_monitors_dict(),
+            'version': self.__version
         }
         return data
 

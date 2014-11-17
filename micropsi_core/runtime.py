@@ -280,7 +280,10 @@ def load_nodenet(nodenet_uid):
                 name=data.name, worldadapter=worldadapter,
                 world=world, owner=data.owner, uid=data.uid,
                 nodetypes=nodetypes, native_modules=native_modules)
-            nodenets[nodenet_uid].settings = data.settings.copy()
+            if "settings" in data:
+                nodenets[nodenet_uid].settings = data["settings"].copy()
+            else:
+                nodenets[nodenet_uid].settings = {}
         else:
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter

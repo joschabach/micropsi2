@@ -582,84 +582,63 @@ class Nodetype(object):
         "spreadsheaves": False
     }
 
-    @property
-    def name(self):
-        return self.data["name"]
-
-    @name.setter
-    def name(self, identifier):
-        self.data["name"] = identifier
+    _parameters = []
+    _nodefunction_definition = None
+    _nodefunction_name = None
 
     @property
-    def slottypes(self):
-        return self.data.get("slottypes")
-
-    @slottypes.setter
-    def slottypes(self, list):
-        self.data["slottypes"] = list
-
-    @property
-    def gatetypes(self):
-        return self.data.get("gatetypes")
-
-    @gatetypes.setter
-    def gatetypes(self, list):
-        self.data["gatetypes"] = list
+    def data(self):
+        data = {
+            "name": self.name,
+            "slottypes": self.slottypes,
+            "gatetypes": self.gatetypes,
+            "parameters": self.parameters,
+            "states": self.states
+        }
+        return data
 
     @property
     def parameters(self):
-        return self.data.get("parameters", [])
+        return self._parameters
 
     @parameters.setter
-    def parameters(self, list):
-        self.data["parameters"] = list
-        self.nodefunction = self.data.get("nodefunction")  # update nodefunction
-
-    @property
-    def states(self):
-        return self.data.get("states", [])
-
-    @states.setter
-    def states(self, list):
-        self.data["states"] = list
+    def parameters(self, parameters):
+        self._parameters = parameters
+        self.nodefunction = self._nodefunction_definition  # update nodefunction
 
     @property
     def nodefunction_definition(self):
-        return self.data.get("nodefunction_definition")
+        return self._nodefunction_definition
 
     @nodefunction_definition.setter
-    def nodefunction_definition(self, string):
-        self.data["nodefunction_definition"] = string
+    def nodefunction_definition(self, nodefunction_definition):
+        self._nodefunction_definition = nodefunction_definition
         args = ','.join(self.parameters).strip(',')
         try:
-            self.nodefunction = micropsi_core.tools.create_function(string,
+            self.nodefunction = micropsi_core.tools.create_function(nodefunction_definition,
                 parameters="nodenet, node, " + args)
         except SyntaxError as err:
             warnings.warn("Syntax error while compiling node function: %s", str(err))
             raise err
-            # self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-            #     parameters="nodenet, node, " + args)
 
     @property
     def nodefunction_name(self):
-        return self.data.get("nodefunction_name")
+        return self._nodefunction_name
 
     @nodefunction_name.setter
-    def nodefunction_name(self, name):
-        self.data["nodefunction_name"] = name
+    def nodefunction_name(self, nodefunction_name):
+        self._nodefunction_name = nodefunction_name
         try:
             from micropsi_core.nodenet import nodefunctions
-            if hasattr(nodefunctions, name):
-                self.nodefunction = getattr(nodefunctions, name)
+            if hasattr(nodefunctions, nodefunction_name):
+                self.nodefunction = getattr(nodefunctions, nodefunction_name)
             else:
                 import nodefunctions as custom_nodefunctions
-                self.nodefunction = getattr(custom_nodefunctions, name)
+                self.nodefunction = getattr(custom_nodefunctions, nodefunction_name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (name, err))
+            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
-            # self.nodefunction = micropsi_core.tools.create_function("""node.activation = 'Syntax error'""",
-            #     parameters="nodenet, node")
 
     def reload_nodefunction(self):
         from micropsi_core.nodenet import nodefunctions
@@ -692,17 +671,15 @@ class Nodetype(object):
                     nodenet as arguments>
             }
         """
-        self.data = {'name': name}
-
-        self.states = self.data.get('states', {}) if states is None else states
-        self.slottypes = self.data.get("slottypes", ["gen"]) if slottypes is None else slottypes
-        self.gatetypes = self.data.get("gatetypes", ["gen"]) if gatetypes is None else gatetypes
+        self.name = name
+        self.states = states or {}
+        self.slottypes = slottypes or {}
+        self.gatetypes = gatetypes or {}
 
         self.gate_defaults = {}
         for g in self.gatetypes:
             self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
 
-        gate_defaults = self.data.get("gate_defaults") if gate_defaults is None else gate_defaults
         if gate_defaults is not None:
             for g in gate_defaults:
                 for key in gate_defaults[g]:
@@ -710,8 +687,8 @@ class Nodetype(object):
                         raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
                     self.gate_defaults[g][key] = gate_defaults[g][key]
 
-        self.parameters = self.data.get("parameters", []) if parameters is None else parameters
-        self.parameter_values = self.data.get("parameter_values", []) if parameter_values is None else parameter_values
+        self.parameters = parameters or {}
+        self.parameter_values = parameter_values or {}
 
         if nodefunction_definition:
             self.nodefunction_definition = nodefunction_definition

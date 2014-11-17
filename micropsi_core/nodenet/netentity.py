@@ -75,7 +75,6 @@ class NetEntity(object):
             nodenet.entitytypes[entitytype] = {}
         if not uid in nodenet.entitytypes[entitytype]:
             nodenet.entitytypes[entitytype][uid] = {}
-        #self.data = nodenet.entitytypes[entitytype][uid]
         self.__uid = uid
         self.index = index or len(nodenet.nodes) + len(nodenet.nodespaces)
         self.entitytype = entitytype

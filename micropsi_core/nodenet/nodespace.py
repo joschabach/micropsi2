@@ -33,18 +33,18 @@ class Nodespace(NetEntity):
         })
         return data
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None,
-                 index=None, gatefunctions={}):
+    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunctions=None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet.nodespaces[self.uid] = self
-        self.gatefunctions = gatefunctions
-        for nodetype in gatefunctions:
-            for gatetype in gatefunctions[nodetype]:
-                self.set_gate_function(nodetype, gatetype, gatefunctions[nodetype][gatetype])
+        self.gatefunctions = {}
+        self.__gatefunction_strings = gatefunctions or {}
+        for nodetype in self.__gatefunction_strings:
+            for gatetype in self.__gatefunction_strings[nodetype]:
+                self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""

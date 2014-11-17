@@ -225,7 +225,7 @@ class Nodenet(object):
                 name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'),
-                gatefunctions=data[id].get('gatefunctions', {}))
+                gatefunctions=data[id].get('gatefunctions', None))
 
     def initialize_nodenet(self, initfrom):
         """Called after reading new nodenet state.

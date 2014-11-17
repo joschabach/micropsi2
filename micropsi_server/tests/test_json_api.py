@@ -1127,7 +1127,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
         assert data['nodes']['N1']['gate_parameters'][key]['amplification'] == 1
         assert data['nodes']['N1']['gate_parameters'][key].keys() == params
 
-    assert data['nodes']['N1']['index'] == 2
+    #assert data['nodes']['N1']['index'] == 2
     assert data['nodes']['N1']['name'] == 'N1'
     assert data['nodes']['N1']['parameters'] == {}
     assert data['nodes']['N1']['parent_nodespace'] == 'Root'
@@ -1136,7 +1136,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['nodes']['N1'] == node_data
 
     # Nodespaces
-    assert data['nodespaces']['NS1']['index'] == 3
+    #assert data['nodespaces']['NS1']['index'] == 3
     assert data['nodespaces']['NS1']['name'] == 'Test-Node-Space'
     assert data['nodespaces']['NS1']['gatefunctions'] == {}
     assert data['nodespaces']['NS1']['parent_nodespace'] == 'Root'

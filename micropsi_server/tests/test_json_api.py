@@ -97,7 +97,7 @@ def test_set_node_activation(app, test_nodenet):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     sheaves = response.json_body['data']['nodes']['N1']['sheaves']
-    assert sheaves['default']['activation'] == '0.734'
+    assert sheaves['default']['activation'] == 0.734
 
 
 def test_start_nodenetrunner(app, test_nodenet):

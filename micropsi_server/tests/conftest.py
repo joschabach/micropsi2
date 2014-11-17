@@ -116,7 +116,16 @@ def test_nodenet(request):
         micropsi.save_nodenet(nn_uid)
 
     def fin():
-        micropsi.revert_nodenet(nn_uid)
+        try:
+            os.remove(os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json'))
+            os.remove(os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py'))
+        except OSError:
+            pass
+        if nn_uid in micropsi.nodenets:
+            micropsi.reload_native_modules(nn_uid)
+            micropsi.revert_nodenet(nn_uid)
+        else:
+            micropsi.reload_native_modules()
     request.addfinalizer(fin)
     return nn_uid
 

@@ -5,6 +5,7 @@
 
 """
 from micropsi_core import runtime as micropsi
+import pytest
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -110,9 +111,47 @@ def test_remove_nodes_linking_to_themselves(fixed_nodenet):
     micropsi.add_link(fixed_nodenet, 'A1', 'gen', 'A1', 'gen')
     assert micropsi.delete_node(fixed_nodenet, 'A1')
 
+
+@pytest.mark.xfail(reason="data-dicts prevent us from handling this correctly")
+def test_gate_defaults_change_with_nodetype(test_nodenet, resourcepath):
+    # gate_parameters are a property of the nodetype, and should change with
+    # the nodetype definition if not explicitly overwritten for a given node
+    from os import path
+    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t",\
+            "gate_defaults":{\
+              "foo": {\
+                "amplification": 13\
+              }\
+            }}}')
+    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    micropsi.reload_native_modules(test_nodenet)
+    micropsi.add_node(test_nodenet, "Testnode", [10, 10], uid="Testnode", name="Testnode")
+    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t",\
+            "gate_defaults":{\
+              "foo": {\
+                "amplification": 5\
+              }\
+            }}}')
+    micropsi.reload_native_modules(test_nodenet)
+    params = micropsi.nodenets[test_nodenet].nodes["Testnode"].get_gate_parameters()
+    assert params["foo"]["amplification"] == 5
+
+
 """
-
-
 def test_get_node(micropsi, test_nodenet):
     assert 0
 

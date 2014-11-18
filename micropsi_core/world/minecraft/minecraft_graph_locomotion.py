@@ -1,6 +1,8 @@
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core import tools
 
+import time
+
 
 class MinecraftGraphLocomotion(WorldAdapter):
 
@@ -28,7 +30,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
-        'fov_reset': 0,
+        # 'fov_reset': 0,
     }
 
     datatarget_feedback = {
@@ -38,13 +40,23 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
-        'fov_reset': 0
+        # 'fov_reset': 0
     }
 
-    # prevent locomotion if actors didn't lose activation since last update
-    refraction_exit_one = False
-    refraction_exit_two = False
-    refraction_exit_three = False
+    # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
+    datatarget_history = {
+        'take_exit_one': 0,
+        'take_exit_two': 0,
+        'take_exit_three': 0
+    }
+
+    # a collection of conditions to check on every update(..), eg., for action feedback
+    checklist = {
+        # str(time.time()): {
+        #     'target': <key in self.datatarget_feedbacks>,
+        #     'condition': '<variable> != <value>'
+        # }
+    }
 
     # specs for vision /fovea
     horizontal_angle = 90    # angles defining the agent's visual field
@@ -189,56 +201,84 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
-        # reset all datatarget_feedbacks
-        self.datatarget_feedback['orientation'] = 0
-        self.datatarget_feedback['take_exit_one'] = 0
-        self.datatarget_feedback['take_exit_two'] = 0
-        self.datatarget_feedback['take_exit_three'] = 0
-        self.datatarget_feedback['fov_x'] = 0
-        self.datatarget_feedback['fov_y'] = 0
-        self.datatarget_feedback['fov_reset'] = 0
-
         #
         orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
         self.datatarget_feedback['orientation'] = 1
         # self.datatargets['orientation'] = 0
 
-        ## read locomotor values, trigger locomotion in the world, provide action feedback
-        # todo: fix action feedback such that it is provided when actual teleport in minecraft is done
-        if self.datatargets['take_exit_one'] >= 1 and not self.refraction_exit_one:
-            self.refraction_exit_one = True
+        # check if ..
+        mark_for_deletion = []
+        if self.checklist:
+            for k, item in self.checklist.items():
+                if eval(item['condition']):
+                    self.datatarget_feedback[item['target']] = 1.0
+                    mark_for_deletion.append(k)
+
+        # delete processed items from checklist
+        for i in mark_for_deletion:
+            del self.checklist[i]
+
+        # read locomotor values, trigger teleportation in the world, and provide action feedback
+        # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
+        if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
+            # if the current node on the transition graph has the chose exit
             if self.current_loco_node['exit_one_uid'] is not None:
-                print('exit one')
+                self.datatarget_feedback['take_exit_one'] = 0  # no action feedback yet
+                # add request for action feedback in case of success to self.checklist
+                # ie. if future position is different from current position, teleport must have succeeded
+                # < unreliable condition can be used here because w/out timeout feedback is blocking wrt further locomotion
+                # in case we add timeout, a timeout should also delete the item from the checklist
+                # TODO: add timeout
+                self.add_to_checklist(
+                    'take_exit_one',
+                    "%d != int(self.spockplugin.clientinfo.position['x']) or \
+                     %d != int(self.spockplugin.clientinfo.position['y']) or \
+                     %d != int(self.spockplugin.clientinfo.position['z'])"
+                    % (int(self.spockplugin.clientinfo.position['x']),
+                       int(self.spockplugin.clientinfo.position['y']),
+                       int(self.spockplugin.clientinfo.position['z'])))
                 self.locomote(self.current_loco_node['exit_one_uid'])
-                self.datatarget_feedback['take_exit_one'] = 1
             else:
                 self.datatarget_feedback['take_exit_one'] = -1
-        elif self.datatargets['take_exit_one'] ==  0:
-            self.refraction_exit_one = False
+        elif self.datatargets['take_exit_one'] == 0:
+            self.datatarget_feedback['take_exit_one'] = 0
 
-        if self.datatargets['take_exit_two'] >= 1 and not self.refraction_exit_two:
-            self.refraction_exit_two = True
+        if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
             if self.current_loco_node['exit_two_uid'] is not None:
-                print('exit two')
+                self.datatarget_feedback['take_exit_two'] = 0
+                self.add_to_checklist(
+                    'take_exit_two',
+                    "%d != int(self.spockplugin.clientinfo.position['x']) or \
+                     %d != int(self.spockplugin.clientinfo.position['y']) or \
+                     %d != int(self.spockplugin.clientinfo.position['z'])"
+                    % (int(self.spockplugin.clientinfo.position['x']),
+                       int(self.spockplugin.clientinfo.position['y']),
+                       int(self.spockplugin.clientinfo.position['z'])))
                 self.locomote(self.current_loco_node['exit_two_uid'])
-                self.datatarget_feedback['take_exit_two'] = 1
             else:
                 self.datatarget_feedback['take_exit_two'] = -1
-        elif self.datatargets['take_exit_two'] ==  0:
-            self.refraction_exit_two = False
+        elif self.datatargets['take_exit_two'] == 0:
+            self.datatarget_feedback['take_exit_two'] = 0
 
-        if self.datatargets['take_exit_three'] >= 1 and not self.refraction_exit_three:
-            self.refraction_exit_three = True
+        if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
             if self.current_loco_node['exit_three_uid'] is not None:
-                print('exit three')
+                self.datatarget_feedback['take_exit_three'] = 0  # no action feedback yet
+                # checklist check provides datatarget feedback on success
+                self.add_to_checklist(
+                    'take_exit_three',
+                    "%d != int(self.spockplugin.clientinfo.position['x']) or \
+                     %d != int(self.spockplugin.clientinfo.position['y']) or \
+                     %d != int(self.spockplugin.clientinfo.position['z'])"
+                    % (int(self.spockplugin.clientinfo.position['x']),
+                       int(self.spockplugin.clientinfo.position['y']),
+                       int(self.spockplugin.clientinfo.position['z'])))
                 self.locomote(self.current_loco_node['exit_three_uid'])
-                self.datatarget_feedback['take_exit_three'] = 1
             else:
                 self.datatarget_feedback['take_exit_three'] = -1
-        elif self.datatargets['take_exit_three'] ==  0:
-            self.refraction_exit_three = False
+        elif self.datatargets['take_exit_three'] == 0:
+            self.datatarget_feedback['take_exit_three'] = 0
 
-        ## read fovea actors, get sensory input from the world and write it to resp. sensors, provide action feedback
+        # read fovea actors, get sensory input from the world and write it to resp. sensors, provide action feedback
         # reset block type sensors -- current model provides sensory data only if fovea saccades
         self.datasources['nothing'] = 0.
         self.datasources['air'] = 0.
@@ -257,7 +297,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         # ( sic because the actor value is used as link weight in scripts )
         self.datasources['fov_x'] = self.datatargets['fov_x']
         self.datasources['fov_y'] = self.datatargets['fov_y']
-        self.datasources['fov_reset'] = self.datatargets['fov_reset']
+        # self.datasources['fov_reset'] = self.datatargets['fov_reset']
 
         # if the fovea actors are active, get new sensor values
         # note: fovea value of 0 means no movement
@@ -270,12 +310,12 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datatarget_feedback['fov_x'] = 1
             self.datatarget_feedback['fov_y'] = 1
 
-        # provide feedback for fovea reset
-        if self.datatargets['fov_reset'] >= 1:
-            self.datatarget_feedback['fov_reset'] = 1
-        self.datatargets['fov_reset'] = 0
+        # update datatarget history
+        for k in self.datatarget_history.keys():
+            self.datatarget_history[k] = self.datatargets[k]
 
     def locomote(self, target_loco_node_uid):
+
         new_loco_node = self.loco_nodes[target_loco_node_uid]
 
         self.spockplugin.chat("/tppos {0} {1} {2}".format(
@@ -411,7 +451,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         elif block_type == 14 or block_type == 15 or block_type == 16 or \
             block_type == 20 or block_type == 41 or block_type == 42 or \
             block_type == 43 or block_type == 44 or block_type == 45 or \
-            block_type == 47 or block_type == 48 or block_type == 49:
+                block_type == 47 or block_type == 48 or block_type == 49:
             self.datasources['solids'] = 1.
 
         else:
@@ -484,3 +524,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
         while start < end:
             yield start
             start += step
+
+    def add_to_checklist(self, target, condition):
+        """
+        """
+        key = str(time.time())
+        self.checklist[key] = {}
+        self.checklist[key]['target'] = target
+        self.checklist[key]['condition'] = condition

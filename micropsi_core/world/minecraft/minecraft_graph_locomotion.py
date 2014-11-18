@@ -47,11 +47,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
     datatarget_history = {
         'take_exit_one': 0,
         'take_exit_two': 0,
-        'take_exit_three': 0
+        'take_exit_three': 0,
+        'fov_x': 0,
+        'fov_y': 0
     }
 
     # a collection of conditions to check on every update(..), eg., for action feedback
-    checklist = {
+    waiting_list = {
         # str(time.time()): {
         #     'target': <key in self.datatarget_feedbacks>,
         #     'condition': '<variable> != <value>'
@@ -206,30 +208,40 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datatarget_feedback['orientation'] = 1
         # self.datatargets['orientation'] = 0
 
-        # check if ..
+        # reset self.datasources
+        for k in self.datasources.keys():
+            self.datasources[k] = 0.
+
+        # reset self.datatarget_feedback
+        for k in self.datatarget_feedback.keys():
+            self.datatarget_feedback[k] = 0.
+
+        # don't reset self.datatargets because their activation is processed differently
+        # depending on whether they fire continuously or not, see self.datatarget_history
+
+        # check if waiting list contains confirmations for datatarget_feedback, if so overwrite resp. value
         mark_for_deletion = []
-        if self.checklist:
-            for k, item in self.checklist.items():
+        if self.waiting_list:
+            for k, item in self.waiting_list.items():
                 if eval(item['condition']):
-                    self.datatarget_feedback[item['target']] = 1.0
+                    self.datatarget_feedback[item['target']] = 1.
                     mark_for_deletion.append(k)
 
-        # delete processed items from checklist
+        # delete processed items from waiting_list
         for i in mark_for_deletion:
-            del self.checklist[i]
+            del self.waiting_list[i]
 
         # read locomotor values, trigger teleportation in the world, and provide action feedback
         # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
         if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
             # if the current node on the transition graph has the chose exit
             if self.current_loco_node['exit_one_uid'] is not None:
-                self.datatarget_feedback['take_exit_one'] = 0  # no action feedback yet
-                # add request for action feedback in case of success to self.checklist
+                # add request for action feedback in case of success to self.waiting_list
                 # ie. if future position is different from current position, teleport must have succeeded
                 # < unreliable condition can be used here because w/out timeout feedback is blocking wrt further locomotion
-                # in case we add timeout, a timeout should also delete the item from the checklist
+                # in case we add timeout, a timeout should also delete the item from the waiting_list
                 # TODO: add timeout
-                self.add_to_checklist(
+                self.add_to_waiting_list(
                     'take_exit_one',
                     "%d != int(self.spockplugin.clientinfo.position['x']) or \
                      %d != int(self.spockplugin.clientinfo.position['y']) or \
@@ -239,14 +251,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                        int(self.spockplugin.clientinfo.position['z'])))
                 self.locomote(self.current_loco_node['exit_one_uid'])
             else:
-                self.datatarget_feedback['take_exit_one'] = -1
-        elif self.datatargets['take_exit_one'] == 0:
-            self.datatarget_feedback['take_exit_one'] = 0
+                self.datatarget_feedback['take_exit_one'] = -1.
 
         if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
             if self.current_loco_node['exit_two_uid'] is not None:
-                self.datatarget_feedback['take_exit_two'] = 0
-                self.add_to_checklist(
+                self.add_to_waiting_list(
                     'take_exit_two',
                     "%d != int(self.spockplugin.clientinfo.position['x']) or \
                      %d != int(self.spockplugin.clientinfo.position['y']) or \
@@ -256,15 +265,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                        int(self.spockplugin.clientinfo.position['z'])))
                 self.locomote(self.current_loco_node['exit_two_uid'])
             else:
-                self.datatarget_feedback['take_exit_two'] = -1
-        elif self.datatargets['take_exit_two'] == 0:
-            self.datatarget_feedback['take_exit_two'] = 0
+                self.datatarget_feedback['take_exit_two'] = -1.
 
         if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
             if self.current_loco_node['exit_three_uid'] is not None:
-                self.datatarget_feedback['take_exit_three'] = 0  # no action feedback yet
-                # checklist check provides datatarget feedback on success
-                self.add_to_checklist(
+                self.add_to_waiting_list(
                     'take_exit_three',
                     "%d != int(self.spockplugin.clientinfo.position['x']) or \
                      %d != int(self.spockplugin.clientinfo.position['y']) or \
@@ -274,41 +279,22 @@ class MinecraftGraphLocomotion(WorldAdapter):
                        int(self.spockplugin.clientinfo.position['z'])))
                 self.locomote(self.current_loco_node['exit_three_uid'])
             else:
-                self.datatarget_feedback['take_exit_three'] = -1
-        elif self.datatargets['take_exit_three'] == 0:
-            self.datatarget_feedback['take_exit_three'] = 0
+                self.datatarget_feedback['take_exit_three'] = -1.
 
-        # read fovea actors, get sensory input from the world and write it to resp. sensors, provide action feedback
-        # reset block type sensors -- current model provides sensory data only if fovea saccades
-        self.datasources['nothing'] = 0.
-        self.datasources['air'] = 0.
-        self.datasources['stone'] = 0.
-        self.datasources['grass'] = 0.
-        self.datasources['dirt'] = 0.
-        self.datasources['wood'] = 0.
-        self.datasources['water'] = 0.
-        self.datasources['sand'] = 0.
-        self.datasources['gravel'] = 0.
-        self.datasources['leaves'] = 0.
-        self.datasources['solids'] = 0.
-        self.datasources['otter'] = 0.
-
-        # set fovea sensors to fovea actors' activation
-        # ( sic because the actor value is used as link weight in scripts )
-        self.datasources['fov_x'] = self.datatargets['fov_x']
-        self.datasources['fov_y'] = self.datatargets['fov_y']
-        # self.datasources['fov_reset'] = self.datatargets['fov_reset']
-
-        # if the fovea actors are active, get new sensor values
-        # note: fovea value of 0 means no movement
-        if self.datasources['fov_x'] > 0 and self.datasources['fov_y'] > 0:
+        # read fovea actors, trigger sampling, and provide action feedback
+        if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
+                and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
             # get block type for current fovea position
-            block_type = self.get_visual_input(int(self.datasources['fov_x'] - 1), int(self.datasources['fov_y'] - 1))
+            block_type = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
             # map block type to one of the sensors
             self.map_block_type_to_sensor(block_type)
+            # set fovea sensors; sic because fovea value is used as link weight
+            self.datasources['fov_x'] = self.datatargets['fov_x']
+            self.datasources['fov_y'] = self.datatargets['fov_y']
             # provide action feedback
             self.datatarget_feedback['fov_x'] = 1
             self.datatarget_feedback['fov_y'] = 1
+        # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
 
         # update datatarget history
         for k in self.datatarget_history.keys():
@@ -525,10 +511,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             yield start
             start += step
 
-    def add_to_checklist(self, target, condition):
+    def add_to_waiting_list(self, target, condition):
         """
         """
         key = str(time.time())
-        self.checklist[key] = {}
-        self.checklist[key]['target'] = target
-        self.checklist[key]['condition'] = condition
+        self.waiting_list[key] = {}
+        self.waiting_list[key]['target'] = target
+        self.waiting_list[key]['condition'] = condition

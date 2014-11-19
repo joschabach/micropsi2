@@ -52,11 +52,11 @@ class World(object):
 
     @property
     def current_step(self):
-        return self.data.get("step", 0)
+        return self.data.get('current_step', 0)
 
     @current_step.setter
     def current_step(self, current_step):
-        self.data['step'] = current_step
+        self.data['current_step'] = current_step
 
     @property
     def is_active(self):
@@ -85,7 +85,7 @@ class World(object):
             "version": WORLD_VERSION,  # used to check compatibility of the world data
             "objects": {},
             "agents": {},
-            "step": 0
+            "current_step": 0
         }
 
         folder = self.__module__.split('.')

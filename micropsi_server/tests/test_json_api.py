@@ -149,6 +149,7 @@ def test_step_nodenet(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 0
     response = app.get_json('/rpc/step_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
+    assert response.json_body['data'] == 1
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     assert response.json_body['data']['current_step'] == 1
 
@@ -334,6 +335,8 @@ def test_get_world_view(app, test_world):
     assert_success(response)
     assert 'agents' in response.json_body['data']
     assert 'objects' in response.json_body['data']
+    assert response.json_body['data']['current_step'] == 0
+    assert 'step' not in response.json_body['data']
 
 
 def test_set_worldagent_properties(app, test_world, test_nodenet):
@@ -443,6 +446,7 @@ def test_step_world(app, test_world):
     step = response.json_body['data']['current_step']
     response = app.get_json('/rpc/step_world(world_uid="%s")' % test_world)
     assert_success(response)
+    assert response.json_body['data'] == 1
     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
     assert response.json_body['data']['current_step'] == step + 1
 
@@ -494,7 +498,7 @@ def test_export_world(app, test_world):
     assert export_data['objects'] == {}
     assert export_data['agents'] == {}
     assert export_data['owner'] == 'Pytest User'
-    assert export_data['step'] == 0
+    assert export_data['current_step'] == 0
     assert export_data['world_type'] == 'Island'
 
 
@@ -1176,7 +1180,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
 
     # Nodenet
     assert data['current_step'] == 0  # TODO:
-    assert data['step'] == 0  # current_step && step?
+    assert 'step' not in data  # current_step && step?
     assert data['version'] == 1
     assert data['world'] == 'WorldOfPain'
     assert data['worldadapter'] == 'Default'

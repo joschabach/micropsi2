@@ -10,7 +10,7 @@ import json
 import os
 
 import warnings
-from .node import Node, Nodetype, emptySheafElement, STANDARD_NODETYPES
+from .node import Node, Nodetype, STANDARD_NODETYPES
 from threading import Lock
 import logging
 from .nodespace import Nodespace
@@ -22,8 +22,10 @@ __date__ = '09.05.12'
 
 NODENET_VERSION = 1
 
+
 class NodenetLockException(Exception):
     pass
+
 
 class Nodenet(object):
     """Main data structure for MicroPsi agents,
@@ -49,8 +51,8 @@ class Nodenet(object):
 
     __uid = ""
     __name = ""
-    __world_id = None
-    __worldadapter_id = None
+    __world_uid = None
+    __worldadapter_uid = None
     __step = 0
     __is_active = False
 
@@ -65,10 +67,10 @@ class Nodenet(object):
             'name': self.name,
             'max_coords': self.max_coords,
             'is_active': self.is_active,
-            'step': self.current_step,
+            'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict("Root"),
-            'world': self.__world_id,
-            'worldadapter': self.__worldadapter_id,
+            'world': self.__world_uid,
+            'worldadapter': self.__worldadapter_uid,
             'settings': self.settings,
             'monitors': self.construct_monitors_dict(),
             'version': self.__version
@@ -92,25 +94,25 @@ class Nodenet(object):
 
     @property
     def world(self):
-        if self.__world_id is not None:
+        if self.__world_uid is not None:
             from micropsi_core.runtime import worlds
-            return worlds.get(self.__world_id)
+            return worlds.get(self.__world_uid)
         return None
 
     @world.setter
     def world(self, world):
         if world:
-            self.__world_id = world.uid
+            self.__world_uid = world.uid
         else:
-            self.__world_id = None
+            self.__world_uid = None
 
     @property
     def worldadapter(self):
-        return self.__worldadapter_id
+        return self.__worldadapter_uid
 
     @worldadapter.setter
     def worldadapter(self, worldadapter_uid):
-        self.__worldadapter_id = worldadapter_uid
+        self.__worldadapter_uid = worldadapter_uid
 
     @property
     def current_step(self):
@@ -214,7 +216,7 @@ class Nodenet(object):
                 name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'),
-                gatefunctions=data[id].get('gatefunctions', None))
+                gatefunctions=data[id].get('gatefunctions'))
 
     def initialize_nodenet(self, initfrom):
         """Called after reading new nodenet state.
@@ -246,7 +248,7 @@ class Nodenet(object):
             data[link_uid] = link.data
         return data
 
-    def construct_nodes_dict(self, max_nodes = -1):
+    def construct_nodes_dict(self, max_nodes=-1):
         data = {}
         i = 0
         for node_uid, node in self.nodes.items():
@@ -256,17 +258,17 @@ class Nodenet(object):
                 break
         return data
 
-    def construct_nodespaces_dict(self, nodespace_id):
+    def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
-        for nodespace_candidate_id in self.nodespaces:
-            if self.nodespaces[nodespace_candidate_id].parent_nodespace == nodespace_id or nodespace_candidate_id == nodespace_id:
-                data[nodespace_candidate_id] = self.nodespaces[nodespace_candidate_id].data
+        for nodespace_candidate_uid in self.nodespaces:
+            if self.nodespaces[nodespace_candidate_uid].parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
+                data[nodespace_candidate_uid] = self.nodespaces[nodespace_candidate_uid].data
         return data
 
     def construct_monitors_dict(self):
         data = {}
-        for monitor_id in self.monitors:
-            data[monitor_id] = self.monitors[monitor_id].data
+        for monitor_uid in self.monitors:
+            data[monitor_uid] = self.monitors[monitor_uid].data
         return data
 
     def get_nodetype(self, type):
@@ -287,8 +289,8 @@ class Nodenet(object):
             'is_active': self.is_active,
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
-            'world': self.__world_id,
-            'worldadapter': self.__worldadapter_id
+            'world': self.__world_uid,
+            'worldadapter': self.__worldadapter_uid
         }
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
@@ -302,8 +304,8 @@ class Nodenet(object):
                         for uid in self.nodes_by_coords[x][y]:
                             if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                                 data['nodes'][uid] = self.nodes[uid].data
-                                links.extend(self.nodes[uid].get_associated_link_ids())
-                                followupnodes.extend(self.nodes[uid].get_associated_node_ids())
+                                links.extend(self.nodes[uid].get_associated_link_uids())
+                                followupnodes.extend(self.nodes[uid].get_associated_node_uids())
         for uid in links:
             data['links'][uid] = self.links[uid].data
         for uid in followupnodes:
@@ -435,7 +437,6 @@ class Nodenet(object):
         # merge in monitors
         for uid in nodenet_data.get('monitors', {}):
             self.monitors[uid] = Monitor(self, **nodenet_data['monitors'][uid])
-
 
     def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.
@@ -750,6 +751,7 @@ class Nodenet(object):
         """
         del self.locks[lock]
 
+
 class NetAPI(object):
     """
     Node Net API facade class for use from within the node net (in node functions)
@@ -870,7 +872,7 @@ class NetAPI(object):
         Returns the newly created entity.
         """
         if name is None:
-            name = ""   #TODO: empty names crash the client right now, but really shouldn't
+            name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)

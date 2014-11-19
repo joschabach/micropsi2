@@ -20,13 +20,6 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-# class SheafElement(micropsi_core.tools.Bunch):
-#     def __init__(self, uid="default", name="default", activation=0):
-#         super().__init__(uid=uid, name=name, activation=activation)
-
-#     def copy(self):
-#         return SheafElement(uid=self.uid, name=self.name)
-
 emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
@@ -45,7 +38,6 @@ class Node(NetEntity):
     """
 
     __type = None
-    __parameters = {}
 
     @property
     def data(self):
@@ -55,7 +47,7 @@ class Node(NetEntity):
             "type": self.type,
             "parameters": self.parameters,
             "state": self.state,
-            "gate_parameters": self.gate_parameters, # still a redundant field, get rid of it
+            "gate_parameters": self.gate_parameters,  # still a redundant field, get rid of it
             "sheaves": self.sheaves,
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -87,16 +79,6 @@ class Node(NetEntity):
         return self.__type
 
     @property
-    def parameters(self):
-        return self.__parameters
-
-    @parameters.setter
-    def parameters(self, dictionary):
-        if self.__type == "Native":
-            self.nodetype.parameters = list(dictionary.keys())
-        self.__parameters = dictionary
-
-    @property
     def nodetype(self):
         return self.nodenet.get_nodetype(self.type)
 
@@ -111,13 +93,12 @@ class Node(NetEntity):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
-        self.state = {}
+        self.state = None
 
         self.gates = {}
         self.slots = {}
         self.__type = type
 
-        #self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
             self.parameters.update(parameters)
@@ -225,7 +206,7 @@ class Node(NetEntity):
         except KeyError:
             return None
 
-    def get_associated_link_ids(self):
+    def get_associated_link_uids(self):
         links = []
         for key in self.gates:
             links.extend(self.gates[key].outgoing)
@@ -233,9 +214,9 @@ class Node(NetEntity):
             links.extend(self.slots[key].incoming)
         return links
 
-    def get_associated_node_ids(self):
+    def get_associated_node_uids(self):
         nodes = []
-        for link in self.get_associated_link_ids():
+        for link in self.get_associated_link_uids():
             if self.nodenet.links[link].source_node.uid != self.uid:
                 nodes.append(self.nodenet.links[link].source_node.uid)
             if self.nodenet.links[link].target_node.uid != self.uid:
@@ -297,8 +278,8 @@ class Node(NetEntity):
 
     def construct_gates_dict(self):
         data = {}
-        for gate_id, gate in self.gates.items():
-            data[gate_id] = gate.sheaves
+        for gate_name, gate in self.gates.items():
+            data[gate_name] = gate.sheaves
         return data
 
 
@@ -362,8 +343,8 @@ class Gate(object):
         if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
         You might want to replace it with a radial basis function, for instance.
         """
-        if input_activation is None: input_activation = 0
-
+        if input_activation is None:
+            input_activation = 0
 
         # check if the current node space has an activator that would prevent the activity of this gate
         nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]
@@ -662,7 +643,7 @@ class Nodetype(object):
         set up the nodetypes after loading new nodenet state (by using it without parameters).
         """
         self.name = name
-        self.states = states or {}
+        self.states = states or []
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
 

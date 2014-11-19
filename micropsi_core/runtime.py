@@ -1007,12 +1007,6 @@ def load_user_files(do_reload=False):
         except ValueError:
             warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
-    if do_reload and old_native_modules != {}:
-        for key in old_native_modules:
-            if key not in native_modules:
-                native_modules[key] = old_native_modules[key]
-                warnings.warn("Deleting native modules during runtime is unsafe. Restoring native module %s" % key)
-
     # respect user defined nodefunctions:
     if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
         import sys
@@ -1024,10 +1018,7 @@ def load_user_files(do_reload=False):
 def reload_native_modules(nodenet_uid=None):
     load_user_files(True)
     if nodenet_uid:
-        nodenets[nodenet_uid].native_modules = {}
-        for key in native_modules:
-            nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
-            nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
+        nodenets[nodenet_uid].reload_native_modules(native_modules)
     return True
 
 

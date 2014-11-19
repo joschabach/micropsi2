@@ -1124,13 +1124,10 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert 'N2' not in data['nodes']
     assert 'NS1' not in data['nodes']
 
-    params = data['nodes']['N1']['gate_parameters']['gen'].keys()
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp', 'sym', 'ref']:
         assert data['nodes']['N1']['gate_activations'][key]['default']['activation'] == 0
-        assert data['nodes']['N1']['gate_parameters'][key]['amplification'] == 1
-        assert data['nodes']['N1']['gate_parameters'][key].keys() == params
 
-    #assert data['nodes']['N1']['index'] == 2
+    assert data['nodes']['N1']['gate_parameters'] == {}
     assert data['nodes']['N1']['name'] == 'N1'
     assert data['nodes']['N1']['parameters'] == {}
     assert data['nodes']['N1']['parent_nodespace'] == 'Root'

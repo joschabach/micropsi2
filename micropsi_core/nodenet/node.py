@@ -38,7 +38,6 @@ class Node(NetEntity):
     """
 
     __type = None
-    __parameters = {}
 
     @property
     def data(self):
@@ -78,16 +77,6 @@ class Node(NetEntity):
     @property
     def type(self):
         return self.__type
-
-    @property
-    def parameters(self):
-        return self.__parameters
-
-    @parameters.setter
-    def parameters(self, dictionary):
-        if self.__type == "Native":
-            self.nodetype.parameters = list(dictionary.keys())
-        self.__parameters = dictionary
 
     @property
     def nodetype(self):

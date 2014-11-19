@@ -226,7 +226,7 @@ function setCurrentNodenet(uid, nodespace){
             }
 
             showDefaultForm();
-            $('#nodenet_step').val(data.step);
+            $('#nodenet_step').val(data.current_step);
             currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
@@ -293,7 +293,7 @@ function getNodespaceList(){
 function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
-        currentSimulationStep = data.step || 0;
+        currentSimulationStep = data.current_step || 0;
         $('#nodenet_step').val(currentSimulationStep);
         currentWorldadapter = data.worldadapter;
         nodenetRunning = data.is_active;

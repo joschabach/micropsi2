@@ -228,7 +228,7 @@ function loadWorldInfo(){
         refreshWorldView();
         world_data = data;
         worldRunning = data.is_active;
-        currentWorldSimulationStep = data.step;
+        currentWorldSimulationStep = data.current_step;
         if('assets' in data){
             var iconhtml = '<img src="/static/island/unknownbox.png" id="icon_default_object" /><img src="/static/island/Micropsi.png" id="icon_default_agent" />';
             for(var key in data.assets.icons){

@@ -738,13 +738,10 @@ def set_node_name(nodenet_uid, node_uid, name):
 
 
 def set_node_state(nodenet_uid, node_uid, state):
-    """ Sets the state of the given node to the given state,
-        provided, the nodetype allows the given state """
+    """ Sets the state of the given node to the given state"""
     node = nodenets[nodenet_uid].nodes[node_uid]
-    if state and state in node.nodetype.states:
-        node.state = state
-        return True
-    return False
+    node.state = state
+    return True
 
 
 def set_node_activation(nodenet_uid, node_uid, activation):

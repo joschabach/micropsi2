@@ -93,7 +93,7 @@ class Node(NetEntity):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
-        self.state = None
+        self.state = {}
 
         self.gates = {}
         self.slots = {}
@@ -573,8 +573,7 @@ class Nodetype(object):
             "name": self.name,
             "slottypes": self.slottypes,
             "gatetypes": self.gatetypes,
-            "parameters": self.parameters,
-            "states": self.states
+            "parameters": self.parameters
         }
         return data
 
@@ -629,7 +628,7 @@ class Nodetype(object):
             reload(custom_nodefunctions)
             self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
 
-    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
                  symbol=None, shape=None):
         """Initializes or creates a nodetype.
@@ -643,7 +642,6 @@ class Nodetype(object):
         set up the nodetypes after loading new nodenet state (by using it without parameters).
         """
         self.name = name
-        self.states = states or []
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
 

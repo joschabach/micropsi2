@@ -212,7 +212,7 @@ class Nodenet(object):
         for key in native_modules:
             self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
             self.native_modules[key].reload_nodefunction()
-        saved = self.data.copy()
+        saved = self.data
         self.clear()
         self.merge_data(saved)
 

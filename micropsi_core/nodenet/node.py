@@ -225,7 +225,7 @@ class Node(NetEntity):
         except KeyError:
             return None
 
-    def get_associated_link_ids(self):
+    def get_associated_link_uids(self):
         links = []
         for key in self.gates:
             links.extend(self.gates[key].outgoing)
@@ -233,9 +233,9 @@ class Node(NetEntity):
             links.extend(self.slots[key].incoming)
         return links
 
-    def get_associated_node_ids(self):
+    def get_associated_node_uids(self):
         nodes = []
-        for link in self.get_associated_link_ids():
+        for link in self.get_associated_link_uids():
             if self.nodenet.links[link].source_node.uid != self.uid:
                 nodes.append(self.nodenet.links[link].source_node.uid)
             if self.nodenet.links[link].target_node.uid != self.uid:

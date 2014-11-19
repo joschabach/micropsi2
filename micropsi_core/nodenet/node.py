@@ -278,8 +278,8 @@ class Node(NetEntity):
 
     def construct_gates_dict(self):
         data = {}
-        for gate_id, gate in self.gates.items():
-            data[gate_id] = gate.sheaves
+        for gate_name, gate in self.gates.items():
+            data[gate_name] = gate.sheaves
         return data
 
 

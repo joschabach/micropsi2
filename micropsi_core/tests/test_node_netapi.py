@@ -54,7 +54,8 @@ def test_node_netapi_create_register_node(fixed_nodenet):
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    assert node.data['gate_parameters']['gen'] == node.get_gate('gen').parameters
+    assert node.data['gate_parameters'] == {}
+    assert node.get_gate('gen').parameters != {}
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
 
@@ -65,6 +66,7 @@ def test_node_netapi_create_register_node(fixed_nodenet):
 
 def test_node_netapi_create_concept_node(fixed_nodenet):
     # test concept node generation
+    from micropsi_core.nodenet.node import Nodetype
     net, netapi, source = prepare(fixed_nodenet)
     node = netapi.create_node("Concept", "Root", "TestName")
 
@@ -95,15 +97,16 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    assert node.data['gate_parameters']['gen'] == node.get_gate('gen').parameters
-    assert node.data['gate_parameters']['sub'] == node.get_gate('sub').parameters
-    assert node.data['gate_parameters']['sur'] == node.get_gate('sur').parameters
-    assert node.data['gate_parameters']['por'] == node.get_gate('por').parameters
-    assert node.data['gate_parameters']['ret'] == node.get_gate('ret').parameters
-    assert node.data['gate_parameters']['cat'] == node.get_gate('cat').parameters
-    assert node.data['gate_parameters']['exp'] == node.get_gate('exp').parameters
-    assert node.data['gate_parameters']['sym'] == node.get_gate('sym').parameters
-    assert node.data['gate_parameters']['ref'] == node.get_gate('ref').parameters
+    assert node.data['gate_parameters'] == {}
+    assert node.get_gate('gen').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('sub').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('sur').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('por').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('ret').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('cat').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('exp').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('sym').parameters == Nodetype.GATE_DEFAULTS
+    assert node.get_gate('ref').parameters == Nodetype.GATE_DEFAULTS
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
 

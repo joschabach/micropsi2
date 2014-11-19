@@ -205,6 +205,17 @@ class Nodenet(object):
             else:
                 raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
+    def reload_native_modules(self, native_modules):
+        """ reloads the native-module definition, and their nodefunctions
+        and afterwards reinstantiates the nodenet."""
+        self.native_modules = {}
+        for key in native_modules:
+            self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
+            self.native_modules[key].reload_nodefunction()
+        saved = self.data.copy()
+        self.clear()
+        self.merge_data(saved)
+
     def initialize_nodespace(self, id, data):
         if id not in self.nodespaces:
             # move up the nodespace tree until we find an existing parent or hit root

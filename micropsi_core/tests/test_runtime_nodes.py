@@ -107,13 +107,14 @@ def test_save_nodenet(test_nodenet):
     assert len(nodespace["nodes"]) == 4
 
 
-def test_remove_nodes_linking_to_themselves(fixed_nodenet):
-    micropsi.add_link(fixed_nodenet, 'A1', 'gen', 'A1', 'gen')
-    assert micropsi.delete_node(fixed_nodenet, 'A1')
+def test_reload_native_modules(fixed_nodenet):
+    data_before = micropsi.nodenets[fixed_nodenet].data
+    micropsi.reload_native_modules(fixed_nodenet)
+    data_after = micropsi.nodenets[fixed_nodenet].data
+    assert data_before == data_after
 
 
-@pytest.mark.xfail(reason="data-dicts prevent us from handling this correctly")
-def xxx_test_gate_defaults_change_with_nodetype(test_nodenet, resourcepath):
+def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
     # gate_parameters are a property of the nodetype, and should change with
     # the nodetype definition if not explicitly overwritten for a given node
     from os import path
@@ -131,9 +132,8 @@ def xxx_test_gate_defaults_change_with_nodetype(test_nodenet, resourcepath):
             }}}')
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-
-    micropsi.reload_native_modules(test_nodenet)
-    micropsi.add_node(test_nodenet, "Testnode", [10, 10], uid="Testnode", name="Testnode")
+    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], uid="Testnode", name="Testnode")
     with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
@@ -146,13 +146,12 @@ def xxx_test_gate_defaults_change_with_nodetype(test_nodenet, resourcepath):
                 "amplification": 5\
               }\
             }}}')
-    micropsi.reload_native_modules(test_nodenet)
-    params = micropsi.nodenets[test_nodenet].nodes["Testnode"].get_gate_parameters()
+    micropsi.reload_native_modules(fixed_nodenet)
+    params = micropsi.nodenets[fixed_nodenet].nodes["Testnode"].get_gate_parameters()
     assert params["foo"]["amplification"] == 5
 
 
-@pytest.mark.xfail(reason="removing a loaded native module is currently undefined.")
-def xxx_test_remove_and_reload_native_module(test_nodenet, resourcepath):
+def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     from os import path, remove
     with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
         fp.write('{"Testnode": {\
@@ -169,11 +168,12 @@ def xxx_test_remove_and_reload_native_module(test_nodenet, resourcepath):
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    micropsi.reload_native_modules(test_nodenet)
+    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], uid="Testnode", name="Testnode")
     remove(path.join(resourcepath, 'nodetypes.json'))
     remove(path.join(resourcepath, 'nodefunctions.py'))
-    micropsi.reload_native_modules(test_nodenet)
-    assert micropsi.get_available_native_module_types(test_nodenet) == {}
+    micropsi.reload_native_modules(fixed_nodenet)
+    assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
 
 
 """

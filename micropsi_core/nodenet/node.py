@@ -93,7 +93,9 @@ class Node(NetEntity):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
-        self.state = None
+        self.gate_parameters = {}
+
+        self.state = {}
 
         self.gates = {}
         self.slots = {}
@@ -102,14 +104,22 @@ class Node(NetEntity):
         self.parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
             self.parameters.update(parameters)
-        self.gate_parameters = {}
+
+        for gate_name in gate_parameters:
+            for key in gate_parameters[gate_name]:
+                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults.get(key, None):
+                    if gate_name not in self.gate_parameters:
+                        self.gate_parameters[gate_name] = {}
+                    self.gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
+
+        gate_parameters = self.nodetype.gate_defaults.copy()
+        gate_parameters.update(self.gate_parameters)
         for gate in self.nodetype.gatetypes:
             if gate_activations is None or gate not in gate_activations:
                 sheaves_to_use = None
             else:
                 sheaves_to_use = gate_activations[gate]
             self.gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
-            self.gate_parameters[gate] = self.gates[gate].parameters
         for slot in self.nodetype.slottypes:
             self.slots[slot] = Slot(slot, self)
         if state:
@@ -241,6 +251,10 @@ class Node(NetEntity):
                     value = float(value)
                 except:
                     raise Exception("Standard gate parameters must be numeric")
+                if value != Nodetype.GATE_DEFAULTS[parameter]:
+                    if gate_type not in self.parameters:
+                        self.gate_parameters[gate_type] = {}
+                    self.gate_parameters[gate_type][parameter] = value
             self.gates[gate_type].parameters[parameter] = value
 
     def reset_slots(self):
@@ -573,8 +587,7 @@ class Nodetype(object):
             "name": self.name,
             "slottypes": self.slottypes,
             "gatetypes": self.gatetypes,
-            "parameters": self.parameters,
-            "states": self.states
+            "parameters": self.parameters
         }
         return data
 
@@ -629,7 +642,7 @@ class Nodetype(object):
             reload(custom_nodefunctions)
             self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
 
-    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, states=None, parameters=None,
+    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
                  symbol=None, shape=None):
         """Initializes or creates a nodetype.
@@ -643,7 +656,6 @@ class Nodetype(object):
         set up the nodetypes after loading new nodenet state (by using it without parameters).
         """
         self.name = name
-        self.states = states or []
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
 

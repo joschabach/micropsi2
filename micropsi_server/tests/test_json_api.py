@@ -76,16 +76,15 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['settings']['foo'] == 'bar'
 
 
-@pytest.mark.xfail(reason="No native nodes define states at the moment")
 def test_set_node_state(app, test_nodenet):
     response = app.post_json('/rpc/set_node_state', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'state': 'active'
+        'state': {'foo': 'bar'}
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
-    assert response.json_body['data']['nodes']['N1']['state'] == 'active'
+    assert response.json_body['data']['nodes']['N1']['state'] == {'foo': 'bar'}
 
 
 def test_set_node_activation(app, test_nodenet):
@@ -1125,13 +1124,10 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert 'N2' not in data['nodes']
     assert 'NS1' not in data['nodes']
 
-    params = data['nodes']['N1']['gate_parameters']['gen'].keys()
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp', 'sym', 'ref']:
         assert data['nodes']['N1']['gate_activations'][key]['default']['activation'] == 0
-        assert data['nodes']['N1']['gate_parameters'][key]['amplification'] == 1
-        assert data['nodes']['N1']['gate_parameters'][key].keys() == params
 
-    #assert data['nodes']['N1']['index'] == 2
+    assert data['nodes']['N1']['gate_parameters'] == {}
     assert data['nodes']['N1']['name'] == 'N1'
     assert data['nodes']['N1']['parameters'] == {}
     assert data['nodes']['N1']['parent_nodespace'] == 'Root'

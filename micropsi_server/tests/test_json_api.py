@@ -335,6 +335,8 @@ def test_get_world_view(app, test_world):
     assert_success(response)
     assert 'agents' in response.json_body['data']
     assert 'objects' in response.json_body['data']
+    assert response.json_body['data']['current_step'] == 0
+    assert 'step' not in response.json_body['data']
 
 
 def test_set_worldagent_properties(app, test_world, test_nodenet):
@@ -496,7 +498,7 @@ def test_export_world(app, test_world):
     assert export_data['objects'] == {}
     assert export_data['agents'] == {}
     assert export_data['owner'] == 'Pytest User'
-    assert export_data['step'] == 0
+    assert export_data['current_step'] == 0
     assert export_data['world_type'] == 'Island'
 
 
@@ -1178,7 +1180,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
 
     # Nodenet
     assert data['current_step'] == 0  # TODO:
-    assert data['step'] == 0  # current_step && step?
+    assert 'step' not in data  # current_step && step?
     assert data['version'] == 1
     assert data['world'] == 'WorldOfPain'
     assert data['worldadapter'] == 'Default'

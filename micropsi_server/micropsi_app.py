@@ -785,7 +785,7 @@ def stop_nodenetrunner(nodenet_uid):
 
 @rpc("step_nodenet", permission_required="manage nodenets")
 def step_nodenet(nodenet_uid):
-    return runtime.step_nodenet(nodenet_uid)
+    return True, runtime.step_nodenet(nodenet_uid)
 
 
 @rpc("revert_nodenet", permission_required="manage nodenets")
@@ -927,7 +927,7 @@ def stop_worldrunner(world_uid):
 
 @rpc("step_world", permission_required="manage worlds")
 def step_world(world_uid, return_world_view=False):
-    return runtime.step_world(world_uid, return_world_view)
+    return True, runtime.step_world(world_uid, return_world_view)
 
 
 @rpc("revert_world", permission_required="manage worlds")

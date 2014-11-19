@@ -149,6 +149,7 @@ def test_step_nodenet(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 0
     response = app.get_json('/rpc/step_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
+    assert response.json_body['data'] == 1
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     assert response.json_body['data']['current_step'] == 1
 
@@ -443,6 +444,7 @@ def test_step_world(app, test_world):
     step = response.json_body['data']['current_step']
     response = app.get_json('/rpc/step_world(world_uid="%s")' % test_world)
     assert_success(response)
+    assert response.json_body['data'] == 1
     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
     assert response.json_body['data']['current_step'] == step + 1
 

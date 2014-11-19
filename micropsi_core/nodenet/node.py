@@ -104,7 +104,7 @@ class Node(NetEntity):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
-        self.state = {}
+        self.state = None
 
         self.gates = {}
         self.slots = {}
@@ -654,7 +654,7 @@ class Nodetype(object):
         set up the nodetypes after loading new nodenet state (by using it without parameters).
         """
         self.name = name
-        self.states = states or {}
+        self.states = states or []
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
 

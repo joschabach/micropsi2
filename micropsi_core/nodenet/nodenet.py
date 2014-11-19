@@ -10,7 +10,7 @@ import json
 import os
 
 import warnings
-from .node import Node, Nodetype, emptySheafElement, STANDARD_NODETYPES
+from .node import Node, Nodetype, STANDARD_NODETYPES
 from threading import Lock
 import logging
 from .nodespace import Nodespace
@@ -22,8 +22,10 @@ __date__ = '09.05.12'
 
 NODENET_VERSION = 1
 
+
 class NodenetLockException(Exception):
     pass
+
 
 class Nodenet(object):
     """Main data structure for MicroPsi agents,
@@ -214,7 +216,7 @@ class Nodenet(object):
                 name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'),
-                gatefunctions=data[id].get('gatefunctions', None))
+                gatefunctions=data[id].get('gatefunctions'))
 
     def initialize_nodenet(self, initfrom):
         """Called after reading new nodenet state.
@@ -246,7 +248,7 @@ class Nodenet(object):
             data[link_uid] = link.data
         return data
 
-    def construct_nodes_dict(self, max_nodes = -1):
+    def construct_nodes_dict(self, max_nodes=-1):
         data = {}
         i = 0
         for node_uid, node in self.nodes.items():
@@ -435,7 +437,6 @@ class Nodenet(object):
         # merge in monitors
         for uid in nodenet_data.get('monitors', {}):
             self.monitors[uid] = Monitor(self, **nodenet_data['monitors'][uid])
-
 
     def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.
@@ -870,7 +871,7 @@ class NetAPI(object):
         Returns the newly created entity.
         """
         if name is None:
-            name = ""   #TODO: empty names crash the client right now, but really shouldn't
+            name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)

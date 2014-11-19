@@ -20,13 +20,6 @@ __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-# class SheafElement(micropsi_core.tools.Bunch):
-#     def __init__(self, uid="default", name="default", activation=0):
-#         super().__init__(uid=uid, name=name, activation=activation)
-
-#     def copy(self):
-#         return SheafElement(uid=self.uid, name=self.name)
-
 emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
@@ -55,7 +48,7 @@ class Node(NetEntity):
             "type": self.type,
             "parameters": self.parameters,
             "state": self.state,
-            "gate_parameters": self.gate_parameters, # still a redundant field, get rid of it
+            "gate_parameters": self.gate_parameters,  # still a redundant field, get rid of it
             "sheaves": self.sheaves,
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -117,7 +110,6 @@ class Node(NetEntity):
         self.slots = {}
         self.__type = type
 
-        #self.nodetype = self.nodenet.get_nodetype(type)
         self.parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
             self.parameters.update(parameters)
@@ -362,8 +354,8 @@ class Gate(object):
         if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
         You might want to replace it with a radial basis function, for instance.
         """
-        if input_activation is None: input_activation = 0
-
+        if input_activation is None:
+            input_activation = 0
 
         # check if the current node space has an activator that would prevent the activity of this gate
         nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]

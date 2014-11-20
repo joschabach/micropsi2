@@ -988,11 +988,11 @@ function createPlaceholder(node, direction, point){
 }
 
 // draw link
-function renderLink(link) {
-    if(nodenet_data.settings.renderlinks == 'no'){
+function renderLink(link, force) {
+    if(nodenet_data.settings.renderlinks == 'no' && !force){
         return;
     }
-    if(nodenet_data.settings.renderlinks == 'hover'){
+    if(nodenet_data.settings.renderlinks == 'hover' && !force){
         if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
             return;
         }
@@ -1562,6 +1562,9 @@ function deselectNode(nodeUid) {
 // mark node as selected, and add it to the selected nodes
 function selectLink(linkUid) {
     selection[linkUid] = links[linkUid];
+    if(!(linkUid in linkLayer.children)){
+        renderLink(links[linkUid], true);
+    }
     var linkShape = linkLayer.children[linkUid].children["link"];
     oldHoverColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeColor = viewProperties.selectionColor;
@@ -1576,6 +1579,9 @@ function deselectLink(linkUid) {
     if (linkUid in selection) {
         delete selection[linkUid];
         var linkShape = linkLayer.children[linkUid].children["link"];
+        if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
+            linkLayer.children[linkUid].remove();
+        }
         linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
         linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
         linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;

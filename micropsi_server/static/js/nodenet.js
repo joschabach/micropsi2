@@ -421,7 +421,11 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         } else {
             nodenetRunning = data.is_active;
         }
+        if (linkCreationStart){
+            renderLinkDuringCreation(clickPoint);
+        }
         setNodespaceData(data, changed);
+
         if(callback){
             callback(data);
         }
@@ -595,7 +599,7 @@ function addLink(link) {
             nodes[link.targetNodeUid].slots[link.slotName].incoming[link.uid]=link;
             slot = true;
         }
-        if(!gate || !slot){
+        if((sourceNode.uid && !gate) || (targetNode.uid && !slot)){
             console.error('Incompatible slots and gates');
             return;
         }
@@ -988,15 +992,6 @@ function renderLink(link) {
     }
     var sourceNode = nodes[link.sourceNodeUid];
     var targetNode = nodes[link.targetNodeUid];
-    var gate;
-    if(sourceNode){
-        gate = sourceNode.gates[link.gateName];
-    } else {
-        gate = {
-            activation: link.weight,
-            name: link.gateName
-        };
-    }
 
     var linkStart = calculateLinkStart(sourceNode, targetNode, link.gateName);
     var linkEnd = calculateLinkEnd(sourceNode, targetNode, link.slotName, link.gateName);
@@ -1014,13 +1009,17 @@ function renderLink(link) {
     }
 
     link.strokeWidth = Math.max(0.1, Math.min(1.0, Math.abs(link.weight)))*viewProperties.zoomFactor;
-    link.strokeColor = activationColor(gate.sheaves[currentSheaf].activation * link.weight, viewProperties.linkColor);
+    if(sourceNode){
+        link.strokeColor = activationColor(sourceNode.gates[link.gateName].sheaves[currentSheaf].activation * link.weight, viewProperties.linkColor);
+    } else {
+        link.strokeColor = viewProperties.linkColor;
+    }
 
     var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
     var endDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkEnd.angle);
 
     var arrowPath = createArrow(linkEnd.point, endDirection.angle, link.strokeColor);
-    var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, linkEnd.point, linkEnd.angle, endDirection, link.strokeColor, link.strokeWidth, gate.name);
+    var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, linkEnd.point, linkEnd.angle, endDirection, link.strokeColor, link.strokeWidth, link.gatename);
 
     var linkItem = new Group([linkPath, arrowPath]);
     linkItem.name = "link";
@@ -1691,7 +1690,9 @@ function isRightClick(event){
 
 function onMouseDown(event) {
     path = hoverPath = null;
+    clickType = null;
     var p = event.point;
+    clickPoint = p;
     dragMultiples = Object.keys(selection).length > 1;
     var clickedSelected = false;
     // first, check for nodes
@@ -1782,7 +1783,9 @@ function onMouseDown(event) {
 
     if (linkCreationStart) {
         // todo: open dialog to link into different nodespaces
-        cancelLinkCreationHandler();
+        if(!(clickType == "node" && nodes[path.name].type == "Nodespace")){
+            cancelLinkCreationHandler();
+        }
         return;
     }
 
@@ -2751,6 +2754,8 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
 
 // establish the created link
 function finalizeLinkHandler(nodeUid, slotIndex) {
+    var sourceNode = linkCreationStart.sourceNode;
+    var targetNode = nodes[nodeUid];
     var sourceUid = linkCreationStart.sourceNode.uid;
     var targetUid = nodeUid;
     var gateIndex = linkCreationStart.gateIndex;
@@ -2762,7 +2767,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
 
         var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
         var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
-        var sourceSlots = nodes[sourceUid].slots ? nodes[sourceUid].slotIndexes.length : 0;
+        var sourceSlots = sourceNode.slots ? sourceNode.slotIndexes.length : 0;
 
         var newlinks = [];
 
@@ -2770,64 +2775,64 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
             case "por/ret":
                 // the por link
                 if (targetSlots > 2) {
-                    newlinks.push(createLinkIfNotExists(sourceUid, "por", targetUid, "por", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
                 } else {
-                    newlinks.push(createLinkIfNotExists(sourceUid, "por", targetUid, "gen", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gen", 1, 1));
                 }
                 // the ret link
                 if (targetGates > 2) {
                     if(sourceSlots > 2) {
-                        newlinks.push(createLinkIfNotExists(targetUid, "ret", sourceUid, "ret", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "ret", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetUid, "ret", sourceUid, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "gen", 1, 1));
                     }
                 }
                 break;
             case "sub/sur":
                 // the sub link
                 if (targetSlots > 4) {
-                    newlinks.push(createLinkIfNotExists(sourceUid, "sub", targetUid, "sub", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "sub", 1, 1));
                 } else {
-                    newlinks.push(createLinkIfNotExists(sourceUid, "sub", targetUid, "gen", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "gen", 1, 1));
                 }
                 // the sur link
                 if (targetGates > 4) {
                     if(sourceSlots > 4) {
-                        newlinks.push(createLinkIfNotExists(targetUid, "sur", sourceUid, "sur", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "sur", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetUid, "sur", sourceUid, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "gen", 1, 1));
                     }
                 }
                 break;
             case "cat/exp":
                 // the cat link
                 if (targetSlots > 6) {
-                    newlinks.push(createLinkIfNotExists(sourceUid, "cat", targetUid, "cat", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "cat", 1, 1));
                 } else {
-                    newlinks.push(createLinkIfNotExists(sourceUid, "cat", targetUid, "gen", 1, 1));
+                    newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "gen", 1, 1));
                 }
                 // the exp link
                 if (targetGates > 6) {
                     if(sourceSlots > 6) {
-                        newlinks.push(createLinkIfNotExists(targetUid, "cat", sourceUid, "cat", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "cat", sourceNode, "cat", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetUid, "exp", sourceUid, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "gen", 1, 1));
                     }
                 }
                 break;
             default:
-                newlinks.push(createLinkIfNotExists(sourceUid, nodes[sourceUid].gateIndexes[gateIndex], targetUid, nodes[targetUid].slotIndexes[slotIndex], 1, 1));
+                newlinks.push(createLinkIfNotExists(sourceNode, sourceNode.gateIndexes[gateIndex], targetNode, targetNode.slotIndexes[slotIndex], 1, 1));
         }
 
         for (i=0;i<newlinks.length;i++) {
 
             var link = newlinks[i];
             if(link){
-                addLink(link);
-                if(nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                    nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                    nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                    if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                    if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
                 }
+                addLink(link);
 
                 api.call("add_link", {
                     nodenet_uid: currentNodenet,
@@ -2845,14 +2850,14 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
     }
 }
 
-function createLinkIfNotExists(sourceUid, sourceGate, targetUid, targetSlot, weight, certainty){
-    for(var uid in nodes[sourceUid].gates[sourceGate].outgoing){
-        var link = nodes[sourceUid].gates[sourceGate].outgoing[uid];
-        if(link.targetNodeUid == targetUid && link.slotName == targetSlot){
+function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight, certainty){
+    for(var uid in sourceNode.gates[sourceGate].outgoing){
+        var link = sourceNode.gates[sourceGate].outgoing[uid];
+        if(link.targetNodeUid == targetNode.uid && link.slotName == targetSlot){
             return false;
         }
     }
-    var newlink = new Link(makeUuid(), sourceUid, sourceGate, targetUid, targetSlot, weight || 1, certainty || 1);
+    var newlink = new Link(makeUuid(), sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1, certainty || 1);
     return newlink;
 }
 

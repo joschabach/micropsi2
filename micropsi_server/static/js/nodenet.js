@@ -68,8 +68,15 @@ prerenderLayer.visible = false;
 
 viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
-currentNodenet = $.cookie('selected_nodenet') || null;
-currentNodeSpace = $.cookie('current_nodespace') || 'Root';
+current = $.cookie('selected_nodenet') || '';
+if(current.search('/')){
+    current = current.split('/');
+    currentNodenet = current[0];
+    currentNodeSpace = current[1];
+} else {
+    currentNodenet = null;
+    currentNodeSpace = null;
+}
 
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -382,7 +389,7 @@ function setNodespaceData(data, changed){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
-    if(!currentNodenet){
+    if(!currentNodenet || !nodespace){
         return;
     }
     if(coordinates)

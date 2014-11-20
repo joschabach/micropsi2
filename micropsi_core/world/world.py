@@ -156,11 +156,17 @@ class World(object):
             else:
                 self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % worldobject['type'])
                 del self.data['objects'][uid]
+        outdated_agents = []
         for uid, agent in self.data.get('agents', {}).items():
-            try:
-                self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
-            except KeyError:
-                warnings.warn('Worldadapter %s not found, can not spawn agent %s' % (agent['type'], agent['name']))
+            if uid in micropsi_core.runtime.nodenet_data:
+                try:
+                    self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
+                except KeyError:
+                    warnings.warn('Worldadapter %s not found, can not spawn agent %s' % (agent['type'], agent['name']))
+            else:
+                outdated_agents.append(uid)
+        for uid in outdated_agents:
+            del self.data['agents'][uid]
 
     def step(self):
         """ advance the simluation """

@@ -1115,7 +1115,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
 
 @rpc("add_link", permission_required="manage nodenets")
 def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, uid=None):
-    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid)
+    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight)
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")

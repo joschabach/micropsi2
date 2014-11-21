@@ -857,8 +857,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     return False
 
 
-def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1,
-             uid=None):
+def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
     """Creates a new link.
 
     Arguments.
@@ -868,14 +867,13 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         slot_type: type of the target slot
         weight: the weight of the link (a float)
         certainty (optional): a probabilistic parameter for the link
-        uid (option): if none is supplied, a uid will be generated
 
     Returns:
         link_uid if successful,
         None if failure
     """
     nodenet = nodenets[nodenet_uid]
-    return nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
+    return nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
 def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):

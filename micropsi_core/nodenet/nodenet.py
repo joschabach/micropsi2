@@ -14,7 +14,6 @@ from .node import Node, Nodetype, STANDARD_NODETYPES
 from threading import Lock
 import logging
 from .nodespace import Nodespace
-from .link import Link
 from .monitor import Monitor
 
 __author__ = 'joscha'
@@ -433,17 +432,13 @@ class Nodenet(object):
         # merge in links
         for uid in nodenet_data.get('links', {}):
             data = nodenet_data['links'][uid]
-            if data['source_node_uid'] in self.nodes and \
-                    data['source_gate_name'] in self.nodes[data['source_node_uid']].gates and\
-                    data['target_node_uid'] in self.nodes and\
-                    data['target_slot_name'] in self.nodes[data['target_node_uid']].slots:
-                self.links[uid] = Link(
-                    self.nodes[data['source_node_uid']], data['source_gate_name'],
-                    self.nodes[data['target_node_uid']], data['target_slot_name'],
-                    weight=data['weight'], certainty=data['certainty'],
-                    uid=uid)
-            else:
-                warnings.warn("Slot or gatetype for link %s invalid" % uid)
+            if data['source_node_uid'] in self.nodes:
+                source_node = self.nodes[data['source_node_uid']]
+                source_node.link(data['source_gate_name'],
+                                 data['target_node_uid'],
+                                 data['target_slot_name'],
+                                 data['weight'],
+                                 data['certainty'])
 
         # merge in monitors
         for uid in nodenet_data.get('monitors', {}):
@@ -531,13 +526,10 @@ class Nodenet(object):
                             if not l in links:
                                 links[l] = link
             for l in links:
-                uid = l if not l in self.links else micropsi_core.tools.generate_uid()
                 link = links[l]
                 source_node = self.nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
-                target_node = self.nodes[rename_nodes.get(link.target_node.uid, link.target_node.uid)]
 
-                Link(source_node, link.source_gate.type, target_node, link.target_slot.type,
-                    link.weight, link.certainty, uid)
+                source_node.link(link.source_gate.type, link.target_node.uid, link.target_slot.type, link.weight, link.certainty)
 
     def move_nodes(self, nodes, nodespaces, target_nodespace=None):
         """moves the nodes into a new nodespace or nodenet, and deletes them at their original position.
@@ -700,7 +692,7 @@ class Nodenet(object):
         self.links[link_uid].certainty = certainty
         return True
 
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1, uid=None):
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Creates a new link.
 
         Arguments.
@@ -710,31 +702,21 @@ class Nodenet(object):
             slot_type: type of the target slot
             weight: the weight of the link (a float)
             certainty (optional): a probabilistic parameter for the link
-            uid (option): if none is supplied, a uid will be generated
 
         Returns:
             link_uid if successful,
             None if failure
         """
 
-        # check if link already exists
-        existing_uid = self.get_link_uid(
-            source_node_uid, gate_type,
-            target_node_uid, slot_type)
-        if existing_uid:
-            self.set_link_weight(existing_uid, weight, certainty)
-            link = self.links[existing_uid]
+        source_node = self.nodes[source_node_uid]
+        if source_node is None:
+            return False, None
+
+        link = source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
+        if link is None:
+            return False, None
         else:
-            link = Link(
-                self.nodes[source_node_uid],
-                gate_type,
-                self.nodes[target_node_uid],
-                slot_type,
-                weight=weight,
-                certainty=certainty,
-                uid=uid)
-            self.links[link.uid] = link
-        return True, link.uid
+            return True, link.uid
 
     def delete_link(self, link_uid):
         """Delete the given link."""

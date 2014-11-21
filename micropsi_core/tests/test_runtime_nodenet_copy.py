@@ -32,12 +32,12 @@ def test_copy_nodes():
     micropsi.add_node(nodenet_uid2, "Register", (100, 140), "Root", uid="n1")
     micropsi.add_node(nodenet_uid2, "Register", (150, 240), "Root", uid="nt2")
 
-    micropsi.add_link(nodenet_uid1, "n1", "gen", "n2", "gen", uid="l1")
-    micropsi.add_link(nodenet_uid1, "n2", "gen", "n3", "gen", uid="l2")
-    micropsi.add_link(nodenet_uid1, "n1", "gen", "associated_node", "gen", uid="la")
-    micropsi.add_link(nodenet_uid1, "n3", "gen", "n1", "gen", uid="l3")
-    micropsi.add_link(nodenet_uid1, "n4", "gen", "n1", "gen", uid="l4")
-    micropsi.add_link(nodenet_uid2, "n1", "gen", "nt2", "gen", uid="l1")
+    micropsi.add_link(nodenet_uid1, "n1", "gen", "n2", "gen")
+    micropsi.add_link(nodenet_uid1, "n2", "gen", "n3", "gen")
+    micropsi.add_link(nodenet_uid1, "n1", "gen", "associated_node", "gen")
+    micropsi.add_link(nodenet_uid1, "n3", "gen", "n1", "gen")
+    micropsi.add_link(nodenet_uid1, "n4", "gen", "n1", "gen")
+    micropsi.add_link(nodenet_uid2, "n1", "gen", "nt2", "gen")
 
     # now copy stuff between nodespaces
     micropsi.copy_nodes(["n1", "n2", "n3", "n5", "ns1", "confl"], nodenet_uid1, nodenet_uid2)
@@ -62,10 +62,6 @@ def test_copy_nodes():
     assert "confl" in target["nodespaces"]
 
     assert len(target["links"]) == 3 + 1
-    assert "l1" in target["links"]
-    assert "l2" in target["links"]
-    assert "l3" in target["links"]
-    assert "l4" not in target["links"]
 
     # we should also test for parentage and link connectivity
 

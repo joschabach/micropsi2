@@ -13,6 +13,7 @@ default Nodetypes
 
 import warnings
 import micropsi_core.tools
+from .link import Link
 from .netentity import NetEntity
 import logging
 
@@ -129,23 +130,6 @@ class Node(NetEntity):
 
         self.activation = 0
 
-    def get_gate_parameters(self):
-        """Looks into the gates and returns gate parameters if these are defined"""
-        gate_parameters = {}
-        for gate in self.gates:
-            if self.gates[gate].parameters:
-                gate_parameters[gate] = self.gates[gate].parameters
-        if len(gate_parameters):
-            return gate_parameters
-        else:
-            return None
-
-    def set_gate_activation(self, gate, activation, sheaf="default"):
-        """ sets the activation of the given gate"""
-        activation = float(activation)
-        if gate in self.gates:
-            self.gates[gate].sheaves[sheaf]['activation'] = activation
-
     def node_function(self):
         """Called whenever the node is activated or active.
 
@@ -215,6 +199,23 @@ class Node(NetEntity):
             return self.slots[slotname]
         except KeyError:
             return None
+
+    def get_gate_parameters(self):
+        """Looks into the gates and returns gate parameters if these are defined"""
+        gate_parameters = {}
+        for gate in self.gates:
+            if self.gates[gate].parameters:
+                gate_parameters[gate] = self.gates[gate].parameters
+        if len(gate_parameters):
+            return gate_parameters
+        else:
+            return None
+
+    def set_gate_activation(self, gate, activation, sheaf="default"):
+        """ sets the activation of the given gate"""
+        activation = float(activation)
+        if gate in self.gates:
+            self.gates[gate].sheaves[sheaf]['activation'] = activation
 
     def get_associated_link_uids(self):
         links = []
@@ -289,6 +290,36 @@ class Node(NetEntity):
 
     def set_state(self, state_element, value):
         self.state[state_element] = value
+
+    def link(self, gate_name, target_node_uid, slot_name, weight=1, certainty=1):
+        """Ensures a link exists with the given parameters and returns it
+           Only one link between a node/gate and a node/slot can exist, its parameters will be updated with the
+           given parameters if a link existed prior to the call of this method
+           Will return None if no such link can be created.
+        """
+
+        if target_node_uid not in self.nodenet.nodes:
+            return None
+
+        target = self.nodenet.nodes[target_node_uid]
+
+        if slot_name not in target.slots:
+            return None
+
+        gate = self.get_gate(gate_name)
+        if gate is None:
+            return None
+        link = None
+        for candidate_uid, candidate in gate.outgoing.items():
+            if candidate.target_node.uid == target.uid and candidate.target_slot == slot_name:
+                link = candidate
+                break
+        if link is None:
+            link = Link(self, gate_name, target, slot_name)
+
+        link.weight = weight
+        link.certainty = certainty
+        return link
 
     def construct_gates_dict(self):
         data = {}

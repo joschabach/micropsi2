@@ -30,7 +30,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
-        # 'fov_reset': 0,
     }
 
     datatarget_feedback = {
@@ -40,7 +39,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
-        # 'fov_reset': 0
     }
 
     # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -347,6 +345,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         h_line.reverse()
         v_line.reverse()
+
+        # TODO: return a majority vote rather than the one single block type hit
 
         return self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
 

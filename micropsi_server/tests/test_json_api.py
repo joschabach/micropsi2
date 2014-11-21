@@ -76,16 +76,15 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['settings']['foo'] == 'bar'
 
 
-@pytest.mark.xfail(reason="No native nodes define states at the moment")
 def test_set_node_state(app, test_nodenet):
     response = app.post_json('/rpc/set_node_state', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'state': 'active'
+        'state': {'foo': 'bar'}
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
-    assert response.json_body['data']['nodes']['N1']['state'] == 'active'
+    assert response.json_body['data']['nodes']['N1']['state'] == {'foo': 'bar'}
 
 
 def test_set_node_activation(app, test_nodenet):
@@ -97,7 +96,7 @@ def test_set_node_activation(app, test_nodenet):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     sheaves = response.json_body['data']['nodes']['N1']['sheaves']
-    assert sheaves['default']['activation'] == '0.734'
+    assert sheaves['default']['activation'] == 0.734
 
 
 def test_start_nodenetrunner(app, test_nodenet):
@@ -149,6 +148,7 @@ def test_step_nodenet(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 0
     response = app.get_json('/rpc/step_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
+    assert response.json_body['data'] == 1
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     assert response.json_body['data']['current_step'] == 1
 
@@ -334,6 +334,8 @@ def test_get_world_view(app, test_world):
     assert_success(response)
     assert 'agents' in response.json_body['data']
     assert 'objects' in response.json_body['data']
+    assert response.json_body['data']['current_step'] == 0
+    assert 'step' not in response.json_body['data']
 
 
 def test_set_worldagent_properties(app, test_world, test_nodenet):
@@ -443,6 +445,7 @@ def test_step_world(app, test_world):
     step = response.json_body['data']['current_step']
     response = app.get_json('/rpc/step_world(world_uid="%s")' % test_world)
     assert_success(response)
+    assert response.json_body['data'] == 1
     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
     assert response.json_body['data']['current_step'] == step + 1
 
@@ -494,7 +497,7 @@ def test_export_world(app, test_world):
     assert export_data['objects'] == {}
     assert export_data['agents'] == {}
     assert export_data['owner'] == 'Pytest User'
-    assert export_data['step'] == 0
+    assert export_data['current_step'] == 0
     assert export_data['world_type'] == 'Island'
 
 
@@ -1050,3 +1053,131 @@ def test_500(app):
     assert_failure(response)
     assert "unexpected keyword argument" in response.json_body['data']
     assert response.json_body['traceback'] is not None
+
+
+def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
+    app.set_auth()
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t"}}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    app.post_json('/rpc/add_node', params={
+        'nodenet_uid': test_nodenet,
+        'type': 'Nodespace',
+        'position': [23, 23],
+        'nodespace': 'Root',
+        'uid': 'NS1',
+        'name': 'Test-Node-Space'
+    })
+    app.post_json('/rpc/add_node', params={
+        'nodenet_uid': test_nodenet,
+        'type': 'Concept',
+        'position': [42, 42],
+        'nodespace': 'NS1',
+        'uid': 'N2'
+    })
+    response = app.post_json('/rpc/add_gate_monitor', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': 'N1',
+        'gate': 'gen'
+    })
+    monitor_uid = response.json_body['data']
+
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
+    data = response.json_body['data']
+
+    # Links
+    response = app.get_json('/rpc/get_link(nodenet_uid="%s", link_uid="N1-N1")' % test_nodenet)
+    link_data = response.json_body['data']
+
+    assert data['links']['N1-N1']['weight'] == 1
+    assert data['links']['N1-N1']['certainty'] == 1
+    assert data['links']['N1-N1']['source_node_uid'] == 'N1'
+    assert data['links']['N1-N1']['target_node_uid'] == 'N1'
+    assert data['links']['N1-N1']['source_gate_name'] == 'gen'
+    assert data['links']['N1-N1']['target_slot_name'] == 'gen'
+    assert data['links']['N1-N1'] == link_data
+
+    # Monitors
+    response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
+    monitor_data = response.json_body['data']
+
+    assert data['monitors'][monitor_uid]['node_name'] == 'N1'
+    assert data['monitors'][monitor_uid]['node_uid'] == 'N1'
+    assert data['monitors'][monitor_uid]['target'] == 'gen'
+    assert data['monitors'][monitor_uid]['type'] == 'gate'
+    assert data['monitors'][monitor_uid]['uid'] == monitor_uid
+    assert data['monitors'][monitor_uid]['values'] == {}
+    assert data['monitors'][monitor_uid] == monitor_data
+
+    # Nodes
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s", node_uid="N1")' % test_nodenet)
+    node_data = response.json_body['data']
+
+    assert 'N1' in data['nodes']
+    assert 'N2' not in data['nodes']
+    assert 'NS1' not in data['nodes']
+
+    for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp', 'sym', 'ref']:
+        assert data['nodes']['N1']['gate_activations'][key]['default']['activation'] == 0
+
+    assert data['nodes']['N1']['gate_parameters'] == {}
+    assert data['nodes']['N1']['name'] == 'N1'
+    assert data['nodes']['N1']['parameters'] == {}
+    assert data['nodes']['N1']['parent_nodespace'] == 'Root'
+    assert data['nodes']['N1']['position'] == [10, 10]
+    assert data['nodes']['N1']['type'] == "Concept"
+    assert data['nodes']['N1'] == node_data
+
+    # Nodespaces
+    #assert data['nodespaces']['NS1']['index'] == 3
+    assert data['nodespaces']['NS1']['name'] == 'Test-Node-Space'
+    assert data['nodespaces']['NS1']['gatefunctions'] == {}
+    assert data['nodespaces']['NS1']['parent_nodespace'] == 'Root'
+    assert data['nodespaces']['NS1']['position'] == [23, 23]
+
+    # Nodetypes
+    response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
+    node_type_data = response.json_body['data']
+
+    for key in ['Comment', 'Nodespace']:
+        assert 'gatetypes' not in data['nodetypes'][key]
+        assert 'slottypes' not in data['nodetypes'][key]
+
+    for key in ['Concept', 'Pipe', 'Register', 'Script', 'Actor']:
+        assert 'gatetypes' in data['nodetypes'][key]
+        assert 'slottypes' in data['nodetypes'][key]
+
+    assert 'slottypes' in data['nodetypes']['Activator']
+    assert 'gatetypes' not in data['nodetypes']['Activator']
+
+    assert 'slottypes' not in data['nodetypes']['Sensor']
+    assert 'gatetypes' in data['nodetypes']['Sensor']
+
+    assert data['nodetypes'] == node_type_data
+
+    # Native Modules
+    response = app.get_json('/rpc/get_available_native_module_types(nodenet_uid="%s")' % test_nodenet)
+    native_module_data = response.json_body['data']
+
+    assert data['native_modules']['Testnode']['gatetypes'] == ['gen', 'foo', 'bar']
+    assert data['native_modules']['Testnode']['name'] == 'Testnode'
+    assert data['native_modules']['Testnode']['nodefunction_name'] == 'testnodefunc'
+    assert data['native_modules']['Testnode']['slottypes'] == ['gen', 'foo', 'bar']
+    assert data['native_modules']['Testnode']['symbol'] == 't'
+
+    assert data['native_modules'] == native_module_data
+
+    # Nodenet
+    assert data['current_step'] == 0  # TODO:
+    assert 'step' not in data  # current_step && step?
+    assert data['version'] == 1
+    assert data['world'] == 'WorldOfPain'
+    assert data['worldadapter'] == 'Default'
+

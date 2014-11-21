@@ -127,6 +127,32 @@ def test_agent_dying_unregisters_agent(test_world, test_nodenet):
     assert nodenet.uid not in world.data['agents']
     assert nodenet.uid not in world.agents
 
+
+def test_world_does_not_spawn_deleted_agents(test_world, resourcepath):
+    from micropsi_core.world.world import World
+    filename = os.path.join(resourcepath, 'worlds', 'foobar.json')
+    data = """{
+    "filename": "%s",
+    "name": "foobar",
+    "owner": "Pytest User",
+    "uid": "foobar",
+    "version":1,
+    "world_type": "Island",
+    "agents": {
+        "dummy": {
+            "name": "Dummy",
+            "position": [17, 17],
+            "type": "Braitenberg",
+            "uid": "dummy"
+        }
+    }
+    }"""
+    with open(filename, 'w') as fp:
+        fp.write(data)
+    world = World(filename, world_type='Island', name='foobar', owner='Pytest User', uid='foobar')
+    assert 'dummy' not in world.agents
+    assert 'dummy' not in world.data['agents']
+
 """
 def test_get_world_view(micropsi, test_world):
     assert 0

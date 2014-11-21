@@ -271,7 +271,7 @@ def load_nodenet(nodenet_uid):
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 
-            if data.get('world'):
+            if data.world:
                 if data.world in worlds:
                     world = worlds.get(data.world)
                     worldadapter = data.get('worldadapter')
@@ -280,6 +280,10 @@ def load_nodenet(nodenet_uid):
                 name=data.name, worldadapter=worldadapter,
                 world=world, owner=data.owner, uid=data.uid,
                 nodetypes=nodetypes, native_modules=native_modules)
+            if "settings" in data:
+                nodenets[nodenet_uid].settings = data["settings"].copy()
+            else:
+                nodenets[nodenet_uid].settings = {}
         else:
             world = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
@@ -293,7 +297,7 @@ def get_nodenet_data(nodenet_uid, **coordinates):
     """ returns the current state of the nodenet """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
-        data = nodenet.state.copy()
+        data = nodenet.data
     data.update(get_nodenet_area(nodenet_uid, **coordinates))
     data.update({
         'nodetypes': nodetypes,
@@ -348,9 +352,9 @@ def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_
     """
     if template is not None and template in nodenet_data:
         if template in nodenets:
-            data = nodenets[template].state.copy()
+            data = nodenets[template].data
         else:
-            data = nodenet_data[template].copy()
+            data = nodenet_data[template]
     else:
         data = dict(
             nodes=dict(),
@@ -365,7 +369,8 @@ def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_
         name=nodenet_name,
         worldadapter=worldadapter,
         owner=owner,
-        world=world_uid
+        world=world_uid,
+        settings={}
     ))
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
@@ -397,6 +402,7 @@ def delete_nodenet(nodenet_uid):
 
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, settings={}):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
+
     nodenet = nodenets[nodenet_uid]
     if nodenet.world and nodenet.world.uid != world_uid:
         nodenet.world.unregister_nodenet(nodenet_uid)
@@ -412,8 +418,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         nodenet.name = nodenet_name
     if owner:
         nodenet.owner = owner
-    nodenet.state['settings'] = settings
-    nodenet_data[nodenet_uid] = Bunch(**nodenet.state)
+    nodenet.settings = settings.copy()
     return True
 
 
@@ -478,8 +483,9 @@ def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
     with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'), 'w+') as fp:
-        fp.write(json.dumps(nodenet.state, sort_keys=True, indent=4))
+        fp.write(json.dumps(nodenet.data, sort_keys=True, indent=4))
     fp.close()
+    nodenet_data[nodenet_uid] = Bunch(**nodenet.data)
     return True
 
 
@@ -488,7 +494,7 @@ def export_nodenet(nodenet_uid):
 
     Returns a string that contains the nodenet state in JSON format.
     """
-    return json.dumps(nodenets[nodenet_uid].state, sort_keys=True, indent=4)
+    return json.dumps(nodenets[nodenet_uid].data, sort_keys=True, indent=4)
 
 
 def import_nodenet(string, owner=None):
@@ -587,7 +593,7 @@ def get_nodespace_list(nodenet_uid):
                 'gates': nodenet.get_nodetype(nodenet.nodes[nid].type).gatetypes,
                 'slots': nodenet.get_nodetype(nodenet.nodes[nid].type).slottypes
             }
-        data[uid]['gatefunctions'] = nodespace.data.get('gatefunctions', {})
+        data[uid]['gatefunctions'] = nodespace.get_gatefunctions_string()
     return data
 
 
@@ -732,13 +738,10 @@ def set_node_name(nodenet_uid, node_uid, name):
 
 
 def set_node_state(nodenet_uid, node_uid, state):
-    """ Sets the state of the given node to the given state,
-        provided, the nodetype allows the given state """
+    """ Sets the state of the given node to the given state"""
     node = nodenets[nodenet_uid].nodes[node_uid]
-    if state and state in node.nodetype.states:
-        node.state = state
-        return True
-    return False
+    node.state = state
+    return True
 
 
 def set_node_activation(nodenet_uid, node_uid, activation):
@@ -805,8 +808,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     """Returns a string with the gate function of the given node and gate within the current nodespace.
     Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
     """
-    return nodenets[nodenet_uid].state['nodespaces'][nodespace]['gatefunctions'].get(node_type, {}).get(
-        gate_type, '')
+    return nodenets[nodenet_uid].nodespaces[nodespace].get_gatefunction_string(node_type, gate_type)
 
 
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
@@ -948,13 +950,15 @@ def parse_definition(json, filename=None):
             uid=json["uid"],
             name=json.get("name", json["uid"]),
             filename=filename or json.get("filename"),
-            owner=json.get("owner")
+            owner=json.get("owner"),
         )
         if "worldadapter" in json:
             result['worldadapter'] = json["worldadapter"]
             result['world'] = json["world"]
         if "world_type" in json:
             result['world_type'] = json['world_type']
+        if "settings" in json:
+            result['settings'] = json['settings']
         return Bunch(**result)
 
 
@@ -1003,12 +1007,6 @@ def load_user_files(do_reload=False):
         except ValueError:
             warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
-    if do_reload and old_native_modules != {}:
-        for key in old_native_modules:
-            if key not in native_modules:
-                native_modules[key] = old_native_modules[key]
-                warnings.warn("Deleting native modules during runtime is unsafe. Restoring native module %s" % key)
-
     # respect user defined nodefunctions:
     if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
         import sys
@@ -1020,10 +1018,7 @@ def load_user_files(do_reload=False):
 def reload_native_modules(nodenet_uid=None):
     load_user_files(True)
     if nodenet_uid:
-        nodenets[nodenet_uid].native_modules = {}
-        for key in native_modules:
-            nodenets[nodenet_uid].native_modules[key] = Nodetype(nodenet=nodenets[nodenet_uid], **native_modules[key])
-            nodenets[nodenet_uid].native_modules[key].reload_nodefunction()
+        nodenets[nodenet_uid].reload_native_modules(native_modules)
     return True
 
 

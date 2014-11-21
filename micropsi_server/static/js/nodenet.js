@@ -68,8 +68,15 @@ prerenderLayer.visible = false;
 
 viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
-currentNodenet = $.cookie('selected_nodenet') || null;
-currentNodeSpace = $.cookie('current_nodespace') || 'Root';
+current = $.cookie('selected_nodenet') || '';
+if(current.search('/')){
+    current = current.split('/');
+    currentNodenet = current[0];
+    currentNodeSpace = current[1];
+} else {
+    currentNodenet = null;
+    currentNodeSpace = null;
+}
 
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -226,7 +233,7 @@ function setCurrentNodenet(uid, nodespace){
             }
 
             showDefaultForm();
-            $('#nodenet_step').val(data.step);
+            $('#nodenet_step').val(data.current_step);
             currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
@@ -293,7 +300,7 @@ function getNodespaceList(){
 function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
-        currentSimulationStep = data.step || 0;
+        currentSimulationStep = data.current_step || 0;
         $('#nodenet_step').val(currentSimulationStep);
         currentWorldadapter = data.worldadapter;
         nodenetRunning = data.is_active;
@@ -382,7 +389,7 @@ function setNodespaceData(data, changed){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
-    if(!currentNodenet){
+    if(!currentNodenet || !nodespace){
         return;
     }
     if(coordinates)
@@ -981,11 +988,11 @@ function createPlaceholder(node, direction, point){
 }
 
 // draw link
-function renderLink(link) {
-    if(nodenet_data.settings.renderlinks == 'no'){
+function renderLink(link, force) {
+    if(nodenet_data.settings.renderlinks == 'no' && !force){
         return;
     }
-    if(nodenet_data.settings.renderlinks == 'hover'){
+    if(nodenet_data.settings.renderlinks == 'hover' && !force){
         if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
             return;
         }
@@ -1555,6 +1562,9 @@ function deselectNode(nodeUid) {
 // mark node as selected, and add it to the selected nodes
 function selectLink(linkUid) {
     selection[linkUid] = links[linkUid];
+    if(!(linkUid in linkLayer.children)){
+        renderLink(links[linkUid], true);
+    }
     var linkShape = linkLayer.children[linkUid].children["link"];
     oldHoverColor = viewProperties.selectionColor;
     linkShape.children["line"].strokeColor = viewProperties.selectionColor;
@@ -1569,6 +1579,9 @@ function deselectLink(linkUid) {
     if (linkUid in selection) {
         delete selection[linkUid];
         var linkShape = linkLayer.children[linkUid].children["link"];
+        if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
+            linkLayer.children[linkUid].remove();
+        }
         linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
         linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
         linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;

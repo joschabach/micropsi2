@@ -22,21 +22,29 @@ class Nodespace(NetEntity):
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None,
-                 index=None, gatefunctions=None):
+    __gatefunction_strings = {}
+
+    @property
+    def data(self):
+        data = NetEntity.data.fget(self)
+        data.update({
+            "uid": self.uid,
+            "gatefunctions": self.__gatefunction_strings
+        })
+        return data
+
+    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunctions=None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
         self.netentities = {}
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet.nodespaces[self.uid] = self
-        if not gatefunctions:
-            gatefunctions = dict()
-        self.data['gatefunctions'] = gatefunctions
         self.gatefunctions = {}
-        for nodetype in gatefunctions:
-            for gatetype in gatefunctions[nodetype]:
-                self.set_gate_function(nodetype, gatetype, gatefunctions[nodetype][gatetype])
+        self.__gatefunction_strings = gatefunctions or {}
+        for nodetype in self.__gatefunction_strings:
+            for gatetype in self.__gatefunction_strings[nodetype]:
+                self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
@@ -63,11 +71,9 @@ class Nodespace(NetEntity):
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""
         if gatefunction:
-            if 'gatefunctions' not in self.data:
-                self.data['gatefunctions'] = {}
-            if nodetype not in self.data['gatefunctions']:
-                self.data['gatefunctions'][nodetype] = {}
-            self.data['gatefunctions'][nodetype][gatetype] = gatefunction
+            if nodetype not in self.__gatefunction_strings:
+                self.__gatefunction_strings[nodetype] = {}
+            self.__gatefunction_strings[nodetype][gatetype] = gatefunction
             if nodetype not in self.gatefunctions:
                 self.gatefunctions[nodetype] = {}
             try:
@@ -79,10 +85,21 @@ class Nodespace(NetEntity):
         else:
             if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
                 del self.gatefunctions[nodetype][gatetype]
-            if nodetype in self.data['gatefunctions'] and gatetype in self.data['gatefunctions'][nodetype]:
-                del self.data['gatefunctions'][nodetype][gatetype]
+            if nodetype in self.__gatefunction_strings[nodetype] and gatetype in self.__gatefunction_strings[nodetype][nodetype]:
+                del self.__gatefunction_strings[nodetype][nodetype][gatetype]
 
     def get_gatefunction(self, nodetype, gatetype):
         """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
         if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
             return self.gatefunctions[nodetype][gatetype]
+
+    def get_gatefunction_string(self, nodetype, gatetype):
+        """Retrieve a string gatefunction for a given node- and gatetype"""
+        if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+            return self.__gatefunction_strings[nodetype][gatetype]
+        else:
+            return ''
+
+    def get_gatefunctions_string(self):
+        """Retrieve all string gatefunctions """
+        return self.__gatefunction_strings

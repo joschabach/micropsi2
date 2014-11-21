@@ -70,15 +70,15 @@ def test_nodespace_removal(fixed_nodenet):
     res, sub_uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace=uid, name="subsubspace", uid='ns2')
     micropsi.delete_node(fixed_nodenet, uid)
     assert uid not in micropsi.nodenets[fixed_nodenet].nodespaces
-    assert uid not in micropsi.nodenets[fixed_nodenet].state['nodespaces']
+    assert uid not in micropsi.nodenets[fixed_nodenet].data['nodespaces']
     assert n1_uid not in micropsi.nodenets[fixed_nodenet].nodes
-    assert n1_uid not in micropsi.nodenets[fixed_nodenet].state['nodes']
+    assert n1_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
     assert n2_uid not in micropsi.nodenets[fixed_nodenet].nodes
-    assert n2_uid not in micropsi.nodenets[fixed_nodenet].state['nodes']
+    assert n2_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
     assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].links
-    assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].state['links']
+    assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].data['links']
     assert sub_uid not in micropsi.nodenets[fixed_nodenet].nodespaces
-    assert sub_uid not in micropsi.nodenets[fixed_nodenet].state['nodespaces']
+    assert sub_uid not in micropsi.nodenets[fixed_nodenet].data['nodespaces']
 
 
 def test_clone_nodes_nolinks(fixed_nodenet):

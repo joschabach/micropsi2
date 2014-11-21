@@ -157,8 +157,9 @@ class World(object):
                 self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % worldobject['type'])
                 del self.data['objects'][uid]
         outdated_agents = []
+        from micropsi_core.runtime import nodenet_data
         for uid, agent in self.data.get('agents', {}).items():
-            if uid in micropsi_core.runtime.nodenet_data:
+            if uid in nodenet_data:
                 try:
                     self.agents[uid] = self.supported_worldadapters[agent['type']](self, **agent)
                 except KeyError:

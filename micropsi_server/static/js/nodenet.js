@@ -389,6 +389,7 @@ function setNodespaceData(data, changed){
 }
 
 function refreshNodespace(nodespace, coordinates, step, callback){
+    if(!nodespace) nodespace = currentNodeSpace;
     if(!currentNodenet || !nodespace){
         return;
     }

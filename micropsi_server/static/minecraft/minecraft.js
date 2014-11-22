@@ -41,6 +41,7 @@ refreshWorldView = function () {
                 return null;
             }
             currentWorldSimulationStep = data.current_step;
+            $('#world_step').val(currentWorldSimulationStep);
             for (var key in data.agents) {
                 if (data.agents[key].minecraft_vision_pixel) {
 

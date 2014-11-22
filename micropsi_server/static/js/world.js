@@ -70,7 +70,7 @@ function stepWorld(event){
         stopWorldrunner(event);
     }
     api.call('step_world', {world_uid: currentWorld}, function(data){
-        currentWorldSimulationStep = data.current_step;
+        currentWorldSimulationStep = data;
         $('#world_step').val(currentWorldSimulationStep);
         if(refreshWorldView) refreshWorldView();
     });

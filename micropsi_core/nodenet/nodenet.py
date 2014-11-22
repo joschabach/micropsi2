@@ -314,10 +314,10 @@ class Nodenet(object):
                         for uid in self.nodes_by_coords[x][y]:
                             if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                                 data['nodes'][uid] = self.nodes[uid].data
-                                links.extend(self.nodes[uid].get_associated_link_uids())
+                                links.extend(self.nodes[uid].get_associated_links())
                                 followupnodes.extend(self.nodes[uid].get_associated_node_uids())
-        for uid in links:
-            data['links'][uid] = self.links[uid].data
+        for link in links:
+            data['links'][link.uid] = link.data
         for uid in followupnodes:
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.nodes[uid].data
@@ -499,30 +499,27 @@ class Nodenet(object):
             )
 
         # copy the links
-        if len(nodes):
-            links = {}
-            origin_links = nodes[list(nodes.keys())[0]].nodenet.links
-            for node_uid in nodes:
-                node = nodes[node_uid]
-                for slot in node.slots:
-                    for l in node.slots[slot].incoming:
-                        link = origin_links[l]
-                        if link.source_node.uid in nodes or (copy_associated_links
-                                                             and link.source_node.uid in self.nodes):
-                            if not l in links:
-                                links[l] = link
-                for gate in node.gates:
-                    for l in node.gates[gate].outgoing:
-                        link = origin_links[l]
-                        if link.target_node.uid in nodes or (copy_associated_links
-                                                             and link.target_node.uid in self.nodes):
-                            if not l in links:
-                                links[l] = link
-            for l in links:
-                link = links[l]
-                source_node = self.nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
-
-                source_node.link(link.source_gate.type, link.target_node.uid, link.target_slot.type, link.weight, link.certainty)
+        links_to_copy = set()
+        for node_uid in nodes:
+            node = nodes[node_uid]
+            for slot in node.slots:
+                for link_uid, link in node.slots[slot].incoming.items():
+                    if link.source_node.uid in nodes or (copy_associated_links
+                                                         and link.source_node.uid in self.nodes):
+                        links_to_copy.add(link)
+            for gate in node.gates:
+                for link_uid, link in node.gates[gate].outgoing.items():
+                    if link.target_node.uid in nodes or (copy_associated_links
+                                                         and link.target_node.uid in self.nodes):
+                        links_to_copy.add(link)
+        for link in links_to_copy:
+            source_node = self.nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
+            source_node.link(
+                link.source_gate.type,
+                link.target_node.uid,
+                link.target_slot.type,
+                link.weight,
+                link.certainty)
 
     def move_nodes(self, nodes, nodespaces, target_nodespace=None):
         """moves the nodes into a new nodespace or nodenet, and deletes them at their original position.
@@ -679,11 +676,18 @@ class Nodenet(object):
         except KeyError:
             return None
 
-    def set_link_weight(self, link_uid, weight, certainty=1):
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Set weight of the given link."""
-        self.links[link_uid].weight = weight
-        self.links[link_uid].certainty = certainty
-        return True
+
+        source_node = self.nodes[source_node_uid]
+        if source_node is None:
+            return False
+
+        link = source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
+        if link is None:
+            return False
+        else:
+            return True
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Creates a new link.

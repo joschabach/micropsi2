@@ -1119,8 +1119,8 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")
-def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
-    return runtime.set_link_weight(nodenet_uid, link_uid, weight, certainty)
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1):
+    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
 @rpc("get_link")

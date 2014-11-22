@@ -2706,7 +2706,10 @@ function handleEditLink(event){
     view.draw();
     api.call("set_link_weight", {
         nodenet_uid:currentNodenet,
-        link_uid: linkUid,
+        source_node_uid: links[linkUid].sourceNodeUid,
+        gate_type: links[linkUid].gateName,
+        target_node_uid: links[linkUid].targetNodeUid,
+        slot_type: links[linkUid].slotName,
         weight: weight,
         certainty: certainty
     });

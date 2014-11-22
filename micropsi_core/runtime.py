@@ -876,10 +876,10 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
     return nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
-def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
     """Set weight of the given link."""
     nodenet = nodenets[nodenet_uid]
-    return nodenet.set_link_weight(link_uid, weight, certainty)
+    return nodenet.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
 def get_link(nodenet_uid, link_uid):

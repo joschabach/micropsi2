@@ -217,20 +217,20 @@ class Node(NetEntity):
         if gate in self.gates:
             self.gates[gate].sheaves[sheaf]['activation'] = activation
 
-    def get_associated_link_uids(self):
+    def get_associated_links(self):
         links = []
         for key in self.gates:
-            links.extend(self.gates[key].outgoing)
+            links.extend(self.gates[key].outgoing.values())
         for key in self.slots:
-            links.extend(self.slots[key].incoming)
+            links.extend(self.slots[key].incoming.values())
         return links
 
     def get_associated_node_uids(self):
         nodes = []
-        for link in self.get_associated_link_uids():
-            if self.nodenet.links[link].source_node.uid != self.uid:
+        for link in self.get_associated_links():
+            if link.source_node.uid != self.uid:
                 nodes.append(self.nodenet.links[link].source_node.uid)
-            if self.nodenet.links[link].target_node.uid != self.uid:
+            if link.target_node.uid != self.uid:
                 nodes.append(self.nodenet.links[link].target_node.uid)
         return nodes
 

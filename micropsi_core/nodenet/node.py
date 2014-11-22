@@ -321,6 +321,18 @@ class Node(NetEntity):
         link.certainty = certainty
         return link
 
+    def unlink_completely(self):
+        """Deletes all links originating from this node or ending at this node"""
+        links_to_delete = set()
+        for gate_name_candidate, gate_candidate in self.gates.items():
+            for link_uid_candidate, link_candidate in gate_candidate.outgoing.items():
+                links_to_delete.add(link_candidate)
+        for slot_name_candidate, slot_candidate in self.slots.items():
+            for link_uid_candidate, link_candidate in slot_candidate.incoming.items():
+                links_to_delete.add(link_candidate)
+        for link in links_to_delete:
+            link.remove()
+
     def construct_gates_dict(self):
         data = {}
         for gate_name, gate in self.gates.items():

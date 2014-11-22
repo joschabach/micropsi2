@@ -83,3 +83,4 @@ class Link(object):
         """
         del self.source_gate.outgoing[self.uid]
         del self.target_slot.incoming[self.uid]
+        del self.nodenet.links[self.uid]

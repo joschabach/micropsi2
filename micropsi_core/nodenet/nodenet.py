@@ -352,15 +352,8 @@ class Nodenet(object):
                 parent_nodespace.netentities["nodespaces"].remove(node_uid)
             del self.nodespaces[node_uid]
         else:
-            link_uids = []
-            for key, gate in self.nodes[node_uid].gates.items():
-                link_uids.extend(gate.outgoing.keys())
-            for key, slot in self.nodes[node_uid].slots.items():
-                link_uids.extend(slot.incoming.keys())
-            for uid in link_uids:
-                if uid in self.links:
-                    self.links[uid].remove()
-                    del self.links[uid]
+            node = self.nodes[node_uid]
+            node.unlink_completely()
             parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
             parent_nodespace.netentities["nodes"].remove(node_uid)
             if self.nodes[node_uid].type == "Activator":
@@ -721,7 +714,6 @@ class Nodenet(object):
     def delete_link(self, link_uid):
         """Delete the given link."""
         self.links[link_uid].remove()
-        del self.links[link_uid]
         return True
 
     def is_locked(self, lock):

@@ -785,6 +785,9 @@ function nodeRedrawNeeded(node){
 // redraw only the links that are connected to the given node
 function redrawNodeLinks(node) {
     var linkUid;
+    for(var dir in  node.placeholder){
+        node.placeholder[dir].remove();
+    }
     for (var gateName in node.gates) {
         for (linkUid in node.gates[gateName].outgoing) {
             if(linkUid in linkLayer.children) {

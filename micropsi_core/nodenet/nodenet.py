@@ -886,24 +886,25 @@ class NetAPI(object):
         Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, catexp and symref
         """
         target_slot_types = target_node.get_slot_types()
+        source_slot_types = source_node.get_slot_types()
         if linktype == "subsur":
             subslot = "sub" if "sub" in target_slot_types else "gen"
-            surslot = "sur" if "sur" in target_slot_types else "gen"
+            surslot = "sur" if "sur" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight, certainty)
         elif linktype == "porret":
             porslot = "por" if "por" in target_slot_types else "gen"
-            retslot = "ret" if "ret" in target_slot_types else "gen"
+            retslot = "ret" if "ret" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight, certainty)
         elif linktype == "catexp":
             catslot = "cat" if "cat" in target_slot_types else "gen"
-            expslot = "exp" if "exp" in target_slot_types else "gen"
+            expslot = "exp" if "exp" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight, certainty)
         elif linktype == "symref":
             symslot = "sym" if "sym" in target_slot_types else "gen"
-            refslot = "ref" if "ref" in target_slot_types else "gen"
+            refslot = "ref" if "ref" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight, certainty)
 

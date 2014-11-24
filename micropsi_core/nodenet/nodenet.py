@@ -715,9 +715,13 @@ class Nodenet(object):
         else:
             return True, link.uid
 
-    def delete_link(self, link_uid):
+    def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""
-        self.links[link_uid].remove()
+
+        source_node = self.nodes[source_node_uid]
+        if source_node is None:
+            return False, None
+        source_node.unlink(gate_type, target_node_uid, slot_type)
         return True
 
     def is_locked(self, lock):
@@ -915,34 +919,24 @@ class NetAPI(object):
         """
         Deletes a link, or links, originating from the given node
         """
-        links_to_delete = []
-        for gatetype, gateobject in source_node.gates.items():
-            if source_gate is None or source_gate == gatetype:
-                for linkid, link in gateobject.outgoing.items():
-                    if target_node is None or target_node.uid == link.target_node.uid:
-                        if target_slot is None or target_slot == link.target_slot.type:
-                            links_to_delete.append(linkid)
-
-        for uid in links_to_delete:
-            self.__nodenet.delete_link(uid)
+        target_node_uid = target_node.uid if target_node is not None else None
+        source_node.unlink(source_gate, target_node_uid, target_slot)
 
     def unlink_direction(self, node, gateslot=None):
         """
         Deletes all links from a node ending at the given gate or originating at the given slot
         Read this as 'delete all por linkage from this node'
         """
+        node.unlink(gateslot)
+
         links_to_delete = set()
-        for gatetype, gateobject in node.gates.items():
-            if gateslot is None or gateslot == gatetype:
-                for linkid, link in gateobject.outgoing.items():
-                    links_to_delete.add(linkid)
         for slottype, slotobject in node.slots.items():
             if gateslot is None or gateslot == slottype:
                 for linkid, link in slotobject.incoming.items():
-                    links_to_delete.add(linkid)
+                    links_to_delete.add(link)
 
-        for uid in links_to_delete:
-            self.__nodenet.delete_link(uid)
+        for link in links_to_delete:
+            link.source_node.unlink(gateslot, node.uid)
 
     def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
         """

@@ -1129,8 +1129,8 @@ def get_link(nodenet_uid, link_uid):
 
 
 @rpc("delete_link", permission_required="manage nodenets")
-def delete_link(nodenet_uid, link_uid):
-    return runtime.delete_link(nodenet_uid, link_uid)
+def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
+    return runtime.delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type)
 
 
 @rpc("reload_native_modules", permission_required="manage nodenets")

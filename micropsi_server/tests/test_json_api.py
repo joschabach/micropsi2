@@ -951,7 +951,10 @@ def test_delete_link(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/delete_link', params={
         'nodenet_uid': test_nodenet,
-        'link_uid': 'N1:gen:gen:N1'
+        'source_node_uid': "N1",
+        'gate_type': "gen",
+        'target_node_uid': "N1",
+        'slot_type': "gen"
     })
     assert_success(response)
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)

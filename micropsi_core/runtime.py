@@ -899,10 +899,10 @@ def get_link(nodenet_uid, link_uid):
     return nodenets[nodenet_uid].links[link_uid].data
 
 
-def delete_link(nodenet_uid, link_uid):
+def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
-    return nodenet.delete_link(link_uid)
+    return nodenet.delete_link(source_node_uid, gate_type, target_node_uid, slot_type)
 
 
 def align_nodes(nodenet_uid, nodespace):

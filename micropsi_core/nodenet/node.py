@@ -229,9 +229,9 @@ class Node(NetEntity):
         nodes = []
         for link in self.get_associated_links():
             if link.source_node.uid != self.uid:
-                nodes.append(self.nodenet.links[link].source_node.uid)
+                nodes.append(link.source_node.uid)
             if link.target_node.uid != self.uid:
-                nodes.append(self.nodenet.links[link].target_node.uid)
+                nodes.append(link.target_node.uid)
         return nodes
 
     def get_sheaves_to_calculate(self):
@@ -330,6 +330,18 @@ class Node(NetEntity):
         for slot_name_candidate, slot_candidate in self.slots.items():
             for link_uid_candidate, link_candidate in slot_candidate.incoming.items():
                 links_to_delete.add(link_candidate)
+        for link in links_to_delete:
+            link.remove()
+
+    def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
+        """Deletes all links originating from this node or ending at this node"""
+        links_to_delete = set()
+        for gate_name_candidate, gate_candidate in self.gates.items():
+            if gate_name is None or gate_name == gate_name_candidate:
+                for link_uid_candidate, link_candidate in gate_candidate.outgoing.items():
+                    if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
+                        if slot_name is None or slot_name == link_candidate.target_slot.type:
+                            links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.remove()
 

@@ -201,6 +201,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
+        tol = 5  # tolerance wrt teleport position
+
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:
             # by substitution: spock init is considered done, when its client has a position unlike
@@ -212,7 +214,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 y = int(self.spockplugin.clientinfo.position['y'])
                 z = int(self.spockplugin.clientinfo.position['z'])
                 for k, v in self.loco_nodes.items():
-                    if abs(x - v['x']) <= 3 and abs(y - v['y']) <= 3 and abs(z - v['z']) <= 3:
+                    if abs(x - v['x']) <= tol and abs(y - v['y']) <= tol and abs(z - v['z']) <= tol:
                         self.current_loco_node = self.loco_nodes[k]
 
         else:
@@ -239,9 +241,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 for k, item in self.waiting_list.items():
                     exit = item['exit_uid']
                     # somehwat brittle because teleportation is imprecise and the buffer of 3 below is picked by inspection
-                    if abs(self.loco_nodes[exit]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= 3 \
-                            and abs(self.loco_nodes[exit]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= 3 \
-                            and abs(self.loco_nodes[exit]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= 3:
+                    if abs(self.loco_nodes[exit]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= tol \
+                            and abs(self.loco_nodes[exit]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= tol \
+                            and abs(self.loco_nodes[exit]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
                         self.datatarget_feedback[item['target']] = 1.
                         mark_for_deletion.append(k)
 

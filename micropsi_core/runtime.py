@@ -116,7 +116,7 @@ class NodenetRunner(MicropsiRunner):
                     except:
                         nodenets[uid].is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
-                        nodenetrunner.last_exception[uid] = sys.exc_info()
+                        NodenetRunner.last_exception[uid] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:
@@ -149,7 +149,7 @@ class WorldRunner(MicropsiRunner):
                     except:
                         worlds[uid].is_active = False
                         logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
-                        worldrunner.last_exception[uid] = sys.exc_info()
+                        WorldRunner.last_exception[uid] = sys.exc_info()
             left = step - (datetime.now() - start)
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())

@@ -63,7 +63,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     vertical_angle = 60
     focal_length = 1         # distance of image plane from projective point /fovea
     resolution = 40          # camera resolution for a specific visual field
-    max_dist = 250           # maximum distance for raytracing
+    max_dist = 150           # maximum distance for raytracing
 
     loco_nodes = {}
 
@@ -443,7 +443,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['otter'] = 1.
 
     def get_block_type(self, x, y, z):
-        """ """
+        """ What used to be jonas' get_voxel_blocktype(..) """
         key = (x // 16, z // 16)
         columns = self.spockplugin.world.map.columns
         if key not in columns:

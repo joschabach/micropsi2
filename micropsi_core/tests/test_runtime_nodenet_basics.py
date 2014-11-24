@@ -66,7 +66,7 @@ def test_nodespace_removal(fixed_nodenet):
     res, uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace="Root", name="testspace", uid='ns1')
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100,100], nodespace=uid, name="sub1", uid='sub1')
     res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100,200], nodespace=uid, name="sub2", uid='sub2')
-    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1, uid='sub1-sub2')
+    micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1)
     res, sub_uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace=uid, name="subsubspace", uid='ns2')
     micropsi.delete_node(fixed_nodenet, uid)
     assert uid not in micropsi.nodenets[fixed_nodenet].nodespaces
@@ -75,7 +75,6 @@ def test_nodespace_removal(fixed_nodenet):
     assert n1_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
     assert n2_uid not in micropsi.nodenets[fixed_nodenet].nodes
     assert n2_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
-    assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].links
     assert 'sub1-sub2' not in micropsi.nodenets[fixed_nodenet].data['links']
     assert sub_uid not in micropsi.nodenets[fixed_nodenet].nodespaces
     assert sub_uid not in micropsi.nodenets[fixed_nodenet].data['nodespaces']
@@ -119,22 +118,33 @@ def test_clone_nodes_all_links(fixed_nodenet):
         a1_copy = result['nodes'][1]
         a2_copy = result['nodes'][0]
 
+    S = nodenet.nodes['S']
     a1_copy = nodenet.nodes[a1_copy['uid']]
     a2_copy = nodenet.nodes[a2_copy['uid']]
     l1_uid = list(a1_copy.gates['por'].outgoing.keys())[0]
     l2_uid = list(a1_copy.slots['gen'].incoming.keys())[0]
 
-    assert nodenet.links[l1_uid].source_node.uid == a1_copy.uid
-    assert nodenet.links[l1_uid].target_node.uid == a2_copy.uid
-    assert nodenet.links[l1_uid].source_gate.type == 'por'
-    assert nodenet.links[l1_uid].target_slot.type == 'gen'
+    links = a1_copy.get_associated_links()
+    link = None
+    for candidate in links:
+        if candidate.source_node == a1_copy and \
+                candidate.target_node == a2_copy and \
+                candidate.source_gate.type == 'por' and \
+                candidate.target_slot.type == 'gen':
+            link = candidate
+    assert link is not None
 
     assert l1_uid in [l['uid'] for l in result['links']]
 
-    assert nodenet.links[l2_uid].source_node.uid == 'S'
-    assert nodenet.links[l2_uid].target_node.uid == a1_copy.uid
-    assert nodenet.links[l2_uid].source_gate.type == 'gen'
-    assert nodenet.links[l2_uid].target_slot.type == 'gen'
+    links = S.get_associated_links()
+    link = None
+    for candidate in links:
+        if candidate.source_node == S and \
+                candidate.target_node == a1_copy and \
+                candidate.source_gate.type == 'gen' and \
+                candidate.target_slot.type == 'gen':
+            link = candidate
+    assert link is not None
 
     assert l2_uid in [l['uid'] for l in result['links']]
 
@@ -157,10 +167,15 @@ def test_clone_nodes_internal_links(fixed_nodenet):
     a2_copy = nodenet.nodes[a2_copy['uid']]
     l1_uid = result['links'][0]['uid']
 
-    assert nodenet.links[l1_uid].source_node.uid == a1_copy.uid
-    assert nodenet.links[l1_uid].target_node.uid == a2_copy.uid
-    assert nodenet.links[l1_uid].source_gate.type == 'por'
-    assert nodenet.links[l1_uid].target_slot.type == 'gen'
+    links = a1_copy.get_associated_links()
+    link = None
+    for candidate in links:
+        if candidate.source_node == a1_copy and \
+                candidate.target_node == a2_copy and \
+                candidate.source_gate.type == 'por' and \
+                candidate.target_slot.type == 'gen':
+            link = candidate
+    assert link is not None
 
 
 def test_clone_nodes_to_new_nodespace(fixed_nodenet):
@@ -186,71 +201,3 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
 
     assert a1_copy.parent_nodespace == 'ns1'
     assert a2_copy.parent_nodespace == 'ns1'
-
-"""
-def test_set_nodenet_properties(micropsi, test_nodenet):
-    assert 0
-
-def test_init_runners(micropsi, test_nodenet):
-    assert 0
-
-def test_nodenetrunner(micropsi, test_nodenet):
-    assert 0
-
-def test__get_world_uid_for_nodenet_uid(micropsi, test_nodenet):
-    assert 0
-
-def test_unload_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_get_nodenet_area(micropsi, test_nodenet):
-    assert 0
-
-def test_start_nodenetrunner(micropsi, test_nodenet):
-    assert 0
-
-def test_set_nodenetrunner_timestep(micropsi, test_nodenet):
-    assert 0
-
-def test_get_nodenetrunner_timestep(micropsi, test_nodenet):
-    assert 0
-
-def test_get_is_nodenet_running(micropsi, test_nodenet):
-    assert 0
-
-def test_stop_nodenetrunner(micropsi, test_nodenet):
-    assert 0
-
-def test_step_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_revert_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_export_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_import_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_merge_nodenet(micropsi, test_nodenet):
-    assert 0
-
-def test_add_gate_monitor(micropsi, test_nodenet):
-    assert 0
-
-def test_add_slot_monitor(micropsi, test_nodenet):
-    assert 0
-
-def test_remove_monitor(micropsi, test_nodenet):
-    assert 0
-
-def test_clear_monitor(micropsi, test_nodenet):
-    assert 0
-
-def test_export_monitor_data(micropsi, test_nodenet):
-    assert 0
-
-def test_get_monitor_data(micropsi, test_nodenet):
-    assert 0
-"""

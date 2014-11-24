@@ -62,14 +62,14 @@ def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
 
 
 def test_add_link(test_nodenet):
-    micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1, "por_ab")
-    micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 1, 0.1, "por_ab2")
-    micropsi.add_link(test_nodenet, "node_c", "ret", "node_b", "gen", 1, 1, "ret_cb")
+    micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1)
+    micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 1, 0.1)
+    micropsi.add_link(test_nodenet, "node_c", "ret", "node_b", "gen", 1, 1)
 
     nodespace = micropsi.get_nodespace(test_nodenet, "Root", -1)
     assert len(nodespace["nodes"]) == 4
     assert len(nodespace["links"]) == 2
-    link1 = nodespace["links"]["por_ab"]
+    link1 = nodespace["links"]["node_a:por:gen:node_b"]
     assert link1["weight"] == 1
     assert link1["certainty"] == 0.1
     assert link1["source_node_uid"] == "node_a"
@@ -77,7 +77,7 @@ def test_add_link(test_nodenet):
     assert link1["source_gate_name"] == "por"
     assert link1["target_slot_name"] == "gen"
 
-    link2 = nodespace["links"]["ret_cb"]
+    link2 = nodespace["links"]["node_c:ret:gen:node_b"]
     assert link2["source_node_uid"] == "node_c"
     assert link2["target_node_uid"] == "node_b"
     assert link2["source_gate_name"] == "ret"
@@ -85,10 +85,11 @@ def test_add_link(test_nodenet):
 
 
 def test_delete_link(test_nodenet):
-    micropsi.delete_link(test_nodenet, "ret_cb")
+    success, link = micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1)
+
+    micropsi.delete_link(test_nodenet, "node_a", "por", "node_b", "gen")
     nodespace = micropsi.get_nodespace(test_nodenet, "Root", -1)
     assert len(nodespace["links"]) == 1
-    assert "ret_cb" not in nodespace["links"]
 
 
 def test_save_nodenet(test_nodenet):
@@ -174,82 +175,3 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     remove(path.join(resourcepath, 'nodefunctions.py'))
     micropsi.reload_native_modules(fixed_nodenet)
     assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
-
-
-"""
-def test_get_node(micropsi, test_nodenet):
-    assert 0
-
-def test_set_node_position(micropsi, test_nodenet):
-    assert 0
-
-def test_set_node_name(micropsi, test_nodenet):
-    assert 0
-
-def test_set_node_state(micropsi, test_nodenet):
-    assert 0
-
-def test_set_node_activation(micropsi, test_nodenet):
-    assert 0
-
-def test_delete_node(micropsi, test_nodenet):
-    assert 0
-
-def test_get_available_node_types(micropsi, test_nodenet):
-    assert 0
-
-def test_get_available_native_module_types(micropsi, test_nodenet):
-    assert 0
-
-def test_get_nodefunction(micropsi, test_nodenet):
-    assert 0
-
-def test_set_nodefunction(micropsi, test_nodenet):
-    assert 0
-
-def test_set_node_parameters(micropsi, test_nodenet):
-    assert 0
-
-def test_add_node_type(micropsi, test_nodenet):
-    assert 0
-
-def test_delete_node_type(micropsi, test_nodenet):
-    assert 0
-
-def test_get_slot_types(micropsi, test_nodenet):
-    assert 0
-
-def test_get_gate_types(micropsi, test_nodenet):
-    assert 0
-
-def test_get_gate_function(micropsi, test_nodenet):
-    assert 0
-
-def test_set_gate_function(micropsi, test_nodenet):
-    assert 0
-
-def test_set_gate_parameters(micropsi, test_nodenet):
-    assert 0
-
-def test_get_available_datasources(micropsi, test_nodenet):
-    assert 0
-
-def test_get_available_datatargets(micropsi, test_nodenet):
-    assert 0
-
-def test_bind_datasource_to_sensor(micropsi, test_nodenet):
-    assert 0
-
-def test_bind_datatarget_to_actor(micropsi, test_nodenet):
-    assert 0
-
-def test_set_link_weight(micropsi, test_nodenet):
-    assert 0
-
-def test_get_link(micropsi, test_nodenet):
-    assert 0
-
-def test_delete_link(micropsi, test_nodenet):
-    assert 0
-
-"""

@@ -13,6 +13,7 @@ default Nodetypes
 
 import warnings
 import micropsi_core.tools
+from .link import Link
 from .netentity import NetEntity
 import logging
 
@@ -129,23 +130,6 @@ class Node(NetEntity):
 
         self.activation = 0
 
-    def get_gate_parameters(self):
-        """Looks into the gates and returns gate parameters if these are defined"""
-        gate_parameters = {}
-        for gate in self.gates:
-            if self.gates[gate].parameters:
-                gate_parameters[gate] = self.gates[gate].parameters
-        if len(gate_parameters):
-            return gate_parameters
-        else:
-            return None
-
-    def set_gate_activation(self, gate, activation, sheaf="default"):
-        """ sets the activation of the given gate"""
-        activation = float(activation)
-        if gate in self.gates:
-            self.gates[gate].sheaves[sheaf]['activation'] = activation
-
     def node_function(self):
         """Called whenever the node is activated or active.
 
@@ -216,21 +200,38 @@ class Node(NetEntity):
         except KeyError:
             return None
 
-    def get_associated_link_uids(self):
+    def get_gate_parameters(self):
+        """Looks into the gates and returns gate parameters if these are defined"""
+        gate_parameters = {}
+        for gate in self.gates:
+            if self.gates[gate].parameters:
+                gate_parameters[gate] = self.gates[gate].parameters
+        if len(gate_parameters):
+            return gate_parameters
+        else:
+            return None
+
+    def set_gate_activation(self, gate, activation, sheaf="default"):
+        """ sets the activation of the given gate"""
+        activation = float(activation)
+        if gate in self.gates:
+            self.gates[gate].sheaves[sheaf]['activation'] = activation
+
+    def get_associated_links(self):
         links = []
         for key in self.gates:
-            links.extend(self.gates[key].outgoing)
+            links.extend(self.gates[key].outgoing.values())
         for key in self.slots:
-            links.extend(self.slots[key].incoming)
+            links.extend(self.slots[key].incoming.values())
         return links
 
     def get_associated_node_uids(self):
         nodes = []
-        for link in self.get_associated_link_uids():
-            if self.nodenet.links[link].source_node.uid != self.uid:
-                nodes.append(self.nodenet.links[link].source_node.uid)
-            if self.nodenet.links[link].target_node.uid != self.uid:
-                nodes.append(self.nodenet.links[link].target_node.uid)
+        for link in self.get_associated_links():
+            if link.source_node.uid != self.uid:
+                nodes.append(link.source_node.uid)
+            if link.target_node.uid != self.uid:
+                nodes.append(link.target_node.uid)
         return nodes
 
     def get_sheaves_to_calculate(self):
@@ -289,6 +290,60 @@ class Node(NetEntity):
 
     def set_state(self, state_element, value):
         self.state[state_element] = value
+
+    def link(self, gate_name, target_node_uid, slot_name, weight=1, certainty=1):
+        """Ensures a link exists with the given parameters and returns it
+           Only one link between a node/gate and a node/slot can exist, its parameters will be updated with the
+           given parameters if a link existed prior to the call of this method
+           Will return None if no such link can be created.
+        """
+
+        if target_node_uid not in self.nodenet.nodes:
+            return None
+
+        target = self.nodenet.nodes[target_node_uid]
+
+        if slot_name not in target.slots:
+            return None
+
+        gate = self.get_gate(gate_name)
+        if gate is None:
+            return None
+        link = None
+        for candidate_uid, candidate in gate.outgoing.items():
+            if candidate.target_node.uid == target.uid and candidate.target_slot == slot_name:
+                link = candidate
+                break
+        if link is None:
+            link = Link(self, gate_name, target, slot_name)
+
+        link.weight = weight
+        link.certainty = certainty
+        return link
+
+    def unlink_completely(self):
+        """Deletes all links originating from this node or ending at this node"""
+        links_to_delete = set()
+        for gate_name_candidate, gate_candidate in self.gates.items():
+            for link_uid_candidate, link_candidate in gate_candidate.outgoing.items():
+                links_to_delete.add(link_candidate)
+        for slot_name_candidate, slot_candidate in self.slots.items():
+            for link_uid_candidate, link_candidate in slot_candidate.incoming.items():
+                links_to_delete.add(link_candidate)
+        for link in links_to_delete:
+            link.remove()
+
+    def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
+        """Deletes all links originating from this node or ending at this node"""
+        links_to_delete = set()
+        for gate_name_candidate, gate_candidate in self.gates.items():
+            if gate_name is None or gate_name == gate_name_candidate:
+                for link_uid_candidate, link_candidate in gate_candidate.outgoing.items():
+                    if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
+                        if slot_name is None or slot_name == link_candidate.target_slot.type:
+                            links_to_delete.add(link_candidate)
+        for link in links_to_delete:
+            link.remove()
 
     def construct_gates_dict(self):
         data = {}

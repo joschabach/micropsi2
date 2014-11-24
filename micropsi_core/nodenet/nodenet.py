@@ -502,13 +502,13 @@ class Nodenet(object):
         links_to_copy = set()
         for node_uid in nodes:
             node = nodes[node_uid]
-            for slot in node.slots:
-                for link_uid, link in node.slots[slot].incoming.items():
+            for slot in node.get_slot_types():
+                for link_uid, link in node.get_slot(slot).incoming.items():
                     if link.source_node.uid in nodes or (copy_associated_links
                                                          and link.source_node.uid in self.nodes):
                         links_to_copy.add(link)
-            for gate in node.gates:
-                for link_uid, link in node.gates[gate].outgoing.items():
+            for gate in node.get_gate_types():
+                for link_uid, link in node.get_gate(gate).outgoing.items():
                     if link.target_node.uid in nodes or (copy_associated_links
                                                          and link.target_node.uid in self.nodes):
                         links_to_copy.add(link)
@@ -579,7 +579,7 @@ class Nodenet(object):
                 if gate.parameters['spreadsheaves'] is True:
                     for sheaf in gate.sheaves:
                         for uid, link in gate.outgoing.items():
-                            for slotname in link.target_node.slots:
+                            for slotname in link.target_node.get_slot_types():
                                 if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
                                     link.target_node.get_slot(slotname).sheaves[sheaf] = dict(uid=gate.sheaves[sheaf]['uid'], name=gate.sheaves[sheaf]['name'], activation=0)
 
@@ -802,13 +802,13 @@ class NetAPI(object):
         if gate is not None:
             gates = [gate]
         else:
-            gates = self.__nodenet.nodes[node.uid].gates.keys()
+            gates = self.__nodenet.nodes[node.uid].get_gate_types()
         for gate in gates:
-            for link_uid, link in self.__nodenet.nodes[node.uid].gates[gate].outgoing.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
                 candidate = link.target_node
                 linked_gates = []
-                for candidate_gate_name, candidate_gate in candidate.gates.items():
-                    if len(candidate_gate.outgoing) > 0:
+                for candidate_gate_name in candidate.get_gate_types():
+                    if len(candidate.get_gate(candidate_gate_name).outgoing) > 0:
                         linked_gates.append(candidate_gate_name)
                 if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
                     (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
@@ -824,9 +824,9 @@ class NetAPI(object):
         if slot is not None:
             slots = [slot]
         else:
-            slots = self.__nodenet.nodes[node.uid].slots.keys()
+            slots = self.__nodenet.nodes[node.uid].get_slot_types()
         for slot in slots:
-            for link_uid, link in self.__nodenet.nodes[node.uid].slots[slot].incoming.items():
+            for link_uid, link in self.__nodenet.nodes[node.uid].get_slot(slot).incoming.items():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name, candidate_gate in candidate.gates.items():
@@ -845,7 +845,7 @@ class NetAPI(object):
         for node in self.get_nodes(nodespace):
             if type is None or node.type == type:
                 if gate is not None:
-                    if gate in node.gates:
+                    if gate in node.get_gate_types():
                         if node.get_gate(gate).sheaves[sheaf]['activation'] >= min_activation:
                             nodes.append(node)
                 else:
@@ -885,24 +885,25 @@ class NetAPI(object):
         """
         Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, catexp and symref
         """
+        target_slot_types = target_node.get_slot_types()
         if linktype == "subsur":
-            subslot = "sub" if "sub" in target_node.slots else "gen"
-            surslot = "sur" if "sur" in source_node.slots else "gen"
+            subslot = "sub" if "sub" in target_slot_types else "gen"
+            surslot = "sur" if "sur" in target_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight, certainty)
         elif linktype == "porret":
-            porslot = "por" if "por" in target_node.slots else "gen"
-            retslot = "ret" if "ret" in source_node.slots else "gen"
+            porslot = "por" if "por" in target_slot_types else "gen"
+            retslot = "ret" if "ret" in target_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight, certainty)
         elif linktype == "catexp":
-            catslot = "cat" if "cat" in target_node.slots else "gen"
-            expslot = "exp" if "exp" in source_node.slots else "gen"
+            catslot = "cat" if "cat" in target_slot_types else "gen"
+            expslot = "exp" if "exp" in target_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight, certainty)
         elif linktype == "symref":
-            symslot = "sym" if "sym" in target_node.slots else "gen"
-            refslot = "ref" if "ref" in source_node.slots else "gen"
+            symslot = "sym" if "sym" in target_slot_types else "gen"
+            refslot = "ref" if "ref" in target_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight, certainty)
 
@@ -930,9 +931,9 @@ class NetAPI(object):
         node.unlink(gateslot)
 
         links_to_delete = set()
-        for slottype, slotobject in node.slots.items():
+        for slottype in node.get_slot_types():
             if gateslot is None or gateslot == slottype:
-                for linkid, link in slotobject.incoming.items():
+                for linkid, link in node.get_slot(slottype).incoming.items():
                     links_to_delete.add(link)
 
         for link in links_to_delete:

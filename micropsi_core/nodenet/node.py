@@ -345,6 +345,12 @@ class Node(NetEntity):
         for link in links_to_delete:
             link.remove()
 
+    def get_gate_types(self):
+        return self.gates.keys()
+
+    def get_slot_types(self):
+        return self.slots.keys()
+
     def construct_gates_dict(self):
         data = {}
         for gate_name, gate in self.gates.items():

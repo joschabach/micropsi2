@@ -1115,12 +1115,12 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
 
 @rpc("add_link", permission_required="manage nodenets")
 def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, uid=None):
-    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight, uid=uid)
+    return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight)
 
 
 @rpc("set_link_weight", permission_required="manage nodenets")
-def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
-    return runtime.set_link_weight(nodenet_uid, link_uid, weight, certainty)
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty=1):
+    return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
 @rpc("get_link")
@@ -1129,8 +1129,8 @@ def get_link(nodenet_uid, link_uid):
 
 
 @rpc("delete_link", permission_required="manage nodenets")
-def delete_link(nodenet_uid, link_uid):
-    return runtime.delete_link(nodenet_uid, link_uid)
+def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
+    return runtime.delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type)
 
 
 @rpc("reload_native_modules", permission_required="manage nodenets")

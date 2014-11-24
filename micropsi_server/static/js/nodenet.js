@@ -2671,22 +2671,27 @@ function deleteNodeHandler(nodeUid) {
 function deleteLinkHandler(linkUid) {
     function removeLinkOnServer(linkUid){
         api.call("delete_link",
-            {nodenet_uid:currentNodenet, link_uid:linkUid},
+            {   nodenet_uid:currentNodenet,
+                source_node_uid: links[linkUid].sourceNodeUid,
+                gate_type: links[linkUid].gateName,
+                target_node_uid: links[linkUid].targetNodeUid,
+                slot_type: links[linkUid].slotName
+            },
             success= function(data){
                 dialogs.notification('Link removed', 'success');
             }
         );
     }
     if (linkUid in links) {
+        removeLinkOnServer(linkUid);
         removeLink(links[linkUid]);
         if (linkUid in selection) delete selection[linkUid];
-        removeLinkOnServer(linkUid);
     }
     for (var selected in selection) {
         if(selection[selected].constructor == Link){
+            removeLinkOnServer(selected);
             removeLink(links[selected]);
             delete selection[selected];
-            removeLinkOnServer(selected);
         }
     }
     showDefaultForm();
@@ -2704,7 +2709,10 @@ function handleEditLink(event){
     view.draw();
     api.call("set_link_weight", {
         nodenet_uid:currentNodenet,
-        link_uid: linkUid,
+        source_node_uid: links[linkUid].sourceNodeUid,
+        gate_type: links[linkUid].gateName,
+        target_node_uid: links[linkUid].targetNodeUid,
+        slot_type: links[linkUid].slotName,
         weight: weight,
         certainty: certainty
     });

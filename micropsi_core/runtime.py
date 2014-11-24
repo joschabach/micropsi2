@@ -884,23 +884,6 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
     return nodenet.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
-def get_link(nodenet_uid, link_uid):
-    """Returns a dictionary of the parameters of the given link, or None if it does not exist. It is
-    structured as follows:
-
-        {
-            uid: unique identifier,
-            source_node_uid: uid of source node,
-            gate_type: type of source gate (amounts to link type),
-            target_node_uid: uid of target node,
-            gate_type: type of target gate,
-            weight: weight of the link (float value),
-            certainty: probabilistic weight of the link (float value),
-        }
-    """
-    return nodenets[nodenet_uid].links[link_uid].data
-
-
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]

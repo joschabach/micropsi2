@@ -194,6 +194,7 @@ function setNodenetValues(data){
     $('#nodenet_world').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
+    $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -3427,7 +3428,6 @@ function showNativeModuleForm(nodeUid){
 
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
-    $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
     $('#nodenet_forms .default_form').show();
 }
 

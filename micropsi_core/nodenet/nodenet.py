@@ -254,8 +254,10 @@ class Nodenet(object):
 
     def construct_links_dict(self):
         data = {}
-        for link_uid, link in self.links.items():
-            data[link_uid] = link.data
+        for node_uid, node in self.nodes.items():
+            links = node.get_associated_links()
+            for link in links:
+                data[link.uid] = link.data
         return data
 
     def construct_nodes_dict(self, max_nodes=-1):
@@ -701,7 +703,7 @@ class Nodenet(object):
             certainty (optional): a probabilistic parameter for the link
 
         Returns:
-            link_uid if successful,
+            the link if successful,
             None if failure
         """
 
@@ -713,7 +715,7 @@ class Nodenet(object):
         if link is None:
             return False, None
         else:
-            return True, link.uid
+            return True, link
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""

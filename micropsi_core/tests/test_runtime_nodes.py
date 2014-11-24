@@ -85,7 +85,7 @@ def test_add_link(test_nodenet):
 
 
 def test_delete_link(test_nodenet):
-    success, link_uid = micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1)
+    success, link = micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1)
 
     micropsi.delete_link(test_nodenet, "node_a", "por", "node_b", "gen")
     nodespace = micropsi.get_nodespace(test_nodenet, "Root", -1)

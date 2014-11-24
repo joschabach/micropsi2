@@ -47,7 +47,6 @@ class Link(object):
 
         self.weight = weight
         self.certainty = certainty
-        self.nodenet = source_node.nodenet
         self.source_node = source_node
         self.target_node = target_node
         self.source_gate = source_node.get_gate(source_gate_name)
@@ -75,12 +74,9 @@ class Link(object):
         self.source_gate.outgoing[self.uid] = self
         self.target_slot.incoming[self.uid] = self
 
-        self.nodenet.links[self.uid] = self
-
     def remove(self):
         """unplug the link from the node net
            can't be handled in the destructor, since it removes references to the instance
         """
         del self.source_gate.outgoing[self.uid]
         del self.target_slot.incoming[self.uid]
-        del self.nodenet.links[self.uid]

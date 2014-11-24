@@ -152,7 +152,6 @@ class Nodenet(object):
 
         self.entitytypes = {}
         self.nodes = {}
-        self.links = {}
         self.nodetypes = nodetypes
         self.native_modules = native_modules
         self.nodespaces = {}
@@ -378,7 +377,6 @@ class Nodenet(object):
 
     def clear(self):
         self.nodes = {}
-        self.links = {}
         self.monitors = {}
 
         self.nodes_by_coords = {}

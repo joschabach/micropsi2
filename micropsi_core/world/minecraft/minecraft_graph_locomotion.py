@@ -282,7 +282,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
                     and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
                 # get block type for current fovea position
-                block_type = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
+                block_type, _ = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
                 # map block type to one of the sensors
                 self.map_block_type_to_sensor(block_type)
                 # set fovea sensors; sic because fovea value is used as link weight

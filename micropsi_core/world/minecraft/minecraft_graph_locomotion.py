@@ -54,7 +54,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     waiting_list = {
         # str(time.time()): {
         #     'target': <key in self.datatarget_feedbacks>,
-        #     'condition': '<variable> != <value>'
+        #     'exit_uid': <uid of next position>
         # }
     }
 
@@ -100,8 +100,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[home_uid]['exit_two_uid'] = cathedral_uid
     loco_nodes[home_uid]['exit_three_uid'] = village_uid
 
-    # assuming we start at the home position
-    current_loco_node = loco_nodes[home_uid]
+    current_loco_node = None
 
     loco_nodes[underground_garden_uid] = loco_node_template.copy()
     loco_nodes[underground_garden_uid]['name'] = "underground garden"
@@ -197,106 +196,104 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
         self.spockplugin = self.world.spockplugin
+        self.waiting_for_spock = True
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
-        #
-        orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
-        self.datatarget_feedback['orientation'] = 1
-        # self.datatargets['orientation'] = 0
+        # first thing when spock initialization is done, determine current loco node
+        if self.waiting_for_spock:
+            # by substitution: spock init is considered done, when its client has a position unlike
+            # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
+            if self.spockplugin.clientinfo.position['stance'] != 0. \
+                    and self.spockplugin.clientinfo.position['x'] != 0:
+                self.waiting_for_spock = False
+                x = int(self.spockplugin.clientinfo.position['x'])
+                y = int(self.spockplugin.clientinfo.position['y'])
+                z = int(self.spockplugin.clientinfo.position['z'])
+                for k, v in self.loco_nodes.items():
+                    if abs(x - v['x']) <= 3 and abs(y - v['y']) <= 3 and abs(z - v['z']) <= 3:
+                        self.current_loco_node = self.loco_nodes[k]
 
-        # reset self.datasources
-        for k in self.datasources.keys():
-            self.datasources[k] = 0.
+        else:
 
-        # reset self.datatarget_feedback
-        for k in self.datatarget_feedback.keys():
-            self.datatarget_feedback[k] = 0.
+            #
+            orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
+            self.datatarget_feedback['orientation'] = 1
+            # self.datatargets['orientation'] = 0
 
-        # don't reset self.datatargets because their activation is processed differently
-        # depending on whether they fire continuously or not, see self.datatarget_history
+            # reset self.datasources
+            for k in self.datasources.keys():
+                self.datasources[k] = 0.
 
-        # check if waiting list contains confirmations for datatarget_feedback, if so overwrite resp. value
-        mark_for_deletion = []
-        if self.waiting_list:
-            for k, item in self.waiting_list.items():
-                if eval(item['condition']):
-                    self.datatarget_feedback[item['target']] = 1.
-                    mark_for_deletion.append(k)
+            # reset self.datatarget_feedback
+            for k in self.datatarget_feedback.keys():
+                self.datatarget_feedback[k] = 0.
 
-        # delete processed items from waiting_list
-        for i in mark_for_deletion:
-            del self.waiting_list[i]
+            # don't reset self.datatargets because their activation is processed differently
+            # depending on whether they fire continuously or not, see self.datatarget_history
 
-        # read locomotor values, trigger teleportation in the world, and provide action feedback
-        # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-        if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
-            # if the current node on the transition graph has the chose exit
-            if self.current_loco_node['exit_one_uid'] is not None:
-                # add request for action feedback in case of success to self.waiting_list
-                # ie. if future position is different from current position, teleport must have succeeded
-                # < unreliable condition can be used here because w/out timeout feedback is blocking wrt further locomotion
-                # in case we add timeout, a timeout should also delete the item from the waiting_list
-                # TODO: add timeout
-                self.add_to_waiting_list(
-                    'take_exit_one',
-                    "%d != int(self.spockplugin.clientinfo.position['x']) or \
-                     %d != int(self.spockplugin.clientinfo.position['y']) or \
-                     %d != int(self.spockplugin.clientinfo.position['z'])"
-                    % (int(self.spockplugin.clientinfo.position['x']),
-                       int(self.spockplugin.clientinfo.position['y']),
-                       int(self.spockplugin.clientinfo.position['z'])))
-                self.locomote(self.current_loco_node['exit_one_uid'])
-            else:
-                self.datatarget_feedback['take_exit_one'] = -1.
+            # check if any pending datatarget_feedback can be confirmed with data from the world
+            mark_for_deletion = []
+            if self.waiting_list:
+                for k, item in self.waiting_list.items():
+                    exit = item['exit_uid']
+                    # somehwat brittle because teleportation is imprecise and the buffer of 3 below is picked by inspection
+                    if abs(self.loco_nodes[exit]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= 3 \
+                            and abs(self.loco_nodes[exit]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= 3 \
+                            and abs(self.loco_nodes[exit]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= 3:
+                        self.datatarget_feedback[item['target']] = 1.
+                        mark_for_deletion.append(k)
 
-        if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
-            if self.current_loco_node['exit_two_uid'] is not None:
-                self.add_to_waiting_list(
-                    'take_exit_two',
-                    "%d != int(self.spockplugin.clientinfo.position['x']) or \
-                     %d != int(self.spockplugin.clientinfo.position['y']) or \
-                     %d != int(self.spockplugin.clientinfo.position['z'])"
-                    % (int(self.spockplugin.clientinfo.position['x']),
-                       int(self.spockplugin.clientinfo.position['y']),
-                       int(self.spockplugin.clientinfo.position['z'])))
-                self.locomote(self.current_loco_node['exit_two_uid'])
-            else:
-                self.datatarget_feedback['take_exit_two'] = -1.
+            # delete processed items from waiting_list
+            for i in mark_for_deletion:
+                del self.waiting_list[i]
 
-        if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
-            if self.current_loco_node['exit_three_uid'] is not None:
-                self.add_to_waiting_list(
-                    'take_exit_three',
-                    "%d != int(self.spockplugin.clientinfo.position['x']) or \
-                     %d != int(self.spockplugin.clientinfo.position['y']) or \
-                     %d != int(self.spockplugin.clientinfo.position['z'])"
-                    % (int(self.spockplugin.clientinfo.position['x']),
-                       int(self.spockplugin.clientinfo.position['y']),
-                       int(self.spockplugin.clientinfo.position['z'])))
-                self.locomote(self.current_loco_node['exit_three_uid'])
-            else:
-                self.datatarget_feedback['take_exit_three'] = -1.
+            # read locomotor values, trigger teleportation in the world, and provide action feedback
+            # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
+            if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
+                # if the current node on the transition graph has the selected exit
+                if self.current_loco_node['exit_one_uid'] is not None:
+                    # add request for action feedback from Minecraft to self.waiting_list
+                    # ie. check if ( future ) position is equal to position of selected exit node
+                    # TODO: add timeout
+                    self.add_to_waiting_list('take_exit_one', self.current_loco_node['exit_one_uid'])
+                    self.locomote(self.current_loco_node['exit_one_uid'])
+                else:
+                    self.datatarget_feedback['take_exit_one'] = -1.
 
-        # read fovea actors, trigger sampling, and provide action feedback
-        if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
-                and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
-            # get block type for current fovea position
-            block_type = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
-            # map block type to one of the sensors
-            self.map_block_type_to_sensor(block_type)
-            # set fovea sensors; sic because fovea value is used as link weight
-            self.datasources['fov_x'] = self.datatargets['fov_x']
-            self.datasources['fov_y'] = self.datatargets['fov_y']
-            # provide action feedback
-            self.datatarget_feedback['fov_x'] = 1
-            self.datatarget_feedback['fov_y'] = 1
-        # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
+            if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
+                if self.current_loco_node['exit_two_uid'] is not None:
+                    self.add_to_waiting_list('take_exit_two', self.current_loco_node['exit_two_uid'])
+                    self.locomote(self.current_loco_node['exit_two_uid'])
+                else:
+                    self.datatarget_feedback['take_exit_two'] = -1.
 
-        # update datatarget history
-        for k in self.datatarget_history.keys():
-            self.datatarget_history[k] = self.datatargets[k]
+            if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
+                if self.current_loco_node['exit_three_uid'] is not None:
+                    self.add_to_waiting_list('take_exit_three', self.current_loco_node['exit_three_uid'])
+                    self.locomote(self.current_loco_node['exit_three_uid'])
+                else:
+                    self.datatarget_feedback['take_exit_three'] = -1.
+
+            # read fovea actors, trigger sampling, and provide action feedback
+            if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
+                    and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
+                # get block type for current fovea position
+                block_type = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
+                # map block type to one of the sensors
+                self.map_block_type_to_sensor(block_type)
+                # set fovea sensors; sic because fovea value is used as link weight
+                self.datasources['fov_x'] = self.datatargets['fov_x']
+                self.datasources['fov_y'] = self.datatargets['fov_y']
+                # provide action feedback
+                self.datatarget_feedback['fov_x'] = 1
+                self.datatarget_feedback['fov_y'] = 1
+            # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
+
+            # update datatarget history
+            for k in self.datatarget_history.keys():
+                self.datatarget_history[k] = self.datatargets[k]
 
     def locomote(self, target_loco_node_uid):
 
@@ -511,10 +508,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             yield start
             start += step
 
-    def add_to_waiting_list(self, target, condition):
+    def add_to_waiting_list(self, target, exit_uid):
         """
         """
         key = str(time.time())
         self.waiting_list[key] = {}
         self.waiting_list[key]['target'] = target
-        self.waiting_list[key]['condition'] = condition
+        self.waiting_list[key]['exit_uid'] = exit_uid

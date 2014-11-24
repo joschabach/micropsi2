@@ -68,15 +68,8 @@ prerenderLayer.visible = false;
 
 viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
-current = $.cookie('selected_nodenet') || '';
-if(current.search('/')){
-    current = current.split('/');
-    currentNodenet = current[0];
-    currentNodeSpace = current[1];
-} else {
-    currentNodenet = null;
-    currentNodeSpace = null;
-}
+currentNodenet = $.cookie('selected_nodenet') || '';
+currentNodeSpace = $.cookie('selected_nodespace') || '';
 
 currentWorldadapter = null;
 var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
@@ -244,7 +237,7 @@ function setCurrentNodenet(uid, nodespace){
             addNode(rootNode);
             linkLayer.removeChildren();
 
-            $.cookie('selected_nodenet', uid, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
                 sorted_nodetypes = Object.keys(nodetypes);
@@ -418,7 +411,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
         var changed = nodespace != currentNodeSpace;
         if(changed){
             currentNodeSpace = nodespace;
-            $.cookie('current_nodespace', nodespace, { expires: 7, path: '/' });
+            $.cookie('selected_nodespace', currentNodeSpace, { expires: 7, path: '/' });
             $("#current_nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();

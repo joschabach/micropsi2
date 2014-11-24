@@ -10,7 +10,6 @@ from spock.plugins.helpers.world import WorldPlugin
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.spockplugin import MicropsiPlugin
-from micropsi_core.world.minecraft.minecraftvision import MinecraftVision
 from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 
 
@@ -21,7 +20,6 @@ class Minecraft(World):
     supported_worldadapters = [
         'MinecraftWorldAdapter',
         'MinecraftBraitenberg',
-        'MinecraftVision',
         'MinecraftGraphLocomotion'
     ]
 
@@ -136,73 +134,8 @@ class Minecraft2D(Minecraft):
         """
         World.step(self)
 
-        # "Yaw is measured in degrees, and does not follow classical trigonometry rules. The unit circle of yaw on
-        #  the XZ-plane starts at (0, 1) and turns counterclockwise, with 90 at (-1, 0), 180 at (0,-1) and 270 at
-        #  (1, 0). Additionally, yaw is not clamped to between 0 and 360 degrees; any number is valid, including
-        #  negative numbers and numbers greater than 360."
-
-        # "Pitch is measured in degrees, where 0 is looking straight ahead,
-        # -90 is looking straight up, and 90 is looking straight down. "
-
-        # different projections of the Minecraft block world:
-
-        # Jonas' projection ( slightly adapted )
-        # self.get_minecraft_vision(self.spockplugin.clientinfo.position)
-
-        # attempt at a 2D perspective projection
+        # a 2D perspective projection
         self.get_perspective_projection(self.spockplugin.clientinfo.position)
-
-    def get_minecraft_vision(self, agent_info):
-        """
-        """
-        from math import pi, sin, cos, tan
-        from micropsi_core.world.minecraft import structs
-
-        width = 700
-        height = 500
-        self.assets['width'] = width
-        self.assets['height'] = height
-
-        x = int(agent_info['x'])
-        z = int(agent_info['z'])
-        y = int(agent_info['y'] + 2)    # +2 to move reference point to head ?
-        yaw = agent_info['yaw']         # rotation around the x axis, in degrees
-        pitch = agent_info['pitch']     # rotation around the y axis, in degrees
-
-        projection = ()
-        intersection = 0
-
-        # orientation = self.datatargets['orientation'] # x_axis + 360 / orientation  degrees
-        # currently: orientation = yaw #TOOD: fix this.
-
-        # for every pixel in the image plane
-        for x_pixel in range(-width // 2, width // 2):
-            for y_pixel in range(height // 2, -height // 2, -1):
-
-                x_angle = x_pixel * pitch // -height
-                x_angle = x_angle / 360
-                y_angle = y_pixel * pitch // -height
-
-                # x_blocks_per_distance = tan(x_angle)
-                y_blocks_per_distance = tan(y_angle)
-
-                intersection = 0
-                distance = 0
-
-                # while the intersecting block is of type air, get next block
-                while intersection == 0:
-
-                    intersection = self.get_blocktype(
-                        x + int(distance * cos((yaw + x_angle) * 2 * pi)),
-                        y + int(y_blocks_per_distance * distance),
-                        z + int(distance * sin((yaw + x_angle) * 2 * pi)))
-
-                    distance += 1
-
-                # is a tuple of ( block name, distance, block name, distance, .. )
-                projection = projection + (structs.block_names[str(intersection)], distance)
-
-        self.data['projection'] = projection
 
     def get_perspective_projection(self, agent_info):
         """
@@ -234,6 +167,14 @@ class Minecraft2D(Minecraft):
         yaw = 360 - float(agent_info['yaw']) % 360    # given in degrees
         # check which yaw value is straight forward, potentially it's 90, ie. mc yaw + 90
         pitch = float(agent_info['pitch'])      # given in degrees
+
+        # "Yaw is measured in degrees, and does not follow classical trigonometry rules. The unit circle of yaw on
+        #  the XZ-plane starts at (0, 1) and turns counterclockwise, with 90 at (-1, 0), 180 at (0,-1) and 270 at
+        #  (1, 0). Additionally, yaw is not clamped to between 0 and 360 degrees; any number is valid, including
+        #  negative numbers and numbers greater than 360."
+
+        # "Pitch is measured in degrees, where 0 is looking straight ahead,
+        # -90 is looking straight up, and 90 is looking straight down. "
 
         # perspective of particular yaw values
         # i get the impression that while the agent turns to the right at eg. 90 degrees yaw

@@ -98,8 +98,8 @@ class Node(NetEntity):
 
         self.state = {}
 
-        self.gates = {}
-        self.slots = {}
+        self.__gates = {}
+        self.__slots = {}
         self.__type = type
 
         self.parameters = dict((key, None) for key in self.nodetype.parameters)
@@ -120,9 +120,9 @@ class Node(NetEntity):
                 sheaves_to_use = None
             else:
                 sheaves_to_use = gate_activations[gate]
-            self.gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
+            self.__gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
         for slot in self.nodetype.slottypes:
-            self.slots[slot] = Slot(slot, self)
+            self.__slots[slot] = Slot(slot, self)
         if state:
             self.state = state
         nodenet.nodes[self.uid] = self
@@ -154,7 +154,7 @@ class Node(NetEntity):
                     node_activation_to_carry_over[id] = self.sheaves[id]
 
             # clear activation states
-            for gatename in self.gates:
+            for gatename in self.get_gate_types():
                 gate = self.get_gate(gatename)
                 gate.sheaves = {}
             self.sheaves = {}
@@ -163,8 +163,8 @@ class Node(NetEntity):
             for sheaf_id in sheaves_to_calculate:
 
                 # prepare sheaves
-                for gatename in self.gates:
-                    gate = self.gates[gatename]
+                for gatename in self.get_gate_types():
+                    gate = self.get_gate(gatename)
                     gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                 if sheaf_id in node_activation_to_carry_over:
                     self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
@@ -182,47 +182,48 @@ class Node(NetEntity):
                     raise
         else:
             # default node function (only using the "default" sheaf)
-            if len(self.slots):
-                self.activation = sum([self.slots[slot].activation for slot in self.slots])
-                if len(self.gates):
-                    for type, gate in self.gates.items():
-                        gate.gate_function(self.activation)
+            if len(self.get_slot_types()):
+                self.activation = sum([self.get_slot(slot).activation for slot in self.get_slot_types()])
+                if len(self.get_gate_types()):
+                    for gatetype in self.get_gate_types():
+                        self.get_gate(gatetype).gate_function(self.activation)
 
     def get_gate(self, gatename):
         try:
-            return self.gates[gatename]
+            return self.__gates[gatename]
         except KeyError:
             return None
 
     def get_slot(self, slotname):
         try:
-            return self.slots[slotname]
+            return self.__slots[slotname]
         except KeyError:
             return None
 
     def get_gate_parameters(self):
         """Looks into the gates and returns gate parameters if these are defined"""
         gate_parameters = {}
-        for gate in self.gates:
-            if self.gates[gate].parameters:
-                gate_parameters[gate] = self.gates[gate].parameters
+        for gatetype in self.get_gate_types():
+            if self.get_gate(gatetype).parameters:
+                gate_parameters[gatetype] = self.get_gate(gatetype).parameters
         if len(gate_parameters):
             return gate_parameters
         else:
             return None
 
-    def set_gate_activation(self, gate, activation, sheaf="default"):
+    def set_gate_activation(self, gatetype, activation, sheaf="default"):
         """ sets the activation of the given gate"""
         activation = float(activation)
-        if gate in self.gates:
-            self.gates[gate].sheaves[sheaf]['activation'] = activation
+        gate = self.get_gate(gatetype)
+        if gate is not None:
+            gate.sheaves[sheaf]['activation'] = activation
 
     def get_associated_links(self):
         links = []
-        for key in self.gates:
-            links.extend(self.gates[key].outgoing.values())
-        for key in self.slots:
-            links.extend(self.slots[key].incoming.values())
+        for key in self.get_gate_types():
+            links.extend(self.get_gate(key).outgoing.values())
+        for key in self.get_slot_types():
+            links.extend(self.get_slot(key).incoming.values())
         return links
 
     def get_associated_node_uids(self):
@@ -236,9 +237,9 @@ class Node(NetEntity):
 
     def get_sheaves_to_calculate(self):
         sheaves_to_calculate = {}
-        for slotname in self.slots:
-            for uid in self.slots[slotname].sheaves:
-                sheaves_to_calculate[uid] = self.slots[slotname].sheaves[uid].copy()
+        for slotname in self.get_slot_types():
+            for uid in self.get_slot(slotname).sheaves:
+                sheaves_to_calculate[uid] = self.get_slot(slotname).sheaves[uid].copy()
         if 'default' not in sheaves_to_calculate:
             sheaves_to_calculate['default'] = emptySheafElement.copy()
         return sheaves_to_calculate
@@ -256,11 +257,11 @@ class Node(NetEntity):
                     if gate_type not in self.parameters:
                         self.gate_parameters[gate_type] = {}
                     self.gate_parameters[gate_type][parameter] = value
-            self.gates[gate_type].parameters[parameter] = value
+            self.get_gate(gate_type).parameters[parameter] = value
 
     def reset_slots(self):
-        for slot in self.slots:
-            self.slots[slot].sheaves = {"default": emptySheafElement.copy()}
+        for slottype in self.get_slot_types():
+            self.get_slot(slottype).sheaves = {"default": emptySheafElement.copy()}
 
     def get_parameter(self, parameter):
         if parameter in self.parameters:
@@ -303,7 +304,7 @@ class Node(NetEntity):
 
         target = self.nodenet.nodes[target_node_uid]
 
-        if slot_name not in target.slots:
+        if slot_name not in target.get_slot_types():
             return None
 
         gate = self.get_gate(gate_name)
@@ -324,11 +325,11 @@ class Node(NetEntity):
     def unlink_completely(self):
         """Deletes all links originating from this node or ending at this node"""
         links_to_delete = set()
-        for gate_name_candidate, gate_candidate in self.gates.items():
-            for link_uid_candidate, link_candidate in gate_candidate.outgoing.items():
+        for gate_name_candidate in self.get_gate_types():
+            for link_uid_candidate, link_candidate in self.get_gate(gate_name_candidate).outgoing.items():
                 links_to_delete.add(link_candidate)
-        for slot_name_candidate, slot_candidate in self.slots.items():
-            for link_uid_candidate, link_candidate in slot_candidate.incoming.items():
+        for slot_name_candidate in self.get_slot_types():
+            for link_uid_candidate, link_candidate in self.get_slot(slot_name_candidate).incoming.items():
                 links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.remove()
@@ -336,9 +337,9 @@ class Node(NetEntity):
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
         """Deletes all links originating from this node or ending at this node"""
         links_to_delete = set()
-        for gate_name_candidate, gate_candidate in self.gates.items():
+        for gate_name_candidate in self.get_gate_types():
             if gate_name is None or gate_name == gate_name_candidate:
-                for link_uid_candidate, link_candidate in gate_candidate.outgoing.items():
+                for link_uid_candidate, link_candidate in self.get_gate(gate_name_candidate).outgoing.items():
                     if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
                         if slot_name is None or slot_name == link_candidate.target_slot.type:
                             links_to_delete.add(link_candidate)
@@ -346,15 +347,15 @@ class Node(NetEntity):
             link.remove()
 
     def get_gate_types(self):
-        return self.gates.keys()
+        return self.__gates.keys()
 
     def get_slot_types(self):
-        return self.slots.keys()
+        return self.__slots.keys()
 
     def construct_gates_dict(self):
         data = {}
-        for gate_name, gate in self.gates.items():
-            data[gate_name] = gate.sheaves
+        for gate_name in self.get_gate_types():
+            data[gate_name] = self.get_gate(gate_name).sheaves
         return data
 
 

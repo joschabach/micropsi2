@@ -44,8 +44,10 @@ class Monitor(object):
 
     def step(self, step):
         if self.node_uid in self.nodenet.nodes:
-            if self.target in getattr(self.nodenet.nodes[self.node_uid], self.type + 's'):
-                self.values[step] = getattr(self.nodenet.nodes[self.node_uid], self.type + 's')[self.target].sheaves['default']['activation']
+            if self.type == 'gate' and self.target in self.nodenet.nodes[self.node_uid].get_gate_types():
+                self.values[step] = self.nodenet.nodes[self.node_uid].get_gate(self.target).sheaves['default']['activation']
+            if self.type == 'slot' and self.target in self.nodenet.nodes[self.node_uid].get_slot_types():
+                self.values[step] = self.nodenet.nodes[self.node_uid].get_slot(self.target).sheaves['default']['activation']
 
     def clear(self):
         self.values = {}

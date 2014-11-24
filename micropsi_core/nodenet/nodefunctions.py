@@ -1,14 +1,14 @@
 
 def register(netapi, node=None, **params):
-    node.activation = node.get_slot("gen").activation
-    for type, gate in node.gates.items():
-        gate.gate_function(node.get_slot("gen").activation)
+    activation = node.get_slot('gen').activation
+    node.activation = activation
+    node.get_gate('gen').gate_function(activation)
 
 
 def sensor(netapi, node=None, datasource=None, **params):
     datasource_value = netapi.world.get_datasource(netapi.uid, datasource)
     node.activation = datasource_value
-    node.gates["gen"].gate_function(datasource_value)
+    node.get_gate('gen').gate_function(datasource_value)
 
 
 def actor(netapi, node=None, datatarget=None, **params):
@@ -24,9 +24,10 @@ def actor(netapi, node=None, datatarget=None, **params):
 
 
 def concept(netapi, node=None, **params):
-    node.activation = node.get_slot("gen").activation
-    for type, gate in node.gates.items():
-        gate.gate_function(node.get_slot("gen").activation)
+    activation = node.get_slot('gen').activation
+    node.activation = activation
+    for gate_type in node.get_gate_types():
+        node.get_gate(gate_type).gate_function(activation)
 
 
 def script(netapi, node=None, **params):

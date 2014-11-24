@@ -940,7 +940,7 @@ function redrawNodePlaceholder(node, direction){
     if(node.placeholder[direction]){
         node.placeholder[direction].remove();
     }
-    if(node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0)){
+    if(node.bounds && (node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0))){
         node.placeholder[direction] = createPlaceholder(node, direction, calculatePlaceHolderPosition(node, direction, 0));
         linkLayer.addChild(node.placeholder[direction]);
     }
@@ -1529,6 +1529,7 @@ function setActivation(node) {
 
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
+    if(!(nodeUid in nodes)) return;
     selection[nodeUid] = nodes[nodeUid];
     var outline;
     if(nodes[nodeUid].type == 'Comment'){
@@ -1576,15 +1577,17 @@ function selectLink(linkUid) {
 function deselectLink(linkUid) {
     if (linkUid in selection) {
         delete selection[linkUid];
-        var linkShape = linkLayer.children[linkUid].children["link"];
-        if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
-            linkLayer.children[linkUid].remove();
+        if(linkUid in linkLayer.children){
+            var linkShape = linkLayer.children[linkUid].children["link"];
+            if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
+                linkLayer.children[linkUid].remove();
+            }
+            linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
+            linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
+            linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;
+            linkShape.children["arrow"].strokeWidth = 0;
+            linkShape.children["arrow"].strokeColor = null;
         }
-        linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
-        linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
-        linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;
-        linkShape.children["arrow"].strokeWidth = 0;
-        linkShape.children["arrow"].strokeColor = null;
     }
 }
 
@@ -2671,22 +2674,27 @@ function deleteNodeHandler(nodeUid) {
 function deleteLinkHandler(linkUid) {
     function removeLinkOnServer(linkUid){
         api.call("delete_link",
-            {nodenet_uid:currentNodenet, link_uid:linkUid},
+            {   nodenet_uid:currentNodenet,
+                source_node_uid: links[linkUid].sourceNodeUid,
+                gate_type: links[linkUid].gateName,
+                target_node_uid: links[linkUid].targetNodeUid,
+                slot_type: links[linkUid].slotName
+            },
             success= function(data){
                 dialogs.notification('Link removed', 'success');
             }
         );
     }
     if (linkUid in links) {
+        removeLinkOnServer(linkUid);
         removeLink(links[linkUid]);
         if (linkUid in selection) delete selection[linkUid];
-        removeLinkOnServer(linkUid);
     }
     for (var selected in selection) {
         if(selection[selected].constructor == Link){
+            removeLinkOnServer(selected);
             removeLink(links[selected]);
             delete selection[selected];
-            removeLinkOnServer(selected);
         }
     }
     showDefaultForm();
@@ -2704,7 +2712,10 @@ function handleEditLink(event){
     view.draw();
     api.call("set_link_weight", {
         nodenet_uid:currentNodenet,
-        link_uid: linkUid,
+        source_node_uid: links[linkUid].sourceNodeUid,
+        gate_type: links[linkUid].gateName,
+        target_node_uid: links[linkUid].targetNodeUid,
+        slot_type: links[linkUid].slotName,
         weight: weight,
         certainty: certainty
     });
@@ -3193,7 +3204,7 @@ function scrollToNode(node, doShowNodeForm){
             canvas_container.scrollLeft(x);
             selectNode(node.uid);
             view.draw();
-            if(doShowNodeForm) showNodeForm(id);
+            if(node.uid in nodes && doShowNodeForm) showNodeForm(node.uid);
         });
     } else {
         deselectAll();

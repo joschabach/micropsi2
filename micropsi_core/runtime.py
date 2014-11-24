@@ -683,14 +683,13 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     if clonemode != 'none':
         for _, n in copynodes.items():
             for g in n.gates:
-                for uid in n.gates[g].outgoing:
-                    if clonemode == 'all' or n.gates[g].outgoing[uid].target_node.uid in copynodes:
-                        copylinks[uid] = nodenet.links[uid]
+                for link in n.gates[g].outgoing.values():
+                    if clonemode == 'all' or link.target_node.uid in copynodes:
+                        copylinks[link.uid] = link
             if clonemode == 'all':
                 for s in n.slots:
-                    for uid in n.slots[s].incoming:
-                        if uid not in copylinks:
-                            copylinks[uid] = nodenet.links[uid]
+                    for link in n.slots[s].incoming.values():
+                        copylinks[link.uid] = link
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
@@ -704,11 +703,17 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     for uid, l in copylinks.items():
         source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
         target_uid = uidmap.get(l.target_node.uid, l.target_node.uid)
-        success, l_uid = add_link(nodenet_uid, source_uid, l.source_gate.type, target_uid, l.target_slot.type, l.weight, l.certainty)
+        success, link = nodenet.create_link(
+            source_uid,
+            l.source_gate.type,
+            target_uid,
+            l.target_slot.type,
+            l.weight,
+            l.certainty)
         if success:
-            result['links'].append(nodenet.links[l_uid].data)
+            result['links'].append(link.data)
         else:
-            logger.warning('Could not duplicate link: ' + l_uid)
+            logger.warning('Could not duplicate link: ' + uid)
 
     if len(result['nodes']) or len(nodes) == 0:
         return True, result
@@ -857,8 +862,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     return False
 
 
-def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1,
-             uid=None):
+def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
     """Creates a new link.
 
     Arguments.
@@ -868,43 +872,22 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         slot_type: type of the target slot
         weight: the weight of the link (a float)
         certainty (optional): a probabilistic parameter for the link
-        uid (option): if none is supplied, a uid will be generated
-
-    Returns:
-        link_uid if successful,
-        None if failure
     """
     nodenet = nodenets[nodenet_uid]
-    return nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty, uid)
+    success, link = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    return success, link.uid
 
 
-def set_link_weight(nodenet_uid, link_uid, weight, certainty=1):
+def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
     """Set weight of the given link."""
     nodenet = nodenets[nodenet_uid]
-    return nodenet.set_link_weight(link_uid, weight, certainty)
+    return nodenet.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
-def get_link(nodenet_uid, link_uid):
-    """Returns a dictionary of the parameters of the given link, or None if it does not exist. It is
-    structured as follows:
-
-        {
-            uid: unique identifier,
-            source_node_uid: uid of source node,
-            gate_type: type of source gate (amounts to link type),
-            target_node_uid: uid of target node,
-            gate_type: type of target gate,
-            weight: weight of the link (float value),
-            certainty: probabilistic weight of the link (float value),
-        }
-    """
-    return nodenets[nodenet_uid].links[link_uid].data
-
-
-def delete_link(nodenet_uid, link_uid):
+def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
-    return nodenet.delete_link(link_uid)
+    return nodenet.delete_link(source_node_uid, gate_type, target_node_uid, slot_type)
 
 
 def align_nodes(nodenet_uid, nodespace):

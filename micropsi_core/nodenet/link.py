@@ -33,7 +33,11 @@ class Link(object):
         }
         return data
 
-    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1, uid=None):
+    @property
+    def uid(self):
+        return self.source_node.uid + ":" + self.source_gate.type + ":" + self.target_slot.type + ":" + self.target_node.uid
+
+    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
         """create a link between the source_node and the target_node, from the source_gate to the target_slot.
         Note: you should make sure that no link between source and gate exists.
 
@@ -41,11 +45,8 @@ class Link(object):
             weight (optional): the weight of the link (default is 1)
         """
 
-        uid = uid or micropsi_core.tools.generate_uid()
-        self.uid = uid
         self.weight = weight
         self.certainty = certainty
-        self.nodenet = source_node.nodenet
         self.source_node = source_node
         self.target_node = target_node
         self.source_gate = source_node.get_gate(source_gate_name)
@@ -72,8 +73,6 @@ class Link(object):
         self.certainty = certainty
         self.source_gate.outgoing[self.uid] = self
         self.target_slot.incoming[self.uid] = self
-
-        self.nodenet.links[self.uid] = self
 
     def remove(self):
         """unplug the link from the node net

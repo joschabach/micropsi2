@@ -924,31 +924,30 @@ def test_add_link(app, test_nodenet):
     assert uid in data['links']
 
 
-def test_get_link(app, test_nodenet):
-    response = app.get_json('/rpc/get_link(nodenet_uid="%s",link_uid="N1-N1")' % test_nodenet)
-    assert_success(response)
-    assert response.json_body['data']['weight'] == 1
-    assert response.json_body['data']['source_node_uid'] == 'N1'
-    assert response.json_body['data']['target_node_uid'] == 'N1'
-
-
 def test_set_link_weight(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_link_weight', params={
         'nodenet_uid': test_nodenet,
-        'link_uid': 'N1-N1',
+        'source_node_uid': "N1",
+        'gate_type': "gen",
+        'target_node_uid': "N1",
+        'slot_type': "gen",
         'weight': 0.345
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_link(nodenet_uid="%s",link_uid="N1-N1")' % test_nodenet)
-    assert response.json_body['data']['weight'] == 0.345
+    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = json.loads(response.json_body['data'])
+    assert data['links']['N1:gen:gen:N1']['weight'] == 0.345
 
 
 def test_delete_link(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/delete_link', params={
         'nodenet_uid': test_nodenet,
-        'link_uid': 'N1-N1'
+        'source_node_uid': "N1",
+        'gate_type': "gen",
+        'target_node_uid': "N1",
+        'slot_type': "gen"
     })
     assert_success(response)
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -1092,18 +1091,6 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     data = response.json_body['data']
 
-    # Links
-    response = app.get_json('/rpc/get_link(nodenet_uid="%s", link_uid="N1-N1")' % test_nodenet)
-    link_data = response.json_body['data']
-
-    assert data['links']['N1-N1']['weight'] == 1
-    assert data['links']['N1-N1']['certainty'] == 1
-    assert data['links']['N1-N1']['source_node_uid'] == 'N1'
-    assert data['links']['N1-N1']['target_node_uid'] == 'N1'
-    assert data['links']['N1-N1']['source_gate_name'] == 'gen'
-    assert data['links']['N1-N1']['target_slot_name'] == 'gen'
-    assert data['links']['N1-N1'] == link_data
-
     # Monitors
     response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
     monitor_data = response.json_body['data']
@@ -1134,6 +1121,15 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['nodes']['N1']['position'] == [10, 10]
     assert data['nodes']['N1']['type'] == "Concept"
     assert data['nodes']['N1'] == node_data
+
+    # Links
+    assert data['links']['N1:gen:gen:N1']['weight'] == 1
+    assert data['links']['N1:gen:gen:N1']['certainty'] == 1
+    assert data['links']['N1:gen:gen:N1']['source_node_uid'] == 'N1'
+    assert data['links']['N1:gen:gen:N1']['target_node_uid'] == 'N1'
+    assert data['links']['N1:gen:gen:N1']['source_gate_name'] == 'gen'
+    assert data['links']['N1:gen:gen:N1']['target_slot_name'] == 'gen'
+    #assert data['links']['N1:gen:gen:N1'] == link_data
 
     # Nodespaces
     #assert data['nodespaces']['NS1']['index'] == 3

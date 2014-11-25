@@ -48,7 +48,7 @@ class Node(NetEntity):
             "type": self.type,
             "parameters": self.parameters,
             "state": self.__state,
-            "gate_parameters": self.gate_parameters,  # still a redundant field, get rid of it
+            "gate_parameters": self.__gate_parameters,  # still a redundant field, get rid of it
             "sheaves": self.sheaves,
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -94,7 +94,7 @@ class Node(NetEntity):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
-        self.gate_parameters = {}
+        self.__gate_parameters = {}
 
         self.__state = {}
 
@@ -109,12 +109,12 @@ class Node(NetEntity):
         for gate_name in gate_parameters:
             for key in gate_parameters[gate_name]:
                 if gate_parameters[gate_name][key] != self.nodetype.gate_defaults.get(key, None):
-                    if gate_name not in self.gate_parameters:
-                        self.gate_parameters[gate_name] = {}
-                    self.gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
+                    if gate_name not in self.__gate_parameters:
+                        self.__gate_parameters[gate_name] = {}
+                    self.__gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
 
         gate_parameters = self.nodetype.gate_defaults.copy()
-        gate_parameters.update(self.gate_parameters)
+        gate_parameters.update(self.__gate_parameters)
         for gate in self.nodetype.gatetypes:
             if gate_activations is None or gate not in gate_activations:
                 sheaves_to_use = None
@@ -245,8 +245,8 @@ class Node(NetEntity):
         return sheaves_to_calculate
 
     def set_gate_parameters(self, gate_type, parameters):
-        if self.gate_parameters is None:
-            self.gate_parameters = {}
+        if self.__gate_parameters is None:
+            self.__gate_parameters = {}
         for parameter, value in parameters.items():
             if parameter in Nodetype.GATE_DEFAULTS:
                 try:
@@ -255,8 +255,8 @@ class Node(NetEntity):
                     raise Exception("Standard gate parameters must be numeric")
                 if value != Nodetype.GATE_DEFAULTS[parameter]:
                     if gate_type not in self.parameters:
-                        self.gate_parameters[gate_type] = {}
-                    self.gate_parameters[gate_type][parameter] = value
+                        self.__gate_parameters[gate_type] = {}
+                    self.__gate_parameters[gate_type][parameter] = value
             self.get_gate(gate_type).parameters[parameter] = value
 
     def reset_slots(self):

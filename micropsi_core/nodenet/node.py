@@ -46,7 +46,7 @@ class Node(NetEntity):
         data.update({
             "uid": self.uid,
             "type": self.type,
-            "parameters": self.parameters,
+            "parameters": self.__parameters,
             "state": self.__state,
             "gate_parameters": self.__gate_parameters,  # still a redundant field, get rid of it
             "sheaves": self.sheaves,
@@ -102,9 +102,9 @@ class Node(NetEntity):
         self.__slots = {}
         self.__type = type
 
-        self.parameters = dict((key, None) for key in self.nodetype.parameters)
+        self.__parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
-            self.parameters.update(parameters)
+            self.__parameters.update(parameters)
 
         for gate_name in gate_parameters:
             for key in gate_parameters[gate_name]:
@@ -175,7 +175,7 @@ class Node(NetEntity):
 
                 # and actually calculate new values for them
                 try:
-                    self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.parameters)
+                    self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.__parameters)
                 except Exception:
                     self.nodenet.is_active = False
                     self.activation = -1
@@ -254,7 +254,7 @@ class Node(NetEntity):
                 except:
                     raise Exception("Standard gate parameters must be numeric")
                 if value != Nodetype.GATE_DEFAULTS[parameter]:
-                    if gate_type not in self.parameters:
+                    if gate_type not in self.__parameters:
                         self.__gate_parameters[gate_type] = {}
                     self.__gate_parameters[gate_type][parameter] = value
             self.get_gate(gate_type).parameters[parameter] = value
@@ -264,27 +264,27 @@ class Node(NetEntity):
             self.get_slot(slottype).sheaves = {"default": emptySheafElement.copy()}
 
     def get_parameter(self, parameter):
-        if parameter in self.parameters:
-            return self.parameters[parameter]
+        if parameter in self.__parameters:
+            return self.__parameters[parameter]
         else:
             return None
 
     def clear_parameter(self, parameter):
-        if parameter in self.parameters:
+        if parameter in self.__parameters:
             if parameter not in self.nodetype.parameters:
-                del self.parameters[parameter]
+                del self.__parameters[parameter]
             else:
-                self.parameters[parameter] = None
+                self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
-        self.parameters[parameter] = value
+        self.__parameters[parameter] = value
 
     def set_parameters(self, parameters):
         for key in parameters:
             self.set_parameter(key, parameters[key])
 
     def clone_parameters(self):
-        return self.parameters.copy()
+        return self.__parameters.copy()
 
     def get_state(self, state_element):
         if state_element in self.__state:

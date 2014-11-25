@@ -610,7 +610,7 @@ def test_node_netapi_import_actors(fixed_nodenet):
     netapi.import_actors("Root", "test_")
     actors = netapi.get_nodes("Root", "test_")
     assert len(actors) == 1
-    assert actors[0].parameters['datatarget'] == "test_target"
+    assert actors[0].get_parameter('datatarget') == "test_target"
 
     # do it again, make sure we can call import multiple times
     netapi.import_actors("Root", "test_")
@@ -626,7 +626,7 @@ def test_node_netapi_import_sensors(fixed_nodenet):
     netapi.import_sensors("Root", "test_")
     sensors = netapi.get_nodes("Root", "test_")
     assert len(sensors) == 1
-    assert sensors[0].parameters['datasource'] == "test_source"
+    assert sensors[0].get_parameter('datasource') == "test_source"
 
     # do it again, make sure we can call import multiple times
     netapi.import_sensors("Root", "test_")
@@ -646,7 +646,7 @@ def test_set_gate_function(fixed_nodenet):
 
     netapi.set_gatefunction("Root", "Register", "gen", "return 1/(1+math.exp(-t*x))")
 
-    source.parameters["theta"] = 1
+    source.get_gate('gen').parameters["theta"] = 1
 
     net.step()
 

@@ -58,6 +58,17 @@ selection = {};
 gatefunctions = {};
 monitors = {};
 
+GATE_DEFAULTS = {
+    "minimum": -1,
+    "maximum": 1,
+    "certainty": 1,
+    "amplification": 1,
+    "threshold": 0,
+    "decay": 0,
+    "rho": 0,
+    "theta": 0
+}
+
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
 nodeLayer = new Layer();
@@ -498,15 +509,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
             if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]]) {
                 parameters = nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]];
             } else {
-                // mh. evil. where should this be defined?
-                parameters = {
-                    "minimum": -1,
-                    "maximum": 1,
-                    "certainty": 1,
-                    "amplification": 1,
-                    "threshold": 0,
-                    "decay": 0
-                };
+                parameters = GATE_DEFAULTS;
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];
@@ -2956,6 +2959,9 @@ function handleEditGate(event){
     var params = {};
     var old_params = gate.parameters;
     for(var i in data){
+        if(!data[i].value && data[i].name in GATE_DEFAULTS){
+            data[i].value = GATE_DEFAULTS[data[i].name];
+        }
         params[data[i].name] = parseFloat(data[i].value);
     }
     api.call('set_gate_parameters', {

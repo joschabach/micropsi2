@@ -654,4 +654,25 @@ def test_set_gate_function(fixed_nodenet):
     assert some_other_node_type.get_gate("gen").activation == 0
 
 
+def test_autoalign(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    for uid, node in net.nodes.items():
+        node.position = (12, 13)
+    netapi.autoalign_nodespace('Root')
+    positions = []
+    for uid, node in net.nodes.items():
+        if node.parent_nodespace == 'Root':
+            positions.extend(node.position)
+    assert set(positions) != set((12, 13))
+
+    for uid, node in net.nodes.items():
+        node.position = (12, 13)
+    netapi.autoalign_nodespace('InVaLiD')
+    positions = []
+    for uid, node in net.nodes.items():
+        positions.extend(node.position)
+    assert set(positions) == set((12, 13))
+
+
+
 #TODO: Add locking tests once we're sure we'll keep locking, and like it is implemented now

@@ -1095,6 +1095,12 @@ class NetAPI(object):
         }
         self.__nodenet.is_active = False
 
+    def autoalign_nodespace(self, nodespace):
+        """ Calls the autoalignment on the given nodespace """
+        from micropsi_core.nodenet.node_alignment import align
+        if nodespace in self.__nodenet.nodespaces:
+            align(self.__nodenet, nodespace)
+
     def _step(self):
         for lock in self.__locks_to_delete:
             self.__nodenet.unlock(lock)

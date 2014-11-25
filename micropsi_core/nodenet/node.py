@@ -249,14 +249,16 @@ class Node(NetEntity):
             self.__gate_parameters = {}
         for parameter, value in parameters.items():
             if parameter in Nodetype.GATE_DEFAULTS:
-                try:
+                if value is None:
+                    value = Nodetype.GATE_DEFAULTS[parameter]
+                else:
                     value = float(value)
-                except:
-                    raise Exception("Standard gate parameters must be numeric")
                 if value != Nodetype.GATE_DEFAULTS[parameter]:
-                    if gate_type not in self.__parameters:
+                    if gate_type not in self.__gate_parameters:
                         self.__gate_parameters[gate_type] = {}
                     self.__gate_parameters[gate_type][parameter] = value
+                elif parameter in self.__gate_parameters.get(gate_type, {}):
+                    del self.__gate_parameters[gate_type][parameter]
             self.get_gate(gate_type).parameters[parameter] = value
 
     def reset_slots(self):

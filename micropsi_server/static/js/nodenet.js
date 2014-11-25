@@ -58,6 +58,17 @@ selection = {};
 gatefunctions = {};
 monitors = {};
 
+GATE_DEFAULTS = {
+    "minimum": -1,
+    "maximum": 1,
+    "certainty": 1,
+    "amplification": 1,
+    "threshold": 0,
+    "decay": 0,
+    "rho": 0,
+    "theta": 0
+}
+
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
 nodeLayer = new Layer();
@@ -498,15 +509,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
             if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]]) {
                 parameters = nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]];
             } else {
-                // mh. evil. where should this be defined?
-                parameters = {
-                    "minimum": -1,
-                    "maximum": 1,
-                    "certainty": 1,
-                    "amplification": 1,
-                    "threshold": 0,
-                    "decay": 0
-                };
+                parameters = GATE_DEFAULTS;
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];
@@ -940,7 +943,7 @@ function redrawNodePlaceholder(node, direction){
     if(node.placeholder[direction]){
         node.placeholder[direction].remove();
     }
-    if(node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0)){
+    if(node.bounds && (node.parent == currentNodeSpace && (direction == 'in' && node.linksFromOutside.length > 0) || (direction == 'out' && node.linksToOutside.length > 0))){
         node.placeholder[direction] = createPlaceholder(node, direction, calculatePlaceHolderPosition(node, direction, 0));
         linkLayer.addChild(node.placeholder[direction]);
     }
@@ -1529,6 +1532,7 @@ function setActivation(node) {
 
 // mark node as selected, and add it to the selected nodes
 function selectNode(nodeUid) {
+    if(!(nodeUid in nodes)) return;
     selection[nodeUid] = nodes[nodeUid];
     var outline;
     if(nodes[nodeUid].type == 'Comment'){
@@ -1576,15 +1580,17 @@ function selectLink(linkUid) {
 function deselectLink(linkUid) {
     if (linkUid in selection) {
         delete selection[linkUid];
-        var linkShape = linkLayer.children[linkUid].children["link"];
-        if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
-            linkLayer.children[linkUid].remove();
+        if(linkUid in linkLayer.children){
+            var linkShape = linkLayer.children[linkUid].children["link"];
+            if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
+                linkLayer.children[linkUid].remove();
+            }
+            linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
+            linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
+            linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;
+            linkShape.children["arrow"].strokeWidth = 0;
+            linkShape.children["arrow"].strokeColor = null;
         }
-        linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
-        linkShape.children["line"].strokeWidth = links[linkUid].strokeWidth*viewProperties.zoomFactor;
-        linkShape.children["arrow"].fillColor = links[linkUid].strokeColor;
-        linkShape.children["arrow"].strokeWidth = 0;
-        linkShape.children["arrow"].strokeColor = null;
     }
 }
 
@@ -2953,6 +2959,9 @@ function handleEditGate(event){
     var params = {};
     var old_params = gate.parameters;
     for(var i in data){
+        if(!data[i].value && data[i].name in GATE_DEFAULTS){
+            data[i].value = GATE_DEFAULTS[data[i].name];
+        }
         params[data[i].name] = parseFloat(data[i].value);
     }
     api.call('set_gate_parameters', {
@@ -3201,7 +3210,7 @@ function scrollToNode(node, doShowNodeForm){
             canvas_container.scrollLeft(x);
             selectNode(node.uid);
             view.draw();
-            if(doShowNodeForm) showNodeForm(id);
+            if(node.uid in nodes && doShowNodeForm) showNodeForm(node.uid);
         });
     } else {
         deselectAll();

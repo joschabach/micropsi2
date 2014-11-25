@@ -63,7 +63,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     vertical_angle = 60
     focal_length = 1         # distance of image plane from projective point /fovea
     resolution = 40          # camera resolution for a specific visual field
-    max_dist = 150           # maximum distance for raytracing
+    max_dist = 250           # maximum distance for raytracing
 
     loco_nodes = {}
 
@@ -232,24 +232,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
 
+            self.check_for_action_feedback(tol)
+
             # don't reset self.datatargets because their activation is processed differently
             # depending on whether they fire continuously or not, see self.datatarget_history
-
-            # check if any pending datatarget_feedback can be confirmed with data from the world
-            mark_for_deletion = []
-            if self.waiting_list:
-                for k, item in self.waiting_list.items():
-                    exit = item['exit_uid']
-                    # somehwat brittle because teleportation is imprecise and the buffer of 3 below is picked by inspection
-                    if abs(self.loco_nodes[exit]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= tol \
-                            and abs(self.loco_nodes[exit]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= tol \
-                            and abs(self.loco_nodes[exit]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
-                        self.datatarget_feedback[item['target']] = 1.
-                        mark_for_deletion.append(k)
-
-            # delete processed items from waiting_list
-            for i in mark_for_deletion:
-                del self.waiting_list[i]
 
             # read locomotor values, trigger teleportation in the world, and provide action feedback
             # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
@@ -293,6 +279,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.datatarget_feedback['fov_y'] = 1
             # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
 
+            # impatience!
+            self.check_for_action_feedback(tol)
+
             # update datatarget history
             for k in self.datatarget_history.keys():
                 self.datatarget_history[k] = self.datatargets[k]
@@ -307,6 +296,25 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_loco_node['z']))
 
         self.current_loco_node = new_loco_node
+
+    def check_for_action_feedback(self, tol):
+        """ """
+        # check if any pending datatarget_feedback can be confirmed with data from the world
+        if self.waiting_list:
+            mark_for_deletion = []
+            for k, item in self.waiting_list.items():
+                exit_uid = item['exit_uid']
+                # somehwat brittle because teleportation is imprecise and the buffer is picked by inspection
+                if abs(self.loco_nodes[exit_uid]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= tol \
+                        and abs(self.loco_nodes[exit_uid]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= tol \
+                        and abs(self.loco_nodes[exit_uid]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
+                    self.datatarget_feedback[item['target']] = 1.
+                    mark_for_deletion.append(k)
+
+            # delete processed items from waiting_list
+            for i in mark_for_deletion:
+                del self.waiting_list[i]
+            del mark_for_deletion
 
     def get_visual_input(self, fov_x, fov_y):
         """
@@ -403,7 +411,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         Map block type given by an integer to a block sensor;
         cf. http://minecraft.gamepedia.com/Data_values#Block_IDs.
         """
-        if block_type == -1:
+        if block_type <= 0:
             self.datasources['nothing'] = 1.
 
         elif block_type == 0:
@@ -443,7 +451,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['otter'] = 1.
 
     def get_block_type(self, x, y, z):
-        """ What used to be jonas' get_voxel_blocktype(..) """
+        """ Jonas' get_voxel_blocktype(..) """
         key = (x // 16, z // 16)
         columns = self.spockplugin.world.map.columns
         if key not in columns:

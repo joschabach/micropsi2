@@ -47,7 +47,7 @@ class Node(NetEntity):
             "uid": self.uid,
             "type": self.type,
             "parameters": self.parameters,
-            "state": self.state,
+            "state": self.__state,
             "gate_parameters": self.gate_parameters,  # still a redundant field, get rid of it
             "sheaves": self.sheaves,
             "activation": self.activation,
@@ -96,7 +96,7 @@ class Node(NetEntity):
 
         self.gate_parameters = {}
 
-        self.state = {}
+        self.__state = {}
 
         self.__gates = {}
         self.__slots = {}
@@ -124,7 +124,7 @@ class Node(NetEntity):
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = Slot(slot, self)
         if state:
-            self.state = state
+            self.__state = state
         nodenet.nodes[self.uid] = self
         self.sheaves = {"default": emptySheafElement.copy()}
 
@@ -284,13 +284,16 @@ class Node(NetEntity):
             self.set_parameter(key, parameters[key])
 
     def get_state(self, state_element):
-        if state_element in self.state:
-            return self.state[state_element]
+        if state_element in self.__state:
+            return self.__state[state_element]
         else:
             return None
 
     def set_state(self, state_element, value):
-        self.state[state_element] = value
+        self.__state[state_element] = value
+
+    def clone_state(self):
+        return self.__state.copy()
 
     def link(self, gate_name, target_node_uid, slot_name, weight=1, certainty=1):
         """Ensures a link exists with the given parameters and returns it

@@ -355,10 +355,11 @@ class Node(NetEntity):
             link.remove()
 
     def get_gate_types(self):
-        return self.__gates.keys()
+        # TODO: actually, the order returned shouldn't be random, but gen, sub, sur, por, ret, cat, exp, sym, ref.
+        return list(self.__gates.keys())
 
     def get_slot_types(self):
-        return self.__slots.keys()
+        return list(self.__slots.keys())
 
     def construct_gates_dict(self):
         data = {}

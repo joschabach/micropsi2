@@ -358,7 +358,7 @@ class Nodenet(object):
             parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
             parent_nodespace.netentities["nodes"].remove(node_uid)
             if self.nodes[node_uid].type == "Activator":
-                parent_nodespace.activators.pop(self.nodes[node_uid].parameters["type"], None)
+                parent_nodespace.activators.pop(self.nodes[node_uid].get_parameter('type'), None)
             del self.nodes[node_uid]
             self.update_node_positions()
 
@@ -494,7 +494,7 @@ class Nodenet(object):
                 name=original.name,
                 type=original.type,
                 uid=uid,
-                parameters=deepcopy(original.parameters),
+                parameters=deepcopy(original.clone_parameters()),
                 gate_parameters=original.get_gate_parameters()
             )
 
@@ -556,7 +556,7 @@ class Nodenet(object):
             for uid in self.monitors:
                 self.monitors[uid].step(self.__step)
             for uid, node in activators.items():
-                node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+                node.activation = self.nodespaces[node.parent_nodespace].activators[node.get_parameter('type')]
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
@@ -637,7 +637,7 @@ class Nodenet(object):
         activators = {}
         for uid in nodes:
             if self.nodes[uid].type == 'Activator':
-                if type is None or type == self.nodes[uid].parameters['type']:
+                if type is None or type == self.nodes[uid].get_parameter('type'):
                     activators.update({uid: self.nodes[uid]})
         return activators
 
@@ -949,11 +949,11 @@ class NetAPI(object):
             raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
-            if candidate.parameters['datatarget'] == datatarget:
+            if candidate.get_parameter('datatarget') == datatarget:
                 actor = candidate
         if actor is None:
             actor = self.create_node("Actor", node.parent_nodespace, datatarget)
-            actor.parameters.update({'datatarget': datatarget})
+            actor.set_parameter('datatarget', datatarget)
 
         self.link(node, gate, actor, 'gen', weight, certainty)
         #self.link(actor, 'gen', node, slot)
@@ -967,11 +967,11 @@ class NetAPI(object):
             raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
-            if candidate.parameters['datasource'] == datasource:
+            if candidate.get_parameter('datasource') == datasource:
                 sensor = candidate
         if sensor is None:
             sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
-            sensor.parameters.update({'datasource': datasource})
+            sensor.set_parameter('datasource', datasource)
 
         self.link(sensor, 'gen', node, slot)
 
@@ -988,11 +988,11 @@ class NetAPI(object):
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
                 for uid, candidate in self.__nodenet.get_actors(nodespace).items():
-                    if candidate.parameters['datatarget'] == datatarget:
+                    if candidate.get_parameter('datatarget') == datatarget:
                         actor = candidate
                 if actor is None:
                     actor = self.create_node("Actor", nodespace, datatarget)
-                    actor.parameters.update({'datatarget': datatarget})
+                    actor.set_parameter('datatarget', datatarget)
                 all_actors.append(actor)
         return all_actors
 
@@ -1009,11 +1009,11 @@ class NetAPI(object):
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None
                 for uid, candidate in self.__nodenet.get_sensors(nodespace).items():
-                    if candidate.parameters['datasource'] == datasource:
+                    if candidate.get_parameter('datasource') == datasource:
                         sensor = candidate
                 if sensor is None:
                     sensor = self.create_node("Sensor", nodespace, datasource)
-                    sensor.parameters.update({'datasource': datasource})
+                    sensor.set_parameter('datasource', datasource)
                 all_sensors.append(sensor)
         return all_sensors
 

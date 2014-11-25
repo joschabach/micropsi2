@@ -283,6 +283,9 @@ class Node(NetEntity):
         for key in parameters:
             self.set_parameter(key, parameters[key])
 
+    def clone_parameters(self):
+        return self.parameters.copy()
+
     def get_state(self, state_element):
         if state_element in self.__state:
             return self.__state[state_element]

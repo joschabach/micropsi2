@@ -693,7 +693,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.clone_state(), uid=None, name=n.name + '_copy', parameters=n.parameters)
+        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.clone_state(), uid=None, name=n.name + '_copy', parameters=n.clone_parameters())
         if success:
             uidmap[n.uid] = uid
             result['nodes'].append(nodenet.nodes[uid].data)
@@ -849,7 +849,7 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     """Associates the datasource type to the sensor node with the given uid."""
     node = nodenets[nodenet_uid].nodes[sensor_uid]
     if node.type == "Sensor":
-        node.parameters.update({'datasource': datasource})
+        node.set_parameter('datasource', datasource)
         return True
     return False
 
@@ -858,7 +858,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     """Associates the datatarget type to the actor node with the given uid."""
     node = nodenets[nodenet_uid].nodes[actor_uid]
     if node.type == "Actor":
-        node.parameters.update({'datatarget': datatarget})
+        node.set_parameter('datatarget', datatarget)
         return True
     return False
 
@@ -900,7 +900,8 @@ def align_nodes(nodenet_uid, nodespace):
 
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
-    nodenets[nodenet_uid].nodes[node_uid].parameters.update(values)
+    for key, value in values.items():
+        nodenets[nodenet_uid].nodes[node_uid].set_parameter(key, value)
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 

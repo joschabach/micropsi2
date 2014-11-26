@@ -158,7 +158,7 @@ class Nodenet(object):
 
         self.monitors = {}
         self.__locks = {}
-        self.nodes_by_coords = {}
+        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
 
@@ -308,10 +308,10 @@ class Nodenet(object):
         links = []
         followupnodes = []
         for x in range(*x_range):
-            if x in self.nodes_by_coords:
+            if x in self.__nodes_by_coords:
                 for y in range(*y_range):
-                    if y in self.nodes_by_coords[x]:
-                        for uid in self.nodes_by_coords[x][y]:
+                    if y in self.__nodes_by_coords[x]:
+                        for uid in self.__nodes_by_coords[x][y]:
                             if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                                 data['nodes'][uid] = self.get_node(uid).data
                                 links.extend(self.get_node(uid).get_associated_links())
@@ -325,21 +325,21 @@ class Nodenet(object):
 
     def update_node_positions(self):
         """ recalculates the position hash """
-        self.nodes_by_coords = {}
+        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
         for uid in self.get_node_uids():
             pos = self.get_node(uid).position
             xpos = int(pos[0] - (pos[0] % 100))
             ypos = int(pos[1] - (pos[1] % 100))
-            if xpos not in self.nodes_by_coords:
-                self.nodes_by_coords[xpos] = {}
+            if xpos not in self.__nodes_by_coords:
+                self.__nodes_by_coords[xpos] = {}
                 if xpos > self.max_coords['x']:
                     self.max_coords['x'] = xpos
-            if ypos not in self.nodes_by_coords[xpos]:
-                self.nodes_by_coords[xpos][ypos] = []
+            if ypos not in self.__nodes_by_coords[xpos]:
+                self.__nodes_by_coords[xpos][ypos] = []
                 if ypos > self.max_coords['y']:
                     self.max_coords['y'] = ypos
-            self.nodes_by_coords[xpos][ypos].append(uid)
+            self.__nodes_by_coords[xpos][ypos].append(uid)
 
     def delete_node(self, node_uid):
         if node_uid in self.__nodespaces:
@@ -378,7 +378,7 @@ class Nodenet(object):
         self.__nodes = {}
         self.monitors = {}
 
-        self.nodes_by_coords = {}
+        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
 
         self.__nodespaces = {}
@@ -415,15 +415,15 @@ class Nodenet(object):
                 pos = self.__nodes[uid].position
                 xpos = int(pos[0] - (pos[0] % 100))
                 ypos = int(pos[1] - (pos[1] % 100))
-                if xpos not in self.nodes_by_coords:
-                    self.nodes_by_coords[xpos] = {}
+                if xpos not in self.__nodes_by_coords:
+                    self.__nodes_by_coords[xpos] = {}
                     if xpos > self.max_coords['x']:
                         self.max_coords['x'] = xpos
-                if ypos not in self.nodes_by_coords[xpos]:
-                    self.nodes_by_coords[xpos][ypos] = []
+                if ypos not in self.__nodes_by_coords[xpos]:
+                    self.__nodes_by_coords[xpos][ypos] = []
                     if ypos > self.max_coords['y']:
                         self.max_coords['y'] = ypos
-                self.nodes_by_coords[xpos][ypos].append(uid)
+                self.__nodes_by_coords[xpos][ypos].append(uid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 

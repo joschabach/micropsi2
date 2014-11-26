@@ -150,7 +150,6 @@ class Nodenet(object):
         if world and worldadapter:
             self.worldadapter = worldadapter
 
-        self.entitytypes = {}
         self.__nodes = {}
         self.__nodetypes = nodetypes
         self.__native_modules = native_modules

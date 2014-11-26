@@ -69,10 +69,6 @@ class NetEntity(object):
 
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
-        if not entitytype in nodenet.entitytypes:
-            nodenet.entitytypes[entitytype] = {}
-        if not uid in nodenet.entitytypes[entitytype]:
-            nodenet.entitytypes[entitytype][uid] = {}
         self.__uid = uid
         self.index = index or len(nodenet.get_node_uids()) + len(nodenet.get_nodespace_uids())
         self.entitytype = entitytype

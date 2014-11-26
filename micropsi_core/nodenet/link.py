@@ -59,24 +59,18 @@ class Link(object):
             You may call this function to change the connections of an existing link. If the link is already
             linked, it will be unlinked first.
         """
-        if self.source_node:
-            if self.source_node != source_node and self.source_gate.type != source_gate_name:
-                del self.source_gate.outgoing[self.uid]
-        if self.target_node:
-            if self.target_node != target_node and self.target_slot.type != target_slot_name:
-                del self.target_slot.incoming[self.uid]
         self.source_node = source_node
         self.target_node = target_node
         self.source_gate = source_node.get_gate(source_gate_name)
         self.target_slot = target_node.get_slot(target_slot_name)
         self.weight = weight
         self.certainty = certainty
-        self.source_gate.outgoing[self.uid] = self
-        self.target_slot.incoming[self.uid] = self
+        self.source_gate._register_outgoing(self)
+        self.target_slot._register_incoming(self)
 
     def remove(self):
         """unplug the link from the node net
            can't be handled in the destructor, since it removes references to the instance
         """
-        del self.source_gate.outgoing[self.uid]
-        del self.target_slot.incoming[self.uid]
+        self.source_gate._unregister_outgoing(self)
+        self.target_slot._unregister_incoming(self)

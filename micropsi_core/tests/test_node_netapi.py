@@ -49,7 +49,7 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert node.type == "Register"
     assert node.uid is not None
     assert node.nodenet is net
-    assert len(node.get_gate('gen').outgoing) == 0
+    assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').sheaves) == 1
 
     # frontend/persistency-oriented data dictionary test
@@ -76,23 +76,23 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node.type == "Concept"
     assert node.uid is not None
     assert node.nodenet is net
-    assert len(node.get_gate('gen').outgoing) == 0
+    assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').sheaves) == 1
-    assert len(node.get_gate('sub').outgoing) == 0
+    assert len(node.get_gate('sub').get_links()) == 0
     assert len(node.get_gate('sub').sheaves) == 1
-    assert len(node.get_gate('sur').outgoing) == 0
+    assert len(node.get_gate('sur').get_links()) == 0
     assert len(node.get_gate('sur').sheaves) == 1
-    assert len(node.get_gate('por').outgoing) == 0
+    assert len(node.get_gate('por').get_links()) == 0
     assert len(node.get_gate('por').sheaves) == 1
-    assert len(node.get_gate('ret').outgoing) == 0
+    assert len(node.get_gate('ret').get_links()) == 0
     assert len(node.get_gate('ret').sheaves) == 1
-    assert len(node.get_gate('cat').outgoing) == 0
+    assert len(node.get_gate('cat').get_links()) == 0
     assert len(node.get_gate('cat').sheaves) == 1
-    assert len(node.get_gate('exp').outgoing) == 0
+    assert len(node.get_gate('exp').get_links()) == 0
     assert len(node.get_gate('exp').sheaves) == 1
-    assert len(node.get_gate('sym').outgoing) == 0
+    assert len(node.get_gate('sym').get_links()) == 0
     assert len(node.get_gate('sym').sheaves) == 1
-    assert len(node.get_gate('ref').outgoing) == 0
+    assert len(node.get_gate('ref').get_links()) == 0
     assert len(node.get_gate('ref').sheaves) == 1
 
     # frontend/persistency-oriented data dictionary test
@@ -382,7 +382,7 @@ def test_node_netapi_delete_node(fixed_nodenet):
     netapi.delete_node(node1)
     with pytest.raises(KeyError):
         netapi.get_node(olduid)
-    assert len(node2.get_gate("gen").outgoing) == 0
+    assert len(node2.get_gate("gen").get_links()) == 0
 
 
 def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
@@ -411,13 +411,18 @@ def test_node_netapi_link(fixed_nodenet):
     node2 = netapi.create_node("Register", "Root", "TestName2")
     netapi.link(node2, "gen", node1, "gen")
 
-    assert len(node2.get_gate("gen").outgoing) == 1
-    for linkuid, link in node2.get_gate("gen").outgoing.items():
+    assert len(node2.get_gate("gen").get_links()) == 1
+    for link in node2.get_gate("gen").get_links():
         # basic internal logic
         assert link.source_node is node2
         assert link.target_node is node1
         assert link.weight == 1
-        assert link.uid in node1.get_slot("gen").incoming
+
+        found = False
+        for otherside_link in node1.get_slot("gen").get_links():
+            if otherside_link.uid == link.uid:
+                found = True
+        assert found
 
         # frontend/persistency-facing
         assert link.data['weight'] == link.weight
@@ -437,13 +442,18 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
 
     netapi.link(node2, "gen", node1, "gen", 0.8)
 
-    assert len(node2.get_gate("gen").outgoing) == 1
-    for linkuid, link in node2.get_gate("gen").outgoing.items():
+    assert len(node2.get_gate("gen").get_links()) == 1
+    for link in node2.get_gate("gen").get_links():
         # basic internal logic
         assert link.source_node is node2
         assert link.target_node is node1
         assert link.weight == 0.8
-        assert link.uid in node1.get_slot("gen").incoming
+
+        found = False
+        for otherside_link in node1.get_slot("gen").get_links():
+            if otherside_link.uid == link.uid:
+                found = True
+        assert found
 
         # frontend/persistency-facing
         assert link.data['weight'] == link.weight
@@ -469,31 +479,31 @@ def test_node_netapi_link_with_reciprocal(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_d, "catexp")
     netapi.link_with_reciprocal(n_d, n_e, "symref")
 
-    assert len(n_head.get_gate("sub").outgoing) == 3
-    assert len(n_head.get_slot("sur").incoming) == 3
-    assert len(n_a.get_gate("sur").outgoing) == 1
-    assert len(n_a.get_slot("sub").incoming) == 1
-    assert len(n_b.get_gate("sur").outgoing) == 1
-    assert len(n_b.get_slot("sub").incoming) == 1
-    assert len(n_c.get_gate("sur").outgoing) == 1
-    assert len(n_c.get_slot("sub").incoming) == 1
-    assert len(n_a.get_gate("por").outgoing) == 1
-    assert len(n_a.get_slot("ret").incoming) == 1
-    assert len(n_a.get_slot("por").incoming) == 0
-    assert len(n_b.get_gate("por").outgoing) == 1
-    assert len(n_b.get_slot("ret").incoming) == 1
-    assert len(n_b.get_gate("ret").outgoing) == 1
-    assert len(n_b.get_slot("por").incoming) == 1
-    assert len(n_c.get_gate("por").outgoing) == 0
-    assert len(n_c.get_slot("ret").incoming) == 0
-    for linkuid, link in n_b.get_gate("por").outgoing.items():
+    assert len(n_head.get_gate("sub").get_links()) == 3
+    assert len(n_head.get_slot("sur").get_links()) == 3
+    assert len(n_a.get_gate("sur").get_links()) == 1
+    assert len(n_a.get_slot("sub").get_links()) == 1
+    assert len(n_b.get_gate("sur").get_links()) == 1
+    assert len(n_b.get_slot("sub").get_links()) == 1
+    assert len(n_c.get_gate("sur").get_links()) == 1
+    assert len(n_c.get_slot("sub").get_links()) == 1
+    assert len(n_a.get_gate("por").get_links()) == 1
+    assert len(n_a.get_slot("ret").get_links()) == 1
+    assert len(n_a.get_slot("por").get_links()) == 0
+    assert len(n_b.get_gate("por").get_links()) == 1
+    assert len(n_b.get_slot("ret").get_links()) == 1
+    assert len(n_b.get_gate("ret").get_links()) == 1
+    assert len(n_b.get_slot("por").get_links()) == 1
+    assert len(n_c.get_gate("por").get_links()) == 0
+    assert len(n_c.get_slot("ret").get_links()) == 0
+    for link in n_b.get_gate("por").get_links():
         assert link.weight == 0.5
 
-    assert len(n_head.get_gate("cat").outgoing) == 1
-    assert len(n_head.get_slot("exp").incoming) == 1
+    assert len(n_head.get_gate("cat").get_links()) == 1
+    assert len(n_head.get_slot("exp").get_links()) == 1
 
-    assert len(n_d.get_gate("sym").outgoing) == 1
-    assert len(n_d.get_slot("gen").incoming) == 2
+    assert len(n_d.get_gate("sym").get_links()) == 1
+    assert len(n_d.get_slot("gen").get_links()) == 2
 
 
 def test_node_netapi_link_full(fixed_nodenet):
@@ -507,10 +517,10 @@ def test_node_netapi_link_full(fixed_nodenet):
 
     netapi.link_full([n_a, n_b, n_c, n_d])
 
-    assert len(n_a.get_slot('por').incoming) == 4
-    assert len(n_b.get_slot('por').incoming) == 4
-    assert len(n_c.get_slot('por').incoming) == 4
-    assert len(n_d.get_slot('por').incoming) == 4
+    assert len(n_a.get_slot('por').get_links()) == 4
+    assert len(n_b.get_slot('por').get_links()) == 4
+    assert len(n_c.get_slot('por').get_links()) == 4
+    assert len(n_d.get_slot('por').get_links()) == 4
 
 
 def test_node_netapi_unlink(fixed_nodenet):
@@ -526,10 +536,10 @@ def test_node_netapi_unlink(fixed_nodenet):
 
     netapi.unlink(n_b)
 
-    assert len(n_a.get_slot('por').incoming) == 3
-    assert len(n_b.get_slot('por').incoming) == 3
-    assert len(n_c.get_slot('por').incoming) == 3
-    assert len(n_d.get_slot('por').incoming) == 3
+    assert len(n_a.get_slot('por').get_links()) == 3
+    assert len(n_b.get_slot('por').get_links()) == 3
+    assert len(n_c.get_slot('por').get_links()) == 3
+    assert len(n_d.get_slot('por').get_links()) == 3
 
 
 def test_node_netapi_unlink_specific_link(fixed_nodenet):
@@ -545,10 +555,10 @@ def test_node_netapi_unlink_specific_link(fixed_nodenet):
 
     netapi.unlink(n_b, "por", n_c, "por")
 
-    assert len(n_a.get_slot('por').incoming) == 4
-    assert len(n_b.get_slot('por').incoming) == 4
-    assert len(n_c.get_slot('por').incoming) == 3
-    assert len(n_d.get_slot('por').incoming) == 4
+    assert len(n_a.get_slot('por').get_links()) == 4
+    assert len(n_b.get_slot('por').get_links()) == 4
+    assert len(n_c.get_slot('por').get_links()) == 3
+    assert len(n_d.get_slot('por').get_links()) == 4
 
 
 def test_node_netapi_unlink_gate(fixed_nodenet):
@@ -564,10 +574,10 @@ def test_node_netapi_unlink_gate(fixed_nodenet):
 
     netapi.unlink(n_b, "por")
 
-    assert len(n_a.get_slot('por').incoming) == 3
-    assert len(n_b.get_slot('por').incoming) == 3
-    assert len(n_c.get_slot('por').incoming) == 3
-    assert len(n_d.get_slot('por').incoming) == 3
+    assert len(n_a.get_slot('por').get_links()) == 3
+    assert len(n_b.get_slot('por').get_links()) == 3
+    assert len(n_c.get_slot('por').get_links()) == 3
+    assert len(n_d.get_slot('por').get_links()) == 3
 
 
 def test_node_netapi_unlink_direction(fixed_nodenet):
@@ -585,21 +595,21 @@ def test_node_netapi_unlink_direction(fixed_nodenet):
 
     netapi.unlink_direction(n_b, "por")
 
-    assert len(n_head.get_gate('sub').outgoing) == 3
-    assert len(n_head.get_slot('sur').incoming) == 3
+    assert len(n_head.get_gate('sub').get_links()) == 3
+    assert len(n_head.get_slot('sur').get_links()) == 3
 
-    assert len(n_a.get_slot('por').incoming) == 2
-    assert len(n_b.get_slot('por').incoming) == 0
-    assert len(n_c.get_slot('por').incoming) == 2
+    assert len(n_a.get_slot('por').get_links()) == 2
+    assert len(n_b.get_slot('por').get_links()) == 0
+    assert len(n_c.get_slot('por').get_links()) == 2
 
     netapi.unlink_direction(n_head, "sub")
 
-    assert len(n_head.get_gate('sub').outgoing) == 0
-    assert len(n_head.get_slot('sur').incoming) == 3
+    assert len(n_head.get_gate('sub').get_links()) == 0
+    assert len(n_head.get_slot('sur').get_links()) == 3
 
-    assert len(n_a.get_slot('sub').incoming) == 0
-    assert len(n_b.get_slot('sub').incoming) == 0
-    assert len(n_c.get_slot('sub').incoming) == 0
+    assert len(n_a.get_slot('sub').get_links()) == 0
+    assert len(n_b.get_slot('sub').get_links()) == 0
+    assert len(n_c.get_slot('sub').get_links()) == 0
 
 
 def test_node_netapi_import_actors(fixed_nodenet):
@@ -610,7 +620,7 @@ def test_node_netapi_import_actors(fixed_nodenet):
     netapi.import_actors("Root", "test_")
     actors = netapi.get_nodes("Root", "test_")
     assert len(actors) == 1
-    assert actors[0].parameters['datatarget'] == "test_target"
+    assert actors[0].get_parameter('datatarget') == "test_target"
 
     # do it again, make sure we can call import multiple times
     netapi.import_actors("Root", "test_")
@@ -626,7 +636,7 @@ def test_node_netapi_import_sensors(fixed_nodenet):
     netapi.import_sensors("Root", "test_")
     sensors = netapi.get_nodes("Root", "test_")
     assert len(sensors) == 1
-    assert sensors[0].parameters['datasource'] == "test_source"
+    assert sensors[0].get_parameter('datasource') == "test_source"
 
     # do it again, make sure we can call import multiple times
     netapi.import_sensors("Root", "test_")
@@ -646,7 +656,7 @@ def test_set_gate_function(fixed_nodenet):
 
     netapi.set_gatefunction("Root", "Register", "gen", "return 1/(1+math.exp(-t*x))")
 
-    source.parameters["theta"] = 1
+    source.get_gate('gen').parameters["theta"] = 1
 
     net.step()
 

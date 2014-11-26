@@ -139,7 +139,7 @@ def test_node_logic_store_and_forward(fixed_nodenet):
 def test_node_logic_activators(fixed_nodenet ):
     net, netapi, source = prepare(fixed_nodenet)
     activator = netapi.create_node('Activator', 'Root')
-    activator.parameters = {'type': 'gen'}
+    activator.set_parameter('type', 'gen')
     activator.activation = 1
     netapi.link(source, 'gen', source, 'gen') # gen loop
     net.step()  # activator has set activation

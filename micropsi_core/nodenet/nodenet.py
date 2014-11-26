@@ -358,7 +358,7 @@ class Nodenet(object):
             parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
             parent_nodespace.netentities["nodes"].remove(node_uid)
             if self.nodes[node_uid].type == "Activator":
-                parent_nodespace.activators.pop(self.nodes[node_uid].parameters["type"], None)
+                parent_nodespace.activators.pop(self.nodes[node_uid].get_parameter('type'), None)
             del self.nodes[node_uid]
             self.update_node_positions()
 
@@ -494,7 +494,7 @@ class Nodenet(object):
                 name=original.name,
                 type=original.type,
                 uid=uid,
-                parameters=deepcopy(original.parameters),
+                parameters=deepcopy(original.clone_parameters()),
                 gate_parameters=original.get_gate_parameters()
             )
 
@@ -502,13 +502,13 @@ class Nodenet(object):
         links_to_copy = set()
         for node_uid in nodes:
             node = nodes[node_uid]
-            for slot in node.slots:
-                for link_uid, link in node.slots[slot].incoming.items():
+            for slot in node.get_slot_types():
+                for link in node.get_slot(slot).get_links():
                     if link.source_node.uid in nodes or (copy_associated_links
                                                          and link.source_node.uid in self.nodes):
                         links_to_copy.add(link)
-            for gate in node.gates:
-                for link_uid, link in node.gates[gate].outgoing.items():
+            for gate in node.get_gate_types():
+                for link in node.get_gate(gate).get_links():
                     if link.target_node.uid in nodes or (copy_associated_links
                                                          and link.target_node.uid in self.nodes):
                         links_to_copy.add(link)
@@ -556,7 +556,7 @@ class Nodenet(object):
             for uid in self.monitors:
                 self.monitors[uid].step(self.__step)
             for uid, node in activators.items():
-                node.activation = self.nodespaces[node.parent_nodespace].activators[node.parameters['type']]
+                node.activation = self.nodespaces[node.parent_nodespace].activators[node.get_parameter('type')]
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
@@ -571,36 +571,36 @@ class Nodenet(object):
 
         # propagate sheaf existence
         for uid, node in nodes.items():
-            if limit_gatetypes is not None:
-                gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
-            else:
-                gates = node.gates.items()
-            for type, gate in gates:
-                if gate.parameters['spreadsheaves'] is True:
-                    for sheaf in gate.sheaves:
-                        for uid, link in gate.outgoing.items():
-                            for slotname in link.target_node.slots:
-                                if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
-                                    link.target_node.get_slot(slotname).sheaves[sheaf] = dict(uid=gate.sheaves[sheaf]['uid'], name=gate.sheaves[sheaf]['name'], activation=0)
+            for gate_type in node.get_gate_types():
+                if limit_gatetypes is None or gate_type in limit_gatetypes:
+                    gate = node.get_gate(gate_type)
+                    if gate.parameters['spreadsheaves'] is True:
+                        for sheaf in gate.sheaves:
+                            for link in gate.get_links():
+                                for slotname in link.target_node.get_slot_types():
+                                    if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
+                                        link.target_node.get_slot(slotname).sheaves[sheaf] = dict(
+                                            uid=gate.sheaves[sheaf]['uid'],
+                                            name=gate.sheaves[sheaf]['name'],
+                                            activation=0)
 
         # propagate activation
         for uid, node in nodes.items():
-            if limit_gatetypes is not None:
-                gates = [(name, gate) for name, gate in node.gates.items() if name in limit_gatetypes]
-            else:
-                gates = node.gates.items()
+            for gate_type in node.get_gate_types():
+                if limit_gatetypes is None or gate_type in limit_gatetypes:
+                    gate = node.get_gate(gate_type)
+                    for link in gate.get_links():
+                        for sheaf in gate.sheaves:
+                            if link.target_node.type == "Actor":
+                                sheaf = "default"
 
-            for type, gate in gates:
-                for uid, link in gate.outgoing.items():
-                    for sheaf in gate.sheaves:
-                        if link.target_node.type == "Actor":
-                            sheaf = "default"
-
-                        if sheaf in link.target_slot.sheaves:
-                            link.target_slot.sheaves[sheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
-                        elif sheaf.endswith(link.target_node.uid):
-                            upsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
-                            link.target_slot.sheaves[upsheaf]['activation'] += float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
+                            if sheaf in link.target_slot.sheaves:
+                                link.target_slot.sheaves[sheaf]['activation'] += \
+                                    float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
+                            elif sheaf.endswith(link.target_node.uid):
+                                upsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
+                                link.target_slot.sheaves[upsheaf]['activation'] += \
+                                    float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
 
     def timeout_locks(self):
         """
@@ -637,7 +637,7 @@ class Nodenet(object):
         activators = {}
         for uid in nodes:
             if self.nodes[uid].type == 'Activator':
-                if type is None or type == self.nodes[uid].parameters['type']:
+                if type is None or type == self.nodes[uid].get_parameter('type'):
                     activators.update({uid: self.nodes[uid]})
         return activators
 
@@ -658,23 +658,6 @@ class Nodenet(object):
             if self.nodes[uid].type == 'Actor':
                 actors[uid] = self.nodes[uid]
         return actors
-
-    def get_link_uid(self, source_uid, source_gate_name, target_uid, target_slot_name):
-        """links are uniquely identified by their origin and targets; this function checks if a link already exists.
-
-        Arguments:
-            source_node: actual node from which the link originates
-            source_gate_name: type of the gate of origin
-            target_node: node that the link ends at
-            target_slot_name: type of the terminating slot
-
-        Returns the link uid, or None if it does not exist"""
-        outgoing_candidates = set(self.nodes[source_uid].get_gate(source_gate_name).outgoing.keys())
-        incoming_candidates = set(self.nodes[target_uid].get_slot(target_slot_name).incoming.keys())
-        try:
-            return (outgoing_candidates & incoming_candidates).pop()
-        except KeyError:
-            return None
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Set weight of the given link."""
@@ -802,13 +785,13 @@ class NetAPI(object):
         if gate is not None:
             gates = [gate]
         else:
-            gates = self.__nodenet.nodes[node.uid].gates.keys()
+            gates = self.__nodenet.nodes[node.uid].get_gate_types()
         for gate in gates:
-            for link_uid, link in self.__nodenet.nodes[node.uid].gates[gate].outgoing.items():
+            for link in self.__nodenet.nodes[node.uid].get_gate(gate).get_links():
                 candidate = link.target_node
                 linked_gates = []
-                for candidate_gate_name, candidate_gate in candidate.gates.items():
-                    if len(candidate_gate.outgoing) > 0:
+                for candidate_gate_name in candidate.get_gate_types():
+                    if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
                         linked_gates.append(candidate_gate_name)
                 if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
                     (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
@@ -824,13 +807,13 @@ class NetAPI(object):
         if slot is not None:
             slots = [slot]
         else:
-            slots = self.__nodenet.nodes[node.uid].slots.keys()
+            slots = self.__nodenet.nodes[node.uid].get_slot_types()
         for slot in slots:
-            for link_uid, link in self.__nodenet.nodes[node.uid].slots[slot].incoming.items():
+            for link in self.__nodenet.nodes[node.uid].get_slot(slot).get_links():
                 candidate = link.source_node
                 linked_gates = []
-                for candidate_gate_name, candidate_gate in candidate.gates.items():
-                    if len(candidate_gate.outgoing) > 0:
+                for candidate_gate_name in candidate.get_gate_types():
+                    if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
                         linked_gates.append(candidate_gate_name)
                 if ((nodespace is None or nodespace == link.source_node.parent_nodespace) and
                     (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
@@ -845,7 +828,7 @@ class NetAPI(object):
         for node in self.get_nodes(nodespace):
             if type is None or node.type == type:
                 if gate is not None:
-                    if gate in node.gates:
+                    if gate in node.get_gate_types():
                         if node.get_gate(gate).sheaves[sheaf]['activation'] >= min_activation:
                             nodes.append(node)
                 else:
@@ -885,24 +868,26 @@ class NetAPI(object):
         """
         Creates two (reciprocal) links between two nodes, valid linktypes are subsur, porret, catexp and symref
         """
+        target_slot_types = target_node.get_slot_types()
+        source_slot_types = source_node.get_slot_types()
         if linktype == "subsur":
-            subslot = "sub" if "sub" in target_node.slots else "gen"
-            surslot = "sur" if "sur" in source_node.slots else "gen"
+            subslot = "sub" if "sub" in target_slot_types else "gen"
+            surslot = "sur" if "sur" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "sub", target_node.uid, subslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "sur", source_node.uid, surslot, weight, certainty)
         elif linktype == "porret":
-            porslot = "por" if "por" in target_node.slots else "gen"
-            retslot = "ret" if "ret" in source_node.slots else "gen"
+            porslot = "por" if "por" in target_slot_types else "gen"
+            retslot = "ret" if "ret" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "por", target_node.uid, porslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "ret", source_node.uid, retslot, weight, certainty)
         elif linktype == "catexp":
-            catslot = "cat" if "cat" in target_node.slots else "gen"
-            expslot = "exp" if "exp" in source_node.slots else "gen"
+            catslot = "cat" if "cat" in target_slot_types else "gen"
+            expslot = "exp" if "exp" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "cat", target_node.uid, catslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "exp", source_node.uid, expslot, weight, certainty)
         elif linktype == "symref":
-            symslot = "sym" if "sym" in target_node.slots else "gen"
-            refslot = "ref" if "ref" in source_node.slots else "gen"
+            symslot = "sym" if "sym" in target_slot_types else "gen"
+            refslot = "ref" if "ref" in source_slot_types else "gen"
             self.__nodenet.create_link(source_node.uid, "sym", target_node.uid, symslot, weight, certainty)
             self.__nodenet.create_link(target_node.uid, "ref", source_node.uid, refslot, weight, certainty)
 
@@ -930,9 +915,9 @@ class NetAPI(object):
         node.unlink(gateslot)
 
         links_to_delete = set()
-        for slottype, slotobject in node.slots.items():
+        for slottype in node.get_slot_types():
             if gateslot is None or gateslot == slottype:
-                for linkid, link in slotobject.incoming.items():
+                for link in node.get_slot(slottype).get_links():
                     links_to_delete.add(link)
 
         for link in links_to_delete:
@@ -947,11 +932,11 @@ class NetAPI(object):
             raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
-            if candidate.parameters['datatarget'] == datatarget:
+            if candidate.get_parameter('datatarget') == datatarget:
                 actor = candidate
         if actor is None:
             actor = self.create_node("Actor", node.parent_nodespace, datatarget)
-            actor.parameters.update({'datatarget': datatarget})
+            actor.set_parameter('datatarget', datatarget)
 
         self.link(node, gate, actor, 'gen', weight, certainty)
         #self.link(actor, 'gen', node, slot)
@@ -965,11 +950,11 @@ class NetAPI(object):
             raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
-            if candidate.parameters['datasource'] == datasource:
+            if candidate.get_parameter('datasource') == datasource:
                 sensor = candidate
         if sensor is None:
             sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
-            sensor.parameters.update({'datasource': datasource})
+            sensor.set_parameter('datasource', datasource)
 
         self.link(sensor, 'gen', node, slot)
 
@@ -986,11 +971,11 @@ class NetAPI(object):
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
                 for uid, candidate in self.__nodenet.get_actors(nodespace).items():
-                    if candidate.parameters['datatarget'] == datatarget:
+                    if candidate.get_parameter('datatarget') == datatarget:
                         actor = candidate
                 if actor is None:
                     actor = self.create_node("Actor", nodespace, datatarget)
-                    actor.parameters.update({'datatarget': datatarget})
+                    actor.set_parameter('datatarget', datatarget)
                 all_actors.append(actor)
         return all_actors
 
@@ -1007,11 +992,11 @@ class NetAPI(object):
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None
                 for uid, candidate in self.__nodenet.get_sensors(nodespace).items():
-                    if candidate.parameters['datasource'] == datasource:
+                    if candidate.get_parameter('datasource') == datasource:
                         sensor = candidate
                 if sensor is None:
                     sensor = self.create_node("Sensor", nodespace, datasource)
-                    sensor.parameters.update({'datasource': datasource})
+                    sensor.set_parameter('datasource', datasource)
                 all_sensors.append(sensor)
         return all_sensors
 

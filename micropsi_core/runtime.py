@@ -682,18 +682,18 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     uidmap = {}
     if clonemode != 'none':
         for _, n in copynodes.items():
-            for g in n.gates:
-                for link in n.gates[g].outgoing.values():
+            for g in n.get_gate_types():
+                for link in n.get_gate(g).get_links():
                     if clonemode == 'all' or link.target_node.uid in copynodes:
                         copylinks[link.uid] = link
             if clonemode == 'all':
-                for s in n.slots:
-                    for link in n.slots[s].incoming.values():
+                for s in n.get_slot_types():
+                    for link in n.get_slot(s).get_links():
                         copylinks[link.uid] = link
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.state, uid=None, name=n.name + '_copy', parameters=n.parameters)
+        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.clone_state(), uid=None, name=n.name + '_copy', parameters=n.clone_parameters())
         if success:
             uidmap[n.uid] = uid
             result['nodes'].append(nodenet.nodes[uid].data)
@@ -745,7 +745,8 @@ def set_node_name(nodenet_uid, node_uid, name):
 def set_node_state(nodenet_uid, node_uid, state):
     """ Sets the state of the given node to the given state"""
     node = nodenets[nodenet_uid].nodes[node_uid]
-    node.state = state
+    for key in state:
+        node.set_state(key, state[key])
     return True
 
 
@@ -848,7 +849,7 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     """Associates the datasource type to the sensor node with the given uid."""
     node = nodenets[nodenet_uid].nodes[sensor_uid]
     if node.type == "Sensor":
-        node.parameters.update({'datasource': datasource})
+        node.set_parameter('datasource', datasource)
         return True
     return False
 
@@ -857,7 +858,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     """Associates the datatarget type to the actor node with the given uid."""
     node = nodenets[nodenet_uid].nodes[actor_uid]
     if node.type == "Actor":
-        node.parameters.update({'datatarget': datatarget})
+        node.set_parameter('datatarget', datatarget)
         return True
     return False
 
@@ -899,7 +900,8 @@ def align_nodes(nodenet_uid, nodespace):
 
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
-    nodenets[nodenet_uid].nodes[node_uid].parameters.update(values)
+    for key, value in values.items():
+        nodenets[nodenet_uid].nodes[node_uid].set_parameter(key, value)
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 

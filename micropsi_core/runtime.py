@@ -564,7 +564,7 @@ def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespa
         if source_nodenet.is_node(node_uid):
             nodes[node_uid] = source_nodenet.get_node(node_uid)
         elif source_nodenet.is_nodespace(node_uid):
-            nodespaces[node_uid] = source_nodenet.nodespaces[node_uid]
+            nodespaces[node_uid] = source_nodenet.get_nodespace(node_uid)
     target_nodenet.copy_nodes(nodes, nodespaces, target_nodespace_uid, copy_associated_links)
     return True
 
@@ -579,7 +579,8 @@ def get_nodespace_list(nodenet_uid):
     """
     nodenet = nodenets[nodenet_uid]
     data = {}
-    for uid, nodespace in nodenet.nodespaces.items():
+    for uid in nodenet.get_nodespace_uids():
+        nodespace = nodenet.get_nodespace(uid)
         data[uid] = {
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
@@ -727,7 +728,7 @@ def set_node_position(nodenet_uid, node_uid, pos):
     if nodenet.is_node(node_uid):
         nodenet.get_node(node_uid).position = pos
     elif nodenet.is_nodespace(node_uid):
-        nodenet.nodespaces[node_uid].position = pos
+        nodenet.get_nodespace(node_uid).position = pos
     nodenet.update_node_positions()
     return True
 
@@ -738,7 +739,7 @@ def set_node_name(nodenet_uid, node_uid, name):
     if nodenet.is_node(node_uid):
         nodenet.get_node(node_uid).name = name
     elif nodenet.is_nodespace(node_uid):
-        nodenet.nodespaces[node_uid].name = name
+        nodenet.get_nodespace(node_uid).name = name
     return True
 
 
@@ -814,7 +815,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     """Returns a string with the gate function of the given node and gate within the current nodespace.
     Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
     """
-    return nodenets[nodenet_uid].nodespaces[nodespace].get_gatefunction_string(node_type, gate_type)
+    return nodenets[nodenet_uid].get_nodespace(nodespace).get_gatefunction_string(node_type, gate_type)
 
 
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
@@ -824,7 +825,7 @@ def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_functio
     None reverts the custom gate function of the given node and gate within the current nodespace to the default.
     Parameters is a list of keys for values of the gate function.
     """
-    nodenets[nodenet_uid].nodespaces[nodespace].set_gate_function(node_type, gate_type, gate_function,
+    nodenets[nodenet_uid].get_nodespace(nodespace).set_gate_function(node_type, gate_type, gate_function,
         parameters)
     return True
 

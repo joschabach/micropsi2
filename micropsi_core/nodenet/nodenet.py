@@ -271,9 +271,9 @@ class Nodenet(object):
 
     def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
-        for nodespace_candidate_uid in self.nodespaces:
-            if self.nodespaces[nodespace_candidate_uid].parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
-                data[nodespace_candidate_uid] = self.nodespaces[nodespace_candidate_uid].data
+        for nodespace_candidate_uid in self.get_nodespace_uids():
+            if self.get_nodespace(nodespace_candidate_uid).parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
+                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
         return data
 
     def construct_monitors_dict(self):
@@ -624,6 +624,15 @@ class Nodenet(object):
 
     def get_node(self, uid):
         return self.nodes[uid]
+
+    def get_nodespace(self, uid):
+        return self.nodespaces[uid]
+
+    def get_node_uids(self):
+        return list(self.nodes.keys())
+
+    def get_nodespace_uids(self):
+        return list(self.nodespaces.keys())
 
     def is_node(self, uid):
         return uid in self.nodes

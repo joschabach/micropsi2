@@ -29,9 +29,9 @@ def align(nodenet, nodespace):
     if not nodenet.is_nodespace(nodespace):
         return False
 
-    unaligned_nodespaces = sorted(nodenet.nodespaces[nodespace].netentities.get("nodespaces", []),
+    unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).netentities.get("nodespaces", []),
         key=lambda i:nodenet.nodespaces[i].index)
-    unaligned_nodes = sorted(nodenet.nodespaces[nodespace].netentities.get("nodes", []),
+    unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).netentities.get("nodes", []),
         key = lambda i: nodenet.nodes[i].index)
     sensors = [ s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor" ]
     actors = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor" ]
@@ -41,7 +41,7 @@ def align(nodenet, nodespace):
     # position nodespaces
 
     for i, id in enumerate(unaligned_nodespaces):
-        nodenet.nodespaces[id].position = calculate_grid_position(i)
+        nodenet.get_nodespace(id).position = calculate_grid_position(i)
 
     start_position = (BORDER + GRID/2, BORDER + (0.5+math.ceil(len(unaligned_nodespaces)/PREFERRED_WIDTH))*GRID)
 

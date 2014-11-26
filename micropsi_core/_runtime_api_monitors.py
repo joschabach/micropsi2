@@ -17,7 +17,7 @@ def add_gate_monitor(nodenet_uid, node_uid, gate):
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    monitor = Monitor(nodenet, node_uid, 'gate', gate, node_name=nodenet.nodes[node_uid].name)
+    monitor = Monitor(nodenet, node_uid, 'gate', gate, node_name=nodenet.get_node(node_uid).name)
     nodenet.monitors[monitor.uid] = monitor
     return monitor.uid
 
@@ -27,7 +27,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot):
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    monitor = Monitor(nodenet, node_uid, 'slot', slot, node_name=nodenet.nodes[node_uid].name)
+    monitor = Monitor(nodenet, node_uid, 'slot', slot, node_name=nodenet.get_node(node_uid).name)
     nodenet.monitors[monitor.uid] = monitor
     return monitor.uid
 

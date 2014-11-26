@@ -158,7 +158,7 @@ class Nodenet(object):
         self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self.monitors = {}
-        self.locks = {}
+        self.__locks = {}
         self.nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
@@ -613,12 +613,12 @@ class Nodenet(object):
         Removes all locks that time out in the current step
         """
         locks_to_delete = []
-        for lock, data in self.locks.items():
-            self.locks[lock] = (data[0] + 1, data[1], data[2])
+        for lock, data in self.__locks.items():
+            self.__locks[lock] = (data[0] + 1, data[1], data[2])
             if data[0] + 1 >= data[1]:
                 locks_to_delete.append(lock)
         for lock in locks_to_delete:
-            del self.locks[lock]
+            del self.__locks[lock]
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions
@@ -733,23 +733,23 @@ class Nodenet(object):
 
     def is_locked(self, lock):
         """Returns true if a lock of the given name exists"""
-        return lock in self.locks
+        return lock in self.__locks
 
     def is_locked_by(self, lock, key):
         """Returns true if a lock of the given name exists and the key used is the given one"""
-        return lock in self.locks and self.locks[lock][2] == key
+        return lock in self.__locks and self.__locks[lock][2] == key
 
     def lock(self, lock, key, timeout=100):
         """Creates a lock with the given name that will time out after the given number of steps
         """
         if self.is_locked(lock):
             raise NodenetLockException("Lock %s is already locked." % lock)
-        self.locks[lock] = (0, timeout, key)
+        self.__locks[lock] = (0, timeout, key)
 
     def unlock(self, lock):
         """Removes the given lock
         """
-        del self.locks[lock]
+        del self.__locks[lock]
 
 
 class NetAPI(object):

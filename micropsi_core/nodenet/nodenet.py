@@ -253,8 +253,8 @@ class Nodenet(object):
 
     def construct_links_dict(self):
         data = {}
-        for node_uid, node in self.nodes.items():
-            links = node.get_associated_links()
+        for node_uid in self.get_node_uids():
+            links = self.get_node(node_uid).get_associated_links()
             for link in links:
                 data[link.uid] = link.data
         return data
@@ -262,9 +262,9 @@ class Nodenet(object):
     def construct_nodes_dict(self, max_nodes=-1):
         data = {}
         i = 0
-        for node_uid, node in self.nodes.items():
+        for node_uid in self.get_node_uids():
             i += 1
-            data[node_uid] = node.data
+            data[node_uid] = self.get_node(node_uid).data
             if max_nodes > 0 and i > max_nodes:
                 break
         return data
@@ -313,7 +313,7 @@ class Nodenet(object):
                 for y in range(*y_range):
                     if y in self.nodes_by_coords[x]:
                         for uid in self.nodes_by_coords[x][y]:
-                            if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort directly by nodespace??
+                            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                                 data['nodes'][uid] = self.nodes[uid].data
                                 links.extend(self.nodes[uid].get_associated_links())
                                 followupnodes.extend(self.nodes[uid].get_associated_node_uids())
@@ -680,7 +680,7 @@ class Nodenet(object):
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Set weight of the given link."""
 
-        source_node = self.nodes[source_node_uid]
+        source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False
 
@@ -706,7 +706,7 @@ class Nodenet(object):
             None if failure
         """
 
-        source_node = self.nodes[source_node_uid]
+        source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False, None
 
@@ -719,7 +719,7 @@ class Nodenet(object):
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""
 
-        source_node = self.nodes[source_node_uid]
+        source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False, None
         source_node.unlink(gate_type, target_node_uid, slot_type)
@@ -765,10 +765,6 @@ class NetAPI(object):
     def world(self):
         return self.__nodenet.world
 
-    @property
-    def nodespaces(self):
-        return self.__nodenet.nodespaces
-
     def __init__(self, nodenet):
         self.__nodenet = nodenet
 
@@ -776,11 +772,17 @@ class NetAPI(object):
     def logger(self):
         return self.__nodenet.logger
 
+    def get_nodespace(self, uid):
+        """
+        Returns the nodespace with the given uid
+        """
+        return self.__nodenet.get_nodespace(uid)
+
     def get_node(self, uid):
         """
         Returns the node with the given uid
         """
-        return self.__nodenet.nodes[uid]
+        return self.__nodenet.get_node(uid)
 
     def get_nodes(self, nodespace=None, node_name_prefix=None):
         """
@@ -788,7 +790,8 @@ class NetAPI(object):
         the given prefix (all if None)
         """
         nodes = []
-        for node_uid, node in self.__nodenet.nodes.items():
+        for node_uid in self.__nodenet.get_node_uids():
+            node = self.__nodenet.get_node(node_uid)
             if ((node_name_prefix is None or node.name.startswith(node_name_prefix)) and
                     (nodespace is None or node.parent_nodespace == nodespace)):
                 nodes.append(node)
@@ -803,9 +806,9 @@ class NetAPI(object):
         if gate is not None:
             gates = [gate]
         else:
-            gates = self.__nodenet.nodes[node.uid].get_gate_types()
+            gates = self.__nodenet.get_node(node.uid).get_gate_types()
         for gate in gates:
-            for link in self.__nodenet.nodes[node.uid].get_gate(gate).get_links():
+            for link in self.__nodenet.get_node(node.uid).get_gate(gate).get_links():
                 candidate = link.target_node
                 linked_gates = []
                 for candidate_gate_name in candidate.get_gate_types():
@@ -825,9 +828,9 @@ class NetAPI(object):
         if slot is not None:
             slots = [slot]
         else:
-            slots = self.__nodenet.nodes[node.uid].get_slot_types()
+            slots = self.__nodenet.get_node(node.uid).get_slot_types()
         for slot in slots:
-            for link in self.__nodenet.nodes[node.uid].get_slot(slot).get_links():
+            for link in self.__nodenet.get_node(node.uid).get_slot(slot).get_links():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name in candidate.get_gate_types():

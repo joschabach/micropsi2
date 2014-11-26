@@ -385,6 +385,12 @@ class Nodenet(object):
         self.nodespaces = {}
         Nodespace(self, None, (0, 0), "Root", "Root")
 
+    def _register_node(self, node):
+        self.nodes[node.uid] = node
+
+    def _register_nodespace(self, nodespace):
+        self.nodespaces[nodespace.uid] = nodespace
+
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 

@@ -30,12 +30,12 @@ def align(nodenet, nodespace):
         return False
 
     unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).netentities.get("nodespaces", []),
-        key=lambda i:nodenet.nodespaces[i].index)
+        key=lambda i:nodenet.get_nodespace(i).index)
     unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).netentities.get("nodes", []),
-        key = lambda i: nodenet.nodes[i].index)
+        key = lambda i: nodenet.get_node(i).index)
     sensors = [ s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor" ]
     actors = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor" ]
-    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.nodes[n].type in ("Sensor", "Actor") ]
+    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor") ]
 
 
     # position nodespaces

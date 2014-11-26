@@ -666,21 +666,21 @@ def test_set_gate_function(fixed_nodenet):
 
 def test_autoalign(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
-    for uid, node in net.nodes.items():
-        node.position = (12, 13)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = (12, 13)
     netapi.autoalign_nodespace('Root')
     positions = []
-    for uid, node in net.nodes.items():
-        if node.parent_nodespace == 'Root':
-            positions.extend(node.position)
+    for uid in net.get_node_uids():
+        if net.get_node(uid).parent_nodespace == 'Root':
+            positions.extend(net.get_node(uid).position)
     assert set(positions) != set((12, 13))
 
-    for uid, node in net.nodes.items():
-        node.position = (12, 13)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = (12, 13)
     netapi.autoalign_nodespace('InVaLiD')
     positions = []
-    for uid, node in net.nodes.items():
-        positions.extend(node.position)
+    for uid in net.get_node_uids():
+        positions.extend(net.get_node(uid).position)
     assert set(positions) == set((12, 13))
 
 

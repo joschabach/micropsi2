@@ -39,7 +39,7 @@ class Nodespace(NetEntity):
         self.netentities = {}
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
-        nodenet.nodespaces[self.uid] = self
+        nodenet._register_nodespace(self)
         self.gatefunctions = {}
         self.__gatefunction_strings = gatefunctions or {}
         for nodetype in self.__gatefunction_strings:

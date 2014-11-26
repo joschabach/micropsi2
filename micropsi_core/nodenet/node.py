@@ -125,7 +125,7 @@ class Node(NetEntity):
             self.__slots[slot] = Slot(slot, self)
         if state:
             self.__state = state
-        nodenet.nodes[self.uid] = self
+        nodenet._register_node(self)
         self.sheaves = {"default": emptySheafElement.copy()}
 
         self.activation = 0

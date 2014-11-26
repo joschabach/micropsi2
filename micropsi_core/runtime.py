@@ -683,12 +683,12 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     if clonemode != 'none':
         for _, n in copynodes.items():
             for g in n.get_gate_types():
-                for link in n.get_gate(g).outgoing.values():
+                for link in n.get_gate(g).get_links():
                     if clonemode == 'all' or link.target_node.uid in copynodes:
                         copylinks[link.uid] = link
             if clonemode == 'all':
                 for s in n.get_slot_types():
-                    for link in n.get_slot(s).incoming.values():
+                    for link in n.get_slot(s).get_links():
                         copylinks[link.uid] = link
 
     for _, n in copynodes.items():

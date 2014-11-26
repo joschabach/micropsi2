@@ -503,12 +503,12 @@ class Nodenet(object):
         for node_uid in nodes:
             node = nodes[node_uid]
             for slot in node.get_slot_types():
-                for link_uid, link in node.get_slot(slot).incoming.items():
+                for link in node.get_slot(slot).get_links():
                     if link.source_node.uid in nodes or (copy_associated_links
                                                          and link.source_node.uid in self.nodes):
                         links_to_copy.add(link)
             for gate in node.get_gate_types():
-                for link_uid, link in node.get_gate(gate).outgoing.items():
+                for link in node.get_gate(gate).get_links():
                     if link.target_node.uid in nodes or (copy_associated_links
                                                          and link.target_node.uid in self.nodes):
                         links_to_copy.add(link)
@@ -576,7 +576,7 @@ class Nodenet(object):
                     gate = node.get_gate(gate_type)
                     if gate.parameters['spreadsheaves'] is True:
                         for sheaf in gate.sheaves:
-                            for uid, link in gate.outgoing.items():
+                            for link in gate.get_links():
                                 for slotname in link.target_node.get_slot_types():
                                     if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
                                         link.target_node.get_slot(slotname).sheaves[sheaf] = dict(
@@ -589,7 +589,7 @@ class Nodenet(object):
             for gate_type in node.get_gate_types():
                 if limit_gatetypes is None or gate_type in limit_gatetypes:
                     gate = node.get_gate(gate_type)
-                    for uid, link in gate.outgoing.items():
+                    for link in gate.get_links():
                         for sheaf in gate.sheaves:
                             if link.target_node.type == "Actor":
                                 sheaf = "default"
@@ -804,11 +804,11 @@ class NetAPI(object):
         else:
             gates = self.__nodenet.nodes[node.uid].get_gate_types()
         for gate in gates:
-            for link_uid, link in self.__nodenet.nodes[node.uid].get_gate(gate).outgoing.items():
+            for link in self.__nodenet.nodes[node.uid].get_gate(gate).get_links():
                 candidate = link.target_node
                 linked_gates = []
                 for candidate_gate_name in candidate.get_gate_types():
-                    if len(candidate.get_gate(candidate_gate_name).outgoing) > 0:
+                    if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
                         linked_gates.append(candidate_gate_name)
                 if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
                     (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
@@ -826,11 +826,11 @@ class NetAPI(object):
         else:
             slots = self.__nodenet.nodes[node.uid].get_slot_types()
         for slot in slots:
-            for link_uid, link in self.__nodenet.nodes[node.uid].get_slot(slot).incoming.items():
+            for link in self.__nodenet.nodes[node.uid].get_slot(slot).get_links():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name in candidate.get_gate_types():
-                    if len(candidate.get_gate(candidate_gate_name).outgoing) > 0:
+                    if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
                         linked_gates.append(candidate_gate_name)
                 if ((nodespace is None or nodespace == link.source_node.parent_nodespace) and
                     (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
@@ -934,7 +934,7 @@ class NetAPI(object):
         links_to_delete = set()
         for slottype in node.get_slot_types():
             if gateslot is None or gateslot == slottype:
-                for linkid, link in node.get_slot(slottype).incoming.items():
+                for link in node.get_slot(slottype).get_links():
                     links_to_delete.add(link)
 
         for link in links_to_delete:

@@ -221,9 +221,9 @@ class Node(NetEntity):
     def get_associated_links(self):
         links = []
         for key in self.get_gate_types():
-            links.extend(self.get_gate(key).outgoing.values())
+            links.extend(self.get_gate(key).get_links())
         for key in self.get_slot_types():
-            links.extend(self.get_slot(key).incoming.values())
+            links.extend(self.get_slot(key).get_links())
         return links
 
     def get_associated_node_uids(self):
@@ -319,7 +319,7 @@ class Node(NetEntity):
         if gate is None:
             return None
         link = None
-        for candidate_uid, candidate in gate.outgoing.items():
+        for candidate in gate.get_links():
             if candidate.target_node.uid == target.uid and candidate.target_slot == slot_name:
                 link = candidate
                 break
@@ -334,10 +334,10 @@ class Node(NetEntity):
         """Deletes all links originating from this node or ending at this node"""
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
-            for link_uid_candidate, link_candidate in self.get_gate(gate_name_candidate).outgoing.items():
+            for link_candidate in self.get_gate(gate_name_candidate).get_links():
                 links_to_delete.add(link_candidate)
         for slot_name_candidate in self.get_slot_types():
-            for link_uid_candidate, link_candidate in self.get_slot(slot_name_candidate).incoming.items():
+            for link_candidate in self.get_slot(slot_name_candidate).get_links():
                 links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.remove()
@@ -347,7 +347,7 @@ class Node(NetEntity):
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
             if gate_name is None or gate_name == gate_name_candidate:
-                for link_uid_candidate, link_candidate in self.get_gate(gate_name_candidate).outgoing.items():
+                for link_candidate in self.get_gate(gate_name_candidate).get_links():
                     if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
                         if slot_name is None or slot_name == link_candidate.target_slot.type:
                             links_to_delete.add(link_candidate)
@@ -420,6 +420,16 @@ class Gate(object):
                 else:
                     self.parameters[key] = float(parameters[key])
         self.monitor = None
+
+    def get_links(self):
+        return list(self.outgoing.values())
+
+    def _register_outgoing(self, link):
+        self.outgoing[link.uid] = link
+
+    def _unregister_outgoing(self, link):
+        del self.outgoing[link.uid]
+
 
     def gate_function(self, input_activation, sheaf="default"):
         """This function sets the activation of the gate.
@@ -511,6 +521,15 @@ class Slot(object):
         if sheaf not in self.sheaves:
             return 0
         return self.sheaves[sheaf]['activation']
+
+    def get_links(self):
+        return list(self.incoming.values())
+
+    def _register_incoming(self, link):
+        self.incoming[link.uid] = link
+
+    def _unregister_incoming(self, link):
+        del self.incoming[link.uid]
 
 
 STANDARD_NODETYPES = {

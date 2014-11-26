@@ -625,6 +625,12 @@ class Nodenet(object):
     def get_node(self, uid):
         return self.nodes[uid]
 
+    def is_node(self, uid):
+        return uid in self.nodes
+
+    def is_nodespace(self, uid):
+        return uid in self.nodespaces
+
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
         nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']

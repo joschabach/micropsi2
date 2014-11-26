@@ -88,7 +88,7 @@ class Node(NetEntity):
         if not gate_parameters:
             gate_parameters = {}
 
-        if uid in nodenet.nodes:
+        if nodenet.is_node(uid):
             raise KeyError("Node already exists")
 
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
@@ -307,10 +307,10 @@ class Node(NetEntity):
            Will return None if no such link can be created.
         """
 
-        if target_node_uid not in self.nodenet.nodes:
+        if not self.nodenet.is_node(target_node_uid):
             return None
 
-        target = self.nodenet.nodes[target_node_uid]
+        target = self.nodenet.get_node(target_node_uid)
 
         if slot_name not in target.get_slot_types():
             return None

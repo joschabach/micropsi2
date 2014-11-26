@@ -153,7 +153,7 @@ class Nodenet(object):
         self.entitytypes = {}
         self.__nodes = {}
         self.nodetypes = nodetypes
-        self.native_modules = native_modules
+        self.__native_modules = native_modules
         self.__nodespaces = {}
         self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
@@ -206,10 +206,10 @@ class Nodenet(object):
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
-        self.native_modules = {}
+        self.__native_modules = {}
         for key in native_modules:
-            self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-            self.native_modules[key].reload_nodefunction()
+            self.__native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
+            self.__native_modules[key].reload_nodefunction()
         saved = self.data
         self.clear()
         self.merge_data(saved)
@@ -240,9 +240,9 @@ class Nodenet(object):
         self.nodetypes = nodetypes
 
         native_modules = {}
-        for type, data in self.native_modules.items():
+        for type, data in self.__native_modules.items():
             native_modules[type] = Nodetype(nodenet=self, **data)
-        self.native_modules = native_modules
+        self.__native_modules = native_modules
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.__nodespaces = {}
@@ -287,7 +287,7 @@ class Nodenet(object):
         if type in self.nodetypes:
             return self.nodetypes[type]
         else:
-            return self.native_modules.get(type)
+            return self.__native_modules.get(type)
 
     def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
@@ -411,7 +411,7 @@ class Nodenet(object):
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
-            if data['type'] in self.nodetypes or data['type'] in self.native_modules:
+            if data['type'] in self.nodetypes or data['type'] in self.__native_modules:
                 self.__nodes[uid] = Node(self, **data)
                 pos = self.__nodes[uid].position
                 xpos = int(pos[0] - (pos[0] % 100))

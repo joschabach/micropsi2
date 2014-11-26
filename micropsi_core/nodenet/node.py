@@ -404,7 +404,7 @@ class Gate(object):
             self.sheaves = {}
             for key in sheaves:
                 self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
-        self.outgoing = {}
+        self.__outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
         if gate_defaults is not None:
@@ -422,13 +422,13 @@ class Gate(object):
         self.monitor = None
 
     def get_links(self):
-        return list(self.outgoing.values())
+        return list(self.__outgoing.values())
 
     def _register_outgoing(self, link):
-        self.outgoing[link.uid] = link
+        self.__outgoing[link.uid] = link
 
     def _unregister_outgoing(self, link):
-        del self.outgoing[link.uid]
+        del self.__outgoing[link.uid]
 
 
     def gate_function(self, input_activation, sheaf="default"):

@@ -120,7 +120,7 @@ def unify_links(nodenet, node_id_list):
                          "sur": "n", "por": "e", "exp": "sw", "ref":"se", "gen": "n"}.get(gate_type, "o")
             if direction:
                 # "o" is for unknown gate types
-                for link_uid, link in node.get_gate(gate_type).outgoing.items():
+                for link in node.get_gate(gate_type).get_links():
                     target_node_id = link.target_node.uid
                     if target_node_id in node_index:
                         # otherwise, the link points outside the current nodespace and will be ignored here

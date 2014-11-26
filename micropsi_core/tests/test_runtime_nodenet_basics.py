@@ -122,7 +122,7 @@ def test_clone_nodes_all_links(fixed_nodenet):
     a1_copy = nodenet.nodes[a1_copy['uid']]
     a2_copy = nodenet.nodes[a2_copy['uid']]
     l1_uid = list(a1_copy.get_gate('por').get_links())[0].uid
-    l2_uid = list(a1_copy.get_slot('gen').incoming.keys())[0]
+    l2_uid = list(a1_copy.get_slot('gen').get_links())[0].uid
 
     links = a1_copy.get_associated_links()
     link = None

@@ -507,7 +507,7 @@ class Slot(object):
         """
         self.type = type
         self.node = node
-        self.incoming = {}
+        self.__incoming = {}
         self.current_step = -1
         self.sheaves = {"default": emptySheafElement.copy()}
 
@@ -516,20 +516,20 @@ class Slot(object):
         return self.get_activation("default")
 
     def get_activation(self, sheaf="default"):
-        if len(self.incoming) == 0:
+        if len(self.__incoming) == 0:
             return 0
         if sheaf not in self.sheaves:
             return 0
         return self.sheaves[sheaf]['activation']
 
     def get_links(self):
-        return list(self.incoming.values())
+        return list(self.__incoming.values())
 
     def _register_incoming(self, link):
-        self.incoming[link.uid] = link
+        self.__incoming[link.uid] = link
 
     def _unregister_incoming(self, link):
-        del self.incoming[link.uid]
+        del self.__incoming[link.uid]
 
 
 STANDARD_NODETYPES = {

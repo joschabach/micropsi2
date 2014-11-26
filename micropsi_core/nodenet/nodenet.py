@@ -152,7 +152,7 @@ class Nodenet(object):
 
         self.entitytypes = {}
         self.__nodes = {}
-        self.nodetypes = nodetypes
+        self.__nodetypes = nodetypes
         self.__native_modules = native_modules
         self.__nodespaces = {}
         self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
@@ -235,9 +235,9 @@ class Nodenet(object):
         """
 
         nodetypes = {}
-        for type, data in self.nodetypes.items():
+        for type, data in self.__nodetypes.items():
             nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.nodetypes = nodetypes
+        self.__nodetypes = nodetypes
 
         native_modules = {}
         for type, data in self.__native_modules.items():
@@ -284,8 +284,8 @@ class Nodenet(object):
 
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        if type in self.nodetypes:
-            return self.nodetypes[type]
+        if type in self.__nodetypes:
+            return self.__nodetypes[type]
         else:
             return self.__native_modules.get(type)
 
@@ -411,7 +411,7 @@ class Nodenet(object):
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
-            if data['type'] in self.nodetypes or data['type'] in self.__native_modules:
+            if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
                 self.__nodes[uid] = Node(self, **data)
                 pos = self.__nodes[uid].position
                 xpos = int(pos[0] - (pos[0] % 100))

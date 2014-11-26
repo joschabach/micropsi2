@@ -329,9 +329,9 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         nodespace = "Root"
     with nodenets[nodenet_uid].netlock:
         if x2 < 0 or y2 < 0:
-            data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
+            data = nodenets[nodenet_uid].get_nodespace_data(nodespace, 500)
         else:
-            data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+            data = nodenets[nodenet_uid].get_nodespace_area_data(nodespace, x1, x2, y1, y2)
         data['nodespace'] = nodespace
         return data
 

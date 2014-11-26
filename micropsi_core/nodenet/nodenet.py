@@ -289,7 +289,7 @@ class Nodenet(object):
         else:
             return self.native_modules.get(type)
 
-    def get_nodespace_area(self, nodespace, x1, x2, y1, y2):
+    def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
         y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
         data = {
@@ -362,7 +362,7 @@ class Nodenet(object):
             del self.nodes[node_uid]
             self.update_node_positions()
 
-    def get_nodespace(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""
         data = {
             'nodes': self.construct_nodes_dict(max_nodes),

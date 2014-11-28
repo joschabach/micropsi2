@@ -50,24 +50,6 @@ class Nodespace(NetEntity):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
         return self.netentities
 
-    def get_activator_value(self, type):
-        """returns the value of the activator of the given type, or 1, if none exists"""
-        pass
-
-    def get_data_targets(self):
-        """Returns a dictionary of available data targets to associate actors with.
-
-        Data targets are either handed down by the node net manager (to operate on the environment), or
-        by the node space itself, to perform directional activation."""
-        pass
-
-    def get_data_sources(self):
-        """Returns a dictionary of available data sources to associate sensors with.
-
-        Data sources are either handed down by the node net manager (to read from the environment), or
-        by the node space itself, to obtain information about its contents."""
-        pass
-
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""
         if gatefunction:

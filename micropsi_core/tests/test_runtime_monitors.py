@@ -35,7 +35,7 @@ def test_remove_monitor(fixed_nodenet):
     except KeyError:
         gone = True
     assert gone
-    
+
 
 def test_get_monitor_data(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')

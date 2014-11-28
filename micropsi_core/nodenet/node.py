@@ -443,8 +443,8 @@ class Gate(object):
 
         # check if the current node space has an activator that would prevent the activity of this gate
         nodespace = self.node.nodenet.get_nodespace(self.node.parent_nodespace)
-        if self.type in nodespace.activators:
-            gate_factor = nodespace.activators[self.type]
+        if nodespace.has_activator(self.type):
+            gate_factor = nodespace.get_activator_value(self.type)
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:

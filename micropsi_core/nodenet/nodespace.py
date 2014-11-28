@@ -35,7 +35,7 @@ class Nodespace(NetEntity):
 
     def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunction_strings=None):
         """create a node space at a given position and within a given node space"""
-        self.activators = {}
+        self.__activators = {}
         self.__netentities = {}
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
@@ -58,6 +58,18 @@ class Nodespace(NetEntity):
         if entitytype not in self.__netentities:
             self.__netentities[entitytype] = []
         return uid in self.__netentities[entitytype]
+
+    def has_activator(self, type):
+        return type in self.__activators
+
+    def get_activator_value(self, type):
+        return self.__activators[type]
+
+    def set_activator_value(self, type, value):
+        self.__activators[type] = value
+
+    def unset_activator_value(self, type):
+        self.__activators.pop(type, None)
 
     def _register_entity(self, entity):
         if entity.entitytype not in self.__netentities:

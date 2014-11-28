@@ -356,7 +356,7 @@ class Nodenet(object):
             parent_nodespace = self.__nodespaces.get(self.__nodes[node_uid].parent_nodespace)
             parent_nodespace._unregister_entity('nodes', node_uid)
             if self.__nodes[node_uid].type == "Activator":
-                parent_nodespace.activators.pop(self.__nodes[node_uid].get_parameter('type'), None)
+                parent_nodespace.unset_activator_value(self.__nodes[node_uid].get_parameter('type'))
             del self.__nodes[node_uid]
             self.update_node_positions()
 
@@ -566,7 +566,7 @@ class Nodenet(object):
             for uid in self.__monitors:
                 self.__monitors[uid].step(self.__step)
             for uid, node in activators.items():
-                node.activation = self.__nodespaces[node.parent_nodespace].activators[node.get_parameter('type')]
+                node.activation = self.__nodespaces[node.parent_nodespace].get_activator_value(node.get_parameter('type'))
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction

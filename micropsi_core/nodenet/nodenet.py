@@ -791,6 +791,13 @@ class NetAPI(object):
         """
         return self.__nodenet.get_nodespace(uid)
 
+    def get_nodespaces(self, parent="Root"):
+        """
+        Returns a list of all nodespaces in the given nodespace
+        """
+        return [self.__nodenet.get_nodespace(uid) for
+                uid in self.__nodenet.get_nodespace(parent).get_known_ids('nodespaces')]
+
     def get_node(self, uid):
         """
         Returns the node with the given uid
@@ -884,6 +891,8 @@ class NetAPI(object):
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
+
+        # todo: There should be a separate method for this Nodespaces are net entities, but they're not nodes.
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)
         else:

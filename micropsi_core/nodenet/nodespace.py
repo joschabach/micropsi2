@@ -36,7 +36,7 @@ class Nodespace(NetEntity):
     def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunctions=None):
         """create a node space at a given position and within a given node space"""
         self.activators = {}
-        self.netentities = {}
+        self.__netentities = {}
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet._register_nodespace(self)
@@ -46,25 +46,27 @@ class Nodespace(NetEntity):
             for gatetype in self.__gatefunction_strings[nodetype]:
                 self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
 
-    def get_entity_ids(self):
-        return list(self.netentities.keys())
+    def get_known_ids(self, entitytype):
+        if entitytype not in self.__netentities:
+            return []
+        return self.__netentities[entitytype]
 
     def is_entity_known_as(self, entitytype, uid):
-        if entitytype not in self.netentities:
-            self.netentities[entitytype] = []
-        return uid in self.netentities[entitytype]
+        if entitytype not in self.__netentities:
+            self.__netentities[entitytype] = []
+        return uid in self.__netentities[entitytype]
 
     def _register_entity(self, entity):
-        if entity.entitytype not in self.netentities:
-            self.netentities[entity.entitytype] = []
-        self.netentities[entity.entitytype].append(entity.uid)
+        if entity.entitytype not in self.__netentities:
+            self.__netentities[entity.entitytype] = []
+        self.__netentities[entity.entitytype].append(entity.uid)
 
     def _unregister_entity(self, entitytype, uid):
-        self.netentities[entitytype].remove(uid)
+        self.__netentities[entitytype].remove(uid)
 
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
-        return self.netentities
+        return self.__netentities
 
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""

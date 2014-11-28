@@ -29,9 +29,9 @@ def align(nodenet, nodespace):
     if not nodenet.is_nodespace(nodespace):
         return False
 
-    unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).netentities.get("nodespaces", []),
+    unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
         key=lambda i:nodenet.get_nodespace(i).index)
-    unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).netentities.get("nodes", []),
+    unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
         key = lambda i: nodenet.get_node(i).index)
     sensors = [ s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor" ]
     actors = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor" ]

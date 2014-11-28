@@ -587,7 +587,7 @@ def get_nodespace_list(nodenet_uid):
             'nodes': {},
             'gatefunctions': {}
         }
-        for nid in nodespace.netentities.get('nodes', []):
+        for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
                 'name': nodenet.get_node(nid).name,
                 'type': nodenet.get_node(nid).type,

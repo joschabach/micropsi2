@@ -656,7 +656,7 @@ class Nodenet(object):
 
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         nativemodules = {}
         for uid in nodes:
             if self.__nodes[uid].type not in STANDARD_NODETYPES:
@@ -665,7 +665,7 @@ class Nodenet(object):
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         activators = {}
         for uid in nodes:
             if self.__nodes[uid].type == 'Activator':
@@ -675,7 +675,7 @@ class Nodenet(object):
 
     def get_sensors(self, nodespace=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         sensors = {}
         for uid in nodes:
             if self.__nodes[uid].type == 'Sensor':
@@ -684,7 +684,7 @@ class Nodenet(object):
 
     def get_actors(self, nodespace=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         actors = {}
         for uid in nodes:
             if self.__nodes[uid].type == 'Actor':

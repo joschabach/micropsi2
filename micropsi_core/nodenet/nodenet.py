@@ -343,10 +343,9 @@ class Nodenet(object):
 
     def delete_node(self, node_uid):
         if node_uid in self.__nodespaces:
-            affected_entities = self.__nodespaces[node_uid].get_contents()
-            for key in affected_entities:
-                for uid in affected_entities[key][:]:
-                    self.delete_node(uid)
+            affected_entity_ids = self.__nodespaces[node_uid].get_known_ids()
+            for uid in affected_entity_ids:
+                self.delete_node(uid)
             parent_nodespace = self.__nodespaces.get(self.__nodespaces[node_uid].parent_nodespace)
             if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
                 parent_nodespace._unregister_entity('nodespaces', node_uid)

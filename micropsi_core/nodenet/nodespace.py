@@ -46,10 +46,13 @@ class Nodespace(NetEntity):
             for gatetype in self.__gatefunction_strings[nodetype]:
                 self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
 
-    def get_known_ids(self, entitytype):
-        if entitytype not in self.__netentities:
-            return []
-        return self.__netentities[entitytype]
+    def get_known_ids(self, entitytype=None):
+        if entitytype:
+            if entitytype not in self.__netentities:
+                return []
+            return self.__netentities[entitytype]
+        else:
+            return [uid for uid_list in self.__netentities.values() for uid in uid_list]
 
     def is_entity_known_as(self, entitytype, uid):
         if entitytype not in self.__netentities:
@@ -63,10 +66,6 @@ class Nodespace(NetEntity):
 
     def _unregister_entity(self, entitytype, uid):
         self.__netentities[entitytype].remove(uid)
-
-    def get_contents(self):
-        """returns a dictionary with all contained net entities, related links and dependent nodes"""
-        return self.__netentities
 
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""

@@ -1,5 +1,6 @@
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core import tools
+import random
 
 import time
 
@@ -216,6 +217,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 for k, v in self.loco_nodes.items():
                     if abs(x - v['x']) <= tol and abs(y - v['y']) <= tol and abs(z - v['z']) <= tol:
                         self.current_loco_node = self.loco_nodes[k]
+
+                if self.current_loco_node is None:
+                    # bot is outside our graph, teleport to a random graph location to get started.
+                    target = random.choice(list(self.loco_nodes.keys()))
+                    self.locomote(target)
 
         else:
 

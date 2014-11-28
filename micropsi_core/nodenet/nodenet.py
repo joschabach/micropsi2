@@ -224,7 +224,7 @@ class Nodenet(object):
                 name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'),
-                gatefunctions=data[id].get('gatefunctions'))
+                gatefunction_strings=data[id].get('gatefunctions'))
 
     def initialize_nodenet(self, initfrom):
         """Called after reading new nodenet state.
@@ -477,7 +477,7 @@ class Nodenet(object):
             Nodespace(self, target_nodespace,
                 position=original.position,
                 name=original.name,
-                gatefunctions=deepcopy(original.gatefunctions),
+                gatefunction_strings=deepcopy(original.get_gatefunction_strings()),
                 uid=uid)
 
         # set the parents (needs to happen in seperate loop to ensure nodespaces are already created

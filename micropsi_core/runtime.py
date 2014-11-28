@@ -594,7 +594,7 @@ def get_nodespace_list(nodenet_uid):
                 'gates': nodenet.get_nodetype(nodenet.get_node(nid).type).gatetypes,
                 'slots': nodenet.get_nodetype(nodenet.get_node(nid).type).slottypes
             }
-        data[uid]['gatefunctions'] = nodespace.get_gatefunctions_string()
+        data[uid]['gatefunctions'] = nodespace.get_gatefunction_strings()
     return data
 
 

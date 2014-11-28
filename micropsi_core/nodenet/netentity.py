@@ -52,15 +52,13 @@ class NetEntity(object):
     def parent_nodespace(self, uid):
         if uid:
             nodespace = self.nodenet.get_nodespace(uid)
-            if self.entitytype not in nodespace.netentities:
-                nodespace.netentities[self.entitytype] = []
-            if self.uid not in nodespace.netentities[self.entitytype]:
-                nodespace.netentities[self.entitytype].append(self.uid)
+            if not nodespace.is_entity_known_as(self.entitytype, self.uid):
+                nodespace._register_entity(self)
                 # tell my old parent that I move out
                 if self.__parent_nodespace is not None:
                     old_parent = self.nodenet.get_nodespace(self.__parent_nodespace)
-                    if old_parent and old_parent.uid != uid and self.uid in old_parent.netentities.get(self.entitytype, []):
-                        old_parent.netentities[self.entitytype].remove(self.uid)
+                    if old_parent and old_parent.uid != uid and old_parent.is_entity_known_as(self.entitytype, self.uid):
+                        old_parent._unregister_entity(self.entitytype, self.uid)
         self.__parent_nodespace = uid
 
     def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities",

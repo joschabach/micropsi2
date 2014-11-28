@@ -348,14 +348,14 @@ class Nodenet(object):
                 for uid in affected_entities[key][:]:
                     self.delete_node(uid)
             parent_nodespace = self.__nodespaces.get(self.__nodespaces[node_uid].parent_nodespace)
-            if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:
-                parent_nodespace.netentities["nodespaces"].remove(node_uid)
+            if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
+                parent_nodespace._unregister_entity('nodespaces', node_uid)
             del self.__nodespaces[node_uid]
         else:
             node = self.__nodes[node_uid]
             node.unlink_completely()
             parent_nodespace = self.__nodespaces.get(self.__nodes[node_uid].parent_nodespace)
-            parent_nodespace.netentities["nodes"].remove(node_uid)
+            parent_nodespace._unregister_entity('nodes', node_uid)
             if self.__nodes[node_uid].type == "Activator":
                 parent_nodespace.activators.pop(self.__nodes[node_uid].get_parameter('type'), None)
             del self.__nodes[node_uid]

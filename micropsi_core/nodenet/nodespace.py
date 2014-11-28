@@ -46,6 +46,22 @@ class Nodespace(NetEntity):
             for gatetype in self.__gatefunction_strings[nodetype]:
                 self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
 
+    def get_entity_ids(self):
+        return list(self.netentities.keys())
+
+    def is_entity_known_as(self, entitytype, uid):
+        if entitytype not in self.netentities:
+            self.netentities[entitytype] = []
+        return uid in self.netentities[entitytype]
+
+    def _register_entity(self, entity):
+        if entity.entitytype not in self.netentities:
+            self.netentities[entity.entitytype] = []
+        self.netentities[entity.entitytype].append(entity.uid)
+
+    def _unregister_entity(self, entitytype, uid):
+        self.netentities[entitytype].remove(uid)
+
     def get_contents(self):
         """returns a dictionary with all contained net entities, related links and dependent nodes"""
         return self.netentities

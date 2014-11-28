@@ -35,12 +35,12 @@ class Monitor(object):
     def __init__(self, nodenet, node_uid, type, target, node_name='', uid=None, **_):
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
-        nodenet.monitors[self.uid] = self
         self.values = {}
         self.node_uid = node_uid
         self.node_name = node_name
         self.type = type
         self.target = target
+        nodenet._register_monitor(self)
 
     def step(self, step):
         if self.nodenet.is_node(self.node_uid):

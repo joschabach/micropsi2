@@ -18,7 +18,6 @@ def add_gate_monitor(nodenet_uid, node_uid, gate):
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
     monitor = Monitor(nodenet, node_uid, 'gate', gate, node_name=nodenet.get_node(node_uid).name)
-    nodenet.monitors[monitor.uid] = monitor
     return monitor.uid
 
 
@@ -28,28 +27,27 @@ def add_slot_monitor(nodenet_uid, node_uid, slot):
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
     monitor = Monitor(nodenet, node_uid, 'slot', slot, node_name=nodenet.get_node(node_uid).name)
-    nodenet.monitors[monitor.uid] = monitor
     return monitor.uid
 
 
 def remove_monitor(nodenet_uid, monitor_uid):
     """Deletes an activation monitor."""
-    del micropsi_core.runtime.nodenets[nodenet_uid].monitors[monitor_uid]
+    micropsi_core.runtime.nodenets[nodenet_uid]._unregister_monitor(monitor_uid)
     return True
 
 
 def clear_monitor(nodenet_uid, monitor_uid):
     """Leaves the monitor intact, but deletes the current list of stored values."""
-    micropsi_core.runtime.nodenets[nodenet_uid].monitors[monitor_uid].clear()
+    micropsi_core.runtime.nodenets[nodenet_uid].get_monitor(monitor_uid).clear()
     return True
 
 
 def export_monitor_data(nodenet_uid, monitor_uid=None):
     """Returns a string with all currently stored monitor data for the given nodenet."""
     if monitor_uid is not None:
-        return micropsi_core.runtime.nodenets[nodenet_uid].data['monitors'][monitor_uid]
+        return micropsi_core.runtime.nodenets[nodenet_uid].construct_monitors_dict()[monitor_uid]
     else:
-        return micropsi_core.runtime.nodenets[nodenet_uid].data.get('monitors', {})
+        return micropsi_core.runtime.nodenets[nodenet_uid].construct_monitors_dict()
 
 
 def get_monitor_data(nodenet_uid, step=0):

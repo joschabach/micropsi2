@@ -220,14 +220,6 @@ def get_logging_levels():
     return levels
 
 
-# Minecraft Image
-def get_minecraft_image():
-    from micropsi_core.world.minecraft.minecraft import Minecraft
-    for uid in worlds:
-        if isinstance(worlds[uid], Minecraft):
-            return worlds[uid].the_image
-
-
 # Nodenet
 def get_available_nodenets(owner=None):
     """Returns a dict of uids: Nodenet of available (running and stored) nodenets.

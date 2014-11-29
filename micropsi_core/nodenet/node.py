@@ -88,7 +88,7 @@ class Node(NetEntity):
         if not gate_parameters:
             gate_parameters = {}
 
-        if uid in nodenet.nodes:
+        if nodenet.is_node(uid):
             raise KeyError("Node already exists")
 
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
@@ -125,7 +125,7 @@ class Node(NetEntity):
             self.__slots[slot] = Slot(slot, self)
         if state:
             self.__state = state
-        nodenet.nodes[self.uid] = self
+        nodenet._register_node(self)
         self.sheaves = {"default": emptySheafElement.copy()}
 
         self.activation = 0
@@ -307,10 +307,10 @@ class Node(NetEntity):
            Will return None if no such link can be created.
         """
 
-        if target_node_uid not in self.nodenet.nodes:
+        if not self.nodenet.is_node(target_node_uid):
             return None
 
-        target = self.nodenet.nodes[target_node_uid]
+        target = self.nodenet.get_node(target_node_uid)
 
         if slot_name not in target.get_slot_types():
             return None
@@ -442,16 +442,16 @@ class Gate(object):
             input_activation = 0
 
         # check if the current node space has an activator that would prevent the activity of this gate
-        nodespace = self.node.nodenet.nodespaces[self.node.parent_nodespace]
-        if self.type in nodespace.activators:
-            gate_factor = nodespace.activators[self.type]
+        nodespace = self.node.nodenet.get_nodespace(self.node.parent_nodespace)
+        if nodespace.has_activator(self.type):
+            gate_factor = nodespace.get_activator_value(self.type)
         else:
             gate_factor = 1.0
         if gate_factor == 0.0:
             self.sheaves[sheaf]['activation'] = 0
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = self.node.nodenet.nodespaces[self.node.parent_nodespace].get_gatefunction(self.node.type,
+        gatefunction = self.node.nodenet.get_nodespace(self.node.parent_nodespace).get_gatefunction(self.node.type,
             self.type)
         if gatefunction:
             activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))

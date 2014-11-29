@@ -150,16 +150,15 @@ class Nodenet(object):
         if world and worldadapter:
             self.worldadapter = worldadapter
 
-        self.entitytypes = {}
-        self.nodes = {}
-        self.nodetypes = nodetypes
-        self.native_modules = native_modules
-        self.nodespaces = {}
-        self.nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
+        self.__nodes = {}
+        self.__nodetypes = nodetypes
+        self.__native_modules = native_modules
+        self.__nodespaces = {}
+        self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        self.monitors = {}
-        self.locks = {}
-        self.nodes_by_coords = {}
+        self.__monitors = {}
+        self.__locks = {}
+        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
         self.netapi = NetAPI(self)
 
@@ -206,26 +205,26 @@ class Nodenet(object):
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
-        self.native_modules = {}
+        self.__native_modules = {}
         for key in native_modules:
-            self.native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-            self.native_modules[key].reload_nodefunction()
+            self.__native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
+            self.__native_modules[key].reload_nodefunction()
         saved = self.data
         self.clear()
         self.merge_data(saved)
 
     def initialize_nodespace(self, id, data):
-        if id not in self.nodespaces:
+        if id not in self.__nodespaces:
             # move up the nodespace tree until we find an existing parent or hit root
-            while id != 'Root' and data[id].get('parent_nodespace') not in self.nodespaces:
+            while id != 'Root' and data[id].get('parent_nodespace') not in self.__nodespaces:
                 self.initialize_nodespace(data[id]['parent_nodespace'], data)
-            self.nodespaces[id] = Nodespace(self,
+            self.__nodespaces[id] = Nodespace(self,
                 data[id].get('parent_nodespace'),
                 data[id].get('position'),
                 name=data[id].get('name', 'Root'),
                 uid=id,
                 index=data[id].get('index'),
-                gatefunctions=data[id].get('gatefunctions'))
+                gatefunction_strings=data[id].get('gatefunctions'))
 
     def initialize_nodenet(self, initfrom):
         """Called after reading new nodenet state.
@@ -235,26 +234,26 @@ class Nodenet(object):
         """
 
         nodetypes = {}
-        for type, data in self.nodetypes.items():
+        for type, data in self.__nodetypes.items():
             nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.nodetypes = nodetypes
+        self.__nodetypes = nodetypes
 
         native_modules = {}
-        for type, data in self.native_modules.items():
+        for type, data in self.__native_modules.items():
             native_modules[type] = Nodetype(nodenet=self, **data)
-        self.native_modules = native_modules
+        self.__native_modules = native_modules
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
-        self.nodespaces = {}
-        self.nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
+        self.__nodespaces = {}
+        self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
         # now merge in all init data (from the persisted file typically)
         self.merge_data(initfrom)
 
     def construct_links_dict(self):
         data = {}
-        for node_uid, node in self.nodes.items():
-            links = node.get_associated_links()
+        for node_uid in self.get_node_uids():
+            links = self.get_node(node_uid).get_associated_links()
             for link in links:
                 data[link.uid] = link.data
         return data
@@ -262,34 +261,34 @@ class Nodenet(object):
     def construct_nodes_dict(self, max_nodes=-1):
         data = {}
         i = 0
-        for node_uid, node in self.nodes.items():
+        for node_uid in self.get_node_uids():
             i += 1
-            data[node_uid] = node.data
+            data[node_uid] = self.get_node(node_uid).data
             if max_nodes > 0 and i > max_nodes:
                 break
         return data
 
     def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
-        for nodespace_candidate_uid in self.nodespaces:
-            if self.nodespaces[nodespace_candidate_uid].parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
-                data[nodespace_candidate_uid] = self.nodespaces[nodespace_candidate_uid].data
+        for nodespace_candidate_uid in self.get_nodespace_uids():
+            if self.get_nodespace(nodespace_candidate_uid).parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
+                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
         return data
 
     def construct_monitors_dict(self):
         data = {}
-        for monitor_uid in self.monitors:
-            data[monitor_uid] = self.monitors[monitor_uid].data
+        for monitor_uid in self.__monitors:
+            data[monitor_uid] = self.__monitors[monitor_uid].data
         return data
 
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        if type in self.nodetypes:
-            return self.nodetypes[type]
+        if type in self.__nodetypes:
+            return self.__nodetypes[type]
         else:
-            return self.native_modules.get(type)
+            return self.__native_modules.get(type)
 
-    def get_nodespace_area(self, nodespace, x1, x2, y1, y2):
+    def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
         y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
         data = {
@@ -309,60 +308,59 @@ class Nodenet(object):
         links = []
         followupnodes = []
         for x in range(*x_range):
-            if x in self.nodes_by_coords:
+            if x in self.__nodes_by_coords:
                 for y in range(*y_range):
-                    if y in self.nodes_by_coords[x]:
-                        for uid in self.nodes_by_coords[x][y]:
-                            if self.nodes[uid].parent_nodespace == nodespace:  # maybe sort directly by nodespace??
-                                data['nodes'][uid] = self.nodes[uid].data
-                                links.extend(self.nodes[uid].get_associated_links())
-                                followupnodes.extend(self.nodes[uid].get_associated_node_uids())
+                    if y in self.__nodes_by_coords[x]:
+                        for uid in self.__nodes_by_coords[x][y]:
+                            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
+                                data['nodes'][uid] = self.get_node(uid).data
+                                links.extend(self.get_node(uid).get_associated_links())
+                                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
         for link in links:
             data['links'][link.uid] = link.data
         for uid in followupnodes:
             if uid not in data['nodes']:
-                data['nodes'][uid] = self.nodes[uid].data
+                data['nodes'][uid] = self.get_node(uid).data
         return data
 
     def update_node_positions(self):
         """ recalculates the position hash """
-        self.nodes_by_coords = {}
+        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
-        for uid in self.nodes:
-            pos = self.nodes[uid].position
+        for uid in self.get_node_uids():
+            pos = self.get_node(uid).position
             xpos = int(pos[0] - (pos[0] % 100))
             ypos = int(pos[1] - (pos[1] % 100))
-            if xpos not in self.nodes_by_coords:
-                self.nodes_by_coords[xpos] = {}
+            if xpos not in self.__nodes_by_coords:
+                self.__nodes_by_coords[xpos] = {}
                 if xpos > self.max_coords['x']:
                     self.max_coords['x'] = xpos
-            if ypos not in self.nodes_by_coords[xpos]:
-                self.nodes_by_coords[xpos][ypos] = []
+            if ypos not in self.__nodes_by_coords[xpos]:
+                self.__nodes_by_coords[xpos][ypos] = []
                 if ypos > self.max_coords['y']:
                     self.max_coords['y'] = ypos
-            self.nodes_by_coords[xpos][ypos].append(uid)
+            self.__nodes_by_coords[xpos][ypos].append(uid)
 
     def delete_node(self, node_uid):
-        if node_uid in self.nodespaces:
-            affected_entities = self.nodespaces[node_uid].get_contents()
-            for key in affected_entities:
-                for uid in affected_entities[key][:]:
-                    self.delete_node(uid)
-            parent_nodespace = self.nodespaces.get(self.nodespaces[node_uid].parent_nodespace)
-            if parent_nodespace and node_uid in parent_nodespace.netentities["nodespaces"]:
-                parent_nodespace.netentities["nodespaces"].remove(node_uid)
-            del self.nodespaces[node_uid]
+        if node_uid in self.__nodespaces:
+            affected_entity_ids = self.__nodespaces[node_uid].get_known_ids()
+            for uid in affected_entity_ids:
+                self.delete_node(uid)
+            parent_nodespace = self.__nodespaces.get(self.__nodespaces[node_uid].parent_nodespace)
+            if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
+                parent_nodespace._unregister_entity('nodespaces', node_uid)
+            del self.__nodespaces[node_uid]
         else:
-            node = self.nodes[node_uid]
+            node = self.__nodes[node_uid]
             node.unlink_completely()
-            parent_nodespace = self.nodespaces.get(self.nodes[node_uid].parent_nodespace)
-            parent_nodespace.netentities["nodes"].remove(node_uid)
-            if self.nodes[node_uid].type == "Activator":
-                parent_nodespace.activators.pop(self.nodes[node_uid].get_parameter('type'), None)
-            del self.nodes[node_uid]
+            parent_nodespace = self.__nodespaces.get(self.__nodes[node_uid].parent_nodespace)
+            parent_nodespace._unregister_entity('nodes', node_uid)
+            if self.__nodes[node_uid].type == "Activator":
+                parent_nodespace.unset_activator_value(self.__nodes[node_uid].get_parameter('type'))
+            del self.__nodes[node_uid]
             self.update_node_positions()
 
-    def get_nodespace(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""
         data = {
             'nodes': self.construct_nodes_dict(max_nodes),
@@ -376,14 +374,26 @@ class Nodenet(object):
         return data
 
     def clear(self):
-        self.nodes = {}
-        self.monitors = {}
+        self.__nodes = {}
+        self.__monitors = {}
 
-        self.nodes_by_coords = {}
+        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
 
-        self.nodespaces = {}
+        self.__nodespaces = {}
         Nodespace(self, None, (0, 0), "Root", "Root")
+
+    def _register_node(self, node):
+        self.__nodes[node.uid] = node
+
+    def _register_nodespace(self, nodespace):
+        self.__nodespaces[nodespace.uid] = nodespace
+
+    def _register_monitor(self, monitor):
+        self.__monitors[monitor.uid] = monitor
+
+    def _unregister_monitor(self, monitor_uid):
+        del self.__monitors[monitor_uid]
 
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -405,28 +415,28 @@ class Nodenet(object):
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
-            if data['type'] in self.nodetypes or data['type'] in self.native_modules:
-                self.nodes[uid] = Node(self, **data)
-                pos = self.nodes[uid].position
+            if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
+                self.__nodes[uid] = Node(self, **data)
+                pos = self.__nodes[uid].position
                 xpos = int(pos[0] - (pos[0] % 100))
                 ypos = int(pos[1] - (pos[1] % 100))
-                if xpos not in self.nodes_by_coords:
-                    self.nodes_by_coords[xpos] = {}
+                if xpos not in self.__nodes_by_coords:
+                    self.__nodes_by_coords[xpos] = {}
                     if xpos > self.max_coords['x']:
                         self.max_coords['x'] = xpos
-                if ypos not in self.nodes_by_coords[xpos]:
-                    self.nodes_by_coords[xpos][ypos] = []
+                if ypos not in self.__nodes_by_coords[xpos]:
+                    self.__nodes_by_coords[xpos][ypos] = []
                     if ypos > self.max_coords['y']:
                         self.max_coords['y'] = ypos
-                self.nodes_by_coords[xpos][ypos].append(uid)
+                self.__nodes_by_coords[xpos][ypos].append(uid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
         # merge in links
         for uid in nodenet_data.get('links', {}):
             data = nodenet_data['links'][uid]
-            if data['source_node_uid'] in self.nodes:
-                source_node = self.nodes[data['source_node_uid']]
+            if data['source_node_uid'] in self.__nodes:
+                source_node = self.__nodes[data['source_node_uid']]
                 source_node.link(data['source_gate_name'],
                                  data['target_node_uid'],
                                  data['target_slot_name'],
@@ -435,7 +445,7 @@ class Nodenet(object):
 
         # merge in monitors
         for uid in nodenet_data.get('monitors', {}):
-            self.monitors[uid] = Monitor(self, **nodenet_data['monitors'][uid])
+            self.__monitors[uid] = Monitor(self, **nodenet_data['monitors'][uid])
 
     def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.
@@ -457,7 +467,7 @@ class Nodenet(object):
             target_nodespace = "Root"
             # first, check for nodespace naming conflicts
         for nodespace_uid in nodespaces:
-            if nodespace_uid in self.nodespaces:
+            if nodespace_uid in self.__nodespaces:
                 rename_nodespaces[nodespace_uid] = micropsi_core.tools.generate_uid()
             # create the nodespaces
         for nodespace_uid in nodespaces:
@@ -467,7 +477,7 @@ class Nodenet(object):
             Nodespace(self, target_nodespace,
                 position=original.position,
                 name=original.name,
-                gatefunctions=deepcopy(original.gatefunctions),
+                gatefunction_strings=deepcopy(original.get_gatefunction_strings()),
                 uid=uid)
 
         # set the parents (needs to happen in seperate loop to ensure nodespaces are already created
@@ -475,11 +485,11 @@ class Nodenet(object):
             if nodespaces[nodespace_uid].parent_nodespace in nodespaces:
                 uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
                 target_nodespace = rename_nodespaces.get(nodespaces[nodespace_uid].parent_nodespace)
-                self.nodespaces[uid].parent_nodespace = target_nodespace
+                self.__nodespaces[uid].parent_nodespace = target_nodespace
 
         # copy the nodes
         for node_uid in nodes:
-            if node_uid in self.nodes:
+            if node_uid in self.__nodes:
                 rename_nodes[node_uid] = micropsi_core.tools.generate_uid()
                 uid = rename_nodes[node_uid]
             else:
@@ -505,15 +515,15 @@ class Nodenet(object):
             for slot in node.get_slot_types():
                 for link in node.get_slot(slot).get_links():
                     if link.source_node.uid in nodes or (copy_associated_links
-                                                         and link.source_node.uid in self.nodes):
+                                                         and link.source_node.uid in self.__nodes):
                         links_to_copy.add(link)
             for gate in node.get_gate_types():
                 for link in node.get_gate(gate).get_links():
                     if link.target_node.uid in nodes or (copy_associated_links
-                                                         and link.target_node.uid in self.nodes):
+                                                         and link.target_node.uid in self.__nodes):
                         links_to_copy.add(link)
         for link in links_to_copy:
-            source_node = self.nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
+            source_node = self.__nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
             source_node.link(
                 link.source_gate.type,
                 link.target_node.uid,
@@ -536,13 +546,13 @@ class Nodenet(object):
                                                         # but instead the world object itself
 
         with self.netlock:
-            self.propagate_link_activation(self.nodes.copy())
+            self.propagate_link_activation(self.__nodes.copy())
 
             self.timeout_locks()
 
             activators = self.get_activators()
             nativemodules = self.get_nativemodules()
-            everythingelse = self.nodes.copy()
+            everythingelse = self.__nodes.copy()
             for key in nativemodules:
                 del everythingelse[key]
 
@@ -553,10 +563,10 @@ class Nodenet(object):
             self.netapi._step()
 
             self.__step += 1
-            for uid in self.monitors:
-                self.monitors[uid].step(self.__step)
+            for uid in self.__monitors:
+                self.__monitors[uid].step(self.__step)
             for uid, node in activators.items():
-                node.activation = self.nodespaces[node.parent_nodespace].activators[node.get_parameter('type')]
+                node.activation = self.__nodespaces[node.parent_nodespace].get_activator_value(node.get_parameter('type'))
 
     def propagate_link_activation(self, nodes, limit_gatetypes=None):
         """ the linkfunction
@@ -607,12 +617,12 @@ class Nodenet(object):
         Removes all locks that time out in the current step
         """
         locks_to_delete = []
-        for lock, data in self.locks.items():
-            self.locks[lock] = (data[0] + 1, data[1], data[2])
+        for lock, data in self.__locks.items():
+            self.__locks[lock] = (data[0] + 1, data[1], data[2])
             if data[0] + 1 >= data[1]:
                 locks_to_delete.append(lock)
         for lock in locks_to_delete:
-            del self.locks[lock]
+            del self.__locks[lock]
 
     def calculate_node_functions(self, nodes):
         """for all given nodes, call their node function, which in turn should update the gate functions
@@ -622,47 +632,68 @@ class Nodenet(object):
         for uid, node in nodes.copy().items():
             node.node_function()
 
+    def get_node(self, uid):
+        return self.__nodes[uid]
+
+    def get_nodespace(self, uid):
+        return self.__nodespaces[uid]
+
+    def get_node_uids(self):
+        return list(self.__nodes.keys())
+
+    def get_nodespace_uids(self):
+        return list(self.__nodespaces.keys())
+
+    def is_node(self, uid):
+        return uid in self.__nodes
+
+    def is_nodespace(self, uid):
+        return uid in self.__nodespaces
+
+    def get_monitor(self, uid):
+        return self.__monitors[uid]
+
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
-        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         nativemodules = {}
         for uid in nodes:
-            if self.nodes[uid].type not in STANDARD_NODETYPES:
-                nativemodules.update({uid: self.nodes[uid]})
+            if self.__nodes[uid].type not in STANDARD_NODETYPES:
+                nativemodules.update({uid: self.__nodes[uid]})
         return nativemodules
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""
-        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         activators = {}
         for uid in nodes:
-            if self.nodes[uid].type == 'Activator':
-                if type is None or type == self.nodes[uid].get_parameter('type'):
-                    activators.update({uid: self.nodes[uid]})
+            if self.__nodes[uid].type == 'Activator':
+                if type is None or type == self.__nodes[uid].get_parameter('type'):
+                    activators.update({uid: self.__nodes[uid]})
         return activators
 
     def get_sensors(self, nodespace=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
-        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         sensors = {}
         for uid in nodes:
-            if self.nodes[uid].type == 'Sensor':
-                sensors[uid] = self.nodes[uid]
+            if self.__nodes[uid].type == 'Sensor':
+                sensors[uid] = self.__nodes[uid]
         return sensors
 
     def get_actors(self, nodespace=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
-        nodes = self.nodes if nodespace is None else self.nodespaces[nodespace].netentities['nodes']
+        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         actors = {}
         for uid in nodes:
-            if self.nodes[uid].type == 'Actor':
-                actors[uid] = self.nodes[uid]
+            if self.__nodes[uid].type == 'Actor':
+                actors[uid] = self.__nodes[uid]
         return actors
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Set weight of the given link."""
 
-        source_node = self.nodes[source_node_uid]
+        source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False
 
@@ -688,7 +719,7 @@ class Nodenet(object):
             None if failure
         """
 
-        source_node = self.nodes[source_node_uid]
+        source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False, None
 
@@ -701,7 +732,7 @@ class Nodenet(object):
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""
 
-        source_node = self.nodes[source_node_uid]
+        source_node = self.get_node(source_node_uid)
         if source_node is None:
             return False, None
         source_node.unlink(gate_type, target_node_uid, slot_type)
@@ -709,23 +740,23 @@ class Nodenet(object):
 
     def is_locked(self, lock):
         """Returns true if a lock of the given name exists"""
-        return lock in self.locks
+        return lock in self.__locks
 
     def is_locked_by(self, lock, key):
         """Returns true if a lock of the given name exists and the key used is the given one"""
-        return lock in self.locks and self.locks[lock][2] == key
+        return lock in self.__locks and self.__locks[lock][2] == key
 
     def lock(self, lock, key, timeout=100):
         """Creates a lock with the given name that will time out after the given number of steps
         """
         if self.is_locked(lock):
             raise NodenetLockException("Lock %s is already locked." % lock)
-        self.locks[lock] = (0, timeout, key)
+        self.__locks[lock] = (0, timeout, key)
 
     def unlock(self, lock):
         """Removes the given lock
         """
-        del self.locks[lock]
+        del self.__locks[lock]
 
 
 class NetAPI(object):
@@ -747,10 +778,6 @@ class NetAPI(object):
     def world(self):
         return self.__nodenet.world
 
-    @property
-    def nodespaces(self):
-        return self.__nodenet.nodespaces
-
     def __init__(self, nodenet):
         self.__nodenet = nodenet
 
@@ -758,11 +785,24 @@ class NetAPI(object):
     def logger(self):
         return self.__nodenet.logger
 
+    def get_nodespace(self, uid):
+        """
+        Returns the nodespace with the given uid
+        """
+        return self.__nodenet.get_nodespace(uid)
+
+    def get_nodespaces(self, parent="Root"):
+        """
+        Returns a list of all nodespaces in the given nodespace
+        """
+        return [self.__nodenet.get_nodespace(uid) for
+                uid in self.__nodenet.get_nodespace(parent).get_known_ids('nodespaces')]
+
     def get_node(self, uid):
         """
         Returns the node with the given uid
         """
-        return self.__nodenet.nodes[uid]
+        return self.__nodenet.get_node(uid)
 
     def get_nodes(self, nodespace=None, node_name_prefix=None):
         """
@@ -770,7 +810,8 @@ class NetAPI(object):
         the given prefix (all if None)
         """
         nodes = []
-        for node_uid, node in self.__nodenet.nodes.items():
+        for node_uid in self.__nodenet.get_node_uids():
+            node = self.__nodenet.get_node(node_uid)
             if ((node_name_prefix is None or node.name.startswith(node_name_prefix)) and
                     (nodespace is None or node.parent_nodespace == nodespace)):
                 nodes.append(node)
@@ -785,9 +826,9 @@ class NetAPI(object):
         if gate is not None:
             gates = [gate]
         else:
-            gates = self.__nodenet.nodes[node.uid].get_gate_types()
+            gates = self.__nodenet.get_node(node.uid).get_gate_types()
         for gate in gates:
-            for link in self.__nodenet.nodes[node.uid].get_gate(gate).get_links():
+            for link in self.__nodenet.get_node(node.uid).get_gate(gate).get_links():
                 candidate = link.target_node
                 linked_gates = []
                 for candidate_gate_name in candidate.get_gate_types():
@@ -807,9 +848,9 @@ class NetAPI(object):
         if slot is not None:
             slots = [slot]
         else:
-            slots = self.__nodenet.nodes[node.uid].get_slot_types()
+            slots = self.__nodenet.get_node(node.uid).get_slot_types()
         for slot in slots:
-            for link in self.__nodenet.nodes[node.uid].get_slot(slot).get_links():
+            for link in self.__nodenet.get_node(node.uid).get_slot(slot).get_links():
                 candidate = link.source_node
                 linked_gates = []
                 for candidate_gate_name in candidate.get_gate_types():
@@ -850,6 +891,8 @@ class NetAPI(object):
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
+
+        # todo: There should be a separate method for this Nodespaces are net entities, but they're not nodes.
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)
         else:
@@ -1005,7 +1048,7 @@ class NetAPI(object):
             nodespace.
             The gatefunction needs to be given as a string.
         """
-        self.__nodenet.nodespaces[nodespace].set_gate_function(nodetype, gatetype, gatefunction)
+        self.__nodenet.get_nodespace(nodespace).set_gate_function(nodetype, gatetype, gatefunction)
 
     def is_locked(self, lock):
         """Returns true if the given lock is locked in the current net step
@@ -1081,7 +1124,7 @@ class NetAPI(object):
     def autoalign_nodespace(self, nodespace):
         """ Calls the autoalignment on the given nodespace """
         from micropsi_core.nodenet.node_alignment import align
-        if nodespace in self.__nodenet.nodespaces:
+        if nodespace in self.__nodenet.get_nodespace_uids():
             align(self.__nodenet, nodespace)
 
     def _step(self):

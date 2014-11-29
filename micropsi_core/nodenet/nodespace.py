@@ -33,40 +33,51 @@ class Nodespace(NetEntity):
         })
         return data
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunctions=None):
+    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunction_strings=None):
         """create a node space at a given position and within a given node space"""
-        self.activators = {}
-        self.netentities = {}
+        self.__activators = {}
+        self.__netentities = {}
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
-        nodenet.nodespaces[self.uid] = self
-        self.gatefunctions = {}
-        self.__gatefunction_strings = gatefunctions or {}
+        nodenet._register_nodespace(self)
+        self.__gatefunctions = {}
+        self.__gatefunction_strings = gatefunction_strings or {}
         for nodetype in self.__gatefunction_strings:
             for gatetype in self.__gatefunction_strings[nodetype]:
                 self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
 
-    def get_contents(self):
-        """returns a dictionary with all contained net entities, related links and dependent nodes"""
-        return self.netentities
+    def get_known_ids(self, entitytype=None):
+        if entitytype:
+            if entitytype not in self.__netentities:
+                return []
+            return self.__netentities[entitytype]
+        else:
+            return [uid for uid_list in self.__netentities.values() for uid in uid_list]
+
+    def is_entity_known_as(self, entitytype, uid):
+        if entitytype not in self.__netentities:
+            self.__netentities[entitytype] = []
+        return uid in self.__netentities[entitytype]
+
+    def has_activator(self, type):
+        return type in self.__activators
 
     def get_activator_value(self, type):
-        """returns the value of the activator of the given type, or 1, if none exists"""
-        pass
+        return self.__activators[type]
 
-    def get_data_targets(self):
-        """Returns a dictionary of available data targets to associate actors with.
+    def set_activator_value(self, type, value):
+        self.__activators[type] = value
 
-        Data targets are either handed down by the node net manager (to operate on the environment), or
-        by the node space itself, to perform directional activation."""
-        pass
+    def unset_activator_value(self, type):
+        self.__activators.pop(type, None)
 
-    def get_data_sources(self):
-        """Returns a dictionary of available data sources to associate sensors with.
+    def _register_entity(self, entity):
+        if entity.entitytype not in self.__netentities:
+            self.__netentities[entity.entitytype] = []
+        self.__netentities[entity.entitytype].append(entity.uid)
 
-        Data sources are either handed down by the node net manager (to read from the environment), or
-        by the node space itself, to obtain information about its contents."""
-        pass
+    def _unregister_entity(self, entitytype, uid):
+        self.__netentities[entitytype].remove(uid)
 
     def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
         """Sets the gatefunction for a given node- and gatetype within this nodespace"""
@@ -74,32 +85,32 @@ class Nodespace(NetEntity):
             if nodetype not in self.__gatefunction_strings:
                 self.__gatefunction_strings[nodetype] = {}
             self.__gatefunction_strings[nodetype][gatetype] = gatefunction
-            if nodetype not in self.gatefunctions:
-                self.gatefunctions[nodetype] = {}
+            if nodetype not in self.__gatefunctions:
+                self.__gatefunctions[nodetype] = {}
             try:
                 import math
-                self.gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction, parameters="x, r, t", additional_symbols={'math': math})
+                self.__gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction, parameters="x, r, t", additional_symbols={'math': math})
             except SyntaxError as err:
                 warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, str(err)))
                 raise err
         else:
-            if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
-                del self.gatefunctions[nodetype][gatetype]
+            if nodetype in self.__gatefunctions and gatetype in self.__gatefunctions[nodetype]:
+                del self.__gatefunctions[nodetype][gatetype]
             if nodetype in self.__gatefunction_strings[nodetype] and gatetype in self.__gatefunction_strings[nodetype][nodetype]:
                 del self.__gatefunction_strings[nodetype][nodetype][gatetype]
 
     def get_gatefunction(self, nodetype, gatetype):
         """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
-        if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
-            return self.gatefunctions[nodetype][gatetype]
+        if nodetype in self.__gatefunctions and gatetype in self.__gatefunctions[nodetype]:
+            return self.__gatefunctions[nodetype][gatetype]
 
     def get_gatefunction_string(self, nodetype, gatetype):
         """Retrieve a string gatefunction for a given node- and gatetype"""
-        if nodetype in self.gatefunctions and gatetype in self.gatefunctions[nodetype]:
+        if nodetype in self.__gatefunctions and gatetype in self.__gatefunctions[nodetype]:
             return self.__gatefunction_strings[nodetype][gatetype]
         else:
             return ''
 
-    def get_gatefunctions_string(self):
+    def get_gatefunction_strings(self):
         """Retrieve all string gatefunctions """
         return self.__gatefunction_strings

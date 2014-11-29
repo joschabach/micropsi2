@@ -148,7 +148,7 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
               }\
             }}}')
     micropsi.reload_native_modules(fixed_nodenet)
-    params = micropsi.nodenets[fixed_nodenet].nodes["Testnode"].get_gate_parameters()
+    params = micropsi.nodenets[fixed_nodenet].get_node("Testnode").get_gate_parameters()
     assert params["foo"]["amplification"] == 5
 
 

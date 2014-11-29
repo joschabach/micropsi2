@@ -325,13 +325,13 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
     """ returns part of the nodespace for representation in the UI
     Either you specify an area to be retrieved, or the retrieval is limited to 500 nodes currently
     """
-    if nodespace not in nodenets[nodenet_uid].nodespaces:
+    if not nodenets[nodenet_uid].is_nodespace(nodespace):
         nodespace = "Root"
     with nodenets[nodenet_uid].netlock:
         if x2 < 0 or y2 < 0:
-            data = nodenets[nodenet_uid].get_nodespace(nodespace, 500)
+            data = nodenets[nodenet_uid].get_nodespace_data(nodespace, 500)
         else:
-            data = nodenets[nodenet_uid].get_nodespace_area(nodespace, x1, x2, y1, y2)
+            data = nodenets[nodenet_uid].get_nodespace_area_data(nodespace, x1, x2, y1, y2)
         data['nodespace'] = nodespace
         return data
 
@@ -561,10 +561,10 @@ def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespa
     nodes = {}
     nodespaces = {}
     for node_uid in node_uids:
-        if node_uid in source_nodenet.nodes:
-            nodes[node_uid] = source_nodenet.nodes[node_uid]
-        elif node_uid in source_nodenet.nodespaces:
-            nodespaces[node_uid] = source_nodenet.nodespaces[node_uid]
+        if source_nodenet.is_node(node_uid):
+            nodes[node_uid] = source_nodenet.get_node(node_uid)
+        elif source_nodenet.is_nodespace(node_uid):
+            nodespaces[node_uid] = source_nodenet.get_nodespace(node_uid)
     target_nodenet.copy_nodes(nodes, nodespaces, target_nodespace_uid, copy_associated_links)
     return True
 
@@ -579,21 +579,22 @@ def get_nodespace_list(nodenet_uid):
     """
     nodenet = nodenets[nodenet_uid]
     data = {}
-    for uid, nodespace in nodenet.nodespaces.items():
+    for uid in nodenet.get_nodespace_uids():
+        nodespace = nodenet.get_nodespace(uid)
         data[uid] = {
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
             'nodes': {},
             'gatefunctions': {}
         }
-        for nid in nodespace.netentities.get('nodes', []):
+        for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
-                'name': nodenet.nodes[nid].name,
-                'type': nodenet.nodes[nid].type,
-                'gates': nodenet.get_nodetype(nodenet.nodes[nid].type).gatetypes,
-                'slots': nodenet.get_nodetype(nodenet.nodes[nid].type).slottypes
+                'name': nodenet.get_node(nid).name,
+                'type': nodenet.get_node(nid).type,
+                'gates': nodenet.get_nodetype(nodenet.get_node(nid).type).gatetypes,
+                'slots': nodenet.get_nodetype(nodenet.get_node(nid).type).slottypes
             }
-        data[uid]['gatefunctions'] = nodespace.get_gatefunctions_string()
+        data[uid]['gatefunctions'] = nodespace.get_gatefunction_strings()
     return data
 
 
@@ -631,7 +632,7 @@ def get_node(nodenet_uid, node_uid):
             parameters (optional): a dict of arbitrary parameters that can make nodes stateful
         }
      """
-    return nodenets[nodenet_uid].nodes[node_uid].data
+    return nodenets[nodenet_uid].get_node(node_uid).data
 
 
 def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
@@ -677,7 +678,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     nodenet = get_nodenet(nodenet_uid)
     result = {'nodes': [], 'links': []}
-    copynodes = {uid: nodenet.nodes[uid] for uid in node_uids}
+    copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
     copylinks = {}
     uidmap = {}
     if clonemode != 'none':
@@ -696,7 +697,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.clone_state(), uid=None, name=n.name + '_copy', parameters=n.clone_parameters())
         if success:
             uidmap[n.uid] = uid
-            result['nodes'].append(nodenet.nodes[uid].data)
+            result['nodes'].append(nodenet.get_node(uid).data)
         else:
             logger.warning('Could not clone node: ' + uid)
 
@@ -724,10 +725,10 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 def set_node_position(nodenet_uid, node_uid, pos):
     """Positions the specified node at the given coordinates."""
     nodenet = nodenets[nodenet_uid]
-    if node_uid in nodenet.nodes:
-        nodenet.nodes[node_uid].position = pos
-    elif node_uid in nodenet.nodespaces:
-        nodenet.nodespaces[node_uid].position = pos
+    if nodenet.is_node(node_uid):
+        nodenet.get_node(node_uid).position = pos
+    elif nodenet.is_nodespace(node_uid):
+        nodenet.get_nodespace(node_uid).position = pos
     nodenet.update_node_positions()
     return True
 
@@ -735,23 +736,23 @@ def set_node_position(nodenet_uid, node_uid, pos):
 def set_node_name(nodenet_uid, node_uid, name):
     """Sets the display name of the node"""
     nodenet = nodenets[nodenet_uid]
-    if node_uid in nodenet.nodes:
-        nodenet.nodes[node_uid].name = name
-    elif node_uid in nodenet.nodespaces:
-        nodenet.nodespaces[node_uid].name = name
+    if nodenet.is_node(node_uid):
+        nodenet.get_node(node_uid).name = name
+    elif nodenet.is_nodespace(node_uid):
+        nodenet.get_nodespace(node_uid).name = name
     return True
 
 
 def set_node_state(nodenet_uid, node_uid, state):
     """ Sets the state of the given node to the given state"""
-    node = nodenets[nodenet_uid].nodes[node_uid]
+    node = nodenets[nodenet_uid].get_node(node_uid)
     for key in state:
         node.set_state(key, state[key])
     return True
 
 
 def set_node_activation(nodenet_uid, node_uid, activation):
-    nodenets[nodenet_uid].nodes[node_uid].activation = activation
+    nodenets[nodenet_uid].get_node(node_uid).activation = activation
     return True
 
 
@@ -796,7 +797,7 @@ def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
 
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
-    nodenets[nodenet_uid].nodes[node_uid].set_parameters(parameters)
+    nodenets[nodenet_uid].get_node(node_uid).set_parameters(parameters)
     return True
 
 
@@ -814,7 +815,7 @@ def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
     """Returns a string with the gate function of the given node and gate within the current nodespace.
     Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
     """
-    return nodenets[nodenet_uid].nodespaces[nodespace].get_gatefunction_string(node_type, gate_type)
+    return nodenets[nodenet_uid].get_nodespace(nodespace).get_gatefunction_string(node_type, gate_type)
 
 
 def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
@@ -824,14 +825,14 @@ def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_functio
     None reverts the custom gate function of the given node and gate within the current nodespace to the default.
     Parameters is a list of keys for values of the gate function.
     """
-    nodenets[nodenet_uid].nodespaces[nodespace].set_gate_function(node_type, gate_type, gate_function,
+    nodenets[nodenet_uid].get_nodespace(nodespace).set_gate_function(node_type, gate_type, gate_function,
         parameters)
     return True
 
 
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters=None):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
-    nodenets[nodenet_uid].nodes[node_uid].set_gate_parameters(gate_type, parameters)
+    nodenets[nodenet_uid].get_node(node_uid).set_gate_parameters(gate_type, parameters)
     return True
 
 
@@ -847,7 +848,7 @@ def get_available_datatargets(nodenet_uid):
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     """Associates the datasource type to the sensor node with the given uid."""
-    node = nodenets[nodenet_uid].nodes[sensor_uid]
+    node = nodenets[nodenet_uid].get_node(sensor_uid)
     if node.type == "Sensor":
         node.set_parameter('datasource', datasource)
         return True
@@ -856,7 +857,7 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
 
 def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     """Associates the datatarget type to the actor node with the given uid."""
-    node = nodenets[nodenet_uid].nodes[actor_uid]
+    node = nodenets[nodenet_uid].get_node(actor_uid)
     if node.type == "Actor":
         node.set_parameter('datatarget', datatarget)
         return True
@@ -901,7 +902,7 @@ def align_nodes(nodenet_uid, nodespace):
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     for key, value in values.items():
-        nodenets[nodenet_uid].nodes[node_uid].set_parameter(key, value)
+        nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 

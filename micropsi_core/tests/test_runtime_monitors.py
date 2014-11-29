@@ -9,7 +9,7 @@ from micropsi_core import runtime as micropsi
 
 def test_add_gate_monitor(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
-    monitor = micropsi.nodenets[fixed_nodenet].monitors[uid]
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.node_name == 'A1'
     assert monitor.node_uid == 'A1'
     assert monitor.target == 'gen'
@@ -18,7 +18,7 @@ def test_add_gate_monitor(fixed_nodenet):
 
 def test_add_slot_monitor(fixed_nodenet):
     uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
-    monitor = micropsi.nodenets[fixed_nodenet].monitors[uid]
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.node_name == 'A1'
     assert monitor.node_uid == 'A1'
     assert monitor.target == 'gen'
@@ -27,9 +27,14 @@ def test_add_slot_monitor(fixed_nodenet):
 
 def test_remove_monitor(fixed_nodenet):
     uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
-    assert uid in micropsi.nodenets[fixed_nodenet].monitors
+    assert micropsi.nodenets[fixed_nodenet].get_monitor(uid) is not None
     micropsi.remove_monitor(fixed_nodenet, uid)
-    assert uid not in micropsi.nodenets[fixed_nodenet].monitors
+    gone = False
+    try:
+        micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    except KeyError:
+        gone = True
+    assert gone
 
 
 def test_get_monitor_data(fixed_nodenet):

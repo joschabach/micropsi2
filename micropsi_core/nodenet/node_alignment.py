@@ -26,21 +26,22 @@ def align(nodenet, nodespace):
         Returns:
             True on success, False otherwise
     """
-    if not nodespace in nodenet.nodespaces: return False
+    if not nodenet.is_nodespace(nodespace):
+        return False
 
-    unaligned_nodespaces = sorted(nodenet.nodespaces[nodespace].netentities.get("nodespaces", []),
-        key=lambda i:nodenet.nodespaces[i].index)
-    unaligned_nodes = sorted(nodenet.nodespaces[nodespace].netentities.get("nodes", []),
-        key = lambda i: nodenet.nodes[i].index)
-    sensors = [ s for s in unaligned_nodes if nodenet.nodes[s].type == "Sensor" ]
-    actors = [ a for a in unaligned_nodes if nodenet.nodes[a].type == "Actor" ]
-    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.nodes[n].type in ("Sensor", "Actor") ]
+    unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
+        key=lambda i:nodenet.get_nodespace(i).index)
+    unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
+        key = lambda i: nodenet.get_node(i).index)
+    sensors = [ s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor" ]
+    actors = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor" ]
+    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor") ]
 
 
     # position nodespaces
 
     for i, id in enumerate(unaligned_nodespaces):
-        nodenet.nodespaces[id].position = calculate_grid_position(i)
+        nodenet.get_nodespace(id).position = calculate_grid_position(i)
 
     start_position = (BORDER + GRID/2, BORDER + (0.5+math.ceil(len(unaligned_nodespaces)/PREFERRED_WIDTH))*GRID)
 
@@ -96,7 +97,7 @@ class DisplayNode(object):
         return 1
 
     def arrange(self, nodenet, starting_point = (0,0)):
-        nodenet.nodes[self.uid].position = starting_point
+        nodenet.get_node(self.uid).position = starting_point
 
 def unify_links(nodenet, node_id_list):
     """create a proxy representation of the node space to simplify bi-directional links.
@@ -113,7 +114,7 @@ def unify_links(nodenet, node_id_list):
     node_index = OrderedDict([(i, DisplayNode(i)) for i in node_id_list])
 
     for node_id in node_id_list:
-        node = nodenet.nodes[node_id]
+        node = nodenet.get_node(node_id)
         vertical_only = True
         for gate_type in node.get_gate_types():
             direction = {"sub": "s", "ret": "w", "cat": "ne", "sym":"nw",
@@ -139,7 +140,7 @@ def unify_links(nodenet, node_id_list):
     for node_id in node_index:
         for direction in node_index[node_id].directions:
             node_index[node_id].directions[direction] = list(node_index[node_id].directions[direction])
-            node_index[node_id].directions[direction].sort(key = lambda i: nodenet.nodes[i.uid].index)
+            node_index[node_id].directions[direction].sort(key = lambda i: nodenet.get_node(i.uid).index)
 
     return UnorderedGroup(node_index.values())
 

@@ -187,4 +187,4 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
 def activator(netapi, node, **params):
     node.activation = node.get_slot("gen").activation
-    netapi.nodespaces[node.parent_nodespace].activators[node.get_parameter('type')] = node.activation
+    netapi.get_nodespace(node.parent_nodespace).set_activator_value(node.get_parameter('type'), node.activation)

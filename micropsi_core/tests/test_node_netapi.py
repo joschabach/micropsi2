@@ -125,6 +125,30 @@ def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
     assert node.data['parent_nodespace'] == nodespace.uid
 
 
+def test_node_netapi_get_nodespace(fixed_nodenet):
+    # test single nodespace querying
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", "Root", "TestName")
+
+    queried_nodespace = netapi.get_nodespace(nodespace.uid)
+    assert queried_nodespace.uid == nodespace.uid
+    assert queried_nodespace.name == nodespace.name
+
+
+def test_node_netapi_get_nodespace(fixed_nodenet):
+    # test nodespace listing
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace1 = netapi.create_node("Nodespace", "Root", "TestName1")
+    nodespace2 = netapi.create_node("Nodespace", "Root", "TestName2")
+    nodespace3 = netapi.create_node("Nodespace", nodespace2.uid, "TestName3")
+
+    queried_nodespaces = netapi.get_nodespaces("Root")
+    assert len(queried_nodespaces) == 2
+    assert nodespace1.uid in [x.uid for x in queried_nodespaces]
+    assert nodespace2.uid in [x.uid for x in queried_nodespaces]
+    assert nodespace3.uid not in [x.uid for x in queried_nodespaces]
+
+
 def test_node_netapi_get_node(fixed_nodenet):
     # test register node creation
     net, netapi, source = prepare(fixed_nodenet)
@@ -666,21 +690,21 @@ def test_set_gate_function(fixed_nodenet):
 
 def test_autoalign(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
-    for uid, node in net.nodes.items():
-        node.position = (12, 13)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = (12, 13)
     netapi.autoalign_nodespace('Root')
     positions = []
-    for uid, node in net.nodes.items():
-        if node.parent_nodespace == 'Root':
-            positions.extend(node.position)
+    for uid in net.get_node_uids():
+        if net.get_node(uid).parent_nodespace == 'Root':
+            positions.extend(net.get_node(uid).position)
     assert set(positions) != set((12, 13))
 
-    for uid, node in net.nodes.items():
-        node.position = (12, 13)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = (12, 13)
     netapi.autoalign_nodespace('InVaLiD')
     positions = []
-    for uid, node in net.nodes.items():
-        positions.extend(node.position)
+    for uid in net.get_node_uids():
+        positions.extend(net.get_node(uid).position)
     assert set(positions) == set((12, 13))
 
 

@@ -276,6 +276,9 @@ class DictNodenet(Nodenet):
             del self.__nodes[node_uid]
             self.update_node_positions()
 
+    def delete_nodespace(self, uid):
+        self.delete_node(uid)
+
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""
         data = {
@@ -546,6 +549,12 @@ class DictNodenet(Nodenet):
         node = Node(self, nodespace_uid, position, name=name, type=nodetype, uid=uid, parameters=parameters)
         self.update_node_positions()
         return node.uid
+
+    def create_nodespace(self, parent_uid, position, name="", uid=None):
+        nodespace = Nodespace(self, parent_uid, position=position, name=name, uid=uid)
+        return nodespace.uid
+
+
 
     def get_node(self, uid):
         return self.__nodes[uid]

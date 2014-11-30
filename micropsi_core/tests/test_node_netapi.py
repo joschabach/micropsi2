@@ -409,7 +409,7 @@ def test_node_netapi_delete_node(fixed_nodenet):
     assert len(node2.get_gate("gen").get_links()) == 0
 
 
-def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
+def test_node_netapi_delete_nodespace(fixed_nodenet):
     # test delete node case deleting a nodespace
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
@@ -423,7 +423,7 @@ def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
     netapi.link(node4, "gen", node1, "gen")
 
     node4uid = node4.uid
-    netapi.delete_node(nodespace)
+    netapi.delete_nodespace(nodespace)
     with pytest.raises(KeyError):
         netapi.get_node(node4uid)
 

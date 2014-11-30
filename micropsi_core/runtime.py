@@ -648,8 +648,7 @@ def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, nam
     """
     nodenet = get_nodenet(nodenet_uid)
     if type == "Nodespace":
-        nodespace = Nodespace(nodenet, nodespace, pos, name=name, uid=uid)
-        uid = nodespace.uid
+        uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
     else:
         uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
     return True, uid
@@ -750,9 +749,18 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 
 
 def delete_node(nodenet_uid, node_uid):
-    """Removes the node"""
-    nodenets[nodenet_uid].delete_node(node_uid)
-    return True
+    """Removes the node or node space"""
+
+    # todo: There should be a separate JSON API method for deleting node spaces -- they're entities, but NOT nodes!
+
+    nodenet = nodenets[nodenet_uid]
+    if nodenet.is_nodespace(node_uid):
+        nodenet.delete_nodespace(node_uid)
+        return True
+    elif nodenet.is_node(node_uid):
+        nodenets[nodenet_uid].delete_node(node_uid)
+        return True
+    return False
 
 
 def get_available_node_types(nodenet_uid=None):

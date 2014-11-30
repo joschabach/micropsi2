@@ -229,6 +229,20 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def create_nodespace(self, parent_uid, position, name="", uid=None):
+        """
+        Creates a new nodespace  in the nodespace with the given UID, at the given position.
+        """
+        pass
+
+    @abstractmethod
+    def delete_nodespace(self, uid):
+        """
+        Deletes the nodespace with the given UID, and everything it contains
+        """
+        pass
+
+    @abstractmethod
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
@@ -465,6 +479,12 @@ class NetAPI(object):
         """
         self.__nodenet.delete_node(node.uid)
 
+    def delete_nodespace(self, nodespace):
+        """
+        Deletes a node and all nodes and nodespaces contained within, and all links connected to it.
+        """
+        self.__nodenet.delete_nodespace(nodespace.uid)
+
     def create_node(self, nodetype, nodespace, name=None):
         """
         Creates a new node or node space of the given type, with the given name and in the given nodespace.
@@ -476,7 +496,8 @@ class NetAPI(object):
 
         # todo: There should be a separate method for this Nodespaces are net entities, but they're not nodes.
         if nodetype == "Nodespace":
-            entity = Nodespace(self.__nodenet, nodespace, pos, name=name)
+            uid = self.__nodenet.create_nodespace(nodespace, pos, name=name)
+            entity = self.__nodenet.get_nodespace(uid)
         else:
             uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
             entity = self.__nodenet.get_node(uid)

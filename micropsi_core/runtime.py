@@ -719,7 +719,6 @@ def set_node_position(nodenet_uid, node_uid, pos):
         nodenet.get_node(node_uid).position = pos
     elif nodenet.is_nodespace(node_uid):
         nodenet.get_nodespace(node_uid).position = pos
-    nodenet.update_node_positions()
     return True
 
 
@@ -894,8 +893,6 @@ def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_t
 def align_nodes(nodenet_uid, nodespace):
     """Perform auto-alignment of nodes in the current nodespace"""
     result = node_alignment.align(nodenets[nodenet_uid], nodespace)
-    if result:
-        nodenets[nodenet_uid].update_node_positions()
     return result
 
 

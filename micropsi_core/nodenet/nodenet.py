@@ -279,10 +279,6 @@ class Nodenet(metaclass=ABCMeta):
     def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
         pass
 
-    def update_node_positions(self):
-        # todo: this should not be API, but handled internally
-        pass
-
     @abstractmethod
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""

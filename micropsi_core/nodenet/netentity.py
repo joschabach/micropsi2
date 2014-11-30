@@ -24,6 +24,7 @@ class NetEntity(object):
 
     __name = None
     __parent_nodespace = None
+    __position = None
 
     @property
     def data(self):
@@ -35,6 +36,15 @@ class NetEntity(object):
             "parent_nodespace": self.parent_nodespace
         }
         return data
+
+    @property
+    def position(self):
+        return self.__position
+
+    @position.setter
+    def position(self, position):
+        self.__position = position
+        self.nodenet.update_node_positions()
 
     @property
     def name(self):

@@ -378,13 +378,6 @@ def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_
     return True, data['uid']
 
 
-def clear_nodenet(nodenet_uid):
-    """Deletes all contents of a nodenet"""
-    nodenet = get_nodenet(nodenet_uid)
-    nodenet.clear()
-    return True
-
-
 def delete_nodenet(nodenet_uid):
     """Unloads the given nodenet from memory and deletes it from the storage.
 

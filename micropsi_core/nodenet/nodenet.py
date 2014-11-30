@@ -303,10 +303,6 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def clear(self):
-        pass
-
-    @abstractmethod
     def merge_data(self, nodenet_data):
         """
         Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.

@@ -1,32 +1,21 @@
-# -*- coding: utf-8 -*-
-
-"""
-Nodenet definition
-"""
-from copy import deepcopy
+__author__ = 'rvuine'
 
 import micropsi_core.tools
 import json
 import os
 
 import warnings
-from .node import Node, Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from threading import Lock
 import logging
-from .nodespace import Nodespace
-from .monitor import Monitor
+from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
+from micropsi_core.nodenet.nodespace import Nodespace
+from micropsi_core.nodenet.monitor import Monitor
 
-__author__ = 'joscha'
-__date__ = '09.05.12'
-
-NODENET_VERSION = 1
+from copy import deepcopy
 
 
-class NodenetLockException(Exception):
-    pass
-
-
-class Nodenet(object):
+class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
 
     Contains the net entities and runs the activation spreading. The nodenet stores persistent data.
@@ -48,105 +37,90 @@ class Nodenet(object):
         step: the current simulation step of the node net
     """
 
-    __uid = ""
-    __name = ""
-    __world_uid = None
-    __worldadapter_uid = None
-    __is_active = False
-
     @property
     def data(self):
-        pass
-
-    @property
-    def current_step(self):
-        pass
-
-    @property
-    def data(self):
-        # create state object from living data
-        data = {
-            'uid': self.uid,
-            'owner': self.owner,
-            'links': {},
-            'nodes': {},
-            'name': self.name,
-            'max_coords': self.max_coords,
-            'is_active': self.is_active,
-            'current_step': self.current_step,
-            'nodespaces': {},
-            'world': self.__world_uid,
-            'worldadapter': self.__worldadapter_uid,
-            'settings': self.settings,
-            'monitors': {},
-            'version': "abstract"
-        }
+        data = super(DictNodenet, self).data
+        data['links'] = self.construct_links_dict()
+        data['nodes'] = self.construct_nodes_dict()
+        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['monitors'] = self.construct_monitors_dict()
+        data['version'] = self.__version
         return data
 
     @property
-    def uid(self):
-        return self.__uid
+    def current_step(self):
+        return self.__step
 
-    @property
-    def name(self):
-        if self.__name is not None:
-            return self.__name
-        else:
-            return self.uid
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
+        """Create a new MicroPsi agent.
 
-    @name.setter
-    def name(self, name):
-        self.__name = name
+        Arguments:
+            filename: the path and filename of the agent
+            agent_type (optional): the interface of this agent to its environment
+            name (optional): the name of the agent
+            owner (optional): the user that created this agent
+            uid (optional): unique handle of the agent; if none is given, it will be generated
+        """
 
-    @property
-    def world(self):
-        if self.__world_uid is not None:
-            from micropsi_core.runtime import worlds
-            return worlds.get(self.__world_uid)
-        return None
-
-    @world.setter
-    def world(self, world):
-        if world:
-            self.__world_uid = world.uid
-        else:
-            self.__world_uid = None
-
-    @property
-    def worldadapter(self):
-        return self.__worldadapter_uid
-
-    @worldadapter.setter
-    def worldadapter(self, worldadapter_uid):
-        self.__worldadapter_uid = worldadapter_uid
-
-    @property
-    def is_active(self):
-        return self.__is_active
-
-    @is_active.setter
-    def is_active(self, is_active):
-        self.__is_active = is_active
-
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None):
-
-        uid = uid or micropsi_core.tools.generate_uid()
+        super(DictNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
-        self.__uid = uid
+        self.__step = 0
+        self.settings = {}
 
-        self.world = world
-        self.owner = owner
-        self.name = name
+        self.filename = filename
         if world and worldadapter:
             self.worldadapter = worldadapter
+
+        self.__nodes = {}
+        self.__nodetypes = nodetypes
+        self.__native_modules = native_modules
+        self.__nodespaces = {}
+        self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
+
+        self.__monitors = {}
+        self.__locks = {}
+        self.__nodes_by_coords = {}
+        self.max_coords = {'x': 0, 'y': 0}
+        self.netapi = NetAPI(self)
 
         self.netlock = Lock()
 
         self.logger = logging.getLogger("nodenet")
         self.logger.info("Setting up nodenet %s", self.name)
 
-        self.user_prompt = None
+        self.load()
+
+    def load(self, string=None):
+        """Load the node net from a file"""
+        # try to access file
+        with self.netlock:
+
+            initfrom = {}
+
+            if string:
+                self.logger.info("Loading nodenet %s from string", self.name)
+                try:
+                    initfrom.update(json.loads(string))
+                except ValueError:
+                    warnings.warn("Could not read nodenet data from string")
+                    return False
+            else:
+                try:
+                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
+                    with open(self.filename) as file:
+                        initfrom.update(json.load(file))
+                except ValueError:
+                    warnings.warn("Could not read nodenet data")
+                    return False
+                except IOError:
+                    warnings.warn("Could not open nodenet file")
+
+            if self.__version == NODENET_VERSION:
+                self.initialize_nodenet(initfrom)
+                return True
+            else:
+                raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
@@ -237,6 +211,9 @@ class Nodenet(object):
     def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
         y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
+
+        world_uid = self.world.uid if self.world is not None else None
+
         data = {
             'links': {},
             'nodes': {},
@@ -245,8 +222,8 @@ class Nodenet(object):
             'is_active': self.is_active,
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
-            'world': self.__world_uid,
-            'worldadapter': self.__worldadapter_uid
+            'world': world_uid,
+            'worldadapter': self.worldadapter
         }
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()

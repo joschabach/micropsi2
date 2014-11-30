@@ -21,6 +21,9 @@ from micropsi_core.nodenet.nodespace import Nodespace
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
+
+from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
+
 import os
 import sys
 from micropsi_core import tools
@@ -267,7 +270,7 @@ def load_nodenet(nodenet_uid):
                 if data.world in worlds:
                     world = worlds.get(data.world)
                     worldadapter = data.get('worldadapter')
-            nodenets[nodenet_uid] = Nodenet(
+            nodenets[nodenet_uid] = DictNodenet(
                 os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
                 name=data.name, worldadapter=worldadapter,
                 world=world, owner=data.owner, uid=data.uid,

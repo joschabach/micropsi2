@@ -193,7 +193,7 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None):
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         """
         Creates a new node of the given node type (string), in the nodespace with the given UID, at the given
         position.
@@ -229,7 +229,7 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
+    def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.
         """
@@ -308,32 +308,12 @@ class Nodenet(metaclass=ABCMeta):
 
     @abstractmethod
     def merge_data(self, nodenet_data):
-        """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-
-        # Because of the horrible initialize_nodenet design that replaces existing dictionary objects with
-        # Python objects between initial loading and first use, none of the nodenet setup code is reusable.
-        # Instantiation should be a state-independent method or a set of state-independent methods that can be
-        # called whenever new data needs to be merged in, initially or later on.
-        # Potentially, initialize_nodenet can be replaced with merge_data.
-
-        # net will have the name of the one to be merged into us
-        pass
-
-    @abstractmethod
-    def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
-        """takes a dictionary of nodes and merges them into the current nodenet.
-        Links between these nodes will be copied, too.
-        If the source nodes are within the current nodenet, it is also possible to retain the associated links.
-        If the source nodes originate within a different nodespace (either because they come from a different
-        nodenet, or because they are copied into a different nodespace), the associated links (i.e. those that
-        link the copied nodes to elements that are themselves not being copied), can be retained, too.
-        Nodes and links may need to receive new UIDs to avoid conflicts.
-
-        Arguments:
-            nodes: a dictionary of node_uids with nodes
-            target_nodespace: if none is given, we copy into the same nodespace of the originating nodes
-            copy_associated_links: if True, also copy connections to not copied nodes
         """
+        Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
+        This is a legacy method from when the only available implementation was dict-based and will either be
+        removed or implemented in the abstact base class as a generic JSON/dict import mechanism.
+        """
+        #todo: This will be replaced with a save/load API at some point.
         pass
 
     @abstractmethod

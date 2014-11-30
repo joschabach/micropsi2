@@ -18,6 +18,8 @@ from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.nodespace import Nodespace
 
+from copy import deepcopy
+
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
@@ -560,8 +562,93 @@ def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespa
             nodes[node_uid] = source_nodenet.get_node(node_uid)
         elif source_nodenet.is_nodespace(node_uid):
             nodespaces[node_uid] = source_nodenet.get_nodespace(node_uid)
-    target_nodenet.copy_nodes(nodes, nodespaces, target_nodespace_uid, copy_associated_links)
+
+    _perform_copy_nodes(target_nodenet, nodes, nodespaces, target_nodespace_uid, copy_associated_links)
     return True
+
+
+def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
+    """takes a dictionary of nodes and merges them into the current nodenet.
+    Links between these nodes will be copied, too.
+    If the source nodes are within the current nodenet, it is also possible to retain the associated links.
+    If the source nodes originate within a different nodespace (either because they come from a different
+    nodenet, or because they are copied into a different nodespace), the associated links (i.e. those that
+    link the copied nodes to elements that are themselves not being copied), can be retained, too.
+    Nodes and links may need to receive new UIDs to avoid conflicts.
+
+    Arguments:
+        nodes: a dictionary of node_uids with nodes
+        target_nodespace: if none is given, we copy into the same nodespace of the originating nodes
+        copy_associated_links: if True, also copy connections to not copied nodes
+    """
+    rename_nodes = {}
+    rename_nodespaces = {}
+    if not target_nodespace:
+        target_nodespace = "Root"
+        # first, check for nodespace naming conflicts
+    for nodespace_uid in nodespaces:
+        if nodespace_uid in nodenet.get_nodespace_uids():
+            rename_nodespaces[nodespace_uid] = micropsi_core.tools.generate_uid()
+        # create the nodespaces
+    for nodespace_uid in nodespaces:
+        original = nodespaces[nodespace_uid]
+        uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
+
+        nodenet.create_nodespace(
+            target_nodespace,
+            original.position,
+            original.name,
+            uid,
+            deepcopy(original.get_gatefunction_strings()))
+
+    # set the parents (needs to happen in seperate loop to ensure nodespaces are already created
+    for nodespace_uid in nodespaces:
+        if nodespaces[nodespace_uid].parent_nodespace in nodespaces:
+            uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
+            target_nodespace = rename_nodespaces.get(nodespaces[nodespace_uid].parent_nodespace)
+            nodenet.get_nodespace(uid).parent_nodespace = target_nodespace
+
+    # copy the nodes
+    for node_uid in nodes:
+        if nodenet.is_node(node_uid):
+            rename_nodes[node_uid] = micropsi_core.tools.generate_uid()
+            uid = rename_nodes[node_uid]
+        else:
+            uid = node_uid
+
+        original = nodes[node_uid]
+        target = original.parent_nodespace if original.parent_nodespace in nodespaces else target_nodespace
+        target = rename_nodespaces.get(target, target)
+
+        nodenet.create_node(
+            original.type,
+            target,
+            original.position,
+            original.name,
+            uid,
+            deepcopy(original.clone_parameters()),
+            original.get_gate_parameters())
+
+    # copy the links
+    links_to_copy = set()
+    for node_uid in nodes:
+        node = nodes[node_uid]
+        for slot in node.get_slot_types():
+            for link in node.get_slot(slot).get_links():
+                if link.source_node.uid in nodes or (copy_associated_links and nodenet.is_node(link.source_node.uid)):
+                    links_to_copy.add(link)
+        for gate in node.get_gate_types():
+            for link in node.get_gate(gate).get_links():
+                if link.target_node.uid in nodes or (copy_associated_links and nodenet.is_node(link.target_node.uid)):
+                    links_to_copy.add(link)
+    for link in links_to_copy:
+        source_node = nodenet.get_node(rename_nodes.get(link.source_node.uid, link.source_node.uid))
+        source_node.link(
+            link.source_gate.type,
+            link.target_node.uid,
+            link.target_slot.type,
+            link.weight,
+            link.certainty)
 
 
 # Node operations

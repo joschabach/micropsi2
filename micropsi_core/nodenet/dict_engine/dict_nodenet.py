@@ -12,8 +12,6 @@ from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockE
 from micropsi_core.nodenet.nodespace import Nodespace
 from micropsi_core.nodenet.monitor import Monitor
 
-from copy import deepcopy
-
 
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
@@ -366,90 +364,6 @@ class DictNodenet(Nodenet):
         for uid in nodenet_data.get('monitors', {}):
             self.__monitors[uid] = Monitor(self, **nodenet_data['monitors'][uid])
 
-    def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
-        """takes a dictionary of nodes and merges them into the current nodenet.
-        Links between these nodes will be copied, too.
-        If the source nodes are within the current nodenet, it is also possible to retain the associated links.
-        If the source nodes originate within a different nodespace (either because they come from a different
-        nodenet, or because they are copied into a different nodespace), the associated links (i.e. those that
-        link the copied nodes to elements that are themselves not being copied), can be retained, too.
-        Nodes and links may need to receive new UIDs to avoid conflicts.
-
-        Arguments:
-            nodes: a dictionary of node_uids with nodes
-            target_nodespace: if none is given, we copy into the same nodespace of the originating nodes
-            copy_associated_links: if True, also copy connections to not copied nodes
-        """
-        rename_nodes = {}
-        rename_nodespaces = {}
-        if not target_nodespace:
-            target_nodespace = "Root"
-            # first, check for nodespace naming conflicts
-        for nodespace_uid in nodespaces:
-            if nodespace_uid in self.__nodespaces:
-                rename_nodespaces[nodespace_uid] = micropsi_core.tools.generate_uid()
-            # create the nodespaces
-        for nodespace_uid in nodespaces:
-            original = nodespaces[nodespace_uid]
-            uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
-
-            Nodespace(self, target_nodespace,
-                position=original.position,
-                name=original.name,
-                gatefunction_strings=deepcopy(original.get_gatefunction_strings()),
-                uid=uid)
-
-        # set the parents (needs to happen in seperate loop to ensure nodespaces are already created
-        for nodespace_uid in nodespaces:
-            if nodespaces[nodespace_uid].parent_nodespace in nodespaces:
-                uid = rename_nodespaces.get(nodespace_uid, nodespace_uid)
-                target_nodespace = rename_nodespaces.get(nodespaces[nodespace_uid].parent_nodespace)
-                self.__nodespaces[uid].parent_nodespace = target_nodespace
-
-        # copy the nodes
-        for node_uid in nodes:
-            if node_uid in self.__nodes:
-                rename_nodes[node_uid] = micropsi_core.tools.generate_uid()
-                uid = rename_nodes[node_uid]
-            else:
-                uid = node_uid
-
-            original = nodes[node_uid]
-            target = original.parent_nodespace if original.parent_nodespace in nodespaces else target_nodespace
-            target = rename_nodespaces.get(target, target)
-
-            Node(self, target,
-                position=original.position,
-                name=original.name,
-                type=original.type,
-                uid=uid,
-                parameters=deepcopy(original.clone_parameters()),
-                gate_parameters=original.get_gate_parameters()
-            )
-
-        # copy the links
-        links_to_copy = set()
-        for node_uid in nodes:
-            node = nodes[node_uid]
-            for slot in node.get_slot_types():
-                for link in node.get_slot(slot).get_links():
-                    if link.source_node.uid in nodes or (copy_associated_links
-                                                         and link.source_node.uid in self.__nodes):
-                        links_to_copy.add(link)
-            for gate in node.get_gate_types():
-                for link in node.get_gate(gate).get_links():
-                    if link.target_node.uid in nodes or (copy_associated_links
-                                                         and link.target_node.uid in self.__nodes):
-                        links_to_copy.add(link)
-        for link in links_to_copy:
-            source_node = self.__nodes[rename_nodes.get(link.source_node.uid, link.source_node.uid)]
-            source_node.link(
-                link.source_gate.type,
-                link.target_node.uid,
-                link.target_slot.type,
-                link.weight,
-                link.certainty)
-
     def step(self):
         """perform a simulation step"""
         self.user_prompt = None
@@ -545,16 +459,21 @@ class DictNodenet(Nodenet):
         for uid, node in nodes.copy().items():
             node.node_function()
 
-    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None):
-        node = Node(self, nodespace_uid, position, name=name, type=nodetype, uid=uid, parameters=parameters)
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
+        node = Node(
+            self,
+            nodespace_uid,
+            position, name=name,
+            type=nodetype,
+            uid=uid,
+            parameters=parameters,
+            gate_parameters=gate_parameters)
         self.update_node_positions()
         return node.uid
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
-        nodespace = Nodespace(self, parent_uid, position=position, name=name, uid=uid)
+    def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
+        nodespace = Nodespace(self, parent_uid, position=position, name=name, uid=uid, gatefunction_strings=gatefunction_strings)
         return nodespace.uid
-
-
 
     def get_node(self, uid):
         return self.__nodes[uid]

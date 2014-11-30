@@ -60,7 +60,7 @@ class Nodenet(metaclass=ABCMeta):
         version
         """
 
-        #todo: This will be replaced with a save/load API at some point
+        #todo: data dicts will be replaced with a save/load/export API at some point.
 
         data = {
             'uid': self.uid,
@@ -289,17 +289,22 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_nodetype(self, type):
-        """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        pass
-
-    @abstractmethod
-    def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
+    def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
+        """
+        Returns a data dict of the sztructure defined in the .data property, filtered for nodes in the given
+        nodespace, and within the given rectangle.
+        """
+        #todo: data dicts will be replaced with a save/load/export API at some point.
+        #todo: Positional data will either be made entirely transient at some point, or moved somewhere else
         pass
 
     @abstractmethod
     def get_nodespace_data(self, nodespace_uid, max_nodes):
-        """returns the nodes and links in a given nodespace"""
+        """
+        Returns a data dict of the sztructure defined in the .data property, filtered for nodes in the given
+        nodespace and limited to the given number of nodes.
+        """
+        #todo: data dicts will be replaced with a save/load/export API at some point.
         pass
 
     @abstractmethod
@@ -309,11 +314,16 @@ class Nodenet(metaclass=ABCMeta):
         This is a legacy method from when the only available implementation was dict-based and will either be
         removed or implemented in the abstact base class as a generic JSON/dict import mechanism.
         """
-        #todo: This will be replaced with a save/load API at some point.
+        #todo: data dicts will be replaced with a save/load/export API at some point.
         pass
 
     @abstractmethod
     def get_monitor(self, uid):
+        pass
+
+    @abstractmethod
+    def get_nodetype(self, type):
+        """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
         pass
 
     @abstractmethod

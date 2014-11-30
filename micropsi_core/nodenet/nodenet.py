@@ -56,7 +56,6 @@ class Nodenet(metaclass=ABCMeta):
         links
         nodes
         nodespaces
-        monitors
         version
         """
 

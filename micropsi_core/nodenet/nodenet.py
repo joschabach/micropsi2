@@ -6,15 +6,12 @@ Nodenet definition
 from copy import deepcopy
 
 import micropsi_core.tools
-import json
-import os
+from abc import ABCMeta, abstractmethod
 
-import warnings
-from .node import Node, Nodetype, STANDARD_NODETYPES
+from .node import Node
 from threading import Lock
 import logging
 from .nodespace import Nodespace
-from .monitor import Monitor
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -26,45 +23,45 @@ class NodenetLockException(Exception):
     pass
 
 
-class Nodenet(object):
-    """Main data structure for MicroPsi agents,
+class Nodenet(metaclass=ABCMeta):
+    """
+    Nodenet is the abstract base class for all node net implementations and defines the interface towards
+    runtime.py, which is where JSON API and tests access node nets.
 
-    Contains the net entities and runs the activation spreading. The nodenet stores persistent data.
-
-    Attributes:
-        state: a dict of persistent nodenet data; everything stored within the state can be stored and exported
-        uid: a unique identifier for the node net
-        name: an optional name for the node net
-        filename: the path and file name to the file storing the persisted net data
-        nodespaces: a dictionary of node space UIDs and respective node spaces
-        nodes: a dictionary of node UIDs and respective nodes
-        links: a dictionary of link UIDs and respective links
-        gate_types: a dictionary of gate type names and the individual types of gates
-        slot_types: a dictionary of slot type names and the individual types of slots
-        node_types: a dictionary of node type names and node type definitions
-        world: an environment for the node net
-        worldadapter: an actual world adapter object residing in a world implementation, provides interface
-        owner: an id of the user who created the node net
-        step: the current simulation step of the node net
+    This abstract Nodenet class defines handling of node net uid, name, world and worldadapter connections,
+    but makes no assumptions on persistency (filesystem, database, memory-only) or implementation.
     """
 
     __uid = ""
     __name = ""
     __world_uid = None
     __worldadapter_uid = None
-    __is_active = False
+    is_active = False
 
     @property
-    def data(self):
-        pass
-
-    @property
+    @abstractmethod
     def current_step(self):
+        """
+        Returns the current net step, an integer
+        """
         pass
 
     @property
+    @abstractmethod
     def data(self):
-        # create state object from living data
+        """
+        Returns a dict representing the whole node net.
+        Concrete implementations are to call this (super) method and then add the following fields:
+
+        links
+        nodes
+        nodespaces
+        monitors
+        version
+        """
+
+        #todo: This will be replaced with a save/load API at some point
+
         data = {
             'uid': self.uid,
             'owner': self.owner,
@@ -85,10 +82,16 @@ class Nodenet(object):
 
     @property
     def uid(self):
+        """
+        Returns the uid of the node net
+        """
         return self.__uid
 
     @property
     def name(self):
+        """
+        Returns the name of the node net for display purposes
+        """
         if self.__name is not None:
             return self.__name
         else:
@@ -96,10 +99,16 @@ class Nodenet(object):
 
     @name.setter
     def name(self, name):
+        """
+        Sets the name of the node net to the given string
+        """
         self.__name = name
 
     @property
     def world(self):
+        """
+        Returns the currently connected world (as an object) or none if no world is set
+        """
         if self.__world_uid is not None:
             from micropsi_core.runtime import worlds
             return worlds.get(self.__world_uid)
@@ -107,6 +116,9 @@ class Nodenet(object):
 
     @world.setter
     def world(self, world):
+        """
+        Connects the node net to the given world object, or disconnects if None is given
+        """
         if world:
             self.__world_uid = world.uid
         else:
@@ -114,22 +126,22 @@ class Nodenet(object):
 
     @property
     def worldadapter(self):
+        """
+        Returns the uid of the currently connected world adapter
+        """
         return self.__worldadapter_uid
 
     @worldadapter.setter
     def worldadapter(self, worldadapter_uid):
+        """
+        Connects the node net to the given world adapter uid, or disconnects if None is given
+        """
         self.__worldadapter_uid = worldadapter_uid
 
-    @property
-    def is_active(self):
-        return self.__is_active
-
-    @is_active.setter
-    def is_active(self, is_active):
-        self.__is_active = is_active
-
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None):
-
+        """
+        Constructor for the abstract base class, must be called by implementations
+        """
         uid = uid or micropsi_core.tools.generate_uid()
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
@@ -152,31 +164,99 @@ class Nodenet(object):
 
         self.netapi = NetAPI(self)
 
+    @abstractmethod
+    def step(self):
+        """
+        Performs one calculatio step, propagating activation accross links
+        """
+        pass
+
+    @abstractmethod
+    def get_node(self, uid):
+        """
+        Returns the Node object with the given UID or None if no such Node object exists
+        """
+        pass
+
+    @abstractmethod
+    def get_node_uids(self):
+        """
+        Returns a list of the UIDs of all Node objects that exist in the node net
+        """
+        pass
+
+    @abstractmethod
+    def is_node(self, uid):
+        """
+        Returns true if the given UID is the UID of an existing Node object
+        """
+        pass
+
+    @abstractmethod
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None):
+        """
+        Creates a new node of the given node type (string), in the nodespace with the given UID, at the given
+        position.
+        """
+        pass
+
+    @abstractmethod
+    def delete_node(self, uid):
+        """
+        Deletes the node with the given UID.
+        """
+        pass
+
+    @abstractmethod
+    def get_nodespace(self, uid):
+        """
+        Returns the Nodespace object with the given UID or None if no such Nodespace object exists
+        """
+        pass
+
+    @abstractmethod
+    def get_nodespace_uids(self):
+        """
+        Returns a list of the UIDs of all Nodespace objects that exist in the node net
+        """
+        pass
+
+    @abstractmethod
+    def is_nodespace(self, uid):
+        """
+        Returns true if the given UID is the UID of an existing Nodespace object
+        """
+        pass
+
+    @abstractmethod
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
         pass
 
+    @abstractmethod
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
         pass
 
+    @abstractmethod
     def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
         pass
 
     def update_node_positions(self):
+        # todo: this should not be API, but handled internally
         pass
 
-    def delete_node(self, node_uid):
-        pass
-
+    @abstractmethod
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         """returns the nodes and links in a given nodespace"""
         pass
 
+    @abstractmethod
     def clear(self):
         pass
 
+    @abstractmethod
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
@@ -189,6 +269,7 @@ class Nodenet(object):
         # net will have the name of the one to be merged into us
         pass
 
+    @abstractmethod
     def copy_nodes(self, nodes, nodespaces, target_nodespace=None, copy_associated_links=True):
         """takes a dictionary of nodes and merges them into the current nodenet.
         Links between these nodes will be copied, too.
@@ -205,35 +286,16 @@ class Nodenet(object):
         """
         pass
 
-    def step(self):
-        """perform a simulation step"""
-        pass
-
-    def get_node(self, uid):
-        pass
-
-    def get_nodespace(self, uid):
-        pass
-
-    def get_node_uids(self):
-        pass
-
-    def get_nodespace_uids(self):
-        pass
-
-    def is_node(self, uid):
-        pass
-
-    def is_nodespace(self, uid):
-        pass
-
+    @abstractmethod
     def get_monitor(self, uid):
         pass
 
+    @abstractmethod
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Set weight of the given link."""
         pass
 
+    @abstractmethod
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """Creates a new link.
 
@@ -251,27 +313,33 @@ class Nodenet(object):
         """
         pass
 
+    @abstractmethod
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""
         pass
 
+    @abstractmethod
     def is_locked(self, lock):
         """Returns true if a lock of the given name exists"""
         pass
 
+    @abstractmethod
     def is_locked_by(self, lock, key):
         """Returns true if a lock of the given name exists and the key used is the given one"""
         pass
 
+    @abstractmethod
     def lock(self, lock, key, timeout=100):
         """Creates a lock with the given name that will time out after the given number of steps
         """
         pass
 
+    @abstractmethod
     def unlock(self, lock):
         """Removes the given lock
         """
         pass
+
 
 class NetAPI(object):
     """
@@ -410,7 +478,8 @@ class NetAPI(object):
         if nodetype == "Nodespace":
             entity = Nodespace(self.__nodenet, nodespace, pos, name=name)
         else:
-            entity = Node(self.__nodenet, nodespace, pos, name=name, type=nodetype)
+            uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
+            entity = self.__nodenet.get_node(uid)
         self.__nodenet.update_node_positions()
         return entity
 

@@ -651,9 +651,7 @@ def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, nam
         nodespace = Nodespace(nodenet, nodespace, pos, name=name, uid=uid)
         uid = nodespace.uid
     else:
-        node = Node(nodenet, nodespace, pos, name=name, type=type, uid=uid, parameters=parameters)
-        uid = node.uid
-        nodenet.update_node_positions()
+        uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
     return True, uid
 
 

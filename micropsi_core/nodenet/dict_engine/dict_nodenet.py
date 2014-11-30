@@ -542,6 +542,11 @@ class DictNodenet(Nodenet):
         for uid, node in nodes.copy().items():
             node.node_function()
 
+    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None):
+        node = Node(self, nodespace_uid, position, name=name, type=nodetype, uid=uid, parameters=parameters)
+        self.update_node_positions()
+        return node.uid
+
     def get_node(self, uid):
         return self.__nodes[uid]
 

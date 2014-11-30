@@ -44,24 +44,6 @@ class DictNode(NetEntity, Node):
     __type = None
 
     @property
-    def data(self):
-        data = {
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-            "uid": self.uid,
-            "type": self.type,
-            "parameters": self.__parameters,
-            "state": self.__state,
-            "gate_parameters": self.get_gate_parameters(False),
-            "sheaves": self.sheaves,
-            "activation": self.activation,
-            "gate_activations": self.construct_gates_dict()
-        }
-        return data
-
-    @property
     def activation(self):
         return self.sheaves['default']['activation']
 
@@ -94,6 +76,8 @@ class DictNode(NetEntity, Node):
         if not gate_parameters:
             gate_parameters = {}
 
+        self.__type = type
+
         if nodenet.is_node(uid):
             raise KeyError("Node already exists")
 
@@ -104,7 +88,6 @@ class DictNode(NetEntity, Node):
 
         self.__gates = {}
         self.__slots = {}
-        self.__type = type
 
         self.__parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
@@ -265,6 +248,9 @@ class DictNode(NetEntity, Node):
     def clone_parameters(self):
         return self.__parameters.copy()
 
+    def clone_sheaves(self):
+        return self.sheaves.copy()
+
     def get_state(self, state_element):
         if state_element in self.__state:
             return self.__state[state_element]
@@ -337,12 +323,6 @@ class DictNode(NetEntity, Node):
 
     def get_slot_types(self):
         return list(self.__slots.keys())
-
-    def construct_gates_dict(self):
-        data = {}
-        for gate_name in self.get_gate_types():
-            data[gate_name] = self.get_gate(gate_name).sheaves
-        return data
 
 
 class Gate(object):

@@ -766,7 +766,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.clone_state(), uid=None, name=n.name + '_copy', parameters=n.clone_parameters())
+        success, uid = add_node(nodenet_uid, n.type, (n.position[0] + offset[0], n.position[1] + offset[1]), nodespace=target_nodespace, state=n.clone_state(), uid=None, name=n.name + '_copy', parameters=n.clone_parameters().copy())
         if success:
             uidmap[n.uid] = uid
             result['nodes'].append(nodenet.get_node(uid).data)

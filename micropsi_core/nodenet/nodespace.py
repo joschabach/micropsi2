@@ -26,11 +26,14 @@ class Nodespace(NetEntity):
 
     @property
     def data(self):
-        data = NetEntity.data.fget(self)
-        data.update({
+        data = {
             "uid": self.uid,
+            "index": self.index,
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
             "gatefunctions": self.__gatefunction_strings
-        })
+        }
         return data
 
     def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunction_strings=None):

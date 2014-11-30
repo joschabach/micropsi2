@@ -29,17 +29,6 @@ class NetEntity(object):
     __position = None
 
     @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace
-        }
-        return data
-
-    @property
     def uid(self):
         return self.__uid
 

@@ -48,10 +48,10 @@ class Node(metaclass=ABCMeta):
             "position": self.position,
             "parent_nodespace": self.parent_nodespace,
             "type": self.type,
-            "parameters": self.__parameters,
-            "state": self.__state,
+            "parameters": self.clone_parameters(),
+            "state": self.clone_state(),
             "gate_parameters": self.get_gate_parameters(False),
-            "sheaves": self.sheaves,
+            "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
         }
@@ -181,6 +181,10 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def clone_sheaves(self):
+        pass
+
+    @abstractmethod
     def get_gate_types(self):
         pass
 
@@ -208,6 +212,13 @@ class Node(metaclass=ABCMeta):
             if link.target_node.uid != self.uid:
                 nodes.append(link.target_node.uid)
         return nodes
+
+    def construct_gates_dict(self):
+        data = {}
+        for gate_name in self.get_gate_types():
+            data[gate_name] = self.get_gate(gate_name).sheaves
+        return data
+
 
 
 class Gate(object):

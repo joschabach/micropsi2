@@ -51,8 +51,6 @@ def test_get_nodespace_list(test_nodenet):
     node = data['Root']['nodes']['node_a']
     assert node['name'] == 'A'
     assert node['type'] == 'Concept'
-    assert node['slots'] == ['gen']
-    assert len(node['gates']) == 9
 
 
 def test_get_nodespace_list_with_empty_nodespace(test_nodenet):

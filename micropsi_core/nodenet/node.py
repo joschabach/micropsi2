@@ -16,7 +16,6 @@ from abc import ABCMeta, abstractmethod
 import warnings
 import micropsi_core.tools
 from .link import Link
-from .netentity import NetEntity
 import logging
 
 __author__ = 'joscha'
@@ -26,7 +25,7 @@ __date__ = '09.05.12'
 emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
-class Node(NetEntity, metaclass=ABCMeta):
+class Node(metaclass=ABCMeta):
     """A net entity with slots and gates and a node function.
 
     Node functions are called alternating with the link functions. They process the information in the slots
@@ -40,14 +39,14 @@ class Node(NetEntity, metaclass=ABCMeta):
         node_function: a function to be executed whenever the node receives activation
     """
 
-    __type = None
-
     @property
-    @abstractmethod
     def data(self):
-        data = NetEntity.data.fget(self)
-        data.update({
+        data = {
             "uid": self.uid,
+            "index": self.index,
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
             "type": self.type,
             "parameters": self.__parameters,
             "state": self.__state,
@@ -55,8 +54,58 @@ class Node(NetEntity, metaclass=ABCMeta):
             "sheaves": self.sheaves,
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
-        })
+        }
         return data
+
+    @property
+    @abstractmethod
+    def uid(self):
+        pass
+
+    @uid.setter
+    @abstractmethod
+    def uid(self, uid):
+        pass
+
+    @property
+    @abstractmethod
+    def index(self):
+        pass
+
+    @index.setter
+    @abstractmethod
+    def index(self, index):
+        pass
+
+    @property
+    @abstractmethod
+    def position(self):
+        pass
+
+    @position.setter
+    @abstractmethod
+    def position(self, position):
+        pass
+
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    @name.setter
+    @abstractmethod
+    def name(self, name):
+        pass
+
+    @property
+    @abstractmethod
+    def parent_nodespace(self):
+        pass
+
+    @parent_nodespace.setter
+    @abstractmethod
+    def parent_nodespace(self, uid):
+        pass
 
     @property
     @abstractmethod
@@ -72,14 +121,6 @@ class Node(NetEntity, metaclass=ABCMeta):
     @abstractmethod
     def type(self):
         pass
-
-    def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, **_):
-        if not gate_parameters:
-            gate_parameters = {}
-
-        NetEntity.__init__(self, nodenet, parent_nodespace, position,
-            name=name, entitytype="nodes", uid=uid, index=index)
 
     @abstractmethod
     def node_function(self):

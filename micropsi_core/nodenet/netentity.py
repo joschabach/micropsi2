@@ -22,6 +22,8 @@ class NetEntity(object):
         parent_nodespace: the node space this entity is contained in
     """
 
+    __uid = None
+    __index = 0
     __name = None
     __parent_nodespace = None
     __position = None
@@ -36,6 +38,22 @@ class NetEntity(object):
             "parent_nodespace": self.parent_nodespace
         }
         return data
+
+    @property
+    def uid(self):
+        return self.__uid
+
+    @uid.setter
+    def uid(self, uid):
+        self.__uid = uid
+
+    @property
+    def index(self):
+        return self.__index
+
+    @index.setter
+    def index(self, index):
+        self.__index = index
 
     @property
     def position(self):
@@ -77,7 +95,6 @@ class NetEntity(object):
 
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
-        self.__uid = uid
         self.index = index or len(nodenet.get_node_uids()) + len(nodenet.get_nodespace_uids())
         self.entitytype = entitytype
         self.name = name

@@ -26,7 +26,7 @@ __date__ = '09.05.12'
 emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
-class DictNode(Node):
+class DictNode(NetEntity, Node):
     """A net entity with slots and gates and a node function.
 
     Node functions are called alternating with the link functions. They process the information in the slots

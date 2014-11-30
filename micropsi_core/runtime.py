@@ -855,40 +855,10 @@ def get_available_native_module_types(nodenet_uid):
     return native_modules
 
 
-def get_nodefunction(nodenet_uid, node_type):
-    """Returns the current node function for this node type"""
-    nodefunc_def = nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_definition
-    nodefunc_name = nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_name
-    if not nodefunc_def:
-        return "nodefunctions.%s" % nodefunc_name
-    return nodefunc_def
-
-
-def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
-    """Sets a new node function for this node type. This amounts to a program that is executed every time the
-    node becomes active. Parameters of the function are the node itself (and thus, its slots, gates and
-    parent nodespace), the nodenet, and the parameter dict of this node).
-    Setting the node_function to None will return it to its default state (passing the slot activations to
-    all gate functions).
-    """
-    nodenets[nodenet_uid].get_nodetype(node_type).nodefunction_definition = nodefunction
-    return True
-
-
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
     nodenets[nodenet_uid].get_node(node_uid).set_parameters(parameters)
     return True
-
-
-def get_slot_types(nodenet_uid, node_type):
-    """Returns the list of slot types for the given node type."""
-    return nodenets[nodenet_uid].get_nodetype(node_type).slottypes
-
-
-def get_gate_types(nodenet_uid, node_type):
-    """Returns the list of gate types for the given node type."""
-    return nodenets[nodenet_uid].get_nodetype(node_type).gatetypes
 
 
 def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):

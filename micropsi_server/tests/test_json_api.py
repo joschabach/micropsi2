@@ -756,24 +756,6 @@ def test_get_available_native_module_types(app, test_nodenet):
     assert response.json_body['data'] == {}
 
 
-def test_get_nodefunction(app, test_nodenet):
-    response = app.get_json('/rpc/get_nodefunction(nodenet_uid="%s",node_type="Concept")' % test_nodenet)
-    assert_success(response)
-    assert response.json_body['data'] is not None
-
-
-def test_set_nodefunction(app, test_nodenet):
-    app.set_auth()
-    response = app.post_json('/rpc/set_nodefunction', params={
-        'nodenet_uid': test_nodenet,
-        'node_type': 'Concept',
-        'nodefunction': 'return 1'
-    })
-    assert_success(response)
-    response = app.get_json('/rpc/get_nodefunction(nodenet_uid="%s",node_type="Concept")' % test_nodenet)
-    assert response.json_body['data'] == 'return 1'
-
-
 def test_set_node_parameters(app, test_nodenet):
     app.set_auth()
     # add activator
@@ -792,18 +774,6 @@ def test_set_node_parameters(app, test_nodenet):
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="A")' % test_nodenet)
     assert response.json_body['data']['parameters']['type'] == 'sub'
-
-
-def test_get_slot_types(app, test_nodenet):
-    response = app.get_json('/rpc/get_slot_types(nodenet_uid="%s",node_type="Concept")' % test_nodenet)
-    assert_success(response)
-    assert response.json_body['data'] == ['gen']
-
-
-def test_get_gate_types(app, test_nodenet):
-    response = app.get_json('/rpc/get_gate_types(nodenet_uid="%s",node_type="Register")' % test_nodenet)
-    assert_success(response)
-    assert response.json_body['data'] == ['gen']
 
 
 def test_get_gate_function(app, test_nodenet):

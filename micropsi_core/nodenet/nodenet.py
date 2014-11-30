@@ -361,11 +361,6 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
-    def get_nodetype(self, type):
-        """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        pass
-
     def clear(self):
         self.__monitors = {}
 

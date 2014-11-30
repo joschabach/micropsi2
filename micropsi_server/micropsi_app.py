@@ -1047,29 +1047,9 @@ def get_available_native_module_types(nodenet_uid):
     return True, runtime.get_available_native_module_types(nodenet_uid)
 
 
-@rpc("get_nodefunction")
-def get_nodefunction(nodenet_uid, node_type):
-    return True, runtime.get_nodefunction(nodenet_uid, node_type)
-
-
-@rpc("set_nodefunction", permission_required="manage nodenets")
-def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
-    return runtime.set_nodefunction(nodenet_uid, node_type, nodefunction)
-
-
 @rpc("set_node_parameters", permission_required="manage nodenets")
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     return runtime.set_node_parameters(nodenet_uid, node_uid, parameters)
-
-
-@rpc("get_slot_types")
-def get_slot_types(nodenet_uid, node_type):
-    return True, runtime.get_slot_types(nodenet_uid, node_type)
-
-
-@rpc("get_gate_types")
-def get_gate_types(nodenet_uid, node_type):
-    return True, runtime.get_gate_types(nodenet_uid, node_type)
 
 
 @rpc("get_gate_function")

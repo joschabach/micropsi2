@@ -243,6 +243,28 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
+    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+        """
+        Creates a new link between the given node/gate and node/slot
+        """
+        pass
+
+    @abstractmethod
+    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
+        """
+        Set weight of the link between the given node/gate and node/slot
+        """
+        pass
+
+    @abstractmethod
+    def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
+        """
+        Deletes the link between the given node/gate and node/slot
+        """
+        pass
+
+
+    @abstractmethod
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
@@ -302,34 +324,6 @@ class Nodenet(metaclass=ABCMeta):
 
     @abstractmethod
     def get_monitor(self, uid):
-        pass
-
-    @abstractmethod
-    def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        """Set weight of the given link."""
-        pass
-
-    @abstractmethod
-    def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        """Creates a new link.
-
-        Arguments.
-            source_node_uid: uid of the origin node
-            gate_type: type of the origin gate (usually defines the link type)
-            target_node_uid: uid of the target node
-            slot_type: type of the target slot
-            weight: the weight of the link (a float)
-            certainty (optional): a probabilistic parameter for the link
-
-        Returns:
-            the link if successful,
-            None if failure
-        """
-        pass
-
-    @abstractmethod
-    def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        """Delete the given link."""
         pass
 
     @abstractmethod

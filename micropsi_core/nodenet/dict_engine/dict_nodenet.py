@@ -11,6 +11,7 @@ import logging
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
 from micropsi_core.nodenet.nodespace import Nodespace
 from micropsi_core.nodenet.monitor import Monitor
+from .dict_node import DictNode
 
 
 class DictNodenet(Nodenet):
@@ -319,7 +320,7 @@ class DictNodenet(Nodenet):
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
             if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
-                self.__nodes[uid] = Node(self, **data)
+                self.__nodes[uid] = DictNode(self, **data)
                 pos = self.__nodes[uid].position
                 xpos = int(pos[0] - (pos[0] % 100))
                 ypos = int(pos[1] - (pos[1] % 100))
@@ -440,7 +441,7 @@ class DictNodenet(Nodenet):
             node.node_function()
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
-        node = Node(
+        node = DictNode(
             self,
             nodespace_uid,
             position, name=name,

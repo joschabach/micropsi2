@@ -638,13 +638,13 @@ def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_
                     links_to_copy.add(link)
     for link in links_to_copy:
         source_node = nodenet.get_node(rename_nodes.get(link.source_node.uid, link.source_node.uid))
-        source_node.link(
+        nodenet.create_link(
+            source_node.uid,
             link.source_gate.type,
             link.target_node.uid,
             link.target_slot.type,
             link.weight,
             link.certainty)
-
 
 # Node operations
 

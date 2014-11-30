@@ -263,11 +263,29 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass
 
-
     @abstractmethod
     def reload_native_modules(self, native_modules):
-        """ reloads the native-module definition, and their nodefunctions
-        and afterwards reinstantiates the nodenet."""
+        """
+        Replaces the native module definitions in the nodenet with the native module definitions given in the
+        native_modules dict.
+
+        Format example for the definition dict:
+
+        "native_module_id": {
+            "name": "Name of the Native Module",
+            "slottypes": ["trigger"],
+            "nodefunction_name": "native_module_function",
+            "gatetypes": ["done"],
+            "gate_defaults": {
+                "done": {
+                    "minimum": -100,
+                    "maximum": 100,
+                    "threshold": -100
+                }
+            }
+        }
+
+        """
         pass
 
     @abstractmethod

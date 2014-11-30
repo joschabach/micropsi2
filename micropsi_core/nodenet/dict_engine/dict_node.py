@@ -14,6 +14,7 @@ default Nodetypes
 import warnings
 import logging
 
+from copy import deepcopy
 import micropsi_core.tools
 from micropsi_core.nodenet.node import Node
 from micropsi_core.nodenet.link import Link
@@ -53,7 +54,7 @@ class DictNode(NetEntity, Node):
             "type": self.type,
             "parameters": self.__parameters,
             "state": self.__state,
-            "gate_parameters": self.__gate_parameters,  # still a redundant field, get rid of it
+            "gate_parameters": self.get_gate_parameters(False),
             "sheaves": self.sheaves,
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -99,8 +100,6 @@ class DictNode(NetEntity, Node):
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
 
-        self.__gate_parameters = {}
-
         self.__state = {}
 
         self.__gates = {}
@@ -111,21 +110,16 @@ class DictNode(NetEntity, Node):
         if parameters is not None:
             self.__parameters.update(parameters)
 
-        for gate_name in gate_parameters:
-            for key in gate_parameters[gate_name]:
-                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults.get(key, None):
-                    if gate_name not in self.__gate_parameters:
-                        self.__gate_parameters[gate_name] = {}
-                    self.__gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
+        gate_parameters_to_set = deepcopy(self.nodetype.gate_defaults)
+        for gate_type in gate_parameters:
+            gate_parameters_to_set[gate_type].update(gate_parameters[gate_type])
 
-        gate_parameters = self.nodetype.gate_defaults.copy()
-        gate_parameters.update(self.__gate_parameters)
         for gate in self.nodetype.gatetypes:
             if gate_activations is None or gate not in gate_activations:
                 sheaves_to_use = None
             else:
                 sheaves_to_use = gate_activations[gate]
-            self.__gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
+            self.__gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters_to_set[gate], gate_defaults=self.nodetype.gate_defaults[gate])
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = Slot(slot, self)
         if state:
@@ -221,21 +215,27 @@ class DictNode(NetEntity, Node):
             sheaves_to_calculate['default'] = emptySheafElement.copy()
         return sheaves_to_calculate
 
+    def get_gate_parameters(self, include_default_values=False):
+        """Looks into the gates and returns gate parameters if these are defined"""
+        gate_parameters = {}
+        for gatetype in self.get_gate_types():
+            if self.get_gate(gatetype).parameters:
+                gate_parameters[gatetype] = {}
+                for key, value in self.get_gate(gatetype).parameters.items():
+                    if self.nodetype is not None:
+                        if self.nodetype.gate_defaults[gatetype][key] != value or include_default_values:
+                            gate_parameters[gatetype][key] = value
+                if len(gate_parameters[gatetype]) == 0:
+                    del gate_parameters[gatetype]
+        return gate_parameters
+
     def set_gate_parameters(self, gate_type, parameters):
-        if self.__gate_parameters is None:
-            self.__gate_parameters = {}
         for parameter, value in parameters.items():
             if parameter in Nodetype.GATE_DEFAULTS:
                 if value is None:
                     value = Nodetype.GATE_DEFAULTS[parameter]
                 else:
                     value = float(value)
-                if value != Nodetype.GATE_DEFAULTS[parameter]:
-                    if gate_type not in self.__gate_parameters:
-                        self.__gate_parameters[gate_type] = {}
-                    self.__gate_parameters[gate_type][parameter] = value
-                elif parameter in self.__gate_parameters.get(gate_type, {}):
-                    del self.__gate_parameters[gate_type][parameter]
             self.get_gate(gate_type).parameters[parameter] = value
 
     def reset_slots(self):

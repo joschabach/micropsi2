@@ -50,7 +50,7 @@ class Node(metaclass=ABCMeta):
             "type": self.type,
             "parameters": self.__parameters,
             "state": self.__state,
-            "gate_parameters": self.__gate_parameters,  # still a redundant field, get rid of it
+            "gate_parameters": self.get_gate_parameters(False),
             "sheaves": self.sheaves,
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -188,16 +188,9 @@ class Node(metaclass=ABCMeta):
     def get_slot_types(self):
         pass
 
-    def get_gate_parameters(self):
-        """Looks into the gates and returns gate parameters if these are defined"""
-        gate_parameters = {}
-        for gatetype in self.get_gate_types():
-            if self.get_gate(gatetype).parameters:
-                gate_parameters[gatetype] = self.get_gate(gatetype).parameters
-        if len(gate_parameters):
-            return gate_parameters
-        else:
-            return None
+    @abstractmethod
+    def get_gate_parameters(self, include_default_values=False):
+        pass
 
     def get_associated_links(self):
         links = []

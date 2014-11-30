@@ -118,6 +118,7 @@ class NodenetRunner(MicropsiRunner):
                     log = True
                     try:
                         nodenets[uid].step()
+                        nodenets[uid].update_monitors()
                     except:
                         nodenets[uid].is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
@@ -459,6 +460,7 @@ def step_nodenet(nodenet_uid):
         nodenet_uid: The uid of the nodenet
     """
     nodenets[nodenet_uid].step()
+    nodenets[nodenet_uid].update_monitors()
     return nodenets[nodenet_uid].current_step
 
 

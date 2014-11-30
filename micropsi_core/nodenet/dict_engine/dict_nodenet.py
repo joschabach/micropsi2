@@ -41,7 +41,6 @@ class DictNodenet(Nodenet):
         data['links'] = self.construct_links_dict()
         data['nodes'] = self.construct_nodes_dict()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
-        data['monitors'] = self.construct_monitors_dict()
         data['version'] = self.__version
         return data
 
@@ -76,7 +75,6 @@ class DictNodenet(Nodenet):
         self.__nodespaces = {}
         self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        self.__monitors = {}
         self.__locks = {}
         self.__nodes_by_coords = {}
 
@@ -186,12 +184,6 @@ class DictNodenet(Nodenet):
                 data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
         return data
 
-    def construct_monitors_dict(self):
-        data = {}
-        for monitor_uid in self.__monitors:
-            data[monitor_uid] = self.__monitors[monitor_uid].data
-        return data
-
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
         if type in self.__nodetypes:
@@ -291,8 +283,8 @@ class DictNodenet(Nodenet):
         return data
 
     def clear(self):
+        super(DictNodenet, self).clear()
         self.__nodes = {}
-        self.__monitors = {}
 
         self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
@@ -305,12 +297,6 @@ class DictNodenet(Nodenet):
 
     def _register_nodespace(self, nodespace):
         self.__nodespaces[nodespace.uid] = nodespace
-
-    def _register_monitor(self, monitor):
-        self.__monitors[monitor.uid] = monitor
-
-    def _unregister_monitor(self, monitor_uid):
-        del self.__monitors[monitor_uid]
 
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -360,10 +346,6 @@ class DictNodenet(Nodenet):
                                  data['weight'],
                                  data['certainty'])
 
-        # merge in monitors
-        for uid in nodenet_data.get('monitors', {}):
-            self.__monitors[uid] = Monitor(self, **nodenet_data['monitors'][uid])
-
     def step(self):
         """perform a simulation step"""
         self.user_prompt = None
@@ -390,8 +372,6 @@ class DictNodenet(Nodenet):
             self.netapi._step()
 
             self.__step += 1
-            for uid in self.__monitors:
-                self.__monitors[uid].step(self.__step)
             for uid, node in activators.items():
                 node.activation = self.__nodespaces[node.parent_nodespace].get_activator_value(node.get_parameter('type'))
 
@@ -492,9 +472,6 @@ class DictNodenet(Nodenet):
 
     def is_nodespace(self, uid):
         return uid in self.__nodespaces
-
-    def get_monitor(self, uid):
-        return self.__monitors[uid]
 
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""

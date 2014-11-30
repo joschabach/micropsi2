@@ -75,7 +75,7 @@ class Nodenet(metaclass=ABCMeta):
             'world': self.__world_uid,
             'worldadapter': self.__worldadapter_uid,
             'settings': self.settings,
-            'monitors': {},
+            'monitors': self.construct_monitors_dict(),
             'version': "abstract"
         }
         return data
@@ -152,6 +152,8 @@ class Nodenet(metaclass=ABCMeta):
         self.name = name
         if world and worldadapter:
             self.worldadapter = worldadapter
+
+        self.__monitors = {}
 
         self.max_coords = {'x': 0, 'y': 0}
 
@@ -318,10 +320,6 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_monitor(self, uid):
-        pass
-
-    @abstractmethod
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
         pass
@@ -347,6 +345,28 @@ class Nodenet(metaclass=ABCMeta):
         """Removes the given lock
         """
         pass
+
+    def clear(self):
+        self.__monitors = {}
+
+    def get_monitor(self, uid):
+        return self.__monitors[uid]
+
+    def update_monitors(self):
+        for uid in self.__monitors:
+            self.__monitors[uid].step(self.step)
+
+    def construct_monitors_dict(self):
+        data = {}
+        for monitor_uid in self.__monitors:
+            data[monitor_uid] = self.__monitors[monitor_uid].data
+        return data
+
+    def _register_monitor(self, monitor):
+        self.__monitors[monitor.uid] = monitor
+
+    def _unregister_monitor(self, monitor_uid):
+        del self.__monitors[monitor_uid]
 
 
 class NetAPI(object):

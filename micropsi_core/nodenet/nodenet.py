@@ -169,7 +169,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def step(self):
         """
-        Performs one calculatio step, propagating activation accross links
+        Performs one calculation step, propagating activation accross links
         """
         pass
 
@@ -293,8 +293,15 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
         """
-        Returns a data dict of the sztructure defined in the .data property, filtered for nodes in the given
+        Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
         nodespace, and within the given rectangle.
+
+        Implementations are expected to fill the following keys:
+        'nodes' - map of nodes it the given rectangle
+        'links' - map of links ending or originating in the given rectangle
+        'nodespaces' - map of nodespaces positioned in the given rectangle
+        'monitors' - result of self.construct_monitors_dict()
+        'user_prompt' - self.user_prompt if set, should be cleared then
         """
         #todo: data dicts will be replaced with a save/load/export API at some point.
         #todo: Positional data will either be made entirely transient at some point, or moved somewhere else
@@ -303,8 +310,15 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         """
-        Returns a data dict of the sztructure defined in the .data property, filtered for nodes in the given
+        Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
         nodespace and limited to the given number of nodes.
+
+        Implementations are expected to fill the following keys:
+        'nodes' - map of nodes it the given rectangle
+        'links' - map of links ending or originating in the given rectangle
+        'nodespaces' - map of nodespaces positioned in the given rectangle
+        'monitors' - result of self.construct_monitors_dict()
+        'user_prompt' - self.user_prompt if set, should be cleared then
         """
         #todo: data dicts will be replaced with a save/load/export API at some point.
         pass
@@ -320,30 +334,36 @@ class Nodenet(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_nodetype(self, type):
-        """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        pass
-
-    @abstractmethod
     def is_locked(self, lock):
-        """Returns true if a lock of the given name exists"""
+        """
+        Returns true if a lock of the given name exists
+        """
         pass
 
     @abstractmethod
     def is_locked_by(self, lock, key):
-        """Returns true if a lock of the given name exists and the key used is the given one"""
+        """
+        Returns true if a lock of the given name exists and the key used is the given one
+        """
         pass
 
     @abstractmethod
     def lock(self, lock, key, timeout=100):
-        """Creates a lock with the given name that will time out after the given number of steps
+        """
+        Creates a lock with the given name that will time out after the given number of steps
         """
         pass
 
     @abstractmethod
     def unlock(self, lock):
-        """Removes the given lock
         """
+        Removes the given lock
+        """
+        pass
+
+    @abstractmethod
+    def get_nodetype(self, type):
+        """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
         pass
 
     def clear(self):

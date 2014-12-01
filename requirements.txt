@@ -1,3 +1,4 @@
+CherryPy==3.6.0
 WebOb==1.4
 WebTest==2.0.16
 beautifulsoup4==4.3.2

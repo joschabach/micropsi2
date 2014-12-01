@@ -1167,7 +1167,7 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0):
 # -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
-    run(micropsi_app, host=host, port=port, quiet=True)  # devV
+    run(micropsi_app, host=host, port=port, quiet=True, server='cherrypy')  # devV
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)

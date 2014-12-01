@@ -50,7 +50,7 @@ class Node(metaclass=ABCMeta):
             "type": self.type,
             "parameters": self.clone_parameters(),
             "state": self.clone_state(),
-            "gate_parameters": self.get_gate_parameters(False),
+            "gate_parameters": self.clone_non_default_gate_parameters(),
             "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -193,7 +193,11 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_gate_parameters(self, include_default_values=False):
+    def get_gate_parameters(self):
+        pass
+
+    @abstractmethod
+    def clone_non_default_gate_parameters(self):
         pass
 
     def get_associated_links(self):

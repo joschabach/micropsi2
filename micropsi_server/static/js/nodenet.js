@@ -51,6 +51,8 @@ var viewProperties = {
 
 var nodenetscope = paper;
 
+var nodenet_loaded = false;
+
 // hashes from uids to object definitions; we import these via json
 nodes = {};
 links = {};
@@ -276,6 +278,7 @@ function setCurrentNodenet(uid, nodespace){
                 setNodespaceData(data, (nodespaceChanged));
             }
             refreshNodenetList();
+            nodenet_loaded = true;
         },
         function(data) {
             if(data.status == 500 || data.status === 0){
@@ -458,7 +461,7 @@ function refreshViewPortData(){
         left + width > loaded_coordinates.x[1] ||
         top < loaded_coordinates.y[0] ||
         left < loaded_coordinates.x[0]) {
-        refreshNodespace(currentNodeSpace, {
+        if(nodenet_loaded) refreshNodespace(currentNodeSpace, {
             x:[Math.max(0, left - width), left + 2*width],
             y:[Math.max(0, top-height), top + 2*height]
         }, currentSimulationStep - 1);

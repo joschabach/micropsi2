@@ -68,6 +68,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     loco_nodes = {}
 
+    target_loco_node_uid = None
+    last_teleport = 0
+    tp_timeout = 10
+
     loco_node_template = {
         'uid': "",
         'name': "",
@@ -301,6 +305,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_loco_node['y'],
             new_loco_node['z']))
 
+        self.target_loco_node_uid = target_loco_node_uid
+        self.last_teleport = time.clock()
+
         self.current_loco_node = new_loco_node
 
     def check_for_action_feedback(self, tol):
@@ -308,6 +315,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         # check if any pending datatarget_feedback can be confirmed with data from the world
         if self.waiting_list:
             mark_for_deletion = []
+            agent_moved = False
             for k, item in self.waiting_list.items():
                 exit_uid = item['exit_uid']
                 # somehwat brittle because teleportation is imprecise and the buffer is picked by inspection
@@ -316,6 +324,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                         and abs(self.loco_nodes[exit_uid]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
                     self.datatarget_feedback[item['target']] = 1.
                     mark_for_deletion.append(k)
+                    agent_moved = True
+
+            if not agent_moved:
+                if time.clock() - self.last_teleport > self.tp_timeout:
+                    self.locomote(self.target_loco_node_uid)
 
             # delete processed items from waiting_list
             for i in mark_for_deletion:

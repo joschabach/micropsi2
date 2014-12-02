@@ -15,7 +15,7 @@ import warnings
 import logging
 
 import micropsi_core.tools
-from micropsi_core.nodenet.node import Node
+from micropsi_core.nodenet.node import Node, Nodetype
 from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.netentity import NetEntity
 
@@ -40,8 +40,6 @@ class DictNode(NetEntity, Node):
         node_function: a function to be executed whenever the node receives activation
     """
 
-    __type = None
-
     @property
     def activation(self):
         return self.sheaves['default']['activation']
@@ -62,23 +60,15 @@ class DictNode(NetEntity, Node):
         if len(self.nodetype.gatetypes):
             self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
 
-    @property
-    def type(self):
-        return self.__type
-
-    @property
-    def nodetype(self):
-        return self.nodenet.get_nodetype(self.type)
-
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, **_):
         if not gate_parameters:
             gate_parameters = {}
 
-        self.__type = type
-
         if nodenet.is_node(uid):
             raise KeyError("Node already exists")
+
+        Node.__init__(self, type, nodenet.get_nodetype(type))
 
         NetEntity.__init__(self, nodenet, parent_nodespace, position,
             name=name, entitytype="nodes", uid=uid, index=index)
@@ -330,14 +320,6 @@ class DictNode(NetEntity, Node):
                             links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.remove()
-
-    def get_gate_types(self):
-        # TODO: actually, the order returned shouldn't be random, but gen, sub, sur, por, ret, cat, exp, sym, ref.
-        return list(self.__gates.keys())
-
-    def get_slot_types(self):
-        return list(self.__slots.keys())
-
 
 class Gate(object):
     """The activation outlet of a node. Nodes may have many gates, from which links originate.
@@ -620,123 +602,3 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "activator"
     }
 }
-
-
-class Nodetype(object):
-    """Every node has a type, which is defined by its slot types, gate types, its node function and a list of
-    node parameteres."""
-
-    GATE_DEFAULTS = {
-        "minimum": -1,
-        "maximum": 1,
-        "certainty": 1,
-        "amplification": 1,
-        "threshold": 0,
-        "decay": 0,
-        "theta": 0,
-        "rho": 0,
-        "spreadsheaves": False
-    }
-
-    _parameters = []
-    _nodefunction_definition = None
-    _nodefunction_name = None
-
-    @property
-    def data(self):
-        data = {
-            "name": self.name,
-            "slottypes": self.slottypes,
-            "gatetypes": self.gatetypes,
-            "parameters": self.parameters
-        }
-        return data
-
-    @property
-    def parameters(self):
-        return self._parameters
-
-    @parameters.setter
-    def parameters(self, parameters):
-        self._parameters = parameters
-        self.nodefunction = self._nodefunction_definition  # update nodefunction
-
-    @property
-    def nodefunction_definition(self):
-        return self._nodefunction_definition
-
-    @nodefunction_definition.setter
-    def nodefunction_definition(self, nodefunction_definition):
-        self._nodefunction_definition = nodefunction_definition
-        args = ','.join(self.parameters).strip(',')
-        try:
-            self.nodefunction = micropsi_core.tools.create_function(nodefunction_definition,
-                parameters="nodenet, node, " + args)
-        except SyntaxError as err:
-            warnings.warn("Syntax error while compiling node function: %s", str(err))
-            raise err
-
-    @property
-    def nodefunction_name(self):
-        return self._nodefunction_name
-
-    @nodefunction_name.setter
-    def nodefunction_name(self, nodefunction_name):
-        self._nodefunction_name = nodefunction_name
-        try:
-            from micropsi_core.nodenet import nodefunctions
-            if hasattr(nodefunctions, nodefunction_name):
-                self.nodefunction = getattr(nodefunctions, nodefunction_name)
-            else:
-                import nodefunctions as custom_nodefunctions
-                self.nodefunction = getattr(custom_nodefunctions, nodefunction_name)
-
-        except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
-            raise err
-
-    def reload_nodefunction(self):
-        from micropsi_core.nodenet import nodefunctions
-        if self.nodefunction_name and not self.nodefunction_definition and not hasattr(nodefunctions, self.nodefunction_name):
-            import nodefunctions as custom_nodefunctions
-            from imp import reload
-            reload(custom_nodefunctions)
-            self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
-
-    def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
-                 nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None):
-        """Initializes or creates a nodetype.
-
-        Arguments:
-            name: a unique identifier for this nodetype
-            nodenet: the nodenet that this nodetype is part of
-
-        If a nodetype with the same name is already defined in the nodenet, it is overwritten. Parameters that
-        are not given here will be taken from the original definition. Thus, you may use this initializer to
-        set up the nodetypes after loading new nodenet state (by using it without parameters).
-        """
-        self.name = name
-        self.slottypes = slottypes or {}
-        self.gatetypes = gatetypes or {}
-
-        self.gate_defaults = {}
-        for g in self.gatetypes:
-            self.gate_defaults[g] = Nodetype.GATE_DEFAULTS.copy()
-
-        if gate_defaults is not None:
-            for g in gate_defaults:
-                for key in gate_defaults[g]:
-                    if g not in self.gate_defaults:
-                        raise Exception("Invalid gate default value for nodetype %s: Gate %s not found" % (name, g))
-                    self.gate_defaults[g][key] = gate_defaults[g][key]
-
-        self.parameters = parameters or {}
-        self.parameter_values = parameter_values or {}
-
-        if nodefunction_definition:
-            self.nodefunction_definition = nodefunction_definition
-        elif nodefunction_name:
-            self.nodefunction_name = nodefunction_name
-        else:
-            self.nodefunction = None

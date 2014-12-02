@@ -30,6 +30,9 @@ class Node(metaclass=ABCMeta):
     Abstract base class for node implementations.
     """
 
+    __nodetype_name = None
+    __nodetype = None
+
     @property
     def data(self):
         data = {
@@ -139,22 +142,28 @@ class Node(metaclass=ABCMeta):
         pass
 
     @property
-    @abstractmethod
     def type(self):
         """
-        This node's node type (as a string)
+        The node's type (as a string)
         """
-        pass
+        return self.__nodetype_name
+
+    @property
+    def nodetype(self):
+        """
+        The Nodetype instance for this node
+        """
+        return self.__nodetype
+
+    def __init__(self, nodetype_name, nodetype):
+        self.__nodetype_name = nodetype_name
+        self.__nodetype = nodetype
 
     @abstractmethod
     def get_gate(self, type):
         """
         Returns this node's gate of the given type, or None if no such gate exists
         """
-        pass
-
-    @abstractmethod
-    def get_gate_types(self):
         pass
 
     @abstractmethod
@@ -202,10 +211,6 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_slot_types(self):
-        pass
-
-    @abstractmethod
     def get_gate_parameters(self):
         pass
 
@@ -218,6 +223,18 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def clone_non_default_gate_parameters(self):
         pass
+
+    def get_gate_types(self):
+        """
+        Returns the types of gates existing in this node
+        """
+        return list(self.nodetype.gatetypes)
+
+    def get_slot_types(self):
+        """
+        Returns the types of slots existing in this node
+        """
+        return list(self.nodetype.slottypes)
 
     def get_associated_links(self):
         links = []

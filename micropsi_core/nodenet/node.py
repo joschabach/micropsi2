@@ -26,17 +26,8 @@ emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
 class Node(metaclass=ABCMeta):
-    """A net entity with slots and gates and a node function.
-
-    Node functions are called alternating with the link functions. They process the information in the slots
-    and usually call all the gate functions to transmit the activation towards the links.
-
-    Attributes:
-        activation: a numeric value (usually between -1 and 1) to indicate its activation. Activation is determined
-            by the node function, usually depending on the value of the slots.
-        slots: a list of slots (activation inlets)
-        gates: a list of gates (activation outlets)
-        node_function: a function to be executed whenever the node receives activation
+    """
+    Abstract base class for node implementations.
     """
 
     @property
@@ -60,88 +51,114 @@ class Node(metaclass=ABCMeta):
     @property
     @abstractmethod
     def uid(self):
-        pass
-
-    @uid.setter
-    @abstractmethod
-    def uid(self, uid):
+        """
+        The uid of this node
+        """
         pass
 
     @property
     @abstractmethod
     def index(self):
+        """
+        The index property of this node. Index properties are used for persistent sorting information.
+        """
         pass
 
     @index.setter
     @abstractmethod
     def index(self, index):
+        """
+        Sets the index property of this node. Index properties are used for persistent sorting information.
+        """
         pass
 
     @property
     @abstractmethod
     def position(self):
+        """
+        This node's 2D coordinates within its nodespace
+        """
+        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
         pass
 
     @position.setter
     @abstractmethod
     def position(self, position):
+        """
+        This node's 2D coordinates within its nodespace
+        """
+        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
         pass
 
     @property
     @abstractmethod
     def name(self):
+        """
+        This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
+        """
         pass
 
     @name.setter
     @abstractmethod
     def name(self, name):
+        """
+        Sets this node's human reaable name for display purposes.
+        """
         pass
 
     @property
     @abstractmethod
     def parent_nodespace(self):
+        """
+        The UID of this node's parent nodespace
+        """
         pass
 
     @parent_nodespace.setter
     @abstractmethod
     def parent_nodespace(self, uid):
+        """
+        Sets this node's parent nodespace by UID, effectively moving from its old parent space to the new one
+        """
         pass
 
     @property
     @abstractmethod
     def activation(self):
+        """
+        This node's activation property as calculated once per step by its node function
+        """
         pass
 
     @activation.setter
     @abstractmethod
     def activation(self, activation):
+        """
+        Sets this node's activation property, overriding what has been calculated by the node fucntion
+        """
         pass
 
     @property
     @abstractmethod
     def type(self):
-        pass
-
-    @abstractmethod
-    def node_function(self):
-        """Called whenever the node is activated or active.
-
-        In different node types, different node functions may be used, i.e. override this one.
-        Generally, a node function must process the slot activations and call each gate function with
-        the result of the slot activations.
-
-        Metaphorically speaking, the node function is the soma of a MicroPsi neuron. It reacts to
-        incoming activations in an arbitrarily specific way, and may then excite the outgoing dendrites (gates),
-        which transmit activation to other neurons with adaptive synaptic strengths (link weights).
+        """
+        This node's node type (as a string)
         """
         pass
 
     @abstractmethod
-    def get_gate(self, gatename):
+    def get_gate(self, type):
+        """
+        Returns this node's gate of the given type, or None if no such gate exists
+        """
         pass
 
     @abstractmethod
-    def get_slot(self, slotname):
+    def get_gate_types(self):
+        pass
+
+    @abstractmethod
+    def get_slot(self, type):
         pass
 
     @abstractmethod
@@ -185,15 +202,17 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_gate_types(self):
-        pass
-
-    @abstractmethod
     def get_slot_types(self):
         pass
 
     @abstractmethod
     def get_gate_parameters(self):
+        pass
+
+    @abstractmethod
+    def node_function(self):
+        """
+        """
         pass
 
     @abstractmethod

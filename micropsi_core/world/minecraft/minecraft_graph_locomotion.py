@@ -386,7 +386,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         except IndexError:
             # TODO: For some reason, the fovea sometimes is out of range, triggering IndexErrors
             self.logger.warning("Sampling gone wrong, returning blocktype zero")
-            return 0, 0
+            return -1, -1
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
@@ -442,7 +442,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         Map block type given by an integer to a block sensor;
         cf. http://minecraft.gamepedia.com/Data_values#Block_IDs.
         """
-        if block_type <= 0:
+        if block_type < 0:
             self.datasources['nothing'] = 1.
 
         elif block_type == 0:

@@ -211,6 +211,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         tol = 5  # tolerance wrt teleport position
 
+        if not self.spockplugin.is_connected():
+            raise RuntimeError("Lost connection to minecraft server")
+
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:
             # by substitution: spock init is considered done, when its client has a position unlike

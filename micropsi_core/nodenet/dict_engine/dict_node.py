@@ -447,7 +447,7 @@ class DictGate(Gate):
             sheaf_name_prefix = ""
         else:
             sheaf_uid_prefix = sheaf + "-"
-            sheaf_name_prefix = self.sheaves[sheaf].name + "-"
+            sheaf_name_prefix = self.sheaves[sheaf]['name'] + "-"
 
         new_sheaf = dict(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name, activation=0)
         self.sheaves[new_sheaf['uid']] = new_sheaf

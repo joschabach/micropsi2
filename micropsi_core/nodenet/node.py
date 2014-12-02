@@ -281,7 +281,7 @@ class Gate(object):
     def activation(self, activation):
         self.sheaves['default']['activation'] = activation
 
-    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
+    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None):
         """create a gate.
 
         Parameters:
@@ -300,8 +300,6 @@ class Gate(object):
         self.__outgoing = {}
         self.gate_function = gate_function or self.gate_function
         self.parameters = {}
-        if gate_defaults is not None:
-            self.parameters = gate_defaults.copy()
         if parameters is not None:
             for key in parameters:
                 if key in Nodetype.GATE_DEFAULTS:

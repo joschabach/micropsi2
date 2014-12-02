@@ -170,7 +170,10 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def set_gate_parameters(self, gate_type, parameters):
+    def set_gate_parameter(self, gate_type, parameter, value):
+        """
+        Sets the given gate parameter to the given value
+        """
         pass
 
     @abstractmethod
@@ -305,6 +308,9 @@ class Gate(object):
 
     def get_links(self):
         return list(self.__outgoing.values())
+
+    def get_parameter(self, parameter_name):
+        return self.parameters[parameter_name]
 
     def _register_outgoing(self, link):
         self.__outgoing[link.uid] = link

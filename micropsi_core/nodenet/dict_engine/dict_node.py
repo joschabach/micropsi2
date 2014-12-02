@@ -219,22 +219,21 @@ class DictNode(NetEntity, Node):
     def clone_non_default_gate_parameters(self):
         return self.__non_default_gate_parameters.copy()
 
-    def set_gate_parameters(self, gate_type, parameters):
+    def set_gate_parameter(self, gate_type, parameter, value):
         if self.__non_default_gate_parameters is None:
             self.__non_default_gate_parameters = {}
-        for parameter, value in parameters.items():
-            if parameter in Nodetype.GATE_DEFAULTS:
-                if value is None:
-                    value = Nodetype.GATE_DEFAULTS[parameter]
-                else:
-                    value = float(value)
-                if value != Nodetype.GATE_DEFAULTS[parameter]:
-                    if gate_type not in self.__non_default_gate_parameters:
-                        self.__non_default_gate_parameters[gate_type] = {}
-                    self.__non_default_gate_parameters[gate_type][parameter] = value
-                elif parameter in self.__non_default_gate_parameters.get(gate_type, {}):
-                    del self.__non_default_gate_parameters[gate_type][parameter]
-            self.get_gate(gate_type).parameters[parameter] = value
+        if parameter in Nodetype.GATE_DEFAULTS:
+            if value is None:
+                value = Nodetype.GATE_DEFAULTS[parameter]
+            else:
+                value = float(value)
+            if value != Nodetype.GATE_DEFAULTS[parameter]:
+                if gate_type not in self.__non_default_gate_parameters:
+                    self.__non_default_gate_parameters[gate_type] = {}
+                self.__non_default_gate_parameters[gate_type][parameter] = value
+            elif parameter in self.__non_default_gate_parameters.get(gate_type, {}):
+                del self.__non_default_gate_parameters[gate_type][parameter]
+        self.get_gate(gate_type).parameters[parameter] = value
 
     def reset_slots(self):
         for slottype in self.get_slot_types():

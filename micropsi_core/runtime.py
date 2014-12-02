@@ -880,9 +880,10 @@ def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_functio
     return True
 
 
-def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters=None):
+def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
-    nodenets[nodenet_uid].get_node(node_uid).set_gate_parameters(gate_type, parameters)
+    for key, value in parameters.items():
+        nodenets[nodenet_uid].get_node(node_uid).set_gate_parameter(gate_type, key, value)
     return True
 
 

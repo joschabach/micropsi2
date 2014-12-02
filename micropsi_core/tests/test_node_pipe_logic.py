@@ -337,9 +337,9 @@ def test_node_pipe_logic_three_alternatives(fixed_nodenet):
     n_a = netapi.create_node("Pipe", "Root", "A")
     n_b = netapi.create_node("Pipe", "Root", "B")
     n_c = netapi.create_node("Pipe", "Root", "C")
-    n_a.set_gate_parameters("sur", {"threshold": 0})
-    n_b.set_gate_parameters("sur", {"threshold": 0})
-    n_c.set_gate_parameters("sur", {"threshold": 0})
+    n_a.set_gate_parameter("sur", "threshold", 0)
+    n_b.set_gate_parameter("sur", "threshold", 0)
+    n_c.set_gate_parameter("sur", "threshold", 0)
 
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")

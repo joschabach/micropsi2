@@ -96,15 +96,17 @@ class DictNode(NetEntity, Node):
         gate_parameters = self.nodetype.gate_defaults.copy()
         gate_parameters.update(self.__non_default_gate_parameters)
 
-        for key in gate_parameters.copy():
-            if key in self.nodetype.gate_defaults:
-                try:
-                    gate_parameters[key] = float(gate_parameters[key])
-                except:
-                    logging.getLogger('nodenet').warn('Invalid gate parameter value for gate %s, param %s, node %s' % (type, key, self.uid))
-                    gate_parameters[key] = self.nodetype.gate_defaults.get(key, 0)
-            else:
-                gate_parameters[key] = float(gate_parameters[key])
+        gate_parameters_for_validation = gate_parameters.copy()
+        for gate_name in gate_parameters_for_validation:
+            for key in gate_parameters_for_validation[gate_name]:
+                if key in self.nodetype.gate_defaults:
+                    try:
+                        gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
+                    except:
+                        logging.getLogger('nodenet').warn('Invalid gate parameter value for gate %s, param %s, node %s' % (gate_name, key, self.uid))
+                        gate_parameters[gate_name][key] = self.nodetype.gate_defaults[gate_name].get(key, 0)
+                else:
+                    gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
 
         for gate in self.nodetype.gatetypes:
             if gate_activations is None or gate not in gate_activations:

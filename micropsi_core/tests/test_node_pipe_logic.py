@@ -24,22 +24,22 @@ def add_directional_activators(fixed_nodenet):
     net = micropsi.get_nodenet(fixed_nodenet)
     netapi = net.netapi
     sub_act = netapi.create_node("Activator", "Root", "sub-activator")
-    net.get_node(sub_act.uid).parameters = {"type": "sub"}
+    net.get_node(sub_act.uid).set_parameter("type", "sub")
 
     sur_act = netapi.create_node("Activator", "Root", "sur-activator")
-    net.get_node(sur_act.uid).parameters = {"type": "sur"}
+    net.get_node(sur_act.uid).set_parameter("type", "sur")
 
     por_act = netapi.create_node("Activator", "Root", "por-activator")
-    net.get_node(por_act.uid).parameters = {"type": "por"}
+    net.get_node(por_act.uid).set_parameter("type", "por")
 
     ret_act = netapi.create_node("Activator", "Root", "ret-activator")
-    net.get_node(ret_act.uid).parameters = {"type": "ret"}
+    net.get_node(ret_act.uid).set_parameter("type", "ret")
 
     cat_act = netapi.create_node("Activator", "Root", "cat-activator")
-    net.get_node(cat_act.uid).parameters = {"type": "cat"}
+    net.get_node(cat_act.uid).set_parameter("type", "cat")
 
     exp_act = netapi.create_node("Activator", "Root", "exp-activator")
-    net.get_node(exp_act.uid).parameters = {"type": "exp"}
+    net.get_node(exp_act.uid).set_parameter("type", "exp")
 
     return sub_act, sur_act, por_act, ret_act, cat_act, exp_act
 

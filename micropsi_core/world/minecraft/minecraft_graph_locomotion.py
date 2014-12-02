@@ -1,7 +1,7 @@
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core import tools
 import random
-
+import logging
 import time
 
 
@@ -198,10 +198,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[swamp_uid]['exit_one_uid'] = forest_uid
     loco_nodes[swamp_uid]['exit_two_uid'] = summit_uid
 
+    logger = None
+
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
+        self.logger = logging.getLogger("world")
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
@@ -374,7 +377,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         # TODO: return a majority vote rather than the one single block type hit
 
-        return self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
+        try:
+            ret = self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
+            return ret
+        except IndexError:
+            # TODO: For some reason, the fovea sometimes is out of range, triggering IndexErrors
+            self.logger.warning("Sampling gone wrong, returning blocktype zero")
+            return 0, 0
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

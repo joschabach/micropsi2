@@ -115,7 +115,7 @@ class DictNode(NetEntity, Node):
                 sheaves_to_use = gate_activations[gate]
             self.__gates[gate] = DictGate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate))
         for slot in self.nodetype.slottypes:
-            self.__slots[slot] = Slot(slot, self)
+            self.__slots[slot] = DictSlot(slot, self)
         if state:
             self.__state = state
         nodenet._register_node(self)
@@ -456,3 +456,62 @@ class DictGate(Gate):
         self.sheaves[new_sheaf['uid']] = new_sheaf
 
         self.gate_function(input_activation, new_sheaf['uid'])
+
+
+class DictSlot(Slot):
+    """The entrance of activation into a node. Nodes may have many slots, in which links terminate.
+
+    Attributes:
+        type: a string that determines the type of the slot
+        node: the parent node of the slot
+        activation: a numerical value which is the sum of all incoming activations
+        current_step: the simulation step when the slot last received activation
+        incoming: a dictionary of incoming links together with the respective activation received by them
+    """
+
+    __type = None
+    __node = None
+
+    @property
+    def type(self):
+        return self.__type
+
+    @property
+    def node(self):
+        return self.__node
+
+    @property
+    def activation(self):
+        return self.sheaves['default']['activation']
+
+    @property
+    def activations(self):
+        return dict((k, v['activation']) for k, v in self.sheaves.items())
+
+    def __init__(self, type, node):
+        """create a slot.
+
+        Parameters:
+            type: a string that refers to the slot type
+            node: the parent node
+        """
+        self.__type = type
+        self.__node = node
+        self.__incoming = {}
+        self.sheaves = {"default": emptySheafElement.copy()}
+
+    def get_activation(self, sheaf="default"):
+        if len(self.__incoming) == 0:
+            return 0
+        if sheaf not in self.sheaves:
+            return 0
+        return self.sheaves[sheaf]['activation']
+
+    def get_links(self):
+        return list(self.__incoming.values())
+
+    def _register_incoming(self, link):
+        self.__incoming[link.uid] = link
+
+    def _unregister_incoming(self, link):
+        del self.__incoming[link.uid]

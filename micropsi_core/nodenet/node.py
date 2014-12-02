@@ -413,6 +413,7 @@ class Gate(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
     def open_sheaf(self, input_activation, sheaf="default"):
         """
         This function opens a new sheaf and calls gate_function function for the newly opened sheaf.
@@ -425,49 +426,61 @@ class Gate(metaclass=ABCMeta):
         pass
 
 
-class Slot(object):
-    """The entrance of activation into a node. Nodes may have many slots, in which links terminate.
-
-    Attributes:
-        type: a string that determines the type of the slot
-        node: the parent node of the slot
-        activation: a numerical value which is the sum of all incoming activations
-        current_step: the simulation step when the slot last received activation
-        incoming: a dictionary of incoming links together with the respective activation received by them
+class Slot(metaclass=ABCMeta):
+    """
+    Activation intake for nodes. Nodes may have many slots, in which links terminate.
+    Slot activations are set by the node net's activation propagation logic. They are immediately read (in the same
+    net step by node functions.)
     """
 
-    def __init__(self, type, node):
-        """create a slot.
-
-        Parameters:
-            type: a string that refers to the slot type
-            node: the parent node
+    @property
+    @abstractmethod
+    def type(self):
         """
-        self.type = type
-        self.node = node
-        self.__incoming = {}
-        self.current_step = -1
-        self.sheaves = {"default": emptySheafElement.copy()}
+        Returns the type of the slot (as a string)
+        """
+        pass
 
     @property
+    @abstractmethod
+    def node(self):
+        """
+        Returns the Node object that this slot belongs to
+        """
+        pass
+
+    @property
+    @abstractmethod
     def activation(self):
-        return self.get_activation("default")
+        """
+        Returns the activation in this slot ('default' sheaf)
+        """
+        pass
 
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        Returns a copy of the slots's activations (all sheaves)
+        Changes to the returned dict will not affect the gate
+        """
+        pass
+
+    @property
+    @abstractmethod
     def get_activation(self, sheaf="default"):
-        if len(self.__incoming) == 0:
-            return 0
-        if sheaf not in self.sheaves:
-            return 0
-        return self.sheaves[sheaf]['activation']
+        """
+        Returns the activation in this slot for the given sheaf.
+        Will return the activation in the 'default' sheaf if the sheaf does not exist
+        """
+        pass
 
+    @abstractmethod
     def get_links(self):
-        return list(self.__incoming.values())
-
-    def _register_incoming(self, link):
-        self.__incoming[link.uid] = link
-
-    def _unregister_incoming(self, link):
-        del self.__incoming[link.uid]
+        """
+        Returns a list of Link objects terminating at this slot
+        """
+        pass
 
 
 STANDARD_NODETYPES = {

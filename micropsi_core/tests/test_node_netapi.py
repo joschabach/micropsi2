@@ -50,7 +50,7 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert node.uid is not None
     assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').sheaves) == 1
+    assert len(node.get_gate('gen').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
@@ -77,23 +77,23 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node.uid is not None
     assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').sheaves) == 1
+    assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
-    assert len(node.get_gate('sub').sheaves) == 1
+    assert len(node.get_gate('sub').activations) == 1
     assert len(node.get_gate('sur').get_links()) == 0
-    assert len(node.get_gate('sur').sheaves) == 1
+    assert len(node.get_gate('sur').activations) == 1
     assert len(node.get_gate('por').get_links()) == 0
-    assert len(node.get_gate('por').sheaves) == 1
+    assert len(node.get_gate('por').activations) == 1
     assert len(node.get_gate('ret').get_links()) == 0
-    assert len(node.get_gate('ret').sheaves) == 1
+    assert len(node.get_gate('ret').activations) == 1
     assert len(node.get_gate('cat').get_links()) == 0
-    assert len(node.get_gate('cat').sheaves) == 1
+    assert len(node.get_gate('cat').activations) == 1
     assert len(node.get_gate('exp').get_links()) == 0
-    assert len(node.get_gate('exp').sheaves) == 1
+    assert len(node.get_gate('exp').activations) == 1
     assert len(node.get_gate('sym').get_links()) == 0
-    assert len(node.get_gate('sym').sheaves) == 1
+    assert len(node.get_gate('sym').activations) == 1
     assert len(node.get_gate('ref').get_links()) == 0
-    assert len(node.get_gate('ref').sheaves) == 1
+    assert len(node.get_gate('ref').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid

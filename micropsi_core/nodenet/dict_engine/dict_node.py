@@ -44,6 +44,10 @@ class DictNode(NetEntity, Node):
     def activation(self):
         return self.sheaves['default']['activation']
 
+    @property
+    def activations(self):
+        return dict((k, v['activation']) for k,v in self.sheaves.items())
+
     @activation.setter
     def activation(self, activation):
         self.set_sheaf_activation(activation)
@@ -357,6 +361,11 @@ class DictGate(Gate):
     def activation(self):
         return self.sheaves['default']['activation']
 
+    @property
+    def activations(self):
+        return dict((k, v['activation']) for k, v in self.sheaves.items())
+
+
     def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None):
         """create a gate.
 
@@ -390,6 +399,8 @@ class DictGate(Gate):
     def _unregister_outgoing(self, link):
         del self.__outgoing[link.uid]
 
+    def clone_sheaves(self):
+        return self.sheaves.copy()
 
     def gate_function(self, input_activation, sheaf="default"):
         """This function sets the activation of the gate.

@@ -494,10 +494,10 @@ class NetAPI(object):
             if type is None or node.type == type:
                 if gate is not None:
                     if gate in node.get_gate_types():
-                        if node.get_gate(gate).sheaves[sheaf]['activation'] >= min_activation:
+                        if node.get_gate(gate).activations[sheaf] >= min_activation:
                             nodes.append(node)
                 else:
-                    if node.sheaves[sheaf]['activation'] >= min_activation:
+                    if node.activations[sheaf] >= min_activation:
                         nodes.append(node)
         return nodes
 

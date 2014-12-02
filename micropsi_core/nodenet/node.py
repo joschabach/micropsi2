@@ -136,7 +136,23 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def activation(self):
         """
-        This node's activation property as calculated once per step by its node function
+        This node's activation property ('default' sheaf) as calculated once per step by its node function
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        This node's activation properties (dict of all sheaves) as calculated once per step by its node function
+        """
+
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        Returns a copy of the nodes's activations (all sheaves)
+        Changes to the returned dict will not affect the node
         """
         pass
 
@@ -144,7 +160,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def activation(self, activation):
         """
-        Sets this node's activation property, overriding what has been calculated by the node fucntion
+        Sets this node's activation property ('default' sheaf), overriding what has been calculated by the node function
         """
         pass
 
@@ -313,7 +329,7 @@ class Node(metaclass=ABCMeta):
     def construct_gates_dict(self):
         data = {}
         for gate_name in self.get_gate_types():
-            data[gate_name] = self.get_gate(gate_name).sheaves
+            data[gate_name] = self.get_gate(gate_name).clone_sheaves()
         return data
 
 
@@ -347,21 +363,14 @@ class Gate(metaclass=ABCMeta):
         """
         pass
 
-    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None):
-        """create a gate.
-
-        Parameters:
-            type: a string that refers to a node type
-            node: the parent node
-            parameters: an optional dictionary of parameters for the gate function
+    @property
+    @abstractmethod
+    def activations(self):
         """
-        if sheaves is None:
-            self.sheaves = {"default": emptySheafElement.copy()}
-        else:
-            self.sheaves = {}
-            for key in sheaves:
-                self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
-        self.gate_function = gate_function or self.gate_function
+        Returns a copy of the gate's activations (all sheaves)
+        Changes to the returned dict will not affect the gate
+        """
+        pass
 
     @abstractmethod
     def get_links(self):
@@ -375,6 +384,14 @@ class Gate(metaclass=ABCMeta):
         """
         Returns the value of the given parameter or none if the parameter is not set.
         Note that the returned value may be a default inherited from gate parameter defaults as defined in Nodetype
+        """
+        pass
+
+    @abstractmethod
+    def clone_sheaves(self):
+        """
+        Returns a copy of the activation values present in the gate.
+        Write access to this dict will not affect the gate.
         """
         pass
 
@@ -399,17 +416,7 @@ class Gate(metaclass=ABCMeta):
     def open_sheaf(self, input_activation, sheaf="default"):
         """This function opens a new sheaf and calls the gate function for the newly opened sheaf
         """
-        if sheaf is "default":
-            sheaf_uid_prefix = "default" + "-"
-            sheaf_name_prefix = ""
-        else:
-            sheaf_uid_prefix = sheaf + "-"
-            sheaf_name_prefix = self.sheaves[sheaf].name + "-"
-
-        new_sheaf = dict(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name, activation=0)
-        self.sheaves[new_sheaf['uid']] = new_sheaf
-
-        self.gate_function(input_activation, new_sheaf['uid'])
+        pass
 
 
 class Slot(object):

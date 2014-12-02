@@ -680,7 +680,7 @@ class NetAPI(object):
             nodespace.
             The gatefunction needs to be given as a string.
         """
-        self.__nodenet.get_nodespace(nodespace).set_gate_function(nodetype, gatetype, gatefunction)
+        self.__nodenet.get_nodespace(nodespace).set_gate_function_string(nodetype, gatetype, gatefunction)
 
     def is_locked(self, lock):
         """Returns true if the given lock is locked in the current net step

@@ -12,7 +12,7 @@ from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockE
 from micropsi_core.nodenet.nodespace import Nodespace
 from micropsi_core.nodenet.monitor import Monitor
 from .dict_node import DictNode
-
+from .dict_nodespace import DictNodespace
 
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
@@ -74,7 +74,7 @@ class DictNodenet(Nodenet):
         self.__nodetypes = nodetypes
         self.__native_modules = native_modules
         self.__nodespaces = {}
-        self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
+        self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self.__locks = {}
         self.__nodes_by_coords = {}
@@ -128,7 +128,7 @@ class DictNodenet(Nodenet):
             # move up the nodespace tree until we find an existing parent or hit root
             while id != 'Root' and data[id].get('parent_nodespace') not in self.__nodespaces:
                 self.initialize_nodespace(data[id]['parent_nodespace'], data)
-            self.__nodespaces[id] = Nodespace(self,
+            self.__nodespaces[id] = DictNodespace(self,
                 data[id].get('parent_nodespace'),
                 data[id].get('position'),
                 name=data[id].get('name', 'Root'),
@@ -155,7 +155,7 @@ class DictNodenet(Nodenet):
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.__nodespaces = {}
-        self.__nodespaces["Root"] = Nodespace(self, None, (0, 0), name="Root", uid="Root")
+        self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         # now merge in all init data (from the persisted file typically)
         self.merge_data(initfrom)
@@ -291,7 +291,7 @@ class DictNodenet(Nodenet):
         self.max_coords = {'x': 0, 'y': 0}
 
         self.__nodespaces = {}
-        Nodespace(self, None, (0, 0), "Root", "Root")
+        DictNodespace(self, None, (0, 0), "Root", "Root")
 
     def _register_node(self, node):
         self.__nodes[node.uid] = node
@@ -453,7 +453,7 @@ class DictNodenet(Nodenet):
         return node.uid
 
     def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
-        nodespace = Nodespace(self, parent_uid, position=position, name=name, uid=uid, gatefunction_strings=gatefunction_strings)
+        nodespace = DictNodespace(self, parent_uid, position=position, name=name, uid=uid, gatefunction_strings=gatefunction_strings)
         return nodespace.uid
 
     def get_node(self, uid):

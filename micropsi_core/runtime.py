@@ -882,7 +882,7 @@ def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_functio
     None reverts the custom gate function of the given node and gate within the current nodespace to the default.
     Parameters is a list of keys for values of the gate function.
     """
-    nodenets[nodenet_uid].get_nodespace(nodespace).set_gate_function(node_type, gate_type, gate_function,
+    nodenets[nodenet_uid].get_nodespace(nodespace).set_gate_function_string(node_type, gate_type, gate_function,
         parameters)
     return True
 

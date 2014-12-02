@@ -112,6 +112,6 @@ def test_gate_arithmetics_gatefunction(fixed_nodenet):
     # set a node function for gen gates, expect it to be used
     net, netapi, source, register = prepare(fixed_nodenet)
     nodespace = net.get_nodespace("Root")
-    nodespace.set_gate_function("Register", "gen", "return 0.9")
+    nodespace.set_gate_function_string("Register", "gen", "return 0.9")
     net.step()
     assert register.get_gate("gen").activation == 0.9

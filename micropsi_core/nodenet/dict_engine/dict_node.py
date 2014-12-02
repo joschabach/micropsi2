@@ -11,13 +11,11 @@ default Nodetypes
 
 """
 
-import warnings
 import logging
 
-import micropsi_core.tools
 from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
 from .dict_link import DictLink
-from micropsi_core.nodenet.netentity import NetEntity
+from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
 
 __author__ = 'joscha'
 __date__ = '09.05.12'

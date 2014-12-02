@@ -3,23 +3,24 @@
 Nodespace definition
 """
 
-from .netentity import NetEntity
-import micropsi_core.tools
-import warnings
+from abc import ABCMeta, abstractmethod
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-class Nodespace(NetEntity):
-    """A container for net entities.
+class Nodespace(metaclass=ABCMeta):
+    """
+    A container for Nodes and Nodespaces.
+    All Nodes and Nodespaces have exactly one parent nodespace, except for the 'Root' nodespace, whose
+    parent nodespace is None.
 
-    One nodespace is marked as root, all others are contained in
-    exactly one other nodespace.
+    Nodespaces define for their direct children nodes:
+    - the gate function per gate type (if no gate function is set for a gate type, the default linear gate function
+        will be used
+    - the scope for directional activators
 
-    Attributes:
-        activators: a dictionary of activators that control the spread of activation, via activator nodes
-        netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
+    gate functions and directional activator scope are not heritable.
     """
 
     __gatefunction_strings = {}
@@ -36,84 +37,154 @@ class Nodespace(NetEntity):
         }
         return data
 
-    def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None, gatefunction_strings=None):
-        """create a node space at a given position and within a given node space"""
-        self.__activators = {}
-        self.__netentities = {}
-        uid = uid or micropsi_core.tools.generate_uid()
-        NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
-        nodenet._register_nodespace(self)
-        self.__gatefunctions = {}
-        self.__gatefunction_strings = gatefunction_strings or {}
-        for nodetype in self.__gatefunction_strings:
-            for gatetype in self.__gatefunction_strings[nodetype]:
-                self.set_gate_function(nodetype, gatetype, self.__gatefunction_strings[nodetype][gatetype])
+    @property
+    @abstractmethod
+    def uid(self):
+        """
+        The uid of this node
+        """
+        pass
 
-    def get_known_ids(self, entitytype=None):
-        if entitytype:
-            if entitytype not in self.__netentities:
-                return []
-            return self.__netentities[entitytype]
-        else:
-            return [uid for uid_list in self.__netentities.values() for uid in uid_list]
+    @property
+    @abstractmethod
+    def index(self):
+        """
+        The index property of this node. Index properties are used for persistent sorting information.
+        """
+        pass
 
-    def is_entity_known_as(self, entitytype, uid):
-        if entitytype not in self.__netentities:
-            self.__netentities[entitytype] = []
-        return uid in self.__netentities[entitytype]
+    @index.setter
+    @abstractmethod
+    def index(self, index):
+        """
+        Sets the index property of this node. Index properties are used for persistent sorting information.
+        """
+        pass
 
-    def has_activator(self, type):
-        return type in self.__activators
+    @property
+    @abstractmethod
+    def position(self):
+        """
+        This node's 2D coordinates within its nodespace
+        """
+        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        pass
 
+    @position.setter
+    @abstractmethod
+    def position(self, position):
+        """
+        This node's 2D coordinates within its nodespace
+        """
+        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        pass
+
+    @property
+    @abstractmethod
+    def name(self):
+        """
+        This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
+        """
+        pass
+
+    @name.setter
+    @abstractmethod
+    def name(self, name):
+        """
+        Sets this node's human reaable name for display purposes.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def parent_nodespace(self):
+        """
+        The UID of this node's parent nodespace
+        """
+        pass
+
+    @parent_nodespace.setter
+    @abstractmethod
+    def parent_nodespace(self, uid):
+        """
+        Sets this node's parent nodespace by UID, effectively moving from its old parent space to the new one
+        """
+        pass
+
+    @abstractmethod
     def get_activator_value(self, type):
-        return self.__activators[type]
+        """
+        Returns the current value for the directional activator with the given type
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
 
+        Alternative implementations are free to handle directional activators in node functions directly and
+        can pass on the implementation of this method.
+
+        """
+        pass
+
+    @abstractmethod
     def set_activator_value(self, type, value):
-        self.__activators[type] = value
+        """
+        Sets the value for the directional activator with the given type, causing gates of nodes in this node space
+        to calculate their gate functions accordingly.
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
 
+        Alternative implementations are free to handle directional activators in node functions directly and
+        can pass on the implementation of this method.
+        """
+        pass
+
+    @abstractmethod
     def unset_activator_value(self, type):
-        self.__activators.pop(type, None)
+        """
+        Unsets the value for the directional activator with the given type, causing gates of nodes in this node space
+        to calculate their gate functions accordingly (with default behavior, i.e. as if a value of 1 had been set)
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
 
-    def _register_entity(self, entity):
-        if entity.entitytype not in self.__netentities:
-            self.__netentities[entity.entitytype] = []
-        self.__netentities[entity.entitytype].append(entity.uid)
+        Alternative implementations are free to handle directional activators in node functions directly and
+        can pass on the implementation of this method.
+        """
+        pass
 
-    def _unregister_entity(self, entitytype, uid):
-        self.__netentities[entitytype].remove(uid)
+    @abstractmethod
+    def set_gate_function_string(self, nodetype, gatetype, gatefunction, parameters=None):
+        """
+        Sets (and typically compiles) the gate function for a given node type / gate type combination in this
+        nodespace.
+        Implemetations with a fixed set of gate functions can use the gatefunction parameter as a key identifying
+        which of the fixed gate functions to select
+        """
+        pass
 
-    def set_gate_function(self, nodetype, gatetype, gatefunction, parameters=None):
-        """Sets the gatefunction for a given node- and gatetype within this nodespace"""
-        if gatefunction:
-            if nodetype not in self.__gatefunction_strings:
-                self.__gatefunction_strings[nodetype] = {}
-            self.__gatefunction_strings[nodetype][gatetype] = gatefunction
-            if nodetype not in self.__gatefunctions:
-                self.__gatefunctions[nodetype] = {}
-            try:
-                import math
-                self.__gatefunctions[nodetype][gatetype] = micropsi_core.tools.create_function(gatefunction, parameters="x, r, t", additional_symbols={'math': math})
-            except SyntaxError as err:
-                warnings.warn("Syntax error while compiling gate function: %s, %s" % (gatefunction, str(err)))
-                raise err
-        else:
-            if nodetype in self.__gatefunctions and gatetype in self.__gatefunctions[nodetype]:
-                del self.__gatefunctions[nodetype][gatetype]
-            if nodetype in self.__gatefunction_strings[nodetype] and gatetype in self.__gatefunction_strings[nodetype][nodetype]:
-                del self.__gatefunction_strings[nodetype][nodetype][gatetype]
-
-    def get_gatefunction(self, nodetype, gatetype):
-        """Retrieve a bytecode-compiled gatefunction for a given node- and gatetype"""
-        if nodetype in self.__gatefunctions and gatetype in self.__gatefunctions[nodetype]:
-            return self.__gatefunctions[nodetype][gatetype]
-
+    @abstractmethod
     def get_gatefunction_string(self, nodetype, gatetype):
-        """Retrieve a string gatefunction for a given node- and gatetype"""
-        if nodetype in self.__gatefunctions and gatetype in self.__gatefunctions[nodetype]:
-            return self.__gatefunction_strings[nodetype][gatetype]
-        else:
-            return ''
+        """
+        Returns the gate function for a given node type / gate type combination in this nodespace.
+        Implementations with a fixed set of gate functions can return the key of the currently configured
+        gate function 
+        """
+        pass
 
+    @abstractmethod
     def get_gatefunction_strings(self):
-        """Retrieve all string gatefunctions """
-        return self.__gatefunction_strings
+        """
+        Returns a dict of gate functions for all node type / gate type combinations in this nodespace.
+        Implementations with a fixed set of gate functions can return the keys of the currently configured
+        gate functions
+        """
+        pass
+
+    @abstractmethod
+    def get_known_ids(self, entitytype=None):
+        """
+        Returns a list of all UIDs in this nodespace.
+        If an entity type is given, the list will be filtered. Valid entity type parameters are:
+        "nodes" - return nodes only
+        "nodespaces" - return node spaces only
+        """
+        pass
+

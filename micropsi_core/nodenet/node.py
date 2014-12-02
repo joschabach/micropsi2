@@ -35,6 +35,13 @@ class Node(metaclass=ABCMeta):
 
     @property
     def data(self):
+
+        gate_parameters = {}
+        for gate_type in self.get_gate_types():
+            ndgp = self.clone_non_default_gate_parameters(gate_type)
+            if ndgp is not None:
+                gate_parameters[gate_type] = ndgp
+
         data = {
             "uid": self.uid,
             "index": self.index,
@@ -44,7 +51,7 @@ class Node(metaclass=ABCMeta):
             "type": self.type,
             "parameters": self.clone_parameters(),
             "state": self.clone_state(),
-            "gate_parameters": self.clone_non_default_gate_parameters(),
+            "gate_parameters": gate_parameters,
             "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
@@ -177,12 +184,17 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def clone_non_default_gate_parameters(self):
+    def clone_non_default_gate_parameters(self, gate_type):
+        """
+        Returns a copy of all gate parameters set to a non-default value
+        """
         pass
-
 
     @abstractmethod
     def get_slot(self, type):
+        """
+        Returns the slot of the given type or none if no such slot exists
+        """
         pass
 
     @abstractmethod

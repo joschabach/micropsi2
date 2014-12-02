@@ -36,7 +36,7 @@ class MicropsiPlugin(object):
 
     def chat(self, message):
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):
-            return
+            raise RuntimeError("Spock is not connected")
         # else push chat message
         self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
 

@@ -414,7 +414,13 @@ class Gate(metaclass=ABCMeta):
         pass
 
     def open_sheaf(self, input_activation, sheaf="default"):
-        """This function opens a new sheaf and calls the gate function for the newly opened sheaf
+        """
+        This function opens a new sheaf and calls gate_function function for the newly opened sheaf.
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
+
+        Alternative implementations are free to handle sheaves in the node functions directly and
+        can pass on the implementation of this method.
         """
         pass
 

@@ -257,10 +257,6 @@ class DictNode(NetEntity, Node):
     def set_parameter(self, parameter, value):
         self.__parameters[parameter] = value
 
-    def set_parameters(self, parameters):
-        for key in parameters:
-            self.set_parameter(key, parameters[key])
-
     def clone_parameters(self):
         return self.__parameters.copy()
 

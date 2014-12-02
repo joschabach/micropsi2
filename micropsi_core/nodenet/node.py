@@ -186,7 +186,8 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def clone_non_default_gate_parameters(self, gate_type):
         """
-        Returns a copy of all gate parameters set to a non-default value
+        Returns a copy of all gate parameters set to a non-default value.
+        Write access to this dict will not affect the node.
         """
         pass
 
@@ -199,46 +200,85 @@ class Node(metaclass=ABCMeta):
 
     @abstractmethod
     def get_parameter(self, parameter):
-        pass
-
-    @abstractmethod
-    def clear_parameter(self, parameter):
+        """
+        Returns the value of a node parameter of None if the parameter is not set.
+        Parameters are used to change what a node does and do typically not change between net steps.
+        An example is the "type" parameter of directional activators that configures the activator to control
+        the gates of type "type"
+        """
         pass
 
     @abstractmethod
     def set_parameter(self, parameter, value):
-        pass
-
-    @abstractmethod
-    def set_parameters(self, parameters):
+        """
+        Changes the value of the given parameter.
+        Parameters are used to change what a node does and do typically not change between net steps.
+        An example is the "type" parameter of directional activators that configures the activator to control
+        the gates of type "type"
+        """
         pass
 
     @abstractmethod
     def clone_parameters(self):
+        """
+        Returns a copy of this node's parameter set.
+        Write access to this dict will not affect the node.
+        Parameters are used to change what a node does and do typically not change between net steps.
+        An example is the "type" parameter of directional activators that configures the activator to control
+        the gates of type "type"
+        """
         pass
 
     @abstractmethod
-    def get_state(self, state_element):
+    def get_state(self, state):
+        """
+        Returns the value of the given state.
+        Node state is runtime-information that can change between net steps.
+        A typical use is native modules "attaching" a bit of information to a node for later retrieval.
+        Node states are not formally required by the node net specification. They exist for convenience reasons only.
+        """
         pass
 
     @abstractmethod
-    def set_state(self, state_element, value):
+    def set_state(self, state, value):
+        """
+        Sets the value of a given state.
+        Node state is runtime-information that can change between net steps.
+        A typical use is native modules "attaching" a bit of information to a node for later retrieval.
+        Node states are not formally required by the node net specification. They exist for convenience reasons only.
+        """
         pass
 
     @abstractmethod
     def clone_state(self):
+        """
+        Returns a copy of the node's state.
+        Write access to this dict will not affect the node.
+        Node state is runtime-information that can change between net steps.
+        A typical use is native modules "attaching" a bit of information to a node for later retrieval.
+        Node states are not formally required by the node net specification. They exist for convenience reasons only.
+        """
         pass
 
     @abstractmethod
     def clone_sheaves(self):
+        """
+        Returns a copy of the activation values present in the node.
+        Note that this is about node activation, not gate activation (gates have their own sheaves).
+        Write access to this dict will not affect the node.
+        """
         pass
 
     @abstractmethod
     def node_function(self):
         """
+        The node function of the node, called after activation has been propagated to the node's slots.
+        This method is expected to set the node's activation(s) and all of the gates' activations.
+        Implementations can either directly implement this method based on the type of the node, or implement some
+        sort of indirection mechanism that selects the code to be executed.
+        For native modules (nodes with non-standard node_functions) that can be reloaded at runtime, this is a must.
         """
         pass
-
 
     def get_gate_types(self):
         """

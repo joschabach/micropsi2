@@ -16,7 +16,7 @@ import logging
 
 import micropsi_core.tools
 from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
-from micropsi_core.nodenet.link import Link
+from .dict_link import DictLink
 from micropsi_core.nodenet.netentity import NetEntity
 
 __author__ = 'joscha'
@@ -303,10 +303,9 @@ class DictNode(NetEntity, Node):
                 link = candidate
                 break
         if link is None:
-            link = Link(self, gate_name, target, slot_name)
+            link = DictLink(self, gate_name, target, slot_name)
 
-        link.weight = weight
-        link.certainty = certainty
+        link.set_weight(weight, certainty)
         return link
 
     def unlink_completely(self):

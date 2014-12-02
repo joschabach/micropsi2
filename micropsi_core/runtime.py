@@ -169,19 +169,11 @@ def kill_runners(signal, frame):
 
 
 def _get_world_uid_for_nodenet_uid(nodenet_uid):
-    """ Temporary method to get the world uid to a given nodenet uid.
-        TODO: I guess this should be handled a bit differently?
-    """
+    """ get the world uid to a given nodenet uid."""
     if nodenet_uid in nodenet_data:
         return nodenet_data[nodenet_uid].world
     return None
 
-    '''yes: it should be (if the nodenet is instantiated already):
-    nodenet = get_nodenet(nodenet_uid)
-    if nodenet:
-        return nodenet.world.uid
-    return None
-    '''
 
 # MicroPsi API
 

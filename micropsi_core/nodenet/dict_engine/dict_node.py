@@ -15,7 +15,7 @@ import warnings
 import logging
 
 import micropsi_core.tools
-from micropsi_core.nodenet.node import Node, Nodetype, Gate, Slot
+from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
 from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.netentity import NetEntity
 
@@ -109,7 +109,7 @@ class DictNode(NetEntity, Node):
                 sheaves_to_use = None
             else:
                 sheaves_to_use = gate_activations[gate]
-            self.__gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate))
+            self.__gates[gate] = DictGate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate))
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = Slot(slot, self)
         if state:
@@ -328,3 +328,120 @@ class DictNode(NetEntity, Node):
                             links_to_delete.add(link_candidate)
         for link in links_to_delete:
             link.remove()
+
+
+class DictGate(Gate):
+    """The activation outlet of a node. Nodes may have many gates, from which links originate.
+
+    Attributes:
+        type: a string that determines the type of the gate
+        node: the parent node of the gate
+        activation: a numerical value which is calculated at every step by the gate function
+        parameters: a dictionary of values used by the gate function
+        gate_function: called by the node function, updates the activation
+        outgoing: the set of links originating at the gate
+    """
+
+    __type = None
+    __node = None
+
+    @property
+    def type(self):
+        return self.__type
+
+    @property
+    def node(self):
+        return self.__node
+
+    @property
+    def activation(self):
+        return self.sheaves['default']['activation']
+
+    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None):
+        """create a gate.
+
+        Parameters:
+            type: a string that refers to a node type
+            node: the parent node
+            parameters: an optional dictionary of parameters for the gate function
+        """
+        self.__type = type
+        self.__node = node
+        if sheaves is None:
+            self.sheaves = {"default": emptySheafElement.copy()}
+        else:
+            self.sheaves = {}
+            for key in sheaves:
+                self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
+        self.__outgoing = {}
+        self.gate_function = gate_function or self.gate_function
+        self.parameters = parameters
+        self.monitor = None
+
+    def get_links(self):
+        return list(self.__outgoing.values())
+
+    def get_parameter(self, parameter_name):
+        return self.parameters[parameter_name]
+
+    def _register_outgoing(self, link):
+        self.__outgoing[link.uid] = link
+
+    def _unregister_outgoing(self, link):
+        del self.__outgoing[link.uid]
+
+
+    def gate_function(self, input_activation, sheaf="default"):
+        """This function sets the activation of the gate.
+
+        The gate function should be called by the node function, and can be replaced by different functions
+        if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
+        You might want to replace it with a radial basis function, for instance.
+        """
+        if input_activation is None:
+            input_activation = 0
+
+        # check if the current node space has an activator that would prevent the activity of this gate
+        nodespace = self.node.nodenet.get_nodespace(self.node.parent_nodespace)
+        if nodespace.has_activator(self.type):
+            gate_factor = nodespace.get_activator_value(self.type)
+        else:
+            gate_factor = 1.0
+        if gate_factor == 0.0:
+            self.sheaves[sheaf]['activation'] = 0
+            return  # if the gate is closed, we don't need to execute the gate function
+            # simple linear threshold function; you might want to use a sigmoid for neural learning
+        gatefunction = self.node.nodenet.get_nodespace(self.node.parent_nodespace).get_gatefunction(self.node.type,
+            self.type)
+        if gatefunction:
+            activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
+        else:
+            activation = input_activation
+
+        if activation * gate_factor < self.parameters['threshold']:
+            activation = 0
+        else:
+            activation = activation * self.parameters["amplification"] * gate_factor
+
+        # if self.parameters["decay"]:  # let activation decay gradually
+        #     if activation < 0:
+        #         activation = min(activation, self.activation * (1 - self.parameters["decay"]))
+        #     else:
+        #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
+
+        self.sheaves[sheaf]['activation'] = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+
+    def open_sheaf(self, input_activation, sheaf="default"):
+        """This function opens a new sheaf and calls the gate function for the newly opened sheaf
+        """
+        if sheaf is "default":
+            sheaf_uid_prefix = "default" + "-"
+            sheaf_name_prefix = ""
+        else:
+            sheaf_uid_prefix = sheaf + "-"
+            sheaf_name_prefix = self.sheaves[sheaf].name + "-"
+
+        new_sheaf = dict(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name, activation=0)
+        self.sheaves[new_sheaf['uid']] = new_sheaf
+
+        self.gate_function(input_activation, new_sheaf['uid'])

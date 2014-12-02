@@ -273,7 +273,8 @@ class Node(metaclass=ABCMeta):
     def node_function(self):
         """
         The node function of the node, called after activation has been propagated to the node's slots.
-        This method is expected to set the node's activation(s) and all of the gates' activations.
+        This method is expected to set the node's activation(s) and all of the gates' activations by calling the
+        gate_function of all gates.
         Implementations can either directly implement this method based on the type of the node, or implement some
         sort of indirection mechanism that selects the code to be executed.
         For native modules (nodes with non-standard node_functions) that can be reloaded at runtime, this is a must.
@@ -316,26 +317,35 @@ class Node(metaclass=ABCMeta):
         return data
 
 
-
-class Gate(object):
-    """The activation outlet of a node. Nodes may have many gates, from which links originate.
-
-    Attributes:
-        type: a string that determines the type of the gate
-        node: the parent node of the gate
-        activation: a numerical value which is calculated at every step by the gate function
-        parameters: a dictionary of values used by the gate function
-        gate_function: called by the node function, updates the activation
-        outgoing: the set of links originating at the gate
+class Gate(metaclass=ABCMeta):
+    """
+    Activation outlet of nodes, where links (connected to slots on the other side) originate.
+    Gate activations are set by the node's node_function through calling gate_function for all of their gates.
     """
 
     @property
-    def activation(self):
-        return self.sheaves['default']['activation']
+    @abstractmethod
+    def type(self):
+        """
+        Returns the type of the gate (as a string)
+        """
+        pass
 
-    @activation.setter
-    def activation(self, activation):
-        self.sheaves['default']['activation'] = activation
+    @property
+    @abstractmethod
+    def node(self):
+        """
+        Returns the Node object that this gate belongs to
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def activation(self):
+        """
+        Returns the gate's activation ('default' sheaf)
+        """
+        pass
 
     def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None):
         """create a gate.
@@ -345,71 +355,46 @@ class Gate(object):
             node: the parent node
             parameters: an optional dictionary of parameters for the gate function
         """
-        self.type = type
-        self.node = node
         if sheaves is None:
             self.sheaves = {"default": emptySheafElement.copy()}
         else:
             self.sheaves = {}
             for key in sheaves:
                 self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
-        self.__outgoing = {}
         self.gate_function = gate_function or self.gate_function
-        self.parameters = parameters
-        self.monitor = None
 
+    @abstractmethod
     def get_links(self):
-        return list(self.__outgoing.values())
-
-    def get_parameter(self, parameter_name):
-        return self.parameters[parameter_name]
-
-    def _register_outgoing(self, link):
-        self.__outgoing[link.uid] = link
-
-    def _unregister_outgoing(self, link):
-        del self.__outgoing[link.uid]
-
-
-    def gate_function(self, input_activation, sheaf="default"):
-        """This function sets the activation of the gate.
-
-        The gate function should be called by the node function, and can be replaced by different functions
-        if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
-        You might want to replace it with a radial basis function, for instance.
         """
-        if input_activation is None:
-            input_activation = 0
+        Returns a list of Link objects originating from this gate
+        """
+        pass
 
-        # check if the current node space has an activator that would prevent the activity of this gate
-        nodespace = self.node.nodenet.get_nodespace(self.node.parent_nodespace)
-        if nodespace.has_activator(self.type):
-            gate_factor = nodespace.get_activator_value(self.type)
-        else:
-            gate_factor = 1.0
-        if gate_factor == 0.0:
-            self.sheaves[sheaf]['activation'] = 0
-            return  # if the gate is closed, we don't need to execute the gate function
-            # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = self.node.nodenet.get_nodespace(self.node.parent_nodespace).get_gatefunction(self.node.type,
-            self.type)
-        if gatefunction:
-            activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
-        else:
-            activation = input_activation
+    @abstractmethod
+    def get_parameter(self, parameter):
+        """
+        Returns the value of the given parameter or none if the parameter is not set.
+        Note that the returned value may be a default inherited from gate parameter defaults as defined in Nodetype
+        """
+        pass
 
-        if activation * gate_factor < self.parameters['threshold']:
-            activation = 0
-        else:
-            activation = activation * self.parameters["amplification"] * gate_factor
+    @abstractmethod
+    def gate_function(self, input_activation, sheaf="default"):
+        """
+        This function sets the activation of the gate.
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
 
-        # if self.parameters["decay"]:  # let activation decay gradually
-        #     if activation < 0:
-        #         activation = min(activation, self.activation * (1 - self.parameters["decay"]))
-        #     else:
-        #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
+        Alternative implementations are free to calculate gate activation values in node functions directly and
+        can pass on the implementation of this method.
 
-        self.sheaves[sheaf]['activation'] = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        The default gate function should be linear (input * amplification) if over the threshold parameter, plus
+        band-passed by the min and max parameters.
+
+        Implementations should allow to define alternative gate functions on a per-nodespace basis, i.e. all
+        gates of nodes in a given nodespace should use the same gate function.
+        """
+        pass
 
     def open_sheaf(self, input_activation, sheaf="default"):
         """This function opens a new sheaf and calls the gate function for the newly opened sheaf

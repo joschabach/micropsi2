@@ -165,7 +165,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         Returns the gate function for a given node type / gate type combination in this nodespace.
         Implementations with a fixed set of gate functions can return the key of the currently configured
-        gate function 
+        gate function
         """
         pass
 

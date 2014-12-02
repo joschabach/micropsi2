@@ -273,11 +273,19 @@ def load_nodenet(nodenet_uid):
                 if data.world in worlds:
                     world = worlds.get(data.world)
                     worldadapter = data.get('worldadapter')
-            nodenets[nodenet_uid] = DictNodenet(
-                os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
-                name=data.name, worldadapter=worldadapter,
-                world=world, owner=data.owner, uid=data.uid,
-                nodetypes=nodetypes, native_modules=native_modules)
+
+            engine = data.get('engine', 'dict_engine')
+
+            if engine == 'dict_engine':
+                nodenets[nodenet_uid] = DictNodenet(
+                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
+                    name=data.name, worldadapter=worldadapter,
+                    world=world, owner=data.owner, uid=data.uid,
+                    nodetypes=nodetypes, native_modules=native_modules)
+            # Add additional engine types here
+            else:
+                return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
             else:
@@ -334,7 +342,7 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         return data
 
 
-def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_uid=None, uid=None):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -360,6 +368,7 @@ def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_
             step=0,
             version=1
         )
+
     if not uid:
         uid = tools.generate_uid()
     data.update(dict(
@@ -368,7 +377,8 @@ def new_nodenet(nodenet_name, worldadapter=None, template=None, owner="", world_
         worldadapter=worldadapter,
         owner=owner,
         world=world_uid,
-        settings={}
+        settings={},
+        engine=engine
     ))
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)

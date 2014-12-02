@@ -46,6 +46,10 @@ class DictNodenet(Nodenet):
         return data
 
     @property
+    def engine(self):
+        return "dict_engine"
+
+    @property
     def current_step(self):
         return self.__step
 

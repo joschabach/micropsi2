@@ -14,7 +14,7 @@ __date__ = '29.10.12'
 
 
 def test_new_nodenet(test_nodenet, resourcepath):
-    success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", "Default", owner="tester")
+    success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", worldadapter="Default", owner="tester")
     assert success
     assert nodenet_uid != test_nodenet
     assert micropsi.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"

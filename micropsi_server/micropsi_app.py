@@ -712,11 +712,12 @@ def load_nodenet(nodenet_uid, **coordinates):
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, template=None, worldadapter=None, world_uid=None, uid=None):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, uid=None):
     if owner is None:
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
         name,
+        engine=engine,
         worldadapter=worldadapter,
         template=template,
         owner=owner,

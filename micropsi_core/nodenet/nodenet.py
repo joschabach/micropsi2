@@ -40,6 +40,14 @@ class Nodenet(metaclass=ABCMeta):
 
     @property
     @abstractmethod
+    def engine(self):
+        """
+        Returns the type of node net engine this nodenet is implemented with
+        """
+        pass
+
+    @property
+    @abstractmethod
     def current_step(self):
         """
         Returns the current net step, an integer
@@ -51,7 +59,8 @@ class Nodenet(metaclass=ABCMeta):
     def data(self):
         """
         Returns a dict representing the whole node net.
-        Concrete implementations are to call this (super) method and then add the following fields:
+        Concrete implementations may call this (super) method and then add the following fields if they want to
+        use JSON persistency:
 
         links
         nodes
@@ -63,6 +72,7 @@ class Nodenet(metaclass=ABCMeta):
 
         data = {
             'uid': self.uid,
+            'engine': self.engine,
             'owner': self.owner,
             'links': {},
             'nodes': {},

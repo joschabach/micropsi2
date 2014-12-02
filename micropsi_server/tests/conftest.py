@@ -110,7 +110,7 @@ def test_nodenet(request):
     global nn_uid
     nodenets = micropsi.get_available_nodenets("Pytest User") or {}
     if nn_uid not in nodenets:
-        success, nn_uid = micropsi.new_nodenet("Testnet", "Default", owner="Pytest User", world_uid=world_uid, uid='Testnet')
+        success, nn_uid = micropsi.new_nodenet("Testnet", worldadapter="Default", owner="Pytest User", world_uid=world_uid, uid='Testnet')
         micropsi.add_node(nn_uid, 'Concept', [10, 10], uid='N1', name='N1')
         micropsi.add_link(nn_uid, 'N1', 'gen', 'N1', 'gen')
         micropsi.save_nodenet(nn_uid)

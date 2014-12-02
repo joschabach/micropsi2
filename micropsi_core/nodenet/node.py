@@ -156,6 +156,9 @@ class Node(metaclass=ABCMeta):
         return self.__nodetype
 
     def __init__(self, nodetype_name, nodetype):
+        """
+        Constructor needs the string name of this node's type, and a Nodetype instance
+        """
         self.__nodetype_name = nodetype_name
         self.__nodetype = nodetype
 
@@ -167,11 +170,16 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_slot(self, type):
+    def set_gate_parameters(self, gate_type, parameters):
         pass
 
     @abstractmethod
-    def set_gate_parameters(self, gate_type, parameters):
+    def clone_non_default_gate_parameters(self):
+        pass
+
+
+    @abstractmethod
+    def get_slot(self, type):
         pass
 
     @abstractmethod
@@ -211,18 +219,11 @@ class Node(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get_gate_parameters(self):
-        pass
-
-    @abstractmethod
     def node_function(self):
         """
         """
         pass
 
-    @abstractmethod
-    def clone_non_default_gate_parameters(self):
-        pass
 
     def get_gate_types(self):
         """
@@ -299,17 +300,7 @@ class Gate(object):
                 self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
         self.__outgoing = {}
         self.gate_function = gate_function or self.gate_function
-        self.parameters = {}
-        if parameters is not None:
-            for key in parameters:
-                if key in Nodetype.GATE_DEFAULTS:
-                    try:
-                        self.parameters[key] = float(parameters[key])
-                    except:
-                        logging.getLogger('nodenet').warn('Invalid gate parameter value for gate %s, param %s, node %s' % (type, key, node.uid))
-                        self.parameters[key] = Nodetype.GATE_DEFAULTS.get(key, 0)
-                else:
-                    self.parameters[key] = float(parameters[key])
+        self.parameters = parameters
         self.monitor = None
 
     def get_links(self):

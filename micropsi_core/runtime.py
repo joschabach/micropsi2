@@ -622,7 +622,7 @@ def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_
             original.name,
             uid,
             deepcopy(original.clone_parameters()),
-            original.get_gate_parameters())
+            original.clone_non_default_gate_parameters())
 
     # copy the links
     links_to_copy = set()

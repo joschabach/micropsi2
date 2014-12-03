@@ -37,9 +37,10 @@ refreshWorldView = function(){
             if(worldRunning){
                 refreshWorldView();
             }
-        }, error=function(data){
+        }, error=function(data, outcome, type){
             $.cookie('selected_world', '', {expires:-1, path:'/'});
-            dialogs.notification(data.Error, 'error');
+            worldRunning = false;
+            api.defaultErrorCallback(data, outcome, type)
         }
     );
 }

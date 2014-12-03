@@ -35,10 +35,13 @@ class MicropsiPlugin(object):
         self.micropsi_world.spockplugin = self
 
     def chat(self, message):
-        if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):
-            return
+        if not (self.is_connected()):
+            raise RuntimeError("Spock is not connected")
         # else push chat message
         self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
+
+    def is_connected(self):
+        return self.net.connected and self.net.proto_state
 
     def dispatchMovement(self, bot_coords, current_section, move_x, move_z):
         target_coords = (self.normalize_coordinate(bot_coords[0] + (STEP_LENGTH if (move_x > 0) else 0) + (-STEP_LENGTH if (move_x < 0) else 0)),

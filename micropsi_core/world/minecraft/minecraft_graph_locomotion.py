@@ -1,7 +1,7 @@
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core import tools
 import random
-
+import logging
 import time
 
 
@@ -67,6 +67,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
     max_dist = 250           # maximum distance for raytracing
 
     loco_nodes = {}
+
+    target_loco_node_uid = None
+    last_teleport = 0
+    tp_timeout = 10
 
     loco_node_template = {
         'uid': "",
@@ -194,15 +198,21 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[swamp_uid]['exit_one_uid'] = forest_uid
     loco_nodes[swamp_uid]['exit_two_uid'] = summit_uid
 
+    logger = None
+
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
+        self.logger = logging.getLogger("world")
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
         tol = 5  # tolerance wrt teleport position
+
+        if not self.spockplugin.is_connected():
+            raise RuntimeError("Lost connection to minecraft server")
 
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:
@@ -301,6 +311,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_loco_node['y'],
             new_loco_node['z']))
 
+        self.target_loco_node_uid = target_loco_node_uid
+        self.last_teleport = time.clock()
+
         self.current_loco_node = new_loco_node
 
     def check_for_action_feedback(self, tol):
@@ -308,6 +321,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         # check if any pending datatarget_feedback can be confirmed with data from the world
         if self.waiting_list:
             mark_for_deletion = []
+            agent_moved = False
             for k, item in self.waiting_list.items():
                 exit_uid = item['exit_uid']
                 # somehwat brittle because teleportation is imprecise and the buffer is picked by inspection
@@ -316,6 +330,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                         and abs(self.loco_nodes[exit_uid]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
                     self.datatarget_feedback[item['target']] = 1.
                     mark_for_deletion.append(k)
+                    agent_moved = True
+
+            if not agent_moved:
+                if time.clock() - self.last_teleport > self.tp_timeout:
+                    self.locomote(self.target_loco_node_uid)
 
             # delete processed items from waiting_list
             for i in mark_for_deletion:
@@ -361,7 +380,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         # TODO: return a majority vote rather than the one single block type hit
 
-        return self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
+        try:
+            ret = self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
+            return ret
+        except IndexError:
+            # TODO: For some reason, the fovea sometimes is out of range, triggering IndexErrors
+            self.logger.warning("Sampling gone wrong, returning blocktype zero")
+            return -1, -1
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
@@ -417,7 +442,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         Map block type given by an integer to a block sensor;
         cf. http://minecraft.gamepedia.com/Data_values#Block_IDs.
         """
-        if block_type <= 0:
+        if block_type < 0:
             self.datasources['nothing'] = 1.
 
         elif block_type == 0:

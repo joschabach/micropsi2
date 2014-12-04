@@ -544,19 +544,19 @@ STANDARD_NODETYPES = {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "por": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "ret": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "sub": {
                 "minimum": -100,
@@ -568,19 +568,19 @@ STANDARD_NODETYPES = {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "cat": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": True
+                "spreadsheaves": 1
             },
             "exp": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             }
         },
         'symbol': 'πp',

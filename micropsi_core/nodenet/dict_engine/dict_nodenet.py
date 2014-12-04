@@ -394,7 +394,7 @@ class DictNodenet(Nodenet):
             for gate_type in node.get_gate_types():
                 if limit_gatetypes is None or gate_type in limit_gatetypes:
                     gate = node.get_gate(gate_type)
-                    if gate.get_parameter('spreadsheaves') is True:
+                    if gate.get_parameter('spreadsheaves'):
                         for sheaf in gate.sheaves:
                             for link in gate.get_links():
                                 for slotname in link.target_node.get_slot_types():

@@ -220,10 +220,14 @@ class DictNode(NetEntity, Node):
         else:
             return None
 
-    def clone_non_default_gate_parameters(self, gate_type):
+    def clone_non_default_gate_parameters(self, gate_type=None):
+        if gate_type is None:
+            return self.__non_default_gate_parameters.copy()
         if gate_type not in self.__non_default_gate_parameters:
             return None
-        return self.__non_default_gate_parameters[gate_type].copy()
+        return {
+            gate_type: self.__non_default_gate_parameters[gate_type].copy()
+        }
 
     def set_gate_parameter(self, gate_type, parameter, value):
         if self.__non_default_gate_parameters is None:

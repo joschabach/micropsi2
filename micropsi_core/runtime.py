@@ -625,11 +625,7 @@ def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_
         target = original.parent_nodespace if original.parent_nodespace in nodespaces else target_nodespace
         target = rename_nodespaces.get(target, target)
 
-        gate_parameters = {}
-        for gate_type in original.get_gate_types():
-            ndgp = original.clone_non_default_gate_parameters(gate_type)
-            if ndgp is not None:
-                gate_parameters[gate_type] = ndgp
+        gate_parameters = original.clone_non_default_gate_parameters()
 
         nodenet.create_node(
             original.type,

@@ -1,3 +1,14 @@
+####################################################################################################
+#
+# These are the reference implementations for the node functions of the standard node types.
+# Node net engine implementations performing node calculations in Python are free to use
+# these implementations directly.
+# Non-python engine implementations, or performance-oriented python implementations,
+# can use these implementations as definitions (or for equivalence tests) and implement them
+# differently.
+#
+####################################################################################################
+
 
 def register(netapi, node=None, **params):
     activation = node.get_slot('gen').activation

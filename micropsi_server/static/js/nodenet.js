@@ -512,7 +512,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
             if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]]) {
                 parameters = nodetypes[type].gate_defaults[nodetypes[type].gatetypes[i]];
             } else {
-                parameters = GATE_DEFAULTS;
+                parameters = jQuery.extend({}, GATE_DEFAULTS);
             }
             for(var key in this.gate_parameters[nodetypes[type].gatetypes[i]]){
                 parameters[key] = this.gate_parameters[nodetypes[type].gatetypes[i]][key];
@@ -2911,7 +2911,7 @@ function handleEditNode(event){
     var parameters = {};
     var fields = form.serializeArray();
     var name = null;
-    var state = null;
+    var state = {};
     var activation = null;
     for (var i in fields){
         if(nodetypes[nodes[nodeUid].type] &&

@@ -564,7 +564,7 @@ def edit_nodenet():
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], worldadapter=request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -712,11 +712,12 @@ def load_nodenet(nodenet_uid, **coordinates):
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, template=None, worldadapter=None, world_uid=None, uid=None):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, uid=None):
     if owner is None:
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
         name,
+        engine=engine,
         worldadapter=worldadapter,
         template=template,
         owner=owner,
@@ -1047,29 +1048,9 @@ def get_available_native_module_types(nodenet_uid):
     return True, runtime.get_available_native_module_types(nodenet_uid)
 
 
-@rpc("get_nodefunction")
-def get_nodefunction(nodenet_uid, node_type):
-    return True, runtime.get_nodefunction(nodenet_uid, node_type)
-
-
-@rpc("set_nodefunction", permission_required="manage nodenets")
-def set_nodefunction(nodenet_uid, node_type, nodefunction=None):
-    return runtime.set_nodefunction(nodenet_uid, node_type, nodefunction)
-
-
 @rpc("set_node_parameters", permission_required="manage nodenets")
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     return runtime.set_node_parameters(nodenet_uid, node_uid, parameters)
-
-
-@rpc("get_slot_types")
-def get_slot_types(nodenet_uid, node_type):
-    return True, runtime.get_slot_types(nodenet_uid, node_type)
-
-
-@rpc("get_gate_types")
-def get_gate_types(nodenet_uid, node_type):
-    return True, runtime.get_gate_types(nodenet_uid, node_type)
 
 
 @rpc("get_gate_function")

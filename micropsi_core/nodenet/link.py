@@ -5,19 +5,15 @@ Link definition
 """
 
 import micropsi_core.tools
+from abc import ABCMeta, abstractmethod
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-class Link(object):
-    """A link between two nodes, starting from a gate and ending in a slot.
-
-    Links propagate activation between nodes and thereby facilitate the function of the agent.
-    Links have weights, but apart from that, all their properties are held in the gates where they emanate.
-    Gates contain parameters, and the gate type effectively determines a link type.
-
-    You may retrieve links either from the global dictionary (by uid), or from the gates of nodes themselves.
+class Link(metaclass=ABCMeta):
+    """
+    A link between two nodes, starting from a gate and ending in a slot.
     """
 
     @property
@@ -37,40 +33,52 @@ class Link(object):
     def uid(self):
         return self.source_node.uid + ":" + self.source_gate.type + ":" + self.target_slot.type + ":" + self.target_node.uid
 
-    def __init__(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
-        """create a link between the source_node and the target_node, from the source_gate to the target_slot.
-        Note: you should make sure that no link between source and gate exists.
-
-        Attributes:
-            weight (optional): the weight of the link (default is 1)
+    @property
+    @abstractmethod
+    def weight(self):
         """
-
-        self.weight = weight
-        self.certainty = certainty
-        self.source_node = source_node
-        self.target_node = target_node
-        self.source_gate = source_node.get_gate(source_gate_name)
-        self.target_slot = target_node.get_slot(target_slot_name)
-        self.link(source_node, source_gate_name, target_node, target_slot_name, weight, certainty)
-
-    def link(self, source_node, source_gate_name, target_node, target_slot_name, weight=1, certainty=1):
-        """link between source and target nodes, from a gate to a slot.
-
-            You may call this function to change the connections of an existing link. If the link is already
-            linked, it will be unlinked first.
+        Returns the weight (the strength) of this link
         """
-        self.source_node = source_node
-        self.target_node = target_node
-        self.source_gate = source_node.get_gate(source_gate_name)
-        self.target_slot = target_node.get_slot(target_slot_name)
-        self.weight = weight
-        self.certainty = certainty
-        self.source_gate._register_outgoing(self)
-        self.target_slot._register_incoming(self)
+        pass
 
-    def remove(self):
-        """unplug the link from the node net
-           can't be handled in the destructor, since it removes references to the instance
+    @property
+    @abstractmethod
+    def certainty(self):
         """
-        self.source_gate._unregister_outgoing(self)
-        self.target_slot._unregister_incoming(self)
+        Returns the certainty value of this link.
+        Note that this is not being used right now and defined/reserved for future use.
+        Implementations can always return 1 for the time being
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def source_node(self):
+        """
+        Returns the Node (object) from which this link originates
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def source_gate(self):
+        """
+        Returns the Gate (object) from which this link originates
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def target_node(self):
+        """
+        Returns the Node (object) at which this link ends
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def target_slot(self):
+        """
+        Returns the Slot (object) at which this link ends
+        """
+        pass

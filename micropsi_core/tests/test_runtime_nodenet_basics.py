@@ -14,7 +14,7 @@ __date__ = '29.10.12'
 
 
 def test_new_nodenet(test_nodenet, resourcepath):
-    success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", "Default", owner="tester")
+    success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", worldadapter="Default", owner="tester")
     assert success
     assert nodenet_uid != test_nodenet
     assert micropsi.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"
@@ -33,6 +33,19 @@ def test_new_nodenet(test_nodenet, resourcepath):
     micropsi.delete_nodenet(nodenet_uid)
     assert nodenet_uid not in micropsi.get_available_nodenets()
     assert not os.path.exists(n_path)
+
+
+def test_nodenet_data_gate_parameters(fixed_nodenet):
+    from micropsi_core.nodenet.node import Nodetype
+    data = micropsi.nodenets[fixed_nodenet].data
+    assert data['nodes']['S']['gate_parameters'] == {}
+    micropsi.set_gate_parameters(fixed_nodenet, 'S', 'gen', {'threshold': 1})
+    data = micropsi.nodenets[fixed_nodenet].data
+    assert data['nodes']['S']['gate_parameters'] == {'gen': {'threshold': 1}}
+    defaults = Nodetype.GATE_DEFAULTS
+    defaults.update({'threshold': 1})
+    data = micropsi.nodenets[fixed_nodenet].get_node('S').data['gate_parameters']
+    assert data == {'gen': defaults}
 
 
 def test_user_prompt(fixed_nodenet):

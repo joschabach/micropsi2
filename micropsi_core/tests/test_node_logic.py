@@ -102,7 +102,7 @@ def test_node_logic_cancel(fixed_nodenet):
 
     reg_a = netapi.create_node("Register", "Root", "RegA")
     reg_b = netapi.create_node("Register", "Root", "RegB")
-    reg_b.set_gate_parameters("gen", {"threshold": -100})
+    reg_b.set_gate_parameter("gen", "threshold", -100)
     reg_result = netapi.create_node("Register", "Root", "RegResult")
 
     netapi.link(source, "gen", reg_a, "gen", 1)
@@ -121,9 +121,9 @@ def test_node_logic_store_and_forward(fixed_nodenet):
 
     reg_a = netapi.create_node("Register", "Root", "RegA")
     reg_b = netapi.create_node("Register", "Root", "RegB")
-    reg_b.set_gate_parameters("gen", {"threshold": -100})
+    reg_b.set_gate_parameter("gen", "threshold", -100)
     reg_result = netapi.create_node("Register", "Root", "RegResult")
-    reg_b.set_gate_parameters("gen", {"threshold": 1})
+    reg_b.set_gate_parameter("gen", "threshold", 1)
 
     netapi.link(source, "gen", reg_a, "gen")
     netapi.link(reg_a, "gen", reg_result, "gen")

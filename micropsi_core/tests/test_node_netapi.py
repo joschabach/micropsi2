@@ -7,10 +7,8 @@ Tests for netapi, i.e. the interface native modules will be developed against
 
 import pytest
 from micropsi_core import runtime as micropsi
-from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import WorldAdapter, WorldObject
+from micropsi_core.nodenet.node import Nodetype
 
-from micropsi_core.tests.test_node_logic import DummyWorld, DummyWorldAdapter
 from micropsi_core.tests import test_node_logic
 
 
@@ -50,11 +48,12 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert node.uid is not None
     assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').sheaves) == 1
+    assert len(node.get_gate('gen').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    assert node.data['gate_parameters'] == {}
+    for key in node.get_gate_types():
+        assert node.data['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
     assert node.get_gate('gen').parameters != {}
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
@@ -77,27 +76,28 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node.uid is not None
     assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
-    assert len(node.get_gate('gen').sheaves) == 1
+    assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
-    assert len(node.get_gate('sub').sheaves) == 1
+    assert len(node.get_gate('sub').activations) == 1
     assert len(node.get_gate('sur').get_links()) == 0
-    assert len(node.get_gate('sur').sheaves) == 1
+    assert len(node.get_gate('sur').activations) == 1
     assert len(node.get_gate('por').get_links()) == 0
-    assert len(node.get_gate('por').sheaves) == 1
+    assert len(node.get_gate('por').activations) == 1
     assert len(node.get_gate('ret').get_links()) == 0
-    assert len(node.get_gate('ret').sheaves) == 1
+    assert len(node.get_gate('ret').activations) == 1
     assert len(node.get_gate('cat').get_links()) == 0
-    assert len(node.get_gate('cat').sheaves) == 1
+    assert len(node.get_gate('cat').activations) == 1
     assert len(node.get_gate('exp').get_links()) == 0
-    assert len(node.get_gate('exp').sheaves) == 1
+    assert len(node.get_gate('exp').activations) == 1
     assert len(node.get_gate('sym').get_links()) == 0
-    assert len(node.get_gate('sym').sheaves) == 1
+    assert len(node.get_gate('sym').activations) == 1
     assert len(node.get_gate('ref').get_links()) == 0
-    assert len(node.get_gate('ref').sheaves) == 1
+    assert len(node.get_gate('ref').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    assert node.data['gate_parameters'] == {}
+    for key in node.get_gate_types():
+        assert node.data['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
     assert node.get_gate('gen').parameters == Nodetype.GATE_DEFAULTS
     assert node.get_gate('sub').parameters == Nodetype.GATE_DEFAULTS
     assert node.get_gate('sur').parameters == Nodetype.GATE_DEFAULTS
@@ -409,7 +409,7 @@ def test_node_netapi_delete_node(fixed_nodenet):
     assert len(node2.get_gate("gen").get_links()) == 0
 
 
-def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
+def test_node_netapi_delete_nodespace(fixed_nodenet):
     # test delete node case deleting a nodespace
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node("Nodespace", "Root", "NestedNodespace")
@@ -423,7 +423,7 @@ def test_node_netapi_delete_node_for_nodespace(fixed_nodenet):
     netapi.link(node4, "gen", node1, "gen")
 
     node4uid = node4.uid
-    netapi.delete_node(nodespace)
+    netapi.delete_nodespace(nodespace)
     with pytest.raises(KeyError):
         netapi.get_node(node4uid)
 

@@ -30,7 +30,7 @@ def test_gate_arithmetics_propagation(fixed_nodenet):
 def test_gate_arithmetics_maximum(fixed_nodenet):
     # set maximum, expect the cutoff to work
     net, netapi, source, register = prepare(fixed_nodenet)
-    register.set_gate_parameters("gen", {"maximum": 0.5})
+    register.set_gate_parameter("gen", "maximum", 0.5)
     net.step()
     assert register.get_gate("gen").activation == 0.5
 
@@ -38,8 +38,8 @@ def test_gate_arithmetics_maximum(fixed_nodenet):
 def test_gate_arithmetics_minimum(fixed_nodenet):
     # set minimum, expect it to show up
     net, netapi, source, register = prepare(fixed_nodenet)
-    register.set_gate_parameters("gen", {"maximum": 2})
-    register.set_gate_parameters("gen", {"minimum": 1.5})
+    register.set_gate_parameter("gen", "maximum", 2)
+    register.set_gate_parameter("gen", "minimum", 1.5)
     net.step()
     assert register.get_gate("gen").activation == 1.5
 
@@ -47,8 +47,8 @@ def test_gate_arithmetics_minimum(fixed_nodenet):
 def test_gate_arithmetics_threshold(fixed_nodenet):
     # set threshold, expect it to mute the node
     net, netapi, source, register = prepare(fixed_nodenet)
-    register.set_gate_parameters("gen", {"maximum": 2})
-    register.set_gate_parameters("gen", {"threshold": 1.5})
+    register.set_gate_parameter("gen", "maximum", 2)
+    register.set_gate_parameter("gen", "threshold", 1.5)
     net.step()
     assert register.get_gate("gen").activation == 0
 
@@ -56,8 +56,8 @@ def test_gate_arithmetics_threshold(fixed_nodenet):
 def test_gate_arithmetics_amplification(fixed_nodenet):
     # set maximum and amplification, expect amplification to be applied after maximum
     net, netapi, source, register = prepare(fixed_nodenet)
-    register.set_gate_parameters("gen", {"maximum": 10})
-    register.set_gate_parameters("gen", {"amplification": 10})
+    register.set_gate_parameter("gen", "maximum", 10)
+    register.set_gate_parameter("gen", "amplification", 10)
     net.step()
     assert register.get_gate("gen").activation == 10
 
@@ -65,9 +65,9 @@ def test_gate_arithmetics_amplification(fixed_nodenet):
 def test_gate_arithmetics_amplification_and_threshold(fixed_nodenet):
     # set maximum, amplification and threshold, expect the threshold to mute the node despite amplification
     net, netapi, source, register = prepare(fixed_nodenet)
-    register.set_gate_parameters("gen", {"maximum": 10})
-    register.set_gate_parameters("gen", {"amplification": 10})
-    register.set_gate_parameters("gen", {"threshold": 2})
+    register.set_gate_parameter("gen", "maximum", 10)
+    register.set_gate_parameter("gen", "amplification", 10)
+    register.set_gate_parameter("gen", "threshold", 2)
     net.step()
     assert register.get_gate("gen").activation == 0
 
@@ -78,8 +78,8 @@ def test_gate_arithmetics_directional_activator_amplification(fixed_nodenet):
     genactivator = netapi.create_node("Activator", "Root")
     genactivator.set_parameter('type', 'gen')
     netapi.link(source, "gen", genactivator, "gen", 5)
-    register.set_gate_parameters("gen", {"maximum": 10})
-    register.set_gate_parameters("gen", {"threshold": 0})
+    register.set_gate_parameter("gen", "maximum", 10)
+    register.set_gate_parameter("gen", "threshold", 0)
     net.step()
     assert register.get_gate("gen").activation == 5
 
@@ -90,8 +90,8 @@ def test_gate_arithmetics_directional_activator_muting(fixed_nodenet):
     genactivator = netapi.create_node("Activator", "Root")
     genactivator.set_parameter('type', 'gen')
     netapi.link(source, "gen", genactivator, "gen", 0)
-    register.set_gate_parameters("gen", {"maximum": 10})
-    register.set_gate_parameters("gen", {"threshold": 0})
+    register.set_gate_parameter("gen", "maximum", 10)
+    register.set_gate_parameter("gen", "threshold", 0)
     net.step()
     assert register.get_gate("gen").activation == 0
 
@@ -102,8 +102,8 @@ def test_gate_arithmetics_directional_activator_threshold(fixed_nodenet):
     genactivator = netapi.create_node("Activator", "Root")
     genactivator.set_parameter('type', 'gen')
     netapi.link(source, "gen", genactivator, "gen", 2)
-    register.set_gate_parameters("gen", {"maximum": 10})
-    register.set_gate_parameters("gen", {"threshold": 1})
+    register.set_gate_parameter("gen", "maximum", 10)
+    register.set_gate_parameter("gen", "threshold", 1)
     net.step()
     assert register.get_gate("gen").activation == 2
 
@@ -112,6 +112,6 @@ def test_gate_arithmetics_gatefunction(fixed_nodenet):
     # set a node function for gen gates, expect it to be used
     net, netapi, source, register = prepare(fixed_nodenet)
     nodespace = net.get_nodespace("Root")
-    nodespace.set_gate_function("Register", "gen", "return 0.9")
+    nodespace.set_gate_function_string("Register", "gen", "return 0.9")
     net.step()
     assert register.get_gate("gen").activation == 0.9

@@ -11,10 +11,11 @@ default Nodetypes
 
 """
 
+from abc import ABCMeta, abstractmethod
+
 import warnings
 import micropsi_core.tools
 from .link import Link
-from .netentity import NetEntity
 import logging
 
 __author__ = 'joscha'
@@ -24,199 +25,283 @@ __date__ = '09.05.12'
 emptySheafElement = dict(uid="default", name="default", activation=0)
 
 
-class Node(NetEntity):
-    """A net entity with slots and gates and a node function.
-
-    Node functions are called alternating with the link functions. They process the information in the slots
-    and usually call all the gate functions to transmit the activation towards the links.
-
-    Attributes:
-        activation: a numeric value (usually between -1 and 1) to indicate its activation. Activation is determined
-            by the node function, usually depending on the value of the slots.
-        slots: a list of slots (activation inlets)
-        gates: a list of gates (activation outlets)
-        node_function: a function to be executed whenever the node receives activation
+class Node(metaclass=ABCMeta):
+    """
+    Abstract base class for node implementations.
     """
 
-    __type = None
+    __nodetype_name = None
+    __nodetype = None
 
     @property
     def data(self):
-        data = NetEntity.data.fget(self)
-        data.update({
+
+        data = {
             "uid": self.uid,
+            "index": self.index,
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
             "type": self.type,
-            "parameters": self.__parameters,
-            "state": self.__state,
-            "gate_parameters": self.__gate_parameters,  # still a redundant field, get rid of it
-            "sheaves": self.sheaves,
+            "parameters": self.clone_parameters(),
+            "state": self.clone_state(),
+            "gate_parameters": self.get_gate_parameters(),
+            "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict()
-        })
+        }
         return data
 
     @property
+    @abstractmethod
+    def uid(self):
+        """
+        The uid of this node
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def index(self):
+        """
+        The index property of this node. Index properties are used for persistent sorting information.
+        """
+        pass
+
+    @index.setter
+    @abstractmethod
+    def index(self, index):
+        """
+        Sets the index property of this node. Index properties are used for persistent sorting information.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def position(self):
+        """
+        This node's 2D coordinates within its nodespace
+        """
+        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        pass
+
+    @position.setter
+    @abstractmethod
+    def position(self, position):
+        """
+        This node's 2D coordinates within its nodespace
+        """
+        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        pass
+
+    @property
+    @abstractmethod
+    def name(self):
+        """
+        This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
+        """
+        pass
+
+    @name.setter
+    @abstractmethod
+    def name(self, name):
+        """
+        Sets this node's human reaable name for display purposes.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def parent_nodespace(self):
+        """
+        The UID of this node's parent nodespace
+        """
+        pass
+
+    @parent_nodespace.setter
+    @abstractmethod
+    def parent_nodespace(self, uid):
+        """
+        Sets this node's parent nodespace by UID, effectively moving from its old parent space to the new one
+        """
+        pass
+
+    @property
+    @abstractmethod
     def activation(self):
-        return self.sheaves['default']['activation']
+        """
+        This node's activation property ('default' sheaf) as calculated once per step by its node function
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        This node's activation properties (dict of all sheaves) as calculated once per step by its node function
+        """
+
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        Returns a copy of the nodes's activations (all sheaves)
+        Changes to the returned dict will not affect the node
+        """
+        pass
 
     @activation.setter
+    @abstractmethod
     def activation(self, activation):
-        self.set_sheaf_activation(activation)
-
-    def set_sheaf_activation(self, activation, sheaf="default"):
-        sheaves_to_calculate = self.get_sheaves_to_calculate()
-        if sheaf not in sheaves_to_calculate:
-            raise "Sheaf " + sheaf + " can not be set as it hasn't been propagated to any slot"
-
-        if activation is None:
-            activation = 0
-
-        self.sheaves[sheaf]['activation'] = float(activation)
-        if len(self.nodetype.gatetypes):
-            self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
+        """
+        Sets this node's activation property ('default' sheaf), overriding what has been calculated by the node function
+        """
+        pass
 
     @property
     def type(self):
-        return self.__type
+        """
+        The node's type (as a string)
+        """
+        return self.__nodetype_name
 
     @property
     def nodetype(self):
-        return self.nodenet.get_nodetype(self.type)
-
-    def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, **_):
-        if not gate_parameters:
-            gate_parameters = {}
-
-        if nodenet.is_node(uid):
-            raise KeyError("Node already exists")
-
-        NetEntity.__init__(self, nodenet, parent_nodespace, position,
-            name=name, entitytype="nodes", uid=uid, index=index)
-
-        self.__gate_parameters = {}
-
-        self.__state = {}
-
-        self.__gates = {}
-        self.__slots = {}
-        self.__type = type
-
-        self.__parameters = dict((key, None) for key in self.nodetype.parameters)
-        if parameters is not None:
-            self.__parameters.update(parameters)
-
-        for gate_name in gate_parameters:
-            for key in gate_parameters[gate_name]:
-                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults.get(key, None):
-                    if gate_name not in self.__gate_parameters:
-                        self.__gate_parameters[gate_name] = {}
-                    self.__gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
-
-        gate_parameters = self.nodetype.gate_defaults.copy()
-        gate_parameters.update(self.__gate_parameters)
-        for gate in self.nodetype.gatetypes:
-            if gate_activations is None or gate not in gate_activations:
-                sheaves_to_use = None
-            else:
-                sheaves_to_use = gate_activations[gate]
-            self.__gates[gate] = Gate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate), gate_defaults=self.nodetype.gate_defaults[gate])
-        for slot in self.nodetype.slottypes:
-            self.__slots[slot] = Slot(slot, self)
-        if state:
-            self.__state = state
-        nodenet._register_node(self)
-        self.sheaves = {"default": emptySheafElement.copy()}
-
-        self.activation = 0
-
-    def node_function(self):
-        """Called whenever the node is activated or active.
-
-        In different node types, different node functions may be used, i.e. override this one.
-        Generally, a node function must process the slot activations and call each gate function with
-        the result of the slot activations.
-
-        Metaphorically speaking, the node function is the soma of a MicroPsi neuron. It reacts to
-        incoming activations in an arbitrarily specific way, and may then excite the outgoing dendrites (gates),
-        which transmit activation to other neurons with adaptive synaptic strengths (link weights).
         """
+        The Nodetype instance for this node
+        """
+        return self.__nodetype
 
-        # call nodefunction of my node type
-        if self.nodetype and self.nodetype.nodefunction is not None:
+    def __init__(self, nodetype_name, nodetype):
+        """
+        Constructor needs the string name of this node's type, and a Nodetype instance
+        """
+        self.__nodetype_name = nodetype_name
+        self.__nodetype = nodetype
 
-            sheaves_to_calculate = self.get_sheaves_to_calculate()
+    @abstractmethod
+    def get_gate(self, type):
+        """
+        Returns this node's gate of the given type, or None if no such gate exists
+        """
+        pass
 
-            # find node activation to carry over
-            node_activation_to_carry_over = {}
-            for id in self.sheaves:
-                if id in sheaves_to_calculate:
-                    node_activation_to_carry_over[id] = self.sheaves[id]
+    @abstractmethod
+    def set_gate_parameter(self, gate_type, parameter, value):
+        """
+        Sets the given gate parameter to the given value
+        """
+        pass
 
-            # clear activation states
-            for gatename in self.get_gate_types():
-                gate = self.get_gate(gatename)
-                gate.sheaves = {}
-            self.sheaves = {}
+    @abstractmethod
+    def clone_non_default_gate_parameters(self, gate_type):
+        """
+        Returns a copy of all gate parameters set to a non-default value.
+        Write access to this dict will not affect the node.
+        """
+        pass
 
-            # calculate activation states for all open sheaves
-            for sheaf_id in sheaves_to_calculate:
+    @abstractmethod
+    def get_slot(self, type):
+        """
+        Returns the slot of the given type or none if no such slot exists
+        """
+        pass
 
-                # prepare sheaves
-                for gatename in self.get_gate_types():
-                    gate = self.get_gate(gatename)
-                    gate.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
-                if sheaf_id in node_activation_to_carry_over:
-                    self.sheaves[sheaf_id] = node_activation_to_carry_over[sheaf_id].copy()
-                    self.set_sheaf_activation(node_activation_to_carry_over[sheaf_id]['activation'], sheaf_id)
-                else:
-                    self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
-                    self.set_sheaf_activation(0, sheaf_id)
+    @abstractmethod
+    def get_parameter(self, parameter):
+        """
+        Returns the value of a node parameter of None if the parameter is not set.
+        Parameters are used to change what a node does and do typically not change between net steps.
+        An example is the "type" parameter of directional activators that configures the activator to control
+        the gates of type "type"
+        """
+        pass
 
-                # and actually calculate new values for them
-                try:
-                    self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.__parameters)
-                except Exception:
-                    self.nodenet.is_active = False
-                    self.activation = -1
-                    raise
-        else:
-            # default node function (only using the "default" sheaf)
-            if len(self.get_slot_types()):
-                self.activation = sum([self.get_slot(slot).activation for slot in self.get_slot_types()])
-                if len(self.get_gate_types()):
-                    for gatetype in self.get_gate_types():
-                        self.get_gate(gatetype).gate_function(self.activation)
+    @abstractmethod
+    def set_parameter(self, parameter, value):
+        """
+        Changes the value of the given parameter.
+        Parameters are used to change what a node does and do typically not change between net steps.
+        An example is the "type" parameter of directional activators that configures the activator to control
+        the gates of type "type"
+        """
+        pass
 
-    def get_gate(self, gatename):
-        try:
-            return self.__gates[gatename]
-        except KeyError:
-            return None
+    @abstractmethod
+    def clone_parameters(self):
+        """
+        Returns a copy of this node's parameter set.
+        Write access to this dict will not affect the node.
+        Parameters are used to change what a node does and do typically not change between net steps.
+        An example is the "type" parameter of directional activators that configures the activator to control
+        the gates of type "type"
+        """
+        pass
 
-    def get_slot(self, slotname):
-        try:
-            return self.__slots[slotname]
-        except KeyError:
-            return None
+    @abstractmethod
+    def get_state(self, state):
+        """
+        Returns the value of the given state.
+        Node state is runtime-information that can change between net steps.
+        A typical use is native modules "attaching" a bit of information to a node for later retrieval.
+        Node states are not formally required by the node net specification. They exist for convenience reasons only.
+        """
+        pass
 
-    def get_gate_parameters(self):
-        """Looks into the gates and returns gate parameters if these are defined"""
-        gate_parameters = {}
-        for gatetype in self.get_gate_types():
-            if self.get_gate(gatetype).parameters:
-                gate_parameters[gatetype] = self.get_gate(gatetype).parameters
-        if len(gate_parameters):
-            return gate_parameters
-        else:
-            return None
+    @abstractmethod
+    def set_state(self, state, value):
+        """
+        Sets the value of a given state.
+        Node state is runtime-information that can change between net steps.
+        A typical use is native modules "attaching" a bit of information to a node for later retrieval.
+        Node states are not formally required by the node net specification. They exist for convenience reasons only.
+        """
+        pass
 
-    def set_gate_activation(self, gatetype, activation, sheaf="default"):
-        """ sets the activation of the given gate"""
-        activation = float(activation)
-        gate = self.get_gate(gatetype)
-        if gate is not None:
-            gate.sheaves[sheaf]['activation'] = activation
+    @abstractmethod
+    def clone_state(self):
+        """
+        Returns a copy of the node's state.
+        Write access to this dict will not affect the node.
+        Node state is runtime-information that can change between net steps.
+        A typical use is native modules "attaching" a bit of information to a node for later retrieval.
+        Node states are not formally required by the node net specification. They exist for convenience reasons only.
+        """
+        pass
+
+    @abstractmethod
+    def clone_sheaves(self):
+        """
+        Returns a copy of the activation values present in the node.
+        Note that this is about node activation, not gate activation (gates have their own sheaves).
+        Write access to this dict will not affect the node.
+        """
+        pass
+
+    @abstractmethod
+    def node_function(self):
+        """
+        The node function of the node, called after activation has been propagated to the node's slots.
+        This method is expected to set the node's activation(s) and all of the gates' activations by calling the
+        gate_function of all gates.
+        Implementations can either directly implement this method based on the type of the node, or implement some
+        sort of indirection mechanism that selects the code to be executed.
+        For native modules (nodes with non-standard node_functions) that can be reloaded at runtime, this is a must.
+        """
+        pass
+
+    def get_gate_types(self):
+        """
+        Returns the types of gates existing in this node
+        """
+        return list(self.nodetype.gatetypes)
+
+    def get_slot_types(self):
+        """
+        Returns the types of slots existing in this node
+        """
+        return list(self.nodetype.slottypes)
 
     def get_associated_links(self):
         links = []
@@ -235,301 +320,161 @@ class Node(NetEntity):
                 nodes.append(link.target_node.uid)
         return nodes
 
-    def get_sheaves_to_calculate(self):
-        sheaves_to_calculate = {}
-        for slotname in self.get_slot_types():
-            for uid in self.get_slot(slotname).sheaves:
-                sheaves_to_calculate[uid] = self.get_slot(slotname).sheaves[uid].copy()
-        if 'default' not in sheaves_to_calculate:
-            sheaves_to_calculate['default'] = emptySheafElement.copy()
-        return sheaves_to_calculate
-
-    def set_gate_parameters(self, gate_type, parameters):
-        if self.__gate_parameters is None:
-            self.__gate_parameters = {}
-        for parameter, value in parameters.items():
-            if parameter in Nodetype.GATE_DEFAULTS:
-                if value is None:
-                    value = Nodetype.GATE_DEFAULTS[parameter]
-                else:
-                    value = float(value)
-                if value != Nodetype.GATE_DEFAULTS[parameter]:
-                    if gate_type not in self.__gate_parameters:
-                        self.__gate_parameters[gate_type] = {}
-                    self.__gate_parameters[gate_type][parameter] = value
-                elif parameter in self.__gate_parameters.get(gate_type, {}):
-                    del self.__gate_parameters[gate_type][parameter]
-            self.get_gate(gate_type).parameters[parameter] = value
-
-    def reset_slots(self):
-        for slottype in self.get_slot_types():
-            self.get_slot(slottype).sheaves = {"default": emptySheafElement.copy()}
-
-    def get_parameter(self, parameter):
-        if parameter in self.__parameters:
-            return self.__parameters[parameter]
-        else:
-            return None
-
-    def clear_parameter(self, parameter):
-        if parameter in self.__parameters:
-            if parameter not in self.nodetype.parameters:
-                del self.__parameters[parameter]
-            else:
-                self.__parameters[parameter] = None
-
-    def set_parameter(self, parameter, value):
-        self.__parameters[parameter] = value
-
-    def set_parameters(self, parameters):
-        for key in parameters:
-            self.set_parameter(key, parameters[key])
-
-    def clone_parameters(self):
-        return self.__parameters.copy()
-
-    def get_state(self, state_element):
-        if state_element in self.__state:
-            return self.__state[state_element]
-        else:
-            return None
-
-    def set_state(self, state_element, value):
-        self.__state[state_element] = value
-
-    def clone_state(self):
-        return self.__state.copy()
-
-    def link(self, gate_name, target_node_uid, slot_name, weight=1, certainty=1):
-        """Ensures a link exists with the given parameters and returns it
-           Only one link between a node/gate and a node/slot can exist, its parameters will be updated with the
-           given parameters if a link existed prior to the call of this method
-           Will return None if no such link can be created.
-        """
-
-        if not self.nodenet.is_node(target_node_uid):
-            return None
-
-        target = self.nodenet.get_node(target_node_uid)
-
-        if slot_name not in target.get_slot_types():
-            return None
-
-        gate = self.get_gate(gate_name)
-        if gate is None:
-            return None
-        link = None
-        for candidate in gate.get_links():
-            if candidate.target_node.uid == target.uid and candidate.target_slot == slot_name:
-                link = candidate
-                break
-        if link is None:
-            link = Link(self, gate_name, target, slot_name)
-
-        link.weight = weight
-        link.certainty = certainty
-        return link
-
-    def unlink_completely(self):
-        """Deletes all links originating from this node or ending at this node"""
-        links_to_delete = set()
-        for gate_name_candidate in self.get_gate_types():
-            for link_candidate in self.get_gate(gate_name_candidate).get_links():
-                links_to_delete.add(link_candidate)
-        for slot_name_candidate in self.get_slot_types():
-            for link_candidate in self.get_slot(slot_name_candidate).get_links():
-                links_to_delete.add(link_candidate)
-        for link in links_to_delete:
-            link.remove()
-
-    def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
-        """Deletes all links originating from this node or ending at this node"""
-        links_to_delete = set()
-        for gate_name_candidate in self.get_gate_types():
-            if gate_name is None or gate_name == gate_name_candidate:
-                for link_candidate in self.get_gate(gate_name_candidate).get_links():
-                    if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
-                        if slot_name is None or slot_name == link_candidate.target_slot.type:
-                            links_to_delete.add(link_candidate)
-        for link in links_to_delete:
-            link.remove()
-
-    def get_gate_types(self):
-        # TODO: actually, the order returned shouldn't be random, but gen, sub, sur, por, ret, cat, exp, sym, ref.
-        return list(self.__gates.keys())
-
-    def get_slot_types(self):
-        return list(self.__slots.keys())
-
     def construct_gates_dict(self):
         data = {}
         for gate_name in self.get_gate_types():
-            data[gate_name] = self.get_gate(gate_name).sheaves
+            data[gate_name] = self.get_gate(gate_name).clone_sheaves()
         return data
 
 
-class Gate(object):
-    """The activation outlet of a node. Nodes may have many gates, from which links originate.
-
-    Attributes:
-        type: a string that determines the type of the gate
-        node: the parent node of the gate
-        activation: a numerical value which is calculated at every step by the gate function
-        parameters: a dictionary of values used by the gate function
-        gate_function: called by the node function, updates the activation
-        outgoing: the set of links originating at the gate
+class Gate(metaclass=ABCMeta):
+    """
+    Activation outlet of nodes, where links (connected to slots on the other side) originate.
+    Gate activations are set by the node's node_function through calling gate_function for all of their gates.
     """
 
     @property
-    def activation(self):
-        return self.sheaves['default']['activation']
-
-    @activation.setter
-    def activation(self, activation):
-        self.sheaves['default']['activation'] = activation
-
-    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None, gate_defaults=None):
-        """create a gate.
-
-        Parameters:
-            type: a string that refers to a node type
-            node: the parent node
-            parameters: an optional dictionary of parameters for the gate function
+    @abstractmethod
+    def type(self):
         """
-        self.type = type
-        self.node = node
-        if sheaves is None:
-            self.sheaves = {"default": emptySheafElement.copy()}
-        else:
-            self.sheaves = {}
-            for key in sheaves:
-                self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
-        self.__outgoing = {}
-        self.gate_function = gate_function or self.gate_function
-        self.parameters = {}
-        if gate_defaults is not None:
-            self.parameters = gate_defaults.copy()
-        if parameters is not None:
-            for key in parameters:
-                if key in Nodetype.GATE_DEFAULTS:
-                    try:
-                        self.parameters[key] = float(parameters[key])
-                    except:
-                        logging.getLogger('nodenet').warn('Invalid gate parameter value for gate %s, param %s, node %s' % (type, key, node.uid))
-                        self.parameters[key] = Nodetype.GATE_DEFAULTS.get(key, 0)
-                else:
-                    self.parameters[key] = float(parameters[key])
-        self.monitor = None
+        Returns the type of the gate (as a string)
+        """
+        pass
 
+    @property
+    @abstractmethod
+    def node(self):
+        """
+        Returns the Node object that this gate belongs to
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def activation(self):
+        """
+        Returns the gate's activation ('default' sheaf)
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        Returns a copy of the gate's activations (all sheaves)
+        Changes to the returned dict will not affect the gate
+        """
+        pass
+
+    @abstractmethod
     def get_links(self):
-        return list(self.__outgoing.values())
+        """
+        Returns a list of Link objects originating from this gate
+        """
+        pass
 
-    def _register_outgoing(self, link):
-        self.__outgoing[link.uid] = link
+    @abstractmethod
+    def get_parameter(self, parameter):
+        """
+        Returns the value of the given parameter or none if the parameter is not set.
+        Note that the returned value may be a default inherited from gate parameter defaults as defined in Nodetype
+        """
+        pass
 
-    def _unregister_outgoing(self, link):
-        del self.__outgoing[link.uid]
+    @abstractmethod
+    def clone_sheaves(self):
+        """
+        Returns a copy of the activation values present in the gate.
+        Write access to this dict will not affect the gate.
+        """
+        pass
 
-
+    @abstractmethod
     def gate_function(self, input_activation, sheaf="default"):
-        """This function sets the activation of the gate.
-
-        The gate function should be called by the node function, and can be replaced by different functions
-        if necessary. This default gives a linear function (input * amplification), cut off below a threshold.
-        You might want to replace it with a radial basis function, for instance.
         """
-        if input_activation is None:
-            input_activation = 0
+        This function sets the activation of the gate.
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
 
-        # check if the current node space has an activator that would prevent the activity of this gate
-        nodespace = self.node.nodenet.get_nodespace(self.node.parent_nodespace)
-        if nodespace.has_activator(self.type):
-            gate_factor = nodespace.get_activator_value(self.type)
-        else:
-            gate_factor = 1.0
-        if gate_factor == 0.0:
-            self.sheaves[sheaf]['activation'] = 0
-            return  # if the gate is closed, we don't need to execute the gate function
-            # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = self.node.nodenet.get_nodespace(self.node.parent_nodespace).get_gatefunction(self.node.type,
-            self.type)
-        if gatefunction:
-            activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
-        else:
-            activation = input_activation
+        Alternative implementations are free to calculate gate activation values in node functions directly and
+        can pass on the implementation of this method.
 
-        if activation * gate_factor < self.parameters['threshold']:
-            activation = 0
-        else:
-            activation = activation * self.parameters["amplification"] * gate_factor
+        The default gate function should be linear (input * amplification) if over the threshold parameter, plus
+        band-passed by the min and max parameters.
 
-        # if self.parameters["decay"]:  # let activation decay gradually
-        #     if activation < 0:
-        #         activation = min(activation, self.activation * (1 - self.parameters["decay"]))
-        #     else:
-        #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
+        Implementations should allow to define alternative gate functions on a per-nodespace basis, i.e. all
+        gates of nodes in a given nodespace should use the same gate function.
+        """
+        pass
 
-        self.sheaves[sheaf]['activation'] = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
-
+    @abstractmethod
     def open_sheaf(self, input_activation, sheaf="default"):
-        """This function opens a new sheaf and calls the gate function for the newly opened sheaf
         """
-        if sheaf is "default":
-            sheaf_uid_prefix = "default" + "-"
-            sheaf_name_prefix = ""
-        else:
-            sheaf_uid_prefix = sheaf + "-"
-            sheaf_name_prefix = self.sheaves[sheaf].name + "-"
+        This function opens a new sheaf and calls gate_function function for the newly opened sheaf.
+        This only needs to be implemented if the reference implementation for the node functions from
+        nodefunctions.py is being used.
 
-        new_sheaf = dict(uid=sheaf_uid_prefix + self.node.uid, name=sheaf_name_prefix + self.node.name, activation=0)
-        self.sheaves[new_sheaf['uid']] = new_sheaf
-
-        self.gate_function(input_activation, new_sheaf['uid'])
+        Alternative implementations are free to handle sheaves in the node functions directly and
+        can pass on the implementation of this method.
+        """
+        pass
 
 
-class Slot(object):
-    """The entrance of activation into a node. Nodes may have many slots, in which links terminate.
-
-    Attributes:
-        type: a string that determines the type of the slot
-        node: the parent node of the slot
-        activation: a numerical value which is the sum of all incoming activations
-        current_step: the simulation step when the slot last received activation
-        incoming: a dictionary of incoming links together with the respective activation received by them
+class Slot(metaclass=ABCMeta):
+    """
+    Activation intake for nodes. Nodes may have many slots, in which links terminate.
+    Slot activations are set by the node net's activation propagation logic. They are immediately read (in the same
+    net step by node functions.)
     """
 
-    def __init__(self, type, node):
-        """create a slot.
-
-        Parameters:
-            type: a string that refers to the slot type
-            node: the parent node
+    @property
+    @abstractmethod
+    def type(self):
         """
-        self.type = type
-        self.node = node
-        self.__incoming = {}
-        self.current_step = -1
-        self.sheaves = {"default": emptySheafElement.copy()}
+        Returns the type of the slot (as a string)
+        """
+        pass
 
     @property
+    @abstractmethod
+    def node(self):
+        """
+        Returns the Node object that this slot belongs to
+        """
+        pass
+
+    @property
+    @abstractmethod
     def activation(self):
-        return self.get_activation("default")
+        """
+        Returns the activation in this slot ('default' sheaf)
+        """
+        pass
 
+    @property
+    @abstractmethod
+    def activations(self):
+        """
+        Returns a copy of the slots's activations (all sheaves)
+        Changes to the returned dict will not affect the gate
+        """
+        pass
+
+    @property
+    @abstractmethod
     def get_activation(self, sheaf="default"):
-        if len(self.__incoming) == 0:
-            return 0
-        if sheaf not in self.sheaves:
-            return 0
-        return self.sheaves[sheaf]['activation']
+        """
+        Returns the activation in this slot for the given sheaf.
+        Will return the activation in the 'default' sheaf if the sheaf does not exist
+        """
+        pass
 
+    @abstractmethod
     def get_links(self):
-        return list(self.__incoming.values())
-
-    def _register_incoming(self, link):
-        self.__incoming[link.uid] = link
-
-    def _unregister_incoming(self, link):
-        del self.__incoming[link.uid]
+        """
+        Returns a list of Link objects terminating at this slot
+        """
+        pass
 
 
 STANDARD_NODETYPES = {
@@ -599,19 +544,19 @@ STANDARD_NODETYPES = {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "por": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "ret": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "sub": {
                 "minimum": -100,
@@ -623,19 +568,19 @@ STANDARD_NODETYPES = {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             },
             "cat": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": True
+                "spreadsheaves": 1
             },
             "exp": {
                 "minimum": -100,
                 "maximum": 100,
                 "threshold": -100,
-                "spreadsheaves": False
+                "spreadsheaves": 0
             }
         },
         'symbol': 'πp',
@@ -664,7 +609,7 @@ class Nodetype(object):
         "decay": 0,
         "theta": 0,
         "rho": 0,
-        "spreadsheaves": False
+        "spreadsheaves": 0
     }
 
     _parameters = []

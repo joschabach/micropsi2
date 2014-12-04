@@ -39,7 +39,7 @@ class Link(metaclass=ABCMeta):
         """
         Returns the weight (the strength) of this link
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -49,7 +49,7 @@ class Link(metaclass=ABCMeta):
         Note that this is not being used right now and defined/reserved for future use.
         Implementations can always return 1 for the time being
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -57,7 +57,7 @@ class Link(metaclass=ABCMeta):
         """
         Returns the Node (object) from which this link originates
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -65,7 +65,7 @@ class Link(metaclass=ABCMeta):
         """
         Returns the Gate (object) from which this link originates
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -73,7 +73,7 @@ class Link(metaclass=ABCMeta):
         """
         Returns the Node (object) at which this link ends
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -81,4 +81,4 @@ class Link(metaclass=ABCMeta):
         """
         Returns the Slot (object) at which this link ends
         """
-        pass
+        pass  # pragma: no cover

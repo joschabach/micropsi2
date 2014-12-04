@@ -44,7 +44,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         Returns the type of node net engine this nodenet is implemented with
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -52,7 +52,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         Returns the current net step, an integer
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -180,28 +180,28 @@ class Nodenet(metaclass=ABCMeta):
         """
         Performs one calculation step, propagating activation accross links
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_node(self, uid):
         """
         Returns the Node object with the given UID or None if no such Node object exists
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_node_uids(self):
         """
         Returns a list of the UIDs of all Node objects that exist in the node net
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def is_node(self, uid):
         """
         Returns true if the given UID is the UID of an existing Node object
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
@@ -209,70 +209,70 @@ class Nodenet(metaclass=ABCMeta):
         Creates a new node of the given node type (string), in the nodespace with the given UID, at the given
         position.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def delete_node(self, uid):
         """
         Deletes the node with the given UID.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_nodespace(self, uid):
         """
         Returns the Nodespace object with the given UID or None if no such Nodespace object exists
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_nodespace_uids(self):
         """
         Returns a list of the UIDs of all Nodespace objects that exist in the node net
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def is_nodespace(self, uid):
         """
         Returns true if the given UID is the UID of an existing Nodespace object
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def delete_nodespace(self, uid):
         """
         Deletes the nodespace with the given UID, and everything it contains
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """
         Creates a new link between the given node/gate and node/slot
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """
         Set weight of the link between the given node/gate and node/slot
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """
         Deletes the link between the given node/gate and node/slot
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def reload_native_modules(self, native_modules):
@@ -297,7 +297,7 @@ class Nodenet(metaclass=ABCMeta):
         }
 
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
@@ -314,7 +314,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         #todo: data dicts will be replaced with a save/load/export API at some point.
         #todo: Positional data will either be made entirely transient at some point, or moved somewhere else
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_nodespace_data(self, nodespace_uid, max_nodes):
@@ -330,7 +330,7 @@ class Nodenet(metaclass=ABCMeta):
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
         #todo: data dicts will be replaced with a save/load/export API at some point.
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def merge_data(self, nodenet_data):
@@ -340,35 +340,35 @@ class Nodenet(metaclass=ABCMeta):
         removed or implemented in the abstact base class as a generic JSON/dict import mechanism.
         """
         #todo: data dicts will be replaced with a save/load/export API at some point.
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def is_locked(self, lock):
         """
         Returns true if a lock of the given name exists
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def is_locked_by(self, lock, key):
         """
         Returns true if a lock of the given name exists and the key used is the given one
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def lock(self, lock, key, timeout=100):
         """
         Creates a lock with the given name that will time out after the given number of steps
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def unlock(self, lock):
         """
         Removes the given lock
         """
-        pass
+        pass  # pragma: no cover
 
     def clear(self):
         self.__monitors = {}

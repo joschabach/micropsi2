@@ -58,7 +58,7 @@ class Node(metaclass=ABCMeta):
         """
         The uid of this node
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -66,7 +66,7 @@ class Node(metaclass=ABCMeta):
         """
         The index property of this node. Index properties are used for persistent sorting information.
         """
-        pass
+        pass  # pragma: no cover
 
     @index.setter
     @abstractmethod
@@ -74,7 +74,7 @@ class Node(metaclass=ABCMeta):
         """
         Sets the index property of this node. Index properties are used for persistent sorting information.
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -83,7 +83,7 @@ class Node(metaclass=ABCMeta):
         This node's 2D coordinates within its nodespace
         """
         # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
-        pass
+        pass  # pragma: no cover
 
     @position.setter
     @abstractmethod
@@ -92,7 +92,7 @@ class Node(metaclass=ABCMeta):
         This node's 2D coordinates within its nodespace
         """
         # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -100,7 +100,7 @@ class Node(metaclass=ABCMeta):
         """
         This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
         """
-        pass
+        pass  # pragma: no cover
 
     @name.setter
     @abstractmethod
@@ -108,7 +108,7 @@ class Node(metaclass=ABCMeta):
         """
         Sets this node's human reaable name for display purposes.
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -116,7 +116,7 @@ class Node(metaclass=ABCMeta):
         """
         The UID of this node's parent nodespace
         """
-        pass
+        pass  # pragma: no cover
 
     @parent_nodespace.setter
     @abstractmethod
@@ -124,7 +124,7 @@ class Node(metaclass=ABCMeta):
         """
         Sets this node's parent nodespace by UID, effectively moving from its old parent space to the new one
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -132,7 +132,7 @@ class Node(metaclass=ABCMeta):
         """
         This node's activation property ('default' sheaf) as calculated once per step by its node function
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -148,7 +148,7 @@ class Node(metaclass=ABCMeta):
         Returns a copy of the nodes's activations (all sheaves)
         Changes to the returned dict will not affect the node
         """
-        pass
+        pass  # pragma: no cover
 
     @activation.setter
     @abstractmethod
@@ -156,7 +156,7 @@ class Node(metaclass=ABCMeta):
         """
         Sets this node's activation property ('default' sheaf), overriding what has been calculated by the node function
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     def type(self):
@@ -184,14 +184,14 @@ class Node(metaclass=ABCMeta):
         """
         Returns this node's gate of the given type, or None if no such gate exists
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_gate_parameter(self, gate_type, parameter, value):
         """
         Sets the given gate parameter to the given value
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def clone_non_default_gate_parameters(self, gate_type):
@@ -199,14 +199,14 @@ class Node(metaclass=ABCMeta):
         Returns a copy of all gate parameters set to a non-default value.
         Write access to this dict will not affect the node.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_slot(self, type):
         """
         Returns the slot of the given type or none if no such slot exists
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_parameter(self, parameter):
@@ -216,7 +216,7 @@ class Node(metaclass=ABCMeta):
         An example is the "type" parameter of directional activators that configures the activator to control
         the gates of type "type"
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_parameter(self, parameter, value):
@@ -226,7 +226,7 @@ class Node(metaclass=ABCMeta):
         An example is the "type" parameter of directional activators that configures the activator to control
         the gates of type "type"
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def clone_parameters(self):
@@ -237,7 +237,7 @@ class Node(metaclass=ABCMeta):
         An example is the "type" parameter of directional activators that configures the activator to control
         the gates of type "type"
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_state(self, state):
@@ -247,7 +247,7 @@ class Node(metaclass=ABCMeta):
         A typical use is native modules "attaching" a bit of information to a node for later retrieval.
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_state(self, state, value):
@@ -257,7 +257,7 @@ class Node(metaclass=ABCMeta):
         A typical use is native modules "attaching" a bit of information to a node for later retrieval.
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def clone_state(self):
@@ -268,7 +268,7 @@ class Node(metaclass=ABCMeta):
         A typical use is native modules "attaching" a bit of information to a node for later retrieval.
         Node states are not formally required by the node net specification. They exist for convenience reasons only.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def clone_sheaves(self):
@@ -277,7 +277,7 @@ class Node(metaclass=ABCMeta):
         Note that this is about node activation, not gate activation (gates have their own sheaves).
         Write access to this dict will not affect the node.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def node_function(self):
@@ -289,7 +289,7 @@ class Node(metaclass=ABCMeta):
         sort of indirection mechanism that selects the code to be executed.
         For native modules (nodes with non-standard node_functions) that can be reloaded at runtime, this is a must.
         """
-        pass
+        pass  # pragma: no cover
 
     def get_gate_types(self):
         """
@@ -339,7 +339,7 @@ class Gate(metaclass=ABCMeta):
         """
         Returns the type of the gate (as a string)
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -347,7 +347,7 @@ class Gate(metaclass=ABCMeta):
         """
         Returns the Node object that this gate belongs to
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -355,7 +355,7 @@ class Gate(metaclass=ABCMeta):
         """
         Returns the gate's activation ('default' sheaf)
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -364,14 +364,14 @@ class Gate(metaclass=ABCMeta):
         Returns a copy of the gate's activations (all sheaves)
         Changes to the returned dict will not affect the gate
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_links(self):
         """
         Returns a list of Link objects originating from this gate
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_parameter(self, parameter):
@@ -379,7 +379,7 @@ class Gate(metaclass=ABCMeta):
         Returns the value of the given parameter or none if the parameter is not set.
         Note that the returned value may be a default inherited from gate parameter defaults as defined in Nodetype
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def clone_sheaves(self):
@@ -387,7 +387,7 @@ class Gate(metaclass=ABCMeta):
         Returns a copy of the activation values present in the gate.
         Write access to this dict will not affect the gate.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def gate_function(self, input_activation, sheaf="default"):
@@ -405,7 +405,7 @@ class Gate(metaclass=ABCMeta):
         Implementations should allow to define alternative gate functions on a per-nodespace basis, i.e. all
         gates of nodes in a given nodespace should use the same gate function.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def open_sheaf(self, input_activation, sheaf="default"):
@@ -417,7 +417,7 @@ class Gate(metaclass=ABCMeta):
         Alternative implementations are free to handle sheaves in the node functions directly and
         can pass on the implementation of this method.
         """
-        pass
+        pass  # pragma: no cover
 
 
 class Slot(metaclass=ABCMeta):
@@ -433,7 +433,7 @@ class Slot(metaclass=ABCMeta):
         """
         Returns the type of the slot (as a string)
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -441,7 +441,7 @@ class Slot(metaclass=ABCMeta):
         """
         Returns the Node object that this slot belongs to
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -449,7 +449,7 @@ class Slot(metaclass=ABCMeta):
         """
         Returns the activation in this slot ('default' sheaf)
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -458,7 +458,7 @@ class Slot(metaclass=ABCMeta):
         Returns a copy of the slots's activations (all sheaves)
         Changes to the returned dict will not affect the gate
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -467,14 +467,14 @@ class Slot(metaclass=ABCMeta):
         Returns the activation in this slot for the given sheaf.
         Will return the activation in the 'default' sheaf if the sheaf does not exist
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_links(self):
         """
         Returns a list of Link objects terminating at this slot
         """
-        pass
+        pass  # pragma: no cover
 
 
 STANDARD_NODETYPES = {

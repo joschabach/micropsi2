@@ -43,7 +43,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         The uid of this node
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -51,7 +51,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         The index property of this node. Index properties are used for persistent sorting information.
         """
-        pass
+        pass  # pragma: no cover
 
     @index.setter
     @abstractmethod
@@ -59,7 +59,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         Sets the index property of this node. Index properties are used for persistent sorting information.
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -68,7 +68,7 @@ class Nodespace(metaclass=ABCMeta):
         This node's 2D coordinates within its nodespace
         """
         # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
-        pass
+        pass  # pragma: no cover
 
     @position.setter
     @abstractmethod
@@ -77,7 +77,7 @@ class Nodespace(metaclass=ABCMeta):
         This node's 2D coordinates within its nodespace
         """
         # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -85,7 +85,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
         """
-        pass
+        pass  # pragma: no cover
 
     @name.setter
     @abstractmethod
@@ -93,7 +93,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         Sets this node's human reaable name for display purposes.
         """
-        pass
+        pass  # pragma: no cover
 
     @property
     @abstractmethod
@@ -101,7 +101,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         The UID of this node's parent nodespace
         """
-        pass
+        pass  # pragma: no cover
 
     @parent_nodespace.setter
     @abstractmethod
@@ -109,7 +109,7 @@ class Nodespace(metaclass=ABCMeta):
         """
         Sets this node's parent nodespace by UID, effectively moving from its old parent space to the new one
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_activator_value(self, type):
@@ -122,7 +122,7 @@ class Nodespace(metaclass=ABCMeta):
         can pass on the implementation of this method.
 
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_activator_value(self, type, value):
@@ -135,7 +135,7 @@ class Nodespace(metaclass=ABCMeta):
         Alternative implementations are free to handle directional activators in node functions directly and
         can pass on the implementation of this method.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def unset_activator_value(self, type):
@@ -148,7 +148,7 @@ class Nodespace(metaclass=ABCMeta):
         Alternative implementations are free to handle directional activators in node functions directly and
         can pass on the implementation of this method.
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_gate_function_string(self, nodetype, gatetype, gatefunction, parameters=None):
@@ -158,7 +158,7 @@ class Nodespace(metaclass=ABCMeta):
         Implemetations with a fixed set of gate functions can use the gatefunction parameter as a key identifying
         which of the fixed gate functions to select
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_gatefunction_string(self, nodetype, gatetype):
@@ -167,7 +167,7 @@ class Nodespace(metaclass=ABCMeta):
         Implementations with a fixed set of gate functions can return the key of the currently configured
         gate function
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_gatefunction_strings(self):
@@ -176,7 +176,7 @@ class Nodespace(metaclass=ABCMeta):
         Implementations with a fixed set of gate functions can return the keys of the currently configured
         gate functions
         """
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_known_ids(self, entitytype=None):
@@ -186,5 +186,5 @@ class Nodespace(metaclass=ABCMeta):
         "nodes" - return nodes only
         "nodespaces" - return node spaces only
         """
-        pass
+        pass  # pragma: no cover
 

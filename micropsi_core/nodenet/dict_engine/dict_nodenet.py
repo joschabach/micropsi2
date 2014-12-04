@@ -1,18 +1,14 @@
 __author__ = 'rvuine'
 
-import micropsi_core.tools
 import json
 import os
 
 import warnings
-from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
-from threading import Lock
-import logging
+from micropsi_core.nodenet.node import Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
-from micropsi_core.nodenet.nodespace import Nodespace
-from micropsi_core.nodenet.monitor import Monitor
 from .dict_node import DictNode
 from .dict_nodespace import DictNodespace
+
 
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,

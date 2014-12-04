@@ -9,6 +9,7 @@
 #
 ####################################################################################################
 
+
 def register(netapi, node=None, **params):
     activation = node.get_slot('gen').activation
     node.activation = activation

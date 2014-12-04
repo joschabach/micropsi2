@@ -278,7 +278,7 @@ def load_nodenet(nodenet_uid):
 
             if engine == 'dict_engine':
                 nodenets[nodenet_uid] = DictNodenet(
-                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY,  nodenet_uid + '.json'),
+                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
                     nodetypes=nodetypes, native_modules=native_modules)

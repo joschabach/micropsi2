@@ -7,10 +7,8 @@ Tests for netapi, i.e. the interface native modules will be developed against
 
 import pytest
 from micropsi_core import runtime as micropsi
-from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import WorldAdapter, WorldObject
+from micropsi_core.nodenet.node import Nodetype
 
-from micropsi_core.tests.test_node_logic import DummyWorld, DummyWorldAdapter
 from micropsi_core.tests import test_node_logic
 
 
@@ -54,7 +52,8 @@ def test_node_netapi_create_register_node(fixed_nodenet):
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    assert node.data['gate_parameters'] == {}
+    for key in node.get_gate_types():
+        assert node.data['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
     assert node.get_gate('gen').parameters != {}
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
@@ -97,7 +96,8 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    assert node.data['gate_parameters'] == {}
+    for key in node.get_gate_types():
+        assert node.data['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
     assert node.get_gate('gen').parameters == Nodetype.GATE_DEFAULTS
     assert node.get_gate('sub').parameters == Nodetype.GATE_DEFAULTS
     assert node.get_gate('sur').parameters == Nodetype.GATE_DEFAULTS

@@ -1026,6 +1026,7 @@ def test_500(app):
 
 def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     app.set_auth()
+    from micropsi_core.nodenet.node import Nodetype
     with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
@@ -1083,8 +1084,8 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
 
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp', 'sym', 'ref']:
         assert data['nodes']['N1']['gate_activations'][key]['default']['activation'] == 0
+        assert data['nodes']['N1']['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
 
-    assert data['nodes']['N1']['gate_parameters'] == {}
     assert data['nodes']['N1']['name'] == 'N1'
     assert data['nodes']['N1']['parameters'] == {}
     assert data['nodes']['N1']['parent_nodespace'] == 'Root'

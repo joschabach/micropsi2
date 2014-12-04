@@ -35,6 +35,19 @@ def test_new_nodenet(test_nodenet, resourcepath):
     assert not os.path.exists(n_path)
 
 
+def test_nodenet_data_gate_parameters(fixed_nodenet):
+    from micropsi_core.nodenet.node import Nodetype
+    data = micropsi.nodenets[fixed_nodenet].data
+    assert data['nodes']['S']['gate_parameters'] == {}
+    micropsi.set_gate_parameters(fixed_nodenet, 'S', 'gen', {'threshold': 1})
+    data = micropsi.nodenets[fixed_nodenet].data
+    assert data['nodes']['S']['gate_parameters'] == {'gen': {'threshold': 1}}
+    defaults = Nodetype.GATE_DEFAULTS
+    defaults.update({'threshold': 1})
+    data = micropsi.nodenets[fixed_nodenet].get_node('S').data['gate_parameters']
+    assert data == {'gen': defaults}
+
+
 def test_user_prompt(fixed_nodenet):
     options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values':  [23, 42]}]
     micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(

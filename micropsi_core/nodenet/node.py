@@ -609,7 +609,7 @@ class Nodetype(object):
         "decay": 0,
         "theta": 0,
         "rho": 0,
-        "spreadsheaves": False
+        "spreadsheaves": 0
     }
 
     _parameters = []

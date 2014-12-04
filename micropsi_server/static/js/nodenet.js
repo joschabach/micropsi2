@@ -2908,7 +2908,7 @@ function handleEditNode(event){
     var parameters = {};
     var fields = form.serializeArray();
     var name = null;
-    var state = null;
+    var state = {};
     var activation = null;
     for (var i in fields){
         if(nodetypes[nodes[nodeUid].type] &&

@@ -21,7 +21,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'solids': 0,   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
         'otter': 0,    # miscellaneous /otter
         'fov_x': 0,  # the fovea sensors receive their input from the fovea actors
-        'fov_y': 0   #
+        'fov_y': 0,  #
+        'health': 0,  # 0-20 (0 being dead)
+        'food': 0   # 0-20 (0 being starving)
     }
 
     datatargets = {
@@ -247,6 +249,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
+
+            self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
+            self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
             self.check_for_action_feedback(tol)
 

@@ -181,6 +181,8 @@ function get_available_worldadapters(world_uid, callback){
                 currentWorld = world_uid;
                 str = '';
                 for (var name in worldadapters){
+                    worldadapters[name].datasources = worldadapters[name].datasources.sort();
+                    worldadapters[name].datatargets = worldadapters[name].datatargets.sort();
                     str += '<option>'+name+'</option>';
                 }
                 $('#nodenet_worldadapter').html(str);
@@ -2395,7 +2397,7 @@ function handleContextMenu(event) {
             switch (type) {
                 case "Sensor":
                     callback = function(data){
-                        clickOriginUid = data.uid;
+                        clickOriginUid = data;
                         dialogs.notification('Please Select a datasource for this sensor');
                         var source_select = $('#select_datasource_modal select');
                         source_select.html('');
@@ -2409,7 +2411,7 @@ function handleContextMenu(event) {
                     break;
                 case "Actor":
                     callback = function(data){
-                        clickOriginUid = data.uid;
+                        clickOriginUid = data;
                         dialogs.notification('Please Select a datatarget for this actor');
                         var target_select = $('#select_datatarget_modal select');
                         target_select.html('');

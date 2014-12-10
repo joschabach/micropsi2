@@ -654,15 +654,15 @@ def edit_runner_properties():
         return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
-@micropsi_app.route("/config/world/runner")
-@micropsi_app.route("/config/world/runner", method="POST")
-def edit_worldrunner():
-    user_id, permissions, token = get_request_data()
-    if len(request.params) > 0:
-        runtime.set_worldrunner_timestep(int(request.params['runner_timestep']))
-        return dict(status="success", msg="Timestep saved")
-    else:
-        return template("runner_form", mode="world", action="/config/world/runner", value=runtime.get_worldrunner_timestep())
+# @micropsi_app.route("/config/world/runner")
+# @micropsi_app.route("/config/world/runner", method="POST")
+# def edit_worldrunner():
+#     user_id, permissions, token = get_request_data()
+#     if len(request.params) > 0:
+#         runtime.set_worldrunner_timestep(int(request.params['runner_timestep']))
+#         return dict(status="success", msg="Timestep saved")
+#     else:
+#         return template("runner_form", mode="world", action="/config/world/runner", value=runtime.get_worldrunner_timestep())
 
 
 @micropsi_app.route("/create_new_nodenet_form")
@@ -901,34 +901,34 @@ def set_world_data(world_uid, world_name=None, owner=None):
     return runtime.set_world_properties(world_uid, world_name, owner)
 
 
-@rpc("start_worldrunner", permission_required="manage worlds")
-def start_worldrunner(world_uid):
-    return runtime.start_worldrunner(world_uid)
+# @rpc("start_worldrunner", permission_required="manage worlds")
+# def start_worldrunner(world_uid):
+#     return runtime.start_worldrunner(world_uid)
 
 
-@rpc("get_worldrunner_timestep")
-def get_worldrunner_timestep():
-    return True, runtime.get_worldrunner_timestep()
+# @rpc("get_worldrunner_timestep")
+# def get_worldrunner_timestep():
+#     return True, runtime.get_worldrunner_timestep()
 
 
-@rpc("get_is_world_running")
-def get_is_world_running(world_uid):
-    return True, runtime.get_is_world_running(world_uid)
+# @rpc("get_is_world_running")
+# def get_is_world_running(world_uid):
+#     return True, runtime.get_is_world_running(world_uid)
 
 
-@rpc("set_worldrunner_timestep", permission_required="manage server")
-def set_worldrunner_timestep(timestep):
-    return runtime.set_worldrunner_timestep(timestep)
+# @rpc("set_worldrunner_timestep", permission_required="manage server")
+# def set_worldrunner_timestep(timestep):
+#     return runtime.set_worldrunner_timestep(timestep)
 
 
-@rpc("stop_worldrunner", permission_required="manage worlds")
-def stop_worldrunner(world_uid):
-    return runtime.stop_worldrunner(world_uid)
+# @rpc("stop_worldrunner", permission_required="manage worlds")
+# def stop_worldrunner(world_uid):
+#     return runtime.stop_worldrunner(world_uid)
 
 
-@rpc("step_world", permission_required="manage worlds")
-def step_world(world_uid, return_world_view=False):
-    return True, runtime.step_world(world_uid, return_world_view)
+# @rpc("step_world", permission_required="manage worlds")
+# def step_world(world_uid, return_world_view=False):
+#     return True, runtime.step_world(world_uid, return_world_view)
 
 
 @rpc("revert_world", permission_required="manage worlds")

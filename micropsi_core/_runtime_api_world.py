@@ -131,9 +131,9 @@ def get_world_view(world_uid, step):
     """Returns the current state of the world for UI purposes, if current step is newer than the supplied one."""
     if world_uid not in micropsi_core.runtime.worlds:
         raise KeyError("World not found")
-    if world_uid in micropsi_core.runtime.WorldRunner.last_exception:
-        e = micropsi_core.runtime.WorldRunner.last_exception[world_uid]
-        del micropsi_core.runtime.WorldRunner.last_exception[world_uid]
+    if world_uid in micropsi_core.runtime.MicropsiRunner.last_world_exception:
+        e = micropsi_core.runtime.MicropsiRunner.last_world_exception[world_uid]
+        del micropsi_core.runtime.MicropsiRunner.last_world_exception[world_uid]
         raise Exception("Error while stepping world").with_traceback(e[2]) from e[1]
     if step <= micropsi_core.runtime.worlds[world_uid].current_step:
         return micropsi_core.runtime.worlds[world_uid].get_world_view(step)

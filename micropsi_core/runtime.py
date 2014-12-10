@@ -49,10 +49,8 @@ worlds = {}
 nodenets = {}
 nodetypes = STANDARD_NODETYPES
 native_modules = {}
-runner = {
-    'nodenet': {'timestep': 1000, 'runner': None},
-    'world': {'timestep': 5000, 'runner': None}
-}
+
+runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
 signal_handler_registry = []
 
@@ -85,44 +83,43 @@ class MicropsiRunner(threading.Thread):
         self.paused = True
         self.state = threading.Condition()
         self.start()
+        self.ticks = 0
 
     def run(self):
-        pass
-
-    def resume(self):
-        with self.state:
-            self.paused = False
-            self.state.notify()
-
-    def pause(self):
-        with self.state:
-            self.paused = True
-
-
-class NodenetRunner(MicropsiRunner):
-
-    def run(self):
-        while runner['nodenet']['running']:
+        while runner['running']:
             with self.state:
                 if self.paused:
                     self.state.wait()
 
-            if configs['nodenetrunner_timestep'] > 1000:
-                step = timedelta(seconds=configs['nodenetrunner_timestep'] / 1000)
+            if configs['runner_timestep'] > 1000:
+                step = timedelta(seconds=configs['runner_timestep'] / 1000)
             else:
-                step = timedelta(milliseconds=configs['nodenetrunner_timestep'])
+                step = timedelta(milliseconds=configs['runner_timestep'])
+
             start = datetime.now()
             log = False
             for uid in nodenets:
                 if nodenets[uid].is_active:
                     log = True
                     try:
+                        print('step nodenet')
                         nodenets[uid].step()
                         nodenets[uid].update_monitors()
                     except:
                         nodenets[uid].is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
-                        NodenetRunner.last_exception[uid] = sys.exc_info()
+                        MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
+
+                    if nodenets[uid].world and self.ticks % runner['factor'] == 0:
+                        try:
+                            print('step world')
+                            nodenets[uid].world.step()
+                        except:
+                            nodenets[uid].world.is_active = False
+                            logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
+                            MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
+
+            self.ticks += 1
 
             elapsed = datetime.now() - start
             if log:
@@ -134,44 +131,24 @@ class NodenetRunner(MicropsiRunner):
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())
 
+    def resume(self):
+        with self.state:
+            self.paused = False
+            self.state.notify()
 
-class WorldRunner(MicropsiRunner):
-    def run(self):
-        self.resume()
-        while runner['world']['running']:
-            with self.state:
-                if self.paused:
-                    self.state.wait()
-
-            if configs['worldrunner_timestep'] > 1000:
-                step = timedelta(seconds=configs['worldrunner_timestep'] / 1000)
-            else:
-                step = timedelta(milliseconds=configs['worldrunner_timestep'])
-            start = datetime.now()
-            for uid in worlds:
-                if worlds[uid].is_active:
-                    try:
-                        worlds[uid].step()
-                    except:
-                        worlds[uid].is_active = False
-                        logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
-                        WorldRunner.last_exception[uid] = sys.exc_info()
-            left = step - (datetime.now() - start)
-            if left.total_seconds() > 0:
-                time.sleep(left.total_seconds())
+    def pause(self):
+        with self.state:
+            self.paused = True
 
 
-NodenetRunner.last_exception = {}
-WorldRunner.last_exception = {}
+MicropsiRunner.last_world_exception = {}
+MicropsiRunner.last_nodenet_exception = {}
 
 
 def kill_runners(signal, frame):
-    runner['world']['runner'].resume()
-    runner['nodenet']['runner'].resume()
-    runner['world']['running'] = False
-    runner['nodenet']['running'] = False
-    runner['world']['runner'].join()
-    runner['nodenet']['runner'].join()
+    runner['runner'].resume()
+    runner['running'] = False
+    runner['runner'].join()
 
 
 def _get_world_uid_for_nodenet_uid(nodenet_uid):
@@ -419,25 +396,30 @@ def start_nodenetrunner(nodenet_uid):
     """Starts a thread that regularly advances the given nodenet by one step."""
 
     nodenets[nodenet_uid].is_active = True
-    if runner['nodenet']['runner'].paused:
-        runner['nodenet']['runner'].resume()
+    if runner['runner'].paused:
+        runner['runner'].resume()
     return True
 
 
-def set_nodenetrunner_timestep(timestep):
+def set_runner_properties(timestep, factor):
     """Sets the speed of the nodenet simulation in ms.
 
     Argument:
         timestep: sets the simulation speed.
     """
-    configs['nodenetrunner_timestep'] = timestep
-    runner['nodenet']['timestep'] = timestep
+    configs['runner_timestep'] = timestep
+    runner['timestep'] = timestep
+    configs['runner_factor'] = int(factor)
+    runner['factor'] = int(factor)
     return True
 
 
-def get_nodenetrunner_timestep():
+def get_runner_properties():
     """Returns the speed that has been configured for the nodenet runner (in ms)."""
-    return configs['nodenetrunner_timestep']
+    return {
+        'timestep': configs['runner_timestep'],
+        'factor': configs['runner_factor']
+    }
 
 
 def get_is_nodenet_running(nodenet_uid):
@@ -450,7 +432,9 @@ def stop_nodenetrunner(nodenet_uid):
     nodenets[nodenet_uid].is_active = False
     test = {nodenets[uid].is_active for uid in nodenets}
     if True not in test:
-        runner['nodenet']['runner'].pause()
+        test = {worlds[uid].is_active for uid in worlds}
+        if True not in test:
+            runner['runner'].pause()
 
     return True
 
@@ -680,9 +664,9 @@ def get_nodespace_list(nodenet_uid):
 def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}
-    if nodenet_uid in NodenetRunner.last_exception:
-        e = NodenetRunner.last_exception[nodenet_uid]
-        del NodenetRunner.last_exception[nodenet_uid]
+    if nodenet_uid in MicropsiRunner.last_nodenet_exception:
+        e = MicropsiRunner.last_nodenet_exception[nodenet_uid]
+        del MicropsiRunner.last_nodenet_exception[nodenet_uid]
         raise Exception("Error during stepping nodenet").with_traceback(e[2]) from e[1]
     if step < nodenets[nodenet_uid].current_step:
         data = get_nodenet_area(nodenet_uid, nodespace, **coordinates)
@@ -1068,14 +1052,17 @@ load_user_files()
 
 # initialize runners
 # Initialize the threads for the continuous simulation of nodenets and worlds
-if 'worldrunner_timestep' not in configs:
-    configs['worldrunner_timestep'] = 5000
-    configs['nodenetrunner_timestep'] = 1000
+if 'runner_timestep' not in configs:
+    configs['runner_timestep'] = 200
     configs.save_configs()
-runner['world']['running'] = True
-runner['world']['runner'] = WorldRunner()
-runner['nodenet']['running'] = True
-runner['nodenet']['runner'] = NodenetRunner()
+if 'runner_factor' not in configs:
+    configs['runner_factor'] = 2
+    configs.save_configs()
+
+set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+
+runner['running'] = True
+runner['runner'] = MicropsiRunner()
 
 add_signal_handler(kill_runners)
 

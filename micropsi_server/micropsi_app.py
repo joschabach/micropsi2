@@ -643,15 +643,15 @@ def world_list(current_world=None):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
-@micropsi_app.route("/config/nodenet/runner")
-@micropsi_app.route("/config/nodenet/runner", method="POST")
-def edit_nodenetrunner():
+@micropsi_app.route("/config/runner")
+@micropsi_app.route("/config/runner", method="POST")
+def edit_runner_properties():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        runtime.set_nodenetrunner_timestep(int(request.params['runner_timestep']))
-        return dict(status="success", msg="Timestep saved")
+        runtime.set_runner_properties(int(request.params['timestep']), int(request.params['factor']))
+        return dict(status="success", msg="Settings saved")
     else:
-        return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=runtime.get_nodenetrunner_timestep())
+        return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
 @micropsi_app.route("/config/world/runner")
@@ -764,14 +764,14 @@ def start_nodenetrunner(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
 
 
-@rpc("set_nodenetrunner_timestep", permission_required="manage nodenets")
-def set_nodenetrunner_timestep(timestep):
-    return runtime.set_nodenetrunner_timestep(timestep)
+@rpc("set_runner_properties", permission_required="manage server")
+def set_runner_properties(timestep, factor):
+    return runtime.set_runner_properties(timestep, factor)
 
 
-@rpc("get_nodenetrunner_timestep", permission_required="manage server")
-def get_nodenetrunner_timestep():
-    return True, runtime.get_nodenetrunner_timestep()
+@rpc("get_runner_properties")
+def get_runner_properties():
+    return True, runtime.get_runner_properties()
 
 
 @rpc("get_is_nodenet_running")

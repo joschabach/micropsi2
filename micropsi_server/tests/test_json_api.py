@@ -107,19 +107,22 @@ def test_start_nodenetrunner(app, test_nodenet):
     assert response.json_body['data']['is_active']
 
 
-def test_get_nodenetrunner_timestep(app):
+def test_get_runner_properties(app):
     app.set_auth()
-    response = app.get_json('/rpc/get_nodenetrunner_timestep()')
+    response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
+    assert 'timestep' in response.json_body['data']
+    assert 'factor' in response.json_body['data']
 
 
-def test_set_nodenetrunner_timestep(app):
+def test_set_runner_properties(app):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenetrunner_timestep', params=dict(timestep=10))
+    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, factor=12))
     assert_success(response)
-    response = app.get_json('/rpc/get_nodenetrunner_timestep()')
+    response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
-    assert response.json_body['data'] == 10
+    assert response.json_body['data']['timestep'] == 123
+    assert response.json_body['data']['factor'] == 12
 
 
 def test_get_is_nodenet_running(app, test_nodenet):

@@ -2635,13 +2635,13 @@ function handlePasteNodes(pastemode){
         offset: offset
     }, success = function(data){
         deselectAll();
-        for(var i = 0; i < data.result.nodes.length; i++){
-            var n = data.result.nodes[i];
+        for(var i = 0; i < data.nodes.length; i++){
+            var n = data.nodes[i];
             addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
             selectNode(n.uid);
         }
-        for(i = 0; i < data.result.links.length; i++){
-            var l = data.result.links[i];
+        for(i = 0; i < data.links.length; i++){
+            var l = data.links[i];
             addLink(new Link(l.uid, l.source_node_uid, l.source_gate_name, l.target_node_uid, l.target_slot_name, l.weight, l.certainty));
         }
         view.draw();
@@ -3151,7 +3151,8 @@ function addSlotMonitor(node, index){
         slot: node.slotIndexes[index]
     }, function(data){
         $(document).trigger('monitorsChanged');
-        monitors[data.uid] = data;
+        monitors[data] = {};
+        setMonitorData(data);
     });
 }
 
@@ -3162,8 +3163,18 @@ function addGateMonitor(node, index){
         gate: node.gateIndexes[index]
     }, function(data){
         $(document).trigger('monitorsChanged');
-        monitors[data.uid] = data;
+        monitors[data] = {};
+        setMonitorData(data);
     });
+}
+
+function setMonitorData(uid){
+    api.call('export_monitor_data', params={
+        'nodenet_uid': currentNodenet,
+        'monitor_uid': uid
+    }, function(data){
+        monitors[uid] = data;
+    })
 }
 
 function removeMonitor(node, target, type){

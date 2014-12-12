@@ -60,11 +60,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
     }
 
     # specs for vision /fovea
-    horizontal_angle = 90    # angles defining the agent's visual field
-    vertical_angle = 60
-    focal_length = 1         # distance of image plane from projective point /fovea
-    resolution = 40          # camera resolution for a specific visual field
-    max_dist = 250           # maximum distance for raytracing
+    focal_length = 1  # distance of image plane from projective point /fovea
+    max_dist = 150    # maximum distance for raytracing
+    resolution = 2    # number of rays per tick in viewport /camera coordinate system
+    im_width = 64     # width of projection /image plane in the world
+    im_height = 32    # height of projection /image plane in the world
+    cam_width = 1.    # width of normalized device /camera /viewport
+    cam_height = 1.   # height of normalized device /camera /viewport
 
     loco_nodes = {}
 
@@ -285,8 +287,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
                 # get block type for current fovea position
                 block_type, _ = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
+
                 # map block type to one of the sensors
                 self.map_block_type_to_sensor(block_type)
+
                 # set fovea sensors; sic because fovea value is used as link weight
                 self.datasources['fov_x'] = self.datatargets['fov_x']
                 self.datasources['fov_y'] = self.datatargets['fov_y']
@@ -355,18 +359,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
         yaw = self.spockplugin.clientinfo.position['yaw']
         pitch = self.spockplugin.clientinfo.position['pitch']
 
-        # compute parameters from specs
-        width = 2 * tan(radians(self.horizontal_angle / 2)) * self.focal_length
-        height = 2 * tan(radians(self.vertical_angle / 2)) * self.focal_length
+        # compute ticks per dimension
+        tick_w = self.cam_width / self.im_width / self.resolution
+        tick_h = self.cam_height / self.im_height / self.resolution
 
         # span image plane
-        # such that height is mostly above y and width is to left and right of x in equal shares
-        tick = 1. / self.resolution
-        # split height 95 to 5
-        h_low = height * 0.5 / 10
-        h_up = height - h_low
-        h_line = [i for i in self.frange(pos_x - width / 2, pos_x + width / 2, tick)]
-        v_line = [i for i in self.frange(pos_y - h_low, pos_y + h_up, tick)]
+        # the horizontal plane is split half-half, the vertical plane is shifted upwards wrt the agent's position
+        h_line = [i for i in self.frange(pos_x - 0.5 * self.cam_width, pos_x + 0.5 * self.cam_width, tick_w)]
+        v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_width, tick_h)]
 
         # compute pixel values of image plane
         block_types = tuple()
@@ -378,14 +378,12 @@ class MinecraftGraphLocomotion(WorldAdapter):
         h_line.reverse()
         v_line.reverse()
 
-        # TODO: return a majority vote rather than the one single block type hit
-
         try:
             ret = self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
             return ret
         except IndexError:
             # TODO: For some reason, the fovea sometimes is out of range, triggering IndexErrors
-            self.logger.warning("Sampling gone wrong, returning blocktype zero")
+            self.logger.warning("Sampling gone wrong, returning blocktype -1")
             return -1, -1
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):

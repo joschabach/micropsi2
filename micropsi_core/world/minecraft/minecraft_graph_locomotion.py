@@ -21,7 +21,16 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'solids': 0,   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
         'otter': 0,    # miscellaneous /otter
         'fov_x': 0,  # the fovea sensors receive their input from the fovea actors
-        'fov_y': 0   #
+        'fov_y': 0,   #
+        'fov_0_0': 0,
+        'fov_0_1': 0,
+        'fov_0_2': 0,
+        'fov_1_0': 0,
+        'fov_1_1': 0,
+        'fov_1_2': 0,
+        'fov_2_0': 0,
+        'fov_2_1': 0,
+        'fov_2_2': 0,
     }
 
     datatargets = {
@@ -62,11 +71,16 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # specs for vision /fovea
     focal_length = 1  # distance of image plane from projective point /fovea
     max_dist = 150    # maximum distance for raytracing
-    resolution = 2    # number of rays per tick in viewport /camera coordinate system
-    im_width = 64     # width of projection /image plane in the world
-    im_height = 32    # height of projection /image plane in the world
+    resolution = 4    # number of rays per tick in viewport /camera coordinate system
+    im_width = 32     # width of projection /image plane in the world
+    im_height = 16    # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
+    patch_len = 3     # side length of a fovea patch
+
+    # Note: the 'maximum' parameter of the saccader's fov_x and fov_y gates as well as of the sensors fov_x and fov_y
+    # have to be adapted to match im_width * resolution - patch_len and im_height * resolution - patch_len respectively
+    # TODO: fix this!
 
     loco_nodes = {}
 
@@ -285,11 +299,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # read fovea actors, trigger sampling, and provide action feedback
             if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
                     and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
-                # get block type for current fovea position
-                block_type, _ = self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
 
-                # map block type to one of the sensors
-                self.map_block_type_to_sensor(block_type)
+                # get visual input for a patch with (fov_x, fov_y) at the lower left corner and assign them
+                # to self.datasources['fov_*_*']
+                self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
+                # TODO: pool different block types into a few
 
                 # set fovea sensors; sic because fovea value is used as link weight
                 self.datasources['fov_x'] = self.datatargets['fov_x']
@@ -378,13 +392,17 @@ class MinecraftGraphLocomotion(WorldAdapter):
         h_line.reverse()
         v_line.reverse()
 
-        try:
-            ret = self.project(h_line[fov_x], v_line[fov_y], zi, x0, y0, z0, yaw, pitch)
-            return ret
-        except IndexError:
-            # TODO: For some reason, the fovea sometimes is out of range, triggering IndexErrors
-            self.logger.warning("Sampling gone wrong, returning blocktype -1")
-            return -1, -1
+        for i in range(self.patch_len):
+            for j in range(self.patch_len):
+                str_name = 'fov_%d_%d' % (j, i)
+                try:
+                    block_type, distance = self.project(h_line[fov_x + j], v_line[fov_y + i], zi, x0, y0, z0, yaw, pitch)
+                    self.datasources[str_name] = block_type
+                    # for now, keep block type sensors and activate them respectively
+                    self.map_block_type_to_sensor(block_type)
+                except IndexError:
+                    self.logger.warning("Sampling gone wrong, returning blocktype -1")
+                    self.datasources[str_name] = -1
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

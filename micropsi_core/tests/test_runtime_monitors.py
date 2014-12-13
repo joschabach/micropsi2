@@ -45,6 +45,7 @@ def test_get_monitor_data(fixed_nodenet):
     assert data['monitors'][uid]['node_name'] == 'A1'
     values = data['monitors'][uid]['values']
     assert len(values.keys()) == 1
+    assert [k for k in values.keys()] == [1]
 
 
 def test_export_monitor_data(fixed_nodenet):

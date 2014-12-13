@@ -378,7 +378,7 @@ class Nodenet(metaclass=ABCMeta):
 
     def update_monitors(self):
         for uid in self.__monitors:
-            self.__monitors[uid].step(self.step)
+            self.__monitors[uid].step(self.current_step)
 
     def construct_monitors_dict(self):
         data = {}

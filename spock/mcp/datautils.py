@@ -66,7 +66,7 @@ def unpack_slot(bbuff):
                 slot['enchant_data'] = data
     return slot
 
-def pack_slot(slot):
+def pack_slot(data):
     o = pack(MC_SHORT, data['id'])
     if data['id'] != -1:
         o += pack(MC_BYTE, data['amount'])

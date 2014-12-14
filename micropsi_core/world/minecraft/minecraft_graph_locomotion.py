@@ -3,6 +3,7 @@ from micropsi_core import tools
 import random
 import logging
 import time
+from functools import partial
 
 
 class MinecraftGraphLocomotion(WorldAdapter):
@@ -50,16 +51,16 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_two': 0,
         'take_exit_three': 0,
         'fov_x': 0,
-        'fov_y': 0
+        'fov_y': 0,
+        'eat': 0
     }
 
     # a collection of conditions to check on every update(..), eg., for action feedback
-    waiting_list = {
+    waiting_list = []
         # str(time.time()): {
         #     'target': <key in self.datatarget_feedbacks>,
         #     'exit_uid': <uid of next position>
         # }
-    }
 
     # specs for vision /fovea
     horizontal_angle = 90    # angles defining the agent's visual field
@@ -71,8 +72,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes = {}
 
     target_loco_node_uid = None
-    last_teleport = 0
-    tp_timeout = 10
 
     loco_node_template = {
         'uid': "",
@@ -202,6 +201,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     logger = None
 
+    tp_tolerance = 5
+    action_timeout = 10
+
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
         self.spockplugin = self.world.spockplugin
@@ -210,8 +212,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-
-        tol = 5  # tolerance wrt teleport position
 
         if not self.spockplugin.is_connected():
             raise RuntimeError("Lost connection to minecraft server")
@@ -227,7 +227,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 y = int(self.spockplugin.clientinfo.position['y'])
                 z = int(self.spockplugin.clientinfo.position['z'])
                 for k, v in self.loco_nodes.items():
-                    if abs(x - v['x']) <= tol and abs(y - v['y']) <= tol and abs(z - v['z']) <= tol:
+                    if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
                         self.current_loco_node = self.loco_nodes[k]
 
                 if self.current_loco_node is None:
@@ -253,7 +253,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
-            self.check_for_action_feedback(tol)
+            self.check_for_action_feedback()
 
             # don't reset self.datatargets because their activation is processed differently
             # depending on whether they fire continuously or not, see self.datatarget_history
@@ -263,25 +263,31 @@ class MinecraftGraphLocomotion(WorldAdapter):
             if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
                 # if the current node on the transition graph has the selected exit
                 if self.current_loco_node['exit_one_uid'] is not None:
-                    # add request for action feedback from Minecraft to self.waiting_list
-                    # ie. check if ( future ) position is equal to position of selected exit node
-                    # TODO: add timeout
-                    self.add_to_waiting_list('take_exit_one', self.current_loco_node['exit_one_uid'])
-                    self.locomote(self.current_loco_node['exit_one_uid'])
+                    self.register_action(
+                        'take_exit_one',
+                        partial(self.locomote, self.current_loco_node['exit_one_uid']),
+                        partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
+                    )
                 else:
                     self.datatarget_feedback['take_exit_one'] = -1.
 
             if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
                 if self.current_loco_node['exit_two_uid'] is not None:
-                    self.add_to_waiting_list('take_exit_two', self.current_loco_node['exit_two_uid'])
-                    self.locomote(self.current_loco_node['exit_two_uid'])
+                    self.register_action(
+                        'take_exit_two',
+                        partial(self.locomote, self.current_loco_node['exit_two_uid']),
+                        partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
+                    )
                 else:
                     self.datatarget_feedback['take_exit_two'] = -1.
 
             if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
                 if self.current_loco_node['exit_three_uid'] is not None:
-                    self.add_to_waiting_list('take_exit_three', self.current_loco_node['exit_three_uid'])
-                    self.locomote(self.current_loco_node['exit_three_uid'])
+                    self.register_action(
+                        'take_exit_three',
+                        partial(self.locomote, self.current_loco_node['exit_three_uid']),
+                        partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
+                    )
                 else:
                     self.datatarget_feedback['take_exit_three'] = -1.
 
@@ -301,7 +307,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
 
             # impatience!
-            self.check_for_action_feedback(tol)
+            self.check_for_action_feedback()
 
             # update datatarget history
             for k in self.datatarget_history.keys():
@@ -317,34 +323,43 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_loco_node['z']))
 
         self.target_loco_node_uid = target_loco_node_uid
-        self.last_teleport = time.clock()
 
         self.current_loco_node = new_loco_node
 
-    def check_for_action_feedback(self, tol):
+    def check_for_action_feedback(self):
         """ """
         # check if any pending datatarget_feedback can be confirmed with data from the world
         if self.waiting_list:
-            mark_for_deletion = []
-            agent_moved = False
-            for k, item in self.waiting_list.items():
-                exit_uid = item['exit_uid']
-                # somehwat brittle because teleportation is imprecise and the buffer is picked by inspection
-                if abs(self.loco_nodes[exit_uid]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= tol \
-                        and abs(self.loco_nodes[exit_uid]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= tol \
-                        and abs(self.loco_nodes[exit_uid]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
-                    self.datatarget_feedback[item['target']] = 1.
-                    mark_for_deletion.append(k)
-                    agent_moved = True
+            new_waiting_list = []
+            for index, item in enumerate(self.waiting_list):
+                if item['validation']():
+                    self.datatarget_feedback[item['datatarget']] = 1.
+                else:
+                    new_waiting_list.append(item)
 
-            if not agent_moved:
-                if time.clock() - self.last_teleport > self.tp_timeout:
-                    self.locomote(self.target_loco_node_uid)
+            for item in new_waiting_list:
+                if time.clock() - item['time'] > self.action_timeout:
+                    # re-trigger action
+                    item['action']()
+                    item['time'] = time.clock()
 
-            # delete processed items from waiting_list
-            for i in mark_for_deletion:
-                del self.waiting_list[i]
-            del mark_for_deletion
+            self.waiting_list = new_waiting_list
+
+    def register_action(self, datatarget, action_function, validation_function):
+        """ registers an action to be performed by the agent. Will wait, and eventually re-trigger the action
+            until the validation function returns true, signalling success of the action"""
+        self.waiting_list.append({
+            'datatarget': datatarget,
+            'action': action_function,
+            'validation': validation_function,
+            'time': time.clock()
+        })
+        action_function()
+
+    def check_movement_feedback(self, target_loco_node):
+        return abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
+            and abs(self.loco_nodes[target_loco_node]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= self.tp_tolerance \
+            and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance
 
     def get_visual_input(self, fov_x, fov_y):
         """
@@ -554,10 +569,3 @@ class MinecraftGraphLocomotion(WorldAdapter):
             yield start
             start += step
 
-    def add_to_waiting_list(self, target, exit_uid):
-        """
-        """
-        key = str(time.time())
-        self.waiting_list[key] = {}
-        self.waiting_list[key]['target'] = target
-        self.waiting_list[key]['exit_uid'] = exit_uid

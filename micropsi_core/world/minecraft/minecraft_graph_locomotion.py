@@ -34,6 +34,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
+        'eat': 0
     }
 
     datatarget_feedback = {
@@ -43,6 +44,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
+        'eat': 0
     }
 
     # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -291,6 +293,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_three'] = -1.
 
+            if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
+                self.register_action(
+                    'eat',
+                    self.spockplugin.eat,
+                    partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
+                )
+
             # read fovea actors, trigger sampling, and provide action feedback
             if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
                     and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
@@ -355,6 +364,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'time': time.clock()
         })
         action_function()
+
+    def check_eat_feedback(self, old_value):
+        return self.spockplugin.clientinfo.health['food'] > old_value
 
     def check_movement_feedback(self, target_loco_node):
         return abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \

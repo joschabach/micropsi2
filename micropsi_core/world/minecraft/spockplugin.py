@@ -66,6 +66,24 @@ class MicropsiPlugin(object):
                 'stance': target_coords[1] // 16 * 16 + ground_offset + STANCE_ADDITION
             })
 
+    def eat(self):
+        """ Attempts to eat the held item. Assumes held item implements eatable """
+        data = {
+            'x': int(self.clientinfo.position['x']),
+            'y': int(self.clientinfo.position['y']),
+            'z': int(self.clientinfo.position['z']),
+            'direction': -1,
+            'held_item': {
+                'id': 247,
+                'amount': 1,
+                'damage': 0
+            },
+            'cur_pos_x': -1,
+            'cur_pos_y': -1,
+            'cur_pos_z': -1
+        }
+        self.net.push(Packet(ident='PLAY>Player Block Placement', data=data))
+
     def move(self, position=None):
 
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):

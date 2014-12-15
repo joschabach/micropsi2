@@ -3,7 +3,6 @@ from spock.mcmap import smpmap
 from spock.mcp import mcdata, mcpacket
 from spock.mcp.mcpacket import Packet
 from spock.utils import pl_announce
-from micropsi_core.world.minecraft.psidispatcher import PsiDispatcher, STANCE_ADDITION
 
 STANCE_ADDITION = 1.620
 STEP_LENGTH = 1.0
@@ -27,8 +26,6 @@ class MicropsiPlugin(object):
             'cl_position_update',
             self.subtract_stance
         )
-
-        self.psi_dispatcher = PsiDispatcher(self)
 
         # make references between micropsi world and MicropsiPlugin
         self.micropsi_world = settings['micropsi_world']

@@ -20,8 +20,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'leaves': 0,   # 18
         'solids': 0,   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
         'otter': 0,    # miscellaneous /otter
-        'fov_x': 0,  # the fovea sensors receive their input from the fovea actors
-        'fov_y': 0,   #
+
+        'fov_x': 0,    # fovea sensors receive their input from the fovea actors
+        'fov_y': 0,
 
         'fov__0_0': 0,
         'fov__0_1': 0,
@@ -141,9 +142,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
     cam_height = 1.   # height of normalized device /camera /viewport
     patch_len = 3     # side length of a fovea patch
 
-    # Note: the 'maximum' parameter of the saccader's fov_x and fov_y gates as well as of the sensors fov_x and fov_y
-    # have to be adapted to match im_width * resolution - patch_len and im_height * resolution - patch_len respectively
-    # TODO: fix this!
+    # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
+    # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
 
     loco_nodes = {}
 
@@ -363,18 +363,18 @@ class MinecraftGraphLocomotion(WorldAdapter):
             if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
                     and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
 
-                # get visual input for a patch with (fov_x, fov_y) at the lower left corner and assign them
-                # to self.datasources['fov_*_*']
-                self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
+                # get visual input /block types for the fovea ( aka self.datasources['fov__%d_%d'] )
+                # where (fov_x,fov_y) is positioned at the bottom left corner of the fovea
+                self.get_visual_input(self.datatargets['fov_x'] - 1., self.datatargets['fov_y'] - 1.)
                 # TODO: pool different block types into a few
 
                 # set fovea sensors; sic because fovea value is used as link weight
                 self.datasources['fov_x'] = self.datatargets['fov_x']
                 self.datasources['fov_y'] = self.datatargets['fov_y']
                 # provide action feedback
+                # Note: saccading can't fail because fov_x, fov_y are internal actors, not ones granted by the world
                 self.datatarget_feedback['fov_x'] = 1
                 self.datatarget_feedback['fov_y'] = 1
-            # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
 
             # impatience!
             self.check_for_action_feedback(tol)
@@ -445,9 +445,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         h_line = [i for i in self.frange(pos_x - 0.5 * self.cam_width, pos_x + 0.5 * self.cam_width, tick_w)]
         v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_width, tick_h)]
 
-        # compute pixel values of image plane
-        block_types = tuple()
-        distances = tuple()
+        # scale up fov_x, fov_y
+        fov_x = round(fov_x * (self.im_width * self.resolution - self.patch_len))
+        fov_y = round(fov_y * (self.im_height * self.resolution - self.patch_len))
 
         x0, y0, z0 = pos_x, pos_y, pos_z  # agent's position aka projective point
         zi = z0 + self.focal_length
@@ -461,14 +461,19 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 try:
                     block_type, distance = self.project(h_line[fov_x + j], v_line[fov_y + i], zi, x0, y0, z0, yaw, pitch)
                     self.datasources[str_name] = block_type
+
                     # for now, keep block type sensors and activate them respectively
                     self.map_block_type_to_sensor(block_type)
+
                 except IndexError:
                     self.logger.warning("Sampling gone wrong, returning blocktype -1")
                     self.datasources[str_name] = -1
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
+        Given a point on the projection plane and the agent's position, cast a
+        ray to find the nearest block type that isn't air and its distance from
+        the projective plane.
         """
         from math import sqrt
 

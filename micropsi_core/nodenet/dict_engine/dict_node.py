@@ -121,7 +121,7 @@ class DictNode(NetEntity, Node):
         nodenet._register_node(self)
         self.sheaves = {"default": emptySheafElement.copy()}
 
-        self.activation = 0
+        self.activation = activation
 
     def node_function(self):
         """Called whenever the node is activated or active.

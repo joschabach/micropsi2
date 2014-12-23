@@ -452,19 +452,41 @@ class MinecraftGraphLocomotion(WorldAdapter):
         h_line.reverse()
         v_line.reverse()
 
+        # compute block type values for the whole patch /fovea
+        patch = []
         for i in range(self.patch_len):
             for j in range(self.patch_len):
-                str_name = 'fov_%d_%d' % (j, i)
                 try:
                     block_type, distance = self.project(h_line[fov_x + j], v_line[fov_y + i], zi, x0, y0, z0, yaw, pitch)
-                    self.datasources[str_name] = block_type
-
-                    # for now, keep block type sensors and activate them respectively
-                    self.map_block_type_to_sensor(block_type)
-
                 except IndexError:
-                    self.logger.warning("Sampling gone wrong, returning blocktype -1")
-                    self.datasources[str_name] = -1
+                    block_type, distance = -1, -1
+                    print("IndexError at (%d,%d)" % (fov_x + j, fov_y + i))
+                patch.append(block_type)
+                # for now, keep block type sensors and activate them respectively
+                self.map_block_type_to_sensor(block_type)
+
+        # normalize block type values
+        # subtract patch mean
+        mean = float(sum(patch)) / len(patch)
+        patch_avg = [x - mean for x in patch]
+
+        # truncate to +/- 3 standard deviations and scale to -1 and +1
+        var = [x ** 2 for x in patch_avg]
+        std = (sum(var) / len(var)) ** 0.5
+        pstd = 3 * std
+        # if block types are all the same number, eg. -1, std will be 0, therefore
+        if pstd == 0:
+            patch_std = [0 for x in patch_avg]
+        else:
+            patch_std = [max(min(x, pstd), -pstd) / pstd for x in patch_avg]
+
+        # scale from [-1,+1] to [0.1,0.9] and write values to sensors
+        patch_resc = [(1 + x) * 0.4 + 0.1 for x in patch_std]
+        for i in range(self.patch_len):
+            for j in range(self.patch_len):
+                str_name = 'fov__%d_%d' % (j, i)  # Beware: magic name
+                # write values to self.datasources aka sensors
+                self.datasources[str_name] = patch_resc[self.patch_len * i + j]
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

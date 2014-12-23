@@ -140,7 +140,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     im_height = 16    # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 3     # side length of a fovea patch
+    patch_len = 8     # side length of a fovea patch
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -319,10 +319,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datatarget_feedback['orientation'] = 1
             # self.datatargets['orientation'] = 0
 
-            # reset self.datasources
-            for k in self.datasources.keys():
-                self.datasources[k] = 0.
-
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
@@ -339,7 +335,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 if self.current_loco_node['exit_one_uid'] is not None:
                     # add request for action feedback from Minecraft to self.waiting_list
                     # ie. check if ( future ) position is equal to position of selected exit node
-                    # TODO: add timeout
                     self.add_to_waiting_list('take_exit_one', self.current_loco_node['exit_one_uid'])
                     self.locomote(self.current_loco_node['exit_one_uid'])
                 else:
@@ -359,22 +354,24 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_three'] = -1.
 
-            # read fovea actors, trigger sampling, and provide action feedback
-            if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
-                    and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
+            # set fovea sensors
+            # Note: fovea sensors store the position of the fovea while fovea actors store fovea movement /saccades
+            # it just so happens that the movement is given in absolut numbers and hence coincides with the position
+            # however, to allow for no movement, ie. self.datatargets['fov_x'] = 0. and self.datatargets['fov_y'] = 0.,
+            # the numeric scale of the actors is shifted +1 where movements are encoded in the interval [1.,2.]
+            # Also: we chose the middle as the default fovea position, ie. (0.5,0.5)
+            self.datasources['fov_x'] = 0.5 if self.datatargets['fov_x'] == 0. else self.datatargets['fov_x'] - 1.
+            self.datasources['fov_y'] = 0.5 if self.datatargets['fov_y'] == 0. else self.datatargets['fov_y'] - 1.
 
-                # get visual input /block types for the fovea ( aka self.datasources['fov__%d_%d'] )
-                # where (fov_x,fov_y) is positioned at the bottom left corner of the fovea
-                self.get_visual_input(self.datatargets['fov_x'] - 1., self.datatargets['fov_y'] - 1.)
-                # TODO: pool different block types into a few
+            # write sensor values to fovea aka self.datasources['fov__%d_%d']
+            # where (fov_x,fov_y) is positioned at the bottom left corner, ie. self.datasources['fov__0_0']
+            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'])
+            # TODO: consider pooling different block types into a few select ones
 
-                # set fovea sensors; sic because fovea value is used as link weight
-                self.datasources['fov_x'] = self.datatargets['fov_x']
-                self.datasources['fov_y'] = self.datatargets['fov_y']
-                # provide action feedback
-                # Note: saccading can't fail because fov_x, fov_y are internal actors, not ones granted by the world
-                self.datatarget_feedback['fov_x'] = 1
-                self.datatarget_feedback['fov_y'] = 1
+            # provide action feedback
+            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
+            self.datatarget_feedback['fov_x'] = 1
+            self.datatarget_feedback['fov_y'] = 1
 
             # impatience!
             self.check_for_action_feedback(tol)

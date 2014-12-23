@@ -441,9 +441,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         tick_h = self.cam_height / self.im_height / self.resolution
 
         # span image plane
-        # the horizontal plane is split half-half, the vertical plane is shifted upwards wrt the agent's position
+        # the horizontal plane is split half-half, the vertical plane is shifted upwards
         h_line = [i for i in self.frange(pos_x - 0.5 * self.cam_width, pos_x + 0.5 * self.cam_width, tick_w)]
-        v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_width, tick_h)]
+        v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_height, tick_h)]
 
         # scale up fov_x, fov_y
         fov_x = round(fov_x * (self.im_width * self.resolution - self.patch_len))

@@ -140,30 +140,24 @@ class Minecraft2D(Minecraft):
     def get_perspective_projection(self, agent_info):
         """
         """
-        from math import ceil, radians, sqrt, tan
+        from math import sqrt
         from micropsi_core.world.minecraft import structs
 
         # specs
-        horizontal_angle = 90   # angle that defines the agent's visual field
-        vertical_angle = 60     # angle that defines the agent's visual field
-        focal_length = 1        # distance of image plane from projective point
-        resolution = 40         # camera resolution for a specific visual field
-        max_dist = 150          # maximum distance for raytracing
-
-        # compute parameters from specs
-        width = 2 * tan(radians(horizontal_angle / 2)) * focal_length
-        height = 2 * tan(radians(vertical_angle / 2)) * focal_length
+        focal_length = 1  # distance of image plane from projective point
+        max_dist = 150    # maximum distance for raytracing
+        resolution = 4    # camera resolution for a specific visual field
+        im_width = 16     # width of projection /image plane
+        im_height = 8    # height of projection /image plane
+        cam_width = 1.    # width of viewport /camera coords
+        cam_height = 1.   # height of viewport /camera coords
 
         # save parameters for frontend
-        self.assets['width'] = ceil(width * resolution)
-        self.assets['height'] = ceil(height * resolution)
+        self.assets['width'] = im_width * resolution
+        self.assets['height'] = im_height * resolution
 
         # get agent's position, yaw, and pitch
-        position = (
-            int(agent_info['x']),
-            int(agent_info['y']),
-            int(agent_info['z'])
-        )
+        position = (int(agent_info['x']), int(agent_info['y']), int(agent_info['z']))
         yaw = 360 - float(agent_info['yaw']) % 360    # given in degrees
         # check which yaw value is straight forward, potentially it's 90, ie. mc yaw + 90
         pitch = float(agent_info['pitch'])      # given in degrees
@@ -190,14 +184,12 @@ class Minecraft2D(Minecraft):
         # 180 - upside down straight backwards
         # 270 - straight up
 
-        # span image plane
-        # such that height is mostly above y and width is to left and right of x in equal shares
-        tick = 1. / resolution
-        # split height 95 to 5
-        h_low = height * 0.5 / 10
-        h_up = height - h_low
-        h_line = [i for i in self.frange(position[0] - width / 2, position[0] + width / 2, tick)]
-        v_line = [i for i in self.frange(position[1] - h_low, position[1] + h_up, tick)]
+        # span viewport
+        tick_w = cam_width / im_width / resolution
+        tick_h = cam_height / im_height / resolution
+        # the horizontal plane is split half-half, the vertical plane is shifted upwards wrt the agent's position
+        h_line = [i for i in self.frange(position[0] - 0.5 * cam_width, position[0] + 0.5 * cam_width, tick_w)]
+        v_line = [i for i in self.frange(position[1] - 0.05 * cam_height, position[1] + 0.95 * cam_height, tick_h)]
 
         # compute pixel values of image plane
         projection = tuple()

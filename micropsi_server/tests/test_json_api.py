@@ -99,9 +99,9 @@ def test_set_node_activation(app, test_nodenet):
     assert sheaves['default']['activation'] == 0.734
 
 
-def test_start_nodenetrunner(app, test_nodenet):
+def test_start_simulation(app, test_nodenet):
     app.set_auth()
-    response = app.post_json('/rpc/start_nodenetrunner', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/start_simulation', params=dict(nodenet_uid=test_nodenet))
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     assert response.json_body['data']['is_active']
@@ -125,31 +125,31 @@ def test_set_runner_properties(app):
     assert response.json_body['data']['factor'] == 12
 
 
-def test_get_is_nodenet_running(app, test_nodenet):
-    response = app.get_json('/rpc/get_is_nodenet_running(nodenet_uid="%s")' % test_nodenet)
+def test_get_is_simulation_running(app, test_nodenet):
+    response = app.get_json('/rpc/get_is_simulation_running(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert not response.json_body['data']
 
 
-def test_stop_nodenetrunner(app, test_nodenet):
+def test_stop_simulation(app, test_nodenet):
     app.set_auth()
-    response = app.post_json('/rpc/start_nodenetrunner', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/start_simulation', params=dict(nodenet_uid=test_nodenet))
     assert_success(response)
-    response = app.get_json('/rpc/get_is_nodenet_running(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_is_simulation_running(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert response.json_body['data']
-    response = app.post_json('/rpc/stop_nodenetrunner', params=dict(nodenet_uid=test_nodenet))
+    response = app.post_json('/rpc/stop_simulation', params=dict(nodenet_uid=test_nodenet))
     assert_success(response)
-    response = app.get_json('/rpc/get_is_nodenet_running(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_is_simulation_running(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert not response.json_body['data']
 
 
-def test_step_nodenet(app, test_nodenet):
+def test_step_simulation(app, test_nodenet):
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)
     assert response.json_body['data']['current_step'] == 0
-    response = app.get_json('/rpc/step_nodenet(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/step_simulation(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert response.json_body['data'] == 1
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",x1=0,x2=100,y1=0,y2=100)' % test_nodenet)

@@ -2233,12 +2233,10 @@ function stepNodenet(event){
         stopNodenetrunner(event);
     }
     if(currentNodenet){
-        api.call("step_nodenet",
+        api.call("step_simulation",
             {nodenet_uid: currentNodenet},
             success=function(data){
-                refreshNodespace();
-                $(document).trigger('nodenetStepped');
-                dialogs.notification("Nodenet stepped", "success");
+                $(document).trigger('runner_stepped');
             });
     } else {
         dialogs.notification('No nodenet selected', 'error');
@@ -2249,8 +2247,8 @@ function startNodenetrunner(event){
     event.preventDefault();
     nodenetRunning = true;
     if(currentNodenet){
-        api.call('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
-            refreshNodespace();
+        api.call('start_simulation', {nodenet_uid: currentNodenet}, function(){
+            $(document).trigger('runner_started');
         });
     } else {
         dialogs.notification('No nodenet selected', 'error');
@@ -2258,7 +2256,10 @@ function startNodenetrunner(event){
 }
 function stopNodenetrunner(event){
     event.preventDefault();
-    api.call('stop_nodenetrunner', {nodenet_uid: currentNodenet}, function(){ nodenetRunning = false; });
+    api.call('stop_simulation', {nodenet_uid: currentNodenet}, function(){
+        $(document).trigger('runner_stopped');
+        nodenetRunning = false;
+    });
 }
 
 function resetNodenet(event){

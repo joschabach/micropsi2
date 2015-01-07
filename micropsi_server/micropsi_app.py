@@ -759,8 +759,8 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return runtime.set_node_activation(nodenet_uid, node_uid, activation)
 
 
-@rpc("start_nodenetrunner", permission_required="manage nodenets")
-def start_nodenetrunner(nodenet_uid):
+@rpc("start_simulation", permission_required="manage nodenets")
+def start_simulation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
 
 
@@ -774,18 +774,18 @@ def get_runner_properties():
     return True, runtime.get_runner_properties()
 
 
-@rpc("get_is_nodenet_running")
-def get_is_nodenet_running(nodenet_uid):
+@rpc("get_is_simulation_running")
+def get_is_simulation_running(nodenet_uid):
     return True, runtime.get_is_nodenet_running(nodenet_uid)
 
 
-@rpc("stop_nodenetrunner", permission_required="manage nodenets")
-def stop_nodenetrunner(nodenet_uid):
+@rpc("stop_simulation", permission_required="manage nodenets")
+def stop_simulation(nodenet_uid):
     return runtime.stop_nodenetrunner(nodenet_uid)
 
 
-@rpc("step_nodenet", permission_required="manage nodenets")
-def step_nodenet(nodenet_uid):
+@rpc("step_simulation", permission_required="manage nodenets")
+def step_simulation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 

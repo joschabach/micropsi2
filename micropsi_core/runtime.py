@@ -83,7 +83,6 @@ class MicropsiRunner(threading.Thread):
         self.paused = True
         self.state = threading.Condition()
         self.start()
-        self.ticks = 0
 
     def run(self):
         while runner['running']:
@@ -102,24 +101,19 @@ class MicropsiRunner(threading.Thread):
                 if nodenets[uid].is_active:
                     log = True
                     try:
-                        print('step nodenet')
                         nodenets[uid].step()
                         nodenets[uid].update_monitors()
                     except:
                         nodenets[uid].is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
                         MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-
-                    if nodenets[uid].world and self.ticks % runner['factor'] == 0:
+                    if nodenets[uid].world and nodenets[uid].current_step % runner['factor'] == 0:
                         try:
-                            print('step world')
                             nodenets[uid].world.step()
                         except:
                             nodenets[uid].world.is_active = False
                             logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
                             MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
-
-            self.ticks += 1
 
             elapsed = datetime.now() - start
             if log:
@@ -447,6 +441,8 @@ def step_nodenet(nodenet_uid):
     """
     nodenets[nodenet_uid].step()
     nodenets[nodenet_uid].update_monitors()
+    if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
+        nodenets[nodenet_uid].world.step()
     return nodenets[nodenet_uid].current_step
 
 

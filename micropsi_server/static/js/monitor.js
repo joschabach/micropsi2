@@ -54,10 +54,12 @@ $(function(){
         if (currentNodenet = $.cookie('selected_nodenet')) {
             api.call('load_nodenet', {
                 nodenet_uid: currentNodenet,
-                x1: 0,
-                x2: 0,
-                y1: 0,
-                y2: 0
+                coordinates: {
+                    x1: 0,
+                    x2: 0,
+                    y1: 0,
+                    y2: 0
+                }
             }, function(data) {
                 nodenetMonitors = data.monitors;
                 currentMonitors = Object.keys(nodenetMonitors);

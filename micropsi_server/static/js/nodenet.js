@@ -219,10 +219,13 @@ function setCurrentNodenet(uid, nodespace){
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
-            x1: loaded_coordinates.x[0],
-            x2: loaded_coordinates.x[1],
-            y1: loaded_coordinates.y[0],
-            y2: loaded_coordinates.y[1]},
+            coordinates: {
+                x1: loaded_coordinates.x[0],
+                x2: loaded_coordinates.x[1],
+                y1: loaded_coordinates.y[0],
+                y2: loaded_coordinates.y[1]
+            }
+        },
         function(data){
             nodenetscope.activate();
             toggleButtons(true);
@@ -419,10 +422,12 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     if(step){
         params.step = step;
     }
-    params.x1 = parseInt(coordinates.x[0]);
-    params.x2 = parseInt(coordinates.x[1]);
-    params.y1 = parseInt(coordinates.y[0]);
-    params.y2 = parseInt(coordinates.y[1]);
+    params.coordinates = {
+        x1: parseInt(coordinates.x[0]),
+        x2: parseInt(coordinates.x[1]),
+        y1: parseInt(coordinates.y[0]),
+        y2: parseInt(coordinates.y[1])
+    };
     api.call('get_nodespace', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){

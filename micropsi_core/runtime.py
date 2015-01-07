@@ -262,12 +262,12 @@ def load_nodenet(nodenet_uid):
     return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
 
 
-def get_nodenet_data(nodenet_uid, **coordinates):
+def get_nodenet_data(nodenet_uid, nodespace, coordinates):
     """ returns the current state of the nodenet """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         data = nodenet.data
-    data.update(get_nodenet_area(nodenet_uid, **coordinates))
+    data.update(get_nodenet_area(nodenet_uid, nodespace, **coordinates))
     data.update({
         'nodetypes': nodetypes,
         'native_modules': native_modules
@@ -657,7 +657,7 @@ def get_nodespace_list(nodenet_uid):
     return data
 
 
-def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
+def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}
     if nodenet_uid in MicropsiRunner.last_nodenet_exception:

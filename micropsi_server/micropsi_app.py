@@ -701,10 +701,10 @@ def select_nodenet(nodenet_uid):
 
 
 @rpc("load_nodenet")
-def load_nodenet(nodenet_uid, **coordinates):
+def load_nodenet(nodenet_uid, nodespace='Root', coordinates={}):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if result:
-        data = runtime.get_nodenet_data(nodenet_uid, **coordinates)
+        data = runtime.get_nodenet_data(nodenet_uid, nodespace, coordinates)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
         return True, data
     else:

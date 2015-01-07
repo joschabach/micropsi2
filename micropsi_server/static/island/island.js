@@ -74,86 +74,91 @@ addObjectGhost = null;
 
 var agentsList = $('#world_agents_list table');
 
+window.get_world_data = function(){
+    return {world_uid: currentWorld, step: currentWorldSimulationStep};
+}
+window.set_world_data = function(data){
+    if(data.world){
+        data = data.world;
+    }
+    if(jQuery.isEmptyObject(data)){
+        if(worldRunning){
+            setTimeout(refreshWorldView, 100);
+        }
+        return null;
+    }
+    worldscope.activate();
+    currentWorldSimulationStep = data.current_step;
+    $('#world_step').val(currentWorldSimulationStep);
+    $('#world_status').val(data.status_message);
+    // treat agents and objects the same
+    data.objects = jQuery.extend(data.objects, data.agents);
+    for(var key in objects){
+        if(!(key in data.objects)){
+            if(objects[key].representation){
+                objects[key].representation.remove();
+                delete objects[key];
+                if(key in scenes){
+                    delete scenes[key];
+                }
+            }
+        } else {
+            if(data.objects[key].position && data.objects[key].position.length == 2){
+                if(!(path && path.objectMoved && path.name == key)){
+                    objects[key].x = data.objects[key].position[0];
+                    objects[key].y = data.objects[key].position[1];
+                    objects[key].representation.position = new Point(objects[key].x, objects[key].y);
+                }
+                if(data.objects[key].orientation){
+                    objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
+                }
+                objects[key].orientation = data.objects[key].orientation;
+                if(key in scenes){
+                    scenes[key] = data.objects[key].scene;
+                }
+            } else {
+                console.log('obj has no pos: ' + key);
+            }
+        }
+        delete data.objects[key];
+    }
+    for(key in data.objects){
+        if(data.objects[key].position && data.objects[key].position.length == 2){
+            if(key in data.agents){
+                addAgent(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+                agents[key] = objects[key];
+                if('scene' in data.agents[key]){
+                    scenes[data.agents[key].uid] = data.agents[key].scene;
+                }
+            } else {
+                addObject(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
+            }
+        } else {
+            console.log('obj has no pos ' + key);
+        }
+    }
+    // purge agent list
+    for(key in agents){
+        if(!(key in data.agents)){
+            $("#world_agents_list a[data='" + key + "']").parent().parent().remove();
+        }
+    }
+
+    updateSceneViewer();
+    updateViewSize();
+}
+
+register_stepping_function('world', get_world_data, set_world_data);
+
 refreshWorldView = function(){
     api.call('get_world_view',
         {world_uid: currentWorld, step: currentWorldSimulationStep},
-        function(data){
-            if(jQuery.isEmptyObject(data)){
-                if(worldRunning){
-                    setTimeout(refreshWorldView, 100);
-                }
-                return null;
-            }
-            worldscope.activate();
-            currentWorldSimulationStep = data.current_step;
-            $('#world_step').val(currentWorldSimulationStep);
-            $('#world_status').val(data.status_message);
-            // treat agents and objects the same
-            data.objects = jQuery.extend(data.objects, data.agents);
-            for(var key in objects){
-                if(!(key in data.objects)){
-                    if(objects[key].representation){
-                        objects[key].representation.remove();
-                        delete objects[key];
-                        if(key in scenes){
-                            delete scenes[key];
-                        }
-                    }
-                } else {
-                    if(data.objects[key].position && data.objects[key].position.length == 2){
-                        if(!(path && path.objectMoved && path.name == key)){
-                            objects[key].x = data.objects[key].position[0];
-                            objects[key].y = data.objects[key].position[1];
-                            objects[key].representation.position = new Point(objects[key].x, objects[key].y);
-                        }
-                        if(data.objects[key].orientation){
-                            objects[key].representation.rotate(data.objects[key].orientation - objects[key].orientation);
-                        }
-                        objects[key].orientation = data.objects[key].orientation;
-                        if(key in scenes){
-                            scenes[key] = data.objects[key].scene;
-                        }
-                    } else {
-                        console.log('obj has no pos: ' + key);
-                    }
-                }
-                delete data.objects[key];
-            }
-            for(key in data.objects){
-                if(data.objects[key].position && data.objects[key].position.length == 2){
-                    if(key in data.agents){
-                        addAgent(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
-                        agents[key] = objects[key];
-                        if('scene' in data.agents[key]){
-                            scenes[data.agents[key].uid] = data.agents[key].scene;
-                        }
-                    } else {
-                        addObject(new WorldObject(key, data.objects[key].position[0], data.objects[key].position[1], data.objects[key].orientation, data.objects[key].name, data.objects[key].type));
-                    }
-                } else {
-                    console.log('obj has no pos ' + key);
-                }
-            }
-            // purge agent list
-            for(key in agents){
-                if(!(key in data.agents)){
-                    $("#world_agents_list a[data='" + key + "']").parent().parent().remove();
-                }
-            }
-
-            updateSceneViewer();
-            updateViewSize();
-            if(typeof refreshNodenetList == 'function'){
-                refreshNodenetList(); // in case new nodenets were created on the serverside
-            }
-            if(worldRunning){
-                refreshWorldView();
-            }
-        }, error=function(data){
+        success = set_world_data,
+        error=function(data){
             $.cookie('selected_world', '', {expires:-1, path:'/'});
             dialogs.notification(data.Error, 'error');
         }
-    );
+    )
 };
 
 function updateSceneViewer(){

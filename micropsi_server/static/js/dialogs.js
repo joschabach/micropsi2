@@ -80,6 +80,7 @@ var dialogs = {
         form = $('form', el);
         form.ajaxSubmit({
             success: function(data){
+                $(document).trigger('form_submit', form.attr('action'), form.serializeArray());
                 if(data.redirect){
                     window.location.replace(data.redirect);
                 } else if (data.msg){
@@ -367,8 +368,50 @@ updateWorldAdapterSelector = function() {
     }
 };
 
-// data tables
 
+runner_properties = {};
+api.call('get_runner_properties', {}, function(data){
+    runner_properties = data;
+});
+
+listeners = {}
+register_stepping_function = function(type, input, callback){
+    listeners[type] = {'input': input, 'callback': callback};
+}
+fetch_stepping_info = function(){
+    params = {}
+    for (key in listeners){
+        params[key] = listeners[key].input()
+    }
+    api.call('get_current_state', params, success=function(data){
+        var start = new Date().getTime();
+        for(key in listeners){
+            listeners[key].callback(data);
+        }
+        var end = new Date().getTime();
+        if(data.nodenet.is_active){
+            if(runner_properties.timestep - (end - start) > 0){
+                window.setTimeout(fetch_stepping_info, runner_properties.timestep - (end - start));
+            } else {
+                fetch_stepping_info();
+            }
+        }
+    });
+}
+$(document).on('runner_started', fetch_stepping_info);
+$(document).on('runner_stepped', fetch_stepping_info);
+$(document).on('form_submit', function(event, data){
+    if(data.url == '/config/runner'){
+        for(var i=0; i < data.values.length; i++){
+            switch(data.values[i].name){
+                case 'timestep': runner_properties.timestep = parseInt(data.values[i].value); break;
+                case 'factor': runner_properties.timestep = parseInt(data.values[i].value); break;
+            }
+        }
+    }
+});
+
+// data tables
 
 $.extend( $.fn.dataTableExt.oStdClasses, {
     "sWrapper": "dataTables_wrapper form-inline"

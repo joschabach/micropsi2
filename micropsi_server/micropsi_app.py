@@ -725,6 +725,18 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         uid=uid)
 
 
+@rpc("get_current_state")
+def get_current_state(nodenet=None, world=None, monitors=None, **_):
+    data = {}
+    if nodenet is not None:
+        data['nodenet'] = runtime.get_nodespace(**nodenet)
+    if world is not None:
+        data['world'] = runtime.get_world_view(**world)
+    if monitors is not None:
+        data['monitors'] = runtime.get_monitoring_info(**monitors)
+    return True, data
+
+
 @rpc("generate_uid")
 def generate_uid():
     return True, tools.generate_uid()
@@ -1140,8 +1152,7 @@ def get_logger_messages(logger=[], after=0):
 
 @rpc("get_monitoring_info")
 def get_monitoring_info(nodenet_uid, logger=[], after=0):
-    data = runtime.get_monitor_data(nodenet_uid, 0)
-    data['logs'] = runtime.get_logger_messages(logger, after)
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after)
     return True, data
 
 

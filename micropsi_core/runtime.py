@@ -167,9 +167,18 @@ def set_logging_levels(system=None, world=None, nodenet=None):
 
 
 def get_logger_messages(loggers=[], after=0):
+    """ Returns messages for the specified loggers.
+        If given, limits the messages to those that occured after the given timestamp"""
     if not isinstance(loggers, list):
         loggers = [loggers]
     return logger.get_logs(loggers, after)
+
+
+def get_monitoring_info(nodenet_uid, logger=[], after=0):
+    """ Returns log-messages and monitor-data for the given nodenet."""
+    data = get_monitor_data(nodenet_uid, 0)
+    data['logs'] = get_logger_messages(logger, after)
+    return data
 
 
 def get_logging_levels():

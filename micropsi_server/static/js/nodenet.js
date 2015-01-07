@@ -312,6 +312,9 @@ function getNodespaceList(){
 // set visible nodes and links
 function setNodespaceData(data, changed){
     nodenetscope.activate();
+    if('nodenet' in data){
+        data = data.nodenet;
+    }
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
         $('#nodenet_step').val(currentSimulationStep);
@@ -400,6 +403,22 @@ function setNodespaceData(data, changed){
     }
     updateViewSize();
 }
+
+function get_nodenet_data(){
+    return {
+        'nodenet_uid': currentNodenet,
+        'nodespace': currentNodeSpace,
+        'step': currentSimulationStep - 1,
+        'coordinates': {
+            x1: loaded_coordinates.x[0],
+            x2: loaded_coordinates.x[1],
+            y1: loaded_coordinates.y[0],
+            y2: loaded_coordinates.y[1]
+        },
+    }
+}
+
+register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
 
 function refreshNodespace(nodespace, coordinates, step, callback){
     if(!nodespace) nodespace = currentNodeSpace;

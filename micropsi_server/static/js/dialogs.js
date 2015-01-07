@@ -356,8 +356,6 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
-
-
 });
 
 

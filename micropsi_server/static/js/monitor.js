@@ -91,8 +91,10 @@ $(function(){
 
     function refreshMonitors(){
         params = getPollParams();
-        params.nodenet_uid = currentNodenet;
-        api.call('get_monitoring_info', params, setData);
+        if(currentNodenet){
+            params.nodenet_uid = currentNodenet;
+            api.call('get_monitoring_info', params, setData);
+        }
     }
 
     function setMonitorData(data){

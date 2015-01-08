@@ -726,14 +726,18 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_current_state")
-def get_current_state(nodenet=None, world=None, monitors=None, **_):
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
     data = {}
+    nodenet_obj = runtime.get_nodenet(nodenet_uid)
+    data['simulation_running'] = nodenet_obj.is_active
+    data['current_nodenet_step'] = nodenet_obj.current_step
+    data['current_world_step'] = nodenet_obj.world.current_step
     if nodenet is not None:
-        data['nodenet'] = runtime.get_nodespace(**nodenet)
+        data['nodenet'] = runtime.get_nodespace(nodenet_uid=nodenet_uid, **nodenet)
     if world is not None:
-        data['world'] = runtime.get_world_view(**world)
+        data['world'] = runtime.get_world_view(world_uid=nodenet_obj.world.uid, **world)
     if monitors is not None:
-        data['monitors'] = runtime.get_monitoring_info(**monitors)
+        data['monitors'] = runtime.get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
     return True, data
 
 

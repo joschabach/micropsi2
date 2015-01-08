@@ -74,7 +74,6 @@ $(function(){
             }
         }
         return {
-            nodenet_uid: currentNodenet,
             logger: poll,
             after: last_logger_call
         }
@@ -92,7 +91,9 @@ $(function(){
     register_stepping_function('monitors', getPollParams, setData);
 
     function refreshMonitors(){
-        api.call('get_monitoring_info', getPollParams(), setData);
+        params = getPollParams();
+        params.nodenet_uid = currentNodenet;
+        api.call('get_monitoring_info', params, setData);
     }
 
     function setMonitorData(data){

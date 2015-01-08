@@ -21,7 +21,7 @@ $(window).focus(function() {
 });
 
 function get_world_data(){
-    return {world_uid: currentWorld, step: currentWorldSimulationStep};
+    return {step: currentWorldSimulationStep};
 }
 
 function set_world_data(data){

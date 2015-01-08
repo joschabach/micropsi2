@@ -406,7 +406,6 @@ function setNodespaceData(data, changed){
 
 function get_nodenet_data(){
     return {
-        'nodenet_uid': currentNodenet,
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
         'coordinates': {

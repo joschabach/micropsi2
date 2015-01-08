@@ -377,7 +377,9 @@ register_stepping_function = function(type, input, callback){
     listeners[type] = {'input': input, 'callback': callback};
 }
 fetch_stepping_info = function(){
-    params = {}
+    params = {
+        nodenet_uid: currentNodenet
+    };
     for (key in listeners){
         params[key] = listeners[key].input()
     }
@@ -387,11 +389,11 @@ fetch_stepping_info = function(){
             listeners[key].callback(data);
         }
         var end = new Date().getTime();
-        if(data.nodenet.is_active){
+        if(data.simulation_running){
             if(runner_properties.timestep - (end - start) > 0){
                 window.setTimeout(fetch_stepping_info, runner_properties.timestep - (end - start));
             } else {
-                fetch_stepping_info();
+                $(document).trigger('runner_stepped');
             }
         }
     });

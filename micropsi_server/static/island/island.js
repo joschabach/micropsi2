@@ -75,7 +75,7 @@ addObjectGhost = null;
 var agentsList = $('#world_agents_list table');
 
 window.get_world_data = function(){
-    return {world_uid: currentWorld, step: currentWorldSimulationStep};
+    return {step: currentWorldSimulationStep};
 }
 window.set_world_data = function(data){
     if(data.world){

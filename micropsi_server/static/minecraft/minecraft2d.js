@@ -22,7 +22,7 @@ if (currentWorld) {
 worldRunning = false;
 
 window.get_world_data = function(){
-    return {world_uid: currentWorld, step: currentWorldSimulationStep};
+    return {step: currentWorldSimulationStep};
 }
 window.set_world_data = function(data){
     data = data.world;

@@ -118,12 +118,12 @@ def test_get_runner_properties(app):
 
 def test_set_runner_properties(app):
     app.set_auth()
-    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, factor=12))
+    response = app.post_json('/rpc/set_runner_properties', params=dict(timestep=123, factor=1))
     assert_success(response)
     response = app.get_json('/rpc/get_runner_properties()')
     assert_success(response)
     assert response.json_body['data']['timestep'] == 123
-    assert response.json_body['data']['factor'] == 12
+    assert response.json_body['data']['factor'] == 1
 
 
 def test_get_is_simulation_running(app, test_nodenet):
@@ -155,6 +155,52 @@ def test_step_simulation(app, test_nodenet):
     assert response.json_body['data'] == 1
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
     assert response.json_body['data']['current_step'] == 1
+
+
+def test_get_current_state(app, test_nodenet, test_world):
+    from time import sleep
+    app.set_auth()
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    assert response.json_body['data']['current_step'] == 0
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world, settings={'foo': 'bar'}))
+
+    response = app.post_json('/rpc/add_gate_monitor', params={
+        'nodenet_uid': test_nodenet,
+        'node_uid': 'N1',
+        'gate': 'sub'
+    })
+    monitor_uid = response.json_body['data']
+    response = app.get_json('/rpc/start_simulation(nodenet_uid="%s")' % test_nodenet)
+    sleep(0.2)
+    response = app.post_json('/rpc/get_current_state', params={
+        'nodenet': {
+            'nodenet_uid': test_nodenet,
+            'nodespace': 'Root',
+            'step': -1,
+        },
+        'monitors': {
+            'nodenet_uid': test_nodenet,
+            'logger': ['system', 'world', 'nodenet'],
+            'after': 0
+        },
+        'world': {
+            'world_uid': test_world,
+            'step': -1
+        }
+    })
+
+    data = response.json_body['data']
+
+    assert 'nodenet' in data
+    assert data['nodenet']['current_step'] > 0
+    assert data['nodenet']['is_active']
+
+    assert 'servertime' in data['monitors']['logs']
+    assert 'logs' in data['monitors']['logs']
+    assert len(data['monitors']['monitors'][monitor_uid]['values']) > 1
+
+    assert test_nodenet in data['world']['agents']
+    assert data['world']['current_step'] > 0
 
 
 def test_revert_nodenet(app, test_nodenet, test_world):

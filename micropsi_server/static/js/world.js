@@ -9,43 +9,17 @@ wasRunning = false;
 
 registerResizeHandler();
 
-$(window).focus(function() {
-    worldRunning = wasRunning;
-    if(wasRunning){
-        if(refreshWorldView) refreshWorldView();
-    }
-})
-.blur(function() {
-    wasRunning = worldRunning;
-    worldRunning = false;
-});
-
 function get_world_data(){
     return {step: currentWorldSimulationStep};
 }
 
 function set_world_data(data){
-    data = data.world
     if(!jQuery.isEmptyObject(data)){
         currentWorldSimulationStep = data.current_step;
-        $('#world_step').val(currentWorldSimulationStep);
     }
 }
 
 register_stepping_function('world', get_world_data, set_world_data);
-
-refreshWorldView = function(){
-    api.call('get_world_view', {
-        world_uid: currentWorld,
-        step: currentWorldSimulationStep},
-        success=set_world_data,
-        error=function(data, outcome, type){
-            $.cookie('selected_world', '', {expires:-1, path:'/'});
-            worldRunning = false;
-            api.defaultErrorCallback(data, outcome, type)
-        }
-    );
-}
 
 function updateViewSize() {
     view.draw(true);

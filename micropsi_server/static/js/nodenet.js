@@ -312,9 +312,6 @@ function getNodespaceList(){
 // set visible nodes and links
 function setNodespaceData(data, changed){
     nodenetscope.activate();
-    if('nodenet' in data){
-        data = data.nodenet;
-    }
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
         currentWorldadapter = data.worldadapter;
@@ -455,12 +452,8 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             linkLayer.removeChildren();
         }
         loaded_coordinates = coordinates;
-        if(jQuery.isEmptyObject(data)){
-            if(nodenetRunning) setTimeout(refreshNodespace, 100);
-            return null;
-        } else {
-            nodenetRunning = data.is_active;
-        }
+        nodenetRunning = data.is_active;
+
         if (linkCreationStart){
             renderLinkDuringCreation(clickPoint);
         }
@@ -468,9 +461,6 @@ function refreshNodespace(nodespace, coordinates, step, callback){
 
         if(callback){
             callback(data);
-        }
-        if(nodenetRunning){
-            refreshNodespace();
         }
     });
 }

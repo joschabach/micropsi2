@@ -21,20 +21,15 @@ if (currentWorld) {
 
 worldRunning = false;
 
-window.get_world_data = function(){
+function get_world_data(){
     return {step: currentWorldSimulationStep};
 }
-window.set_world_data = function(data){
-    data = data.world;
-    if (jQuery.isEmptyObject(data)) {
-        if (worldRunning) {
-            setTimeout(refreshWorldView, 100);
-        }
-        return null;
-    }
+
+function set_world_data(data){
+
     worldscope.activate();
     currentWorldSimulationStep = data.current_step;
-    
+
     if (data.projection) {
 
         if (current_layer == 1) {
@@ -80,9 +75,6 @@ window.set_world_data = function(data){
     }
 
     updateViewSize();
-    if (worldRunning) {
-        refreshWorldView();
-    }
 }
 
 register_stepping_function('world', get_world_data, set_world_data);

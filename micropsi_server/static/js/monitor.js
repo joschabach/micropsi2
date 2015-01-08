@@ -79,9 +79,6 @@ $(function(){
     }
 
     function setData(data){
-        if(!data.logs){
-            data = data.monitors;
-        }
         setMonitorData(data);
         setLoggingData(data);
         currentSimulationStep = data.current_step;

@@ -27,19 +27,11 @@ if (currentWorld) {
 
 worldRunning = false;
 
-window.get_world_data = function(){
+function get_world_data(){
     return {step: currentWorldSimulationStep};
 }
-window.set_world_data = function(data){
-    data = data.world;
-    if (jQuery.isEmptyObject(data)) {
-        if (worldRunning) {
-            setTimeout(refreshWorldView, 100);
-        }
-        return null;
-    }
+function set_world_data(data){
     currentWorldSimulationStep = data.current_step;
-    $('#world_step').val(currentWorldSimulationStep);
     for (var key in data.agents) {
         if (data.agents[key].minecraft_vision_pixel) {
 

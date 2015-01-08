@@ -381,6 +381,7 @@ $(function(){
 register_stepping_function = function(type, input, callback){
     listeners[type] = {'input': input, 'callback': callback};
 }
+
 fetch_stepping_info = function(){
     params = {
         nodenet_uid: currentNodenet
@@ -391,7 +392,9 @@ fetch_stepping_info = function(){
     api.call('get_current_state', params, success=function(data){
         var start = new Date().getTime();
         for(key in listeners){
-            listeners[key].callback(data);
+            if(data[key]){
+                listeners[key].callback(data[key]);
+            }
         }
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);

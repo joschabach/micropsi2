@@ -74,19 +74,12 @@ addObjectGhost = null;
 
 var agentsList = $('#world_agents_list table');
 
-window.get_world_data = function(){
+function get_world_data(){
     return {step: currentWorldSimulationStep};
 }
-window.set_world_data = function(data){
-    if(data.world){
-        data = data.world;
-    }
-    if(jQuery.isEmptyObject(data)){
-        if(worldRunning){
-            setTimeout(refreshWorldView, 100);
-        }
-        return null;
-    }
+
+function set_world_data(data){
+
     worldscope.activate();
     currentWorldSimulationStep = data.current_step;
     $('#world_step').val(currentWorldSimulationStep);
@@ -651,39 +644,6 @@ function initializeControls(){
     });
 }
 
-function resetWorld(event){
-    event.preventDefault();
-    worldRunning = false;
-    api.call('revert_world', {world_uid: currentWorld}, function(){
-        setCurrentWorld(currentWorld);
-    });
-}
-
-function stepWorld(event){
-    event.preventDefault();
-    if(worldRunning){
-        stopWorldrunner(event);
-    }
-    api.call('step_world', {world_uid: currentWorld}, function(){
-        refreshWorldView();
-    });
-}
-
-function startWorldrunner(event){
-    event.preventDefault();
-    api.call('start_worldrunner', {world_uid: currentWorld}, function(){
-        worldRunning = true;
-        refreshWorldView();
-    });
-}
-
-function stopWorldrunner(event){
-    event.preventDefault();
-    worldRunning = false;
-    api.call('stop_worldrunner', {world_uid: currentWorld}, function(){
-        $('#world_step').val(currentWorldSimulationStep);
-    });
-}
 
 
 // ------------------------ side bar form stuff --------------------------------------------- //

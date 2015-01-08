@@ -149,54 +149,6 @@ def set_world_properties(world_uid, world_name=None, owner=None):
     return True
 
 
-# def start_worldrunner(world_uid):
-#     """Starts a thread that regularly advances the world simulation."""
-#     micropsi_core.runtime.worlds[world_uid].is_active = True
-#     if micropsi_core.runtime.runner['world']['runner'].paused:
-#         micropsi_core.runtime.runner['world']['runner'].resume()
-#     return True
-
-
-# def get_worldrunner_timestep():
-#     """Returns the speed that has been configured for the world runner (in ms)."""
-#     return micropsi_core.runtime.configs['worldrunner_timestep']
-
-
-# def get_is_world_running(world_uid):
-#     """Returns True if an worldrunner is active for the given world, False otherwise."""
-#     return micropsi_core.runtime.worlds[world_uid].is_active
-
-
-# def set_worldrunner_timestep(timestep):
-#     """Sets the interval of the simulation steps for the world runner (in ms)."""
-#     micropsi_core.runtime.configs['worldrunner_timestep'] = timestep
-#     return True
-
-
-# def stop_worldrunner(world_uid):
-#     """Ends the thread of the continuous world simulation."""
-#     micropsi_core.runtime.worlds[world_uid].is_active = False
-#     test = {micropsi_core.runtime.worlds[uid].is_active for uid in micropsi_core.runtime.worlds}
-#     if True not in test:
-#         micropsi_core.runtime.runner['world']['runner'].pause()
-
-#     return True
-
-
-# def step_world(world_uid, return_world_view=False):
-#     """Advances the world simulation by one step.
-
-#     Arguments:
-#         world_uid: the uid of the simulation world
-#         return_world_view: if True, return the current world state for UI purposes
-#     """
-
-#     micropsi_core.runtime.worlds[world_uid].step()
-#     if return_world_view:
-#         return get_world_view(world_uid)
-#     return micropsi_core.runtime.worlds[world_uid].current_step
-
-
 def revert_world(world_uid):
     """Reverts the world to the last saved state."""
     data = micropsi_core.runtime.world_data[world_uid]

@@ -454,54 +454,6 @@ def test_set_world_properties(app, test_world):
     assert response.json_body['data']['name'] == "asdf"
 
 
-# def test_get_is_world_running(app, test_world):
-#     response = app.get_json('/rpc/get_is_world_running(world_uid="%s")' % test_world)
-#     assert_success(response)
-#     assert not response.json_body['data']
-
-
-# def test_start_worldrunner(app, test_world):
-#     app.set_auth()
-#     response = app.post_json('/rpc/start_worldrunner', params=dict(world_uid=test_world))
-#     assert_success(response)
-#     response = app.get_json('/rpc/get_is_world_running(world_uid="%s")' % test_world)
-#     assert response.json_body['data']
-
-
-# def test_get_worldrunner_timestep(app):
-#     response = app.get_json('/rpc/get_worldrunner_timestep()')
-#     assert_success(response)
-#     assert response.json_body['data'] is not None
-
-
-# def test_set_worldrunner_timestep(app):
-#     app.set_auth()
-#     response = app.post_json('/rpc/set_worldrunner_timestep', params=dict(timestep=10))
-#     assert_success(response)
-#     response = app.get_json('/rpc/get_worldrunner_timestep()')
-#     assert response.json_body['data'] == 10
-
-
-# def test_stop_worldrunner(app, test_world):
-#     app.set_auth()
-#     response = app.post_json('/rpc/start_worldrunner', params=dict(world_uid=test_world))
-#     response = app.post_json('/rpc/stop_worldrunner', params=dict(world_uid=test_world))
-#     assert_success(response)
-#     response = app.get_json('/rpc/get_is_world_running(world_uid="%s")' % test_world)
-#     assert not response.json_body['data']
-
-
-# def test_step_world(app, test_world):
-#     app.set_auth()
-#     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
-#     step = response.json_body['data']['current_step']
-#     response = app.get_json('/rpc/step_world(world_uid="%s")' % test_world)
-#     assert_success(response)
-#     assert response.json_body['data'] == 1
-#     response = app.get_json('/rpc/get_world_view(world_uid="%s",step=0)' % test_world)
-#     assert response.json_body['data']['current_step'] == step + 1
-
-
 def test_revert_world(app, test_world):
     app.set_auth()
     response = app.post_json('/rpc/add_worldobject', params={

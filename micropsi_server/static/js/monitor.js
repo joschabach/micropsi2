@@ -13,9 +13,8 @@ $(function(){
     var nodenetMonitors = {};
     var currentMonitors = [];
 
+    var currentSimulationStep = 0;
     var currentNodenet = null;
-
-    var nodenet_running = false;
 
     var capturedLoggers = {
         'system': false,
@@ -34,39 +33,27 @@ $(function(){
     init();
 
     $(document).on('monitorsChanged', function(){
-        if(!nodenet_running){
-            pollMonitoringData();
-        }
-    });
-    $(document).on('nodenetStepped', function(){
-        if(!nodenet_running){
-            pollMonitoringData();
-        }
+        refreshMonitors();
     });
     $(document).on('nodenetChanged', function(data, newNodenet){
-        currentNodenet = newNodenet;
-        pollMonitoringData();
+        refreshMonitors();
     });
-
 
     function init() {
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
             api.call('load_nodenet', {
                 nodenet_uid: currentNodenet,
-                x1: 0,
-                x2: 0,
-                y1: 0,
-                y2: 0
+                coordinates: {
+                    x1: 0,
+                    x2: 0,
+                    y1: 0,
+                    y2: 0
+                }
             }, function(data) {
-                nodenetMonitors = data.monitors;
-                currentMonitors = Object.keys(nodenetMonitors);
-                currentSimulationStep = data.step;
-                nodenet_running = data.is_active;
-                pollMonitoringData();
+                refreshMonitors();
             },
             function(data) {
-
                 if(data.status == 500){
                     api.defaultErrorCallback(data);
                 } else {
@@ -78,42 +65,33 @@ $(function(){
         }
     }
 
-    function pollMonitoringData(){
+    function getPollParams(){
         var poll = [];
         for(var logger in capturedLoggers){
             if(capturedLoggers[logger]){
                 poll.push(logger);
             }
         }
-        api.call('get_monitoring_info', {
-            nodenet_uid: currentNodenet,
+        return {
             logger: poll,
             after: last_logger_call
-        }, function(data){
-            setMonitorData(data);
-            setLoggingData(data);
-            nodenet_running = data.nodenet_running;
-            currentSimulationStep = data.current_step;
-            if(nodenet_running){
-                window.setTimeout(pollMonitoringData, 500);
-            } else {
-                pollActive();
-            }
-        });
+        }
     }
 
-    function pollActive(){
-        api.call('get_is_nodenet_running', {nodenet_uid: currentNodenet}, function(data){
-            nodenet_running = data.nodenet_running;
-            if(nodenet_running){
-                pollMonitoringData();
-            }
-            if(!nodenet_running){
-                window.setTimeout(pollActive, 4000);
-            }
-        }, function(){
-            console.warn('server offline. can not determine nodenet state');
-        });
+    function setData(data){
+        setMonitorData(data);
+        setLoggingData(data);
+        currentSimulationStep = data.current_step;
+    }
+
+    register_stepping_function('monitors', getPollParams, setData);
+
+    function refreshMonitors(){
+        params = getPollParams();
+        if(currentNodenet){
+            params.nodenet_uid = currentNodenet;
+            api.call('get_monitoring_info', params, setData);
+        }
     }
 
     function setMonitorData(data){

@@ -27,62 +27,63 @@ if (currentWorld) {
 
 worldRunning = false;
 
+function get_world_data(){
+    return {step: currentWorldSimulationStep};
+}
+function set_world_data(data){
+    currentWorldSimulationStep = data.current_step;
+    for (var key in data.agents) {
+        if (data.agents[key].minecraft_vision_pixel) {
+
+            if (current_layer == 1) {
+                console.log("activating second layer ...");
+                secondLayer.activate();
+            }
+            else{
+                console.log("activating first layer ...");
+                firstLayer.activate();
+            }
+
+            var minecraft_pixel = data.agents[key].minecraft_vision_pixel;
+            for (var x = 0; x < WIDTH; x++) {
+                for (var y = 0; y < HEIGHT; y++) {
+
+                    var raster = new Raster('mc_block_img_' + minecraft_pixel[(y + x * HEIGHT) * 2]);
+                    raster.position = new Point(world.width / WIDTH * x, world.height / HEIGHT * y);
+                    var distance = minecraft_pixel[(y + x * HEIGHT) * 2 + 1];
+                    raster.scale((world.width / WIDTH) / 64 * (1 / Math.pow(distance, 1 / 5)), (world.height / HEIGHT) / 64 * (1 / Math.pow(distance, 1 / 5)));
+                }
+            }
+            if (current_layer == 1) {
+                console.log("removing frist layer children ...");
+                firstLayer.removeChildren();
+                current_layer = 0;
+            }
+            else{
+                console.log("removing frist layer children ...");
+                secondLayer.removeChildren();
+                current_layer = 1;
+            }
+            break;
+        }
+    }
+
+    updateViewSize();
+    if (worldRunning) {
+        refreshWorldView();
+    }
+}
+
+register_stepping_function('world', get_world_data, set_world_data);
+
+
 refreshWorldView = function () {
     worldscope.activate();
-    api.call('get_world_view', {
-            world_uid: currentWorld,
-            step: currentWorldSimulationStep
-    },
-        function (data) {
-            if (jQuery.isEmptyObject(data)) {
-                if (worldRunning) {
-                    setTimeout(refreshWorldView, 100);
-                }
-                return null;
-            }
-            currentWorldSimulationStep = data.current_step;
-            $('#world_step').val(currentWorldSimulationStep);
-            for (var key in data.agents) {
-                if (data.agents[key].minecraft_vision_pixel) {
-
-                    if (current_layer == 1) {
-                        console.log("activating second layer ...");
-                        secondLayer.activate();
-                    }
-                    else{
-                        console.log("activating first layer ...");
-                        firstLayer.activate();
-                    }
-
-                    var minecraft_pixel = data.agents[key].minecraft_vision_pixel;
-                    for (var x = 0; x < WIDTH; x++) {
-                        for (var y = 0; y < HEIGHT; y++) {
-
-                            var raster = new Raster('mc_block_img_' + minecraft_pixel[(y + x * HEIGHT) * 2]);
-                            raster.position = new Point(world.width / WIDTH * x, world.height / HEIGHT * y);
-                            var distance = minecraft_pixel[(y + x * HEIGHT) * 2 + 1];
-                            raster.scale((world.width / WIDTH) / 64 * (1 / Math.pow(distance, 1 / 5)), (world.height / HEIGHT) / 64 * (1 / Math.pow(distance, 1 / 5)));
-                        }
-                    }
-                    if (current_layer == 1) {
-                        console.log("removing frist layer children ...");
-                        firstLayer.removeChildren();
-                        current_layer = 0;
-                    }
-                    else{
-                        console.log("removing frist layer children ...");
-                        secondLayer.removeChildren();
-                        current_layer = 1;
-                    }
-                    break;
-                }
-            }
-
-            updateViewSize();
-            if (worldRunning) {
-                refreshWorldView();
-            }
-        }, error = function (data, outcome, type) {
+    api.call(
+        'get_world_view',
+        {world_uid: currentWorld, step: currentWorldSimulationStep},
+        success=set_world_data,
+        error=function (data, outcome, type) {
             $.cookie('selected_world', '', {
                 expires: -1,
                 path: '/'
@@ -91,9 +92,6 @@ refreshWorldView = function () {
             api.defaultErrorCallback(data, outcome, type)
         }
     );
-
-
-
 }
 
 function addAgent(worldobject) {

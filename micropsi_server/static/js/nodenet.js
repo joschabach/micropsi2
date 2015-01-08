@@ -153,6 +153,7 @@ function refreshNodenetList(){
             event.preventDefault();
             var el = $(event.target);
             var uid = el.attr('data');
+            $(document).trigger('nodenet_changed', uid);
             setCurrentNodenet(uid);
         });
     });
@@ -219,10 +220,13 @@ function setCurrentNodenet(uid, nodespace){
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
-            x1: loaded_coordinates.x[0],
-            x2: loaded_coordinates.x[1],
-            y1: loaded_coordinates.y[0],
-            y2: loaded_coordinates.y[1]},
+            coordinates: {
+                x1: loaded_coordinates.x[0],
+                x2: loaded_coordinates.x[1],
+                y1: loaded_coordinates.y[0],
+                y2: loaded_coordinates.y[1]
+            }
+        },
         function(data){
             nodenetscope.activate();
             toggleButtons(true);
@@ -242,7 +246,6 @@ function setCurrentNodenet(uid, nodespace){
             }
 
             showDefaultForm();
-            $('#nodenet_step').val(data.current_step);
             currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
@@ -311,7 +314,6 @@ function setNodespaceData(data, changed){
     nodenetscope.activate();
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
-        $('#nodenet_step').val(currentSimulationStep);
         currentWorldadapter = data.worldadapter;
         nodenetRunning = data.is_active;
 
@@ -398,6 +400,21 @@ function setNodespaceData(data, changed){
     updateViewSize();
 }
 
+function get_nodenet_data(){
+    return {
+        'nodespace': currentNodeSpace,
+        'step': currentSimulationStep - 1,
+        'coordinates': {
+            x1: loaded_coordinates.x[0],
+            x2: loaded_coordinates.x[1],
+            y1: loaded_coordinates.y[0],
+            y2: loaded_coordinates.y[1]
+        },
+    }
+}
+
+register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+
 function refreshNodespace(nodespace, coordinates, step, callback){
     if(!nodespace) nodespace = currentNodeSpace;
     if(!currentNodenet || !nodespace){
@@ -419,10 +436,12 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     if(step){
         params.step = step;
     }
-    params.x1 = parseInt(coordinates.x[0]);
-    params.x2 = parseInt(coordinates.x[1]);
-    params.y1 = parseInt(coordinates.y[0]);
-    params.y2 = parseInt(coordinates.y[1]);
+    params.coordinates = {
+        x1: parseInt(coordinates.x[0]),
+        x2: parseInt(coordinates.x[1]),
+        y1: parseInt(coordinates.y[0]),
+        y2: parseInt(coordinates.y[1])
+    };
     api.call('get_nodespace', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
@@ -433,12 +452,8 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             linkLayer.removeChildren();
         }
         loaded_coordinates = coordinates;
-        if(jQuery.isEmptyObject(data)){
-            if(nodenetRunning) setTimeout(refreshNodespace, 100);
-            return null;
-        } else {
-            nodenetRunning = data.is_active;
-        }
+        nodenetRunning = data.is_active;
+
         if (linkCreationStart){
             renderLinkDuringCreation(clickPoint);
         }
@@ -446,9 +461,6 @@ function refreshNodespace(nodespace, coordinates, step, callback){
 
         if(callback){
             callback(data);
-        }
-        if(nodenetRunning){
-            refreshNodespace();
         }
     });
 }
@@ -2136,10 +2148,6 @@ function initializeMenus() {
 }
 
 function initializeControls(){
-    $('#nodenet_start').on('click', startNodenetrunner);
-    $('#nodenet_stop').on('click', stopNodenetrunner);
-    $('#nodenet_reset').on('click', resetNodenet);
-    $('#nodenet_step_forward').on('click', stepNodenet);
     $('#zoomOut').on('click', zoomOut);
     $('#zoomIn').on('click', zoomIn);
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
@@ -2225,56 +2233,6 @@ function initializeDialogs(){
         handlePasteNodes(form.serializeArray()[0].value);
         $('#paste_mode_selection_modal').modal('hide');
     });
-}
-
-function stepNodenet(event){
-    event.preventDefault();
-    if(nodenetRunning){
-        stopNodenetrunner(event);
-    }
-    if(currentNodenet){
-        api.call("step_nodenet",
-            {nodenet_uid: currentNodenet},
-            success=function(data){
-                refreshNodespace();
-                $(document).trigger('nodenetStepped');
-                dialogs.notification("Nodenet stepped", "success");
-            });
-    } else {
-        dialogs.notification('No nodenet selected', 'error');
-    }
-}
-
-function startNodenetrunner(event){
-    event.preventDefault();
-    nodenetRunning = true;
-    if(currentNodenet){
-        api.call('start_nodenetrunner', {nodenet_uid: currentNodenet}, function(){
-            refreshNodespace();
-        });
-    } else {
-        dialogs.notification('No nodenet selected', 'error');
-    }
-}
-function stopNodenetrunner(event){
-    event.preventDefault();
-    api.call('stop_nodenetrunner', {nodenet_uid: currentNodenet}, function(){ nodenetRunning = false; });
-}
-
-function resetNodenet(event){
-    event.preventDefault();
-    nodenetRunning = false;
-    if(currentNodenet){
-        api.call(
-            'revert_nodenet',
-            {nodenet_uid: currentNodenet},
-            function(){
-                setCurrentNodenet(currentNodenet);
-            }
-        );
-    } else {
-        dialogs.notification('No nodenet selected', 'error');
-    }
 }
 
 var clickPosition = null;

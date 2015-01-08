@@ -95,6 +95,15 @@
                     %end
                 </div>
             %end
+                <div id="simulation_controls" class="btn-group pull-right">
+                    <span class="btn step_counters">
+                        World:<span class="world_step">0</span><br/>
+                        Net:<span class="nodenet_step">0</span></span>
+                  <a href="#" id="nodenet_reset" class="btn" data-nodenet-control><i class="icon-fast-backward"></i></a>
+                  <a href="#" id="nodenet_start" class="btn" data-nodenet-control><i class="icon-play"></i></a>
+                  <a href="#" id="nodenet_step_forward" class="btn" data-nodenet-control><i class="icon-step-forward"></i></a>
+                  <a href="#" id="nodenet_stop" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
+                </div>
         </div>
     </div>
 </div>

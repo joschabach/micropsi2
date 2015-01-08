@@ -13,6 +13,7 @@ $(function(){
     var nodenetMonitors = {};
     var currentMonitors = [];
 
+    var currentSimulationStep = 0;
     var currentNodenet = null;
 
     var capturedLoggers = {
@@ -50,9 +51,7 @@ $(function(){
                     y2: 0
                 }
             }, function(data) {
-                nodenetMonitors = data.monitors;
-                currentMonitors = Object.keys(nodenetMonitors);
-                currentSimulationStep = data.step;
+                refreshMonitors();
             },
             function(data) {
                 if(data.status == 500){

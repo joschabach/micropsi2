@@ -153,6 +153,7 @@ function refreshNodenetList(){
             event.preventDefault();
             var el = $(event.target);
             var uid = el.attr('data');
+            $(document).trigger('nodenet_changed', uid);
             setCurrentNodenet(uid);
         });
     });
@@ -245,7 +246,6 @@ function setCurrentNodenet(uid, nodespace){
             }
 
             showDefaultForm();
-            $('#nodenet_step').val(data.current_step);
             currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
 
@@ -317,7 +317,6 @@ function setNodespaceData(data, changed){
     }
     if (data && !jQuery.isEmptyObject(data)){
         currentSimulationStep = data.current_step || 0;
-        $('#nodenet_step').val(currentSimulationStep);
         currentWorldadapter = data.worldadapter;
         nodenetRunning = data.is_active;
 
@@ -2159,10 +2158,6 @@ function initializeMenus() {
 }
 
 function initializeControls(){
-    $('#nodenet_start').on('click', startNodenetrunner);
-    $('#nodenet_stop').on('click', stopNodenetrunner);
-    $('#nodenet_reset').on('click', resetNodenet);
-    $('#nodenet_step_forward').on('click', stepNodenet);
     $('#zoomOut').on('click', zoomOut);
     $('#zoomIn').on('click', zoomIn);
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
@@ -2248,57 +2243,6 @@ function initializeDialogs(){
         handlePasteNodes(form.serializeArray()[0].value);
         $('#paste_mode_selection_modal').modal('hide');
     });
-}
-
-function stepNodenet(event){
-    event.preventDefault();
-    if(nodenetRunning){
-        stopNodenetrunner(event);
-    }
-    if(currentNodenet){
-        api.call("step_simulation",
-            {nodenet_uid: currentNodenet},
-            success=function(data){
-                $(document).trigger('runner_stepped');
-            });
-    } else {
-        dialogs.notification('No nodenet selected', 'error');
-    }
-}
-
-function startNodenetrunner(event){
-    event.preventDefault();
-    nodenetRunning = true;
-    if(currentNodenet){
-        api.call('start_simulation', {nodenet_uid: currentNodenet}, function(){
-            $(document).trigger('runner_started');
-        });
-    } else {
-        dialogs.notification('No nodenet selected', 'error');
-    }
-}
-function stopNodenetrunner(event){
-    event.preventDefault();
-    api.call('stop_simulation', {nodenet_uid: currentNodenet}, function(){
-        $(document).trigger('runner_stopped');
-        nodenetRunning = false;
-    });
-}
-
-function resetNodenet(event){
-    event.preventDefault();
-    nodenetRunning = false;
-    if(currentNodenet){
-        api.call(
-            'revert_nodenet',
-            {nodenet_uid: currentNodenet},
-            function(){
-                setCurrentNodenet(currentNodenet);
-            }
-        );
-    } else {
-        dialogs.notification('No nodenet selected', 'error');
-    }
 }
 
 var clickPosition = null;

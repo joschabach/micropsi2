@@ -412,7 +412,7 @@ fetch_stepping_info = function(){
 
 $(document).on('runner_started', fetch_stepping_info);
 $(document).on('runner_stepped', fetch_stepping_info);
-$(document).on('nodenet_changed', function(new_uid){
+$(document).on('nodenet_changed', function(event, new_uid){
     currentNodenet = new_uid;
 })
 $(document).on('form_submit', function(event, data){
@@ -483,7 +483,7 @@ function resetNodenet(event){
             'revert_nodenet',
             {nodenet_uid: currentNodenet},
             function(){
-                $(document).trigger('runner_stepped');
+                $(document).trigger('load_nodenet', currentNodenet);
             }
         );
     } else {

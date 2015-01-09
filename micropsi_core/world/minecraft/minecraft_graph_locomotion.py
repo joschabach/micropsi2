@@ -311,11 +311,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.datatarget_feedback['take_exit_three'] = -1.
 
             if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
-                self.register_action(
-                    'eat',
-                    self.spockplugin.eat,
-                    partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
-                )
+                    if self.has_bread():
+                        self.register_action(
+                            'eat',
+                            self.spockplugin.eat,
+                            partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
+                        )
+                    else:
+                        self.datatarget_feedback['eat'] = -1.
 
             # read fovea actors, trigger sampling, and provide action feedback
             if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
@@ -384,13 +387,25 @@ class MinecraftGraphLocomotion(WorldAdapter):
         })
         action_function()
 
+    def has_bread(self):
+        for item in self.spockplugin.inventory:
+            if item.get('id', 0) == 297:
+                return True
+        return False
+
     def check_eat_feedback(self, old_value):
-        return self.spockplugin.clientinfo.health['food'] > old_value
+        food = self.spockplugin.clientinfo.health['food']
+        return food > old_value or food == 20
 
     def check_movement_feedback(self, target_loco_node):
-        return abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
+        if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
             and abs(self.loco_nodes[target_loco_node]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= self.tp_tolerance \
-            and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance
+            and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance:
+            # hand the agent a bread, if it just arrived at the farm, or at the village
+            if target_loco_node == self.village_uid or target_loco_node == self.farm_uid:
+                self.spockplugin.give_item('bread')
+            return True
+        return False
 
     def get_visual_input(self, fov_x, fov_y):
         """

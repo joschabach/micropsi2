@@ -12,6 +12,9 @@ JUMPING_MAGIC_NUMBER = 0  # 2 used to work
 @pl_announce('Micropsi')
 class MicropsiPlugin(object):
 
+    inventory = []
+    quickslots = []
+
     def __init__(self, ploader, settings):
 
         # register required plugins
@@ -25,6 +28,11 @@ class MicropsiPlugin(object):
         self.event.reg_event_handler(
             'cl_position_update',
             self.subtract_stance
+        )
+
+        self.event.reg_event_handler(
+            (3, 0, 48),
+            self.update_inventory
         )
 
         # make references between micropsi world and MicropsiPlugin
@@ -71,7 +79,7 @@ class MicropsiPlugin(object):
             'z': int(self.clientinfo.position['z']),
             'direction': -1,
             'held_item': {
-                'id': 247,
+                'id': 297,
                 'amount': 1,
                 'damage': 0
             },
@@ -80,6 +88,20 @@ class MicropsiPlugin(object):
             'cur_pos_z': -1
         }
         self.net.push(Packet(ident='PLAY>Player Block Placement', data=data))
+
+    def give_item(self, item, amount=1):
+        message = "/item %s %d" % (str(item), amount)
+        print("giving the agent %s" % message)
+        self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
+
+    def update_inventory(self, event, packet):
+        self.inventory = packet.data['slots']
+        self.quickslots = packet.data['slots'][36:9]
+        print(self.inventory)
+
+    def change_held_item(self, target_slot):
+        """ Changes the held item to a quick inventory slot """
+        self.net.push(Packet(ident='PLAY>Held Item Change', data={'Slot': target_slot}))
 
     def move(self, position=None):
 

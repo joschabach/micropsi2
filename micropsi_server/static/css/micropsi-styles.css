@@ -419,3 +419,13 @@ label input[type="radio"] {
   background-color: transparent;
 }
 
+#simulation_controls{
+  margin-right: 20px;
+}
+
+#simulation_controls .step_counters {
+  font-size: 8px;
+  line-height: 9px;
+  text-align: left;
+}
+

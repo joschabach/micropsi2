@@ -43,24 +43,6 @@
                         </tr>
                     </table>
                 </td>
-                <td>
-                    <table class="pull-right">
-                        <tr>
-                            <td style="white-space:nowrap;">
-                                <div class="btn-group">
-                                  <a href="#" id="nodenet_reset" class="btn" data-nodenet-control><i class="icon-fast-backward"></i></a>
-                                  <a href="#" id="nodenet_start" class="btn" data-nodenet-control><i class="icon-play"></i></a>
-                                  <a href="#" id="nodenet_step_forward" class="btn" data-nodenet-control><i class="icon-step-forward"></i></a>
-                                  <a href="#" id="nodenet_stop" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
-                                </div>
-                            </td>
-
-                            <td align="right"><input id="nodenet_step" type="text" disabled="disabled"
-                                                     style="text-align:right; width:60px;" value="0"/></td>
-
-                        </tr>
-                    </table>
-                </td>
             </tr>
         </table>
     </form>

@@ -643,26 +643,15 @@ def world_list(current_world=None):
         others=dict((uid, worlds[uid]) for uid in worlds if worlds[uid].owner != user_id))
 
 
-@micropsi_app.route("/config/nodenet/runner")
-@micropsi_app.route("/config/nodenet/runner", method="POST")
-def edit_nodenetrunner():
+@micropsi_app.route("/config/runner")
+@micropsi_app.route("/config/runner", method="POST")
+def edit_runner_properties():
     user_id, permissions, token = get_request_data()
     if len(request.params) > 0:
-        runtime.set_nodenetrunner_timestep(int(request.params['runner_timestep']))
-        return dict(status="success", msg="Timestep saved")
+        runtime.set_runner_properties(int(request.params['timestep']), int(request.params['factor']))
+        return dict(status="success", msg="Settings saved")
     else:
-        return template("runner_form", mode="nodenet", action="/config/nodenet/runner", value=runtime.get_nodenetrunner_timestep())
-
-
-@micropsi_app.route("/config/world/runner")
-@micropsi_app.route("/config/world/runner", method="POST")
-def edit_worldrunner():
-    user_id, permissions, token = get_request_data()
-    if len(request.params) > 0:
-        runtime.set_worldrunner_timestep(int(request.params['runner_timestep']))
-        return dict(status="success", msg="Timestep saved")
-    else:
-        return template("runner_form", mode="world", action="/config/world/runner", value=runtime.get_worldrunner_timestep())
+        return template("runner_form", action="/config/runner", value=runtime.get_runner_properties())
 
 
 @micropsi_app.route("/create_new_nodenet_form")
@@ -701,10 +690,10 @@ def select_nodenet(nodenet_uid):
 
 
 @rpc("load_nodenet")
-def load_nodenet(nodenet_uid, **coordinates):
+def load_nodenet(nodenet_uid, nodespace='Root', coordinates={}):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if result:
-        data = runtime.get_nodenet_data(nodenet_uid, **coordinates)
+        data = runtime.get_nodenet_data(nodenet_uid, nodespace, coordinates)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
         return True, data
     else:
@@ -723,6 +712,22 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         owner=owner,
         world_uid=world_uid,
         uid=uid)
+
+
+@rpc("get_current_state")
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
+    data = {}
+    nodenet_obj = runtime.get_nodenet(nodenet_uid)
+    data['simulation_running'] = nodenet_obj.is_active
+    data['current_nodenet_step'] = nodenet_obj.current_step
+    data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
+    if nodenet is not None:
+        data['nodenet'] = runtime.get_nodespace(nodenet_uid=nodenet_uid, **nodenet)
+    if world is not None and nodenet_obj.world:
+        data['world'] = runtime.get_world_view(world_uid=nodenet_obj.world.uid, **world)
+    if monitors is not None:
+        data['monitors'] = runtime.get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
+    return True, data
 
 
 @rpc("generate_uid")
@@ -759,33 +764,33 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return runtime.set_node_activation(nodenet_uid, node_uid, activation)
 
 
-@rpc("start_nodenetrunner", permission_required="manage nodenets")
-def start_nodenetrunner(nodenet_uid):
+@rpc("start_simulation", permission_required="manage nodenets")
+def start_simulation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
 
 
-@rpc("set_nodenetrunner_timestep", permission_required="manage nodenets")
-def set_nodenetrunner_timestep(timestep):
-    return runtime.set_nodenetrunner_timestep(timestep)
+@rpc("set_runner_properties", permission_required="manage server")
+def set_runner_properties(timestep, factor):
+    return runtime.set_runner_properties(timestep, factor)
 
 
-@rpc("get_nodenetrunner_timestep", permission_required="manage server")
-def get_nodenetrunner_timestep():
-    return True, runtime.get_nodenetrunner_timestep()
+@rpc("get_runner_properties")
+def get_runner_properties():
+    return True, runtime.get_runner_properties()
 
 
-@rpc("get_is_nodenet_running")
-def get_is_nodenet_running(nodenet_uid):
+@rpc("get_is_simulation_running")
+def get_is_simulation_running(nodenet_uid):
     return True, runtime.get_is_nodenet_running(nodenet_uid)
 
 
-@rpc("stop_nodenetrunner", permission_required="manage nodenets")
-def stop_nodenetrunner(nodenet_uid):
+@rpc("stop_simulation", permission_required="manage nodenets")
+def stop_simulation(nodenet_uid):
     return runtime.stop_nodenetrunner(nodenet_uid)
 
 
-@rpc("step_nodenet", permission_required="manage nodenets")
-def step_nodenet(nodenet_uid):
+@rpc("step_simulation", permission_required="manage nodenets")
+def step_simulation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 
@@ -899,36 +904,6 @@ def get_world_view(world_uid, step):
 @rpc("set_world_properties", permission_required="manage worlds")
 def set_world_data(world_uid, world_name=None, owner=None):
     return runtime.set_world_properties(world_uid, world_name, owner)
-
-
-@rpc("start_worldrunner", permission_required="manage worlds")
-def start_worldrunner(world_uid):
-    return runtime.start_worldrunner(world_uid)
-
-
-@rpc("get_worldrunner_timestep")
-def get_worldrunner_timestep():
-    return True, runtime.get_worldrunner_timestep()
-
-
-@rpc("get_is_world_running")
-def get_is_world_running(world_uid):
-    return True, runtime.get_is_world_running(world_uid)
-
-
-@rpc("set_worldrunner_timestep", permission_required="manage server")
-def set_worldrunner_timestep(timestep):
-    return runtime.set_worldrunner_timestep(timestep)
-
-
-@rpc("stop_worldrunner", permission_required="manage worlds")
-def stop_worldrunner(world_uid):
-    return runtime.stop_worldrunner(world_uid)
-
-
-@rpc("step_world", permission_required="manage worlds")
-def step_world(world_uid, return_world_view=False):
-    return True, runtime.step_world(world_uid, return_world_view)
 
 
 @rpc("revert_world", permission_required="manage worlds")
@@ -1140,8 +1115,7 @@ def get_logger_messages(logger=[], after=0):
 
 @rpc("get_monitoring_info")
 def get_monitoring_info(nodenet_uid, logger=[], after=0):
-    data = runtime.get_monitor_data(nodenet_uid, 0)
-    data['logs'] = runtime.get_logger_messages(logger, after)
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after)
     return True, data
 
 

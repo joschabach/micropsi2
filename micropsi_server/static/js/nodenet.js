@@ -2138,6 +2138,7 @@ function initializeMenus() {
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
     $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
     $('#edit_native_modal .btn-primary').on('click', createNativeModuleHandler);
+    $('#edit_native_modal form').on('submit', createNativeModuleHandler);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -2189,9 +2190,10 @@ function initializeDialogs(){
     target_node.on('change', function(event){
         var node = nodespaces[target_nodespace.val()].nodes[target_node.val()];
         if(node){
+            var slots = nodetypes[node.type].slottypes;
             var html = '';
-            for(var i in node.slots){
-                html += '<option value="'+node.slots[i]+'">'+node.slots[i]+'</option>';
+            for(var i in slots){
+                html += '<option value="'+slots[i]+'">'+slots[i]+'</option>';
             }
             target_slot.html(html);
         }
@@ -2549,9 +2551,9 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
 
 
 function createNativeModuleHandler(event){
-
     var modal = $("#edit_native_modal");
     if(event){
+        event.preventDefault();
         createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
                         clickPosition.y/viewProperties.zoomFactor,
                         $('#native_module_name').val(),

@@ -60,8 +60,7 @@
                     <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_config">Config
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="/config/nodenet/runner" class="remote_form_dialog edit_nodenetrunner">Nodenet runner</a></li>
-                        <li><a href="/config/world/runner" class="remote_form_dialog edit_worldrunner">World runner</a></li>
+                        <li><a href="/config/runner" class="remote_form_dialog edit_runner_properties">Runner Properties</a></li>
                     </ul>
                 </li>
                 %end
@@ -96,6 +95,15 @@
                     %end
                 </div>
             %end
+                <div id="simulation_controls" class="btn-group pull-right">
+                    <span class="btn step_counters">
+                        World:<span class="world_step">0</span><br/>
+                        Net:<span class="nodenet_step">0</span></span>
+                  <a href="#" id="nodenet_reset" class="btn" data-nodenet-control><i class="icon-fast-backward"></i></a>
+                  <a href="#" id="nodenet_start" class="btn" data-nodenet-control><i class="icon-play"></i></a>
+                  <a href="#" id="nodenet_step_forward" class="btn" data-nodenet-control><i class="icon-step-forward"></i></a>
+                  <a href="#" id="nodenet_stop" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
+                </div>
         </div>
     </div>
 </div>

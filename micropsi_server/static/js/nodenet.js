@@ -140,6 +140,14 @@ refreshNodenetList();
 
 registerResizeHandler();
 
+$(document).on('load_nodenet', function(event, uid){
+    ns = 'Root';
+    if(uid == currentNodenet){
+        ns = currentNodeSpace;
+    }
+    setCurrentNodenet(uid, ns);
+});
+
 function toggleButtons(on){
     if(on)
         $('[data-nodenet-control]').removeAttr('disabled');

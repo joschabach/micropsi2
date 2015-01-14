@@ -111,7 +111,7 @@ class MicropsiRunner(threading.Thread):
                         try:
                             nodenets[uid].world.step()
                         except:
-                            nodenets[uid].world.is_active = False
+                            nodenets[uid].is_active = False
                             logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
                             MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
 

@@ -548,7 +548,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def get_block_type(self, x, y, z):
         """ Jonas' get_voxel_blocktype(..) """
         key = (x // 16, z // 16)
-        columns = self.spockplugin.world.map.columns
+        columns = self.spockplugin.world.columns
         if key not in columns:
             return -1
         current_column = columns[key]
@@ -561,7 +561,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         if current_section is None:
             return -1
         else:
-            return current_section.get(x % 16, y % 16, z % 16).id
+            block_type_id = current_section.block_data.get(x % 16, y % 16, z % 16)
+            # print('blocktype: %s' % str( block_type_id/ 16))
+            return block_type_id / 16
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """

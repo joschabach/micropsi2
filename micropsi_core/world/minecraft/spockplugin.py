@@ -74,9 +74,11 @@ class MicropsiPlugin(object):
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
         data = {
-            'x': int(self.clientinfo.position['x']),
-            'y': int(self.clientinfo.position['y']),
-            'z': int(self.clientinfo.position['z']),
+            'location': {
+                'x': int(self.clientinfo.position['x']),
+                'y': int(self.clientinfo.position['y']),
+                'z': int(self.clientinfo.position['z'])
+            },
             'direction': -1,
             'held_item': {
                 'id': 297,

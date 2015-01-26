@@ -1,6 +1,6 @@
 from spock.mcp import mcpacket, mcdata
 
-MOVEMENT_TICK = 0.05
+MOVEMENT_TICK = 1
 
 class MovementPlugin:
     def __init__(self, ploader, settings):

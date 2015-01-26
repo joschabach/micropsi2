@@ -4,6 +4,7 @@ import json
 import os
 
 import warnings
+from micropsi_core.nodenet.monitor import Monitor
 from micropsi_core.nodenet.node import Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
 from .dict_node import DictNode
@@ -348,6 +349,9 @@ class DictNodenet(Nodenet):
                                  data['target_slot_name'],
                                  data['weight'],
                                  data['certainty'])
+
+        for uid in nodenet_data.get('monitors', {}):
+            Monitor(self, **nodenet_data['monitors'][uid])
 
     def step(self):
         """perform a simulation step"""

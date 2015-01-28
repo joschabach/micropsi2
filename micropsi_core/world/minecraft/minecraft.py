@@ -113,7 +113,7 @@ class Minecraft(World):
         """
         self.spockplugin.event.kill()
         self.minecraft_communication_thread.join()
-        self.spockplugin.threadpool.shutdown(False)
+        # self.spockplugin.threadpool.shutdown(False)
 
 
 class Minecraft2D(Minecraft):

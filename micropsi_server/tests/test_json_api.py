@@ -199,7 +199,7 @@ def test_get_current_state(app, test_nodenet, test_world):
 
     assert 'servertime' in data['monitors']['logs']
     assert 'logs' in data['monitors']['logs']
-    assert len(data['monitors']['monitors'][monitor_uid]['values']) > 1
+    assert len(data['monitors']['monitors'][monitor_uid]['values']) == data['nodenet']['current_step']
 
     assert test_nodenet in data['world']['agents']
     assert data['world']['current_step'] > 0

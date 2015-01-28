@@ -10,4 +10,5 @@ pycrypto==2.6.1
 pytest==2.6.4
 pytest-cov==1.8.1
 six==1.8.0
+-e git+git@github.com:micropsi-industries/spock.git@2f4ee32b44eed07238af06532ba512c5cd1ee4c7#egg=spock-origin/micropsi
 waitress==0.8.9

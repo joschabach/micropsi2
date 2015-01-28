@@ -93,13 +93,11 @@ class MicropsiPlugin(object):
 
     def give_item(self, item, amount=1):
         message = "/item %s %d" % (str(item), amount)
-        print("giving the agent %s" % message)
         self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
 
     def update_inventory(self, event, packet):
         self.inventory = packet.data['slots']
         self.quickslots = packet.data['slots'][36:9]
-        print(self.inventory)
 
     def change_held_item(self, target_slot):
         """ Changes the held item to a quick inventory slot """

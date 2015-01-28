@@ -483,7 +483,8 @@ function resetNodenet(event){
             'revert_nodenet',
             {nodenet_uid: currentNodenet},
             function(){
-                $(document).trigger('load_nodenet', currentNodenet);
+                window.location.reload();
+                // $(document).trigger('load_nodenet', currentNodenet);
             }
         );
     } else {

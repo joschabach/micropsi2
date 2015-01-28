@@ -228,6 +228,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")
+        self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
+
+    def set_datasources(self, event, data):
+        self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
+        self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""

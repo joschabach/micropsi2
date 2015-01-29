@@ -2733,25 +2733,40 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
 
 function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
     if ((sourceUid in nodes)) {
-
-        var uuid = makeUuid();
         if(!(targetUid in nodes)){
-            nodes[sourceUid].linksToOutside.push(uuid);
-        } else if(nodes[targetUid].parent != currentNodeSpace){
-            nodes[sourceUid].linksToOutside.push(uuid);
-            nodes[targetUid].linksFromOutside.push(uuid);
+            api.call('get_node', {
+                'nodenet_uid': currentNodenet,
+                'node_uid': targetUid
+            }, function(data){
+                nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters);
+                createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
+            });
+        } else {
+            var uuid = makeUuid();
+            if(!(targetUid in nodes)){
+                api.call('get_node', {
+                    'nodenet_uid': currentNodenet,
+                    'node_uid': targetUid
+                }, function(data){
+                    nodes[targetUid] = data;
+                    nodes[targetUid].linksFromOutside.push(uuid);
+                });
+            } else if(nodes[targetUid].parent != currentNodeSpace){
+                nodes[sourceUid].linksToOutside.push(uuid);
+                nodes[targetUid].linksFromOutside.push(uuid);
+            }
+            addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
+            // TODO: also write backwards link??
+            api.call("add_link", {
+                nodenet_uid: currentNodenet,
+                source_node_uid: sourceUid,
+                gate_type: sourceGate,
+                target_node_uid: targetUid,
+                slot_type: targetSlot,
+                weight: 1,
+                uid: uuid
+            });
         }
-        addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
-        // TODO: also write backwards link??
-        api.call("add_link", {
-            nodenet_uid: currentNodenet,
-            source_node_uid: sourceUid,
-            gate_type: sourceGate,
-            target_node_uid: targetUid,
-            slot_type: targetSlot,
-            weight: 1,
-            uid: uuid
-        });
     }
 }
 

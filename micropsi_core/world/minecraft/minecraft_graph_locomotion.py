@@ -316,7 +316,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.datatarget_feedback['take_exit_three'] = -1.
 
             if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
-                    if self.has_bread():
+                    if self.has_bread() and self.datasources['hunger'] < 1:
                         self.register_action(
                             'eat',
                             self.spockplugin.eat,

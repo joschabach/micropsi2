@@ -3,6 +3,7 @@ from micropsi_core import tools
 import random
 import logging
 import time
+from functools import partial
 
 
 class MinecraftGraphLocomotion(WorldAdapter):
@@ -95,6 +96,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'fov__7_5': 0,
         'fov__7_6': 0,
         'fov__7_7': 0,
+
+        'health': 0,  # 0-20 (0 being dead)
+        'food': 0  # 0-20 (0 being starving)
     }
 
     datatargets = {
@@ -104,6 +108,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
+        'eat': 0
     }
 
     datatarget_feedback = {
@@ -113,6 +118,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three': 0,
         'fov_x': 0,
         'fov_y': 0,
+        'eat': 0
     }
 
     # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -121,16 +127,16 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_two': 0,
         'take_exit_three': 0,
         'fov_x': 0,
-        'fov_y': 0
+        'fov_y': 0,
+        'eat': 0
     }
 
     # a collection of conditions to check on every update(..), eg., for action feedback
-    waiting_list = {
+    waiting_list = []
         # str(time.time()): {
         #     'target': <key in self.datatarget_feedbacks>,
         #     'exit_uid': <uid of next position>
         # }
-    }
 
     # specs for vision /fovea
     focal_length = 1  # distance of image plane from projective point /fovea
@@ -148,8 +154,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes = {}
 
     target_loco_node_uid = None
-    last_teleport = 0
-    tp_timeout = 10
 
     loco_node_template = {
         'uid': "",
@@ -178,7 +182,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[home_uid]['name'] = "home"
     loco_nodes[home_uid]['uid'] = home_uid
     loco_nodes[home_uid]['x'] = -105
-    loco_nodes[home_uid]['y'] = 65
+    loco_nodes[home_uid]['y'] = 63
     loco_nodes[home_uid]['z'] = 59
     loco_nodes[home_uid]['exit_one_uid'] = cloud_uid
     loco_nodes[home_uid]['exit_two_uid'] = cathedral_uid
@@ -190,7 +194,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[underground_garden_uid]['name'] = "underground garden"
     loco_nodes[underground_garden_uid]['uid'] = underground_garden_uid
     loco_nodes[underground_garden_uid]['x'] = -264
-    loco_nodes[underground_garden_uid]['y'] = 65
+    loco_nodes[underground_garden_uid]['y'] = 62
     loco_nodes[underground_garden_uid]['z'] = 65
     loco_nodes[underground_garden_uid]['exit_one_uid'] = home_uid
     loco_nodes[underground_garden_uid]['exit_two_uid'] = village_uid
@@ -199,7 +203,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[village_uid]['name'] = "village"
     loco_nodes[village_uid]['uid'] = village_uid
     loco_nodes[village_uid]['x'] = -293
-    loco_nodes[village_uid]['y'] = 65
+    loco_nodes[village_uid]['y'] = 64
     loco_nodes[village_uid]['z'] = -220
     loco_nodes[village_uid]['exit_one_uid'] = underground_garden_uid
     loco_nodes[village_uid]['exit_two_uid'] = home_uid
@@ -208,7 +212,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[cathedral_uid]['name'] = "cathedral"
     loco_nodes[cathedral_uid]['uid'] = cathedral_uid
     loco_nodes[cathedral_uid]['x'] = -100
-    loco_nodes[cathedral_uid]['y'] = 65
+    loco_nodes[cathedral_uid]['y'] = 63
     loco_nodes[cathedral_uid]['z'] = 282
     loco_nodes[cathedral_uid]['exit_one_uid'] = home_uid
     loco_nodes[cathedral_uid]['exit_two_uid'] = cloud_uid
@@ -226,7 +230,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[cloud_uid]['name'] = "cloud"
     loco_nodes[cloud_uid]['uid'] = cloud_uid
     loco_nodes[cloud_uid]['x'] = -98
-    loco_nodes[cloud_uid]['y'] = 65
+    loco_nodes[cloud_uid]['y'] = 63
     loco_nodes[cloud_uid]['z'] = 198
     loco_nodes[cloud_uid]['exit_one_uid'] = home_uid
     loco_nodes[cloud_uid]['exit_two_uid'] = cathedral_uid
@@ -235,7 +239,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[bungalow_uid]['name'] = "bungalow"
     loco_nodes[bungalow_uid]['uid'] = bungalow_uid
     loco_nodes[bungalow_uid]['x'] = 28
-    loco_nodes[bungalow_uid]['y'] = 65
+    loco_nodes[bungalow_uid]['y'] = 63
     loco_nodes[bungalow_uid]['z'] = 292
     loco_nodes[bungalow_uid]['exit_one_uid'] = cathedral_uid
     loco_nodes[bungalow_uid]['exit_two_uid'] = farm_uid
@@ -244,7 +248,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[farm_uid]['name'] = "farm"
     loco_nodes[farm_uid]['uid'] = farm_uid
     loco_nodes[farm_uid]['x'] = -50
-    loco_nodes[farm_uid]['y'] = 65
+    loco_nodes[farm_uid]['y'] = 64
     loco_nodes[farm_uid]['z'] = 410
     loco_nodes[farm_uid]['exit_one_uid'] = bungalow_uid
     loco_nodes[farm_uid]['exit_two_uid'] = cathedral_uid
@@ -264,7 +268,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[desert_outpost_uid]['name'] = "desert outpost"
     loco_nodes[desert_outpost_uid]['uid'] = desert_outpost_uid
     loco_nodes[desert_outpost_uid]['x'] = -243
-    loco_nodes[desert_outpost_uid]['y'] = 65
+    loco_nodes[desert_outpost_uid]['y'] = 64
     loco_nodes[desert_outpost_uid]['z'] = 958
     loco_nodes[desert_outpost_uid]['exit_one_uid'] = forest_uid
 
@@ -272,23 +276,29 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[swamp_uid]['name'] = "swamp"
     loco_nodes[swamp_uid]['uid'] = swamp_uid
     loco_nodes[swamp_uid]['x'] = -529
-    loco_nodes[swamp_uid]['y'] = 65
+    loco_nodes[swamp_uid]['y'] = 63
     loco_nodes[swamp_uid]['z'] = 504
     loco_nodes[swamp_uid]['exit_one_uid'] = forest_uid
     loco_nodes[swamp_uid]['exit_two_uid'] = summit_uid
 
     logger = None
 
+    tp_tolerance = 5
+    action_timeout = 10
+
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")
+        self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
+
+    def set_datasources(self, event, data):
+        self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
+        self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
-
-        tol = 5  # tolerance wrt teleport position
 
         if not self.spockplugin.is_connected():
             raise RuntimeError("Lost connection to minecraft server")
@@ -304,7 +314,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 y = int(self.spockplugin.clientinfo.position['y'])
                 z = int(self.spockplugin.clientinfo.position['z'])
                 for k, v in self.loco_nodes.items():
-                    if abs(x - v['x']) <= tol and abs(y - v['y']) <= tol and abs(z - v['z']) <= tol:
+                    if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
                         self.current_loco_node = self.loco_nodes[k]
 
                 if self.current_loco_node is None:
@@ -323,7 +333,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
 
-            self.check_for_action_feedback(tol)
+            self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
+            self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
+
+            self.check_for_action_feedback()
 
             # don't reset self.datatargets because their activation is processed differently
             # depending on whether they fire continuously or not, see self.datatarget_history
@@ -333,48 +346,63 @@ class MinecraftGraphLocomotion(WorldAdapter):
             if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
                 # if the current node on the transition graph has the selected exit
                 if self.current_loco_node['exit_one_uid'] is not None:
-                    # add request for action feedback from Minecraft to self.waiting_list
-                    # ie. check if ( future ) position is equal to position of selected exit node
-                    self.add_to_waiting_list('take_exit_one', self.current_loco_node['exit_one_uid'])
-                    self.locomote(self.current_loco_node['exit_one_uid'])
+                    self.register_action(
+                        'take_exit_one',
+                        partial(self.locomote, self.current_loco_node['exit_one_uid']),
+                        partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
+                    )
                 else:
                     self.datatarget_feedback['take_exit_one'] = -1.
 
             if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
                 if self.current_loco_node['exit_two_uid'] is not None:
-                    self.add_to_waiting_list('take_exit_two', self.current_loco_node['exit_two_uid'])
-                    self.locomote(self.current_loco_node['exit_two_uid'])
+                    self.register_action(
+                        'take_exit_two',
+                        partial(self.locomote, self.current_loco_node['exit_two_uid']),
+                        partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
+                    )
                 else:
                     self.datatarget_feedback['take_exit_two'] = -1.
 
             if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
                 if self.current_loco_node['exit_three_uid'] is not None:
-                    self.add_to_waiting_list('take_exit_three', self.current_loco_node['exit_three_uid'])
-                    self.locomote(self.current_loco_node['exit_three_uid'])
+                    self.register_action(
+                        'take_exit_three',
+                        partial(self.locomote, self.current_loco_node['exit_three_uid']),
+                        partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
+                    )
                 else:
                     self.datatarget_feedback['take_exit_three'] = -1.
 
-            # set fovea sensors
-            # Note: fovea sensors store the position of the fovea while fovea actors store fovea movement /saccades
-            # it just so happens that the movement is given in absolut numbers and hence coincides with the position
-            # however, to allow for no movement, ie. self.datatargets['fov_x'] = 0. and self.datatargets['fov_y'] = 0.,
-            # the numeric scale of the actors is shifted +1 where movements are encoded in the interval [1.,2.]
-            # Also: we chose the middle as the default fovea position, ie. (0.5,0.5)
-            self.datasources['fov_x'] = 0.5 if self.datatargets['fov_x'] == 0. else self.datatargets['fov_x'] - 1.
-            self.datasources['fov_y'] = 0.5 if self.datatargets['fov_y'] == 0. else self.datatargets['fov_y'] - 1.
+            if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
+                    if self.has_bread() and self.datasources['food'] < 1:
+                        self.register_action(
+                            'eat',
+                            self.spockplugin.eat,
+                            partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
+                        )
+                    else:
+                        self.datatarget_feedback['eat'] = -1.
 
-            # write sensor values to fovea aka self.datasources['fov__%d_%d']
-            # where (fov_x,fov_y) is positioned at the bottom left corner, ie. self.datasources['fov__0_0']
-            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'])
-            # TODO: consider pooling different block types into a few select ones
+            # read fovea actors, trigger sampling, and provide action feedback
+            if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
+                    and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
 
-            # provide action feedback
-            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
-            self.datatarget_feedback['fov_x'] = 1
-            self.datatarget_feedback['fov_y'] = 1
+                # get visual input for a patch with (fov_x, fov_y) at the lower left corner and assign them
+                # to self.datasources['fov_*_*']
+                self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
+                # TODO: pool different block types into a few
+
+                # set fovea sensors; sic because fovea value is used as link weight
+                self.datasources['fov_x'] = self.datatargets['fov_x']
+                self.datasources['fov_y'] = self.datatargets['fov_y']
+                # provide action feedback
+                self.datatarget_feedback['fov_x'] = 1
+                self.datatarget_feedback['fov_y'] = 1
+            # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
 
             # impatience!
-            self.check_for_action_feedback(tol)
+            self.check_for_action_feedback()
 
             # update datatarget history
             for k in self.datatarget_history.keys():
@@ -390,34 +418,58 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_loco_node['z']))
 
         self.target_loco_node_uid = target_loco_node_uid
-        self.last_teleport = time.clock()
 
         self.current_loco_node = new_loco_node
 
-    def check_for_action_feedback(self, tol):
+    def check_for_action_feedback(self):
         """ """
         # check if any pending datatarget_feedback can be confirmed with data from the world
         if self.waiting_list:
-            mark_for_deletion = []
-            agent_moved = False
-            for k, item in self.waiting_list.items():
-                exit_uid = item['exit_uid']
-                # somehwat brittle because teleportation is imprecise and the buffer is picked by inspection
-                if abs(self.loco_nodes[exit_uid]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= tol \
-                        and abs(self.loco_nodes[exit_uid]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= tol \
-                        and abs(self.loco_nodes[exit_uid]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= tol:
-                    self.datatarget_feedback[item['target']] = 1.
-                    mark_for_deletion.append(k)
-                    agent_moved = True
+            new_waiting_list = []
+            for index, item in enumerate(self.waiting_list):
+                if item['validation']():
+                    self.datatarget_feedback[item['datatarget']] = 1.
+                else:
+                    new_waiting_list.append(item)
 
-            if not agent_moved:
-                if time.clock() - self.last_teleport > self.tp_timeout:
-                    self.locomote(self.target_loco_node_uid)
+            for item in new_waiting_list:
+                if time.clock() - item['time'] > self.action_timeout:
+                    # re-trigger action
+                    item['action']()
+                    item['time'] = time.clock()
 
-            # delete processed items from waiting_list
-            for i in mark_for_deletion:
-                del self.waiting_list[i]
-            del mark_for_deletion
+            self.waiting_list = new_waiting_list
+
+    def register_action(self, datatarget, action_function, validation_function):
+        """ registers an action to be performed by the agent. Will wait, and eventually re-trigger the action
+            until the validation function returns true, signalling success of the action"""
+        self.waiting_list.append({
+            'datatarget': datatarget,
+            'action': action_function,
+            'validation': validation_function,
+            'time': time.clock()
+        })
+        action_function()
+
+    def has_bread(self):
+        for item in self.spockplugin.inventory:
+            if item.get('id', 0) == 297:
+                return True
+        return False
+
+    def check_eat_feedback(self, old_value):
+        food = self.spockplugin.clientinfo.health['food']
+        return food > old_value or food == 20
+
+    def check_movement_feedback(self, target_loco_node):
+        if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
+           and abs(self.loco_nodes[target_loco_node]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= self.tp_tolerance \
+           and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance:
+            # hand the agent a bread, if it just arrived at the farm, or at the village
+            if target_loco_node == self.village_uid or target_loco_node == self.farm_uid:
+                self.spockplugin.give_item('bread')
+            return True
+        return False
 
     def get_visual_input(self, fov_x, fov_y):
         """
@@ -587,7 +639,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def get_block_type(self, x, y, z):
         """ Jonas' get_voxel_blocktype(..) """
         key = (x // 16, z // 16)
-        columns = self.spockplugin.world.map.columns
+        columns = self.spockplugin.world.columns
         if key not in columns:
             return -1
         current_column = columns[key]
@@ -600,7 +652,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         if current_section is None:
             return -1
         else:
-            return current_section.get(x % 16, y % 16, z % 16).id
+            block_type_id = current_section.block_data.get(x % 16, y % 16, z % 16)
+            # print('blocktype: %s' % str( block_type_id/ 16))
+            return block_type_id / 16
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """
@@ -651,11 +705,3 @@ class MinecraftGraphLocomotion(WorldAdapter):
         while start < end:
             yield start
             start += step
-
-    def add_to_waiting_list(self, target, exit_uid):
-        """
-        """
-        key = str(time.time())
-        self.waiting_list[key] = {}
-        self.waiting_list[key]['target'] = target
-        self.waiting_list[key]['exit_uid'] = exit_uid

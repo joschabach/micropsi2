@@ -536,7 +536,9 @@ def merge_nodenet_form(nodenet_uid):
 
 @micropsi_app.route("/nodenet/merge/<nodenet_uid>", method="POST")
 def merge_nodenet(nodenet_uid):
-    runtime.merge_nodenet(nodenet_uid, request.files['file_upload'].file.read())
+    data = request.files['file_upload'].file.read()
+    data = data.decode('utf-8')
+    runtime.merge_nodenet(nodenet_uid, data)
     return dict(status='success', msg="Nodenet merged")
 
 

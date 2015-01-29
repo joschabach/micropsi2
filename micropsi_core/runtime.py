@@ -639,6 +639,7 @@ def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_
             link.weight,
             link.certainty)
 
+
 # Node operations
 
 def get_nodespace_list(nodenet_uid):
@@ -652,6 +653,7 @@ def get_nodespace_list(nodenet_uid):
     for uid in nodenet.get_nodespace_uids():
         nodespace = nodenet.get_nodespace(uid)
         data[uid] = {
+            'uid': uid,
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
             'nodes': {},
@@ -659,6 +661,7 @@ def get_nodespace_list(nodenet_uid):
         }
         for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
+                'uid': nid,
                 'name': nodenet.get_node(nid).name,
                 'type': nodenet.get_node(nid).type
             }

@@ -1,5 +1,17 @@
 
+Object.values = function(obj){
+    ret = [];
+    for(var key in obj){
+        ret.push(obj[key]);
+    }
+    return ret;
+}
 
+window.sortByName = function(a, b){
+    if(a.name.toLowerCase() < b.name.toLowerCase()) return -1;
+    if(b.name.toLowerCase() < a.name.toLowerCase()) return 1;
+    return 0;
+}
 
 var dialogs = {
 
@@ -483,7 +495,8 @@ function resetNodenet(event){
             'revert_nodenet',
             {nodenet_uid: currentNodenet},
             function(){
-                $(document).trigger('load_nodenet', currentNodenet);
+                window.location.reload();
+                // $(document).trigger('load_nodenet', currentNodenet);
             }
         );
     } else {

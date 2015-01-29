@@ -2181,11 +2181,7 @@ function initializeDialogs(){
         if(ns){
             var html = '';
             var nodes = Object.values(ns.nodes);
-            nodes.sort(function(a, b){
-                if(a.name.toLowerCase() < b.name.toLowerCase()) return -1;
-                if(b.name.toLowerCase() < a.name.toLowerCase()) return 1;
-                return 0;
-            });
+            nodes.sort(sortByName);
             for(var i in nodes){
                 html += '<option value="'+nodes[i].uid+'">'+nodes[i].name + '('+nodes[i].type+')</option>';
             }
@@ -2460,8 +2456,10 @@ function handleContextMenu(event) {
                         $("#link_target_node").html('');
                         $('#link_target_slot').html('');
                         var html = '';
-                        for(var key in nodespaces){
-                            html += '<option value="'+key+'">'+nodespaces[key].name+'</option>';
+                        var sorted_ns = Object.values(nodespaces);
+                        sorted_ns.sort(sortByName);
+                        for(var i in sorted_ns){
+                            html += '<option value="'+sorted_ns[i].uid+'">'+sorted_ns[i].name+'</option>';
                         }
                         $('#link_target_nodespace').html(html);
                         html = '';

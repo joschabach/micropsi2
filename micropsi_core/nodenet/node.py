@@ -605,7 +605,7 @@ class Nodetype(object):
         "maximum": 1,
         "certainty": 1,
         "amplification": 1,
-        "threshold": 0,
+        "threshold": -1,
         "decay": 0,
         "theta": 0,
         "rho": 0,

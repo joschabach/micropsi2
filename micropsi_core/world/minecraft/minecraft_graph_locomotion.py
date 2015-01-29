@@ -143,7 +143,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     im_height = 16    # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 16     # side length of a fovea patch
+    patch_len = 8     # side length of a fovea patch
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -294,8 +294,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
         self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
-        # self.f = open('/Users/pi/data/mc_data/patches.csv', 'a')
-
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
@@ -323,27 +321,26 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         else:
 
-            # set pitch for sampling
-            # self.spockplugin.clientinfo.position['pitch'] = 90
-            self.spockplugin.clientinfo.position['pitch'] = 0
-            self.spockplugin.clientinfo.position['yaw'] = 0
-
             #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
             self.datatarget_feedback['orientation'] = 1
             # self.datatargets['orientation'] = 0
 
+            # reset self.datasources
+            for k in self.datasources.keys():
+                self.datasources[k] = 0.
+
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
+
+            # don't reset self.datatargets because their activation is processed differently
+            # depending on whether they fire continuously or not, see self.datatarget_history
 
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
             self.check_for_action_feedback()
-
-            # don't reset self.datatargets because their activation is processed differently
-            # depending on whether they fire continuously or not, see self.datatarget_history
 
             # read locomotor values, trigger teleportation in the world, and provide action feedback
             # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
@@ -477,8 +474,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         """
         from math import radians, tan
 
-        # print("Fovea values: ( %.2f , %.2f)" % (fov_x, fov_y))
-
         # set agent position
         pos_x = self.spockplugin.clientinfo.position['x']
         pos_y = self.spockplugin.clientinfo.position['y']  # + 1.620
@@ -516,17 +511,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     block_type, distance = self.project(h_line[fov_x + j], v_line[fov_y + i], zi, x0, y0, z0, yaw, pitch)
                 except IndexError:
                     block_type, distance = -1, -1
-                    print("IndexError at (%d,%d)" % (fov_x + j, fov_y + i))
+                    self.logger.warning("IndexError at (%d,%d)" % (fov_x + j, fov_y + i))
                 patch.append(block_type)
                 # for now, keep block type sensors and activate them respectively
                 block_type_pooled = self.map_block_type_to_sensor(block_type)
                 # patch.append(block_type_pooled)
-
-        # why so many air blocks
-        # if most found blocks are airy or empty blocks, inspect data used
-        # from IPython import embed
-        # if not patch.count(-1) == len(patch) and patch.count(0) + patch.count(-1) == len(patch):
-        #     embed()
 
         # normalize block type values
         # subtract patch mean
@@ -551,11 +540,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 # write values to self.datasources aka sensors
                 self.datasources[str_name] = patch_resc[self.patch_len * i + j]
 
-        # # write ( labeled ) data to file for further analysis and learning
-        # data = "{0}".format(",".join(str(b) for b in patch))
-        # label = self.current_loco_node['name']
-        # self.f.write("%s,%s\n" % (data, label))
-
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
         Given a point on the projection plane and the agent's position, cast a
@@ -565,7 +549,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         from math import sqrt
 
         distance = 0    # just a counter
-        block_type = 0
+        block_type = -1
         xb, yb, zb = xi, yi, zi
 
         # compute difference vector between projective point and image point

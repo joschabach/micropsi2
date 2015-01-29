@@ -659,6 +659,7 @@ def get_nodespace_list(nodenet_uid):
         }
         for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
+                'uid': nid,
                 'name': nodenet.get_node(nid).name,
                 'type': nodenet.get_node(nid).type
             }

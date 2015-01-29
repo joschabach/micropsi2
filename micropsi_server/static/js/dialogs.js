@@ -1,5 +1,11 @@
 
-
+Object.values = function(obj){
+    ret = [];
+    for(var key in obj){
+        ret.push(obj[key]);
+    }
+    return ret;
+}
 
 var dialogs = {
 

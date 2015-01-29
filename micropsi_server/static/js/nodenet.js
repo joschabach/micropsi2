@@ -2180,8 +2180,14 @@ function initializeDialogs(){
         var ns = nodespaces[target_nodespace.val()];
         if(ns){
             var html = '';
-            for(var nid in ns.nodes){
-                html += '<option value="'+nid+'">'+ns.nodes[nid].name + '('+ns.nodes[nid].type+')</option>';
+            var nodes = Object.values(ns.nodes);
+            nodes.sort(function(a, b){
+                if(a.name.toLowerCase() < b.name.toLowerCase()) return -1;
+                if(b.name.toLowerCase() < a.name.toLowerCase()) return 1;
+                return 0;
+            });
+            for(var i in nodes){
+                html += '<option value="'+nodes[i].uid+'">'+nodes[i].name + '('+nodes[i].type+')</option>';
             }
             target_node.html(html);
             target_node.trigger('change');

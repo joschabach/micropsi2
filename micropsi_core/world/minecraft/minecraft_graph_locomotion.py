@@ -133,20 +133,17 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     # a collection of conditions to check on every update(..), eg., for action feedback
     waiting_list = []
-        # str(time.time()): {
-        #     'target': <key in self.datatarget_feedbacks>,
-        #     'exit_uid': <uid of next position>
-        # }
+    # str(time.time()): {'target': <key in self.datatarget_feedbacks>, 'exit_uid': <uid of next position>}
 
     # specs for vision /fovea
     focal_length = 1  # distance of image plane from projective point /fovea
-    max_dist = 150    # maximum distance for raytracing
+    max_dist = 200    # maximum distance for raytracing
     resolution = 4    # number of rays per tick in viewport /camera coordinate system
     im_width = 32     # width of projection /image plane in the world
     im_height = 16    # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 8     # side length of a fovea patch
+    patch_len = 16     # side length of a fovea patch
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -297,6 +294,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
         self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
+        # self.f = open('/Users/pi/data/mc_data/patches.csv', 'a')
+
     def update(self):
         """called on every world simulation step to advance the life of the agent"""
 
@@ -323,6 +322,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.locomote(target)
 
         else:
+
+            # set pitch for sampling
+            # self.spockplugin.clientinfo.position['pitch'] = 90
+            self.spockplugin.clientinfo.position['pitch'] = 0
+            self.spockplugin.clientinfo.position['yaw'] = 0
 
             #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
@@ -385,21 +389,17 @@ class MinecraftGraphLocomotion(WorldAdapter):
                         self.datatarget_feedback['eat'] = -1.
 
             # read fovea actors, trigger sampling, and provide action feedback
-            if self.datatargets['fov_x'] > 0 and self.datatargets['fov_y'] > 0 \
-                    and not self.datatarget_history['fov_x'] > 0 and not self.datatarget_history['fov_y'] > 0:
+            if not (self.datatargets['fov_x'] == 0. and self.datatargets['fov_y'] == 0.):
+                # update fovea sensors
+                self.datasources['fov_x'] = self.datatargets['fov_x'] - 1.
+                self.datasources['fov_y'] = self.datatargets['fov_y'] - 1.
+                # print("fovea values (%.3f,%.3f)" % (self.datasources['fov_x'], self.datasources['fov_y']))
+                self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'])
 
-                # get visual input for a patch with (fov_x, fov_y) at the lower left corner and assign them
-                # to self.datasources['fov_*_*']
-                self.get_visual_input(int(self.datatargets['fov_x'] - 1), int(self.datatargets['fov_y'] - 1))
-                # TODO: pool different block types into a few
-
-                # set fovea sensors; sic because fovea value is used as link weight
-                self.datasources['fov_x'] = self.datatargets['fov_x']
-                self.datasources['fov_y'] = self.datatargets['fov_y']
-                # provide action feedback
-                self.datatarget_feedback['fov_x'] = 1
-                self.datatarget_feedback['fov_y'] = 1
-            # note: fovea saccading can't fail because it involves only internal actors, not ones granted by the world
+            # provide action feedback
+            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
+            self.datatarget_feedback['fov_x'] = 1
+            self.datatarget_feedback['fov_y'] = 1
 
             # impatience!
             self.check_for_action_feedback()
@@ -473,16 +473,20 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def get_visual_input(self, fov_x, fov_y):
         """
+        Spans an image plane
         """
         from math import radians, tan
 
+        # print("Fovea values: ( %.2f , %.2f)" % (fov_x, fov_y))
+
         # set agent position
         pos_x = self.spockplugin.clientinfo.position['x']
-        pos_y = self.spockplugin.clientinfo.position['y']
+        pos_y = self.spockplugin.clientinfo.position['y']  # + 1.620
         pos_z = self.spockplugin.clientinfo.position['z']
 
         # set yaw and pitch ( in degrees )
         yaw = self.spockplugin.clientinfo.position['yaw']
+        # consider setting yaw to a random value between 0 and 359
         pitch = self.spockplugin.clientinfo.position['pitch']
 
         # compute ticks per dimension
@@ -515,7 +519,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     print("IndexError at (%d,%d)" % (fov_x + j, fov_y + i))
                 patch.append(block_type)
                 # for now, keep block type sensors and activate them respectively
-                self.map_block_type_to_sensor(block_type)
+                block_type_pooled = self.map_block_type_to_sensor(block_type)
+                # patch.append(block_type_pooled)
+
+        # why so many air blocks
+        # if most found blocks are airy or empty blocks, inspect data used
+        # from IPython import embed
+        # if not patch.count(-1) == len(patch) and patch.count(0) + patch.count(-1) == len(patch):
+        #     embed()
 
         # normalize block type values
         # subtract patch mean
@@ -539,6 +550,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 str_name = 'fov__%d_%d' % (j, i)  # Beware: magic name
                 # write values to self.datasources aka sensors
                 self.datasources[str_name] = patch_resc[self.patch_len * i + j]
+
+        # # write ( labeled ) data to file for further analysis and learning
+        # data = "{0}".format(",".join(str(b) for b in patch))
+        # label = self.current_loco_node['name']
+        # self.f.write("%s,%s\n" % (data, label))
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
@@ -599,42 +615,54 @@ class MinecraftGraphLocomotion(WorldAdapter):
         """
         if block_type < 0:
             self.datasources['nothing'] = 1.
+            return -1
 
         elif block_type == 0:
             self.datasources['air'] = 1.
+            return 0
 
         elif block_type == 1 or block_type == 4 or block_type == 7:
             self.datasources['stone'] = 1.
+            return 1
 
         elif block_type == 2 or block_type == 31:
             self.datasources['grass'] = 1.
+            return 2
 
         elif block_type == 3:
             self.datasources['dirt'] = 1.
+            return 3
 
         elif block_type == 5 or block_type == 17:
             self.datasources['wood'] = 1.
+            return 4
 
         elif block_type == 8 or block_type == 9:
             self.datasources['water'] = 1.
+            return 5
 
         elif block_type == 12:
             self.datasources['sand'] = 1.
+            return 6
 
         elif block_type == 13:
             self.datasources['gravel'] = 1.
+            return 7
 
         elif block_type == 18:
             self.datasources['leaves'] = 1.
+            return 8
 
         elif block_type == 14 or block_type == 15 or block_type == 16 or \
             block_type == 20 or block_type == 41 or block_type == 42 or \
             block_type == 43 or block_type == 44 or block_type == 45 or \
                 block_type == 47 or block_type == 48 or block_type == 49:
             self.datasources['solids'] = 1.
+            return 9
 
         else:
             self.datasources['otter'] = 1.
+            return 10
 
     def get_block_type(self, x, y, z):
         """ Jonas' get_voxel_blocktype(..) """

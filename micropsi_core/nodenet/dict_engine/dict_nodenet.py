@@ -205,7 +205,7 @@ class DictNodenet(Nodenet):
             'links': {},
             'nodes': {},
             'name': self.name,
-            'max_coords': self.max_coords,
+            'max_coords': {'x': 0, 'y': 0},
             'is_active': self.is_active,
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
@@ -223,7 +223,12 @@ class DictNodenet(Nodenet):
                     if y in self.__nodes_by_coords[x]:
                         for uid in self.__nodes_by_coords[x][y]:
                             if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
-                                data['nodes'][uid] = self.get_node(uid).data
+                                node = self.get_node(uid)
+                                data['nodes'][uid] = node.data
+                                if node.position[0] > data['max_coords']['x']:
+                                    data['max_coords']['x'] = node.position[0]
+                                if node.position[1] > data['max_coords']['y']:
+                                    data['max_coords']['y'] = node.position[1]
                                 links.extend(self.get_node(uid).get_associated_links())
                                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
         for link in links:

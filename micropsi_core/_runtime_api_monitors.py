@@ -12,21 +12,21 @@ from micropsi_core.nodenet import monitor
 import micropsi_core
 
 
-def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=''):
+def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid=node_uid, type='gate', target=gate, name=nodenet.get_node(node_uid).name, sheaf=sheaf)
+    mon = monitor.NodeMonitor(nodenet, node_uid, 'gate', gate, sheaf=sheaf, name=nodenet.get_node(node_uid).name)
     return mon.uid
 
 
-def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=''):
+def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
     """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid=node_uid, type='slot', target=slot, name=nodenet.get_node(node_uid).name, sheaf=sheaf)
+    mon = monitor.NodeMonitor(nodenet, node_uid, 'slot', slot, sheaf=sheaf, name=nodenet.get_node(node_uid).name)
     return mon.uid
 
 

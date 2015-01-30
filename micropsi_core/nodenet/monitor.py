@@ -34,7 +34,7 @@ class Monitor(object):
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
         self.values = {}
-        self.name = name
+        self.name = name or "some monitor"
         nodenet._register_monitor(self)
 
     def step(self, step):
@@ -60,7 +60,7 @@ class NodeMonitor(Monitor):
         }
         return data
 
-    def __init__(self, nodenet, name='', uid=None, node_uid='', type='', target='', sheaf=''):
+    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None):
         super(NodeMonitor, self).__init__(nodenet, name, uid)
         self.node_uid = node_uid
         self.type = type
@@ -91,7 +91,7 @@ class LinkMonitor(Monitor):
         }
         return data
 
-    def __init__(self, nodenet, name='', uid=None, source_node_uid=None, gate_type=None, target_node_uid=None, slot_type=None, property=None):
+    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None):
         super(LinkMonitor, self).__init__(nodenet, name, uid)
         self.source_node_uid = source_node_uid
         self.target_node_uid = target_node_uid
@@ -124,7 +124,7 @@ class CustomMonitor(Monitor):
         }
         return data
 
-    def __init__(self, nodenet, name='', uid=None, function=''):
+    def __init__(self, nodenet, function, name=None, uid=None):
         super(CustomMonitor, self).__init__(nodenet, name, uid)
         self.function = function
         self.compiled_function = micropsi_core.tools.create_function(self.function, parameters="netapi")

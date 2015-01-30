@@ -1066,7 +1066,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
     monitor_data = response.json_body['data']
 
-    assert data['monitors'][monitor_uid]['node_name'] == 'N1'
+    assert data['monitors'][monitor_uid]['name'] == 'N1'
     assert data['monitors'][monitor_uid]['node_uid'] == 'N1'
     assert data['monitors'][monitor_uid]['target'] == 'gen'
     assert data['monitors'][monitor_uid]['type'] == 'gate'

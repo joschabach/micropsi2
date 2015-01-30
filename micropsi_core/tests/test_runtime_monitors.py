@@ -80,7 +80,7 @@ def test_get_monitor_data(fixed_nodenet):
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.get_monitor_data(fixed_nodenet)
     assert data['current_step'] == 1
-    assert data['monitors'][uid]['node_name'] == 'A1'
+    assert data['monitors'][uid]['name'] == 'A1'
     values = data['monitors'][uid]['values']
     assert len(values.keys()) == 1
     assert [k for k in values.keys()] == [1]
@@ -101,7 +101,7 @@ def test_export_monitor_data_with_id(fixed_nodenet):
     micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid1)
-    assert data['node_name'] == 'A1'
+    assert data['name'] == 'A1'
     assert 'values' in data
 
 

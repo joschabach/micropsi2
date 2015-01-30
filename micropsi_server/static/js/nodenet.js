@@ -3359,19 +3359,11 @@ function showNodeForm(nodeUid){
         var inlink_types = {};
         if(nodes[nodeUid].slotIndexes.length){
             for(key in nodes[nodeUid].slots){
+                link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
-                    if(!(links[id].gateName in inlink_types)){
-                        inlink_types[links[id].gateName] = [];
-                    }
-                    inlink_types[links[id].gateName].push('<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>');
+                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
                 }
             }
-        }
-        for(key in inlink_types){
-            link_list += '<tr><td>';
-            //link_list += '<a href="#followslot" class="followslots" data="'+available_gatetypes[j]+'">'+available_gatetypes[j]+"</a>";
-            link_list += key + '</td><td>';
-            link_list += "<ul>"+inlink_types[key].join(' ')+"</ul></td></tr>";
         }
         $('#node_slots').html(link_list || "<tr><td>None</td></tr>");
         content = "";

@@ -8,21 +8,59 @@ from micropsi_core import runtime as micropsi
 
 
 def test_add_gate_monitor(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen', sheaf='default')
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    assert monitor.node_name == 'A1'
+    assert monitor.name == 'A1'
     assert monitor.node_uid == 'A1'
     assert monitor.target == 'gen'
     assert monitor.type == 'gate'
+    assert monitor.sheaf == 'default'
+    assert len(monitor.values) == 0
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert len(monitor.values) == 1
 
 
 def test_add_slot_monitor(fixed_nodenet):
     uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    assert monitor.node_name == 'A1'
+    assert monitor.name == 'A1'
     assert monitor.node_uid == 'A1'
     assert monitor.target == 'gen'
     assert monitor.type == 'slot'
+    assert len(monitor.values) == 0
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert len(monitor.values) == 1
+
+
+def test_add_link_monitor(fixed_nodenet):
+    uid = micropsi.add_link_monitor(fixed_nodenet, 'S', 'gen', 'B1', 'gen', 'weight', 'Testmonitor')
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert monitor.name == 'Testmonitor'
+    assert monitor.property == 'weight'
+    assert monitor.source_node_uid == 'S'
+    assert monitor.target_node_uid == 'B1'
+    assert monitor.gate_type == 'gen'
+    assert monitor.slot_type == 'gen'
+    assert len(monitor.values) == 0
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert len(monitor.values) == 1
+
+
+def test_add_custom_monitor(fixed_nodenet):
+    code = """return len(netapi.get_nodes())"""
+    uid = micropsi.add_custom_monitor(fixed_nodenet, code, 'Nodecount')
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert monitor.name == 'Nodecount'
+    assert monitor.compiled_function is not None
+    assert monitor.function == code
+    assert len(monitor.values) == 0
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert len(monitor.values) == 1
+    assert monitor.values[1] == len(micropsi.nodenets[fixed_nodenet].netapi.get_nodes())
 
 
 def test_remove_monitor(fixed_nodenet):

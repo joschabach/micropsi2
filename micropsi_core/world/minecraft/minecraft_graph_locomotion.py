@@ -97,8 +97,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'fov__7_6': 0,
         'fov__7_7': 0,
 
-        'health': 0,  # 0-20 (0 being dead)
-        'food': 0  # 0-20 (0 being starving)
+        'health': 1,
+        'food': 1
     }
 
     datatargets = {
@@ -133,7 +133,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     # a collection of conditions to check on every update(..), eg., for action feedback
     waiting_list = []
-    # str(time.time()): {'target': <key in self.datatarget_feedbacks>, 'exit_uid': <uid of next position>}
 
     # specs for vision /fovea
     focal_length = 1  # distance of image plane from projective point /fovea
@@ -337,6 +336,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # don't reset self.datatargets because their activation is processed differently
             # depending on whether they fire continuously or not, see self.datatarget_history
 
+            # health and food are in [0;20]
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
@@ -376,14 +376,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.datatarget_feedback['take_exit_three'] = -1.
 
             if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
-                    if self.has_bread() and self.datasources['food'] < 1:
-                        self.register_action(
-                            'eat',
-                            self.spockplugin.eat,
-                            partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
-                        )
-                    else:
-                        self.datatarget_feedback['eat'] = -1.
+                if self.has_bread() and self.datasources['food'] < 1:
+                    self.register_action(
+                        'eat',
+                        self.spockplugin.eat,
+                        partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
+                    )
+                else:
+                    self.datatarget_feedback['eat'] = -1.
 
             # read fovea actors, trigger sampling, and provide action feedback
             if not (self.datatargets['fov_x'] == 0. and self.datatargets['fov_y'] == 0.):

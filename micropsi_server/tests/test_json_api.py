@@ -1059,8 +1059,14 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     })
     monitor_uid = response.json_body['data']
 
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
-    data = response.json_body['data']
+    response_1 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/save_nodenet(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
+    response_2 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+
+    assert response_1.json_body['data'] == response_2.json_body['data']
+
+    data = response_2.json_body['data']
 
     # Monitors
     response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))

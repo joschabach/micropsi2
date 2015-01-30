@@ -5,12 +5,14 @@ Monitor definition
 """
 
 import micropsi_core.tools
+from abc import ABCMeta, abstractmethod
+
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
 
 
-class Monitor(object):
+class Monitor(metaclass=ABCMeta):
     """A gate or slot monitor watching the activation of the given slot or gate over time
 
     Attributes:
@@ -30,15 +32,16 @@ class Monitor(object):
         }
         return data
 
-    def __init__(self, nodenet, name='', uid=None, **_):
+    def __init__(self, nodenet, name='', uid=None):
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
         self.values = {}
         self.name = name or "some monitor"
         nodenet._register_monitor(self)
 
+    @abstractmethod
     def step(self, step):
-        pass
+        pass  # pragma: no cover
 
     def clear(self):
         self.values = {}
@@ -60,7 +63,7 @@ class NodeMonitor(Monitor):
         }
         return data
 
-    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None):
+    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, **_):
         super(NodeMonitor, self).__init__(nodenet, name, uid)
         self.node_uid = node_uid
         self.type = type
@@ -91,7 +94,7 @@ class LinkMonitor(Monitor):
         }
         return data
 
-    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None):
+    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, **_):
         super(LinkMonitor, self).__init__(nodenet, name, uid)
         self.source_node_uid = source_node_uid
         self.target_node_uid = target_node_uid
@@ -124,7 +127,7 @@ class CustomMonitor(Monitor):
         }
         return data
 
-    def __init__(self, nodenet, function, name=None, uid=None):
+    def __init__(self, nodenet, function, name=None, uid=None, **_):
         super(CustomMonitor, self).__init__(nodenet, name, uid)
         self.function = function
         self.compiled_function = micropsi_core.tools.create_function(self.function, parameters="netapi")

@@ -4,7 +4,7 @@ import json
 import os
 
 import warnings
-from micropsi_core.nodenet.monitor import Monitor
+from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
 from .dict_node import DictNode
@@ -356,7 +356,15 @@ class DictNodenet(Nodenet):
                                  data['certainty'])
 
         for uid in nodenet_data.get('monitors', {}):
-            Monitor(self, **nodenet_data['monitors'][uid])
+            data = nodenet_data['monitors'][uid]
+            if 'classname' in data:
+                if hasattr(monitor, data['classname']):
+                    getattr(monitor, data['classname'])(self, **data)
+                else:
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+            else:
+                # Compatibility mode
+                monitor.NodeMonitor(self, name=data['node_name'], **data)
 
     def step(self):
         """perform a simulation step"""

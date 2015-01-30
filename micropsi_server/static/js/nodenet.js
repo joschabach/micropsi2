@@ -2701,6 +2701,11 @@ function handleEditLink(event){
     });
 }
 
+function handleDeleteLink(event){
+    event.preventDefault();
+    deleteLinkHandler(clickOriginUid);
+}
+
 linkCreationStart = null;
 
 // start the creation of a new link
@@ -3189,6 +3194,7 @@ function followlink(event){
     deselectAll();
     selectLink(id);
     view.draw();
+    clickOriginUid = id;
     showLinkForm(id);
 }
 
@@ -3257,6 +3263,7 @@ function followgate(event){
 
 function initializeSidebarForms(){
     $('#edit_link_form').submit(handleEditLink);
+    $('#edit_link_form .deleteLink').on('click', handleDeleteLink);
     $('#edit_node_form').submit(handleEditNode);
     $('#edit_gate_form').submit(handleEditGate);
     $('#edit_nodenet_form').submit(handleEditNodenet);

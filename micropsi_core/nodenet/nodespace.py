@@ -83,7 +83,7 @@ class Nodespace(metaclass=ABCMeta):
     @abstractmethod
     def name(self):
         """
-        This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
+        This nodespace's human reaable name for display purposes. Returns the UID if no human readable name has been set.
         """
         pass  # pragma: no cover
 
@@ -91,7 +91,7 @@ class Nodespace(metaclass=ABCMeta):
     @abstractmethod
     def name(self, name):
         """
-        Sets this node's human reaable name for display purposes.
+        Sets this nodespace's human reaable name for display purposes.
         """
         pass  # pragma: no cover
 
@@ -107,7 +107,7 @@ class Nodespace(metaclass=ABCMeta):
     @abstractmethod
     def parent_nodespace(self, uid):
         """
-        Sets this node's parent nodespace by UID, effectively moving from its old parent space to the new one
+        Sets this nodespace's parent nodespace by UID, effectively moving from its old parent space to the new one
         """
         pass  # pragma: no cover
 

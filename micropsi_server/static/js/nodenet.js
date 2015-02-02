@@ -2497,6 +2497,9 @@ function handleContextMenu(event) {
             break;
         case "link":
             switch (menuText) {
+                case "Add link-weight monitor":
+                    addLinkMonitor(clickOriginUid);
+                    break;
                 case "Delete link":
                     deleteLinkHandler(clickOriginUid);
                     break;
@@ -2887,6 +2890,33 @@ function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, w
 function cancelLinkCreationHandler() {
     if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
     linkCreationStart = null;
+}
+
+function addLinkMonitor(clickOriginUid){
+    var link = links[clickOriginUid];
+    event.preventDefault();
+    $('#monitor_modal .custom_monitor').hide();
+    $('#monitor_modal').modal('show');
+    $('#monitor_modal .btn-primary').on('click', function(event){
+        api.call('add_link_monitor', {
+            nodenet_uid: currentNodenet,
+            source_node_uid: link.sourceNodeUid,
+            gate_type: link.gateName,
+            target_node_uid: link.targetNodeUid,
+            slot_type: link.slotName,
+            name: $('#monitor_name_input').val(),
+            property:'weight'
+        }, function(data){
+            dialogs.notification("monitor saved");
+            $(document).trigger('monitorsChanged');
+            $('#monitor_modal .btn-primary').off();
+            $('#monitor_modal').modal('hide');
+        }, function(data){
+            api.defaultErrorCallback(data);
+            $('#monitor_modal .btn-primary').off();
+            $('#monitor_modal').modal('hide');
+        });
+    });
 }
 
 function moveNode(nodeUid, x, y){

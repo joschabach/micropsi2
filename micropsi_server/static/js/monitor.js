@@ -147,7 +147,7 @@ $(function(){
             if(currentMonitors.indexOf(uid) > -1){
                 html += ' checked="checked"';
             }
-            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].type + ' ' + monitors[uid].target + '</strong> @ Node ' + (monitors[uid].node_name || monitors[uid].node_uid) + '</label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
+            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);
@@ -158,7 +158,7 @@ $(function(){
                 {nodenet_uid: currentNodenet, monitor_uid: $(event.delegateTarget).attr('data')},
                 function(){
                     delete monitors[uid];
-                    pollMonitoringData();
+                    refreshMonitors();
                 }
             );
         });
@@ -175,10 +175,11 @@ $(function(){
 
     function drawGraph(currentMonitors) {
 
+        var customMonitors = false;
         container.html(''); // TODO: come up with a way to redraw
         var margin = {
                 top: 20,
-                right: 20,
+                right: 50,
                 bottom: 30,
                 left: 50
             },
@@ -189,32 +190,48 @@ $(function(){
         var x = d3.scale.linear()
             .domain([xmax - viewProperties.xvalues, xmax])
             .range([0, width]);
-
-        var values = [];
         var xstart = xmax - viewProperties.xvalues;
-        var ymax = 1.0;
-        var ymin = 0;
+
+        var y1values = [];
+        var y2values = [];
+        var y1max = 1.0;
+        var y1min = 0;
+        var y2max = 1.0;
+        var y2min = 1.0;
         for (var uid in currentMonitors) {
             for (var step in currentMonitors[uid].values) {
-                values.push(currentMonitors[uid].values[step]);
-                if (step >= xstart) {
-                    ymax = Math.max(ymax, currentMonitors[uid].values[step]);
-                    ymin = Math.min(ymin, currentMonitors[uid].values[step]);
+                if(currentMonitors[uid].classname == 'CustomMonitor'){
+                    customMonitors = true;
+                    y2values.push(currentMonitors[uid].values[step]);
+                    if (step >= xstart) {
+                        y2max = Math.max(y2max, currentMonitors[uid].values[step]);
+                        y2min = Math.min(y2min, currentMonitors[uid].values[step]);
+                    }
+                } else {
+                    y1values.push(currentMonitors[uid].values[step]);
+                    if (step >= xstart) {
+                        y1max = Math.max(y1max, currentMonitors[uid].values[step]);
+                        y1min = Math.min(y1min, currentMonitors[uid].values[step]);
+                    }
                 }
             }
         }
 
-        var y = d3.scale.linear().domain([ymin, ymax]).range([height, 0]);
+        var y1 = d3.scale.linear().domain([y1min, y1max]).range([height, 0]);
+        var y2 = d3.scale.linear().domain([y2min, y2max]).range([height, 0]);
 
-        var x_axis_pos = (ymax / (ymax - ymin)) * height;
+        var x_axis_pos = (y1max / (y1max - y1min)) * height;
 
         var xAxis = d3.svg.axis()
             .scale(x)
             .orient("bottom");
 
-        var yAxis = d3.svg.axis()
-            .scale(y)
+        var y1Axis = d3.svg.axis()
+            .scale(y1)
             .orient("left");
+        var y2Axis = d3.svg.axis()
+            .scale(y2)
+            .orient("right");
 
         svg = d3.select("#graph").append("svg")
             .attr("width", width + margin.left + margin.right)
@@ -233,25 +250,50 @@ $(function(){
             .text("Nodenet step");
         svg.append("g")
             .attr("class", "y axis")
-            .call(yAxis)
+            .call(y1Axis)
             .append("text")
             .attr("transform", "rotate(-90)")
             .attr("y", 6)
             .attr("dy", ".71em")
             .style("text-anchor", "end")
             .text("Activation");
+        if(customMonitors){
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y2Axis)
+                .attr("transform", "translate(" + width + " ,0)")
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("Value");
+        }
 
         for (var uid in currentMonitors) {
-            var line = d3.svg.line()
-                .x(function(d) {
-                    return x(d[0]);
-                })
-                .y(function(d) {
-                    return y(d[1]);
-                });
             var data = [];
-            for (var step in currentMonitors[uid].values) {
-                data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
+            if(currentMonitors[uid].classname == 'CustomMonitor'){
+                var line = d3.svg.line()
+                    .x(function(d) {
+                        return x(d[0]);
+                    })
+                    .y(function(d) {
+                        return y2(d[1]);
+                    });
+                for (var step in currentMonitors[uid].values) {
+                    data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
+                }
+            } else {
+                var line = d3.svg.line()
+                    .x(function(d) {
+                        return x(d[0]);
+                    })
+                    .y(function(d) {
+                        return y1(d[1]);
+                    });
+                for (var step in currentMonitors[uid].values) {
+                    data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
+                }
             }
             var len = data.length;
             data.splice(0, len - viewProperties.xvalues - 1);

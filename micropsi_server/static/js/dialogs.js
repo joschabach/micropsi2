@@ -368,6 +368,28 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
+    $('.add_custom_monitor').on('click', function(event){
+        event.preventDefault();
+        $('#monitor_modal .custom_monitor').show();
+        $('#monitor_modal').modal('show');
+        $('#monitor_modal .btn-primary').on('click', function(event){
+            api.call('add_custom_monitor', {
+                'nodenet_uid': currentNodenet,
+                'function': $('#monitor_code_input').val(),
+                'name': $('#monitor_name_input').val()
+            }, function(data){
+                dialogs.notification("monitor saved");
+                $(document).trigger('monitorsChanged');
+                $('#monitor_modal .btn-primary').off();
+                $('#monitor_modal').modal('hide');
+            }, function(data){
+                api.defaultErrorCallback(data);
+                $('#monitor_modal .btn-primary').off();
+                $('#monitor_modal').modal('hide');
+            });
+        });
+    });
+
 });
 
 
@@ -388,6 +410,9 @@ var runner_properties = {};
 $(function(){
     setButtonStates(false);
     currentNodenet = $.cookie('selected_nodenet') || '';
+    if(currentNodenet){
+        fetch_stepping_info();
+    }
 });
 
 register_stepping_function = function(type, input, callback){

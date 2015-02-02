@@ -361,6 +361,10 @@ class DictGate(Gate):
         return self.__node
 
     @property
+    def empty(self):
+        return len(self.__outgoing) == 0
+
+    @property
     def activation(self):
         return self.sheaves['default']['activation']
 
@@ -481,6 +485,10 @@ class DictSlot(Slot):
     @property
     def node(self):
         return self.__node
+
+    @property
+    def empty(self):
+        return len(self.__incoming) == 0
 
     @property
     def activation(self):

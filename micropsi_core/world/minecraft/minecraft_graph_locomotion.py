@@ -666,7 +666,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         else:
             block_type_id = current_section.block_data.get(x % 16, y % 16, z % 16)
             # print('blocktype: %s' % str( block_type_id/ 16))
-            return block_type_id / 16
+            return int(block_type_id / 16)
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """

@@ -147,8 +147,8 @@ class Minecraft2D(Minecraft):
         focal_length = 1  # distance of image plane from projective point
         max_dist = 150    # maximum distance for raytracing
         resolution = 4    # camera resolution for a specific visual field
-        im_width = 16     # width of projection /image plane
-        im_height = 8    # height of projection /image plane
+        im_width = 32     # width of projection /image plane
+        im_height = 16    # height of projection /image plane
         cam_width = 1.    # width of viewport /camera coords
         cam_height = 1.   # height of viewport /camera coords
 
@@ -261,7 +261,7 @@ class Minecraft2D(Minecraft):
     def get_blocktype(self, x, y, z):
         """ """
         key = (x // 16, z // 16)
-        columns = self.spockplugin.world.map.columns
+        columns = self.spockplugin.world.columns
         if key not in columns:
             return -1
         current_column = columns[key]
@@ -274,7 +274,9 @@ class Minecraft2D(Minecraft):
         if current_section is None:
             return -1
         else:
-            return current_section.get(x % 16, y % 16, z % 16).id
+            block_type_id = current_section.block_data.get(x % 16, y % 16, z % 16)
+            # print('blocktype: %s' % str( block_type_id/ 16))
+            return int(block_type_id / 16)
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """

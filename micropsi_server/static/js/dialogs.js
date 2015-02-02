@@ -370,6 +370,8 @@ $(function() {
 
     $('.add_custom_monitor').on('click', function(event){
         event.preventDefault();
+        $('#monitor_name_input').val('');
+        $('#monitor_code_input').val('');
         $('#monitor_modal .custom_monitor').show();
         $('#monitor_modal').modal('show');
         $('#monitor_modal .btn-primary').on('click', function(event){

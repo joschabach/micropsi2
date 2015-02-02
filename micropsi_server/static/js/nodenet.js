@@ -2895,6 +2895,7 @@ function cancelLinkCreationHandler() {
 function addLinkMonitor(clickOriginUid){
     var link = links[clickOriginUid];
     event.preventDefault();
+    $('#monitor_name_input').val('');
     $('#monitor_modal .custom_monitor').hide();
     $('#monitor_modal').modal('show');
     $('#monitor_modal .btn-primary').on('click', function(event){

@@ -1055,7 +1055,8 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'gate': 'gen'
+        'gate': 'gen',
+        'name': 'Testmonitor'
     })
     monitor_uid = response.json_body['data']
 
@@ -1072,7 +1073,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
     monitor_data = response.json_body['data']
 
-    assert data['monitors'][monitor_uid]['name'] == 'N1'
+    assert data['monitors'][monitor_uid]['name'] == 'Testmonitor'
     assert data['monitors'][monitor_uid]['node_uid'] == 'N1'
     assert data['monitors'][monitor_uid]['target'] == 'gen'
     assert data['monitors'][monitor_uid]['type'] == 'gate'

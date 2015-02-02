@@ -64,6 +64,7 @@ class NodeMonitor(Monitor):
         return data
 
     def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, **_):
+        name = name or "%s %s @ Node %s" % (type, target, nodenet.netapi.get_node(node_uid).name)
         super(NodeMonitor, self).__init__(nodenet, name, uid)
         self.node_uid = node_uid
         self.type = type
@@ -84,6 +85,7 @@ class LinkMonitor(Monitor):
     def data(self):
         data = {
             "uid": self.uid,
+            "name": self.name,
             "values": self.values,
             "source_node_uid": self.source_node_uid,
             "target_node_uid": self.target_node_uid,
@@ -95,6 +97,8 @@ class LinkMonitor(Monitor):
         return data
 
     def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, **_):
+        api = nodenet.netapi
+        name = name or "%s:%s -> %s:%s" % (api.get_node(source_node_uid).name, gate_type, api.get_node(source_node_uid).name, slot_type)
         super(LinkMonitor, self).__init__(nodenet, name, uid)
         self.source_node_uid = source_node_uid
         self.target_node_uid = target_node_uid

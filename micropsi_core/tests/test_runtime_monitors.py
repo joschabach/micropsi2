@@ -10,7 +10,7 @@ from micropsi_core import runtime as micropsi
 def test_add_gate_monitor(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen', sheaf='default')
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    assert monitor.name == 'A1'
+    assert monitor.name == 'gate gen @ Node A1'
     assert monitor.node_uid == 'A1'
     assert monitor.target == 'gen'
     assert monitor.type == 'gate'
@@ -22,9 +22,9 @@ def test_add_gate_monitor(fixed_nodenet):
 
 
 def test_add_slot_monitor(fixed_nodenet):
-    uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen')
+    uid = micropsi.add_slot_monitor(fixed_nodenet, 'A1', 'gen', name="FooBarMonitor")
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    assert monitor.name == 'A1'
+    assert monitor.name == 'FooBarMonitor'
     assert monitor.node_uid == 'A1'
     assert monitor.target == 'gen'
     assert monitor.type == 'slot'
@@ -76,11 +76,11 @@ def test_remove_monitor(fixed_nodenet):
 
 
 def test_get_monitor_data(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen', name="Testmonitor")
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.get_monitor_data(fixed_nodenet)
     assert data['current_step'] == 1
-    assert data['monitors'][uid]['name'] == 'A1'
+    assert data['monitors'][uid]['name'] == 'Testmonitor'
     values = data['monitors'][uid]['values']
     assert len(values.keys()) == 1
     assert [k for k in values.keys()] == [1]
@@ -97,11 +97,11 @@ def test_export_monitor_data(fixed_nodenet):
 
 
 def test_export_monitor_data_with_id(fixed_nodenet):
-    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen')
+    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen', name="Testmonitor")
     micropsi.add_gate_monitor(fixed_nodenet, 'B1', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid1)
-    assert data['name'] == 'A1'
+    assert data['name'] == 'Testmonitor'
     assert 'values' in data
 
 

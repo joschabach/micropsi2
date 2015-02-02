@@ -17,7 +17,7 @@ def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None):
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid, 'gate', gate, sheaf=sheaf, name=nodenet.get_node(node_uid).name)
+    mon = monitor.NodeMonitor(nodenet, node_uid, 'gate', gate, sheaf=sheaf, name=name)
     return mon.uid
 
 
@@ -26,7 +26,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid, 'slot', slot, sheaf=sheaf, name=nodenet.get_node(node_uid).name)
+    mon = monitor.NodeMonitor(nodenet, node_uid, 'slot', slot, sheaf=sheaf, name=name)
     return mon.uid
 
 
@@ -35,7 +35,7 @@ def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, s
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.LinkMonitor(nodenet, name=name, source_node_uid=source_node_uid, gate_type=gate_type, target_node_uid=target_node_uid, slot_type=slot_type, property=property)
+    mon = monitor.LinkMonitor(nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name)
     return mon.uid
 
 
@@ -44,7 +44,7 @@ def add_custom_monitor(nodenet_uid, function, name):
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.CustomMonitor(nodenet, name=name, function=function)
+    mon = monitor.CustomMonitor(nodenet, function=function, name=name)
     return mon.uid
 
 

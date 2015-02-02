@@ -117,6 +117,11 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     neighbors = len(node.get_slot("por").get_links())
 
+    classifierelements = 0
+    if len(node.get_gate("sur").get_links()) == 1:
+        surnode = node.get_gate("sur").get_links()[0].target_node
+        classifierelements = len(surnode.get_gate("sub").get_links())
+
     gen += node.get_slot("gen").get_activation(sheaf)
     if gen < 0.1: gen = 0                                                   # cut off gen loop at lower threshold
     gen += node.get_slot("sur").get_activation(sheaf)

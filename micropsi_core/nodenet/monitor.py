@@ -105,7 +105,6 @@ class LinkMonitor(Monitor):
         self.gate_type = gate_type
         self.slot_type = slot_type
         self.property = property or 'weight'
-        self.link = self.findLink()
 
     def findLink(self):
         links = self.nodenet.netapi.get_node(self.source_node_uid).get_gate(self.gate_type).get_links()
@@ -115,7 +114,7 @@ class LinkMonitor(Monitor):
         return None
 
     def step(self, step):
-        self.values[step] = getattr(self.link, self.property)
+        self.values[step] = getattr(self.findLink(), self.property)
 
 
 class CustomMonitor(Monitor):

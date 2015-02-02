@@ -46,7 +46,12 @@ def test_add_link_monitor(fixed_nodenet):
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    assert len(monitor.values) == 1
+    assert monitor.values[1] == 1
+    micropsi.nodenets[fixed_nodenet].set_link_weight('S', 'gen', 'B1', 'gen', weight=0.7)
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert len(monitor.values) == 2
+    assert monitor.values[2] == 0.7
 
 
 def test_add_custom_monitor(fixed_nodenet):

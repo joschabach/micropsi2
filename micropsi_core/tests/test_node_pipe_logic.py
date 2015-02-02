@@ -468,7 +468,7 @@ def test_node_pipe_logic_search_ret(fixed_nodenet):
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
     netapi.link(source, "gen", ret_act, "gen")
 
-    netapi.link(source, "gen", n_b, "por")
+    netapi.link(source, "gen", n_b, "ret")
 
     net.step()
     net.step()

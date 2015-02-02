@@ -63,7 +63,6 @@ def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
     n_b = netapi.create_node("Pipe", "Root", "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
-    netapi.link_full([n_a, n_b])
 
     for i in range(1, 3):
         net.step()
@@ -78,7 +77,6 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
     n_b = netapi.create_node("Pipe", "Root", "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
-    netapi.link_full([n_a, n_b])
 
     netapi.link(source, "gen", n_a, "sur")
 
@@ -101,7 +99,6 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
     n_b = netapi.create_node("Pipe", "Root", "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
-    netapi.link_full([n_a, n_b])
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
@@ -126,7 +123,6 @@ def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
-    netapi.link_full([n_a, n_b, n_c])
 
     for i in range(1, 3):
         net.step()
@@ -143,7 +139,6 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
-    netapi.link_full([n_a, n_b, n_c])
 
     netapi.link(source, "gen", n_a, "sur")
 
@@ -174,7 +169,6 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
-    netapi.link_full([n_a, n_b, n_c])
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
@@ -340,6 +334,7 @@ def test_node_pipe_logic_three_alternatives(fixed_nodenet):
     n_a.set_gate_parameter("sur", "threshold", 0)
     n_b.set_gate_parameter("sur", "threshold", 0)
     n_c.set_gate_parameter("sur", "threshold", 0)
+    netapi.link_full([n_a, n_b, n_c])
 
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
@@ -376,7 +371,6 @@ def test_node_pipe_logic_feature_binding(fixed_nodenet):
     element2 = netapi.create_node("Pipe", "Root", "Element2")
     netapi.link_with_reciprocal(schema, element1, "subsur")
     netapi.link_with_reciprocal(schema, element2, "subsur")
-    netapi.link_full([element1, element2])
 
     concrete_feature1 = netapi.create_node("Pipe", "Root", "ConcreteFeature1")
     concrete_feature2 = netapi.create_node("Pipe", "Root", "ConcreteFeature2")

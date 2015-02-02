@@ -31,8 +31,8 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
 
 
 def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name):
-    """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-    value in every simulation step.
+    """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
+    The monitor will collect respective value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
     mon = monitor.LinkMonitor(nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name)
@@ -40,8 +40,8 @@ def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, s
 
 
 def add_custom_monitor(nodenet_uid, function, name):
-    """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-    value in every simulation step.
+    """Adds a continuous monitor, that evaluates the given python-code and collects the
+    return-value for every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
     mon = monitor.CustomMonitor(nodenet, function=function, name=name)

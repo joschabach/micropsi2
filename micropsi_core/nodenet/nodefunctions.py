@@ -141,7 +141,15 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur > 0:     # else: always propagate failure
         sur *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
         sur *= 0 if node.get_slot("ret").get_activation(sheaf) < 0 else 1
-    sur /= neighbors if neighbors > 1 else 1
+
+    if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
+        sur /= classifierelements if classifierelements > 1 else 1          # classifier case
+    #else:
+    #    if not node.get_slot('por').empty and not node.get_slot('ret').empty and sur < 0:
+    #        sur = 0                                                         # alternatives case
+    #
+    #    if node.get_slot("por").empty or (not node.get_slot('por').empty and not node.get_slot('ret').empty):
+    #        sur = 0
 
     por += node.get_slot("sur").get_activation(sheaf) * \
            (1+node.get_slot("por").get_activation(sheaf))

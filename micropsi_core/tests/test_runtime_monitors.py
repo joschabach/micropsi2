@@ -80,6 +80,30 @@ def test_remove_monitor(fixed_nodenet):
     assert gone
 
 
+def test_remove_monitored_node(fixed_nodenet):
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen', sheaf='default')
+    micropsi.delete_node(fixed_nodenet, 'A1')
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.export_monitor_data(fixed_nodenet)
+    assert monitor[uid]['values'][1] is None
+
+
+def test_remove_monitored_link(fixed_nodenet):
+    uid = micropsi.add_link_monitor(fixed_nodenet, 'S', 'gen', 'B1', 'gen', 'weight', 'Testmonitor')
+    micropsi.delete_link(fixed_nodenet, 'S', 'gen', 'B1', 'gen')
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.export_monitor_data(fixed_nodenet)
+    assert monitor[uid]['values'][1] is None
+
+
+def test_remove_monitored_link_via_delete_node(fixed_nodenet):
+    uid = micropsi.add_link_monitor(fixed_nodenet, 'S', 'gen', 'B1', 'gen', 'weight', 'Testmonitor')
+    micropsi.delete_node(fixed_nodenet, 'S')
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.export_monitor_data(fixed_nodenet)
+    assert monitor[uid]['values'][1] is None
+
+
 def test_get_monitor_data(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'A1', 'gen', name="Testmonitor")
     micropsi.step_nodenet(fixed_nodenet)

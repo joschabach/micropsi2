@@ -77,6 +77,8 @@ class NodeMonitor(Monitor):
                 self.values[step] = self.nodenet.get_node(self.node_uid).get_gate(self.target).activations[self.sheaf]
             if self.type == 'slot' and self.target in self.nodenet.get_node(self.node_uid).get_slot_types():
                 self.values[step] = self.nodenet.get_node(self.node_uid).get_slot(self.target).activations[self.sheaf]
+        else:
+            self.values[step] = None
 
 
 class LinkMonitor(Monitor):
@@ -107,14 +109,21 @@ class LinkMonitor(Monitor):
         self.property = property or 'weight'
 
     def findLink(self):
-        links = self.nodenet.netapi.get_node(self.source_node_uid).get_gate(self.gate_type).get_links()
-        for l in links:
-            if l.target_node.uid == self.target_node_uid and l.target_slot.type == self.slot_type:
-                return l
+        if self.nodenet.is_node(self.source_node_uid) and self.nodenet.is_node(self.target_node_uid):
+            gate = self.nodenet.netapi.get_node(self.source_node_uid).get_gate(self.gate_type)
+            if gate:
+                links = gate.get_links()
+                for l in links:
+                    if l.target_node.uid == self.target_node_uid and l.target_slot.type == self.slot_type:
+                        return l
         return None
 
     def step(self, step):
-        self.values[step] = getattr(self.findLink(), self.property)
+        link = self.findLink()
+        if link:
+            self.values[step] = getattr(self.findLink(), self.property)
+        else:
+            self.values[step] = None
 
 
 class CustomMonitor(Monitor):

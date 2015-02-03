@@ -171,6 +171,7 @@ $(function(){
                 currentMonitors.push(el.value);
             }
         });
+        drawGraph(currentMonitors);
     }
 
     function drawGraph(currentMonitors) {
@@ -279,7 +280,8 @@ $(function(){
                     })
                     .y(function(d) {
                         return y2(d[1]);
-                    });
+                    })
+                    .defined(function(d){ return Boolean(d[1])});
                 for (var step in currentMonitors[uid].values) {
                     data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
                 }
@@ -290,7 +292,8 @@ $(function(){
                     })
                     .y(function(d) {
                         return y1(d[1]);
-                    });
+                    })
+                    .defined(function(d){ return Boolean(d[1])});
                 for (var step in currentMonitors[uid].values) {
                     data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
                 }

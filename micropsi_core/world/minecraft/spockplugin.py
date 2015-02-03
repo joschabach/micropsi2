@@ -48,7 +48,7 @@ class MicropsiPlugin(object):
     def is_connected(self):
         return self.net.connected and self.net.proto_state
 
-    def dispatchMovement(self, bot_coords, current_section, move_x, move_z):
+    def dispatchMovement(self, bot_coords, move_x, move_z):
         target_coords = (self.normalize_coordinate(bot_coords[0] + (STEP_LENGTH if (move_x > 0) else 0) + (-STEP_LENGTH if (move_x < 0) else 0)),
                          bot_coords[1],
                          self.normalize_coordinate(bot_coords[2] + (STEP_LENGTH if (move_z > 0) else 0) + (-STEP_LENGTH if (move_z < 0) else 0)))
@@ -58,7 +58,7 @@ class MicropsiPlugin(object):
                                self.normalize_block_coordinate(target_coords[2]))
         ground_offset = 0
         for y in range(0, 16):
-            if current_section.get(target_block_coords[0], y, target_block_coords[2]).id != 0:
+            if self.get_block_type(target_block_coords[0], y, target_block_coords[2]) != 0:
                 ground_offset = y + 1
         if target_coords[1] // 16 * 16 + ground_offset - target_coords[1] <= 1:
             self.move(position={
@@ -70,6 +70,26 @@ class MicropsiPlugin(object):
                 'on_ground': self.clientinfo.position['on_ground'],
                 'stance': target_coords[1] // 16 * 16 + ground_offset + STANCE_ADDITION
             })
+
+    def get_block_type(self, x, y, z):
+        """ Jonas' get_voxel_blocktype(..) """
+        key = (x // 16, z // 16)
+        columns = self.world.columns
+        if key not in columns:
+            return -1
+        current_column = columns[key]
+        if len(current_column.chunks) <= y // 16:
+            return -1
+        try:
+            current_section = current_column.chunks[y // 16]
+        except IndexError:
+            return -1
+        if current_section is None:
+            return -1
+        else:
+            block_type_id = current_section.block_data.get(x % 16, y % 16, z % 16)
+            # print('blocktype: %s' % str( block_type_id/ 16))
+            return int(block_type_id / 16)
 
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """

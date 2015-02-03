@@ -131,9 +131,12 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur == 0: sur += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     sur += 0 if node.get_slot("gen").get_activation(sheaf) < 0.2 else 1     # cut off sur-reports from gen looping before the loop fades away
     sur += node.get_slot("exp").get_activation(sheaf)
-    if sur > 0 and len(node.get_slot('ret').get_links()) == 1:     # else: always propagate failure
+
+    if sur > 0 and node.get_slot("ret").get_activation(sheaf) < 0:
         sur = 0
-    sur *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1
+
+    if sur > 0 and not node.get_slot("por").empty:
+        sur *= node.get_slot("por").get_activation(sheaf)
 
     if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
         classifierelements = 0
@@ -151,6 +154,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por < 0: por = 0
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
+    ret -= node.get_slot("sub").get_activation(sheaf)
+    if ret > 1:
+        ret = 1
 
     cat = sub
     if cat == 0: cat += node.get_slot("cat").get_activation(sheaf)

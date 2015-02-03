@@ -326,44 +326,108 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
     assert n_head.get_gate("gen").activation == -1
 
 
-def test_node_pipe_logic_three_alternatives(fixed_nodenet):
-    # create three alternatives, let one fail, one be undecided, one succeed
+def test_node_pipe_logic_alternatives(fixed_nodenet):
+    # create a script with alternatives, let one fail, one one succeed
     net, netapi, source = prepare(fixed_nodenet)
     n_head = netapi.create_node("Pipe", "Root", "Head")
     n_a = netapi.create_node("Pipe", "Root", "A")
     n_b = netapi.create_node("Pipe", "Root", "B")
     n_c = netapi.create_node("Pipe", "Root", "C")
-    n_a.set_gate_parameter("sur", "threshold", 0)
-    n_b.set_gate_parameter("sur", "threshold", 0)
-    n_c.set_gate_parameter("sur", "threshold", 0)
-    netapi.link_full([n_a, n_b, n_c])
-
+    n_b_a1 = netapi.create_node("Pipe", "Root", "B-A1")
+    n_b_a2 = netapi.create_node("Pipe", "Root", "B-A1")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
+    netapi.link_with_reciprocal(n_b, n_b_a1, "subsur")
+    netapi.link_with_reciprocal(n_b, n_b_a2, "subsur")
+    netapi.link_with_reciprocal(n_a, n_b, "porret")
+    netapi.link_with_reciprocal(n_b, n_c, "porret")
+    netapi.link_with_reciprocal(n_b_a1, n_b_a2, "porret")
+    netapi.link(n_b_a1, "por", n_b_a2, "por", -1)
     netapi.link(source, "gen", n_head, "sub")
     net.step()
     net.step()
 
-    netapi.link(source, "gen", n_a, "sur", 0)
-    netapi.link(source, "gen", n_b, "sur", 1)
-    netapi.link(source, "gen", n_c, "sur", -1)
+    # quiet, first node requesting
+    assert n_head.get_gate("gen").activation == 0
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 0
+    assert n_b.get_gate("sur").activation == 0
+    assert n_c.get_gate("sub").activation == 0
+    assert n_c.get_gate("sur").activation == 0
 
+    # reply: good!
+    netapi.link(source, "gen", n_a, "sur")
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 0
+    assert n_b.get_gate("sur").activation == 0
+    assert n_c.get_gate("sub").activation == 0
+    assert n_c.get_gate("sur").activation == 0
+
+    # first alternative requesting
     net.step()
     net.step()
+    assert n_b_a1.get_gate("sub").activation == 1
+    assert n_b_a1.get_gate("sur").activation == 0
+    assert n_b_a2.get_gate("sub").activation == 0
+    assert n_b_a2.get_gate("sur").activation == 0
 
+    # reply: fail!
+    netapi.link(source, "gen", n_b_a1, "sur", -1)
+    net.step()
+    net.step()
+    assert n_b_a1.get_gate("sur").activation == 0
+    assert n_b_a1.get_gate("por").activation == -1
+
+    # second alternative requesting
+    assert n_b_a2.get_gate("sub").activation == 1
+    assert n_b_a2.get_gate("sur").activation == 0
+    assert n_b.get_gate("sur").activation == 0
+
+    # reply: succeed!
+    netapi.link(source, "gen", n_b_a2, "sur", 1)
+    net.step()
+    net.step()
+    assert n_b_a1.get_gate("sur").activation == 0
+    assert n_b_a1.get_gate("por").activation == -1
+    assert n_b_a2.get_gate("sub").activation == 1
+    assert n_b_a2.get_gate("sur").activation == 1
+
+    # third node good
+    netapi.link(source, "gen", n_c, "sur")
+    net.step()
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 1
+    assert n_b.get_gate("sur").activation == 0
+    assert n_c.get_gate("sub").activation == 1
+    assert n_c.get_gate("sur").activation == 1
+
+    # overall script good
+    net.step()
     assert n_head.get_gate("gen").activation == 1
 
-    # now fail the good one
-    netapi.link(source, "gen", n_a, "sur", 0)
-    netapi.link(source, "gen", n_b, "sur", -1)
-    netapi.link(source, "gen", n_c, "sur", -1)
-
+    # now let the second alternative also fail
+    # whole script fails, third one muted
+    netapi.link(source, "gen", n_b_a2, "sur", -1)
     net.step()
     net.step()
+    net.step()     # extra steps because we're coming from a stable "all good state"
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 1
+    assert n_b.get_gate("sur").activation == -1
+    assert n_c.get_gate("sub").activation == -1
+    assert n_c.get_gate("sur").activation == 0
 
-    assert n_head.get_gate("gen").activation == 0
-
+    net.step()
+    assert n_head.get_gate("gen").activation == -1
+    
 
 def test_node_pipe_logic_feature_binding(fixed_nodenet):
     # check if the same feature can be checked and bound twice

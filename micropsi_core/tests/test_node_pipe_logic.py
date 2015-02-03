@@ -427,7 +427,7 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
 
     net.step()
     assert n_head.get_gate("gen").activation == -1
-    
+
 
 def test_node_pipe_logic_feature_binding(fixed_nodenet):
     # check if the same feature can be checked and bound twice

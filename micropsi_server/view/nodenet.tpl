@@ -360,6 +360,8 @@
     <ul class="nodenet_menu dropdown-menu">
         <li><a href="#">Edit link</a></li>
         <li><a href="#">Delete link</a></li>
+        <li><a data-add-monitor href="#">Add link-weight monitor</a></li>
+        <li><a data-remove-monitor href="#">Remove link monitor</a></li>
     </ul>
 </div>
 

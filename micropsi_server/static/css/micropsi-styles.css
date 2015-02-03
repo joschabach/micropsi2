@@ -356,6 +356,9 @@ graphs
   overflow: auto;
 }
 
+.monospace{
+    font-family: monospace;
+}
 
 .textareafake {
   background: white;

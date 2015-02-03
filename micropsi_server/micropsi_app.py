@@ -928,16 +928,27 @@ def import_world_rpc(worlddata):
     user_id, _, _ = get_request_data()
     return True, runtime.import_world(worlddata, user_id)
 
+
 # Monitor
 
 @rpc("add_gate_monitor")
-def add_gate_monitor(nodenet_uid, node_uid, gate):
-    return True, runtime.add_gate_monitor(nodenet_uid, node_uid, gate)
+def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None):
+    return True, runtime.add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=sheaf, name=name)
 
 
 @rpc("add_slot_monitor")
-def add_slot_monitor(nodenet_uid, node_uid, slot):
-    return True, runtime.add_slot_monitor(nodenet_uid, node_uid, slot)
+def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
+    return True, runtime.add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=sheaf, name=name)
+
+
+@rpc("add_link_monitor")
+def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name):
+    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name)
+
+
+@rpc("add_custom_monitor")
+def add_custom_monitor(nodenet_uid, function, name):
+    return True, runtime.add_custom_monitor(nodenet_uid, function, name)
 
 
 @rpc("remove_monitor")

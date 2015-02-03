@@ -11,6 +11,7 @@
                     <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
 
                     <td><div class="" id="monitor_controls collapse in">
+                        <button class="add_custom_monitor btn">Add custom Monitor</button>
                         <button class="btn">Clear</button>
                     </div></td>
 

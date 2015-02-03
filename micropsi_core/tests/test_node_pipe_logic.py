@@ -313,11 +313,13 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
     netapi.link(source, "gen", n_b, "sur", -1)
     net.step()
     net.step()
+    net.step()     # extra steps because we're coming from a stable "all good state"
+    net.step()
     assert n_a.get_gate("sub").activation == 1
     assert n_a.get_gate("sur").activation == 0
     assert n_b.get_gate("sub").activation == 1
     assert n_b.get_gate("sur").activation == -1
-    assert n_c.get_gate("sub").activation == 0
+    assert n_c.get_gate("sub").activation == -1
     assert n_c.get_gate("sur").activation == 0
 
     net.step()

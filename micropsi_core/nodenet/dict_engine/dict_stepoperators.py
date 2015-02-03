@@ -76,7 +76,7 @@ class DictCalculate(Calculate):
 
 class DictPORRETHebbian(StepOperator):
     """
-    Implementation of POR/RET link decaying
+    Implementation of POR/RET link decaying and Hebbian strengthening
     """
 
     @property
@@ -84,36 +84,28 @@ class DictPORRETHebbian(StepOperator):
         return 100
 
     def execute(self, nodenet, nodes, netapi):
+        obsoletelinks = []
         for node in nodes:
             if node.type in ['Concept', 'Script', 'Pipe']:
-                confirmation = node.get_gate('sur').activation
+                confirmation = node.get_gate('gen').activation
 
                 porgate = node.get_gate('por')
                 pordecay = porgate.get_gate_parameter('decay')
                 if pordecay is not None and pordecay > 0:
                     for link in porgate.links:
                         othernode = link.target_node
-                        otherconfirmation = othernode.get_gate('sur').activation
+                        otherconfirmation = othernode.get_gate('gen').activation
                         if confirmation > 0.8 and otherconfirmation > 0.8:
-                            linkdelta = 10 * pordecay
+                            linkdelta = 10 * pordecay       # TODO magic numbers should be nodespace parameters
                         else:
                             linkdelta = - pordecay
 
                         if link.weight > 0:
-                            link.weight = link.weight + linkdelta
+                            link.weight = max(link.weight + linkdelta, 0)
+                        if link.weight == 0:
+                            obsoletelinks.append(link)
+        for link in obsoletelinks:
+            netapi.unlink(link.source_node, 'por', link.target_node, 'por')
+            netapi.unlink(link.target_node, 'ret', link.source_node, 'ret')
 
-                retgate = node.get_gate('ret')
-                retdecay = retgate.get_gate_parameter('decay')
-                if retdecay is not None and retdecay > 0:
-                    for link in retgate.links:
-                        othernode = link.target_node
-                        otherconfirmation = othernode.get_gate('sur').activation
-                        if confirmation > 0.8 and otherconfirmation > 0.8:
-                            linkdelta = 10 * retdecay
-                        else:
-                            linkdelta = - retdecay
 
-                        link.weight = link.weight + linkdelta
-
-                        if link.weight > 0:
-                            link.weight = link.weight + linkdelta

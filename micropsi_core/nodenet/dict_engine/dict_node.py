@@ -12,6 +12,7 @@ default Nodetypes
 """
 
 import logging
+import copy
 
 from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
 from .dict_link import DictLink
@@ -93,12 +94,12 @@ class DictNode(NetEntity, Node):
                         self.__non_default_gate_parameters[gate_name] = {}
                     self.__non_default_gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
 
-        gate_parameters = self.nodetype.gate_defaults.copy()
+        gate_parameters = copy.deepcopy(self.nodetype.gate_defaults)
         for gate_name in gate_parameters:
             if gate_name in self.__non_default_gate_parameters:
                 gate_parameters[gate_name].update(self.__non_default_gate_parameters[gate_name])
 
-        gate_parameters_for_validation = gate_parameters.copy()
+        gate_parameters_for_validation = copy.deepcopy(gate_parameters)
         for gate_name in gate_parameters_for_validation:
             for key in gate_parameters_for_validation[gate_name]:
                 if key in self.nodetype.gate_defaults:
@@ -389,7 +390,7 @@ class DictGate(Gate):
                 self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
         self.__outgoing = {}
         self.gate_function = gate_function or self.gate_function
-        self.parameters = parameters
+        self.parameters = parameters.copy()
         self.monitor = None
 
     def get_links(self):

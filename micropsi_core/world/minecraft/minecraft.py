@@ -147,8 +147,8 @@ class Minecraft2D(Minecraft):
         focal_length = 1  # distance of image plane from projective point
         max_dist = 150    # maximum distance for raytracing
         resolution = 4    # camera resolution for a specific visual field
-        im_width = 16     # width of projection /image plane
-        im_height = 8    # height of projection /image plane
+        im_width = 32     # width of projection /image plane
+        im_height = 16    # height of projection /image plane
         cam_width = 1.    # width of viewport /camera coords
         cam_height = 1.   # height of viewport /camera coords
 
@@ -232,7 +232,7 @@ class Minecraft2D(Minecraft):
                     yb = yb + norm[1]
                     zb = zb + norm[2]
 
-                    block_type = self.get_blocktype(
+                    block_type = self.spockplugin.get_block_type(
                         int(xb),
                         int(yb),
                         int(zb),
@@ -257,24 +257,6 @@ class Minecraft2D(Minecraft):
         # ideas:
         # increase number of rays per pixel with increasing distance
         # make a non-linear image plane, eg. with higher resolution in the middle
-
-    def get_blocktype(self, x, y, z):
-        """ """
-        key = (x // 16, z // 16)
-        columns = self.spockplugin.world.map.columns
-        if key not in columns:
-            return -1
-        current_column = columns[key]
-        if len(current_column.chunks) <= y // 16:
-            return -1
-        try:
-            current_section = current_column.chunks[y // 16]
-        except IndexError:
-            return -1
-        if current_section is None:
-            return -1
-        else:
-            return current_section.get(x % 16, y % 16, z % 16).id
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """
@@ -374,11 +356,11 @@ class MinecraftWorldAdapter(WorldAdapter):
 
         # translate data targets
         self.position = (self.datasources['x'], self.datasources['y'], self.datasources['z'])
-        section = self.get_current_section()
-        if section:
-            movement = self.translate_datatargets_to_xz()
-            # note: movement info is sent regardless of change
-            self.world.spockplugin.dispatchMovement(self.position, section, movement[0], movement[1])
+
+        movement = self.translate_datatargets_to_xz()
+
+        # note: movement info is sent regardless of change
+        self.world.spockplugin.dispatchMovement(self.position, movement[0], movement[1])
 
         position = self.world.spockplugin.clientinfo.position
         amp = random.choice([-4, -3, 2, 3, 4])
@@ -395,19 +377,6 @@ class MinecraftWorldAdapter(WorldAdapter):
         self.datasources['yaw'] = self.world.spockplugin.clientinfo.position['yaw']
         self.datasources['pitch'] = self.world.spockplugin.clientinfo.position['pitch']
         self.datasources['groundtype'] = self.get_groundtype()
-
-    def get_current_section(self):
-        """ Given a yzx position returns the current section. """
-        try:
-            chunk_x = self.datasources['x'] // 16
-            chunk_z = self.datasources['z'] // 16
-            column = self.world.spockplugin.world.map.columns[(chunk_x, chunk_z)]
-            section = column.chunks[int((self.datasources['y'] - 1) // 16)]
-
-        except KeyError:
-            section = None
-
-        return section
 
     def translate_datatargets_to_xz(self):
         """ Translates movements in cardinal directions to x,z coordinates. """
@@ -429,10 +398,10 @@ class MinecraftWorldAdapter(WorldAdapter):
         """
         """
         try:
-            section = self.get_current_section()
-            groundtype = section.get(int(self.datasources['x']) % 16,
-                                     int((self.datasources['y'] - 1) % 16),
-                                     int(self.datasources['z']) % 16).id
+            groundtype = self.world.spockplugin.get_block_type(
+                int(self.datasources['x']),
+                int(self.datasources['y'] - 1),
+                int(self.datasources['z']))
 
         except AttributeError:
             groundtype = None
@@ -469,7 +438,7 @@ class MinecraftBraitenberg(WorldAdapter):
         x_chunk = bot_x // 16
         z_chunk = bot_z // 16
 
-        current_column = self.world.spockplugin.world.map.columns[(x_chunk, z_chunk)]
+        current_column = self.world.spockplugin.world.columns[(x_chunk, z_chunk)]
         current_section = current_column.chunks[int((bot_y - 1) // 16)]
 
         self.detect_groundtypes(bot_coords, current_section)

@@ -7,27 +7,45 @@ Runtime API functionality for creating and maintaining activation monitors
 __author__ = 'dominik'
 __date__ = '11.12.12'
 
-from micropsi_core.nodenet.monitor import Monitor
+from micropsi_core.nodenet import monitor
 
 import micropsi_core
 
 
-def add_gate_monitor(nodenet_uid, node_uid, gate):
+def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    monitor = Monitor(nodenet, node_uid, 'gate', gate, node_name=nodenet.get_node(node_uid).name)
-    return monitor.uid
+    mon = monitor.NodeMonitor(nodenet, node_uid, 'gate', gate, sheaf=sheaf, name=name)
+    return mon.uid
 
 
-def add_slot_monitor(nodenet_uid, node_uid, slot):
+def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
     """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    monitor = Monitor(nodenet, node_uid, 'slot', slot, node_name=nodenet.get_node(node_uid).name)
-    return monitor.uid
+    mon = monitor.NodeMonitor(nodenet, node_uid, 'slot', slot, sheaf=sheaf, name=name)
+    return mon.uid
+
+
+def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name):
+    """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
+    The monitor will collect respective value in every simulation step.
+    Returns the uid of the new monitor."""
+    nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
+    mon = monitor.LinkMonitor(nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name)
+    return mon.uid
+
+
+def add_custom_monitor(nodenet_uid, function, name):
+    """Adds a continuous monitor, that evaluates the given python-code and collects the
+    return-value for every simulation step.
+    Returns the uid of the new monitor."""
+    nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
+    mon = monitor.CustomMonitor(nodenet, function=function, name=name)
+    return mon.uid
 
 
 def remove_monitor(nodenet_uid, monitor_uid):

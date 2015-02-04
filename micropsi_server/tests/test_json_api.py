@@ -167,7 +167,7 @@ def test_get_current_state(app, test_nodenet, test_world):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'gate': 'sub'
+        'gate': 'sub',
     })
     monitor_uid = response.json_body['data']
     response = app.get_json('/rpc/start_simulation(nodenet_uid="%s")' % test_nodenet)
@@ -538,7 +538,8 @@ def test_add_gate_monitor(app, test_nodenet):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'gate': 'sub'
+        'gate': 'sub',
+        'sheaf': 'default'
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -549,6 +550,7 @@ def test_add_gate_monitor(app, test_nodenet):
     assert response.json_body['data']['node_uid'] == 'N1'
     assert response.json_body['data']['target'] == 'sub'
     assert response.json_body['data']['type'] == 'gate'
+    assert response.json_body['data']['sheaf'] == 'default'
     assert response.json_body['data']['values'] == {}
 
 
@@ -556,7 +558,8 @@ def test_add_slot_monitor(app, test_nodenet):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'slot': 'gen'
+        'slot': 'gen',
+        'name': 'Foobar'
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -564,10 +567,51 @@ def test_add_slot_monitor(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'monitor_uid': uid
     })
+    assert response.json_body['data']['name'] == 'Foobar'
     assert response.json_body['data']['node_uid'] == 'N1'
     assert response.json_body['data']['target'] == 'gen'
     assert response.json_body['data']['type'] == 'slot'
+    assert response.json_body['data']['sheaf'] == 'default'
     assert response.json_body['data']['values'] == {}
+
+
+def test_add_link_monitor(app, test_nodenet):
+    response = app.post_json('/rpc/add_link_monitor', params={
+        'nodenet_uid': test_nodenet,
+        'source_node_uid': 'N1',
+        'gate_type': 'gen',
+        'target_node_uid': 'N1',
+        'slot_type': 'gen',
+        'property': 'weight',
+        'name': 'LinkWeight'
+    })
+    assert_success(response)
+    uid = response.json_body['data']
+    response = app.post_json('/rpc/export_monitor_data', params={
+        'nodenet_uid': test_nodenet,
+        'monitor_uid': uid
+    })
+    assert response.json_body['data']['name'] == 'LinkWeight'
+    assert response.json_body['data']['source_node_uid'] == 'N1'
+    assert response.json_body['data']['gate_type'] == 'gen'
+    assert response.json_body['data']['target_node_uid'] == 'N1'
+    assert response.json_body['data']['slot_type'] == 'gen'
+    assert response.json_body['data']['property'] == 'weight'
+
+
+def test_add_custom_monitor(app, test_nodenet):
+    response = app.post_json('/rpc/add_custom_monitor', params={
+        'nodenet_uid': test_nodenet,
+        'function': 'return len(netapi.get_nodes())',
+        'name': 'nodecount'
+    })
+    assert_success(response)
+    uid = response.json_body['data']
+    response = app.post_json('/rpc/export_monitor_data', params={
+        'nodenet_uid': test_nodenet,
+        'monitor_uid': uid
+    })
+    assert response.json_body['data']['name'] == 'nodecount'
 
 
 def test_remove_monitor(app, test_nodenet):
@@ -1055,18 +1099,25 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
-        'gate': 'gen'
+        'gate': 'gen',
+        'name': 'Testmonitor'
     })
     monitor_uid = response.json_body['data']
 
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
-    data = response.json_body['data']
+    response_1 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/save_nodenet(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
+    response_2 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+
+    assert response_1.json_body['data'] == response_2.json_body['data']
+
+    data = response_2.json_body['data']
 
     # Monitors
     response = app.get_json('/rpc/export_monitor_data(nodenet_uid="%s", monitor_uid="%s")' % (test_nodenet, monitor_uid))
     monitor_data = response.json_body['data']
 
-    assert data['monitors'][monitor_uid]['node_name'] == 'N1'
+    assert data['monitors'][monitor_uid]['name'] == 'Testmonitor'
     assert data['monitors'][monitor_uid]['node_uid'] == 'N1'
     assert data['monitors'][monitor_uid]['target'] == 'gen'
     assert data['monitors'][monitor_uid]['type'] == 'gate'

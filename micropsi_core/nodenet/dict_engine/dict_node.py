@@ -207,6 +207,7 @@ class DictNode(NetEntity, Node):
         for slotname in self.get_slot_types():
             for uid in self.get_slot(slotname).sheaves:
                 sheaves_to_calculate[uid] = self.get_slot(slotname).sheaves[uid].copy()
+                sheaves_to_calculate[uid]['activation'] = 0
         if 'default' not in sheaves_to_calculate:
             sheaves_to_calculate['default'] = emptySheafElement.copy()
         return sheaves_to_calculate

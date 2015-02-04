@@ -94,7 +94,9 @@ class DictNode(NetEntity, Node):
                     self.__non_default_gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
 
         gate_parameters = self.nodetype.gate_defaults.copy()
-        gate_parameters.update(self.__non_default_gate_parameters)
+        for gate_name in gate_parameters:
+            if gate_name in self.__non_default_gate_parameters:
+                gate_parameters[gate_name].update(self.__non_default_gate_parameters[gate_name])
 
         gate_parameters_for_validation = gate_parameters.copy()
         for gate_name in gate_parameters_for_validation:

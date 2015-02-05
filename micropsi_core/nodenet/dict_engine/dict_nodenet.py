@@ -43,6 +43,7 @@ class DictNodenet(Nodenet):
             data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
         data['version'] = self.__version
+        data['modulators'] = self.construct_modulators_dict()
         return data
 
     @property
@@ -53,7 +54,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self.__step
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}, modulators={}):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -71,6 +72,7 @@ class DictNodenet(Nodenet):
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
+        self.__modulators = modulators
         self.settings = {}
 
         self.filename = filename
@@ -214,7 +216,8 @@ class DictNodenet(Nodenet):
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
             'world': world_uid,
-            'worldadapter': self.worldadapter
+            'worldadapter': self.worldadapter,
+            'modulators': self.construct_modulators_dict()
         }
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
@@ -539,3 +542,25 @@ class DictNodenet(Nodenet):
         """Removes the given lock
         """
         del self.__locks[lock]
+
+    def get_modulator(self, modulator):
+        """
+        Returns the numeric value of the given global modulator
+        """
+        if modulator in self.__modulators:
+            return self.__modulators[modulator]
+        else:
+            return 0
+
+    def change_modulator(self, modulator, diff):
+        """
+        Changes the value of the given global modulator by the value of diff
+        """
+        self.__modulators[modulator] = max(min(self.__modulators.get(modulator, 0)+diff, 1),0)
+
+    def construct_modulators_dict(self):
+        """
+        Returns a new dict containing all modulators
+        """
+        return self.__modulators.copy()
+

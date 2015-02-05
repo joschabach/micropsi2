@@ -85,6 +85,7 @@ class Nodenet(metaclass=ABCMeta):
             'worldadapter': self.__worldadapter_uid,
             'settings': self.settings,
             'monitors': self.construct_monitors_dict(),
+            'modulators': {},
             'version': "abstract"
         }
         return data
@@ -367,6 +368,20 @@ class Nodenet(metaclass=ABCMeta):
     def unlock(self, lock):
         """
         Removes the given lock
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_modulator(self, modulator):
+        """
+        Returns the numeric value of the given global modulator
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def change_modulator(self, modulator, diff):
+        """
+        Changes the value of the given global modulator by the value of diff
         """
         pass  # pragma: no cover
 
@@ -768,6 +783,18 @@ class NetAPI(object):
         from micropsi_core.nodenet.node_alignment import align
         if nodespace in self.__nodenet.get_nodespace_uids():
             align(self.__nodenet, nodespace)
+
+    def get_modulator(self, modulator):
+        """
+        Returns the numeric value of the given global modulator
+        """
+        return self.__nodenet.get_modulator(modulator)
+
+    def change_modulator(self, modulator, diff):
+        """
+        Changes the value of the given global modulator by the value of diff
+        """
+        self.__nodenet.change_modulator(modulator, diff)
 
     def _step(self):
         for lock in self.__locks_to_delete:

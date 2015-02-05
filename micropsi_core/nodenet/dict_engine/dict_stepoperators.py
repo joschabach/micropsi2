@@ -1,5 +1,7 @@
 __author__ = 'rvuine'
 
+import math
+
 import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
 
@@ -103,4 +105,106 @@ class DictPORRETDecay(StepOperator):
             netapi.unlink(link.source_node, 'por', link.target_node, 'por')
             netapi.unlink(link.target_node, 'ret', link.source_node, 'ret')
 
+
+def gentle_sigmoid(x):
+    return 2 * ((1/(1+math.exp(-0.5 * x))) - 0.5)
+
+
+class DictDoernerianEmotionalModulators(StepOperator):
+    """
+    Implementation a doernerian emotional model based on global node net modulators.
+
+    The following base values can and should be set from the node net:
+
+    base_sum_importance_of_intentions           - Sum of importance of all current intentions
+    base_sum_urgency_of_intentions              - Sum of urgency of all current intentions
+    base_competence_for_intention               - Competence for currently selected intention
+    base_importance_of_intention                - Importance of currently selected intention
+    base_urgency_of_intention                   - Importance of currently selected intention
+    base_number_of_active_motives               - Number of currently active motives
+    base_number_of_expected_events              - Number of expected events in last cycle
+    base_number_of_unexpected_events            - Number of unexpected events in last cycle
+    base_urge_change                            - Sum of changes to urges in last cycle
+    base_age_influence_on_competence            - Influence factor of node net age on competence (0: no influence)
+
+    The following emotional parameters will be calculated:
+
+    emo_pleasure                                - Pleasure (LUL in Dörner)
+    emo_activation                              - General activation (ARAS in Dörner)
+    emo_securing_rate                           - Tendency to check/re-check the environment
+    emo_resolution                              - Thoroughness of perception
+    emo_selection_threshold                     - Tendency to change selected motive
+    emo_competence                              - Assumed predictability of events
+
+    This code is experimental, various normalizations and magic numbers / constants will have to be
+    introduced to make it work.
+    
+    """
+
+    @property
+    def priority(self):
+        return 1000
+
+    def execute(self, nodenet, nodes, netapi):
+
+        base_sum_importance_of_intentions = netapi.get_modulator("base_sum_importance_of_intentions")
+        base_sum_urgency_of_intentions = netapi.get_modulator("base_sum_urgency_of_intentions")
+        base_competence_for_intention = netapi.get_modulator("base_competence_for_intention")
+        base_importance_of_intention = netapi.get_modulator("base_importance_of_intention")
+        base_urgency_of_intention = netapi.get_modulator("base_urgency_of_intention")
+
+        base_number_of_active_motives = netapi.get_modulator("base_number_of_active_motives")
+        base_number_of_unexpected_events = netapi.get_modulator("base_number_of_unexpected_events")
+        base_number_of_expected_events = netapi.get_modulator("base_number_of_expected_events")
+        base_urge_change = netapi.get_modulator("base_urge_change")
+        base_age = netapi.get_modulator("base_age")
+        base_age_influence_on_competence = netapi.get_modulator("base_age_influence_on_competence")
+        base_unexpectedness_prev = netapi.get_modulator("base_unexpectedness")
+
+        emo_activation_prev = netapi.get_modulator("emo_activation")
+        emo_competence_prev = netapi.get_modulator("emo_competence")
+
+        base_age += 1
+
+        emo_activation = (math.log(base_sum_importance_of_intentions + base_sum_urgency_of_intentions + 1) /
+                          math.log((base_number_of_active_motives * 2) / 1)) * ((2/3) * emo_activation_prev)
+
+        unexpectedness = base_unexpectedness_prev + gentle_sigmoid(base_number_of_expected_events - base_number_of_unexpected_events)
+        fear = 0                    # todo: understand the formula in Principles 185
+
+        emo_securing_rate = (((1 - base_competence_for_intention) -
+                              (0.5 * base_urgency_of_intention * base_importance_of_intention)) +
+                               fear +
+                               unexpectedness)
+
+        emo_resolution = 1 / emo_activation
+
+        emo_selection_threshold = emo_activation
+
+        pleasure_from_expectation = base_number_of_expected_events - base_number_of_unexpected_events
+        pleasure_from_satisfaction = base_urge_change
+
+        emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
+
+        pleasurefactor = 1 if emo_pleasure > 0 else -1
+        divisorbaseline = 1 if emo_pleasure > 0 else 2
+        emo_competence = (emo_competence_prev + emo_pleasure * base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age))) /
+                          (divisorbaseline + (pleasurefactor * emo_competence_prev)))
+
+        # setting technical parameters
+        nodenet.set_modulator("base_age", base_age)
+        nodenet.set_modulator("base_unexpectedness")
+
+        # resetting per-cycle base parameters
+        nodenet.set_modulator("base_number_of_expected_events", 0)
+        nodenet.set_modulator("base_number_of_unexpected_events", 0)
+        nodenet.set_modulator("base_urge_change", 0)
+
+        # setting emotional parameters
+        nodenet.set_modulator("emo_pleasure", emo_activation)
+        nodenet.set_modulator("emo_activation", emo_activation)
+        nodenet.set_modulator("emo_securing_rate", emo_securing_rate)
+        nodenet.set_modulator("emo_resolution", emo_resolution)
+        nodenet.set_modulator("emo_selection_threshold", emo_selection_threshold)
+        nodenet.set_modulator("emo_competence", emo_competence)
 

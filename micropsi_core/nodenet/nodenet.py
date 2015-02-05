@@ -385,6 +385,13 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    @abstractmethod
+    def set_modulator(self, modulator, value):
+        """
+        Changes the value of the given global modulator to the given value
+        """
+        pass  # pragma: no cover
+
     def clear(self):
         self.__monitors = {}
 

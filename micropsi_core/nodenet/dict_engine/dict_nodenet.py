@@ -564,3 +564,8 @@ class DictNodenet(Nodenet):
         """
         return self.__modulators.copy()
 
+    def set_modulator(self, modulator, value):
+        """
+        Changes the value of the given global modulator to the given value
+        """
+        self.__modulators[modulator] = value

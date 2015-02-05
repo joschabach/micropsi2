@@ -556,7 +556,7 @@ class DictNodenet(Nodenet):
         """
         Changes the value of the given global modulator by the value of diff
         """
-        self.__modulators[modulator] = max(min(self.__modulators.get(modulator, 0)+diff, 1),0)
+        self.__modulators[modulator] = self.__modulators.get(modulator, 0)+diff
 
     def construct_modulators_dict(self):
         """

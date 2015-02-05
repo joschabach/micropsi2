@@ -142,7 +142,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
         classifierelements = 0
         if len(node.get_gate("sur").get_links()) == 1:
             surnode = node.get_gate("sur").get_links()[0].target_node
-            classifierelements = len(surnode.get_gate("sub").get_links())
+            if surnode.type is "Pipe":
+                classifierelements = len(surnode.get_gate("sub").get_links())
         sur /= classifierelements if classifierelements > 1 else 1          # classifier case
 
     por += node.get_slot("sur").get_activation(sheaf)

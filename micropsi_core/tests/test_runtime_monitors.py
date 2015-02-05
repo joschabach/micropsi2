@@ -54,6 +54,22 @@ def test_add_link_monitor(fixed_nodenet):
     assert monitor.values[2] == 0.7
 
 
+def test_add_modulator_monitor(fixed_nodenet):
+    uid = micropsi.add_modulator_monitor(fixed_nodenet, 'base_test', 'Testmonitor')
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert monitor.name == 'Testmonitor'
+    assert monitor.modulator == 'base_test'
+    assert len(monitor.values) == 0
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert monitor.values[1] == 1
+    micropsi.nodenets[fixed_nodenet].set_modulator('base_test', 0.7)
+    micropsi.step_nodenet(fixed_nodenet)
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert len(monitor.values) == 2
+    assert monitor.values[2] == 0.7
+
+
 def test_add_custom_monitor(fixed_nodenet):
     code = """return len(netapi.get_nodes())"""
     uid = micropsi.add_custom_monitor(fixed_nodenet, code, 'Nodecount')

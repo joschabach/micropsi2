@@ -222,12 +222,5 @@ def test_modulators(fixed_nodenet):
     nodenet.netapi.change_modulator("test_modulator", 0.42)
     assert nodenet.netapi.get_modulator("test_modulator") == 0.42
 
-    nodenet.netapi.change_modulator("test_modulator", -1)
-    assert nodenet.netapi.get_modulator("test_modulator") == 0
-
-    nodenet.netapi.change_modulator("test_modulator", 42)
-    assert nodenet.netapi.get_modulator("test_modulator") == 1
-
-    nodenet.netapi.change_modulator("test_modulator2", 10)
-    assert nodenet.netapi.get_modulator("test_modulator") == 1
-    assert nodenet.netapi.get_modulator("test_modulator2") == 1
+    nodenet.set_modulator("test_modulator", -1)
+    assert nodenet.netapi.get_modulator("test_modulator") == -1

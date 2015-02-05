@@ -39,6 +39,15 @@ def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, s
     return mon.uid
 
 
+def add_modulator_monitor(nodenet_uid, modulator, name):
+    """Adds a continuous monitor to a global modulator.
+    The monitor will collect respective value in every simulation step.
+    Returns the uid of the new monitor."""
+    nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
+    mon = monitor.ModulatorMonitor(nodenet, modulator, property=property, name=name)
+    return mon.uid
+
+
 def add_custom_monitor(nodenet_uid, function, name):
     """Adds a continuous monitor, that evaluates the given python-code and collects the
     return-value for every simulation step.

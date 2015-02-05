@@ -319,7 +319,7 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
     assert n_a.get_gate("sur").activation == 0
     assert n_b.get_gate("sub").activation == 1
     assert n_b.get_gate("sur").activation == -1
-    assert n_c.get_gate("sub").activation == -1
+    assert n_c.get_gate("sub").activation == 0
     assert n_c.get_gate("sur").activation == 0
 
     net.step()
@@ -422,7 +422,7 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     assert n_a.get_gate("sur").activation == 0
     assert n_b.get_gate("sub").activation == 1
     assert n_b.get_gate("sur").activation == -1
-    assert n_c.get_gate("sub").activation == -1
+    assert n_c.get_gate("sub").activation == 0
     assert n_c.get_gate("sur").activation == 0
 
     net.step()

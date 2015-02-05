@@ -547,10 +547,7 @@ class DictNodenet(Nodenet):
         """
         Returns the numeric value of the given global modulator
         """
-        if modulator in self.__modulators:
-            return self.__modulators[modulator]
-        else:
-            return 0
+        return self.__modulators.get(modulator, 1)
 
     def change_modulator(self, modulator, diff):
         """

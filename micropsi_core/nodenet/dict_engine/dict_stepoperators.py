@@ -169,13 +169,13 @@ class DictDoernerianEmotionalModulators(StepOperator):
         emo_activation = (math.log(base_sum_importance_of_intentions + base_sum_urgency_of_intentions + 1) /
                           math.log((base_number_of_active_motives * 2) / 1)) * ((2/3) * emo_activation_prev)
 
-        unexpectedness = base_unexpectedness_prev + gentle_sigmoid(base_number_of_expected_events - base_number_of_unexpected_events)
+        base_unexpectedness = base_unexpectedness_prev + gentle_sigmoid(base_number_of_expected_events - base_number_of_unexpected_events)
         fear = 0                    # todo: understand the formula in Principles 185
 
         emo_securing_rate = (((1 - base_competence_for_intention) -
                               (0.5 * base_urgency_of_intention * base_importance_of_intention)) +
                                fear +
-                               unexpectedness)
+                               base_unexpectedness)
 
         emo_resolution = 1 / emo_activation
 
@@ -193,7 +193,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
 
         # setting technical parameters
         nodenet.set_modulator("base_age", base_age)
-        nodenet.set_modulator("base_unexpectedness")
+        nodenet.set_modulator("base_unexpectedness", base_unexpectedness)
 
         # resetting per-cycle base parameters
         nodenet.set_modulator("base_number_of_expected_events", 0)

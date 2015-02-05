@@ -803,6 +803,12 @@ class NetAPI(object):
         """
         self.__nodenet.change_modulator(modulator, diff)
 
+    def set_modulator(self, modulator, value):
+        """
+        Changes the value of the given global modulator to the given value
+        """
+        self.__nodenet.set_modulator(modulator, value)
+
     def _step(self):
         for lock in self.__locks_to_delete:
             self.__nodenet.unlock(lock)

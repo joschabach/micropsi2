@@ -161,15 +161,14 @@ class DictDoernerianEmotionalModulators(StepOperator):
         base_age_influence_on_competence = netapi.get_modulator("base_age_influence_on_competence")
         base_unexpectedness_prev = netapi.get_modulator("base_unexpectedness")
 
-        emo_activation_prev = netapi.get_modulator("emo_activation")
         emo_competence_prev = netapi.get_modulator("emo_competence")
 
         base_age += 1
 
         emo_activation = (math.log(base_sum_importance_of_intentions + base_sum_urgency_of_intentions + 1) /
-                          math.log((base_number_of_active_motives * 2) / 1)) * ((2/3) * emo_activation_prev)
+                          math.log((base_number_of_active_motives * 2) + 1))
 
-        base_unexpectedness = base_unexpectedness_prev + gentle_sigmoid(base_number_of_expected_events - base_number_of_unexpected_events)
+        base_unexpectedness = max(base_unexpectedness_prev - gentle_sigmoid(base_number_of_expected_events - base_number_of_unexpected_events),0)
         fear = 0                    # todo: understand the formula in Principles 185
 
         emo_securing_rate = (((1 - base_competence_for_intention) -

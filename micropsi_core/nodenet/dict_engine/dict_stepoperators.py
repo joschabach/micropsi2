@@ -74,9 +74,9 @@ class DictCalculate(Calculate):
             node.node_function()
 
 
-class DictPORRETHebbian(StepOperator):
+class DictPORRETDecay(StepOperator):
     """
-    Implementation of POR/RET link decaying and Hebbian strengthening
+    Implementation of POR/RET link decaying
     """
 
     @property
@@ -93,12 +93,7 @@ class DictPORRETHebbian(StepOperator):
                 pordecay = porgate.get_gate_parameter('decay')
                 if pordecay is not None and pordecay > 0:
                     for link in porgate.links:
-                        othernode = link.target_node
-                        otherconfirmation = othernode.get_gate('gen').activation
-                        if confirmation > 0.8 and otherconfirmation > 0.8:
-                            linkdelta = 10 * pordecay       # TODO magic numbers should be nodespace parameters
-                        else:
-                            linkdelta = - pordecay
+                        linkdelta = - pordecay
 
                         if link.weight > 0:
                             link.weight = max(link.weight + linkdelta, 0)

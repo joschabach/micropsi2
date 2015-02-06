@@ -670,7 +670,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def get_visual_input(self, fov_x, fov_y):
         """
-        Spans an image plane
+        Spans an image plane.
+
+        Note that the image plane is walked left to right, top to bottom ( before rotation )!
+        This means that fov__00_00 gets the top left pixel, fov__15_15 gets the bottom right pixel.
         """
         from math import radians, tan
 
@@ -700,7 +703,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         x0, y0, z0 = pos_x, pos_y, pos_z  # agent's position aka projective point
         zi = z0 + self.focal_length
 
-        h_line.reverse()
         v_line.reverse()
 
         # compute block type values for the whole patch /fovea
@@ -737,9 +739,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         for i in range(self.patch_len):
             for j in range(self.patch_len):
-                jj = "0%d" % j if j < 10 else str(j)
                 ii = "0%d" % i if i < 10 else str(i)
-                str_name = 'fov__%s_%s' % (jj, ii)  # Beware: magic name
+                jj = "0%d" % j if j < 10 else str(j)
+                str_name = 'fov__%s_%s' % (ii, jj)  # Beware: magic name
                 # write values to self.datasources aka sensors
                 self.datasources[str_name] = patch_resc[self.patch_len * i + j]
 

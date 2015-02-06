@@ -608,8 +608,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.datatarget_history[k] = self.datatargets[k]
 
     def locomote(self, target_loco_node_uid):
-
         new_loco_node = self.loco_nodes[target_loco_node_uid]
+
+        self.logger.debug('locomoting to  %s' % new_loco_node['name'])
 
         self.spockplugin.chat("/tppos {0} {1} {2}".format(
             new_loco_node['x'],
@@ -634,6 +635,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for item in new_waiting_list:
                 if time.clock() - item['time'] > self.action_timeout:
                     # re-trigger action
+                    self.logger.debug('re-triggering last action')
                     item['action']()
                     item['time'] = time.clock()
 

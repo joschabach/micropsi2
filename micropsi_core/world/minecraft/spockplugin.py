@@ -119,6 +119,7 @@ class MicropsiPlugin(object):
 
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
+        logging.getLogger('world').debug('eating a bread')
         data = {
             'location': self.get_int_coordinates(),
             'direction': -1,

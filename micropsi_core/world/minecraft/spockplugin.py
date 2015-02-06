@@ -42,28 +42,38 @@ class MicropsiPlugin(object):
     def is_connected(self):
         return self.net.connected and self.net.proto_state
 
-    def dispatchMovement(self, bot_coords, move_x, move_z):
-        target_coords = (self.normalize_coordinate(bot_coords[0] + (STEP_LENGTH if (move_x > 0) else 0) + (-STEP_LENGTH if (move_x < 0) else 0)),
-                         bot_coords[1],
-                         self.normalize_coordinate(bot_coords[2] + (STEP_LENGTH if (move_z > 0) else 0) + (-STEP_LENGTH if (move_z < 0) else 0)))
+    def dispatchMovement(self, move_x, move_z):
 
-        target_block_coords = (self.normalize_block_coordinate(target_coords[0]),
-                               self.normalize_block_coordinate(target_coords[1]),
-                               self.normalize_block_coordinate(target_coords[2]))
-        ground_offset = 0
-        for y in range(0, 16):
-            if self.get_block_type(target_block_coords[0], y, target_block_coords[2]) != 0:
-                ground_offset = y + 1
-        if target_coords[1] // 16 * 16 + ground_offset - target_coords[1] <= 1:
-            self.move(position={
-                'x': target_coords[0],
-                'y': target_coords[1] // 16 * 16 + ground_offset,
-                'z': target_coords[2],
-                'yaw': self.clientinfo.position['yaw'],
-                'pitch': self.clientinfo.position['pitch'],
-                'on_ground': self.clientinfo.position['on_ground'],
-                'stance': target_coords[1] // 16 * 16 + ground_offset + STANCE_ADDITION
-            })
+        target_coords = {
+            'x': round(self.clientinfo.position['x'] // 1),
+            'y': round(self.clientinfo.position['y'] // 1),
+            'z': round(self.clientinfo.position['z'] // 1)
+        }
+        if move_x:
+            target_coords['x'] += 1
+        elif move_z:
+            target_coords['z'] += 1
+
+        ground_offset = 2  # assume impossible
+        y = target_coords['y'] - 1  # current block agent is standing on
+
+        # check if the next step is possible: nothing in the way, height diff <= 1
+        if self.get_block_type(target_coords['x'], y + 2, target_coords['z']) > 0:
+            ground_offset = 2
+        elif self.get_block_type(target_coords['x'], y + 1, target_coords['z']) > 0 and \
+                self.get_block_type(target_coords['x'], y + 3, target_coords['z']) <= 0:
+            ground_offset = 1
+        elif self.get_block_type(target_coords['x'], y, target_coords['z']) > 0:
+            ground_offset = 0
+        elif self.get_block_type(target_coords['x'], y - 1, target_coords['z']) > 0:
+            ground_offset = -1
+
+        if ground_offset < 2:
+            self.clientinfo.position['x'] = target_coords['x'] + .5
+            self.clientinfo.position['y'] = target_coords['y'] + ground_offset
+            self.clientinfo.position['stance'] = target_coords['y'] + ground_offset + STANCE_ADDITION
+            self.clientinfo.position['z'] = target_coords['z'] + .5
+            self.clientinfo.position['on_ground'] = True
 
     def get_block_type(self, x, y, z):
         """ Jonas' get_voxel_blocktype(..) """

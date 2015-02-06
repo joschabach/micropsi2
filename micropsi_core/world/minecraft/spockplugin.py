@@ -43,12 +43,7 @@ class MicropsiPlugin(object):
         return self.net.connected and self.net.proto_state
 
     def dispatchMovement(self, move_x, move_z):
-
-        target_coords = {
-            'x': round(self.clientinfo.position['x'] // 1),
-            'y': round(self.clientinfo.position['y'] // 1),
-            'z': round(self.clientinfo.position['z'] // 1)
-        }
+        target_coords = self.get_int_coordinates()
         if move_x:
             target_coords['x'] += 1
         elif move_z:
@@ -98,11 +93,7 @@ class MicropsiPlugin(object):
     def get_biome_info(self, pos=None):
         from spock.mcmap.mapdata import biomes
         if pos is None:
-            pos = {
-                'x': int(self.clientinfo.position['x'] // 1),
-                'y': int(self.clientinfo.position['y'] // 1),
-                'z': int(self.clientinfo.position['z'] // 1)
-            }
+            pos = self.get_int_coordinates()
         key = (pos['x'] // 16, pos['z'] // 16)
         columns = self.world.columns
         if key not in columns:
@@ -116,11 +107,7 @@ class MicropsiPlugin(object):
 
     def get_temperature(self, pos=None):
         if pos is None:
-            pos = {
-                'x': int(self.clientinfo.position['x'] // 1),
-                'y': int(self.clientinfo.position['y'] // 1),
-                'z': int(self.clientinfo.position['z'] // 1)
-            }
+            pos = self.get_int_coordinates()
         biome = self.get_biome_info(pos=pos)
         if biome:
             temp = biome['temperature']
@@ -133,11 +120,7 @@ class MicropsiPlugin(object):
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
         data = {
-            'location': {
-                'x': int(self.clientinfo.position['x']),
-                'y': int(self.clientinfo.position['y']),
-                'z': int(self.clientinfo.position['z'])
-            },
+            'location': self.get_int_coordinates(),
             'direction': -1,
             'held_item': {
                 'id': 297,
@@ -163,14 +146,14 @@ class MicropsiPlugin(object):
         self.net.push(Packet(ident='PLAY>Held Item Change', data={'Slot': target_slot}))
 
     def move(self, position=None):
-
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):
             return
         # writes new data to clientinfo which is pulled and pushed to Minecraft by ClientInfoPlugin
         self.clientinfo.position = position
 
-    def normalize_coordinate(self, coordinate):
-        return coordinate // 1 + 0.5
-
-    def normalize_block_coordinate(self, coordinate):
-        return int(coordinate // 1 % 16)
+    def get_int_coordinates(self):
+        return {
+            'x': int(self.clientinfo.position['x']),
+            'y': int(self.clientinfo.position['y']),
+            'z': int(self.clientinfo.position['z'])
+        }

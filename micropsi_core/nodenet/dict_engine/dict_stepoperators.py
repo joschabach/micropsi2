@@ -168,7 +168,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         emo_activation = (math.log(base_sum_importance_of_intentions + base_sum_urgency_of_intentions + 1) /
                           math.log((base_number_of_active_motives * 2) + 1))
 
-        base_unexpectedness = max(base_unexpectedness_prev - gentle_sigmoid(base_number_of_expected_events - base_number_of_unexpected_events),0)
+        base_unexpectedness = max(min(base_unexpectedness_prev + gentle_sigmoid((base_number_of_unexpected_events - base_number_of_expected_events) / 10),1),0)
         fear = 0                    # todo: understand the formula in Principles 185
 
         emo_securing_rate = (((1 - base_competence_for_intention) -

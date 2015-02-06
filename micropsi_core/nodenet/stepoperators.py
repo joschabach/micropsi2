@@ -3,6 +3,7 @@ __author__ = 'rvuine'
 import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
 
+
 class StepOperator(metaclass=ABCMeta):
     """
     A step operator will be executed once per net step on all nodes.

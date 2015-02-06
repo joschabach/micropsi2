@@ -2,10 +2,8 @@ __author__ = 'rvuine'
 
 import math
 
-import micropsi_core.tools
-from abc import ABCMeta, abstractmethod
-
 from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
+
 
 class DictPropagate(Propagate):
     """
@@ -107,7 +105,7 @@ class DictPORRETDecay(StepOperator):
 
 
 def gentle_sigmoid(x):
-    return 2 * ((1/(1+math.exp(-0.5 * x))) - 0.5)
+    return 2 * ((1 / (1 + math.exp(-0.5 * x))) - 0.5)
 
 
 class DictDoernerianEmotionalModulators(StepOperator):
@@ -138,7 +136,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
 
     This code is experimental, various magic numbers / parameters will probably have to be
     introduced to make it work.
-    
+
     """
 
     @property
@@ -168,7 +166,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         emo_activation = (math.log(base_sum_importance_of_intentions + base_sum_urgency_of_intentions + 1) /
                           math.log((base_number_of_active_motives * 2) + 1))
 
-        base_unexpectedness = max(min(base_unexpectedness_prev + gentle_sigmoid((base_number_of_unexpected_events - base_number_of_expected_events) / 10),1),0)
+        base_unexpectedness = max(min(base_unexpectedness_prev + gentle_sigmoid((base_number_of_unexpected_events - base_number_of_expected_events) / 10), 1), 0)
         fear = 0                    # todo: understand the formula in Principles 185
 
         emo_securing_rate = (((1 - base_competence_for_intention) -
@@ -190,7 +188,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         youthful_exuberance_term = base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
         emo_competence = ((emo_competence_prev + (emo_pleasure * youthful_exuberance_term)) /
                           (divisorbaseline + (pleasurefactor * emo_competence_prev)))
-        emo_competence = max(min(emo_competence,0.99),0.01)
+        emo_competence = max(min(emo_competence, 0.99), 0.01)
 
         # setting technical parameters
         nodenet.set_modulator("base_age", base_age)

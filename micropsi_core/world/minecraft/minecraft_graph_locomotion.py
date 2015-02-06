@@ -298,7 +298,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'fov__15_15': 0,
 
         'health': 1,
-        'food': 1
+        'food': 1,
+        'temperature': 1
     }
 
     datatargets = {
@@ -539,6 +540,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # health and food are in [0;20]
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
+            self.datasources['temperature'] = self.spockplugin.get_temperature()
 
             self.check_for_action_feedback()
 

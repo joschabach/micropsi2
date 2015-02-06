@@ -95,6 +95,41 @@ class MicropsiPlugin(object):
             # print('blocktype: %s' % str( block_type_id/ 16))
             return int(block_type_id / 16)
 
+    def get_biome_info(self, pos=None):
+        from spock.mcmap.mapdata import biomes
+        if pos is None:
+            pos = {
+                'x': int(self.clientinfo.position['x'] // 1),
+                'y': int(self.clientinfo.position['y'] // 1),
+                'z': int(self.clientinfo.position['z'] // 1)
+            }
+        key = (pos['x'] // 16, pos['z'] // 16)
+        columns = self.world.columns
+        if key not in columns:
+            return None
+        current_column = columns[key]
+        biome_id = current_column.biome.get(pos['x'] % 16, pos['z'] % 16)
+        if biome_id >= 0:
+            return biomes[biome_id]
+        else:
+            return None
+
+    def get_temperature(self, pos=None):
+        if pos is None:
+            pos = {
+                'x': int(self.clientinfo.position['x'] // 1),
+                'y': int(self.clientinfo.position['y'] // 1),
+                'z': int(self.clientinfo.position['z'] // 1)
+            }
+        biome = self.get_biome_info(pos=pos)
+        if biome:
+            temp = biome['temperature']
+            if pos['y'] > 64:
+                temp -= (0.00166667 * (pos['y'] - 64))
+            return temp
+        else:
+            return 1
+
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
         data = {

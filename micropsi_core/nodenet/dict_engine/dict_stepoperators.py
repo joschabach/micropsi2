@@ -136,7 +136,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
     emo_selection_threshold                     - Tendency to change selected motive
     emo_competence                              - Assumed predictability of events
 
-    This code is experimental, various normalizations and magic numbers / constants will have to be
+    This code is experimental, various magic numbers / parameters will probably have to be
     introduced to make it work.
     
     """
@@ -176,19 +176,21 @@ class DictDoernerianEmotionalModulators(StepOperator):
                                fear +
                                base_unexpectedness)
 
-        emo_resolution = 1 / emo_activation
+        emo_resolution = 1 - emo_activation
 
         emo_selection_threshold = emo_activation
 
-        pleasure_from_expectation = base_number_of_expected_events - base_number_of_unexpected_events
-        pleasure_from_satisfaction = base_urge_change
+        pleasure_from_expectation = gentle_sigmoid((base_number_of_expected_events - base_number_of_unexpected_events) / 10)
+        pleasure_from_satisfaction = gentle_sigmoid(base_urge_change)
 
         emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
 
         pleasurefactor = 1 if emo_pleasure > 0 else -1
-        divisorbaseline = 1 if emo_pleasure > 0 else 2
-        emo_competence = (emo_competence_prev + emo_pleasure * base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age))) /
+        divisorbaseline = 1 if emo_pleasure >= 0 else 2
+        youthful_exuberance_term = base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
+        emo_competence = ((emo_competence_prev + (emo_pleasure * youthful_exuberance_term)) /
                           (divisorbaseline + (pleasurefactor * emo_competence_prev)))
+        emo_competence = max(min(emo_competence,0.99),0.01)
 
         # setting technical parameters
         nodenet.set_modulator("base_age", base_age)
@@ -200,7 +202,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("base_urge_change", 0)
 
         # setting emotional parameters
-        nodenet.set_modulator("emo_pleasure", emo_activation)
+        nodenet.set_modulator("emo_pleasure", emo_pleasure)
         nodenet.set_modulator("emo_activation", emo_activation)
         nodenet.set_modulator("emo_securing_rate", emo_securing_rate)
         nodenet.set_modulator("emo_resolution", emo_resolution)

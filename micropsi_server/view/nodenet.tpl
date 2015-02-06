@@ -87,6 +87,11 @@
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
+                <p>&nbsp;</p>
+                <p><strong>global parameters</strong>
+                <table class="emotionals table-condensed">
+                </table>
+                </p>
             </form>
 
             <form class="form-horizontal default_form hide" id="edit_nodespace_form">

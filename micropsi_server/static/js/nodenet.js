@@ -394,6 +394,7 @@ function setNodespaceData(data, changed){
                 addLink(outsideLinks[index]);
             }
         }
+        updateModulators(data.modulators);
 
         if(data.monitors){
             monitors = data.monitors;
@@ -488,6 +489,29 @@ function refreshViewPortData(){
             y:[Math.max(0, top-height), top + 2*height]
         }, currentSimulationStep - 1);
     }
+}
+
+function updateModulators(data){
+    var table = $('table.emotionals');
+    html = '';
+    for(key in data){
+        html += '<tr><td>'+key+'</td><td>'+data[key].toFixed(2)+'</td><td><button class="btn btn-mini" data="'+key+'">monitor</button></td></tr>';
+    }
+    table.html(html);
+    $('button', table).each(function(idx, button){
+        $(button).on('click', function(evt){
+            evt.preventDefault();
+            var mod = $(button).attr('data');
+            api.call('add_modulator_monitor', {
+                    nodenet_uid: currentNodenet,
+                    modulator: mod,
+                    name: mod
+                }, function(data){
+                    $(document).trigger('monitorsChanged');
+                }
+            );
+        });
+    });
 }
 
 // data structures ----------------------------------------------------------------------

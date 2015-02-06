@@ -83,7 +83,7 @@ class Nodespace(metaclass=ABCMeta):
     @abstractmethod
     def name(self):
         """
-        This nodespace's human reaable name for display purposes. Returns the UID if no human readable name has been set.
+        This nodespace's human readable name for display purposes. Returns the UID if no human readable name has been set.
         """
         pass  # pragma: no cover
 
@@ -91,7 +91,7 @@ class Nodespace(metaclass=ABCMeta):
     @abstractmethod
     def name(self, name):
         """
-        Sets this nodespace's human reaable name for display purposes.
+        Sets this nodespace's human readable name for display purposes.
         """
         pass  # pragma: no cover
 

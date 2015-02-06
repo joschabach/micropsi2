@@ -303,7 +303,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         if self.waiting_for_spock:
             # by substitution: spock init is considered done, when its client has a position unlike
             # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
-            if self.spockplugin.clientinfo.position['stance'] != 0. \
+            if self.spockplugin.clientinfo.position['y'] != 0. \
                     and self.spockplugin.clientinfo.position['x'] != 0:
                 self.waiting_for_spock = False
                 x = int(self.spockplugin.clientinfo.position['x'])

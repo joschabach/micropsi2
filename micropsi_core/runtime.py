@@ -983,6 +983,7 @@ def parse_definition(json, filename=None):
             name=json.get("name", json["uid"]),
             filename=filename or json.get("filename"),
             owner=json.get("owner"),
+            engine=json.get("engine"),
         )
         if "worldadapter" in json:
             result['worldadapter'] = json["worldadapter"]

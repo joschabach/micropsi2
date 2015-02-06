@@ -68,7 +68,7 @@ class World(object):
 
     supported_worldadapters = []
 
-    def __init__(self, filename, world_type="", name="", owner="", uid=None, version=WORLD_VERSION):
+    def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.
 
         Arguments:

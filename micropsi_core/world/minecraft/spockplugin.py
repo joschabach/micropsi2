@@ -24,12 +24,6 @@ class MicropsiPlugin(object):
         self.clientinfo = ploader.requires('ClientInfo')
         self.threadpool = ploader.requires('ThreadPool')
 
-        #
-        self.event.reg_event_handler(
-            'cl_position_update',
-            self.subtract_stance
-        )
-
         self.event.reg_event_handler(
             (3, 0, 48),
             self.update_inventory
@@ -129,15 +123,6 @@ class MicropsiPlugin(object):
             return
         # writes new data to clientinfo which is pulled and pushed to Minecraft by ClientInfoPlugin
         self.clientinfo.position = position
-
-    def subtract_stance(self, name, packet):
-
-        # this is to correctly calculate a y value -- the server seems to deliver the value with stance addition,
-        # but for movements it will have to be sent without (the "foot" value).
-        # Movements sent with stance addition (eye values sent as foot values) will be silently discarded
-        # by the server as impossible, which is undesirable.
-        self.clientinfo.position['stance'] = self.clientinfo.position['y']
-        self.clientinfo.position['y'] = self.clientinfo.position['y'] - STANCE_ADDITION
 
     def normalize_coordinate(self, coordinate):
         return coordinate // 1 + 0.5

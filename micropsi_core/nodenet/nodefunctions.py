@@ -115,41 +115,51 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
-    neighbors = len(node.get_slot("por").get_links())
-
     gen += node.get_slot("gen").get_activation(sheaf)
-    if gen < 0.1: gen = 0                                                   # cut off gen loop at lower threshold
+    if abs(gen) < 0.1: gen = 0                                                   # cut off gen loop at lower threshold
     gen += node.get_slot("sur").get_activation(sheaf)
     gen += node.get_slot("exp").get_activation(sheaf)
     if gen > 1: gen = 1
+    if gen < -1: gen = -1
 
     sub += max(node.get_slot("sur").get_activation(sheaf), 0)
     sub += node.get_slot("sub").get_activation(sheaf)
-    sub *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
+    sub *= max(node.get_slot("por").get_activation(sheaf), 0) if not node.get_slot("por").empty else 1
     sub *= 0 if node.get_slot("gen").get_activation(sheaf) > 0 else 1
     if sub > 0: sub = 1
+    if sub < 0: sub = -1
 
     sur += node.get_slot("sur").get_activation(sheaf)
     if sur == 0: sur += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
-    sur += 0 if node.get_slot("gen").get_activation(sheaf) < 0.2 else 1     # cut off sur-reports from gen looping before the loop fades away
+    if abs(node.get_slot("gen").get_activation(sheaf)) > 0.2:               # cut off sur-reports from gen looping before the loop fades away
+        sur += 1 if node.get_slot("gen").get_activation(sheaf) > 0 else -1
     sur += node.get_slot("exp").get_activation(sheaf)
-    if sur > 0:     # else: always propagate failure
-        sur *= 0 if node.get_slot("por").get_activation(sheaf) < 0 else 1
-        sur *= 0 if node.get_slot("ret").get_activation(sheaf) < 0 else 1
-    sur /= neighbors if neighbors > 1 else 1
 
-    por += node.get_slot("sur").get_activation(sheaf) * \
-           (1+node.get_slot("por").get_activation(sheaf))
+    if node.get_slot("ret").get_activation(sheaf) < 0:
+        sur = 0
+    if node.get_slot("por").get_activation(sheaf) <= 0 and not node.get_slot("por").empty:
+        sur = 0
+
+    if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
+        classifierelements = 0
+        if len(node.get_gate("sur").get_links()) == 1:
+            surnode = node.get_gate("sur").get_links()[0].target_node
+            if surnode.type is "Pipe":
+                classifierelements = len(surnode.get_gate("sub").get_links())
+        sur /= classifierelements if classifierelements > 1 else 1          # classifier case
+
+    por += node.get_slot("sur").get_activation(sheaf)
+    por *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
     por += node.get_slot("por").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
-    por += 1 if neighbors > 1 else 0
-    if por <= 0: por = -1
     if por > 0: por = 1
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
-    ret += 1 if neighbors > 1 else 0
-    if ret <= 0: ret = -1
+    if node.get_slot("por").get_activation(sheaf) >= 0:
+        ret -= node.get_slot("sub").get_activation(sheaf)
+    if ret > 1:
+        ret = 1
 
     cat = sub
     if cat == 0: cat += node.get_slot("cat").get_activation(sheaf)

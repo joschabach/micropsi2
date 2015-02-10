@@ -24,12 +24,6 @@ class MicropsiPlugin(object):
         self.clientinfo = ploader.requires('ClientInfo')
         self.threadpool = ploader.requires('ThreadPool')
 
-        #
-        self.event.reg_event_handler(
-            'cl_position_update',
-            self.subtract_stance
-        )
-
         self.event.reg_event_handler(
             (3, 0, 48),
             self.update_inventory
@@ -48,28 +42,33 @@ class MicropsiPlugin(object):
     def is_connected(self):
         return self.net.connected and self.net.proto_state
 
-    def dispatchMovement(self, bot_coords, move_x, move_z):
-        target_coords = (self.normalize_coordinate(bot_coords[0] + (STEP_LENGTH if (move_x > 0) else 0) + (-STEP_LENGTH if (move_x < 0) else 0)),
-                         bot_coords[1],
-                         self.normalize_coordinate(bot_coords[2] + (STEP_LENGTH if (move_z > 0) else 0) + (-STEP_LENGTH if (move_z < 0) else 0)))
+    def dispatchMovement(self, move_x, move_z):
+        target_coords = self.get_int_coordinates()
+        if move_x:
+            target_coords['x'] += 1
+        elif move_z:
+            target_coords['z'] += 1
 
-        target_block_coords = (self.normalize_block_coordinate(target_coords[0]),
-                               self.normalize_block_coordinate(target_coords[1]),
-                               self.normalize_block_coordinate(target_coords[2]))
-        ground_offset = 0
-        for y in range(0, 16):
-            if self.get_block_type(target_block_coords[0], y, target_block_coords[2]) != 0:
-                ground_offset = y + 1
-        if target_coords[1] // 16 * 16 + ground_offset - target_coords[1] <= 1:
-            self.move(position={
-                'x': target_coords[0],
-                'y': target_coords[1] // 16 * 16 + ground_offset,
-                'z': target_coords[2],
-                'yaw': self.clientinfo.position['yaw'],
-                'pitch': self.clientinfo.position['pitch'],
-                'on_ground': self.clientinfo.position['on_ground'],
-                'stance': target_coords[1] // 16 * 16 + ground_offset + STANCE_ADDITION
-            })
+        ground_offset = 2  # assume impossible
+        y = target_coords['y'] - 1  # current block agent is standing on
+
+        # check if the next step is possible: nothing in the way, height diff <= 1
+        if self.get_block_type(target_coords['x'], y + 2, target_coords['z']) > 0:
+            ground_offset = 2
+        elif self.get_block_type(target_coords['x'], y + 1, target_coords['z']) > 0 and \
+                self.get_block_type(target_coords['x'], y + 3, target_coords['z']) <= 0:
+            ground_offset = 1
+        elif self.get_block_type(target_coords['x'], y, target_coords['z']) > 0:
+            ground_offset = 0
+        elif self.get_block_type(target_coords['x'], y - 1, target_coords['z']) > 0:
+            ground_offset = -1
+
+        if ground_offset < 2:
+            self.clientinfo.position['x'] = target_coords['x'] + .5
+            self.clientinfo.position['y'] = target_coords['y'] + ground_offset
+            self.clientinfo.position['stance'] = target_coords['y'] + ground_offset + STANCE_ADDITION
+            self.clientinfo.position['z'] = target_coords['z'] + .5
+            self.clientinfo.position['on_ground'] = True
 
     def get_block_type(self, x, y, z):
         """ Jonas' get_voxel_blocktype(..) """
@@ -91,14 +90,38 @@ class MicropsiPlugin(object):
             # print('blocktype: %s' % str( block_type_id/ 16))
             return int(block_type_id / 16)
 
+    def get_biome_info(self, pos=None):
+        from spock.mcmap.mapdata import biomes
+        if pos is None:
+            pos = self.get_int_coordinates()
+        key = (pos['x'] // 16, pos['z'] // 16)
+        columns = self.world.columns
+        if key not in columns:
+            return None
+        current_column = columns[key]
+        biome_id = current_column.biome.get(pos['x'] % 16, pos['z'] % 16)
+        if biome_id >= 0:
+            return biomes[biome_id]
+        else:
+            return None
+
+    def get_temperature(self, pos=None):
+        if pos is None:
+            pos = self.get_int_coordinates()
+        biome = self.get_biome_info(pos=pos)
+        if biome:
+            temp = biome['temperature']
+            if pos['y'] > 64:
+                temp -= (0.00166667 * (pos['y'] - 64))
+            return temp
+        else:
+            return 1
+
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
+        logging.getLogger('world').debug('eating a bread')
         data = {
-            'location': {
-                'x': int(self.clientinfo.position['x']),
-                'y': int(self.clientinfo.position['y']),
-                'z': int(self.clientinfo.position['z'])
-            },
+            'location': self.get_int_coordinates(),
             'direction': -1,
             'held_item': {
                 'id': 297,
@@ -124,23 +147,14 @@ class MicropsiPlugin(object):
         self.net.push(Packet(ident='PLAY>Held Item Change', data={'Slot': target_slot}))
 
     def move(self, position=None):
-
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):
             return
         # writes new data to clientinfo which is pulled and pushed to Minecraft by ClientInfoPlugin
         self.clientinfo.position = position
 
-    def subtract_stance(self, name, packet):
-
-        # this is to correctly calculate a y value -- the server seems to deliver the value with stance addition,
-        # but for movements it will have to be sent without (the "foot" value).
-        # Movements sent with stance addition (eye values sent as foot values) will be silently discarded
-        # by the server as impossible, which is undesirable.
-        self.clientinfo.position['stance'] = self.clientinfo.position['y']
-        self.clientinfo.position['y'] = self.clientinfo.position['y'] - STANCE_ADDITION
-
-    def normalize_coordinate(self, coordinate):
-        return coordinate // 1 + 0.5
-
-    def normalize_block_coordinate(self, coordinate):
-        return int(coordinate // 1 % 16)
+    def get_int_coordinates(self):
+        return {
+            'x': int(self.clientinfo.position['x']),
+            'y': int(self.clientinfo.position['y']),
+            'z': int(self.clientinfo.position['z'])
+        }

@@ -248,15 +248,12 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
-            modulators = data.get('modulators', {})
-
             if engine == 'dict_engine':
                 nodenets[nodenet_uid] = DictNodenet(
                     os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
-                    nodetypes=nodetypes, native_modules=native_modules,
-                    modulators=modulators)
+                    nodetypes=nodetypes, native_modules=native_modules)
             # Add additional engine types here
             else:
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)

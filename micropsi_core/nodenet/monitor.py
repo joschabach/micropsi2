@@ -131,6 +131,7 @@ class ModulatorMonitor(Monitor):
     @property
     def data(self):
         data = {
+            "classname": "ModulatorMonitor",
             "uid": self.uid,
             "name": self.name,
             "values": self.values,

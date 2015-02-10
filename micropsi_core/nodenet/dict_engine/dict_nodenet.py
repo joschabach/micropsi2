@@ -54,7 +54,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self.__step
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}, modulators={}):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -72,7 +72,7 @@ class DictNodenet(Nodenet):
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
-        self.__modulators = modulators
+        self.__modulators = {}
         self.settings = {}
 
         self.filename = filename
@@ -161,6 +161,8 @@ class DictNodenet(Nodenet):
         for type, data in self.__native_modules.items():
             native_modules[type] = Nodetype(nodenet=self, **data)
         self.__native_modules = native_modules
+
+        self.__modulators = initfrom.get("modulators", {})
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.__nodespaces = {}

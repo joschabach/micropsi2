@@ -30,7 +30,7 @@ class Minecraft(World):
         'y': 256,
     }
 
-    def __init__(self, filename, world_type="Minecraft", name="", owner="", uid=None, version=1):
+    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
         """

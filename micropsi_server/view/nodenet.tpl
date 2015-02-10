@@ -88,9 +88,11 @@
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
                 <p>&nbsp;</p>
-                <p><strong>global parameters</strong>
+                <p><strong>global modulators</strong>
+                <div class="" style="max-height:200px; overflow-y:auto">
                 <table class="emotionals table-condensed">
                 </table>
+                </div>
                 </p>
             </form>
 

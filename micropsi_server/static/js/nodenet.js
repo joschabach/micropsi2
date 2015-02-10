@@ -492,10 +492,16 @@ function refreshViewPortData(){
 }
 
 function updateModulators(data){
-    var table = $('table.emotionals');
+    var table = $('table.modulators');
     html = '';
+    var sorted = [];
     for(key in data){
-        html += '<tr><td>'+key+'</td><td>'+data[key].toFixed(2)+'</td><td><button class="btn btn-mini" data="'+key+'">monitor</button></td></tr>';
+        sorted.push({'name': key, 'value': data[key]});
+    }
+    sorted.sort(sortByName);
+    // display reversed to get emo_ before base_
+    for(var i = sorted.length-1; i >=0; i--){
+        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button></td></tr>'
     }
     table.html(html);
     $('button', table).each(function(idx, button){
@@ -507,6 +513,7 @@ function updateModulators(data){
                     modulator: mod,
                     name: mod
                 }, function(data){
+                    dialogs.notification('Monitor added', 'success');
                     $(document).trigger('monitorsChanged');
                 }
             );

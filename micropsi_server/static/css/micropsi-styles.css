@@ -432,3 +432,9 @@ label input[type="radio"] {
   text-align: left;
 }
 
+div.modulators_container{
+  max-height: 200px;
+  overflow-y: auto;
+}
+table.modulators button { visibility: hidden;}
+table.modulators tr:hover button { visibility: visible;}

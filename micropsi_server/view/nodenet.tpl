@@ -89,9 +89,9 @@
                 </div>
                 <p>&nbsp;</p>
                 <p><strong>global modulators</strong>
-                <div class="" style="max-height:200px; overflow-y:auto">
-                <table class="emotionals table-condensed">
-                </table>
+                <div class="modulators_container">
+                    <table class="modulators table-striped table-condensed">
+                    </table>
                 </div>
                 </p>
             </form>

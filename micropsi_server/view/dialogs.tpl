@@ -50,7 +50,7 @@
                     <label class="control-label" for="monitor_code_input">Function</label>
                     <div class="controls">
                         <textarea name="monitor_code_input" class="input-xlarge monospace" id="monitor_code_input" rows="10"></textarea>
-                        <p class="help-block">You can enter custom python code returning a flot for each step. You have access to the netapi.</p>
+                        <p class="help-block">You can enter custom python code returning a float for each step. You have access to the netapi.</p>
                     </div>
                 </div>
             </fieldset>

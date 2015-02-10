@@ -351,6 +351,14 @@ class Gate(metaclass=ABCMeta):
 
     @property
     @abstractmethod
+    def empty(self):
+        """
+        Returns true if the gate has no links
+        """
+        pass  # pragma: no cover
+
+    @property
+    @abstractmethod
     def activation(self):
         """
         Returns the gate's activation ('default' sheaf)
@@ -440,6 +448,14 @@ class Slot(metaclass=ABCMeta):
     def node(self):
         """
         Returns the Node object that this slot belongs to
+        """
+        pass  # pragma: no cover
+
+    @property
+    @abstractmethod
+    def empty(self):
+        """
+        Returns true if the slot has no links
         """
         pass  # pragma: no cover
 

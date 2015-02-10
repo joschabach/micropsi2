@@ -155,7 +155,7 @@
                     </tr>
                 </table>
                 <div class="controls">
-                    <button type="submit" class="deleteLink btn btn-danger btn-mini">Delete link</button>
+                    <button type="button" class="deleteLink btn btn-danger btn-mini">Delete link</button>
                     <button type="submit" class="saveLink btn btn-primary">Apply</button>
                 </div>
             </form>

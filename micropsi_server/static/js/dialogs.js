@@ -381,7 +381,7 @@ $(function() {
                 'name': $('#monitor_name_input').val()
             }, function(data){
                 dialogs.notification("monitor saved");
-                $(document).trigger('monitorsChanged');
+                $(document).trigger('monitorsChanged', data);
                 $('#monitor_modal .btn-primary').off();
                 $('#monitor_modal').modal('hide');
             }, function(data){

@@ -514,7 +514,7 @@ function updateModulators(data){
                     name: mod
                 }, function(data){
                     dialogs.notification('Monitor added', 'success');
-                    $(document).trigger('monitorsChanged');
+                    $(document).trigger('monitorsChanged', data);
                 }
             );
         });
@@ -2940,7 +2940,7 @@ function addLinkMonitor(clickOriginUid){
             property:'weight'
         }, function(data){
             dialogs.notification("monitor saved");
-            $(document).trigger('monitorsChanged');
+            $(document).trigger('monitorsChanged', data);
             $('#monitor_modal .btn-primary').off();
             $('#monitor_modal').modal('hide');
         }, function(data){
@@ -3204,7 +3204,7 @@ function addSlotMonitor(node, index){
         node_uid: node.uid,
         slot: node.slotIndexes[index]
     }, function(data){
-        $(document).trigger('monitorsChanged');
+        $(document).trigger('monitorsChanged', data);
         monitors[data] = {};
         setMonitorData(data);
     });
@@ -3216,7 +3216,7 @@ function addGateMonitor(node, index){
         node_uid: node.uid,
         gate: node.gateIndexes[index]
     }, function(data){
-        $(document).trigger('monitorsChanged');
+        $(document).trigger('monitorsChanged', data);
         monitors[data] = {};
         setMonitorData(data);
     });

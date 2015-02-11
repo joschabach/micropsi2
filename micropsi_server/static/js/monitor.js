@@ -32,7 +32,8 @@ $(function(){
 
     init();
 
-    $(document).on('monitorsChanged', function(){
+    $(document).on('monitorsChanged', function(evt, new_monitor){
+        currentMonitors.push(new_monitor)
         refreshMonitors();
     });
     $(document).on('nodenetChanged', function(data, newNodenet){

@@ -98,7 +98,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def name(self):
         """
-        This node's human reaable name for display purposes. Returns the UID if no human readable name has been set.
+        This node's human readable name for display purposes. Returns the UID if no human readable name has been set.
         """
         pass  # pragma: no cover
 
@@ -106,7 +106,7 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def name(self, name):
         """
-        Sets this node's human reaable name for display purposes.
+        Sets this node's human readable name for display purposes.
         """
         pass  # pragma: no cover
 

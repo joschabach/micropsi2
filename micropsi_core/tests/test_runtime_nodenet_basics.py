@@ -214,3 +214,13 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
 
     assert a1_copy.parent_nodespace == 'ns1'
     assert a2_copy.parent_nodespace == 'ns1'
+
+
+def test_modulators(fixed_nodenet):
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+
+    nodenet.netapi.change_modulator("test_modulator", 0.42)
+    assert nodenet.netapi.get_modulator("test_modulator") == 0.42
+
+    nodenet.set_modulator("test_modulator", -1)
+    assert nodenet.netapi.get_modulator("test_modulator") == -1

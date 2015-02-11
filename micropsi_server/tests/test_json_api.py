@@ -171,7 +171,7 @@ def test_get_current_state(app, test_nodenet, test_world):
     })
     monitor_uid = response.json_body['data']
     response = app.get_json('/rpc/start_simulation(nodenet_uid="%s")' % test_nodenet)
-    sleep(0.2)
+    sleep(0.4)
     response = app.post_json('/rpc/get_current_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {

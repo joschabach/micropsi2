@@ -7,6 +7,7 @@ import warnings
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
+from .dict_stepoperators import DictPropagate, DictCalculate, DictDoernerianEmotionalModulators
 from .dict_node import DictNode
 from .dict_nodespace import DictNodespace
 
@@ -42,6 +43,7 @@ class DictNodenet(Nodenet):
             data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
         data['version'] = self.__version
+        data['modulators'] = self.construct_modulators_dict()
         return data
 
     @property
@@ -65,8 +67,12 @@ class DictNodenet(Nodenet):
 
         super(DictNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
+        self.stepoperators = [DictPropagate(), DictCalculate(), DictDoernerianEmotionalModulators()]
+        self.stepoperators.sort(key=lambda op: op.priority)
+
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
+        self.__modulators = {}
         self.settings = {}
 
         self.filename = filename
@@ -156,6 +162,8 @@ class DictNodenet(Nodenet):
             native_modules[type] = Nodetype(nodenet=self, **data)
         self.__native_modules = native_modules
 
+        self.__modulators = initfrom.get("modulators", {})
+
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
@@ -210,7 +218,8 @@ class DictNodenet(Nodenet):
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
             'world': world_uid,
-            'worldadapter': self.worldadapter
+            'worldadapter': self.worldadapter,
+            'modulators': self.construct_modulators_dict()
         }
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
@@ -375,69 +384,15 @@ class DictNodenet(Nodenet):
                                                         # but instead the world object itself
 
         with self.netlock:
-            self.propagate_link_activation(self.__nodes.copy())
 
             self.timeout_locks()
 
-            activators = self.get_activators()
-            nativemodules = self.get_nativemodules()
-            everythingelse = self.__nodes.copy()
-            for key in nativemodules:
-                del everythingelse[key]
-
-            self.calculate_node_functions(activators)       # activators go first
-            self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
-            self.calculate_node_functions(everythingelse)   # then all the peasant nodes get calculated
+            for operator in self.stepoperators:
+                operator.execute(self, self.__nodes.copy(), self.netapi)
 
             self.netapi._step()
 
             self.__step += 1
-            for uid, node in activators.items():
-                node.activation = self.__nodespaces[node.parent_nodespace].get_activator_value(node.get_parameter('type'))
-
-    def propagate_link_activation(self, nodes, limit_gatetypes=None):
-        """ the linkfunction
-            propagate activation from gates to slots via their links. returns the nodes that received activation.
-            Arguments:
-                nodes: the dict of nodes to consider
-                limit_gatetypes (optional): a list of gatetypes to restrict the activation to links originating
-                    from the given slottypes.
-        """
-        for uid, node in nodes.items():
-            node.reset_slots()
-
-        # propagate sheaf existence
-        for uid, node in nodes.items():
-            for gate_type in node.get_gate_types():
-                if limit_gatetypes is None or gate_type in limit_gatetypes:
-                    gate = node.get_gate(gate_type)
-                    if gate.get_parameter('spreadsheaves'):
-                        for sheaf in gate.sheaves:
-                            for link in gate.get_links():
-                                for slotname in link.target_node.get_slot_types():
-                                    if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
-                                        link.target_node.get_slot(slotname).sheaves[sheaf] = dict(
-                                            uid=gate.sheaves[sheaf]['uid'],
-                                            name=gate.sheaves[sheaf]['name'],
-                                            activation=0)
-
-        # propagate activation
-        for uid, node in nodes.items():
-            for gate_type in node.get_gate_types():
-                if limit_gatetypes is None or gate_type in limit_gatetypes:
-                    gate = node.get_gate(gate_type)
-                    for link in gate.get_links():
-                        for sheaf in gate.sheaves:
-                            if link.target_node.type == "Actor":
-                                sheaf = "default"
-
-                            if sheaf in link.target_slot.sheaves:
-                                link.target_slot.sheaves[sheaf]['activation'] += \
-                                    float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
-                            elif sheaf.endswith(link.target_node.uid):
-                                upsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
-                                link.target_slot.sheaves[upsheaf]['activation'] += \
-                                    float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
 
     def timeout_locks(self):
         """
@@ -450,14 +405,6 @@ class DictNodenet(Nodenet):
                 locks_to_delete.append(lock)
         for lock in locks_to_delete:
             del self.__locks[lock]
-
-    def calculate_node_functions(self, nodes):
-        """for all given nodes, call their node function, which in turn should update the gate functions
-           Arguments:
-               nodes: the dict of nodes to consider
-        """
-        for uid, node in nodes.copy().items():
-            node.node_function()
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         node = DictNode(
@@ -597,3 +544,27 @@ class DictNodenet(Nodenet):
         """Removes the given lock
         """
         del self.__locks[lock]
+
+    def get_modulator(self, modulator):
+        """
+        Returns the numeric value of the given global modulator
+        """
+        return self.__modulators.get(modulator, 1)
+
+    def change_modulator(self, modulator, diff):
+        """
+        Changes the value of the given global modulator by the value of diff
+        """
+        self.__modulators[modulator] = self.__modulators.get(modulator, 0) + diff
+
+    def construct_modulators_dict(self):
+        """
+        Returns a new dict containing all modulators
+        """
+        return self.__modulators.copy()
+
+    def set_modulator(self, modulator, value):
+        """
+        Changes the value of the given global modulator to the given value
+        """
+        self.__modulators[modulator] = value

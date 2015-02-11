@@ -945,6 +945,10 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
 def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name):
     return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name)
 
+@rpc("add_modulator_monitor")
+def add_modulator_monitor(nodenet_uid, modulator, name):
+    return True, runtime.add_modulator_monitor(nodenet_uid, modulator, name)
+
 
 @rpc("add_custom_monitor")
 def add_custom_monitor(nodenet_uid, function, name):

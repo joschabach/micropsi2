@@ -87,6 +87,13 @@
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
                 </div>
+                <p>&nbsp;</p>
+                <p><strong>global modulators</strong>
+                <div class="modulators_container">
+                    <table class="modulators table-striped table-condensed">
+                    </table>
+                </div>
+                </p>
             </form>
 
             <form class="form-horizontal default_form hide" id="edit_nodespace_form">

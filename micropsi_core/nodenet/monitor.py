@@ -126,6 +126,30 @@ class LinkMonitor(Monitor):
             self.values[step] = None
 
 
+class ModulatorMonitor(Monitor):
+
+    @property
+    def data(self):
+        data = {
+            "classname": "ModulatorMonitor",
+            "uid": self.uid,
+            "name": self.name,
+            "values": self.values,
+            "modulator": self.modulator
+        }
+        return data
+
+    def __init__(self, nodenet, modulator, name=None, uid=None, **_):
+        api = nodenet.netapi
+        name = name or "Modulator: %s" % modulator
+        super(ModulatorMonitor, self).__init__(nodenet, name, uid)
+        self.modulator = modulator
+        self.nodenet = nodenet
+
+    def step(self, step):
+        self.values[step] = self.nodenet.get_modulator(self.modulator)
+
+
 class CustomMonitor(Monitor):
 
     @property

@@ -299,7 +299,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         'health': 1,
         'food': 1,
-        'temperature': 1
+        'temperature': 1,
+        'food_supply': 0
     }
 
     datatargets = {
@@ -541,6 +542,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
             self.datasources['temperature'] = self.spockplugin.get_temperature()
+            self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
 
             self.check_for_action_feedback()
 

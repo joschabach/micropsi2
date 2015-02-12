@@ -142,6 +142,13 @@ class MicropsiPlugin(object):
         self.inventory = packet.data['slots']
         self.quickslots = packet.data['slots'][36:9]
 
+    def count_inventory_item(self, item):
+        count = 0
+        for slot in self.inventory:
+            if slot and slot['id'] == item:
+                count += slot['amount']
+        return count
+
     def change_held_item(self, target_slot):
         """ Changes the held item to a quick inventory slot """
         self.net.push(Packet(ident='PLAY>Held Item Change', data={'Slot': target_slot}))

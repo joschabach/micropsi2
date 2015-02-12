@@ -28,7 +28,7 @@ class Monitor(metaclass=ABCMeta):
             "uid": self.uid,
             "values": self.values,
             "name": self.name,
-            "classname": "Monitor"
+            "classname": self.__class__.__name__
         }
         return data
 
@@ -51,16 +51,13 @@ class NodeMonitor(Monitor):
 
     @property
     def data(self):
-        data = {
-            "uid": self.uid,
-            "values": self.values,
+        data = super(NodeMonitor, self).data
+        data.update({
             "node_uid": self.node_uid,
-            "name": self.name,
             "type": self.type,
             "target": self.target,
             "sheaf": self.sheaf,
-            "classname": "NodeMonitor"
-        }
+        })
         return data
 
     def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, **_):
@@ -85,17 +82,14 @@ class LinkMonitor(Monitor):
 
     @property
     def data(self):
-        data = {
-            "uid": self.uid,
-            "name": self.name,
-            "values": self.values,
+        data = super(LinkMonitor, self).data
+        data.update({
             "source_node_uid": self.source_node_uid,
             "target_node_uid": self.target_node_uid,
             "gate_type": self.gate_type,
             "slot_type": self.slot_type,
             "property": self.property,
-            "classname": "LinkMonitor"
-        }
+        })
         return data
 
     def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, **_):
@@ -130,13 +124,10 @@ class ModulatorMonitor(Monitor):
 
     @property
     def data(self):
-        data = {
-            "classname": "ModulatorMonitor",
-            "uid": self.uid,
-            "name": self.name,
-            "values": self.values,
+        data = super(ModulatorMonitor, self).data
+        data.update({
             "modulator": self.modulator
-        }
+        })
         return data
 
     def __init__(self, nodenet, modulator, name=None, uid=None, **_):
@@ -154,13 +145,10 @@ class CustomMonitor(Monitor):
 
     @property
     def data(self):
-        data = {
-            "uid": self.uid,
-            "values": self.values,
-            "name": self.name,
+        data = super(CustomMonitor, self).data
+        data.update({
             "function": self.function,
-            "classname": "CustomMonitor"
-        }
+        })
         return data
 
     def __init__(self, nodenet, function, name=None, uid=None, **_):

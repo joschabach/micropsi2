@@ -220,8 +220,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
 
         # add datasources for fovea and fovea_hist
-        for i in range(16):
-            for j in range(16):
+        for i in range(self.patch_len):
+            for j in range(self.patch_len):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
         for i in range(-1, 198, 1):

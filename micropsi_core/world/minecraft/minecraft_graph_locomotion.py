@@ -25,278 +25,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'fov_x': 0,    # fovea sensors receive their input from the fovea actors
         'fov_y': 0,
 
-        'fov__00_00': 0,
-        'fov__00_01': 0,
-        'fov__00_02': 0,
-        'fov__00_03': 0,
-        'fov__00_04': 0,
-        'fov__00_05': 0,
-        'fov__00_06': 0,
-        'fov__00_07': 0,
-        'fov__00_08': 0,
-        'fov__00_09': 0,
-        'fov__00_10': 0,
-        'fov__00_11': 0,
-        'fov__00_12': 0,
-        'fov__00_13': 0,
-        'fov__00_14': 0,
-        'fov__00_15': 0,
-
-        'fov__01_00': 0,
-        'fov__01_01': 0,
-        'fov__01_02': 0,
-        'fov__01_03': 0,
-        'fov__01_04': 0,
-        'fov__01_05': 0,
-        'fov__01_06': 0,
-        'fov__01_07': 0,
-        'fov__01_08': 0,
-        'fov__01_09': 0,
-        'fov__01_10': 0,
-        'fov__01_11': 0,
-        'fov__01_12': 0,
-        'fov__01_13': 0,
-        'fov__01_14': 0,
-        'fov__01_15': 0,
-
-        'fov__02_00': 0,
-        'fov__02_01': 0,
-        'fov__02_02': 0,
-        'fov__02_03': 0,
-        'fov__02_04': 0,
-        'fov__02_05': 0,
-        'fov__02_06': 0,
-        'fov__02_07': 0,
-        'fov__02_08': 0,
-        'fov__02_09': 0,
-        'fov__02_10': 0,
-        'fov__02_11': 0,
-        'fov__02_12': 0,
-        'fov__02_13': 0,
-        'fov__02_14': 0,
-        'fov__02_15': 0,
-
-        'fov__03_00': 0,
-        'fov__03_01': 0,
-        'fov__03_02': 0,
-        'fov__03_03': 0,
-        'fov__03_04': 0,
-        'fov__03_05': 0,
-        'fov__03_06': 0,
-        'fov__03_07': 0,
-        'fov__03_08': 0,
-        'fov__03_09': 0,
-        'fov__03_10': 0,
-        'fov__03_11': 0,
-        'fov__03_12': 0,
-        'fov__03_13': 0,
-        'fov__03_14': 0,
-        'fov__03_15': 0,
-
-        'fov__04_00': 0,
-        'fov__04_01': 0,
-        'fov__04_02': 0,
-        'fov__04_03': 0,
-        'fov__04_04': 0,
-        'fov__04_05': 0,
-        'fov__04_06': 0,
-        'fov__04_07': 0,
-        'fov__04_08': 0,
-        'fov__04_09': 0,
-        'fov__04_10': 0,
-        'fov__04_11': 0,
-        'fov__04_12': 0,
-        'fov__04_13': 0,
-        'fov__04_14': 0,
-        'fov__04_15': 0,
-
-        'fov__05_00': 0,
-        'fov__05_01': 0,
-        'fov__05_02': 0,
-        'fov__05_03': 0,
-        'fov__05_04': 0,
-        'fov__05_05': 0,
-        'fov__05_06': 0,
-        'fov__05_07': 0,
-        'fov__05_08': 0,
-        'fov__05_09': 0,
-        'fov__05_10': 0,
-        'fov__05_11': 0,
-        'fov__05_12': 0,
-        'fov__05_13': 0,
-        'fov__05_14': 0,
-        'fov__05_15': 0,
-
-        'fov__06_00': 0,
-        'fov__06_01': 0,
-        'fov__06_02': 0,
-        'fov__06_03': 0,
-        'fov__06_04': 0,
-        'fov__06_05': 0,
-        'fov__06_06': 0,
-        'fov__06_07': 0,
-        'fov__06_08': 0,
-        'fov__06_09': 0,
-        'fov__06_10': 0,
-        'fov__06_11': 0,
-        'fov__06_12': 0,
-        'fov__06_13': 0,
-        'fov__06_14': 0,
-        'fov__06_15': 0,
-
-        'fov__07_00': 0,
-        'fov__07_01': 0,
-        'fov__07_02': 0,
-        'fov__07_03': 0,
-        'fov__07_04': 0,
-        'fov__07_05': 0,
-        'fov__07_06': 0,
-        'fov__07_07': 0,
-        'fov__07_08': 0,
-        'fov__07_09': 0,
-        'fov__07_10': 0,
-        'fov__07_11': 0,
-        'fov__07_12': 0,
-        'fov__07_13': 0,
-        'fov__07_14': 0,
-        'fov__07_15': 0,
-
-        'fov__08_00': 0,
-        'fov__08_01': 0,
-        'fov__08_02': 0,
-        'fov__08_03': 0,
-        'fov__08_04': 0,
-        'fov__08_05': 0,
-        'fov__08_06': 0,
-        'fov__08_07': 0,
-        'fov__08_08': 0,
-        'fov__08_09': 0,
-        'fov__08_10': 0,
-        'fov__08_11': 0,
-        'fov__08_12': 0,
-        'fov__08_13': 0,
-        'fov__08_14': 0,
-        'fov__08_15': 0,
-
-        'fov__09_00': 0,
-        'fov__09_01': 0,
-        'fov__09_02': 0,
-        'fov__09_03': 0,
-        'fov__09_04': 0,
-        'fov__09_05': 0,
-        'fov__09_06': 0,
-        'fov__09_07': 0,
-        'fov__09_08': 0,
-        'fov__09_09': 0,
-        'fov__09_10': 0,
-        'fov__09_11': 0,
-        'fov__09_12': 0,
-        'fov__09_13': 0,
-        'fov__09_14': 0,
-        'fov__09_15': 0,
-
-        'fov__10_00': 0,
-        'fov__10_01': 0,
-        'fov__10_02': 0,
-        'fov__10_03': 0,
-        'fov__10_04': 0,
-        'fov__10_05': 0,
-        'fov__10_06': 0,
-        'fov__10_07': 0,
-        'fov__10_08': 0,
-        'fov__10_09': 0,
-        'fov__10_10': 0,
-        'fov__10_11': 0,
-        'fov__10_12': 0,
-        'fov__10_13': 0,
-        'fov__10_14': 0,
-        'fov__10_15': 0,
-
-        'fov__11_00': 0,
-        'fov__11_01': 0,
-        'fov__11_02': 0,
-        'fov__11_03': 0,
-        'fov__11_04': 0,
-        'fov__11_05': 0,
-        'fov__11_06': 0,
-        'fov__11_07': 0,
-        'fov__11_08': 0,
-        'fov__11_09': 0,
-        'fov__11_10': 0,
-        'fov__11_11': 0,
-        'fov__11_12': 0,
-        'fov__11_13': 0,
-        'fov__11_14': 0,
-        'fov__11_15': 0,
-
-        'fov__12_00': 0,
-        'fov__12_01': 0,
-        'fov__12_02': 0,
-        'fov__12_03': 0,
-        'fov__12_04': 0,
-        'fov__12_05': 0,
-        'fov__12_06': 0,
-        'fov__12_07': 0,
-        'fov__12_08': 0,
-        'fov__12_09': 0,
-        'fov__12_10': 0,
-        'fov__12_11': 0,
-        'fov__12_12': 0,
-        'fov__12_13': 0,
-        'fov__12_14': 0,
-        'fov__12_15': 0,
-
-        'fov__13_00': 0,
-        'fov__13_01': 0,
-        'fov__13_02': 0,
-        'fov__13_03': 0,
-        'fov__13_04': 0,
-        'fov__13_05': 0,
-        'fov__13_06': 0,
-        'fov__13_07': 0,
-        'fov__13_08': 0,
-        'fov__13_09': 0,
-        'fov__13_10': 0,
-        'fov__13_11': 0,
-        'fov__13_12': 0,
-        'fov__13_13': 0,
-        'fov__13_14': 0,
-        'fov__13_15': 0,
-
-        'fov__14_00': 0,
-        'fov__14_01': 0,
-        'fov__14_02': 0,
-        'fov__14_03': 0,
-        'fov__14_04': 0,
-        'fov__14_05': 0,
-        'fov__14_06': 0,
-        'fov__14_07': 0,
-        'fov__14_08': 0,
-        'fov__14_09': 0,
-        'fov__14_10': 0,
-        'fov__14_11': 0,
-        'fov__14_12': 0,
-        'fov__14_13': 0,
-        'fov__14_14': 0,
-        'fov__14_15': 0,
-
-        'fov__15_00': 0,
-        'fov__15_01': 0,
-        'fov__15_02': 0,
-        'fov__15_03': 0,
-        'fov__15_04': 0,
-        'fov__15_05': 0,
-        'fov__15_06': 0,
-        'fov__15_07': 0,
-        'fov__15_08': 0,
-        'fov__15_09': 0,
-        'fov__15_10': 0,
-        'fov__15_11': 0,
-        'fov__15_12': 0,
-        'fov__15_13': 0,
-        'fov__15_14': 0,
-        'fov__15_15': 0,
-
         'health': 1,
         'food': 1,
         'temperature': 1,
@@ -490,6 +218,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
+
+        # add datasources for fovea and fovea_hist
+        for i in range(16):
+            for j in range(16):
+                name = "fov__%02d_%02d" % (i, j)
+                self.datasources[name] = 0.
+        for i in range(-1, 198, 1):
+            name = "fov_hist__%03d" % (i)
+            self.datasources[name] = 0
 
     def set_datasources(self, event, data):
         self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
@@ -685,7 +422,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         # set agent position
         pos_x = self.spockplugin.clientinfo.position['x']
-        pos_y = self.spockplugin.clientinfo.position['y']  # + 1.620
+        pos_y = self.spockplugin.clientinfo.position['y'] + 0.620  # add some stance to y pos ( which is ground + 1 )
         pos_z = self.spockplugin.clientinfo.position['z']
 
         # set yaw and pitch ( in degrees )
@@ -725,6 +462,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 block_type_pooled = self.map_block_type_to_sensor(block_type)
                 # patch.append(block_type_pooled)
 
+        # write values to self.datasources['fov_hist__*']
+        # for every block type value seen in patch, count its occurrences, normalize them, write them to datasource
+        normalizer = self.patch_len ** 2
+        for bt in set(patch):
+            name = "fov_hist__%03d" % bt
+            self.datasources[name] = patch.count(bt) / normalizer
+            # TODO: make sure this histogram computes the same values as np.histogram(..) used in tgng/preprocess.py
+
         # normalize block type values
         # subtract patch mean
         mean = float(sum(patch)) / len(patch)
@@ -743,13 +488,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
         # scale from [-1,+1] to [0.1,0.9] and write values to sensors
         patch_resc = [(1 + x) * 0.4 + 0.1 for x in patch_std]
 
+        # write values to self.datasources['fov__']
         for i in range(self.patch_len):
             for j in range(self.patch_len):
-                ii = "0%d" % i if i < 10 else str(i)
-                jj = "0%d" % j if j < 10 else str(j)
-                str_name = 'fov__%s_%s' % (ii, jj)  # Beware: magic name
-                # write values to self.datasources aka sensors
-                self.datasources[str_name] = patch_resc[self.patch_len * i + j]
+                name = 'fov__%02d_%02d' % (i, j)
+                self.datasources[name] = patch_resc[self.patch_len * i + j]
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

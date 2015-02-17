@@ -60,6 +60,8 @@ logger = MicropsiLogger({
     'nodenet': LOGGING['level_nodenet']
 })
 
+nodenet_lock = threading.Lock()
+
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
@@ -226,9 +228,6 @@ def get_nodenet(nodenet_uid):
 
 def load_nodenet(nodenet_uid):
     """ Load the nodenet with the given uid into memeory
-        TODO: how do we know in which world we want to load the nodenet?
-        I've added the world uid to the nodenet serialized data for the moment
-
         Arguments:
             nodenet_uid
         Returns:
@@ -238,7 +237,10 @@ def load_nodenet(nodenet_uid):
     """
     if nodenet_uid in nodenet_data:
         world = worldadapter = None
+
+        nodenet_lock.acquire()
         if nodenet_uid not in nodenets:
+            nodenets[nodenet_uid] = None
             data = nodenet_data[nodenet_uid]
 
             if data.world:
@@ -256,6 +258,7 @@ def load_nodenet(nodenet_uid):
                     nodetypes=nodetypes, native_modules=native_modules)
             # Add additional engine types here
             else:
+                nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
             if "settings" in data:
@@ -267,6 +270,8 @@ def load_nodenet(nodenet_uid):
             worldadapter = nodenets[nodenet_uid].worldadapter
         if world:
             world.register_nodenet(worldadapter, nodenets[nodenet_uid])
+
+        nodenet_lock.release()
         return True, nodenet_uid
     return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
 

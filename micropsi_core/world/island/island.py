@@ -291,10 +291,11 @@ class Waterhole(WorldObject):
 
 class Survivor(WorldAdapter):
 
+    supported_datasources = ['body-energy', 'body-water', 'body-integrity']
+    supported_datatargets = ['action_eat', 'action_drink', 'loco_north', 'loco_south', 'loco_east', 'loco_west']
+
     def __init__(self, world, uid=None, **data):
         super(Survivor, self).__init__(world, uid, **data)
-
-        self.datatargets = {'action_eat': 0, 'action_drink': 0, 'loco_north': 0, 'loco_south': 0, 'loco_east': 0, 'loco_west': 0}
 
         self.currentobject = None
 
@@ -416,10 +417,11 @@ class Braitenberg(WorldAdapter):
     # maximum speed
     speed_limit = 1.
 
+    supported_datasources = ['brightness_l', 'brightness_r']
+    supported_datatargets = ['engine_l', 'engine_r']
+
     def __init__(self, world, uid=None, **data):
         super(Braitenberg, self).__init__(world, uid, **data)
-        self.datasources = {'brightness_l': 0, 'brightness_r': 0}
-        self.datatargets = {'engine_l': 0, 'engine_r': 0}
         self.datatarget_feedback = {'engine_l': 0, 'engine_r': 0}
 
     def initialize_worldobject(self, data):

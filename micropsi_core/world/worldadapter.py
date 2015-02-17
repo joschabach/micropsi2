@@ -29,10 +29,16 @@ class WorldAdapter(WorldObject):
     The agent writes activation values into data targets, and receives it from data sources. The world adapter
     takes care of translating between the world and these values at each world cycle.
     """
+    supported_datasources = []
+    supported_datatargets = []
 
     def __init__(self, world, uid=None, **data):
         self.datasources = {}
+        for key in self.supported_datasources:
+            self.datasources[key] = 0
         self.datatargets = {}
+        for key in self.supported_datatargets:
+            self.datatargets[key] = 0
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         self.datasource_snapshots = {}

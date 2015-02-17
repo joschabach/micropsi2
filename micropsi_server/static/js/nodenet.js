@@ -3478,6 +3478,7 @@ function getNodeParameterHTML(parameters, parameter_values){
                     break;
                 default:
                     if(parameter_values && parameter_values[name]){
+                        input += '<option value="">None</option>';
                         for(i in parameter_values[name]){
                             input += "<option"+ (value == parameter_values[name][i] ? " selected=selected" : "") +">"+parameter_values[name][i]+"</option>";
                         }

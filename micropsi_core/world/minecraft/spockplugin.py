@@ -12,9 +12,6 @@ JUMPING_MAGIC_NUMBER = 0  # 2 used to work
 @pl_announce('Micropsi')
 class MicropsiPlugin(object):
 
-    inventory = []
-    quickslots = []
-
     def __init__(self, ploader, settings):
 
         # register required plugins
@@ -23,6 +20,9 @@ class MicropsiPlugin(object):
         self.world = ploader.requires('World')
         self.clientinfo = ploader.requires('ClientInfo')
         self.threadpool = ploader.requires('ThreadPool')
+
+        self.inventory = []
+        self.quickslots = []
 
         self.event.reg_event_handler(
             (3, 0, 48),

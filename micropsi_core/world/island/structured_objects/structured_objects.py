@@ -10,17 +10,17 @@ from micropsi_core.world.worldadapter import WorldAdapter
 class StructuredObjects(WorldAdapter):
     """A world adapter exposing objects composed of basic shapes and colors to the agent"""
 
-    shapetypes = []
-    shapecolors = []
-
-    datasources = {}
-    datatargets = {'fov_x': 0, 'fov_y': 0, 'fov_reset': 0}
-
-    currentobject = None
-    scene = None
-
     def __init__(self, world, uid=None, **data):
         super(StructuredObjects, self).__init__(world, uid, **data)
+
+        self.shapetypes = []
+        self.shapecolors = []
+
+        self.datasources = {}
+        self.datatargets = {'fov_x': 0, 'fov_y': 0, 'fov_reset': 0}
+
+        self.currentobject = None
+        self.scene = None
 
         for key, objecttype in OBJECTS.items():
             for shapeline in objecttype['shape_grid']:

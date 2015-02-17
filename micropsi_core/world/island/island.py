@@ -291,12 +291,12 @@ class Waterhole(WorldObject):
 
 class Survivor(WorldAdapter):
 
-    datatargets = {'action_eat': 0, 'action_drink': 0, 'loco_north': 0, 'loco_south': 0, 'loco_east': 0, 'loco_west': 0}
-
-    currentobject = None
-
     def __init__(self, world, uid=None, **data):
         super(Survivor, self).__init__(world, uid, **data)
+
+        self.datatargets = {'action_eat': 0, 'action_drink': 0, 'loco_north': 0, 'loco_south': 0, 'loco_east': 0, 'loco_west': 0}
+
+        self.currentobject = None
 
         self.energy = 1.0
         self.water = 1.0
@@ -401,10 +401,6 @@ class Survivor(WorldAdapter):
 class Braitenberg(WorldAdapter):
     """A simple Braitenberg vehicle chassis, with two light sensitive sensors and two engines"""
 
-    datasources = {'brightness_l': 0, 'brightness_r': 0}
-    datatargets = {'engine_l': 0, 'engine_r': 0}
-    datatarget_feedback = {'engine_l': 0, 'engine_r': 0}
-
     # positions of sensors, relative to origin of agent center
     brightness_l_offset = (-25, -50)
     brightness_r_offset = (+25, -50)
@@ -419,6 +415,12 @@ class Braitenberg(WorldAdapter):
 
     # maximum speed
     speed_limit = 1.
+
+    def __init__(self, world, uid=None, **data):
+        super(Braitenberg, self).__init__(world, uid, **data)
+        self.datasources = {'brightness_l': 0, 'brightness_r': 0}
+        self.datatargets = {'engine_l': 0, 'engine_r': 0}
+        self.datatarget_feedback = {'engine_l': 0, 'engine_r': 0}
 
     def initialize_worldobject(self, data):
         if not "position" in data:

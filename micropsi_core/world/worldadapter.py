@@ -30,14 +30,12 @@ class WorldAdapter(WorldObject):
     takes care of translating between the world and these values at each world cycle.
     """
 
-    datasources = {}
-    datatargets = {}
-    datatarget_feedback = {}
-
-    datasource_lock = Lock()
-    datasource_snapshots = {}
-
     def __init__(self, world, uid=None, **data):
+        self.datasources = {}
+        self.datatargets = {}
+        self.datatarget_feedback = {}
+        self.datasource_lock = Lock()
+        self.datasource_snapshots = {}
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
 
     def initialize_worldobject(self, data):

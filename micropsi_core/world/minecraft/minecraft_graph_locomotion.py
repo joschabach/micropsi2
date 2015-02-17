@@ -8,79 +8,6 @@ from functools import partial
 
 class MinecraftGraphLocomotion(WorldAdapter):
 
-    datasources = {
-        'nothing': 0,  # -1
-        'air': 0,      # 0
-        'stone': 0,    # 1, 4, 7, 24 ( sand stone )
-        'grass': 0,    # 2
-        'dirt': 0,     # 3
-        'wood': 0,     # 5, 17
-        'water': 0,    # 8, 9
-        'sand': 0,     # 12
-        'gravel': 0,   # 13
-        'leaves': 0,   # 18
-        'solids': 0,   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
-        'otter': 0,    # miscellaneous /otter
-
-        'fov_x': 0,    # fovea sensors receive their input from the fovea actors
-        'fov_y': 0,
-
-        'health': 1,
-        'food': 1,
-        'temperature': 1,
-        'food_supply': 0
-    }
-
-    datatargets = {
-        'orientation': 0,
-        'take_exit_one': 0,
-        'take_exit_two': 0,
-        'take_exit_three': 0,
-        'fov_x': 0,
-        'fov_y': 0,
-        'eat': 0
-    }
-
-    datatarget_feedback = {
-        'orientation': 0,
-        'take_exit_one': 0,
-        'take_exit_two': 0,
-        'take_exit_three': 0,
-        'fov_x': 0,
-        'fov_y': 0,
-        'eat': 0
-    }
-
-    # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
-    datatarget_history = {
-        'take_exit_one': 0,
-        'take_exit_two': 0,
-        'take_exit_three': 0,
-        'fov_x': 0,
-        'fov_y': 0,
-        'eat': 0
-    }
-
-    # a collection of conditions to check on every update(..), eg., for action feedback
-    waiting_list = []
-
-    # specs for vision /fovea
-    focal_length = 1  # distance of image plane from projective point /fovea
-    max_dist = 200    # maximum distance for raytracing
-    resolution = 4    # number of rays per tick in viewport /camera coordinate system
-    im_width = 32     # width of projection /image plane in the world
-    im_height = 16    # height of projection /image plane in the world
-    cam_width = 1.    # width of normalized device /camera /viewport
-    cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 16     # side length of a fovea patch
-
-    # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
-    # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
-
-    loco_nodes = {}
-
-    target_loco_node_uid = None
-
     loco_node_template = {
         'uid': "",
         'name': "",
@@ -91,6 +18,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'exit_two_uid': None,
         'exit_three_uid': None,
     }
+
+    loco_nodes = {}
 
     home_uid = tools.generate_uid()
     underground_garden_uid = tools.generate_uid()
@@ -113,8 +42,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[home_uid]['exit_one_uid'] = cloud_uid
     loco_nodes[home_uid]['exit_two_uid'] = cathedral_uid
     loco_nodes[home_uid]['exit_three_uid'] = village_uid
-
-    current_loco_node = None
 
     loco_nodes[underground_garden_uid] = loco_node_template.copy()
     loco_nodes[underground_garden_uid]['name'] = "underground garden"
@@ -207,13 +134,88 @@ class MinecraftGraphLocomotion(WorldAdapter):
     loco_nodes[swamp_uid]['exit_one_uid'] = forest_uid
     loco_nodes[swamp_uid]['exit_two_uid'] = summit_uid
 
+    tp_tolerance = 5
+
+    action_timeout = 10
+
     logger = None
 
-    tp_tolerance = 5
-    action_timeout = 10
+    # specs for vision /fovea
+    focal_length = 1  # distance of image plane from projective point /fovea
+    max_dist = 200    # maximum distance for raytracing
+    resolution = 4    # number of rays per tick in viewport /camera coordinate system
+    im_width = 32     # width of projection /image plane in the world
+    im_height = 16    # height of projection /image plane in the world
+    cam_width = 1.    # width of normalized device /camera /viewport
+    cam_height = 1.   # height of normalized device /camera /viewport
+    patch_len = 16     # side length of a fovea patch
+
+    # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
+    # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
 
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
+
+        self.datasources = {
+            'nothing': 0,  # -1
+            'air': 0,      # 0
+            'stone': 0,    # 1, 4, 7, 24 ( sand stone )
+            'grass': 0,    # 2
+            'dirt': 0,     # 3
+            'wood': 0,     # 5, 17
+            'water': 0,    # 8, 9
+            'sand': 0,     # 12
+            'gravel': 0,   # 13
+            'leaves': 0,   # 18
+            'solids': 0,   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
+            'otter': 0,    # miscellaneous /otter
+
+            'fov_x': 0,    # fovea sensors receive their input from the fovea actors
+            'fov_y': 0,
+
+            'health': 1,
+            'food': 1,
+            'temperature': 1,
+            'food_supply': 0
+        }
+
+        self.datatargets = {
+            'orientation': 0,
+            'take_exit_one': 0,
+            'take_exit_two': 0,
+            'take_exit_three': 0,
+            'fov_x': 0,
+            'fov_y': 0,
+            'eat': 0
+        }
+
+        self.datatarget_feedback = {
+            'orientation': 0,
+            'take_exit_one': 0,
+            'take_exit_two': 0,
+            'take_exit_three': 0,
+            'fov_x': 0,
+            'fov_y': 0,
+            'eat': 0
+        }
+
+        # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
+        self.datatarget_history = {
+            'take_exit_one': 0,
+            'take_exit_two': 0,
+            'take_exit_three': 0,
+            'fov_x': 0,
+            'fov_y': 0,
+            'eat': 0
+        }
+
+        # a collection of conditions to check on every update(..), eg., for action feedback
+        self.waiting_list = []
+
+        self.target_loco_node_uid = None
+
+        self.current_loco_node = None
+
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")

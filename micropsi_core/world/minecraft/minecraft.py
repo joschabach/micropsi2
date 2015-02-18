@@ -30,6 +30,12 @@ class Minecraft(World):
         'y': 256,
     }
 
+    # thread and spock only exist once
+    instances = {
+        'spock': None,
+        'thread': None
+    }
+
     def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
@@ -61,17 +67,21 @@ class Minecraft(World):
             }
         }
 
-        # instantiate spock client, which in turn instantiates its plugins
+        # instantiate spock client if not yet done, which in turn instantiates its plugins
         # ( MicropsiPlugin sets self.spockplugin upon instantiation )
-        spock_client = Client(plugins=plugins, settings=settings)
-        # start new thread for minecraft comm" which starts spock client
-        self.minecraft_communication_thread = Thread(
-            target=spock_client.start,
-            args=(settings['server'], settings['port']))
-        # Note: client.start() is attached in StartPlugin w/ setattr(self.client, 'start', self.start)
-        self.minecraft_communication_thread.start()
-        #
-        add_signal_handler(self.kill_minecraft_thread)
+        if self.instances['spock'] is None:
+            self.instances['spock'] = Client(plugins=plugins, settings=settings)
+
+        if self.instances['thread'] is None:
+            # start new thread for minecraft comm" which starts spock client
+            thread = Thread(
+                target=self.instances['spock'].start,
+                args=(settings['server'], settings['port']))
+            # Note: client.start() is attached in StartPlugin w/ setattr(self.client, 'start', self.start)
+            thread.start()
+            self.instances['thread'] = thread
+            #
+            add_signal_handler(self.kill_minecraft_thread)
 
         # once MicropsiPlugin is instantiated and running, initialize micropsi world
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
@@ -112,7 +122,7 @@ class Minecraft(World):
         """
         """
         self.spockplugin.event.kill()
-        self.minecraft_communication_thread.join()
+        self.instances['thread'].join()
         # self.spockplugin.threadpool.shutdown(False)
 
 

@@ -1275,9 +1275,17 @@ function createCompactNodeShape(node) {
             shape = new Path([bounds.bottomRight,
                 new Point(bounds.x+bounds.width * 0.65, bounds.y),
                 new Point(bounds.x+bounds.width * 0.35, bounds.y),
-                new Point(bounds.x+bounds.width * 0.35, bounds.y),
                 bounds.bottomLeft
             ]);
+            shape.closePath();
+            break;
+        case "Trigger":
+            shape = new Path()
+            shape.add(bounds.bottomLeft)
+            shape.add(new Point(bounds.x+bounds.width * 0.10, bounds.y))
+            shape.add(new Point(bounds.x+bounds.width * 0.50, bounds.y))
+            shape.add(new Point(bounds.x+bounds.width * 0.50, bounds.y + bounds.height * 0.25))
+            shape.cubicCurveTo(new Point(bounds.x + bounds.width * 0.75, bounds.y-bounds.height * 0.2), new Point(bounds.right, bounds.y-bounds.height * 0.2), bounds.bottomRight);
             shape.closePath();
             break;
         case "Concept": // draw circle
@@ -2846,14 +2854,14 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 break;
             case "sub/sur":
                 // the sub link
-                if (targetSlots > 4) {
+                if (targetSlots > 4 || nodes[targetUid].type == "Trigger") {
                     newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "sub", 1, 1));
                 } else {
                     newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "gen", 1, 1));
                 }
                 // the sur link
-                if (targetGates > 4) {
-                    if(sourceSlots > 4) {
+                if (targetGates > 4 || nodes[targetUid].type == "Trigger") {
+                    if(sourceSlots > 4 || nodes[targetUid].type == "Trigger") {
                         newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "sur", 1, 1));
                     } else {
                         newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "gen", 1, 1));

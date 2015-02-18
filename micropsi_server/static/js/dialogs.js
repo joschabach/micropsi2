@@ -388,7 +388,8 @@ $(function() {
                 api.defaultErrorCallback(data);
                 $('#monitor_modal .btn-primary').off();
                 $('#monitor_modal').modal('hide');
-            });
+            },
+            method="post");
         });
     });
 

@@ -17,7 +17,10 @@ def register(netapi, node=None, **params):
 
 
 def sensor(netapi, node=None, datasource=None, **params):
-    datasource_value = netapi.world.get_datasource(netapi.uid, datasource)
+    if datasource in netapi.world.get_available_datasources(netapi.uid):
+        datasource_value = netapi.world.get_datasource(netapi.uid, datasource)
+    else:
+        datasource_value = netapi.get_modulator(datasource)
     node.activation = datasource_value
     node.get_gate('gen').gate_function(datasource_value)
 
@@ -26,10 +29,12 @@ def actor(netapi, node=None, datatarget=None, **params):
     if not netapi.world:
         return
     activation_to_set = node.get_slot("gen").activation
-    netapi.world.set_datatarget(netapi.uid, datatarget, activation_to_set)
-    # if activation_to_set > 0:
-        # node.activation = 1
-    feedback = netapi.world.get_datatarget_feedback(netapi.uid, datatarget)
+    if datatarget in netapi.world.get_available_datatargets(netapi.uid):
+        netapi.world.set_datatarget(netapi.uid, datatarget, activation_to_set)
+        feedback = netapi.world.get_datatarget_feedback(netapi.uid, datatarget)
+    else:
+        netapi.set_modulator(datatarget, activation_to_set)
+        feedback = 1
     if feedback is not None:
         node.get_gate('gen').gate_function(feedback)
 

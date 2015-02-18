@@ -140,6 +140,9 @@ refreshNodenetList();
 
 registerResizeHandler();
 
+globalDataSources = [];
+globalDataTargets = [];
+
 $(document).on('load_nodenet', function(event, uid){
     ns = 'Root';
     if(uid == currentNodenet){
@@ -495,6 +498,9 @@ function updateModulators(data){
     var table = $('table.modulators');
     html = '';
     var sorted = [];
+    globalDataSources = [];
+    globalDataTargets = [];
+
     for(key in data){
         sorted.push({'name': key, 'value': data[key]});
     }
@@ -502,6 +508,11 @@ function updateModulators(data){
     // display reversed to get emo_ before base_
     for(var i = sorted.length-1; i >=0; i--){
         html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button></td></tr>'
+        if(sorted[i].name.substr(0, 3) == "emo"){
+            globalDataSources.push(sorted[i].name);
+        } else {
+            globalDataTargets.push(sorted[i].name);
+        }
     }
     table.html(html);
     $('button', table).each(function(idx, button){
@@ -2403,10 +2414,8 @@ function handleContextMenu(event) {
                         var source_select = $('#select_datasource_modal select');
                         source_select.html('');
                         $("#select_datasource_modal").modal("show");
-                        var sources = worldadapters[currentWorldadapter].datasources;
-                        for(var i in sources){
-                            source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
-                        }
+                        var html = get_datasource_options(currentWorldadapter);
+                        source_select.html(html);
                         source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     };
                     break;
@@ -2417,10 +2426,8 @@ function handleContextMenu(event) {
                         var target_select = $('#select_datatarget_modal select');
                         target_select.html('');
                         $("#select_datatarget_modal").modal("show");
-                        var targets = worldadapters[currentWorldadapter].datatargets;
-                        for(var i in targets){
-                            target_select.append($('<option>', {value:targets[i]}).text(targets[i]));
-                        }
+                        var html = get_datatarget_options(currentWorldadapter);
+                        target_select.html(html);
                         target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     };
                     break;
@@ -2457,20 +2464,16 @@ function handleContextMenu(event) {
                     var source_select = $('#select_datasource_modal select');
                     source_select.html('');
                     $("#select_datasource_modal").modal("show");
-                    var sources = worldadapters[currentWorldadapter].datasources;
-                    for(var i in sources){
-                        source_select.append($('<option>', {value:sources[i]}).text(sources[i]));
-                    }
+                    var html = get_datasource_options(currentWorldadapter);
+                    source_select.html(html);
                     source_select.val(nodes[clickOriginUid].parameters['datasource']).select().focus();
                     break;
                 case "Select datatarget":
                     var target_select = $('#select_datatarget_modal select');
                     $("#select_datatarget_modal").modal("show");
                     target_select.html('');
-                    var datatargets = worldadapters[currentWorldadapter].datatargets;
-                    for(var j in datatargets){
-                        target_select.append($('<option>', {value:datatargets[j]}).text(datatargets[j]));
-                    }
+                    var html = get_datatarget_options(currentWorldadapter);
+                    target_select.html(html);
                     target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     break;
                 default:
@@ -2545,6 +2548,36 @@ function handleContextMenu(event) {
             }
     }
     view.draw();
+}
+
+function get_datasource_options(worldadapter, value){
+    var sources = worldadapters[worldadapter].datasources;
+    html = '<optgroup label="Datasources">';
+    for(var i in sources){
+        html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
+    }
+    html += '</optgroup>';
+    html += '<optgroup label="Nodenet Globals">';
+    for(var i in globalDataSources){
+        html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
+    }
+    html += '</optgroup>';
+    return html;
+}
+
+function get_datatarget_options(worldadapter, value){
+    var targets = worldadapters[worldadapter].datatargets;
+    html = '<optgroup label="Datatargets">';
+    for(var i in targets){
+        html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
+    }
+    html += '</optgroup>';
+    html += '<optgroup label="Nodenet Globals">';
+    for(var i in globalDataTargets){
+        html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
+    }
+    html += '</optgroup>';
+    return html;
 }
 
 // rearrange nodes in the current nodespace
@@ -3462,18 +3495,14 @@ function getNodeParameterHTML(parameters, parameter_values){
             switch(name){
                 case "datatarget":
                     if(currentWorldadapter in worldadapters){
-                        for(i in worldadapters[currentWorldadapter].datatargets){
-                            input += "<option"+ (value == worldadapters[currentWorldadapter].datatargets[i] ? " selected=selected" : "") +">"+worldadapters[currentWorldadapter].datatargets[i]+"</option>";
-                        }
-                        input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+input+"</select>";
+                        var opts = get_datatarget_options(currentWorldadapter, value);
+                        input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+opts+"</select>";
                     }
                     break;
                 case "datasource":
                     if(currentWorldadapter in worldadapters){
-                        for(i in worldadapters[currentWorldadapter].datasources){
-                            input += "<option"+ (value == worldadapters[currentWorldadapter].datasources[i] ? " selected=selected" : "") +">"+worldadapters[currentWorldadapter].datasources[i]+"</option>";
-                        }
-                        input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+input+"</select>";
+                        var opts = get_datasource_options(currentWorldadapter, value);
+                        input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+opts+"</select>";
                     }
                     break;
                 default:

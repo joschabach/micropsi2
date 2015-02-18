@@ -26,7 +26,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'health',
         'food',
         'temperature',
-        'food_supply'
+        'food_supply',
+        'hack_situation'
     ]
 
     supported_datatargets = [
@@ -63,6 +64,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
     forest_uid = tools.generate_uid()
     desert_outpost_uid = tools.generate_uid()
     swamp_uid = tools.generate_uid()
+
+    loco_nodes_indexes = ['home', 'underground garden', 'village', 'cathedral', 'summit', 'cloud', 'bungalow', 'farm', 'forest', 'desert outpost', 'swamp']
 
     loco_nodes[home_uid] = loco_node_template.copy()
     loco_nodes[home_uid]['name'] = "home"
@@ -207,6 +210,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'eat': 0
         }
 
+        self.datasources['hack_situation'] = -1
+
         # a collection of conditions to check on every update(..), eg., for action feedback
         self.waiting_list = []
 
@@ -266,7 +271,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # reset self.datasources
             for k in self.datasources.keys():
-                self.datasources[k] = 0.
+                if k != 'hack_situation':
+                    self.datasources[k] = 0.
 
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
@@ -408,6 +414,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # hand the agent a bread, if it just arrived at the farm, or at the village
             if target_loco_node == self.village_uid or target_loco_node == self.farm_uid:
                 self.spockplugin.give_item('bread')
+            self.datasources['hack_situation'] = self.loco_nodes_indexes.index(self.loco_nodes[target_loco_node]['name'])
             return True
         return False
 

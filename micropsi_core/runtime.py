@@ -240,7 +240,6 @@ def load_nodenet(nodenet_uid):
 
         nodenet_lock.acquire()
         if nodenet_uid not in nodenets:
-            nodenets[nodenet_uid] = None
             data = nodenet_data[nodenet_uid]
 
             if data.world:

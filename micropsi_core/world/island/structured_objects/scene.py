@@ -6,15 +6,6 @@ HALFGRID = int((GRIDSIZE-1) / 2)
 
 class Scene():
 
-    __fovea_x = 0
-    __fovea_y = 0
-
-    __shape_grid = [[0] * GRIDSIZE for i in range(GRIDSIZE)]
-    __shape_name = "none"
-
-    __world = None
-    __agent_id = None
-
     @property
     def fovea_x(self):
         return self.__fovea_x
@@ -24,6 +15,12 @@ class Scene():
         return self.__fovea_y
 
     def __init__(self, world, agent_id):
+        self.__fovea_x = 0
+        self.__fovea_y = 0
+
+        self.__shape_grid = [[0] * GRIDSIZE for i in range(GRIDSIZE)]
+        self.__shape_name = "none"
+
         self.__world = world
         self.__agent_id = agent_id
 

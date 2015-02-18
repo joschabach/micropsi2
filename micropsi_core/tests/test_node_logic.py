@@ -7,7 +7,7 @@ Tests for node activation propagation and gate arithmetic
 
 from micropsi_core import runtime as micropsi
 from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import WorldAdapter, WorldObject
+from micropsi_core.world.worldadapter import WorldAdapter
 
 
 class DummyWorld(World):
@@ -22,12 +22,14 @@ class DummyWorld(World):
 
 class DummyWorldAdapter(WorldAdapter):
 
-    datasources = {'test_source': 0.7}
-    datatargets = {'test_target': 0}
-    datatarget_feedback = {'test_target': 0.3}
+    supported_datasources = ['test_source']
+    supported_datatargets = ['test_target']
 
     def __init__(self, world, uid=None, **data):
-        WorldObject.__init__(self, world, category='agents', uid=uid, **data)
+        WorldAdapter.__init__(self, world, uid=uid, **data)
+        self.datasources = {'test_source': 0.7}
+        self.datatargets = {'test_target': 0}
+        self.datatarget_feedback = {'test_target': 0.3}
 
     def update(self):
         self.world.test_target_value = self.datatargets['test_target']

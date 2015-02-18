@@ -8,6 +8,37 @@ from functools import partial
 
 class MinecraftGraphLocomotion(WorldAdapter):
 
+    supported_datasources = [
+        'nothing',  # -1
+        'air',
+        'stone',    # 1, 4, 7, 24 ( sand stone )
+        'grass',    # 2
+        'dirt',     # 3
+        'wood',     # 5, 17
+        'water',    # 8, 9
+        'sand',     # 12
+        'gravel',   # 13
+        'leaves',   # 18
+        'solids',   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
+        'otter',    # miscellaneous /otter
+        'fov_x',    # fovea sensors receive their input from the fovea actors
+        'fov_y',
+        'health',
+        'food',
+        'temperature',
+        'food_supply'
+    ]
+
+    supported_datatargets = [
+        'orientation',
+        'take_exit_one',
+        'take_exit_two',
+        'take_exit_three',
+        'fov_x',
+        'fov_y',
+        'eat'
+    ]
+
     loco_node_template = {
         'uid': "",
         'name': "",
@@ -155,39 +186,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def __init__(self, world, uid=None, **data):
         super(MinecraftGraphLocomotion, self).__init__(world, uid, **data)
-
-        self.datasources = {
-            'nothing': 0,  # -1
-            'air': 0,      # 0
-            'stone': 0,    # 1, 4, 7, 24 ( sand stone )
-            'grass': 0,    # 2
-            'dirt': 0,     # 3
-            'wood': 0,     # 5, 17
-            'water': 0,    # 8, 9
-            'sand': 0,     # 12
-            'gravel': 0,   # 13
-            'leaves': 0,   # 18
-            'solids': 0,   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
-            'otter': 0,    # miscellaneous /otter
-
-            'fov_x': 0,    # fovea sensors receive their input from the fovea actors
-            'fov_y': 0,
-
-            'health': 1,
-            'food': 1,
-            'temperature': 1,
-            'food_supply': 0
-        }
-
-        self.datatargets = {
-            'orientation': 0,
-            'take_exit_one': 0,
-            'take_exit_two': 0,
-            'take_exit_three': 0,
-            'fov_x': 0,
-            'fov_y': 0,
-            'eat': 0
-        }
 
         self.datatarget_feedback = {
             'orientation': 0,

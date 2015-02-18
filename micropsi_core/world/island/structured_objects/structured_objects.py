@@ -13,35 +13,30 @@ class StructuredObjects(WorldAdapter):
     shapetypes = []
     shapecolors = []
 
-    datasources = {}
-    datatargets = {'fov_x': 0, 'fov_y': 0, 'fov_reset': 0}
+    supported_datasources = ['fov-x', 'fov-y', 'major-newscene']
+    supported_datatargets = ['fov_x', 'fov_y', 'fov_reset']
 
-    currentobject = None
-    scene = None
+    for key, objecttype in OBJECTS.items():
+        for shapeline in objecttype['shape_grid']:
+            for shape in shapeline:
+                if shape is not None and shape.type not in shapetypes:
+                    shapetypes.append(shape.type)
+                if shape is not None and shape.color not in shapecolors:
+                    shapecolors.append(shape.color)
+
+    for shapetype in shapetypes:
+        supported_datasources.append('fovea-'+shapetype)
+        supported_datasources.append('presence-'+shapetype)
+
+    for shapecolor in shapecolors:
+        supported_datasources.append("fovea-"+shapecolor)
+        supported_datasources.append("presence-"+shapecolor)
 
     def __init__(self, world, uid=None, **data):
         super(StructuredObjects, self).__init__(world, uid, **data)
 
-        for key, objecttype in OBJECTS.items():
-            for shapeline in objecttype['shape_grid']:
-                for shape in shapeline:
-                    if shape is not None and shape.type not in self.shapetypes:
-                        self.shapetypes.append(shape.type)
-                    if shape is not None and shape.color not in self.shapecolors:
-                        self.shapecolors.append(shape.color)
-
-        for shapetype in self.shapetypes:
-            self.datasources["fovea-"+shapetype] = 0
-            self.datasources["presence-"+shapetype] = 0
-
-        for shapecolor in self.shapecolors:
-            self.datasources["fovea-"+shapecolor] = 0
-            self.datasources["presence-"+shapecolor] = 0
-
-        self.datasources["fov-x"] = 0
-        self.datasources["fov-y"] = 0
-
-        self.datasources["major-newscene"] = 0
+        self.currentobject = None
+        self.scene = None
 
         self.scene = Scene(world, uid)
         self.scene.load_object("PalmTree", OBJECTS["PalmTree"]["shape_grid"])

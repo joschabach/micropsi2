@@ -23,6 +23,21 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'otter',    # miscellaneous /otter
         'fov_x',    # fovea sensors receive their input from the fovea actors
         'fov_y',
+        'fov_hist__-01': 0,
+        'fov_hist__000': 0,
+        'fov_hist__001': 0,
+        'fov_hist__002': 0,
+        'fov_hist__012': 0,
+        'fov_hist__017': 0,
+        'fov_hist__018': 0,
+        'fov_hist__020': 0,
+        'fov_hist__031': 0,
+        'fov_hist__032': 0,
+        'fov_hist__078': 0,
+        'fov_hist__081': 0,
+        'fov_hist__083': 0,
+        'fov_hist__102': 0,
+        'fov_hist__106': 0,
         'health',
         'food',
         'temperature',
@@ -224,14 +239,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.logger = logging.getLogger("world")
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
 
-        # add datasources for fovea and fovea_hist
+        # add datasources for fovea
         for i in range(self.patch_len):
             for j in range(self.patch_len):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
-        for i in range(-1, 198, 1):
-            name = "fov_hist__%03d" % (i)
-            self.datasources[name] = 0
 
     def set_datasources(self, event, data):
         self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
@@ -469,13 +481,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 block_type_pooled = self.map_block_type_to_sensor(block_type)
                 # patch.append(block_type_pooled)
 
-        # write values to self.datasources['fov_hist__*']
-        # for every block type value seen in patch, count its occurrences, normalize them, write them to datasource
+        # write block type histogram values to self.datasources['fov_hist__*']
+        # for every block type seen in patch, if there's a datasource for it, fill it with its normalized frequency
         normalizer = self.patch_len ** 2
         for bt in set(patch):
             name = "fov_hist__%03d" % bt
-            self.datasources[name] = patch.count(bt) / normalizer
-            # TODO: make sure this histogram computes the same values as np.histogram(..) used in tgng/preprocess.py
+            if name in self.datasources:
+                self.datasources[name] = patch.count(bt) / normalizer
 
         # normalize block type values
         # subtract patch mean

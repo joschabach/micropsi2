@@ -1636,6 +1636,15 @@ function deselectNode(nodeUid) {
     }
 }
 
+function deselectOtherNodes(nodeUid){
+    for(var key in selection){
+        if(key != nodeUid && nodeUid in nodes){
+            deselectNode(key);
+        }
+    }
+}
+
+
 // mark node as selected, and add it to the selected nodes
 function selectLink(linkUid) {
     selection[linkUid] = links[linkUid];
@@ -1785,17 +1794,16 @@ function onMouseDown(event) {
     clickType = null;
     var p = event.point;
     clickPoint = p;
-    dragMultiples = Object.keys(selection).length > 1;
+    var selected_node_count = 0;
+    for (key in selection){
+        if(key in nodes){
+            selected_node_count ++;
+        }
+    }
+    dragMultiples = selected_node_count > 1;
     var clickedSelected = false;
     // first, check for nodes
     // we iterate over all bounding boxes, but should improve speed by maintaining an index
-    function deselectOtherNodes(nodeUid){
-        for(var key in selection){
-            if(key != node.uid && selection[key].constructor == Node){
-                deselectNode(key);
-            }
-        }
-    }
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             var node = nodes[nodeUid];
@@ -1812,7 +1820,7 @@ function onMouseDown(event) {
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
                 }
-                else if(clickedSelected && Object.keys(selection).length > 1 && isRightClick(event)){
+                else if(clickedSelected && selected_node_count > 1 && isRightClick(event)){
                     openMultipleNodesContextMenu(event.event);
                     return;
                 }
@@ -2641,8 +2649,10 @@ function createNativeModuleHandler(event){
         modal.modal("hide");
     } else {
         var html = '';
-        for(var key in native_modules){
-            html += '<option>'+ key +'</option>';
+        for(var idx in sorted_nodetypes){
+            if(sorted_nodetypes[idx] in native_modules){
+                html += '<option>'+ sorted_nodetypes[idx] +'</option>';
+            }
         }
         $('[data-native-module-type]', modal).html(html);
         $('#native_module_name').val('');

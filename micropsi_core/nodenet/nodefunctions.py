@@ -234,7 +234,9 @@ def trigger(netapi, node=None, sheaf="default", **params):
         if node.get_slot('sub').activation > 0:
             timeout = node.get_parameter("timeout") or 10        # todo: use emo_resolution
             condition = node.get_parameter("condition") or "="
-            response = node.get_parameter("response") or 1
+            response = node.get_parameter("response")
+            if response is None:
+                response = 1
             currentstep = netapi.step
 
             success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \

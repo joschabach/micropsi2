@@ -2641,8 +2641,10 @@ function createNativeModuleHandler(event){
         modal.modal("hide");
     } else {
         var html = '';
-        for(var key in native_modules){
-            html += '<option>'+ key +'</option>';
+        for(var idx in sorted_nodetypes){
+            if(sorted_nodetypes[idx] in native_modules){
+                html += '<option>'+ sorted_nodetypes[idx] +'</option>';
+            }
         }
         $('[data-native-module-type]', modal).html(html);
         $('#native_module_name').val('');

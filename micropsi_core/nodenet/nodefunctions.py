@@ -144,6 +144,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     if node.get_slot("ret").get_activation(sheaf) < 0:
         sur = 0
+    if node.get_slot("por").empty and not node.get_slot("ret").empty and sur > 0:
+        sur = 0                                                             # first nodes in scripts can never report sur
     if node.get_slot("por").get_activation(sheaf) <= 0 and not node.get_slot("por").empty:
         sur = 0
 
@@ -160,7 +162,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur < -1:
         sur = -1
 
-    por += node.get_slot("sur").get_activation(sheaf)
+    por += node.get_slot("sur").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
     por *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
@@ -168,6 +170,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por > 0: por = 1
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
+    ret -= node.get_slot("por").get_activation(sheaf)
     if node.get_slot("por").get_activation(sheaf) >= 0:
         ret -= node.get_slot("sub").get_activation(sheaf)
     if ret > 1:

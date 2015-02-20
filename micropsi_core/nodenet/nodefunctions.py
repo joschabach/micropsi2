@@ -131,6 +131,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     sub += max(node.get_slot("sur").get_activation(sheaf), 0)
     sub += node.get_slot("sub").get_activation(sheaf)
+    sub += node.get_slot("cat").get_activation(sheaf)
     sub *= max(node.get_slot("por").get_activation(sheaf), 0) if not node.get_slot("por").empty else 1
     sub *= 0 if node.get_slot("gen").get_activation(sheaf) != 0 else 1
     if sub > 0: sub = 1
@@ -212,7 +213,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
     node.get_gate("exp").gate_function(exp, sheaf)
-    if cat > 0 and sub > 0:     # cats will be checked in their own sheaf
+    if cat > 0 and node.get_slot("sub").get_activation(sheaf) > 0:     # cats will be checked in their own sheaf
         node.get_gate("cat").open_sheaf(cat, sheaf)
         node.get_gate("cat").gate_function(0, sheaf)
     else:

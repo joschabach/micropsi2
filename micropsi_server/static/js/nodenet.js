@@ -2921,7 +2921,7 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                 // the exp link
                 if (targetGates > 6) {
                     if(sourceSlots > 6) {
-                        newlinks.push(createLinkIfNotExists(targetNode, "cat", sourceNode, "cat", 1, 1));
+                        newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "exp", 1, 1));
                     } else {
                         newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "gen", 1, 1));
                     }

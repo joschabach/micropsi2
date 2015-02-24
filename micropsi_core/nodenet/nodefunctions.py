@@ -30,7 +30,7 @@ def actor(netapi, node=None, datatarget=None, sheaf="default", **params):
         return
     activation_to_set = node.get_slot("gen").get_activation(sheaf)
     if datatarget in netapi.world.get_available_datatargets(netapi.uid):
-        netapi.world.set_datatarget(netapi.uid, datatarget, activation_to_set)
+        netapi.world.add_to_datatarget(netapi.uid, datatarget, activation_to_set)
         feedback = netapi.world.get_datatarget_feedback(netapi.uid, datatarget)
     else:
         netapi.set_modulator(datatarget, activation_to_set)

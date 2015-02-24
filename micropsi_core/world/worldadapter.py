@@ -71,10 +71,10 @@ class WorldAdapter(WorldObject):
         """allows the agent to read a value from a datasource"""
         return self.datasource_snapshots.get(key)
 
-    def set_datatarget(self, key, value):
+    def add_to_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:
-            self.datatargets[key] = value
+            self.datatargets[key] += value
 
     def get_datatarget_feedback(self, key):
         """get feedback whether the actor-induced action succeeded"""

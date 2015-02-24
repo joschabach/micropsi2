@@ -25,10 +25,10 @@ def sensor(netapi, node=None, datasource=None, **params):
     node.get_gate('gen').gate_function(datasource_value)
 
 
-def actor(netapi, node=None, datatarget=None, **params):
+def actor(netapi, node=None, datatarget=None, sheaf="default", **params):
     if not netapi.world:
         return
-    activation_to_set = node.get_slot("gen").activation
+    activation_to_set = node.get_slot("gen").get_activation(sheaf)
     if datatarget in netapi.world.get_available_datatargets(netapi.uid):
         netapi.world.set_datatarget(netapi.uid, datatarget, activation_to_set)
         feedback = netapi.world.get_datatarget_feedback(netapi.uid, datatarget)

@@ -57,7 +57,7 @@ class StructuredObjects(WorldAdapter):
         else:
             return WorldAdapter.get_datasource(self, key)
 
-    def update(self):
+    def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
         # we don't move, for now

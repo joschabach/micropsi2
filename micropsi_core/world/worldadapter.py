@@ -84,9 +84,14 @@ class WorldAdapter(WorldObject):
         """set feedback for the given datatarget"""
         self.datatarget_feedback[key] = value
 
-    # world facing methods:
     def update(self):
-        """called by the world to update datasources"""
+        """ Called by the world at each world iteration """
+        self.update_data_sources_and_targets()
+        for datatarget in self.supported_datatargets:
+            self.datatargets[datatarget] = 0
+
+    def update_data_sources_and_targets(self):
+        """must be implemented by concrete world adapters to read datatargets and fill datasources"""
         pass
 
     def is_alive(self):

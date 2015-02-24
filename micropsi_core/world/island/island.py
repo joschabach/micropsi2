@@ -314,7 +314,7 @@ class Survivor(WorldAdapter):
         if not "position" in data:
             self.position = self.world.groundmap['start_position']
 
-    def update(self):
+    def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
         if self.is_dead:
@@ -428,7 +428,7 @@ class Braitenberg(WorldAdapter):
         if not "position" in data:
             self.position = self.world.groundmap['start_position']
 
-    def update(self):
+    def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
         # drive engines

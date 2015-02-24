@@ -27,7 +27,7 @@ class DictPropagate(Propagate):
                     for sheaf in gate.sheaves:
                         for link in gate.get_links():
                             for slotname in link.target_node.get_slot_types():
-                                if sheaf not in link.target_node.get_slot(slotname).sheaves and link.target_node.type != "Actor":
+                                if sheaf not in link.target_node.get_slot(slotname).sheaves:
                                     link.target_node.get_slot(slotname).sheaves[sheaf] = dict(
                                         uid=gate.sheaves[sheaf]['uid'],
                                         name=gate.sheaves[sheaf]['name'],

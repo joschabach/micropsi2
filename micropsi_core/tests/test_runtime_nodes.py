@@ -173,3 +173,12 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     remove(path.join(resourcepath, 'nodefunctions.py'))
     micropsi.reload_native_modules(fixed_nodenet)
     assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
+
+
+def test_node_parameters_none(fixed_nodenet):
+    nodenet = micropsi.nodenets[fixed_nodenet]
+    micropsi.add_node(fixed_nodenet, 'Trigger', [30, 30], uid='testtrigger', name='test')
+    node = nodenet.netapi.get_node('testtrigger')
+    micropsi.set_node_parameters(fixed_nodenet, node.uid, {'response': '', 'timeout': 0})
+    assert node.get_parameter('response') is None
+    assert node.get_parameter('timeout') == 0

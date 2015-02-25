@@ -334,10 +334,10 @@ class World(object):
             return self.agents[nodenet_uid].get_datasource(key)
         return None
 
-    def set_datatarget(self, nodenet_uid, key, value):
+    def add_to_datatarget(self, nodenet_uid, key, value):
         """allows the nodenet to write a value to a datatarget"""
         if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].set_datatarget(key, value)
+            return self.agents[nodenet_uid].add_to_datatarget(key, value)
 
     def get_datatarget_feedback(self, nodenet_uid, key):
         """reads the feedback-value for a given datatarget from the worldadapter"""

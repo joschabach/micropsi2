@@ -169,7 +169,9 @@ class DictNode(NetEntity, Node):
                     self.sheaves[sheaf_id] = sheaves_to_calculate[sheaf_id].copy()
                     self.set_sheaf_activation(0, sheaf_id)
 
-                # and actually calculate new values for them
+            # and actually calculate new values for them
+            for sheaf_id in sheaves_to_calculate:
+
                 try:
                     self.nodetype.nodefunction(netapi=self.nodenet.netapi, node=self, sheaf=sheaf_id, **self.__parameters)
                 except Exception:

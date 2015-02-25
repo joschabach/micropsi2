@@ -71,10 +71,10 @@ class WorldAdapter(WorldObject):
         """allows the agent to read a value from a datasource"""
         return self.datasource_snapshots.get(key)
 
-    def set_datatarget(self, key, value):
+    def add_to_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:
-            self.datatargets[key] = value
+            self.datatargets[key] += value
 
     def get_datatarget_feedback(self, key):
         """get feedback whether the actor-induced action succeeded"""
@@ -84,9 +84,18 @@ class WorldAdapter(WorldObject):
         """set feedback for the given datatarget"""
         self.datatarget_feedback[key] = value
 
-    # world facing methods:
     def update(self):
-        """called by the world to update datasources"""
+        """ Called by the world at each world iteration """
+        self.update_data_sources_and_targets()
+        self.reset_datatargets()
+
+    def reset_datatargets(self):
+        """ resets (zeros) the datatargets """
+        for datatarget in self.supported_datatargets:
+            self.datatargets[datatarget] = 0
+
+    def update_data_sources_and_targets(self):
+        """must be implemented by concrete world adapters to read datatargets and fill datasources"""
         pass
 
     def is_alive(self):

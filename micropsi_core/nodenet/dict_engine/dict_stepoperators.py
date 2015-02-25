@@ -39,15 +39,16 @@ class DictPropagate(Propagate):
                 gate = node.get_gate(gate_type)
                 for link in gate.get_links():
                     for sheaf in gate.sheaves:
+                        targetsheaf = sheaf
                         if link.target_node.type == "Actor":
-                            sheaf = "default"
+                            targetsheaf = "default"
 
-                        if sheaf in link.target_slot.sheaves:
-                            link.target_slot.sheaves[sheaf]['activation'] += \
+                        if targetsheaf in link.target_slot.sheaves:
+                            link.target_slot.sheaves[targetsheaf]['activation'] += \
                                 float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
                         elif sheaf.endswith(link.target_node.uid):
-                            upsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
-                            link.target_slot.sheaves[upsheaf]['activation'] += \
+                            targetsheaf = sheaf[:-(len(link.target_node.uid) + 1)]
+                            link.target_slot.sheaves[targetsheaf]['activation'] += \
                                 float(gate.sheaves[sheaf]['activation']) * float(link.weight)  # TODO: where's the string coming from?
 
 

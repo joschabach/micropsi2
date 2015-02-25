@@ -348,7 +348,7 @@ class MinecraftWorldAdapter(WorldAdapter):
         self.datasources['pitch'] = self.world.spockplugin.clientinfo.position['pitch']
         self.datasources['groundtype'] = self.get_groundtype()
 
-    def update(self):
+    def update_data_sources_and_targets(self):
         """ Advances the agent's life on every cycle of the world simulation. """
         import random
 
@@ -426,7 +426,7 @@ class MinecraftBraitenberg(WorldAdapter):
         'move_z'
     ]
 
-    def update(self):
+    def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
         # find diamond
         bot_x = self.world.spockplugin.clientinfo.position['x']

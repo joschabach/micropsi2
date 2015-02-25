@@ -31,7 +31,7 @@ class DummyWorldAdapter(WorldAdapter):
         self.datatargets = {'test_target': 0}
         self.datatarget_feedback = {'test_target': 0.3}
 
-    def update(self):
+    def update_data_sources_and_targets(self):
         self.world.test_target_value = self.datatargets['test_target']
 
 

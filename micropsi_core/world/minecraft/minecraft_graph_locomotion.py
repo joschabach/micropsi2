@@ -80,7 +80,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     desert_outpost_uid = tools.generate_uid()
     swamp_uid = tools.generate_uid()
 
-    loco_nodes_indexes = ['home', 'underground garden', 'village', 'cathedral', 'summit', 'cloud', 'bungalow', 'farm', 'forest', 'desert outpost', 'swamp']
+    loco_nodes_indexes = [None, 'home', 'underground garden', 'village', 'cathedral', 'summit', 'cloud', 'bungalow', 'farm', 'forest', 'desert outpost', 'swamp']
 
     loco_nodes[home_uid] = loco_node_template.copy()
     loco_nodes[home_uid]['name'] = "home"

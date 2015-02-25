@@ -180,8 +180,11 @@ def test_actuators_do_not_reset_each_others_datatarget(test_world, test_nodenet)
     actor2.set_parameter('datatarget', 'engine_r')
     reg1 = nodenet.netapi.create_node("Register", "Root")
     reg2 = nodenet.netapi.create_node("Register", "Root")
-    reg1.node_function()
-    reg2.node_function()
+    nodenet.netapi.link(reg1, 'gen', actor1, 'gen')
+    nodenet.netapi.link(reg2, 'gen', actor2, 'gen')
+    reg1.activation = 0.7
+    reg2.activation = 0.3
+    runtime.step_nodenet(test_nodenet)
     actor1.node_function()
     actor2.node_function()
     assert world.agents[test_nodenet].datatargets['engine_r'] == 1

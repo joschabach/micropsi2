@@ -704,5 +704,21 @@ def test_autoalign(fixed_nodenet):
     assert set(positions) == set((12, 13))
 
 
+def test_copy_nodes(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node('Nodespace', 'Root', name='copy')
+    a1 = netapi.get_node('A1')
+    a2 = netapi.get_node('A2')
+    mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
+    assert a1 in mapping
+    assert a2 in mapping
+    assert a1.name == mapping[a1].name
+    assert mapping[a1].parent_nodespace == nodespace.uid
+    assert mapping[a2].parent_nodespace == nodespace.uid
+    assert set(nodespace.get_known_ids()) == set([mapping[a1].uid, mapping[a2].uid])
+    assert len(mapping[a1].get_slot('gen').get_links()) == 0  # incoming link from outside not copied
+    assert mapping[a1].get_gate('por').get_links()[0].target_node == mapping[a2]
+    assert a1.clone_parameters() == mapping[a1].clone_parameters()
+    assert a1.get_gate_parameters() == mapping[a1].get_gate_parameters()
 
-#TODO: Add locking tests once we're sure we'll keep locking, and like it is implemented now
+# TODO: Add locking tests once we're sure we'll keep locking, and like it is implemented now

@@ -800,6 +800,22 @@ class NetAPI(object):
         """
         self.__nodenet.set_modulator(modulator, value)
 
+    def copy_nodes(self, nodes, nodespace_uid):
+        """
+        Copys the given nodes into the target nodespace. Also copies the internal linkage
+        between these nodes
+        """
+        mapping = {}
+        for node in nodes:
+            new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_parameters=node.get_gate_parameters())
+            mapping[node] = self.get_node(new_uid)
+        for node in nodes:
+            for g in node.get_gate_types():
+                for l in node.get_gate(g).get_links():
+                    if l.target_node in nodes:
+                        self.link(mapping[l.source_node], l.source_gate.type, mapping[l.target_node], l.target_slot.type, weight=l.weight, certainty=l.certainty)
+        return mapping
+
     def _step(self):
         for lock in self.__locks_to_delete:
             self.__nodenet.unlock(lock)

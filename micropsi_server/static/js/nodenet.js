@@ -309,10 +309,12 @@ function setCurrentNodenet(uid, nodespace){
 
 function getNodespaceList(){
     api.call('get_nodespace_list', {nodenet_uid:currentNodenet}, function(nodespacedata){
-        nodespaces = nodespacedata;
+        var sorted = Object.values(nodespacedata);
+        sorted.sort(sortByName);
         html = '';
-        for(var uid in nodespaces){
-            html += '<li><a href="#" data-nodespace="'+uid+'">'+nodespaces[uid].name+'</a></li>';
+        for(var i=0; i < sorted.length; i++){
+            nodespaces[sorted[i].uid] = sorted[i];
+            html += '<li><a href="#" data-nodespace="'+sorted[i].uid+'">'+sorted[i].name+'</a></li>';
         }
         $('#nodespace_control ul').html(html);
         $("#current_nodespace_name").text(nodespaces[currentNodeSpace].name);

@@ -87,6 +87,10 @@ class WorldAdapter(WorldObject):
     def update(self):
         """ Called by the world at each world iteration """
         self.update_data_sources_and_targets()
+        self.reset_datatargets()
+
+    def reset_datatargets(self):
+        """ resets (zeros) the datatargets """
         for datatarget in self.supported_datatargets:
             self.datatargets[datatarget] = 0
 

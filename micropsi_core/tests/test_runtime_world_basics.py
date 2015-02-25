@@ -153,6 +153,50 @@ def test_world_does_not_spawn_deleted_agents(test_world, resourcepath):
     assert 'dummy' not in world.agents
     assert 'dummy' not in world.data['agents']
 
+
+def test_reset_datatargets(test_world, test_nodenet):
+    world = runtime.worlds[test_world]
+    nodenet = runtime.get_nodenet(test_nodenet)
+    runtime.load_nodenet(test_nodenet)
+    nodenet.world = world
+    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
+    world.agents[test_nodenet].datatargets['engine_r'] = 0.7
+    world.agents[test_nodenet].datatargets['engine_l'] = 0.2
+    world.agents[test_nodenet].reset_datatargets()
+    assert world.agents[test_nodenet].datatargets['engine_l'] == 0
+    assert world.agents[test_nodenet].datatargets['engine_r'] == 0
+
+
+def test_actuators_do_not_reset_each_others_datatarget(test_world, test_nodenet):
+    world = runtime.worlds[test_world]
+    nodenet = runtime.get_nodenet(test_nodenet)
+    runtime.load_nodenet(test_nodenet)
+    nodenet.world = world
+    runtime.set_runner_properties(200, 1)
+    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
+    actor1 = nodenet.netapi.create_node("Actor", "Root")
+    actor2 = nodenet.netapi.create_node("Actor", "Root")
+    actor1.set_parameter('datatarget', 'engine_r')
+    actor2.set_parameter('datatarget', 'engine_r')
+    reg1 = nodenet.netapi.create_node("Register", "Root")
+    reg2 = nodenet.netapi.create_node("Register", "Root")
+    reg1.node_function()
+    reg2.node_function()
+    actor1.node_function()
+    actor2.node_function()
+    assert world.agents[test_nodenet].datatargets['engine_r'] == 1
+
+
+def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
+    world = runtime.worlds[test_world]
+    nodenet = runtime.get_nodenet(test_nodenet)
+    runtime.load_nodenet(test_nodenet)
+    nodenet.world = world
+    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
+    world.agents[test_nodenet].reset_datatargets = mock.MagicMock(name='reset')
+    runtime.step_nodenet(test_nodenet)
+    world.agents[test_nodenet].reset_datatargets.assert_called_once()
+
 """
 def test_get_world_view(micropsi, test_world):
     assert 0

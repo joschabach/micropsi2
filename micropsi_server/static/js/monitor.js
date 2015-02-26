@@ -25,6 +25,9 @@ $(function(){
     if($.cookie('capturedLoggers')){
         capturedLoggers = JSON.parse($.cookie('capturedLoggers'));
     }
+    if($.cookie('currentMonitors')){
+        currentMonitors = JSON.parse($.cookie('currentMonitors'));
+    }
 
     var last_logger_call = 0;
 
@@ -172,6 +175,7 @@ $(function(){
                 currentMonitors.push(el.value);
             }
         });
+        $.cookie('currentMonitors', JSON.stringify(currentMonitors), {path:'/', expires:7})
         drawGraph(currentMonitors);
     }
 

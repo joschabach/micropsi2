@@ -115,7 +115,7 @@ class MicropsiPlugin(object):
                 temp -= (0.00166667 * (pos['y'] - 64))
             return temp
         else:
-            return 1
+            return None
 
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """

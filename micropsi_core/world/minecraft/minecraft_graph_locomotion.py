@@ -314,7 +314,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # reset self.datasources
             for k in self.datasources.keys():
-                if k != 'hack_situation':
+                if k != 'hack_situation' and k != 'temperature':
                     self.datasources[k] = 0.
 
             # reset self.datatarget_feedback

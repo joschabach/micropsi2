@@ -270,7 +270,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.sleeping = True
 
     def server_set_position(self, event, data):
-        if self.sleeping:
+        """ Interprete this as waking up, if we're sleeping, and it's morning"""
+        if self.sleeping and abs(24000 * round(self.spockplugin.world.time_of_day / 24000) - self.spockplugin.world.time_of_day) < 1200:
             self.sleeping = False
             self.last_slept = self.spockplugin.world.age
 

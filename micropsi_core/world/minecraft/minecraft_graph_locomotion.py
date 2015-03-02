@@ -4,6 +4,7 @@ import random
 import logging
 import time
 from functools import partial
+from spock.mcp.mcpacket import Packet
 
 
 class MinecraftGraphLocomotion(WorldAdapter):
@@ -42,6 +43,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'food',
         'temperature',
         'food_supply',
+        'fatigue',
         'hack_situation'
     ]
 
@@ -52,7 +54,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three',
         'fov_x',
         'fov_y',
-        'eat'
+        'eat',
+        'sleep'
     ]
 
     loco_node_template = {
@@ -212,7 +215,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'take_exit_three': 0,
             'fov_x': 0,
             'fov_y': 0,
-            'eat': 0
+            'eat': 0,
+            'sleep': 0
         }
 
         # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -222,7 +226,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'take_exit_three': 0,
             'fov_x': 0,
             'fov_y': 0,
-            'eat': 0
+            'eat': 0,
+            'sleep': 0
         }
 
         self.datasources['hack_situation'] = -1
@@ -234,16 +239,40 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         self.current_loco_node = None
 
+        self.last_slept = None
+        self.sleeping = False
+
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
+        self.spockplugin.event.reg_event_handler('PLAY<Player Position and Look', self.server_set_position)
+        self.spockplugin.event.reg_event_handler('PLAY<Use Bed', self.server_use_bed)
+        self.spockplugin.event.reg_event_handler('PLAY<Chat Message', self.server_chat_message)
 
         # add datasources for fovea
         for i in range(self.patch_len):
             for j in range(self.patch_len):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
+
+    def server_chat_message(self, event, data):
+        if data.data and 'json_data' in data.data:
+            if data.data['json_data'].get('translate') == 'tile.bed.noSleep':
+                self.datatarget_feedback['sleep'] = -1
+                self.sleeping = False
+
+    def server_use_bed(self, event, data):
+        # TODO: check if it's us, that has gone to sleep
+        # Currently however there's an issue parsing the use-bed packet from the
+        # server. we'll just assume it's us.
+        # if data.data['eid'] == self.spockplugin.clientinfo.eid
+        self.sleeping = True
+
+    def server_set_position(self, event, data):
+        if self.sleeping:
+            self.sleeping = False
+            self.last_slept = self.spockplugin.world.age
 
     def set_datasources(self, event, data):
         self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
@@ -269,6 +298,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
                         self.current_loco_node = self.loco_nodes[k]
 
+                self.last_slept = self.spockplugin.world.age
                 if self.current_loco_node is None:
                     # bot is outside our graph, teleport to a random graph location to get started.
                     target = random.choice(list(self.loco_nodes.keys()))
@@ -298,6 +328,12 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
             self.datasources['temperature'] = self.spockplugin.get_temperature()
             self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
+
+            # compute fatigue: 0.2 per half a day:
+            # timeofday = self.spockplugin.world.time_of_day % 24000
+            no_sleep = ((self.spockplugin.world.age - self.last_slept) // 6000)
+            fatigue = no_sleep * 0.2
+            self.datasources['fatigue'] = fatigue
 
             self.check_for_action_feedback()
 
@@ -343,6 +379,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     )
                 else:
                     self.datatarget_feedback['eat'] = -1.
+
+            if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
+                if self.check_movement_feedback(self.home_uid):
+                    # if self.datasources['fatigue'] > 0:
+                        # urge is only active at night, so we can sleep now:
+                    self.register_action('sleep', self.sleep, self.check_waking_up)
+                else:
+                    self.datatarget_feedback['sleep'] = -1
 
             # read fovea actors, trigger sampling, and provide action feedback
             if not (self.datatargets['fov_x'] == 0. and self.datatargets['fov_y'] == 0.):
@@ -429,6 +473,35 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['hack_situation'] = self.loco_nodes_indexes.index(self.loco_nodes[target_loco_node]['name'])
             return True
         return False
+
+    def check_waking_up(self):
+        """ Checks whether we're done sleeping.
+        Sets the datatarget_feedback to 1 and returns True if so, False otherwise"""
+        if not self.sleeping:
+            self.datatarget_feedback['sleep'] = 1
+            return True
+        return False
+
+    def sleep(self):
+        """ Attempts to use the bed located at -103/63/59"""
+        logging.getLogger('world').debug('going to sleep')
+        data = {
+            'location': {
+                'x': -103,
+                'y': 63,
+                'z': 59
+            },
+            'direction': 1,
+            'held_item': {
+                'id': 297,
+                'amount': 0,
+                'damage': 0
+            },
+            'cur_pos_x': -103,
+            'cur_pos_y': 63,
+            'cur_pos_z': 59
+        }
+        self.spockplugin.net.push(Packet(ident='PLAY>Player Block Placement', data=data))
 
     def get_visual_input(self, fov_x, fov_y):
         """

@@ -83,42 +83,44 @@ function init() {
     face_background = new THREE.Mesh( face_background_p, face_background_m );
     scene.add( face_background );
 
-    eye_l_p = new THREE.PlaneGeometry( eye_l_width, eye_l_height )
+    eye_l_p = new THREE.PlaneGeometry( eye_l_width, eye_l_height );
+    eye_l_p.dynamic = true;
     eye_l_m = new THREE.MeshBasicMaterial( { color: eye_background_color, wireframe: false } );
     eye_l = new THREE.Mesh( eye_l_p, eye_l_m );
     eye_l.position.x = eye_l_x;
     eye_l.position.y = eye_l_y;
     scene.add( eye_l );
 
-    eye_r_p = new THREE.PlaneGeometry( eye_r_width, eye_r_height )
+    eye_r_p = new THREE.PlaneGeometry( eye_r_width, eye_r_height );
+    eye_l_p.dynamic = true;
     eye_r_m = new THREE.MeshBasicMaterial( { color: eye_background_color, wireframe: false } );
     eye_r = new THREE.Mesh( eye_r_p, eye_r_m );
     eye_r.position.x = eye_r_x;
     eye_r.position.y = eye_r_y;
     scene.add( eye_r );
 
-    pup_l_p = new THREE.PlaneGeometry( pup_l_width, pup_l_height )
+    pup_l_p = new THREE.PlaneGeometry( pup_l_width, pup_l_height );
     pup_l_m = new THREE.MeshBasicMaterial( { color: pup_color, wireframe: false } );
     pup_l = new THREE.Mesh( pup_l_p, pup_l_m );
     pup_l.position.x = pup_l_x;
     pup_l.position.y = pup_l_y;
     scene.add( pup_l );
 
-    pup_r_p = new THREE.PlaneGeometry( pup_r_width, pup_r_height )
+    pup_r_p = new THREE.PlaneGeometry( pup_r_width, pup_r_height );
     pup_r_m = new THREE.MeshBasicMaterial( { color: pup_color, wireframe: false } );
     pup_r = new THREE.Mesh( pup_r_p, pup_r_m );
     pup_r.position.x = pup_r_x;
     pup_r.position.y = pup_r_y;
     scene.add( pup_r );
 
-    nose_p = new THREE.PlaneGeometry( nose_width, nose_height )
+    nose_p = new THREE.PlaneGeometry( nose_width, nose_height );
     nose_m = new THREE.MeshBasicMaterial( { color: nose_color, wireframe: false } );
     nose = new THREE.Mesh( nose_p, nose_m );
     nose.position.x = nose_x;
     nose.position.y = nose_y;
     scene.add( nose );
 
-    mouth_p = new THREE.PlaneGeometry( mouth_width, mouth_height )
+    mouth_p = new THREE.PlaneGeometry( mouth_width, mouth_height );
     mouth_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
     mouth = new THREE.Mesh( mouth_p, mouth_m );
     mouth.position.x = mouth_x;
@@ -136,7 +138,69 @@ function animate() {
 
     requestAnimationFrame( animate );
 
-    //face_background_m.uniforms["color"]["value"] = new THREE.Color( Math.random(), -0.8, -0.8 )
+    // -- face color
+
+    face_r = 0
+    face_g = 0
+    face_b = 0
+
+    // activation slightly reddens the face
+    face_r += emoexpression["exp_activation"] / 5
+
+    // anger strongly reddens the face
+    face_r += emoexpression["exp_anger"]
+    face_g -= emoexpression["exp_anger"] / 5
+    face_b -= emoexpression["exp_anger"] / 5
+
+    // fear pales the face
+    face_r -= emoexpression["exp_fear"] / 5
+    face_g -= emoexpression["exp_fear"] / 5
+    face_b -= emoexpression["exp_fear"] / 5
+
+    face_background_m.uniforms["color"]["value"] = new THREE.Color(face_r, face_g, face_b )
+
+    // -- eye height
+    eye_l_h = 1
+    eye_r_h = 1
+
+    // pain lowers eye height left and increases right
+    eye_l_h -= emoexpression["exp_pain"] / 2
+    eye_r_h += emoexpression["exp_pain"] / 2
+
+    // surprise increaes eye height
+    eye_l_h += emoexpression["exp_surprise"] * 1.2
+    eye_r_h += emoexpression["exp_surprise"] * 1.2
+
+    // anger decreases eye height
+    eye_l_h -= emoexpression["exp_anger"]
+    eye_r_h -= emoexpression["exp_anger"]
+
+    // fear increases eye height
+    eye_l_h += emoexpression["exp_fear"]
+    eye_r_h += emoexpression["exp_fear"]
+
+    eye_l.scale.y = eye_l_h;
+    eye_r.scale.y = eye_r_h;
+
+    // -- eye width
+    eye_l_w = 1
+    eye_r_w = 1
+
+    // surprise increaes eye width
+    eye_l_w += emoexpression["exp_surprise"] / 2
+    eye_r_w += emoexpression["exp_surprise"] / 2
+
+    // anger increases eye width
+    eye_l_w += emoexpression["exp_anger"] / 2
+    eye_r_w += emoexpression["exp_anger"] / 2
+
+    // fear increases eye height
+    eye_l_w += emoexpression["exp_fear"] / 2
+    eye_r_w += emoexpression["exp_fear"] / 2
+
+    eye_l.scale.x = eye_l_w;
+    eye_r.scale.x = eye_r_w;
+
 
     renderer.render( scene, camera );
 

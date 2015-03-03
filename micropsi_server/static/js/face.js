@@ -1,10 +1,9 @@
 var scene, camera, renderer;
 
-var face_base_color = new THREE.Color(0xC69680);
 var eye_background_color = new THREE.Color(0xFFFFFF);
 var pup_color = new THREE.Color(0x523D89);
-var nose_color = new THREE.Color(0x774235);
-var mouth_color = new THREE.Color(0x774235);
+var nose_color = new THREE.Color(0x694032);
+var mouth_color = new THREE.Color(0x764237);
 
 var eye_l_width = 200;
 var eye_l_height = 100;
@@ -37,6 +36,24 @@ var mouth_y = -400 + (mouth_height / 2) + 100;
 var currentNodenet = $.cookie('selected_nodenet') || '';
 var emoexpression = {}
 
+var faceVertexShader = [
+"varying vec2 vUv;",
+"void main() {",
+"vUv = uv;",
+"gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );",
+"}"
+].join("\n");
+
+var faceFragmentShader = [
+"uniform sampler2D map;",
+"uniform vec3 color;",
+"varying vec2 vUv;",
+"void main() {",
+"vec4 texel = texture2D( map, vUv );",
+"gl_FragColor = vec4( texel.xyz + color, texel.w );",
+"}"
+].join("\n")
+
 init();
 register_stepping_function('nodenet', get_nodenet_data, fetchEmoexpressionParameters)
 
@@ -49,8 +66,20 @@ function init() {
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
     camera.position.z = 2000;
 
+    texture = THREE.ImageUtils.loadTexture('/static/face/stevehead.png'),
+    textureMaterial = new THREE.ShaderMaterial();
+
     face_background_p = new THREE.PlaneGeometry( 800, 800 )
-    face_background_m = new THREE.MeshBasicMaterial( { color: face_base_color, wireframe: false } );
+    face_background_m = new THREE.ShaderMaterial({
+        uniforms: {
+            map: {type: 't', value: texture},
+            color: {type: 'c', value: new THREE.Color( 0x000000 )}
+        },
+     	vertexShader: faceVertexShader,
+        fragmentShader: faceFragmentShader,
+        transparent: false
+    });
+
     face_background = new THREE.Mesh( face_background_p, face_background_m );
     scene.add( face_background );
 
@@ -99,7 +128,7 @@ function init() {
     canvas = document.getElementById("face");
 
     renderer = new THREE.WebGLRenderer({canvas: canvas});
-    renderer.setSize( canvas.width * 2, canvas.height * 2)
+    renderer.setSize( canvas.width * 4, canvas.height * 4)
 
 }
 
@@ -107,10 +136,7 @@ function animate() {
 
     requestAnimationFrame( animate );
 
-    face_color = face_base_color.clone();
-    face_color.r = face_color.r + Math.random();
-
-    //face.material.color = face_color
+    //face_background_m.uniforms["color"]["value"] = new THREE.Color( Math.random(), -0.8, -0.8 )
 
     renderer.render( scene, camera );
 

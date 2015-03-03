@@ -38,7 +38,7 @@ var currentNodenet = $.cookie('selected_nodenet') || '';
 var emoexpression = {}
 
 init();
-register_stepping_function('nodenet', get_nodenet_data, fetch_emoexpression_parameters)
+register_stepping_function('nodenet', get_nodenet_data, fetchEmoexpressionParameters)
 
 animate();
 
@@ -96,10 +96,10 @@ function init() {
     mouth.position.y = mouth_y;
     scene.add( mouth );
 
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    canvas = document.getElementById("face");
 
-    document.getElementById("facecanvas").appendChild( renderer.domElement );
+    renderer = new THREE.WebGLRenderer({canvas: canvas});
+    renderer.setSize( canvas.width * 2, canvas.height * 2)
 
 }
 
@@ -129,8 +129,50 @@ function get_nodenet_data(){
     }
 }
 
-function fetch_emoexpression_parameters() {
+function fetchEmoexpressionParameters() {
     api.call('get_emoexpression_parameters', {nodenet_uid:currentNodenet}, success=function(data){
         emoexpression = data;
+        updateEmoexpressionParameters(data)
     });
+}
+
+function updateEmoexpressionParameters(data) {
+
+    var table = $('table.emoexpression');
+    html = '';
+    var sorted = [];
+    globalDataSources = [];
+    globalDataTargets = [];
+
+    for(key in data){
+        sorted.push({'name': key, 'value': data[key]});
+    }
+    sorted.sort(sortByName);
+    // display reversed to get emo_ before base_
+    for(var i = sorted.length-1; i >=0; i--){
+        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><!--button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button--></td></tr>'
+        if(sorted[i].name.substr(0, 3) == "emo"){
+            globalDataSources.push(sorted[i].name);
+        } else {
+            globalDataTargets.push(sorted[i].name);
+        }
+    }
+    table.html(html);
+    /*
+    $('button', table).each(function(idx, button){
+        $(button).on('click', function(evt){
+            evt.preventDefault();
+            var mod = $(button).attr('data');
+            api.call('add_modulator_monitor', {
+                    nodenet_uid: currentNodenet,
+                    modulator: mod,
+                    name: mod
+                }, function(data){
+                    dialogs.notification('Monitor added', 'success');
+                    $(document).trigger('monitorsChanged', data);
+                }
+            );
+        });
+    });
+    */
 }

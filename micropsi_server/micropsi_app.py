@@ -673,6 +673,17 @@ def create_worldadapter_selector(world_uid):
         nodenets=nodenets, worlds=worlds)
 
 
+@micropsi_app.route("/face")
+@micropsi_app.route("/face/<agent>")
+def show_face(agent=None):
+    user_id, permissions, token = get_request_data()
+    if agent is None:
+        nodenets = runtime.get_available_nodenets()
+        agent = nodenets[0].name
+    return template("viewer", mode="face", agent=agent, user_id=user_id, permissions=permissions, token=token, version=VERSION)
+
+
+
 #################################################################
 #
 #

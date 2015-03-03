@@ -14,7 +14,7 @@
     %include world  mine=mine,others=others,current=current,world_assets=world_assets
 % end
 %if mode == "face":
-    %include face  agent=agent
+    %include face
 % end
 
 %if mode == "all":

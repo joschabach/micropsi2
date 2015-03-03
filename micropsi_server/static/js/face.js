@@ -34,7 +34,12 @@ var mouth_height = 100;
 var mouth_x = -400 + (mouth_width / 2) + 200;
 var mouth_y = -400 + (mouth_height / 2) + 100;
 
+var currentNodenet = $.cookie('selected_nodenet') || '';
+var emoexpression = {}
+
 init();
+register_stepping_function('nodenet', get_nodenet_data, fetch_emoexpression_parameters)
+
 animate();
 
 function init() {
@@ -109,4 +114,23 @@ function animate() {
 
     renderer.render( scene, camera );
 
+}
+
+function get_nodenet_data(){
+    return {
+        'nodespace': "Root",
+        'step': 0,              // todo: do we need to know the current netstep -1?
+        'coordinates': {
+            x1: 0,
+            x2: 0,
+            y1: 0,
+            y2: 0
+        }
+    }
+}
+
+function fetch_emoexpression_parameters() {
+    api.call('get_emoexpression_parameters', {nodenet_uid:currentNodenet}, success=function(data){
+        emoexpression = data;
+    });
 }

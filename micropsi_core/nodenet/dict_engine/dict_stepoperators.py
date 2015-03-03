@@ -93,11 +93,11 @@ class DictPORRETDecay(StepOperator):
                 porgate = node.get_gate('por')
                 pordecay = porgate.get_parameter('decay')
                 if pordecay is not None and pordecay > 0:
-                    for link in porgate.links:
+                    for link in porgate.get_links():
                         linkdelta = - pordecay
 
                         if link.weight > 0:
-                            link.weight = max(link.weight + linkdelta, 0)
+                            link.set_weight(max(link.weight + linkdelta, 0))
                         if link.weight == 0:
                             obsoletelinks.append(link)
         for link in obsoletelinks:

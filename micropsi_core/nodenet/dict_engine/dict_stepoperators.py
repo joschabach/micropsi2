@@ -86,12 +86,12 @@ class DictPORRETDecay(StepOperator):
 
     def execute(self, nodenet, nodes, netapi):
         obsoletelinks = []
-        for node in nodes:
+        for uid, node in nodes.items():
             if node.type in ['Concept', 'Script', 'Pipe']:
                 confirmation = node.get_gate('gen').activation
 
                 porgate = node.get_gate('por')
-                pordecay = porgate.get_gate_parameter('decay')
+                pordecay = porgate.get_parameter('decay')
                 if pordecay is not None and pordecay > 0:
                     for link in porgate.links:
                         linkdelta = - pordecay

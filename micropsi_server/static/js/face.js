@@ -29,7 +29,7 @@ var nose_x = -400 + (nose_width / 2) + 300;
 var nose_y = -400 + (nose_height / 2) + 200;
 
 var upper_lip_width = 400;
-var upper_lip_height = 50;
+var upper_lip_height = 45;
 var upper_lip_x = -400 + (upper_lip_width / 2) + 200;
 var upper_lip_y = -400 + (upper_lip_height / 2) + 145;
 
@@ -39,12 +39,12 @@ var lower_lip_x = -400 + (lower_lip_width / 2) + 200;
 var lower_lip_y = -400 + (lower_lip_height / 2) + 100;
 
 var corner_l_width = 50;
-var corner_l_height = 100;
+var corner_l_height = 90;
 var corner_l_x = -400 + (corner_l_width / 2) + 200;
 var corner_l_y = -400 + (corner_l_height / 2) + 100;
 
 var corner_r_width = 50;
-var corner_r_height = 100;
+var corner_r_height = 90;
 var corner_r_x = -400 + (corner_r_width / 2) + 550;
 var corner_r_y = -400 + (corner_r_height / 2) + 100;
 
@@ -185,16 +185,32 @@ function animate() {
     face_r += emoexpression["exp_activation"] / 5;
 
     // anger strongly reddens the face
-    face_r += emoexpression["exp_anger"];
-    face_g -= emoexpression["exp_anger"] / 5;
-    face_b -= emoexpression["exp_anger"] / 5;
+    face_r += emoexpression["exp_anger"] / 3;
+    face_g -= emoexpression["exp_anger"] / 10;
+    face_b -= emoexpression["exp_anger"] / 10;
 
     // fear pales the face
     face_r -= emoexpression["exp_fear"] / 5;
     face_g -= emoexpression["exp_fear"] / 5;
     face_b -= emoexpression["exp_fear"] / 5;
 
+    // pain greens the face
+    face_r -= emoexpression["exp_pain"] / 20;
+    face_g += emoexpression["exp_pain"] / 20;
+    face_b -= emoexpression["exp_pain"] / 20;
+
+
     face_background_m.uniforms["color"]["value"] = new THREE.Color(face_r, face_g, face_b );
+
+
+    // -- pupil position
+    pup_depressor = 0
+    pup_depressor += emoexpression["exp_sadness"];
+
+    pup_l.position.y = pup_l_y - pup_depressor * 30;
+    pup_r.position.y = pup_r_y - pup_depressor * 30;
+    pup_l.scale.y = 1-(pup_depressor / 2);
+    pup_r.scale.y = 1-(pup_depressor / 2);
 
 
     // -- eye height
@@ -210,8 +226,8 @@ function animate() {
     eye_r_h += emoexpression["exp_surprise"] * 1.8;
 
     // anger decreases eye height
-    eye_l_h -= emoexpression["exp_anger"];
-    eye_r_h -= emoexpression["exp_anger"];
+    eye_l_h -= emoexpression["exp_anger"] / 2;
+    eye_r_h -= emoexpression["exp_anger"] / 2;
 
     // fear increases eye height
     eye_l_h += emoexpression["exp_fear"];
@@ -247,54 +263,55 @@ function animate() {
     // surprise increaes eye position
     eye_raiser += emoexpression["exp_surprise"] * 40;
 
-    eye_l.position.y = eye_l_y + eye_raiser
-    eye_r.position.y = eye_r_y + eye_raiser
-
-
-    // -- lower lip depressor
-    lower_lip_depresspor = 0;
-
-    lower_lip_depresspor += emoexpression["exp_surprise"] * 50;
-    lower_lip_depresspor += emoexpression["exp_sadness"] * 50;
-    lower_lip_depresspor += emoexpression["exp_joy"] * 50;
-    if(lower_lip_depresspor > 50) {
-        lower_lip_depresspor = 50;
-    }
-
-    lower_lip.position.y = lower_lip_y - lower_lip_depresspor;
-
-
-    // -- lip presser
-    lip_presser = 0;
-    lip_depressor = 0;
-
-    lip_presser += emoexpression["exp_pain"] * 0.5;
-    lip_presser += emoexpression["exp_anger"] * 0.5;
-    lip_presser += emoexpression["exp_fear"] * 0.5;
-
-    if(lip_presser > 1) {
-        lip_depressor = lower_lip_depresspor;
-    }
-
-    upper_lip.scale.y = (1-lip_presser);
-    lower_lip.scale.y = (1-lip_presser);
-    upper_lip.scale.x = (1-(lip_presser / 4));
-    lower_lip.scale.x = (1-(lip_presser / 4));
-
-    upper_lip.position.y = upper_lip_y - lip_depressor;
+    eye_l.position.y = eye_l_y + eye_raiser;
+    eye_r.position.y = eye_r_y + eye_raiser;
 
 
     // -- lip corners
     lip_corner_depressor = 0
 
     // sadness depresses lip corners
-    lip_corner_depressor -= emoexpression["exp_sadness"] * 50;
+    lip_corner_depressor -= emoexpression["exp_sadness"] * 40;
 
     // joy raises 'em
-    lip_corner_depressor += emoexpression["exp_joy"] * 50;
+    lip_corner_depressor += emoexpression["exp_joy"] * 20;
 
-    corner_l.position.y = corner_l_y + lip_corner_depressor;
-    corner_r.position.y = corner_r_y + lip_corner_depressor;
+    corner_l.position.y = (corner_l_y + lip_corner_depressor);
+    corner_r.position.y = (corner_r_y + lip_corner_depressor);
+
+    // -- lip presser
+    lip_presser = 0;
+
+    lip_presser += emoexpression["exp_pain"] * 0.5;
+    lip_presser += emoexpression["exp_anger"] * 0.5;
+    lip_presser += emoexpression["exp_fear"] * 0.5;
+    lip_presser += emoexpression["exp_joy"] * 0.2;
+
+    upper_lip.scale.y = (1-lip_presser);
+    lower_lip.scale.y = (1-lip_presser);
+    upper_lip.scale.x = (1-(lip_presser / 4));
+    lower_lip.scale.x = (1-(lip_presser / 4));
+    corner_l.scale.y = (1-lip_presser);
+    corner_r.scale.y = (1-lip_presser);
+    corner_l.scale.x = (1-lip_presser);
+    corner_r.scale.x = (1-lip_presser);
+
+    lower_lip.position.y = lower_lip_y - lip_presser * 20;
+    upper_lip.position.y = upper_lip_y - lip_presser * 80;
+
+    corner_l.position.y = corner_l.position.y - lip_presser * 50;
+    corner_r.position.y = corner_r.position.y - lip_presser * 50;
+
+
+    // -- lower lip depressor
+    lower_lip_depressor = 0;
+
+    lower_lip_depressor += emoexpression["exp_surprise"] * 50;
+    if(lower_lip_depressor > 50) {
+        lower_lip_depressor = 50;
+    }
+
+    lower_lip.position.y = lower_lip.position.y - lower_lip_depressor;
 
 
     renderer.render( scene, camera );
@@ -326,8 +343,6 @@ function updateEmoexpressionParameters(data) {
     var table = $('table.emoexpression');
     html = '';
     var sorted = [];
-    globalDataSources = [];
-    globalDataTargets = [];
 
     for(key in data){
         sorted.push({'name': key, 'value': data[key]});
@@ -335,12 +350,8 @@ function updateEmoexpressionParameters(data) {
     sorted.sort(sortByName);
     // display reversed to get emo_ before base_
     for(var i = sorted.length-1; i >=0; i--){
-        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><!--button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button--></td></tr>'
-        if(sorted[i].name.substr(0, 3) == "emo"){
-            globalDataSources.push(sorted[i].name);
-        } else {
-            globalDataTargets.push(sorted[i].name);
-        }
+        //alert(sorted[i].value);
+        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><!--button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button--><button class="btn btn-mini" data="'+sorted[i].name+'">test</button></td></tr>'
     }
     table.html(html);
     /*
@@ -360,4 +371,15 @@ function updateEmoexpressionParameters(data) {
         });
     });
     */
+    $('button', table).each(function(idx, button){
+        $(button).on('click', function(evt){
+            evt.preventDefault();
+            var mod = $(button).attr('data');
+            var newval =  prompt("new value for" + data, emoexpression[mod]);
+            emoexpression[mod] = parseFloat(newval);
+            updateEmoexpressionParameters(emoexpression);
+            animate();
+        });
+    });
+
 }

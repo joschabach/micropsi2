@@ -28,10 +28,26 @@ var nose_height = 100;
 var nose_x = -400 + (nose_width / 2) + 300;
 var nose_y = -400 + (nose_height / 2) + 200;
 
-var mouth_width = 400;
-var mouth_height = 100;
-var mouth_x = -400 + (mouth_width / 2) + 200;
-var mouth_y = -400 + (mouth_height / 2) + 100;
+var upper_lip_width = 400;
+var upper_lip_height = 50;
+var upper_lip_x = -400 + (upper_lip_width / 2) + 200;
+var upper_lip_y = -400 + (upper_lip_height / 2) + 145;
+
+var lower_lip_width = 400;
+var lower_lip_height = 50;
+var lower_lip_x = -400 + (lower_lip_width / 2) + 200;
+var lower_lip_y = -400 + (lower_lip_height / 2) + 100;
+
+var corner_l_width = 50;
+var corner_l_height = 100;
+var corner_l_x = -400 + (corner_l_width / 2) + 200;
+var corner_l_y = -400 + (corner_l_height / 2) + 100;
+
+var corner_r_width = 50;
+var corner_r_height = 100;
+var corner_r_x = -400 + (corner_r_width / 2) + 550;
+var corner_r_y = -400 + (corner_r_height / 2) + 100;
+
 
 var currentNodenet = $.cookie('selected_nodenet') || '';
 var emoexpression = {}
@@ -120,12 +136,33 @@ function init() {
     nose.position.y = nose_y;
     scene.add( nose );
 
-    mouth_p = new THREE.PlaneGeometry( mouth_width, mouth_height );
-    mouth_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
-    mouth = new THREE.Mesh( mouth_p, mouth_m );
-    mouth.position.x = mouth_x;
-    mouth.position.y = mouth_y;
-    scene.add( mouth );
+    upper_lip_p = new THREE.PlaneGeometry( upper_lip_width, upper_lip_height );
+    upper_lip_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
+    upper_lip = new THREE.Mesh( upper_lip_p, upper_lip_m );
+    upper_lip.position.x = upper_lip_x;
+    upper_lip.position.y = upper_lip_y;
+    scene.add( upper_lip );
+
+    lower_lip_p = new THREE.PlaneGeometry(  lower_lip_width,  lower_lip_height );
+    lower_lip_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
+    lower_lip = new THREE.Mesh( lower_lip_p, lower_lip_m );
+    lower_lip.position.x = lower_lip_x;
+    lower_lip.position.y = lower_lip_y;
+    scene.add( lower_lip );
+
+    corner_l_p = new THREE.PlaneGeometry(  corner_l_width,  corner_l_height );
+    corner_l_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
+    corner_l = new THREE.Mesh( corner_l_p, corner_l_m );
+    corner_l.position.x = corner_l_x;
+    corner_l.position.y = corner_l_y;
+    scene.add( corner_l );
+
+    corner_r_p = new THREE.PlaneGeometry(  corner_r_width,  corner_r_height );
+    corner_r_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
+    corner_r = new THREE.Mesh( corner_r_p, corner_r_m );
+    corner_r.position.x = corner_r_x;
+    corner_r.position.y = corner_r_y;
+    scene.add( corner_r );
 
     canvas = document.getElementById("face");
 
@@ -140,66 +177,124 @@ function animate() {
 
     // -- face color
 
-    face_r = 0
-    face_g = 0
-    face_b = 0
+    face_r = 0;
+    face_g = 0;
+    face_b = 0;
 
     // activation slightly reddens the face
-    face_r += emoexpression["exp_activation"] / 5
+    face_r += emoexpression["exp_activation"] / 5;
 
     // anger strongly reddens the face
-    face_r += emoexpression["exp_anger"]
-    face_g -= emoexpression["exp_anger"] / 5
-    face_b -= emoexpression["exp_anger"] / 5
+    face_r += emoexpression["exp_anger"];
+    face_g -= emoexpression["exp_anger"] / 5;
+    face_b -= emoexpression["exp_anger"] / 5;
 
     // fear pales the face
-    face_r -= emoexpression["exp_fear"] / 5
-    face_g -= emoexpression["exp_fear"] / 5
-    face_b -= emoexpression["exp_fear"] / 5
+    face_r -= emoexpression["exp_fear"] / 5;
+    face_g -= emoexpression["exp_fear"] / 5;
+    face_b -= emoexpression["exp_fear"] / 5;
 
-    face_background_m.uniforms["color"]["value"] = new THREE.Color(face_r, face_g, face_b )
+    face_background_m.uniforms["color"]["value"] = new THREE.Color(face_r, face_g, face_b );
+
 
     // -- eye height
-    eye_l_h = 1
-    eye_r_h = 1
+    eye_l_h = 1;
+    eye_r_h = 1;
 
     // pain lowers eye height left and increases right
-    eye_l_h -= emoexpression["exp_pain"] / 2
-    eye_r_h += emoexpression["exp_pain"] / 2
+    eye_l_h -= emoexpression["exp_pain"] / 2;
+    eye_r_h += emoexpression["exp_pain"] / 2;
 
     // surprise increaes eye height
-    eye_l_h += emoexpression["exp_surprise"] * 1.2
-    eye_r_h += emoexpression["exp_surprise"] * 1.2
+    eye_l_h += emoexpression["exp_surprise"] * 1.8;
+    eye_r_h += emoexpression["exp_surprise"] * 1.8;
 
     // anger decreases eye height
-    eye_l_h -= emoexpression["exp_anger"]
-    eye_r_h -= emoexpression["exp_anger"]
+    eye_l_h -= emoexpression["exp_anger"];
+    eye_r_h -= emoexpression["exp_anger"];
 
     // fear increases eye height
-    eye_l_h += emoexpression["exp_fear"]
-    eye_r_h += emoexpression["exp_fear"]
+    eye_l_h += emoexpression["exp_fear"];
+    eye_r_h += emoexpression["exp_fear"];
 
     eye_l.scale.y = eye_l_h;
     eye_r.scale.y = eye_r_h;
 
-    // -- eye width
-    eye_l_w = 1
-    eye_r_w = 1
 
-    // surprise increaes eye width
-    eye_l_w += emoexpression["exp_surprise"] / 2
-    eye_r_w += emoexpression["exp_surprise"] / 2
+    // -- eye width
+    eye_l_w = 1;
+    eye_r_w = 1;
+
+    // surprise decreases eye width, slightly
+    eye_l_w -= emoexpression["exp_surprise"] / 5;
+    eye_r_w -= emoexpression["exp_surprise"] / 5;
 
     // anger increases eye width
-    eye_l_w += emoexpression["exp_anger"] / 2
-    eye_r_w += emoexpression["exp_anger"] / 2
+    eye_l_w += emoexpression["exp_anger"] / 2;
+    eye_r_w += emoexpression["exp_anger"] / 2;
 
-    // fear increases eye height
-    eye_l_w += emoexpression["exp_fear"] / 2
-    eye_r_w += emoexpression["exp_fear"] / 2
+    // fear increases eye width
+    eye_l_w += emoexpression["exp_fear"] / 2;
+    eye_r_w += emoexpression["exp_fear"] / 2;
 
     eye_l.scale.x = eye_l_w;
     eye_r.scale.x = eye_r_w;
+
+
+    // -- eye position
+    eye_raiser = 0
+
+    // surprise increaes eye position
+    eye_raiser += emoexpression["exp_surprise"] * 40;
+
+    eye_l.position.y = eye_l_y + eye_raiser
+    eye_r.position.y = eye_r_y + eye_raiser
+
+
+    // -- lower lip depressor
+    lower_lip_depresspor = 0;
+
+    lower_lip_depresspor += emoexpression["exp_surprise"] * 50;
+    lower_lip_depresspor += emoexpression["exp_sadness"] * 50;
+    lower_lip_depresspor += emoexpression["exp_joy"] * 50;
+    if(lower_lip_depresspor > 50) {
+        lower_lip_depresspor = 50;
+    }
+
+    lower_lip.position.y = lower_lip_y - lower_lip_depresspor;
+
+
+    // -- lip presser
+    lip_presser = 0;
+    lip_depressor = 0;
+
+    lip_presser += emoexpression["exp_pain"] * 0.5;
+    lip_presser += emoexpression["exp_anger"] * 0.5;
+    lip_presser += emoexpression["exp_fear"] * 0.5;
+
+    if(lip_presser > 1) {
+        lip_depressor = lower_lip_depresspor;
+    }
+
+    upper_lip.scale.y = (1-lip_presser);
+    lower_lip.scale.y = (1-lip_presser);
+    upper_lip.scale.x = (1-(lip_presser / 4));
+    lower_lip.scale.x = (1-(lip_presser / 4));
+
+    upper_lip.position.y = upper_lip_y - lip_depressor;
+
+
+    // -- lip corners
+    lip_corner_depressor = 0
+
+    // sadness depresses lip corners
+    lip_corner_depressor -= emoexpression["exp_sadness"] * 50;
+
+    // joy raises 'em
+    lip_corner_depressor += emoexpression["exp_joy"] * 50;
+
+    corner_l.position.y = corner_l_y + lip_corner_depressor;
+    corner_r.position.y = corner_r_y + lip_corner_depressor;
 
 
     renderer.render( scene, camera );

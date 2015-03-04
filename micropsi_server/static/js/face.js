@@ -7,11 +7,11 @@ var mouth_color = new THREE.Color(0x764237);
 
 var eye_l_width = 200;
 var eye_l_height = 100;
-var eye_l_x = -400 + (eye_l_width / 2) + 100;
+var eye_l_x = -400 + (eye_l_width / 2) + 100 - 2;
 var eye_l_y = -400 + (eye_l_height / 2) + 300;
 var eye_r_width = 200;
 var eye_r_height = 100;
-var eye_r_x = -400 + (eye_r_width / 2) + 500;
+var eye_r_x = -400 + (eye_r_width / 2) + 500 + 2;
 var eye_r_y = -400 + (eye_r_height / 2) + 300;
 
 var pup_l_width = 100;
@@ -77,15 +77,17 @@ animate();
 
 function init() {
 
+    canvas = document.getElementById("face");
+
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera = new THREE.PerspectiveCamera( 75, canvas.width / canvas.height, 1, 10000 );
     camera.position.z = 2000;
 
     texture = THREE.ImageUtils.loadTexture('/static/face/stevehead.png'),
     textureMaterial = new THREE.ShaderMaterial();
 
-    face_background_p = new THREE.PlaneGeometry( 800, 800 )
+    face_background_p = new THREE.PlaneBufferGeometry( 800, 800 )
     face_background_m = new THREE.ShaderMaterial({
         uniforms: {
             map: {type: 't', value: texture},
@@ -99,7 +101,7 @@ function init() {
     face_background = new THREE.Mesh( face_background_p, face_background_m );
     scene.add( face_background );
 
-    eye_l_p = new THREE.PlaneGeometry( eye_l_width, eye_l_height );
+    eye_l_p = new THREE.PlaneBufferGeometry( eye_l_width, eye_l_height );
     eye_l_p.dynamic = true;
     eye_l_m = new THREE.MeshBasicMaterial( { color: eye_background_color, wireframe: false } );
     eye_l = new THREE.Mesh( eye_l_p, eye_l_m );
@@ -107,7 +109,7 @@ function init() {
     eye_l.position.y = eye_l_y;
     scene.add( eye_l );
 
-    eye_r_p = new THREE.PlaneGeometry( eye_r_width, eye_r_height );
+    eye_r_p = new THREE.PlaneBufferGeometry( eye_r_width, eye_r_height );
     eye_l_p.dynamic = true;
     eye_r_m = new THREE.MeshBasicMaterial( { color: eye_background_color, wireframe: false } );
     eye_r = new THREE.Mesh( eye_r_p, eye_r_m );
@@ -115,56 +117,54 @@ function init() {
     eye_r.position.y = eye_r_y;
     scene.add( eye_r );
 
-    pup_l_p = new THREE.PlaneGeometry( pup_l_width, pup_l_height );
+    pup_l_p = new THREE.PlaneBufferGeometry( pup_l_width, pup_l_height );
     pup_l_m = new THREE.MeshBasicMaterial( { color: pup_color, wireframe: false } );
     pup_l = new THREE.Mesh( pup_l_p, pup_l_m );
     pup_l.position.x = pup_l_x;
     pup_l.position.y = pup_l_y;
     scene.add( pup_l );
 
-    pup_r_p = new THREE.PlaneGeometry( pup_r_width, pup_r_height );
+    pup_r_p = new THREE.PlaneBufferGeometry( pup_r_width, pup_r_height );
     pup_r_m = new THREE.MeshBasicMaterial( { color: pup_color, wireframe: false } );
     pup_r = new THREE.Mesh( pup_r_p, pup_r_m );
     pup_r.position.x = pup_r_x;
     pup_r.position.y = pup_r_y;
     scene.add( pup_r );
 
-    nose_p = new THREE.PlaneGeometry( nose_width, nose_height );
+    nose_p = new THREE.PlaneBufferGeometry( nose_width, nose_height );
     nose_m = new THREE.MeshBasicMaterial( { color: nose_color, wireframe: false } );
     nose = new THREE.Mesh( nose_p, nose_m );
     nose.position.x = nose_x;
     nose.position.y = nose_y;
     scene.add( nose );
 
-    upper_lip_p = new THREE.PlaneGeometry( upper_lip_width, upper_lip_height );
+    upper_lip_p = new THREE.PlaneBufferGeometry( upper_lip_width, upper_lip_height );
     upper_lip_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
     upper_lip = new THREE.Mesh( upper_lip_p, upper_lip_m );
     upper_lip.position.x = upper_lip_x;
     upper_lip.position.y = upper_lip_y;
     scene.add( upper_lip );
 
-    lower_lip_p = new THREE.PlaneGeometry(  lower_lip_width,  lower_lip_height );
+    lower_lip_p = new THREE.PlaneBufferGeometry(  lower_lip_width,  lower_lip_height );
     lower_lip_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
     lower_lip = new THREE.Mesh( lower_lip_p, lower_lip_m );
     lower_lip.position.x = lower_lip_x;
     lower_lip.position.y = lower_lip_y;
     scene.add( lower_lip );
 
-    corner_l_p = new THREE.PlaneGeometry(  corner_l_width,  corner_l_height );
+    corner_l_p = new THREE.PlaneBufferGeometry(  corner_l_width,  corner_l_height );
     corner_l_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
     corner_l = new THREE.Mesh( corner_l_p, corner_l_m );
     corner_l.position.x = corner_l_x;
     corner_l.position.y = corner_l_y;
     scene.add( corner_l );
 
-    corner_r_p = new THREE.PlaneGeometry(  corner_r_width,  corner_r_height );
+    corner_r_p = new THREE.PlaneBufferGeometry(  corner_r_width,  corner_r_height );
     corner_r_m = new THREE.MeshBasicMaterial( { color: mouth_color, wireframe: false } );
     corner_r = new THREE.Mesh( corner_r_p, corner_r_m );
     corner_r.position.x = corner_r_x;
     corner_r.position.y = corner_r_y;
     scene.add( corner_r );
-
-    canvas = document.getElementById("face");
 
     renderer = new THREE.WebGLRenderer({canvas: canvas});
     renderer.setSize( canvas.width * 4, canvas.height * 4)

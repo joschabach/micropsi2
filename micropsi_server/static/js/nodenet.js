@@ -3125,7 +3125,7 @@ function updateNodeParameters(nodeUid, parameters){
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         parameters: parameters
-    });
+    }, api.defaultSuccessCallback, api.defaultErrorCallback, "post");
 }
 
 // handler for renaming the node

@@ -71,13 +71,16 @@ var faceFragmentShader = [
 ].join("\n")
 
 init();
-register_stepping_function('nodenet', get_nodenet_data, fetchEmoexpressionParameters)
+register_stepping_function('nodenet', get_nodenet_data, fetchEmoexpressionParameters);
 
 animate();
 
 function init() {
 
     canvas = document.getElementById("face");
+    div = document.getElementById("face_viewer");
+    canvas.width = div.clientWidth;
+    canvas.height = div.clientHeight;
 
     scene = new THREE.Scene();
 
@@ -167,11 +170,12 @@ function init() {
     scene.add( corner_r );
 
     renderer = new THREE.WebGLRenderer({canvas: canvas});
-    renderer.setSize( canvas.width * 4, canvas.height * 4)
+    renderer.setSize( canvas.width, canvas.height)
 
 }
 
 function animate() {
+
 
     requestAnimationFrame( animate );
 

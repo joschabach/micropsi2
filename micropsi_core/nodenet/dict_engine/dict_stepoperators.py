@@ -164,8 +164,8 @@ class DictDoernerianEmotionalModulators(StepOperator):
 
         base_age += 1
 
-        emo_activation = (math.log(base_sum_importance_of_intentions + base_sum_urgency_of_intentions + 1) /
-                          math.log((base_number_of_active_motives * 2) + 1))
+        emo_activation = ((base_sum_importance_of_intentions + base_sum_urgency_of_intentions) /
+                          ((base_number_of_active_motives * 2) + 1))
 
         base_unexpectedness = max(min(base_unexpectedness_prev + gentle_sigmoid((base_number_of_unexpected_events - base_number_of_expected_events) / 10), 1), 0)
         fear = 0                    # todo: understand the formula in Principles 185
@@ -184,7 +184,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
 
         emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
 
-        pleasurefactor = 1 if emo_pleasure > 0 else -1
+        pleasurefactor = 1 if emo_pleasure >= 0 else -1
         divisorbaseline = 1 if emo_pleasure >= 0 else 2
         youthful_exuberance_term = base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
         emo_competence = ((emo_competence_prev + (emo_pleasure * youthful_exuberance_term)) /

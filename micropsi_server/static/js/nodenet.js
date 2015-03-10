@@ -416,7 +416,7 @@ function setNodespaceData(data, changed){
             promptUser(data.user_prompt);
         }
     }
-    drawGridLines(view.bounds);
+    drawGridLines(view.element);
     updateViewSize();
 }
 
@@ -820,7 +820,7 @@ function redrawNodeNet() {
             renderLink(links[i]);
         }
     }
-    drawGridLines(view.bounds);
+    drawGridLines(view.element);
     updateViewSize();
 }
 
@@ -3756,24 +3756,24 @@ function ApplyLineBreaks(strTextAreaId) {
     oTextarea.setAttribute("wrap", "");
 }
 
-var drawGridLines = function(boundingRect) {
+var drawGridLines = function(element) {
     gridLayer.removeChildren();
     if(nodenet_data.snap_to_grid){
         var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;
-        for (var i = 0; i <= boundingRect.width/size; i++) {
-            var xPos = boundingRect.left + i * size;
-            var topPoint = new paper.Point(xPos, boundingRect.top);
-            var bottomPoint = new paper.Point(xPos, boundingRect.bottom);
+        for (var i = 0; i <= element.width/size; i++) {
+            var xPos = i * size;
+            var topPoint = new paper.Point(xPos, 0);
+            var bottomPoint = new paper.Point(xPos, element.height);
             var aLine = new paper.Path.Line(topPoint, bottomPoint);
             aLine.strokeColor = 'black';
             aLine.strokeWidth = 0.1;
             aLine.opacity = 0.3;
             gridLayer.addChild(aLine);
         }
-        for (var i = 0; i <= boundingRect.height/size; i++) {
-            var yPos = boundingRect.top + i * size;
-            var leftPoint = new paper.Point(boundingRect.left, yPos);
-            var rightPoint = new paper.Point(boundingRect.right, yPos);
+        for (var i = 0; i <= element.height/size; i++) {
+            var yPos = i * size;
+            var leftPoint = new paper.Point(0, yPos);
+            var rightPoint = new paper.Point(element.width, yPos);
             var aLine = new paper.Path.Line(leftPoint, rightPoint);
             aLine.strokeColor = 'black';
             aLine.strokeWidth = 0.1;

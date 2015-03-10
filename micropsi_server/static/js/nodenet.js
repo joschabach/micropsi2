@@ -2469,7 +2469,7 @@ function handleContextMenu(event) {
                 if(menuText == "Delete nodes"){
                     deleteNodeHandler(clickOriginUid);
                     return;
-                } else if($(event.target).attr('data-link-type')) {
+                } else if($(event.target).attr('data-link-type') != undefined) {
                     // multi node menu
                     var linktype = $(event.target).attr('data-link-type');
                     if (linktype) {
@@ -2481,7 +2481,10 @@ function handleContextMenu(event) {
                             clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
                             createLinkHandler(uid, clickIndex, linktype);
                         }
+                    } else {
+                        openLinkCreationDialog(path.name)
                     }
+                    $el.parentsUntil('.dropdown-menu').dropdown('toggle');
                 } else {
                     return false;
                 }
@@ -2578,22 +2581,7 @@ function handleContextMenu(event) {
                         clickIndex = nodes[clickOriginUid].gateIndexes.indexOf(forwardlinktype);
                         createLinkHandler(clickOriginUid, clickIndex, linktype);
                     } else {
-                        $("#link_target_node").html('');
-                        $('#link_target_slot').html('');
-                        var html = '';
-                        var sorted_ns = Object.values(nodespaces);
-                        sorted_ns.sort(sortByName);
-                        for(var i in sorted_ns){
-                            html += '<option value="'+sorted_ns[i].uid+'">'+sorted_ns[i].name+'</option>';
-                        }
-                        $('#link_target_nodespace').html(html);
-                        html = '';
-                        for(var g in nodes[path.name].gates){
-                            html += '<option value="'+g+'">'+g+'</option>';
-                        }
-                        $("#link_source_gate").html(html);
-                        $('#link_target_nodespace').trigger('change');
-                        $("#create_link_modal").modal("show");
+                        openLinkCreationDialog(path.name);
                     }
             }
             break;
@@ -2639,6 +2627,25 @@ function handleContextMenu(event) {
             }
     }
     view.draw();
+}
+
+function openLinkCreationDialog(nodeUid){
+    $("#link_target_node").html('');
+    $('#link_target_slot').html('');
+    var html = '';
+    var sorted_ns = Object.values(nodespaces);
+    sorted_ns.sort(sortByName);
+    for(var i in sorted_ns){
+        html += '<option value="'+sorted_ns[i].uid+'">'+sorted_ns[i].name+'</option>';
+    }
+    $('#link_target_nodespace').html(html);
+    html = '';
+    for(var g in nodes[nodeUid].gates){
+        html += '<option value="'+g+'">'+g+'</option>';
+    }
+    $("#link_source_gate").html(html);
+    $('#link_target_nodespace').trigger('change');
+    $("#create_link_modal").modal("show");
 }
 
 function get_datasource_options(worldadapter, value){
@@ -2898,40 +2905,52 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
 }
 
 function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
-    if ((sourceUid in nodes)) {
-        if(!(targetUid in nodes)){
-            api.call('get_node', {
-                'nodenet_uid': currentNodenet,
-                'node_uid': targetUid
-            }, function(data){
-                nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters);
-                createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
-            });
-        } else {
-            var uuid = makeUuid();
+    var uids = [];
+    for(var uid in selection){
+        if(uid in nodes){
+            uids.push(uid);
+        }
+    }
+    if(!uids.length){
+        uids = [sourceNodeUid];
+    }
+    for(var i=0; i < uids.length; i++){
+        sourceUid = uids[i];
+        if ((sourceUid in nodes)) {
             if(!(targetUid in nodes)){
                 api.call('get_node', {
                     'nodenet_uid': currentNodenet,
                     'node_uid': targetUid
                 }, function(data){
-                    nodes[targetUid] = data;
-                    nodes[targetUid].linksFromOutside.push(uuid);
+                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters);
+                    createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
-            } else if(nodes[targetUid].parent != currentNodeSpace){
-                nodes[sourceUid].linksToOutside.push(uuid);
-                nodes[targetUid].linksFromOutside.push(uuid);
+            } else {
+                var uuid = makeUuid();
+                if(!(targetUid in nodes)){
+                    api.call('get_node', {
+                        'nodenet_uid': currentNodenet,
+                        'node_uid': targetUid
+                    }, function(data){
+                        nodes[targetUid] = data;
+                        nodes[targetUid].linksFromOutside.push(uuid);
+                    });
+                } else if(nodes[targetUid].parent != currentNodeSpace){
+                    nodes[sourceUid].linksToOutside.push(uuid);
+                    nodes[targetUid].linksFromOutside.push(uuid);
+                }
+                addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
+                // TODO: also write backwards link??
+                api.call("add_link", {
+                    nodenet_uid: currentNodenet,
+                    source_node_uid: sourceUid,
+                    gate_type: sourceGate,
+                    target_node_uid: targetUid,
+                    slot_type: targetSlot,
+                    weight: 1,
+                    uid: uuid
+                });
             }
-            addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
-            // TODO: also write backwards link??
-            api.call("add_link", {
-                nodenet_uid: currentNodenet,
-                source_node_uid: sourceUid,
-                gate_type: sourceGate,
-                target_node_uid: targetUid,
-                slot_type: targetSlot,
-                weight: 1,
-                uid: uuid
-            });
         }
     }
 }

@@ -218,6 +218,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'sleep': 0
         }
 
+        self.datasources['health'] = 1
+        self.datasources['food'] = 1
+        self.datasources['temperature'] = 0.5
         self.datasources['hack_situation'] = -1
 
         # a collection of conditions to check on every update(..), eg., for action feedback

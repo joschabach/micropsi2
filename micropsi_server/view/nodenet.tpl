@@ -83,6 +83,10 @@
                             <option value="no">never</opeion>
                         </select></td>
                     </tr>
+                    <tr>
+                        <td><label for="nodenet_snap">Snap to grid</label></td>
+                        <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
+                    </tr>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>

@@ -46,7 +46,8 @@ var viewProperties = {
     rasterize: true,
     yMax: 13500,
     xMax: 13500,
-    copyPasteOffset: 50
+    copyPasteOffset: 50,
+    snap_to_grid: false
 };
 
 var nodenetscope = paper;
@@ -71,6 +72,8 @@ GATE_DEFAULTS = {
     "theta": 0
 }
 
+gridLayer = new Layer();
+gridLayer.name = 'GridLayer';
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
 nodeLayer = new Layer();
@@ -214,6 +217,7 @@ function setNodenetValues(data){
     $('#nodenet_world').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
+    $('#nodenet_snap').attr('checked', data.snap_to_grid);
     $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
@@ -255,6 +259,7 @@ function setCurrentNodenet(uid, nodespace){
                 // default nodenet settings
                 nodenet_data.settings['renderlinks'] = 'always';
             }
+            nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
             currentNodeSpace = data['nodespace'];
@@ -411,6 +416,7 @@ function setNodespaceData(data, changed){
             promptUser(data.user_prompt);
         }
     }
+    drawGridLines(view.bounds);
     updateViewSize();
 }
 
@@ -814,6 +820,7 @@ function redrawNodeNet() {
             renderLink(links[i]);
         }
     }
+    drawGridLines(view.bounds);
     updateViewSize();
 }
 
@@ -2048,21 +2055,35 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    function moveNode(uid){
+    function moveNode(uid, snap){
         var canvas = $('#nodenet');
         var pos = canvas.offset();
+        var rounded = {
+            'x': Math.round(event.event.layerX / 10) * 10,
+            'y': Math.round(event.event.layerY / 10) * 10
+        };
         if(event.event.clientX < pos.left || event.event.clientY < pos.top) return false;
-        nodeLayer.children[uid].position += event.delta;
+        if(!snap){
+            nodeLayer.children[uid].position += event.delta;
+        }
         nodeLayer.children[uid].nodeMoved = true;
         var node = nodes[uid];
-        node.x += event.delta.x/viewProperties.zoomFactor;
-        node.y += event.delta.y/viewProperties.zoomFactor;
+        if(snap){
+            node.x = rounded.x / viewProperties.zoomFactor;
+            node.y = rounded.y / viewProperties.zoomFactor;
+        } else {
+            node.x += event.delta.x/viewProperties.zoomFactor;
+            node.y += event.delta.y/viewProperties.zoomFactor;
+        }
         if(node.type == 'Comment'){
             node.bounds.x = node.x;
             node.bounds.y = node.y;
             redrawNode(node, true);
         } else {
             node.bounds = calculateNodeBounds(node);
+            if(snap){
+                redrawNode(node, true);
+            }
             redrawNodeLinks(node);
         }
     }
@@ -2074,7 +2095,7 @@ function onMouseDrag(event) {
                 }
             }
         } else {
-            moveNode(path.name);
+            moveNode(path.name, nodenet_data.snap_to_grid);
         }
     }
 }
@@ -3213,7 +3234,7 @@ function handleEditNodenet(event){
     }
     nodenet_data.settings['renderlinks'] = $('#nodenet_renderlinks').val();
     params.settings = nodenet_data.settings;
-
+    $.cookie('snap_to_grid', $('#nodenet_snap').attr('checked') || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
@@ -3734,6 +3755,34 @@ function ApplyLineBreaks(strTextAreaId) {
     oTextarea.value = strNewValue;
     oTextarea.setAttribute("wrap", "");
 }
+
+var drawGridLines = function(boundingRect) {
+    gridLayer.removeChildren();
+    if(nodenet_data.snap_to_grid){
+        var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;
+        for (var i = 0; i <= boundingRect.width/size; i++) {
+            var xPos = boundingRect.left + i * size;
+            var topPoint = new paper.Point(xPos, boundingRect.top);
+            var bottomPoint = new paper.Point(xPos, boundingRect.bottom);
+            var aLine = new paper.Path.Line(topPoint, bottomPoint);
+            aLine.strokeColor = 'black';
+            aLine.strokeWidth = 0.1;
+            aLine.opacity = 0.3;
+            gridLayer.addChild(aLine);
+        }
+        for (var i = 0; i <= boundingRect.height/size; i++) {
+            var yPos = boundingRect.top + i * size;
+            var leftPoint = new paper.Point(boundingRect.left, yPos);
+            var rightPoint = new paper.Point(boundingRect.right, yPos);
+            var aLine = new paper.Path.Line(leftPoint, rightPoint);
+            aLine.strokeColor = 'black';
+            aLine.strokeWidth = 0.1;
+            aLine.opacity = 0.3;
+            gridLayer.addChild(aLine);
+        }
+    }
+}
+
 
 /* todo:
 

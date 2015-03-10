@@ -403,10 +403,14 @@ graphs
 
 }
 
-label input[type="radio"] {
+label input[type="radio"], label input[type="checkbox"] {
   padding: 0;
   vertical-align: middle;
   margin: 0;
+}
+
+.section .form-horizontal input[type="checkbox"] {
+  margin-bottom: 5px;
 }
 
 .dropdown li.disabled {

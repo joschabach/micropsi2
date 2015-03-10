@@ -321,7 +321,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # compute fatigue: 0.2 per half a day:
             # timeofday = self.spockplugin.world.time_of_day % 24000
-            no_sleep = ((self.spockplugin.world.age - self.last_slept) // 6000)
+            no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
             fatigue = no_sleep * 0.2
             self.datasources['fatigue'] = fatigue
 
@@ -426,8 +426,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for item in new_waiting_list:
                 if time.clock() - item['time'] > self.action_timeout:
                     # re-trigger action
-                    self.logger.debug('re-triggering last action')
-                    item['action']()
+                    if item['datatarget'] != 'sleep':
+                        self.logger.debug('re-triggering last action')
+                        item['action']()
                     item['time'] = time.clock()
 
             self.waiting_list = new_waiting_list

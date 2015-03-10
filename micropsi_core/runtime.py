@@ -119,10 +119,10 @@ class MicropsiRunner(threading.Thread):
 
             elapsed = datetime.now() - start
             if log:
-                ms = divmod(elapsed.microseconds, 1000)[0]
+                ms = elapsed.seconds + ((elapsed.microseconds // 1000) / 1000)
                 stats.append(ms)
                 if len(stats) % 100 == 0 and len(stats) > 0:
-                    logging.getLogger("nodenet").debug("AFTER %d RUNS: AVG. %s" % (len(stats), str(sum(stats) / len(stats))))
+                    logging.getLogger("nodenet").debug("AFTER %d RUNS: AVG. %s sec" % (len(stats), str(sum(stats) / len(stats))))
             left = step - elapsed
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())

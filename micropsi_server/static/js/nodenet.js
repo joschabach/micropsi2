@@ -2523,8 +2523,15 @@ function handleContextMenu(event) {
                     createNativeModuleHandler();
                 }
                 else {
-                    createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                        clickPosition.y/viewProperties.zoomFactor,
+                    if(nodenet_data.snap_to_grid){
+                        var xpos = Math.round(clickPosition.x / 10) * 10;
+                        var ypos = Math.round(clickPosition.y / 10) * 10;
+                    } else {
+                        var xpos = clickPosition.x;
+                        var ypos = clickPosition.y;
+                    }
+                    createNodeHandler(xpos/viewProperties.zoomFactor,
+                        ypos/viewProperties.zoomFactor,
                         "", type, null, callback);
                 }
             } else{

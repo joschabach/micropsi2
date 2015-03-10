@@ -24,19 +24,19 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'otter',    # miscellaneous /otter
         'fov_x',    # fovea sensors receive their input from the fovea actors
         'fov_y',
-        'fov_hist__-01',
-        'fov_hist__000',
+        'fov_hist__-01',  # these names must be the most commonly observed block types
         'fov_hist__001',
         'fov_hist__002',
+        'fov_hist__003',
+        'fov_hist__004',
         'fov_hist__012',
         'fov_hist__017',
         'fov_hist__018',
         'fov_hist__020',
         'fov_hist__031',
-        'fov_hist__032',
+        'fov_hist__064',
         'fov_hist__078',
         'fov_hist__081',
-        'fov_hist__083',
         'fov_hist__102',
         'fov_hist__106',
         'health',

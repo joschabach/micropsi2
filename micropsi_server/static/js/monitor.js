@@ -286,10 +286,19 @@ $(function(){
                     .y(function(d) {
                         return y2(d[1]);
                     })
-                    .defined(function(d){ return Boolean(d[1])});
+                    .defined(function(d){ return d[1] == 0 || Boolean(d[1])});
                 for (var step in currentMonitors[uid].values) {
                     data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
                 }
+                var points = svg.selectAll(".point")
+                    .data(data)
+                    .enter().append("svg:circle")
+                     .attr("stroke", "black")
+                     .attr("fill", function(d, i) { return '#' + uid.substr(2, 6); })
+                     .attr("cx", function(d, i) { return x(d[0]); })
+                     .attr("cy", function(d, i) { return y2(d[1]); })
+                     .attr("r", function(d, i) { return 2 });
+
             } else {
                 var line = d3.svg.line()
                     .x(function(d) {
@@ -298,11 +307,21 @@ $(function(){
                     .y(function(d) {
                         return y1(d[1]);
                     })
-                    .defined(function(d){ return Boolean(d[1])});
+                    .defined(function(d){ return d[1] == 0 || Boolean(d[1])});
                 for (var step in currentMonitors[uid].values) {
                     data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
                 }
+                var points = svg.selectAll(".point")
+                    .data(data)
+                    .enter().append("svg:circle")
+                     .attr("fill", function(d, i) { return '#' + uid.substr(2, 6); })
+                     .attr("cx", function(d, i) { return x(d[0]); })
+                     .attr("cy", function(d, i) { return y1(d[1]); })
+                     .attr("r", function(d, i) { return 2 });
+
             }
+
+
             var len = data.length;
             data.splice(0, len - viewProperties.xvalues - 1);
             var color = '#' + uid.substr(2, 6);

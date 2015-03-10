@@ -1141,32 +1141,41 @@ function createArrow(endPoint, endAngle, arrowColor) {
     return arrowPath;
 }
 
+var templinks = [];
+
 // draw link during creation
 function renderLinkDuringCreation(endPoint) {
-    var sourceNode = linkCreationStart.sourceNode;
-    var gateIndex = linkCreationStart.gateIndex;
-
-    var linkStart = calculateLinkStart(sourceNode, null, sourceNode.gateIndexes[gateIndex]);
-
-    var correctionVector;
-    if (linkStart.isPreliminary) { // start from boundary of a compact node
-        correctionVector = new Point(sourceBounds.width/2, 0);
-        linkStart.angle = (endPoint - linkStart.point).angle;
-        linkStart.point += correctionVector.rotate(linkStart.angle-10);
+    if(templinks){
+        $.each(templinks, function(idx, link){
+            link.remove();
+        });
     }
+    for(var i=0; i < linkCreationStart.length; i++){
+        var sourceNode = linkCreationStart[i].sourceNode;
+        var gateIndex = linkCreationStart[i].gateIndex;
 
-    var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
-    var endDirection = new Point(-viewProperties.linkTension*viewProperties.zoomFactor,0);
+        var linkStart = calculateLinkStart(sourceNode, null, sourceNode.gateIndexes[gateIndex]);
 
-    var arrowPath = createArrow(endPoint, 180, viewProperties.selectionColor);
-    var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, endPoint, 180, endDirection,
-        viewProperties.selectionColor, 2*viewProperties.zoomFactor);
+        var correctionVector;
+        if (linkStart.isPreliminary) { // start from boundary of a compact node
+            correctionVector = new Point(sourceBounds.width/2, 0);
+            linkStart.angle = (endPoint - linkStart.point).angle;
+            linkStart.point += correctionVector.rotate(linkStart.angle-10);
+        }
 
-    var tempLink = new Group([linkPath, arrowPath]);
-    tempLink.name = "tempLink";
+        var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
+        var endDirection = new Point(-viewProperties.linkTension*viewProperties.zoomFactor,0);
 
-    if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
-    nodeLayer.addChild(tempLink);
+        var arrowPath = createArrow(endPoint, 180, viewProperties.selectionColor);
+        var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, endPoint, 180, endDirection,
+            viewProperties.selectionColor, 2*viewProperties.zoomFactor);
+
+        var tempLink = new Group([linkPath, arrowPath]);
+        tempLink.name = "tempLink";
+
+        nodeLayer.addChild(tempLink);
+        templinks.push(tempLink);
+    }
 }
 
 // draw net entity
@@ -1611,7 +1620,7 @@ function setActivation(node) {
                     viewProperties.nodeColor);
             }
         }
-    } else console.log ("node "+node.uid+" not found in current view");
+    } else console.warn ("node "+node.uid+" not found in current view");
 }
 
 // mark node as selected, and add it to the selected nodes
@@ -2372,7 +2381,24 @@ function openContextMenu(menu_id, event) {
 }
 
 function openMultipleNodesContextMenu(event){
-    var menu = $('#multi_node_menu .dropdown-menu');
+    var typecheck = null;
+    var sametype = true;
+    var node = null;
+    for(var uid in selection){
+        if(typecheck == null || typecheck == nodes[uid].type){
+            typecheck = nodes[uid].type;
+            node = nodes[uid];
+        } else {
+            sametype = false;
+            break;
+        }
+    }
+    var special = $('#multi_node_menu .same_nodes');
+    if(sametype){
+        special.html('<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node));
+    } else {
+        special.html('');
+    }
     if(Object.keys(clipboard).length === 0){
         $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
     } else {
@@ -2381,24 +2407,30 @@ function openMultipleNodesContextMenu(event){
     openContextMenu('#multi_node_menu', event);
 }
 
+function getNodeLinkageContextMenuHTML(node){
+    var html = '';
+    if (node.gateIndexes.length) {
+        for (var gateName in node.gates) {
+            if(gateName in inverse_link_map){
+                var compound = gateName+'/'+inverse_link_map[gateName];
+                html += ('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
+            } else if(inverse_link_targets.indexOf(gateName) == -1){
+                html += ('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
+            }
+        }
+        html += ('<li><a href="#" data-link-type="">Create link</a></li>');
+        html += ('<li class="divider"></li>');
+    }
+    return html;
+}
+
 // build the node menu
 function openNodeContextMenu(menu_id, event, nodeUid) {
     var menu = $(menu_id+" .dropdown-menu");
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    if (node.gateIndexes.length) {
-        for (var gateName in node.gates) {
-            if(gateName in inverse_link_map){
-                var compound = gateName+'/'+inverse_link_map[gateName];
-                menu.append('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
-            } else if(inverse_link_targets.indexOf(gateName) == -1){
-                menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
-            }
-        }
-        menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
-        menu.append('<li class="divider"></li>');
-    }
+    menu.html(getNodeLinkageContextMenuHTML(node));
     if(node.type == "Sensor"){
         menu.append('<li><a href="#">Select datasource</li>');
     }
@@ -2437,6 +2469,19 @@ function handleContextMenu(event) {
                 if(menuText == "Delete nodes"){
                     deleteNodeHandler(clickOriginUid);
                     return;
+                } else if($(event.target).attr('data-link-type')) {
+                    // multi node menu
+                    var linktype = $(event.target).attr('data-link-type');
+                    if (linktype) {
+                        var forwardlinktype = linktype;
+                        if(forwardlinktype.indexOf('/')){
+                            forwardlinktype = forwardlinktype.split('/')[0];
+                        }
+                        for(var uid in selection){
+                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                            createLinkHandler(uid, clickIndex, linktype);
+                        }
+                    }
                 } else {
                     return false;
                 }
@@ -2834,11 +2879,14 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
                 gateIndex = 0;
                 break;
         }
-        linkCreationStart = {
+        if(!linkCreationStart){
+            linkCreationStart = [];
+        }
+        linkCreationStart.push({
             sourceNode: nodes[nodeUid],
             gateIndex: gateIndex, // if no gate give, assume gen gate
             creationType: creationType
-        };
+        });
     }
 }
 
@@ -2884,100 +2932,100 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
 
 // establish the created link
 function finalizeLinkHandler(nodeUid, slotIndex) {
-    var sourceNode = linkCreationStart.sourceNode;
     var targetNode = nodes[nodeUid];
-    var sourceUid = linkCreationStart.sourceNode.uid;
     var targetUid = nodeUid;
-    var gateIndex = linkCreationStart.gateIndex;
+    for(var i=0; i < linkCreationStart.length; i++){
+        var sourceNode = linkCreationStart[i].sourceNode;
+        var sourceUid = linkCreationStart[i].sourceNode.uid;
+        var gateIndex = linkCreationStart[i].gateIndex;
 
-    if (!slotIndex || slotIndex < 0) slotIndex = 0;
+        if (!slotIndex || slotIndex < 0) slotIndex = 0;
 
-    if ((targetUid in nodes) &&
-        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
+        if ((targetUid in nodes) &&
+            nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
 
-        var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
-        var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
-        var sourceSlots = sourceNode.slots ? sourceNode.slotIndexes.length : 0;
+            var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
+            var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
+            var sourceSlots = sourceNode.slots ? sourceNode.slotIndexes.length : 0;
 
-        var newlinks = [];
+            var newlinks = [];
 
-        switch (linkCreationStart.creationType) {
-            case "por/ret":
-                // the por link
-                if (targetSlots > 2) {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
-                } else {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gen", 1, 1));
-                }
-                // the ret link
-                if (targetGates > 2) {
-                    if(sourceSlots > 2) {
-                        newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "ret", 1, 1));
+            switch (linkCreationStart[i].creationType) {
+                case "por/ret":
+                    // the por link
+                    if (targetSlots > 2) {
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gen", 1, 1));
                     }
-                }
-                break;
-            case "sub/sur":
-                // the sub link
-                if (targetSlots > 4 || nodes[targetUid].type == "Trigger") {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "sub", 1, 1));
-                } else {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "gen", 1, 1));
-                }
-                // the sur link
-                if (targetGates > 4 || nodes[targetUid].type == "Trigger") {
-                    if(sourceSlots > 4 || nodes[targetUid].type == "Trigger") {
-                        newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "sur", 1, 1));
+                    // the ret link
+                    if (targetGates > 2) {
+                        if(sourceSlots > 2) {
+                            newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "ret", 1, 1));
+                        } else {
+                            newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "gen", 1, 1));
+                        }
+                    }
+                    break;
+                case "sub/sur":
+                    // the sub link
+                    if (targetSlots > 4 || nodes[targetUid].type == "Trigger") {
+                        newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "sub", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "gen", 1, 1));
                     }
-                }
-                break;
-            case "cat/exp":
-                // the cat link
-                if (targetSlots > 6) {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "cat", 1, 1));
-                } else {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "gen", 1, 1));
-                }
-                // the exp link
-                if (targetGates > 6) {
-                    if(sourceSlots > 6) {
-                        newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "exp", 1, 1));
+                    // the sur link
+                    if (targetGates > 4 || nodes[targetUid].type == "Trigger") {
+                        if(sourceSlots > 4 || nodes[targetUid].type == "Trigger") {
+                            newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "sur", 1, 1));
+                        } else {
+                            newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "gen", 1, 1));
+                        }
+                    }
+                    break;
+                case "cat/exp":
+                    // the cat link
+                    if (targetSlots > 6) {
+                        newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "cat", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "gen", 1, 1));
                     }
+                    // the exp link
+                    if (targetGates > 6) {
+                        if(sourceSlots > 6) {
+                            newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "exp", 1, 1));
+                        } else {
+                            newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "gen", 1, 1));
+                        }
+                    }
+                    break;
+                default:
+                    newlinks.push(createLinkIfNotExists(sourceNode, sourceNode.gateIndexes[gateIndex], targetNode, targetNode.slotIndexes[slotIndex], 1, 1));
+            }
+
+            for (j=0; j < newlinks.length; j++) {
+                var link = newlinks[j];
+                if(link){
+                    if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                        if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                        if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                    }
+                    addLink(link);
+
+                    api.call("add_link", {
+                        nodenet_uid: currentNodenet,
+                        source_node_uid: link.sourceNodeUid,
+                        gate_type: link.gateName,
+                        target_node_uid: link.targetNodeUid,
+                        slot_type: link.slotName,
+                        weight: link.weight,
+                        uid: link.uid
+                    });
                 }
-                break;
-            default:
-                newlinks.push(createLinkIfNotExists(sourceNode, sourceNode.gateIndexes[gateIndex], targetNode, targetNode.slotIndexes[slotIndex], 1, 1));
-        }
-
-        for (i=0;i<newlinks.length;i++) {
-
-            var link = newlinks[i];
-            if(link){
-                if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                    if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                    if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
-                }
-                addLink(link);
-
-                api.call("add_link", {
-                    nodenet_uid: currentNodenet,
-                    source_node_uid: link.sourceNodeUid,
-                    gate_type: link.gateName,
-                    target_node_uid: link.targetNodeUid,
-                    slot_type: link.slotName,
-                    weight: link.weight,
-                    uid: link.uid
-                });
             }
         }
-
-        cancelLinkCreationHandler();
     }
+    cancelLinkCreationHandler();
 }
 
 function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight, certainty){
@@ -2993,7 +3041,11 @@ function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, w
 
 // cancel link creation
 function cancelLinkCreationHandler() {
-    if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
+    if(templinks){
+        $.each(templinks, function(idx, link){
+            link.remove();
+        });
+    }
     linkCreationStart = null;
 }
 

@@ -359,10 +359,11 @@
 
 <div class="dropdown" id="multi_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#multi_node_menu"></a>
-    <ul class="nodenet_menu dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu all_nodes">
         <li data-copy-nodes><a href="#">Copy nodes</a></li>
         <li data-paste-nodes><a href="#">Paste nodes</a></li>
         <li><a href="#">Delete nodes</a></li>
+        <li class="same_nodes"></li>
     </ul>
 </div>
 

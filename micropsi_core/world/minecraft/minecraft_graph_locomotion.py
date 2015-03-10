@@ -10,18 +10,6 @@ from spock.mcp.mcpacket import Packet
 class MinecraftGraphLocomotion(WorldAdapter):
 
     supported_datasources = [
-        'nothing',  # -1
-        'air',
-        'stone',    # 1, 4, 7, 24 ( sand stone )
-        'grass',    # 2
-        'dirt',     # 3
-        'wood',     # 5, 17
-        'water',    # 8, 9
-        'sand',     # 12
-        'gravel',   # 13
-        'leaves',   # 18
-        'solids',   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
-        'otter',    # miscellaneous /otter
         'fov_x',    # fovea sensors receive their input from the fovea actors
         'fov_y',
         'fov_hist__-01',  # these names must be the most commonly observed block types
@@ -200,7 +188,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     im_height = 16    # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 16     # side length of a fovea patch
+    patch_len = 16    # side length of a fovea patch
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -552,9 +540,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     block_type, distance = -1, -1
                     self.logger.warning("IndexError at (%d,%d)" % (fov_x + j, fov_y + i))
                 patch.append(block_type)
-                # for now, keep block type sensors and activate them respectively
-                block_type_pooled = self.map_block_type_to_sensor(block_type)
-                # patch.append(block_type_pooled)
 
         # write block type histogram values to self.datasources['fov_hist__*']
         # for every block type seen in patch, if there's a datasource for it, fill it with its normalized frequency
@@ -639,62 +624,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 break
 
         return block_type, distance
-
-    def map_block_type_to_sensor(self, block_type):
-        """
-        Map block type given by an integer to a block sensor;
-        cf. http://minecraft.gamepedia.com/Data_values#Block_IDs.
-        """
-        if block_type < 0:
-            self.datasources['nothing'] = 1.
-            return -1
-
-        elif block_type == 0:
-            self.datasources['air'] = 1.
-            return 0
-
-        elif block_type == 1 or block_type == 4 or block_type == 7:
-            self.datasources['stone'] = 1.
-            return 1
-
-        elif block_type == 2 or block_type == 31:
-            self.datasources['grass'] = 1.
-            return 2
-
-        elif block_type == 3:
-            self.datasources['dirt'] = 1.
-            return 3
-
-        elif block_type == 5 or block_type == 17:
-            self.datasources['wood'] = 1.
-            return 4
-
-        elif block_type == 8 or block_type == 9:
-            self.datasources['water'] = 1.
-            return 5
-
-        elif block_type == 12:
-            self.datasources['sand'] = 1.
-            return 6
-
-        elif block_type == 13:
-            self.datasources['gravel'] = 1.
-            return 7
-
-        elif block_type == 18:
-            self.datasources['leaves'] = 1.
-            return 8
-
-        elif block_type == 14 or block_type == 15 or block_type == 16 or \
-            block_type == 20 or block_type == 41 or block_type == 42 or \
-            block_type == 43 or block_type == 44 or block_type == 45 or \
-                block_type == 47 or block_type == 48 or block_type == 49:
-            self.datasources['solids'] = 1.
-            return 9
-
-        else:
-            self.datasources['otter'] = 1.
-            return 10
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """

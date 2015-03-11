@@ -1127,6 +1127,7 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     runtime.user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet)
     return True
 
+
 # Face
 @rpc("get_emoexpression_parameters")
 def get_emoexpression_parameters(nodenet_uid):

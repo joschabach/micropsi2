@@ -85,7 +85,8 @@ class DictNode(NetEntity, Node):
 
         self.__parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
-            self.__parameters.update(parameters)
+            for key in parameters:
+                self.set_parameter(key, parameters[key])
 
         for gate_name in gate_parameters:
             for key in gate_parameters[gate_name]:
@@ -269,6 +270,8 @@ class DictNode(NetEntity, Node):
                 self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
+        if value == '':
+            value = None
         self.__parameters[parameter] = value
 
     def clone_parameters(self):

@@ -83,6 +83,10 @@
                             <option value="no">never</opeion>
                         </select></td>
                     </tr>
+                    <tr>
+                        <td><label for="nodenet_snap">Snap to grid</label></td>
+                        <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
+                    </tr>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
@@ -355,10 +359,11 @@
 
 <div class="dropdown" id="multi_node_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#multi_node_menu"></a>
-    <ul class="nodenet_menu dropdown-menu">
+    <ul class="nodenet_menu dropdown-menu all_nodes">
         <li data-copy-nodes><a href="#">Copy nodes</a></li>
         <li data-paste-nodes><a href="#">Paste nodes</a></li>
         <li><a href="#">Delete nodes</a></li>
+        <li class="same_nodes"></li>
     </ul>
 </div>
 

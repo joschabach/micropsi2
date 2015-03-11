@@ -46,7 +46,8 @@ var viewProperties = {
     rasterize: true,
     yMax: 13500,
     xMax: 13500,
-    copyPasteOffset: 50
+    copyPasteOffset: 50,
+    snap_to_grid: false
 };
 
 var nodenetscope = paper;
@@ -71,6 +72,8 @@ GATE_DEFAULTS = {
     "theta": 0
 }
 
+gridLayer = new Layer();
+gridLayer.name = 'GridLayer';
 linkLayer = new Layer();
 linkLayer.name = 'LinkLayer';
 nodeLayer = new Layer();
@@ -214,6 +217,7 @@ function setNodenetValues(data){
     $('#nodenet_world').val(data.world);
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
+    $('#nodenet_snap').attr('checked', data.snap_to_grid);
     $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
@@ -255,6 +259,7 @@ function setCurrentNodenet(uid, nodespace){
                 // default nodenet settings
                 nodenet_data.settings['renderlinks'] = 'always';
             }
+            nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
             currentNodeSpace = data['nodespace'];
@@ -411,6 +416,7 @@ function setNodespaceData(data, changed){
             promptUser(data.user_prompt);
         }
     }
+    drawGridLines(view.element);
     updateViewSize();
 }
 
@@ -814,6 +820,7 @@ function redrawNodeNet() {
             renderLink(links[i]);
         }
     }
+    drawGridLines(view.element);
     updateViewSize();
 }
 
@@ -1134,32 +1141,41 @@ function createArrow(endPoint, endAngle, arrowColor) {
     return arrowPath;
 }
 
+var templinks = [];
+
 // draw link during creation
 function renderLinkDuringCreation(endPoint) {
-    var sourceNode = linkCreationStart.sourceNode;
-    var gateIndex = linkCreationStart.gateIndex;
-
-    var linkStart = calculateLinkStart(sourceNode, null, sourceNode.gateIndexes[gateIndex]);
-
-    var correctionVector;
-    if (linkStart.isPreliminary) { // start from boundary of a compact node
-        correctionVector = new Point(sourceBounds.width/2, 0);
-        linkStart.angle = (endPoint - linkStart.point).angle;
-        linkStart.point += correctionVector.rotate(linkStart.angle-10);
+    if(templinks){
+        $.each(templinks, function(idx, link){
+            link.remove();
+        });
     }
+    for(var i=0; i < linkCreationStart.length; i++){
+        var sourceNode = linkCreationStart[i].sourceNode;
+        var gateIndex = linkCreationStart[i].gateIndex;
 
-    var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
-    var endDirection = new Point(-viewProperties.linkTension*viewProperties.zoomFactor,0);
+        var linkStart = calculateLinkStart(sourceNode, null, sourceNode.gateIndexes[gateIndex]);
 
-    var arrowPath = createArrow(endPoint, 180, viewProperties.selectionColor);
-    var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, endPoint, 180, endDirection,
-        viewProperties.selectionColor, 2*viewProperties.zoomFactor);
+        var correctionVector;
+        if (linkStart.isPreliminary) { // start from boundary of a compact node
+            correctionVector = new Point(sourceBounds.width/2, 0);
+            linkStart.angle = (endPoint - linkStart.point).angle;
+            linkStart.point += correctionVector.rotate(linkStart.angle-10);
+        }
 
-    var tempLink = new Group([linkPath, arrowPath]);
-    tempLink.name = "tempLink";
+        var startDirection = new Point(viewProperties.linkTension*viewProperties.zoomFactor,0).rotate(linkStart.angle);
+        var endDirection = new Point(-viewProperties.linkTension*viewProperties.zoomFactor,0);
 
-    if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
-    nodeLayer.addChild(tempLink);
+        var arrowPath = createArrow(endPoint, 180, viewProperties.selectionColor);
+        var linkPath = createLink(linkStart.point, linkStart.angle, startDirection, endPoint, 180, endDirection,
+            viewProperties.selectionColor, 2*viewProperties.zoomFactor);
+
+        var tempLink = new Group([linkPath, arrowPath]);
+        tempLink.name = "tempLink";
+
+        nodeLayer.addChild(tempLink);
+        templinks.push(tempLink);
+    }
 }
 
 // draw net entity
@@ -1604,7 +1620,7 @@ function setActivation(node) {
                     viewProperties.nodeColor);
             }
         }
-    } else console.log ("node "+node.uid+" not found in current view");
+    } else console.warn ("node "+node.uid+" not found in current view");
 }
 
 // mark node as selected, and add it to the selected nodes
@@ -2048,21 +2064,35 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    function moveNode(uid){
+    function moveNode(uid, snap){
         var canvas = $('#nodenet');
         var pos = canvas.offset();
+        var rounded = {
+            'x': Math.round(event.event.layerX / 10) * 10,
+            'y': Math.round(event.event.layerY / 10) * 10
+        };
         if(event.event.clientX < pos.left || event.event.clientY < pos.top) return false;
-        nodeLayer.children[uid].position += event.delta;
+        if(!snap){
+            nodeLayer.children[uid].position += event.delta;
+        }
         nodeLayer.children[uid].nodeMoved = true;
         var node = nodes[uid];
-        node.x += event.delta.x/viewProperties.zoomFactor;
-        node.y += event.delta.y/viewProperties.zoomFactor;
+        if(snap){
+            node.x = rounded.x / viewProperties.zoomFactor;
+            node.y = rounded.y / viewProperties.zoomFactor;
+        } else {
+            node.x += event.delta.x/viewProperties.zoomFactor;
+            node.y += event.delta.y/viewProperties.zoomFactor;
+        }
         if(node.type == 'Comment'){
             node.bounds.x = node.x;
             node.bounds.y = node.y;
             redrawNode(node, true);
         } else {
             node.bounds = calculateNodeBounds(node);
+            if(snap){
+                redrawNode(node, true);
+            }
             redrawNodeLinks(node);
         }
     }
@@ -2074,7 +2104,7 @@ function onMouseDrag(event) {
                 }
             }
         } else {
-            moveNode(path.name);
+            moveNode(path.name, nodenet_data.snap_to_grid);
         }
     }
 }
@@ -2351,7 +2381,24 @@ function openContextMenu(menu_id, event) {
 }
 
 function openMultipleNodesContextMenu(event){
-    var menu = $('#multi_node_menu .dropdown-menu');
+    var typecheck = null;
+    var sametype = true;
+    var node = null;
+    for(var uid in selection){
+        if(typecheck == null || typecheck == nodes[uid].type){
+            typecheck = nodes[uid].type;
+            node = nodes[uid];
+        } else {
+            sametype = false;
+            break;
+        }
+    }
+    var special = $('#multi_node_menu .same_nodes');
+    if(sametype){
+        special.html('<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node));
+    } else {
+        special.html('');
+    }
     if(Object.keys(clipboard).length === 0){
         $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
     } else {
@@ -2360,24 +2407,30 @@ function openMultipleNodesContextMenu(event){
     openContextMenu('#multi_node_menu', event);
 }
 
+function getNodeLinkageContextMenuHTML(node){
+    var html = '';
+    if (node.gateIndexes.length) {
+        for (var gateName in node.gates) {
+            if(gateName in inverse_link_map){
+                var compound = gateName+'/'+inverse_link_map[gateName];
+                html += ('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
+            } else if(inverse_link_targets.indexOf(gateName) == -1){
+                html += ('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
+            }
+        }
+        html += ('<li><a href="#" data-link-type="">Create link</a></li>');
+        html += ('<li class="divider"></li>');
+    }
+    return html;
+}
+
 // build the node menu
 function openNodeContextMenu(menu_id, event, nodeUid) {
     var menu = $(menu_id+" .dropdown-menu");
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    if (node.gateIndexes.length) {
-        for (var gateName in node.gates) {
-            if(gateName in inverse_link_map){
-                var compound = gateName+'/'+inverse_link_map[gateName];
-                menu.append('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
-            } else if(inverse_link_targets.indexOf(gateName) == -1){
-                menu.append('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
-            }
-        }
-        menu.append('<li><a href="#" data-link-type="">Create link</a></li>');
-        menu.append('<li class="divider"></li>');
-    }
+    menu.html(getNodeLinkageContextMenuHTML(node));
     if(node.type == "Sensor"){
         menu.append('<li><a href="#">Select datasource</li>');
     }
@@ -2416,6 +2469,22 @@ function handleContextMenu(event) {
                 if(menuText == "Delete nodes"){
                     deleteNodeHandler(clickOriginUid);
                     return;
+                } else if($(event.target).attr('data-link-type') != undefined) {
+                    // multi node menu
+                    var linktype = $(event.target).attr('data-link-type');
+                    if (linktype) {
+                        var forwardlinktype = linktype;
+                        if(forwardlinktype.indexOf('/')){
+                            forwardlinktype = forwardlinktype.split('/')[0];
+                        }
+                        for(var uid in selection){
+                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                            createLinkHandler(uid, clickIndex, linktype);
+                        }
+                    } else {
+                        openLinkCreationDialog(path.name)
+                    }
+                    $el.parentsUntil('.dropdown-menu').dropdown('toggle');
                 } else {
                     return false;
                 }
@@ -2457,8 +2526,15 @@ function handleContextMenu(event) {
                     createNativeModuleHandler();
                 }
                 else {
-                    createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                        clickPosition.y/viewProperties.zoomFactor,
+                    if(nodenet_data.snap_to_grid){
+                        var xpos = Math.round(clickPosition.x / 10) * 10;
+                        var ypos = Math.round(clickPosition.y / 10) * 10;
+                    } else {
+                        var xpos = clickPosition.x;
+                        var ypos = clickPosition.y;
+                    }
+                    createNodeHandler(xpos/viewProperties.zoomFactor,
+                        ypos/viewProperties.zoomFactor,
                         "", type, null, callback);
                 }
             } else{
@@ -2505,22 +2581,7 @@ function handleContextMenu(event) {
                         clickIndex = nodes[clickOriginUid].gateIndexes.indexOf(forwardlinktype);
                         createLinkHandler(clickOriginUid, clickIndex, linktype);
                     } else {
-                        $("#link_target_node").html('');
-                        $('#link_target_slot').html('');
-                        var html = '';
-                        var sorted_ns = Object.values(nodespaces);
-                        sorted_ns.sort(sortByName);
-                        for(var i in sorted_ns){
-                            html += '<option value="'+sorted_ns[i].uid+'">'+sorted_ns[i].name+'</option>';
-                        }
-                        $('#link_target_nodespace').html(html);
-                        html = '';
-                        for(var g in nodes[path.name].gates){
-                            html += '<option value="'+g+'">'+g+'</option>';
-                        }
-                        $("#link_source_gate").html(html);
-                        $('#link_target_nodespace').trigger('change');
-                        $("#create_link_modal").modal("show");
+                        openLinkCreationDialog(path.name);
                     }
             }
             break;
@@ -2566,6 +2627,25 @@ function handleContextMenu(event) {
             }
     }
     view.draw();
+}
+
+function openLinkCreationDialog(nodeUid){
+    $("#link_target_node").html('');
+    $('#link_target_slot').html('');
+    var html = '';
+    var sorted_ns = Object.values(nodespaces);
+    sorted_ns.sort(sortByName);
+    for(var i in sorted_ns){
+        html += '<option value="'+sorted_ns[i].uid+'">'+sorted_ns[i].name+'</option>';
+    }
+    $('#link_target_nodespace').html(html);
+    html = '';
+    for(var g in nodes[nodeUid].gates){
+        html += '<option value="'+g+'">'+g+'</option>';
+    }
+    $("#link_source_gate").html(html);
+    $('#link_target_nodespace').trigger('change');
+    $("#create_link_modal").modal("show");
 }
 
 function get_datasource_options(worldadapter, value){
@@ -2813,49 +2893,64 @@ function createLinkHandler(nodeUid, gateIndex, creationType) {
                 gateIndex = 0;
                 break;
         }
-        linkCreationStart = {
+        if(!linkCreationStart){
+            linkCreationStart = [];
+        }
+        linkCreationStart.push({
             sourceNode: nodes[nodeUid],
             gateIndex: gateIndex, // if no gate give, assume gen gate
             creationType: creationType
-        };
+        });
     }
 }
 
 function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
-    if ((sourceUid in nodes)) {
-        if(!(targetUid in nodes)){
-            api.call('get_node', {
-                'nodenet_uid': currentNodenet,
-                'node_uid': targetUid
-            }, function(data){
-                nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters);
-                createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
-            });
-        } else {
-            var uuid = makeUuid();
+    var uids = [];
+    for(var uid in selection){
+        if(uid in nodes){
+            uids.push(uid);
+        }
+    }
+    if(!uids.length){
+        uids = [sourceNodeUid];
+    }
+    for(var i=0; i < uids.length; i++){
+        sourceUid = uids[i];
+        if ((sourceUid in nodes)) {
             if(!(targetUid in nodes)){
                 api.call('get_node', {
                     'nodenet_uid': currentNodenet,
                     'node_uid': targetUid
                 }, function(data){
-                    nodes[targetUid] = data;
-                    nodes[targetUid].linksFromOutside.push(uuid);
+                    nodes[targetUid] = new Node(data.uid, data.position[0], data.position[1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters);
+                    createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
-            } else if(nodes[targetUid].parent != currentNodeSpace){
-                nodes[sourceUid].linksToOutside.push(uuid);
-                nodes[targetUid].linksFromOutside.push(uuid);
+            } else {
+                var uuid = makeUuid();
+                if(!(targetUid in nodes)){
+                    api.call('get_node', {
+                        'nodenet_uid': currentNodenet,
+                        'node_uid': targetUid
+                    }, function(data){
+                        nodes[targetUid] = data;
+                        nodes[targetUid].linksFromOutside.push(uuid);
+                    });
+                } else if(nodes[targetUid].parent != currentNodeSpace){
+                    nodes[sourceUid].linksToOutside.push(uuid);
+                    nodes[targetUid].linksFromOutside.push(uuid);
+                }
+                addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
+                // TODO: also write backwards link??
+                api.call("add_link", {
+                    nodenet_uid: currentNodenet,
+                    source_node_uid: sourceUid,
+                    gate_type: sourceGate,
+                    target_node_uid: targetUid,
+                    slot_type: targetSlot,
+                    weight: 1,
+                    uid: uuid
+                });
             }
-            addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
-            // TODO: also write backwards link??
-            api.call("add_link", {
-                nodenet_uid: currentNodenet,
-                source_node_uid: sourceUid,
-                gate_type: sourceGate,
-                target_node_uid: targetUid,
-                slot_type: targetSlot,
-                weight: 1,
-                uid: uuid
-            });
         }
     }
 }
@@ -2863,100 +2958,100 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
 
 // establish the created link
 function finalizeLinkHandler(nodeUid, slotIndex) {
-    var sourceNode = linkCreationStart.sourceNode;
     var targetNode = nodes[nodeUid];
-    var sourceUid = linkCreationStart.sourceNode.uid;
     var targetUid = nodeUid;
-    var gateIndex = linkCreationStart.gateIndex;
+    for(var i=0; i < linkCreationStart.length; i++){
+        var sourceNode = linkCreationStart[i].sourceNode;
+        var sourceUid = linkCreationStart[i].sourceNode.uid;
+        var gateIndex = linkCreationStart[i].gateIndex;
 
-    if (!slotIndex || slotIndex < 0) slotIndex = 0;
+        if (!slotIndex || slotIndex < 0) slotIndex = 0;
 
-    if ((targetUid in nodes) &&
-        nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
+        if ((targetUid in nodes) &&
+            nodes[targetUid].slots && (nodes[targetUid].slotIndexes.length > slotIndex)) {
 
-        var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
-        var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
-        var sourceSlots = sourceNode.slots ? sourceNode.slotIndexes.length : 0;
+            var targetGates = nodes[targetUid].gates ? nodes[targetUid].gateIndexes.length : 0;
+            var targetSlots = nodes[targetUid].slots ? nodes[targetUid].slotIndexes.length : 0;
+            var sourceSlots = sourceNode.slots ? sourceNode.slotIndexes.length : 0;
 
-        var newlinks = [];
+            var newlinks = [];
 
-        switch (linkCreationStart.creationType) {
-            case "por/ret":
-                // the por link
-                if (targetSlots > 2) {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
-                } else {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gen", 1, 1));
-                }
-                // the ret link
-                if (targetGates > 2) {
-                    if(sourceSlots > 2) {
-                        newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "ret", 1, 1));
+            switch (linkCreationStart[i].creationType) {
+                case "por/ret":
+                    // the por link
+                    if (targetSlots > 2) {
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gen", 1, 1));
                     }
-                }
-                break;
-            case "sub/sur":
-                // the sub link
-                if (targetSlots > 4 || nodes[targetUid].type == "Trigger") {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "sub", 1, 1));
-                } else {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "gen", 1, 1));
-                }
-                // the sur link
-                if (targetGates > 4 || nodes[targetUid].type == "Trigger") {
-                    if(sourceSlots > 4 || nodes[targetUid].type == "Trigger") {
-                        newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "sur", 1, 1));
+                    // the ret link
+                    if (targetGates > 2) {
+                        if(sourceSlots > 2) {
+                            newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "ret", 1, 1));
+                        } else {
+                            newlinks.push(createLinkIfNotExists(targetNode, "ret", sourceNode, "gen", 1, 1));
+                        }
+                    }
+                    break;
+                case "sub/sur":
+                    // the sub link
+                    if (targetSlots > 4 || nodes[targetUid].type == "Trigger") {
+                        newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "sub", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "sub", targetNode, "gen", 1, 1));
                     }
-                }
-                break;
-            case "cat/exp":
-                // the cat link
-                if (targetSlots > 6) {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "cat", 1, 1));
-                } else {
-                    newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "gen", 1, 1));
-                }
-                // the exp link
-                if (targetGates > 6) {
-                    if(sourceSlots > 6) {
-                        newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "exp", 1, 1));
+                    // the sur link
+                    if (targetGates > 4 || nodes[targetUid].type == "Trigger") {
+                        if(sourceSlots > 4 || nodes[targetUid].type == "Trigger") {
+                            newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "sur", 1, 1));
+                        } else {
+                            newlinks.push(createLinkIfNotExists(targetNode, "sur", sourceNode, "gen", 1, 1));
+                        }
+                    }
+                    break;
+                case "cat/exp":
+                    // the cat link
+                    if (targetSlots > 6) {
+                        newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "cat", 1, 1));
                     } else {
-                        newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "gen", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "cat", targetNode, "gen", 1, 1));
                     }
+                    // the exp link
+                    if (targetGates > 6) {
+                        if(sourceSlots > 6) {
+                            newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "exp", 1, 1));
+                        } else {
+                            newlinks.push(createLinkIfNotExists(targetNode, "exp", sourceNode, "gen", 1, 1));
+                        }
+                    }
+                    break;
+                default:
+                    newlinks.push(createLinkIfNotExists(sourceNode, sourceNode.gateIndexes[gateIndex], targetNode, targetNode.slotIndexes[slotIndex], 1, 1));
+            }
+
+            for (j=0; j < newlinks.length; j++) {
+                var link = newlinks[j];
+                if(link){
+                    if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                        if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                        if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                    }
+                    addLink(link);
+
+                    api.call("add_link", {
+                        nodenet_uid: currentNodenet,
+                        source_node_uid: link.sourceNodeUid,
+                        gate_type: link.gateName,
+                        target_node_uid: link.targetNodeUid,
+                        slot_type: link.slotName,
+                        weight: link.weight,
+                        uid: link.uid
+                    });
                 }
-                break;
-            default:
-                newlinks.push(createLinkIfNotExists(sourceNode, sourceNode.gateIndexes[gateIndex], targetNode, targetNode.slotIndexes[slotIndex], 1, 1));
-        }
-
-        for (i=0;i<newlinks.length;i++) {
-
-            var link = newlinks[i];
-            if(link){
-                if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                    if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                    if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
-                }
-                addLink(link);
-
-                api.call("add_link", {
-                    nodenet_uid: currentNodenet,
-                    source_node_uid: link.sourceNodeUid,
-                    gate_type: link.gateName,
-                    target_node_uid: link.targetNodeUid,
-                    slot_type: link.slotName,
-                    weight: link.weight,
-                    uid: link.uid
-                });
             }
         }
-
-        cancelLinkCreationHandler();
     }
+    cancelLinkCreationHandler();
 }
 
 function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, weight, certainty){
@@ -2972,7 +3067,11 @@ function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, w
 
 // cancel link creation
 function cancelLinkCreationHandler() {
-    if ("tempLink" in nodeLayer.children) nodeLayer.children["tempLink"].remove();
+    if(templinks){
+        $.each(templinks, function(idx, link){
+            link.remove();
+        });
+    }
     linkCreationStart = null;
 }
 
@@ -3125,7 +3224,7 @@ function updateNodeParameters(nodeUid, parameters){
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
         parameters: parameters
-    });
+    }, api.defaultSuccessCallback, api.defaultErrorCallback, "post");
 }
 
 // handler for renaming the node
@@ -3213,7 +3312,7 @@ function handleEditNodenet(event){
     }
     nodenet_data.settings['renderlinks'] = $('#nodenet_renderlinks').val();
     params.settings = nodenet_data.settings;
-
+    $.cookie('snap_to_grid', $('#nodenet_snap').attr('checked') || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
@@ -3533,6 +3632,7 @@ function getNodeParameterHTML(parameters, parameter_values){
                         }
                         input = "<select name=\""+name+"\" class=\"inplace\" id=\"node_"+name+"\">"+input+"</select>";
                     } else {
+                        if(!value) value = '';
                         input = "<input name=\""+name+"\" class=\"inplace\" value=\""+value+"\"/>";
                     }
             }
@@ -3733,6 +3833,34 @@ function ApplyLineBreaks(strTextAreaId) {
     oTextarea.value = strNewValue;
     oTextarea.setAttribute("wrap", "");
 }
+
+var drawGridLines = function(element) {
+    gridLayer.removeChildren();
+    if(nodenet_data.snap_to_grid){
+        var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;
+        for (var i = 0; i <= element.width/size; i++) {
+            var xPos = i * size;
+            var topPoint = new paper.Point(xPos, 0);
+            var bottomPoint = new paper.Point(xPos, element.height);
+            var aLine = new paper.Path.Line(topPoint, bottomPoint);
+            aLine.strokeColor = 'black';
+            aLine.strokeWidth = 0.1;
+            aLine.opacity = 0.3;
+            gridLayer.addChild(aLine);
+        }
+        for (var i = 0; i <= element.height/size; i++) {
+            var yPos = i * size;
+            var leftPoint = new paper.Point(0, yPos);
+            var rightPoint = new paper.Point(element.width, yPos);
+            var aLine = new paper.Path.Line(leftPoint, rightPoint);
+            aLine.strokeColor = 'black';
+            aLine.strokeWidth = 0.1;
+            aLine.opacity = 0.3;
+            gridLayer.addChild(aLine);
+        }
+    }
+}
+
 
 /* todo:
 

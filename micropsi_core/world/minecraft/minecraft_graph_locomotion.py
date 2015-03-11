@@ -4,44 +4,34 @@ import random
 import logging
 import time
 from functools import partial
+from spock.mcp.mcpacket import Packet
 
 
 class MinecraftGraphLocomotion(WorldAdapter):
 
     supported_datasources = [
-        'nothing',  # -1
-        'air',
-        'stone',    # 1, 4, 7, 24 ( sand stone )
-        'grass',    # 2
-        'dirt',     # 3
-        'wood',     # 5, 17
-        'water',    # 8, 9
-        'sand',     # 12
-        'gravel',   # 13
-        'leaves',   # 18
-        'solids',   # 14, 15, 16, 20, 41, 42, 43, 44, 45, 47, 48, 49
-        'otter',    # miscellaneous /otter
         'fov_x',    # fovea sensors receive their input from the fovea actors
         'fov_y',
-        'fov_hist__-01',
-        'fov_hist__000',
+        'fov_hist__-01',  # these names must be the most commonly observed block types
         'fov_hist__001',
         'fov_hist__002',
+        'fov_hist__003',
+        'fov_hist__004',
         'fov_hist__012',
         'fov_hist__017',
         'fov_hist__018',
         'fov_hist__020',
         'fov_hist__031',
-        'fov_hist__032',
+        'fov_hist__064',
         'fov_hist__078',
         'fov_hist__081',
-        'fov_hist__083',
         'fov_hist__102',
         'fov_hist__106',
         'health',
         'food',
         'temperature',
         'food_supply',
+        'fatigue',
         'hack_situation'
     ]
 
@@ -52,7 +42,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three',
         'fov_x',
         'fov_y',
-        'eat'
+        'eat',
+        'sleep'
     ]
 
     loco_node_template = {
@@ -197,7 +188,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     im_height = 16    # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 16     # side length of a fovea patch
+    patch_len = 16    # side length of a fovea patch
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -212,7 +203,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'take_exit_three': 0,
             'fov_x': 0,
             'fov_y': 0,
-            'eat': 0
+            'eat': 0,
+            'sleep': 0
         }
 
         # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -222,9 +214,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'take_exit_three': 0,
             'fov_x': 0,
             'fov_y': 0,
-            'eat': 0
+            'eat': 0,
+            'sleep': 0
         }
 
+        self.datasources['health'] = 1
+        self.datasources['food'] = 1
+        self.datasources['temperature'] = 0.5
         self.datasources['hack_situation'] = -1
 
         # a collection of conditions to check on every update(..), eg., for action feedback
@@ -234,16 +230,41 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         self.current_loco_node = None
 
+        self.last_slept = None
+        self.sleeping = False
+
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
+        self.spockplugin.event.reg_event_handler('PLAY<Player Position and Look', self.server_set_position)
+        self.spockplugin.event.reg_event_handler('PLAY<Use Bed', self.server_use_bed)
+        self.spockplugin.event.reg_event_handler('PLAY<Chat Message', self.server_chat_message)
 
         # add datasources for fovea
         for i in range(self.patch_len):
             for j in range(self.patch_len):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
+
+    def server_chat_message(self, event, data):
+        if data.data and 'json_data' in data.data:
+            if data.data['json_data'].get('translate') == 'tile.bed.noSleep':
+                self.datatarget_feedback['sleep'] = -1
+                self.sleeping = False
+
+    def server_use_bed(self, event, data):
+        # TODO: check if it's us, that has gone to sleep
+        # Currently however there's an issue parsing the use-bed packet from the
+        # server. we'll just assume it's us.
+        # if data.data['eid'] == self.spockplugin.clientinfo.eid
+        self.sleeping = True
+
+    def server_set_position(self, event, data):
+        """ Interprete this as waking up, if we're sleeping, and it's morning"""
+        if self.sleeping and abs(24000 * round(self.spockplugin.world.time_of_day / 24000) - self.spockplugin.world.time_of_day) < 1200:
+            self.sleeping = False
+            self.last_slept = self.spockplugin.world.age
 
     def set_datasources(self, event, data):
         self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
@@ -269,6 +290,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
                         self.current_loco_node = self.loco_nodes[k]
 
+                self.last_slept = self.spockplugin.world.age
                 if self.current_loco_node is None:
                     # bot is outside our graph, teleport to a random graph location to get started.
                     target = random.choice(list(self.loco_nodes.keys()))
@@ -283,7 +305,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # reset self.datasources
             for k in self.datasources.keys():
-                if k != 'hack_situation':
+                if k != 'hack_situation' and k != 'temperature':
                     self.datasources[k] = 0.
 
             # reset self.datatarget_feedback
@@ -296,8 +318,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # health and food are in [0;20]
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
             self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
-            self.datasources['temperature'] = self.spockplugin.get_temperature()
+            if self.spockplugin.get_temperature() is not None:
+                self.datasources['temperature'] = self.spockplugin.get_temperature()
             self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
+
+            # compute fatigue: 0.2 per half a day:
+            # timeofday = self.spockplugin.world.time_of_day % 24000
+            no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
+            fatigue = no_sleep * 0.2
+            self.datasources['fatigue'] = fatigue
 
             self.check_for_action_feedback()
 
@@ -343,6 +372,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     )
                 else:
                     self.datatarget_feedback['eat'] = -1.
+
+            if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
+                if self.check_movement_feedback(self.home_uid):
+                    # if self.datasources['fatigue'] > 0:
+                        # urge is only active at night, so we can sleep now:
+                    self.register_action('sleep', self.sleep, self.check_waking_up)
+                else:
+                    self.datatarget_feedback['sleep'] = -1
 
             # read fovea actors, trigger sampling, and provide action feedback
             if not (self.datatargets['fov_x'] == 0. and self.datatargets['fov_y'] == 0.):
@@ -392,8 +429,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for item in new_waiting_list:
                 if time.clock() - item['time'] > self.action_timeout:
                     # re-trigger action
-                    self.logger.debug('re-triggering last action')
-                    item['action']()
+                    if item['datatarget'] != 'sleep':
+                        self.logger.debug('re-triggering last action')
+                        item['action']()
                     item['time'] = time.clock()
 
             self.waiting_list = new_waiting_list
@@ -429,6 +467,35 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['hack_situation'] = self.loco_nodes_indexes.index(self.loco_nodes[target_loco_node]['name'])
             return True
         return False
+
+    def check_waking_up(self):
+        """ Checks whether we're done sleeping.
+        Sets the datatarget_feedback to 1 and returns True if so, False otherwise"""
+        if not self.sleeping:
+            self.datatarget_feedback['sleep'] = 1
+            return True
+        return False
+
+    def sleep(self):
+        """ Attempts to use the bed located at -103/63/59"""
+        logging.getLogger('world').debug('going to sleep')
+        data = {
+            'location': {
+                'x': -103,
+                'y': 63,
+                'z': 59
+            },
+            'direction': 1,
+            'held_item': {
+                'id': 297,
+                'amount': 0,
+                'damage': 0
+            },
+            'cur_pos_x': -103,
+            'cur_pos_y': 63,
+            'cur_pos_z': 59
+        }
+        self.spockplugin.net.push(Packet(ident='PLAY>Player Block Placement', data=data))
 
     def get_visual_input(self, fov_x, fov_y):
         """
@@ -477,9 +544,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     block_type, distance = -1, -1
                     self.logger.warning("IndexError at (%d,%d)" % (fov_x + j, fov_y + i))
                 patch.append(block_type)
-                # for now, keep block type sensors and activate them respectively
-                block_type_pooled = self.map_block_type_to_sensor(block_type)
-                # patch.append(block_type_pooled)
 
         # write block type histogram values to self.datasources['fov_hist__*']
         # for every block type seen in patch, if there's a datasource for it, fill it with its normalized frequency
@@ -564,62 +628,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 break
 
         return block_type, distance
-
-    def map_block_type_to_sensor(self, block_type):
-        """
-        Map block type given by an integer to a block sensor;
-        cf. http://minecraft.gamepedia.com/Data_values#Block_IDs.
-        """
-        if block_type < 0:
-            self.datasources['nothing'] = 1.
-            return -1
-
-        elif block_type == 0:
-            self.datasources['air'] = 1.
-            return 0
-
-        elif block_type == 1 or block_type == 4 or block_type == 7:
-            self.datasources['stone'] = 1.
-            return 1
-
-        elif block_type == 2 or block_type == 31:
-            self.datasources['grass'] = 1.
-            return 2
-
-        elif block_type == 3:
-            self.datasources['dirt'] = 1.
-            return 3
-
-        elif block_type == 5 or block_type == 17:
-            self.datasources['wood'] = 1.
-            return 4
-
-        elif block_type == 8 or block_type == 9:
-            self.datasources['water'] = 1.
-            return 5
-
-        elif block_type == 12:
-            self.datasources['sand'] = 1.
-            return 6
-
-        elif block_type == 13:
-            self.datasources['gravel'] = 1.
-            return 7
-
-        elif block_type == 18:
-            self.datasources['leaves'] = 1.
-            return 8
-
-        elif block_type == 14 or block_type == 15 or block_type == 16 or \
-            block_type == 20 or block_type == 41 or block_type == 42 or \
-            block_type == 43 or block_type == 44 or block_type == 45 or \
-                block_type == 47 or block_type == 48 or block_type == 49:
-            self.datasources['solids'] = 1.
-            return 9
-
-        else:
-            self.datasources['otter'] = 1.
-            return 10
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """

@@ -434,6 +434,8 @@ label input[type="radio"], label input[type="checkbox"] {
   font-size: 8px;
   line-height: 9px;
   text-align: left;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 div.modulators_container{

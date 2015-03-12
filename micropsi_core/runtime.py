@@ -25,6 +25,7 @@ from micropsi_core import config
 from micropsi_core.tools import Bunch
 
 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
+from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
 
 import os
 import sys
@@ -251,6 +252,12 @@ def load_nodenet(nodenet_uid):
 
             if engine == 'dict_engine':
                 nodenets[nodenet_uid] = DictNodenet(
+                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
+                    name=data.name, worldadapter=worldadapter,
+                    world=world, owner=data.owner, uid=data.uid,
+                    nodetypes=nodetypes, native_modules=native_modules)
+            elif engine == 'theano_engine':
+                nodenets[nodenet_uid] = TheanoNodenet(
                     os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,

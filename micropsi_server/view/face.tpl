@@ -14,7 +14,6 @@
                 </div>
             </form>
     </div>
-    <div class="seperator" style="text-align:center;"><a class="resizeHandle" id="nodenetSizeHandle"> </a></div>
 </div>
 
 <script src="/static/js/bootstrap-slider.js"></script>

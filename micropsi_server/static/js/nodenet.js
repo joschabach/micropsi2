@@ -3319,7 +3319,7 @@ function handleEditNodenet(event){
             if(reload){
                 window.location.reload();
             } else {
-                setCurrentNodenet(currentNodenet);
+                setCurrentNodenet(currentNodenet, currentNodeSpace);
             }
         }
     );

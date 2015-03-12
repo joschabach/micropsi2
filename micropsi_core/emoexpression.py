@@ -26,8 +26,8 @@ def calc_emoexpression_parameters(nodenet):
     exp_pain = 1 - integrity
     exp_activation = emo_activation
     exp_surprise = base_unexpectedness
-    exp_anger = (1-emo_competence) * emo_activation
-    exp_sadness = (1-emo_competence) * (1/emo_activation)
+    exp_anger = (1 - emo_competence) * emo_activation
+    exp_sadness = (1 - emo_competence) * (1 - emo_activation)
     exp_joy = emo_pleasure
     exp_fear = 0                # todo: get fear from emo once we know how to calculate it
     exp_helplessness = 0        # todo: probably introduce base_ parameter to be set by motivation

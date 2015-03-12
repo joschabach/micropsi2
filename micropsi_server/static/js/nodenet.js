@@ -2393,12 +2393,14 @@ function openMultipleNodesContextMenu(event){
             break;
         }
     }
-    var special = $('#multi_node_menu .same_nodes');
+    var menu = $('#multi_node_menu .nodenet_menu');
+    var html = '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
+        '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
+        '<li><a href="#">Delete nodes</a></li>';
     if(sametype){
-        special.html('<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node));
-    } else {
-        special.html('');
+        html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
+    menu.html(html);
     if(Object.keys(clipboard).length === 0){
         $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
     } else {

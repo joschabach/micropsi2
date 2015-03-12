@@ -70,6 +70,16 @@ var faceFragmentShader = [
 "}"
 ].join("\n")
 
+var file = $("<link>").attr('rel', 'stylesheet').attr('type', 'text/css').attr('href', '/static/css/bootstrap-slider.css');
+$("head").append(file);
+
+var id;
+$(window).resize(function() {
+    clearTimeout(id);
+    id = setTimeout(init, 500);
+});
+
+
 init();
 register_stepping_function('nodenet', get_nodenet_data, fetchEmoexpressionParameters);
 
@@ -78,7 +88,7 @@ animate();
 function init() {
 
     canvas = document.getElementById("face");
-    div = document.getElementById("face_viewer");
+    div = canvas.parentNode;
     canvas.width = div.clientWidth;
     canvas.height = div.clientHeight;
 
@@ -322,10 +332,13 @@ function animate() {
 
 }
 
+var sliders = {};
+var inputs = {};
+
 function get_nodenet_data(){
     return {
         'nodespace': "Root",
-        'step': 0,              // todo: do we need to know the current netstep -1?
+        'step': 0,
         'coordinates': {
             x1: 0,
             x2: 0,
@@ -345,6 +358,19 @@ function fetchEmoexpressionParameters() {
 function updateEmoexpressionParameters(data) {
 
     var table = $('table.emoexpression');
+    if(Object.keys(sliders).length == 0){
+        init_sliders(data);
+    }
+
+    for(key in data){
+        sliders[key].slider('setValue', data[key]);
+        inputs[key].val(parseFloat(data[key]).toFixed(2));
+    }
+
+}
+
+function init_sliders(data){
+    var table = $('table.emoexpression');
     html = '';
     var sorted = [];
 
@@ -354,36 +380,45 @@ function updateEmoexpressionParameters(data) {
     sorted.sort(sortByName);
     // display reversed to get emo_ before base_
     for(var i = sorted.length-1; i >=0; i--){
-        //alert(sorted[i].value);
-        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><!--button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button--><button class="btn btn-mini" data="'+sorted[i].name+'">test</button></td></tr>'
+        html +=
+            '<tr>'+
+            '<td>'+sorted[i].name+'</td>'+
+            '<td><input id="'+sorted[i].name+'" data-target-value="'+sorted[i].name+'" data-slider-id="'+sorted[i].name+'" type="text" data-slider-min="0" data-slider-max="1" data-slider-step="0.01" data-slider-value="'+sorted[i].value+'"/></td>'+
+            '<td><input type="text" data-target-value="'+sorted[i].name+'" id="'+sorted[i].name+'_text" class="input-mini" value="'+sorted[i].value+'"/></td>'+
+            '</tr>'
     }
     table.html(html);
-    /*
-    $('button', table).each(function(idx, button){
-        $(button).on('click', function(evt){
-            evt.preventDefault();
-            var mod = $(button).attr('data');
-            api.call('add_modulator_monitor', {
-                    nodenet_uid: currentNodenet,
-                    modulator: mod,
-                    name: mod
-                }, function(data){
-                    dialogs.notification('Monitor added', 'success');
-                    $(document).trigger('monitorsChanged', data);
-                }
-            );
-        });
-    });
-    */
-    $('button', table).each(function(idx, button){
-        $(button).on('click', function(evt){
-            evt.preventDefault();
-            var mod = $(button).attr('data');
-            var newval =  prompt("new value for" + data, emoexpression[mod]);
-            emoexpression[mod] = parseFloat(newval);
-            updateEmoexpressionParameters(emoexpression);
-            animate();
-        });
-    });
 
+    $.each(sorted, function(idx, el){
+        sliders[el.name] = $('#'+el.name).slider({
+            tooltip: 'hide',
+            handle: 'triangle'
+        }).on('slide', setEmoValue);
+        inputs[el.name] = $('#'+el.name+'_text').on('blur', setEmoValue).on('keydown', function(event){
+            if(event.keyCode == 13){
+                setEmoValue(event);
+            } else if(event.keyCode == 38){
+                event.target.value = parseFloat(event.target.value) + 0.01;
+                setEmoValue(event);
+            } else if(event.keyCode == 40){
+                event.target.value = parseFloat(event.target.value) - 0.01;
+                setEmoValue(event);
+            }
+        });
+    });
+}
+
+function setEmoValue(event){
+    var key = $(event.target).attr('data-target-value');
+    var value;
+    if(event.value){
+        value = parseFloat(event.value);
+    } else {
+        value = parseFloat(event.target.value);
+    }
+    if(value >= 0 && value <= 1){
+        emoexpression[key] = value;
+    }
+    updateEmoexpressionParameters(emoexpression);
+    animate();
 }

@@ -13,6 +13,9 @@
 %if mode == "world":
     %include world  mine=mine,others=others,current=current,world_assets=world_assets
 % end
+%if mode == "face":
+    %include face
+% end
 
 %if mode == "all":
     %include nodenet

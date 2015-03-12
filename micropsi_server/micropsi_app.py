@@ -15,6 +15,7 @@ __date__ = '15.05.12'
 
 from micropsi_core import runtime
 from micropsi_core import tools
+from micropsi_core import emoexpression
 
 import micropsi_core.tools
 from micropsi_server import usermanagement
@@ -673,6 +674,13 @@ def create_worldadapter_selector(world_uid):
         nodenets=nodenets, worlds=worlds)
 
 
+@micropsi_app.route("/face")
+def show_face():
+    user_id, permissions, token = get_request_data()
+    return template("viewer", mode="face", user_id=user_id, permissions=permissions, token=token, version=VERSION)
+
+
+
 #################################################################
 #
 #
@@ -1118,6 +1126,13 @@ def reload_native_modules(nodenet_uid=None):
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     runtime.user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet)
     return True
+
+
+# Face
+@rpc("get_emoexpression_parameters")
+def get_emoexpression_parameters(nodenet_uid):
+    nodenet = runtime.get_nodenet(nodenet_uid)
+    return True, emoexpression.calc_emoexpression_parameters(nodenet)
 
 # --------- logging --------
 

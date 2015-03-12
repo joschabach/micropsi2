@@ -1312,9 +1312,9 @@ function createCompactNodeShape(node) {
             shape = new Path()
             shape.add(bounds.bottomLeft)
             shape.add(new Point(bounds.x+bounds.width * 0.10, bounds.y))
-            shape.add(new Point(bounds.x+bounds.width * 0.50, bounds.y))
+            shape.add(new Point(bounds.x+bounds.width * 0.40, bounds.y))
             shape.add(new Point(bounds.x+bounds.width * 0.50, bounds.y + bounds.height * 0.25))
-            shape.cubicCurveTo(new Point(bounds.x + bounds.width * 0.75, bounds.y-bounds.height * 0.2), new Point(bounds.right, bounds.y-bounds.height * 0.2), bounds.bottomRight);
+            shape.cubicCurveTo(new Point(bounds.x + bounds.width * 0.65, bounds.y-bounds.height * 0.2), new Point(bounds.right, bounds.y-bounds.height * 0.2), bounds.bottomRight);
             shape.closePath();
             break;
         case "Concept": // draw circle

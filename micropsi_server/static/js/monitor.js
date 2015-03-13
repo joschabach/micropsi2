@@ -203,7 +203,7 @@ $(function(){
         var y1max = 1.0;
         var y1min = 0;
         var y2max = 1.0;
-        var y2min = 1.0;
+        var y2min = 0;
         for (var uid in currentMonitors) {
             for (var step in currentMonitors[uid].values) {
                 if(currentMonitors[uid].classname == 'CustomMonitor'){

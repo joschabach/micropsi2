@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from micropsi_core.nodenet.node import Node, Gate, Slot
+from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 
 import theano
 from theano import tensor as T
@@ -17,6 +18,8 @@ SUB = 3
 SUR = 4
 CAT = 5
 EXP = 6
+
+NUMBER_OF_ELEMENTS_PER_NODE = 7
 
 
 def get_numerical_gate_type(type):
@@ -35,6 +38,23 @@ def get_numerical_gate_type(type):
     else:
         return GEN
 
+def get_string_gate_type(type):
+    if type == POR:
+        return "por"
+    elif type == RET:
+        return "ret"
+    elif type == SUB:
+        return "ret"
+    elif type == SUR:
+        return "sur"
+    elif type == CAT:
+        return "cat"
+    elif type == EXP:
+        return "exp"
+    else:
+        return "gen"
+
+
 
 class TheanoNode(Node):
     """
@@ -51,7 +71,7 @@ class TheanoNode(Node):
 
     @property
     def uid(self):
-        return str(self._id)
+        return str(int(self._id))
 
     @property
     def index(self):
@@ -108,7 +128,7 @@ class TheanoNode(Node):
         pass                    # todo: implement gate parameters
 
     def get_slot(self, type):
-        pass
+        return TheanoSlot(type, self, self._nodenet)
 
     def get_parameter(self, parameter):
         pass                    # todo: implement node parameters
@@ -172,7 +192,18 @@ class TheanoGate(Gate):
         self.__numerictype = get_numerical_gate_type(type)
 
     def get_links(self):
-        pass            # todo: implement links
+        links = []
+        gaterow = self.__nodenet.w_matrix[int(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
+        linksIndices = np.nonzero(gaterow)[0]
+        for index in linksIndices:
+            target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
+            target_uid = int(int(index - target_slot_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
+            weight = gaterow[index]
+            target_node = self.__nodenet.get_node(str(target_uid))
+            target_slot = target_node.get_slot(get_string_gate_type(target_slot_numerical))
+            link = TheanoLink(self.__node, self, target_node, target_slot, weight)
+            links.append(link)
+        return links
 
     def get_parameter(self, parameter_name):
         pass            # todo: implement parameters

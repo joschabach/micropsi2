@@ -19,12 +19,11 @@ from micropsi_core.nodenet.node import Node
 from threading import Lock
 import logging
 
-from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode, get_numerical_gate_type
+from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode, get_numerical_gate_type, NUMBER_OF_ELEMENTS_PER_NODE
 
 NODENET_VERSION = 1
 
-NUMBER_OF_NODES = 1000
-NUMBER_OF_ELEMENTS_PER_NODE = 7
+NUMBER_OF_NODES = 5
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
 
 REGISTER = 1
@@ -136,7 +135,7 @@ class TheanoNodenet(Nodenet):
         elif nodetype == "Trigger":
             numerictype = TRIGGER
         self.allocated_nodes[uid] = numerictype
-        return str(uid)
+        return str(int(uid))
 
     def delete_node(self, uid):
         self.allocated_nodes[int(uid)] = 0
@@ -163,7 +162,7 @@ class TheanoNodenet(Nodenet):
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
-        self.w_matrix[int(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst][int(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt] = weight
+        self.w_matrix[int(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt][int(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst] = weight
         self.w.set_value(self.w_matrix, borrow=True)
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):

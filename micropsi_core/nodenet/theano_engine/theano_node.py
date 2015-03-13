@@ -19,6 +19,23 @@ CAT = 5
 EXP = 6
 
 
+def get_numerical_gate_type(type):
+    if type == "por":
+        return POR
+    elif type == "ret":
+        return RET
+    elif type == "sub":
+        return SUB
+    elif type == "sur":
+        return SUR
+    elif type == "cat":
+        return CAT
+    elif type == "exp":
+        return EXP
+    else:
+        return GEN
+
+
 class TheanoNode(Node):
     """
         theano node proxy class
@@ -152,18 +169,7 @@ class TheanoGate(Gate):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
-        if type == "POR":
-            self.__numerictype = POR
-        elif type == "RET":
-            self.__numerictype = RET
-        elif type == "SUB":
-            self.__numerictype = SUB
-        elif type == "SUR":
-            self.__numerictype = SUR
-        elif type == "CAT":
-            self.__numerictype = CAT
-        elif type == "EXP":
-            self.__numerictype = EXP
+        self.__numerictype = get_numerical_gate_type(type)
 
     def get_links(self):
         pass            # todo: implement links
@@ -215,18 +221,7 @@ class TheanoSlot(Slot):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
-        if type == "POR":
-            self.__numerictype = POR
-        elif type == "RET":
-            self.__numerictype = RET
-        elif type == "SUB":
-            self.__numerictype = SUB
-        elif type == "SUR":
-            self.__numerictype = SUR
-        elif type == "CAT":
-            self.__numerictype = CAT
-        elif type == "EXP":
-            self.__numerictype = EXP
+        self.__tyoe = get_numerical_gate_type(type)
 
     def get_activation(self, sheaf="default"):
         return              # theano slots never report activation to anybody

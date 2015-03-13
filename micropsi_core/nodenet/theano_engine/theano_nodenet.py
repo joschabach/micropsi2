@@ -19,7 +19,7 @@ from micropsi_core.nodenet.node import Node
 from threading import Lock
 import logging
 
-from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
+from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode, get_numerical_gate_type
 
 NODENET_VERSION = 1
 
@@ -158,13 +158,16 @@ class TheanoNodenet(Nodenet):
         pass
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        pass
+        self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        pass
+        ngt = get_numerical_gate_type(gate_type)
+        nst = get_numerical_gate_type(slot_type)
+        self.w_matrix[int(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst][int(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt] = weight
+        self.w.set_value(self.w_matrix, borrow=True)
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        pass
+        self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
 
     def reload_native_modules(self, native_modules):
         pass

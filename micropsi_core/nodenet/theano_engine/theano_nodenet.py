@@ -27,11 +27,23 @@ NUMBER_OF_NODES = 1000
 NUMBER_OF_ELEMENTS_PER_NODE = 7
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
 
+REGISTER = 1
+SENSOR = 2
+ACTUATOR = 3
+ACTIVATOR = 4
+CONCEPT = 5
+SCRIPT = 6
+PIPE = 7
+TRIGGER = 8
+
 
 class TheanoNodenet(Nodenet):
     """
         theano runtime engine implementation
     """
+
+    allocated_nodes = None
+    last_allocated_node = -1
 
     # numpy data structures holding the actual data
     w_matrix = None
@@ -59,6 +71,8 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
+        self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
+
         self.w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
         self.w = theano.shared(value=self.w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
@@ -72,20 +86,61 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_node(self, uid):
-        return TheanoNode(self, uid)
-        pass
+        if int(uid) in self.get_node_uids():
+            return TheanoNode(self, int(uid))
+        else:
+            return None
 
     def get_node_uids(self):
-        pass
+        return np.nonzero(self.allocated_nodes)[0]
 
     def is_node(self, uid):
-        pass
+        return int(uid) in self.get_node_uids()
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
-        pass
+
+        uid = -1
+        while uid < 0:
+            for i in range((self.last_allocated_node+1), NUMBER_OF_NODES):
+                if self.allocated_nodes[i] == 0:
+                    uid = i
+                    break
+
+        if uid < 0:
+            for i in range(self.last_allocated_node-1):
+                if self.allocated_nodes[i] == 0:
+                    uid = i
+                    break
+
+        if uid < 0:
+            self.logger.warning("Cannot find free id, all "+NUMBER_OF_NODES+" node entries already in use.")
+            return None
+
+        self.last_allocated_node = uid
+
+        numerictype = 0
+        if nodetype == "Register":
+            numerictype = REGISTER
+        elif nodetype == "Actuator":
+            numerictype = ACTUATOR
+        elif nodetype == "Sensor":
+            numerictype = SENSOR
+        elif nodetype == "Activator":
+            numerictype = ACTIVATOR
+        elif nodetype == "Concept":
+            numerictype = CONCEPT
+        elif nodetype == "Script":
+            numerictype = SCRIPT
+        elif nodetype == "Pipe":
+            numerictype = PIPE
+        elif nodetype == "Trigger":
+            numerictype = TRIGGER
+        self.allocated_nodes[uid] = numerictype
+        return str(uid)
 
     def delete_node(self, uid):
-        pass
+        self.allocated_nodes[int(uid)] = 0
+        self.last_allocated_node = int(uid)-1
 
     def get_nodespace(self, uid):
         pass

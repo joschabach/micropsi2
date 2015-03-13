@@ -8,6 +8,7 @@ from copy import deepcopy
 import json
 import os
 
+import theano
 from theano import tensor as T
 import numpy as np
 
@@ -18,20 +19,29 @@ from micropsi_core.nodenet.node import Node
 from threading import Lock
 import logging
 
+from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode
+
 NODENET_VERSION = 1
 
 NUMBER_OF_NODES = 1000
 NUMBER_OF_ELEMENTS_PER_NODE = 7
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
 
+
 class TheanoNodenet(Nodenet):
     """
         theano runtime engine implementation
     """
 
+    # numpy data structures holding the actual data
+    w_matrix = None
+    a_array = None
+    theta_array = None
+
+    # theano tensors for performing operations
     w = None            # matrix of weights
     a = None            # vector of activations
-    
+    theta = None        # vector of thetas (i.e. biases)
 
     @property
     def engine(self):
@@ -49,13 +59,20 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
-        a_array = np.zeros(NUMBER_OF_ELEMENTS,dtype=np.float32)
-        a = T.shared(value=a_array.theano.config.floatX, name="a", borrow=True)
+        self.w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
+        self.w = theano.shared(value=self.w_matrix.astype(T.config.floatX), name="w", borrow=True)
+
+        self.a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.a = theano.shared(value=self.a_array.astype(T.config.floatX), name="a", borrow=True)
+
+        self.theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.theta = theano.shared(value=self.theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
     def step(self):
         pass
 
     def get_node(self, uid):
+        return TheanoNode(self, uid)
         pass
 
     def get_node_uids(self):

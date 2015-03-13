@@ -20,6 +20,7 @@ from threading import Lock
 import logging
 
 from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode, get_numerical_gate_type, NUMBER_OF_ELEMENTS_PER_NODE
+from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 
 NODENET_VERSION = 1
 
@@ -60,7 +61,7 @@ class TheanoNodenet(Nodenet):
 
     @property
     def current_step(self):
-        pass
+        return self.__step
 
     @property
     def data(self):
@@ -69,6 +70,13 @@ class TheanoNodenet(Nodenet):
     def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
 
         super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
+
+        self.stepoperators = [TheanoPropagate()]
+        self.stepoperators.sort(key=lambda op: op.priority)
+
+        self.__version = NODENET_VERSION  # used to check compatibility of the node net data
+        self.__step = 0
+        self.__modulators = {}
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
@@ -82,7 +90,22 @@ class TheanoNodenet(Nodenet):
         self.theta = theano.shared(value=self.theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
     def step(self):
-        pass
+        #self.user_prompt = None                        # todo: re-introduce user prompts when looking into native modules
+        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
+            self.world.agents[self.uid].snapshot()      # world adapter snapshot
+                                                        # TODO: Not really sure why we don't just know our world adapter,
+                                                        # but instead the world object itself
+
+        with self.netlock:
+
+            #self.timeout_locks()
+
+            for operator in self.stepoperators:
+                operator.execute(self, None, self.netapi)
+
+            self.netapi._step()
+
+            self.__step += 1
 
     def get_node(self, uid):
         if int(uid) in self.get_node_uids():

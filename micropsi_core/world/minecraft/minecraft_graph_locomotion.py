@@ -304,9 +304,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # self.datatargets['orientation'] = 0
 
             # reset self.datasources
-            for k in self.datasources.keys():
-                if k != 'hack_situation' and k != 'temperature':
-                    self.datasources[k] = 0.
+            # for k in self.datasources.keys():
+                # if k != 'hack_situation' and k != 'temperature':
+                    # self.datasources[k] = 0.
 
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():

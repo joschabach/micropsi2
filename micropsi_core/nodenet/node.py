@@ -134,12 +134,12 @@ class Node(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @property
-    @abstractmethod
-    def activations(self):
-        """
-        This node's activation properties (dict of all sheaves) as calculated once per step by its node function
-        """
+    #@property
+    #@abstractmethod
+    #def activations(self):
+    #    """
+    #    This node's activation properties (dict of all sheaves) as calculated once per step by its node function
+    #    """
 
     @property
     @abstractmethod

@@ -40,7 +40,7 @@ $(function(){
         refreshMonitors();
     });
     $(document).on('nodenetChanged', function(data, newNodenet){
-        refreshMonitors();
+        refreshMonitors(newNodenet);
     });
 
     function init() {
@@ -90,10 +90,10 @@ $(function(){
 
     register_stepping_function('monitors', getPollParams, setData);
 
-    function refreshMonitors(){
+    function refreshMonitors(newNodenet){
         params = getPollParams();
-        if(currentNodenet){
-            params.nodenet_uid = currentNodenet;
+        if(newNodenet || currentNodenet){
+            params.nodenet_uid = newNodenet || currentNodenet;
             api.call('get_monitoring_info', params, setData);
         }
     }

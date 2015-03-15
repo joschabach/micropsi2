@@ -168,7 +168,7 @@ function refreshNodenetList(){
             var el = $(event.target);
             var uid = el.attr('data');
             $(document).trigger('nodenet_changed', uid);
-            setCurrentNodenet(uid);
+            setCurrentNodenet(uid, 'Root', true);
         });
     });
 }
@@ -228,7 +228,7 @@ function setNodenetValues(data){
     }
 }
 
-function setCurrentNodenet(uid, nodespace){
+function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
         nodespace = "Root";
     }
@@ -246,8 +246,8 @@ function setCurrentNodenet(uid, nodespace){
             nodenetscope.activate();
             toggleButtons(true);
 
-            var nodenetChanged = (uid != currentNodenet);
-            var nodespaceChanged = (nodespace != currentNodeSpace);
+            var nodenetChanged = changed || (uid != currentNodenet);
+            var nodespaceChanged = changed || (nodespace != currentNodeSpace);
 
             if(nodenetChanged){
                 $(document).trigger('nodenetChanged', uid);

@@ -252,6 +252,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             if(nodenetChanged){
                 $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
+                selection = {};
             }
 
             nodenet_data = data;
@@ -1869,7 +1870,8 @@ function onMouseDown(event) {
                     clickType = "gate";
                     clickIndex = i;
                     var gate = node.gates[node.gateIndexes[i]];
-                    deselectGate();
+                    deselectAll();
+                    selectNode(node.uid);
                     selectGate(node, gate);
                     showGateForm(node, gate);
                     if (isRightClick(event)) {
@@ -1883,7 +1885,8 @@ function onMouseDown(event) {
                 }
                 clickType = "node";
                 if (isRightClick(event)) {
-                    deselectOtherNodes(nodeUid);
+                    deselectAll();
+                    selectNode(nodeUid);
                     openNodeContextMenu("#node_menu", event.event, nodeUid);
                     return;
                 }

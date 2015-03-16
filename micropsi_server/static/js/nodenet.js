@@ -2445,7 +2445,6 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.append('<li><a href="#">Rename node</a></li>');
     menu.append('<li><a href="#">Delete node</a></li>');
     menu.append('<li data-copy-nodes><a href="#">Copy node</a></li>');
-    menu.on('click', 'li', handleContextMenu);
     openContextMenu(menu_id, event);
 }
 
@@ -2696,7 +2695,6 @@ function autoalignmentHandler() {
 
 // let user create a new node
 function createNodeHandler(x, y, name, type, parameters, callback) {
-    var uid = makeUuid();
     params = {};
     if (!parameters) parameters = {};
     if (nodetypes[type]){
@@ -2704,23 +2702,21 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
         }
     }
-    addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
-    view.draw();
-    selectNode(uid);
     api.call("add_node", {
         nodenet_uid: currentNodenet,
         type: type,
         position: [x,y],
         nodespace: currentNodeSpace,
-        uid: uid,
         name: name,
         parameters: params },
-        success=function(data){
-            if(callback) callback(data);
+        success=function(uid){
+            addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
+            view.draw();
+            selectNode(uid);
+            if(callback) callback(uid);
             showNodeForm(uid);
             getNodespaceList();
         });
-    return uid;
 }
 
 
@@ -2931,20 +2927,6 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                     createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot);
                 });
             } else {
-                var uuid = makeUuid();
-                if(!(targetUid in nodes)){
-                    api.call('get_node', {
-                        'nodenet_uid': currentNodenet,
-                        'node_uid': targetUid
-                    }, function(data){
-                        nodes[targetUid] = data;
-                        nodes[targetUid].linksFromOutside.push(uuid);
-                    });
-                } else if(nodes[targetUid].parent != currentNodeSpace){
-                    nodes[sourceUid].linksToOutside.push(uuid);
-                    nodes[targetUid].linksFromOutside.push(uuid);
-                }
-                addLink(new Link(uuid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
                 // TODO: also write backwards link??
                 api.call("add_link", {
                     nodenet_uid: currentNodenet,
@@ -2952,8 +2934,21 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
                     gate_type: sourceGate,
                     target_node_uid: targetUid,
                     slot_type: targetSlot,
-                    weight: 1,
-                    uid: uuid
+                    weight: 1
+                }, function(uid){
+                    if(!(targetUid in nodes)){
+                        api.call('get_node', {
+                            'nodenet_uid': currentNodenet,
+                            'node_uid': targetUid
+                        }, function(data){
+                            nodes[targetUid] = data;
+                            nodes[targetUid].linksFromOutside.push(uid);
+                        });
+                    } else if(nodes[targetUid].parent != currentNodeSpace){
+                        nodes[sourceUid].linksToOutside.push(uid);
+                        nodes[targetUid].linksFromOutside.push(uid);
+                    }
+                    addLink(new Link(uid, sourceUid, sourceGate, targetUid, targetSlot, 1, 1));
                 });
             }
         }
@@ -3034,26 +3029,25 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                     newlinks.push(createLinkIfNotExists(sourceNode, sourceNode.gateIndexes[gateIndex], targetNode, targetNode.slotIndexes[slotIndex], 1, 1));
             }
 
-            for (j=0; j < newlinks.length; j++) {
-                var link = newlinks[j];
+            $.each(newlinks, function(idx, link){
                 if(link){
-                    if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                        if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                        if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
-                    }
-                    addLink(link);
-
                     api.call("add_link", {
                         nodenet_uid: currentNodenet,
                         source_node_uid: link.sourceNodeUid,
                         gate_type: link.gateName,
                         target_node_uid: link.targetNodeUid,
                         slot_type: link.slotName,
-                        weight: link.weight,
-                        uid: link.uid
+                        weight: link.weight
+                    }, function(uid){
+                        link.uid = uid;
+                        if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                            if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                            if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                        }
+                        addLink(link);
                     });
                 }
-            }
+            });
         }
     }
     cancelLinkCreationHandler();
@@ -3066,7 +3060,7 @@ function createLinkIfNotExists(sourceNode, sourceGate, targetNode, targetSlot, w
             return false;
         }
     }
-    var newlink = new Link(makeUuid(), sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1, certainty || 1);
+    var newlink = new Link('tmp', sourceNode.uid, sourceGate, targetNode.uid, targetSlot, weight || 1, certainty || 1);
     return newlink;
 }
 
@@ -3397,13 +3391,6 @@ function removeMonitor(node, target, type){
         $(document).trigger('monitorsChanged');
         delete monitors[monitor];
     });
-}
-
-function makeUuid() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-        return v.toString(16);
-    }); // todo: replace with a uuid fetched from server
 }
 
 

@@ -48,6 +48,7 @@ def get_numerical_gate_type(type):
     else:
         return GEN
 
+
 def get_string_gate_type(type):
     if type == POR:
         return "por"
@@ -63,6 +64,7 @@ def get_string_gate_type(type):
         return "exp"
     else:
         return "gen"
+
 
 def get_numerical_node_type(type):
     numerictype = 0
@@ -85,6 +87,27 @@ def get_numerical_node_type(type):
     return numerictype
 
 
+def get_string_node_type(type):
+    stringtype = 0
+    if type == REGISTER:
+        stringtype = "Register"
+    elif type == ACTUATOR:
+        stringtype = "Actuator"
+    elif type == SENSOR:
+        stringtype = "Sensor"
+    elif type == ACTIVATOR:
+        stringtype = "Activator"
+    elif type == CONCEPT:
+        stringtype = "Concept"
+    elif type == SCRIPT:
+        stringtype = "Script"
+    elif type == PIPE:
+        stringtype = "Pipe"
+    elif type == TRIGGER:
+        stringtype = "Trigger"
+    return stringtype
+
+
 class TheanoNode(Node):
     """
         theano node proxy class
@@ -93,9 +116,11 @@ class TheanoNode(Node):
     _nodenet = None
     _id =-1
 
-    def __init__(self, nodenet, uid=0, **_):
+    def __init__(self, nodenet, uid=0, type=0, **_):
 
-        Node.__init__(self, type, nodenet.get_nodetype(type))
+        strtype = get_string_node_type(type)
+
+        Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
         self._nodenet = nodenet
         self._id = int(uid)
@@ -255,7 +280,7 @@ class TheanoGate(Gate):
         pass            # todo: implement parameters
 
     def clone_sheaves(self):
-        pass            # tod: implement sheaves
+        return self.activations.copy()      # todo: implement sheaves
 
     def gate_function(self, input_activation, sheaf="default"):
         pass            # todo: implement gate function - or rather, don't, who'd be calling this?

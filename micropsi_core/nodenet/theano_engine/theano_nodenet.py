@@ -15,7 +15,7 @@ import numpy as np
 import micropsi_core.tools
 
 from micropsi_core.nodenet.nodenet import Nodenet
-from micropsi_core.nodenet.node import Node
+from micropsi_core.nodenet.node import Node, Nodetype
 from threading import Lock
 import logging
 
@@ -60,8 +60,8 @@ class TheanoNodenet(Nodenet):
         data = super(TheanoNodenet, self).data
         data['links'] = self.construct_links_dict()
         data['nodes'] = self.construct_nodes_dict()
-        for uid in data['nodes']:
-            data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
+        #for uid in data['nodes']:
+        #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
         data['version'] = self.__version
         data['modulators'] = self.construct_modulators_dict()
@@ -79,6 +79,12 @@ class TheanoNodenet(Nodenet):
         self.__step = 0
         self.__modulators = {}
         self.__nodetypes = nodetypes
+
+        # this conversion of dicts to living objects in the same variable name really isn't pretty.
+        # dict_nodenet is also doing it, and it's evil and should be fixed.
+        self.__nodetypes = {}
+        for type, data in nodetypes.items():
+            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
@@ -113,7 +119,7 @@ class TheanoNodenet(Nodenet):
 
     def get_node(self, uid):
         if int(uid) in self.get_node_uids():
-            return TheanoNode(self, int(uid))
+            return TheanoNode(self, int(uid), self.allocated_nodes[int(uid)])
         else:
             return None
 
@@ -233,7 +239,7 @@ class TheanoNodenet(Nodenet):
         i = 0
         for node_uid in self.get_node_uids():
             i += 1
-            data[node_uid] = self.get_node(node_uid).data
+            data[str(int(node_uid))] = self.get_node(node_uid).data
             if max_nodes > 0 and i > max_nodes:
                 break
         return data

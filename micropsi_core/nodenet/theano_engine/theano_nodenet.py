@@ -21,6 +21,7 @@ import logging
 
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
+from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 
 NODENET_VERSION = 1
 
@@ -56,7 +57,16 @@ class TheanoNodenet(Nodenet):
 
     @property
     def data(self):
-        pass
+        data = super(TheanoNodenet, self).data
+        data['links'] = self.construct_links_dict()
+        data['nodes'] = self.construct_nodes_dict()
+        for uid in data['nodes']:
+            data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
+        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['version'] = self.__version
+        data['modulators'] = self.construct_modulators_dict()
+        return data
+
 
     def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
 
@@ -68,6 +78,7 @@ class TheanoNodenet(Nodenet):
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
+        self.__nodetypes = nodetypes
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
@@ -79,6 +90,8 @@ class TheanoNodenet(Nodenet):
 
         self.theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.theta = theano.shared(value=self.theta_array.astype(T.config.floatX), name="theta", borrow=True)
+
+        self.rootnodespace = TheanoNodespace(self)
 
     def step(self):
         #self.user_prompt = None                        # todo: re-introduce user prompts when looking into native modules
@@ -138,13 +151,16 @@ class TheanoNodenet(Nodenet):
         self.last_allocated_node = int(uid)-1
 
     def get_nodespace(self, uid):
-        pass
+        if uid == "Root":
+            return self.rootnodespace
+        else:
+            return None
 
     def get_nodespace_uids(self):
-        pass
+        return ["Root"]
 
     def is_nodespace(self, uid):
-        pass
+        return uid == "Root"
 
     def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
         pass
@@ -168,10 +184,10 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
-        pass
+        return self.data                    # todo: implement
 
     def get_nodespace_data(self, nodespace_uid, max_nodes):
-        pass
+        return self.data                    # todo: implement
 
     def merge_data(self, nodenet_data):
         pass
@@ -196,3 +212,38 @@ class TheanoNodenet(Nodenet):
 
     def set_modulator(self, modulator, value):
         pass
+
+    def get_nodetype(self, type):
+        if type in self.__nodetypes:
+            return self.__nodetypes[type]
+        else:
+            return None
+            #return self.__native_modules.get(type)         # todo: implement native modules
+
+    def construct_links_dict(self):
+        data = {}
+        for node_uid in self.get_node_uids():
+            links = self.get_node(node_uid).get_associated_links()
+            for link in links:
+                data[link.uid] = link.data
+        return data
+
+    def construct_nodes_dict(self, max_nodes=-1):
+        data = {}
+        i = 0
+        for node_uid in self.get_node_uids():
+            i += 1
+            data[node_uid] = self.get_node(node_uid).data
+            if max_nodes > 0 and i > max_nodes:
+                break
+        return data
+
+    def construct_nodespaces_dict(self, nodespace_uid):
+        data = {}
+        for nodespace_candidate_uid in self.get_nodespace_uids():
+            if self.get_nodespace(nodespace_candidate_uid).parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
+                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
+        return data
+
+    def construct_modulators_dict(self):
+        return {}

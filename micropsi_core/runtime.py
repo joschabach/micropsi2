@@ -250,6 +250,8 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
+            engine = "theano_engine"
+
             if engine == 'dict_engine':
                 nodenets[nodenet_uid] = DictNodenet(
                     os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),

@@ -95,6 +95,8 @@ class TheanoNode(Node):
 
     def __init__(self, nodenet, uid=0, **_):
 
+        Node.__init__(self, type, nodenet.get_nodetype(type))
+
         self._nodenet = nodenet
         self._id = int(uid)
 
@@ -159,6 +161,17 @@ class TheanoNode(Node):
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
 
+    def get_associated_links(self):
+        links = []
+        links.extend(self.get_gate("gen").get_links())
+        links.extend(self.get_gate("por").get_links())
+        links.extend(self.get_gate("ret").get_links())
+        links.extend(self.get_gate("sub").get_links())
+        links.extend(self.get_gate("sur").get_links())
+        links.extend(self.get_gate("cat").get_links())
+        links.extend(self.get_gate("exp").get_links())
+        return links
+
     def get_parameter(self, parameter):
         pass                    # todo: implement node parameters
 
@@ -167,6 +180,9 @@ class TheanoNode(Node):
 
     def clone_parameters(self):
         pass
+
+    def get_gate_parameters(self):
+        return {}               # todo: implement gate parameters
 
     def get_state(self, state):
         pass
@@ -182,6 +198,7 @@ class TheanoNode(Node):
 
     def node_function(self):
         pass
+
 
 
 class TheanoGate(Gate):

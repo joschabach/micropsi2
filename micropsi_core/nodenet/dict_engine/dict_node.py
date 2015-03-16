@@ -239,12 +239,12 @@ class DictNode(NetEntity, Node):
     def set_gate_parameter(self, gate_type, parameter, value):
         if self.__non_default_gate_parameters is None:
             self.__non_default_gate_parameters = {}
-        if parameter in Nodetype.GATE_DEFAULTS:
+        if parameter in self.nodetype.gate_defaults[gate_type]:
             if value is None:
-                value = Nodetype.GATE_DEFAULTS[parameter]
+                value = self.nodetype.gate_defaults[gate_type][parameter]
             else:
                 value = float(value)
-            if value != Nodetype.GATE_DEFAULTS[parameter]:
+            if value != self.nodetype.gate_defaults[gate_type][parameter]:
                 if gate_type not in self.__non_default_gate_parameters:
                     self.__non_default_gate_parameters[gate_type] = {}
                 self.__non_default_gate_parameters[gate_type][parameter] = value

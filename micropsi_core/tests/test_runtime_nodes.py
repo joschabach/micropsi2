@@ -150,6 +150,17 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
     assert params["foo"]["amplification"] == 5
 
 
+def test_non_standard_gate_defaults(fixed_nodenet):
+    nodenet = micropsi.nodenets[fixed_nodenet]
+    micropsi.add_node(fixed_nodenet, 'Trigger', [30, 30], uid='testtrigger', name='test')
+    node = nodenet.netapi.get_node('testtrigger')
+    params = node.get_gate_parameters()
+    genparams = params['gen']
+    genparams['maximum'] = 1
+    micropsi.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
+    assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 1
+
+
 def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     from os import path, remove
     with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:

@@ -66,7 +66,7 @@ class TheanoNodespace(Nodespace):
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return self.__nodenet.get_node_uids()
+            return [str(int(uid)) for uid in self.__nodenet.get_node_uids()]
         else:
             return ["Root"]
 

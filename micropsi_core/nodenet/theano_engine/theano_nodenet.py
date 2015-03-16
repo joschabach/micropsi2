@@ -19,22 +19,13 @@ from micropsi_core.nodenet.node import Node
 from threading import Lock
 import logging
 
-from micropsi_core.nodenet.theano_engine.theano_node import TheanoNode, get_numerical_gate_type, NUMBER_OF_ELEMENTS_PER_NODE
+from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 
 NODENET_VERSION = 1
 
 NUMBER_OF_NODES = 5
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
-
-REGISTER = 1
-SENSOR = 2
-ACTUATOR = 3
-ACTIVATOR = 4
-CONCEPT = 5
-SCRIPT = 6
-PIPE = 7
-TRIGGER = 8
 
 
 class TheanoNodenet(Nodenet):
@@ -139,25 +130,7 @@ class TheanoNodenet(Nodenet):
             return None
 
         self.last_allocated_node = uid
-
-        numerictype = 0
-        if nodetype == "Register":
-            numerictype = REGISTER
-        elif nodetype == "Actuator":
-            numerictype = ACTUATOR
-        elif nodetype == "Sensor":
-            numerictype = SENSOR
-        elif nodetype == "Activator":
-            numerictype = ACTIVATOR
-        elif nodetype == "Concept":
-            numerictype = CONCEPT
-        elif nodetype == "Script":
-            numerictype = SCRIPT
-        elif nodetype == "Pipe":
-            numerictype = PIPE
-        elif nodetype == "Trigger":
-            numerictype = TRIGGER
-        self.allocated_nodes[uid] = numerictype
+        self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
         return str(int(uid))
 
     def delete_node(self, uid):

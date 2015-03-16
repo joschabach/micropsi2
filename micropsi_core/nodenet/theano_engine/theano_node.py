@@ -11,6 +11,16 @@ import warnings
 import micropsi_core.tools
 import logging
 
+REGISTER = 1
+SENSOR = 2
+ACTUATOR = 3
+ACTIVATOR = 4
+CONCEPT = 5
+SCRIPT = 6
+PIPE = 7
+TRIGGER = 8
+
+
 GEN = 0
 POR = 1
 RET = 2
@@ -54,6 +64,25 @@ def get_string_gate_type(type):
     else:
         return "gen"
 
+def get_numerical_node_type(type):
+    numerictype = 0
+    if type == "Register":
+        numerictype = REGISTER
+    elif type == "Actuator":
+        numerictype = ACTUATOR
+    elif type == "Sensor":
+        numerictype = SENSOR
+    elif type == "Activator":
+        numerictype = ACTIVATOR
+    elif type == "Concept":
+        numerictype = CONCEPT
+    elif type == "Script":
+        numerictype = SCRIPT
+    elif type == "Pipe":
+        numerictype = PIPE
+    elif type == "Trigger":
+        numerictype = TRIGGER
+    return numerictype
 
 
 class TheanoNode(Node):

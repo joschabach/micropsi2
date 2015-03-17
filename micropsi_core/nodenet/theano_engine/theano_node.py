@@ -147,11 +147,11 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return (0,0,)           # todo: implement position
+        return self._nodenet.positions[self._id]      # todo: get rid of positions
 
     @position.setter
     def position(self, position):
-        pass                    # todo: implement position
+        self._nodenet.positions[self._id] = position  # todo: get rid of positions
 
     @property
     def name(self):
@@ -179,8 +179,9 @@ class TheanoNode(Node):
 
     @activation.setter
     def activation(self, activation):
-        self._nodenet.a_array[self._id*NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
-        self._nodenet.a.set_value(self._nodenet.a_array, borrow=True)
+        a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
+        a_array[self._id*NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
+        self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
         return TheanoGate(type, self, self._nodenet)
@@ -272,9 +273,10 @@ class TheanoGate(Gate):
 
     def get_links(self):
         links = []
-        gaterow = self.__nodenet.w_matrix[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
-        linksIndices = np.nonzero(gaterow)[0]
-        for index in linksIndices:
+        w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
+        gaterow = w_matrix[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
+        links_indices = np.nonzero(gaterow)[0]
+        for index in links_indices:
             target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
             target_uid = int(int(index - target_slot_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
             weight = gaterow[index]

@@ -37,10 +37,8 @@ class TheanoNodenet(Nodenet):
     allocated_nodes = None
     last_allocated_node = -1
 
-    # numpy data structures holding the actual data
-    w_matrix = None
-    a_array = None
-    theta_array = None
+    # todo: get rid of positions
+    positions = []
 
     # theano tensors for performing operations
     w = None            # matrix of weights
@@ -88,14 +86,16 @@ class TheanoNodenet(Nodenet):
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
-        self.w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
-        self.w = theano.shared(value=self.w_matrix.astype(T.config.floatX), name="w", borrow=True)
+        self.positions = [(10,10) for i in range(0,NUMBER_OF_NODES)]
 
-        self.a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
-        self.a = theano.shared(value=self.a_array.astype(T.config.floatX), name="a", borrow=True)
+        w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
+        self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        self.theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
-        self.theta = theano.shared(value=self.theta_array.astype(T.config.floatX), name="theta", borrow=True)
+        a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
+
+        theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.theta = theano.shared(value=theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 
@@ -110,10 +110,14 @@ class TheanoNodenet(Nodenet):
 
             #self.timeout_locks()
 
+            print(self.a.get_value())
+
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
             self.netapi._step()
+
+            print(self.a.get_value())
 
             self.__step += 1
 
@@ -150,6 +154,8 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_node = uid
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
+        self.positions[uid] = position
+
         return to_id(uid)
 
     def delete_node(self, uid):
@@ -191,8 +197,9 @@ class TheanoNodenet(Nodenet):
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
-        self.w_matrix[from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt][from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst] = weight
-        self.w.set_value(self.w_matrix, borrow=True)
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix[from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt][from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst] = weight
+        self.w.set_value(w_matrix, borrow=True)
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
@@ -264,3 +271,6 @@ class TheanoNodenet(Nodenet):
 
     def construct_modulators_dict(self):
         return {}
+
+    def update_node_positions(self):
+        pass

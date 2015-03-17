@@ -177,6 +177,17 @@ class TheanoNodenet(Nodenet):
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
+        # todo: the interface for create_link makes no sense: it always returns true and a link object that is only
+        # being used to query the UID which is useless
+        links = self.get_node(source_node_uid).get_gate(gate_type).get_links()
+        link = None
+        for candidate in links:
+            if candidate.target_slot.type == slot_type and candidate.target_node.uid == target_node_uid:
+                link = candidate
+                break
+
+        return True, link
+
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)

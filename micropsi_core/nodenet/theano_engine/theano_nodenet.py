@@ -118,16 +118,16 @@ class TheanoNodenet(Nodenet):
             self.__step += 1
 
     def get_node(self, uid):
-        if int(uid) in self.get_node_uids():
-            return TheanoNode(self, int(uid), self.allocated_nodes[int(uid)])
+        if uid in self.get_node_uids():
+            return TheanoNode(self, uid, self.allocated_nodes[from_id(uid)])
         else:
             return None
 
     def get_node_uids(self):
-        return np.nonzero(self.allocated_nodes)[0]
+        return [to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
 
     def is_node(self, uid):
-        return int(uid) in self.get_node_uids()
+        return uid in self.get_node_uids()
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
 
@@ -150,11 +150,11 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_node = uid
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
-        return str(int(uid))
+        return to_id(uid)
 
     def delete_node(self, uid):
-        self.allocated_nodes[int(uid)] = 0
-        self.last_allocated_node = int(uid)-1
+        self.allocated_nodes[from_id(uid)] = 0
+        self.last_allocated_node = from_id(uid)-1
 
     def get_nodespace(self, uid):
         if uid == "Root":
@@ -180,7 +180,7 @@ class TheanoNodenet(Nodenet):
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
-        self.w_matrix[int(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt][int(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst] = weight
+        self.w_matrix[from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt][from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst] = weight
         self.w.set_value(self.w_matrix, borrow=True)
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
@@ -239,7 +239,7 @@ class TheanoNodenet(Nodenet):
         i = 0
         for node_uid in self.get_node_uids():
             i += 1
-            data[str(int(node_uid))] = self.get_node(node_uid).data
+            data[node_uid] = self.get_node(node_uid).data
             if max_nodes > 0 and i > max_nodes:
                 break
         return data

@@ -4,6 +4,7 @@ import warnings
 
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
 from micropsi_core.nodenet.nodespace import Nodespace
+from micropsi_core.nodenet.theano_engine.theano_node import *
 import micropsi_core.tools
 
 
@@ -66,7 +67,7 @@ class TheanoNodespace(Nodespace):
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return [str(int(uid)) for uid in self.__nodenet.get_node_uids()]
+            return self.__nodenet.get_node_uids()
         else:
             return ["Root"]
 

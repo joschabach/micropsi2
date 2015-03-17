@@ -108,6 +108,14 @@ def get_string_node_type(type):
     return stringtype
 
 
+def to_id(numericid):
+    return "n"+str(int(numericid))
+
+
+def from_id(stringid):
+    return int(stringid[1:])
+
+
 class TheanoNode(Node):
     """
         theano node proxy class
@@ -123,11 +131,11 @@ class TheanoNode(Node):
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
         self._nodenet = nodenet
-        self._id = int(uid)
+        self._id = from_id(uid)
 
     @property
     def uid(self):
-        return str(int(self._id))
+        return to_id(self._id)
 
     @property
     def index(self):

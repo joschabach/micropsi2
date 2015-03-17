@@ -43,6 +43,7 @@ class WorldAdapter(WorldObject):
         self.datasource_lock = Lock()
         self.datasource_snapshots = {}
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
+        self.snapshot()
 
     def initialize_worldobject(self, data):
         for key in self.datasources:

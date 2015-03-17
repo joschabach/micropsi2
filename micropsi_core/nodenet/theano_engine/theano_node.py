@@ -171,7 +171,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._id + GEN]
+        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._id*NUMBER_OF_ELEMENTS_PER_NODE + GEN])
 
     @property
     def activations(self):
@@ -179,7 +179,7 @@ class TheanoNode(Node):
 
     @activation.setter
     def activation(self, activation):
-        self._nodenet.a_array[self._id + GEN] = activation
+        self._nodenet.a_array[self._id*NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
         self._nodenet.a.set_value(self._nodenet.a_array, borrow=True)
 
     def get_gate(self, type):
@@ -227,7 +227,7 @@ class TheanoNode(Node):
         pass
 
     def clone_sheaves(self):
-        pass                    # todo: implement sheaves
+        return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
 
     def node_function(self):
         pass
@@ -258,7 +258,7 @@ class TheanoGate(Gate):
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid) + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype])
 
     @property
     def activations(self):
@@ -288,7 +288,7 @@ class TheanoGate(Gate):
         pass            # todo: implement parameters
 
     def clone_sheaves(self):
-        return self.activations.copy()      # todo: implement sheaves
+        return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
 
     def gate_function(self, input_activation, sheaf="default"):
         pass            # todo: implement gate function - or rather, don't, who'd be calling this?

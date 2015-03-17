@@ -258,7 +258,7 @@ class TheanoGate(Gate):
 
     @property
     def activation(self):
-        return self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[int(self.__node.uid) + self.__numerictype]
+        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid) + self.__numerictype])
 
     @property
     def activations(self):

@@ -21,11 +21,11 @@ class TheanoLink(Link):
 
     @property
     def weight(self):
-        return self.__weight
+        return float(self.__weight)
 
     @property
     def certainty(self):
-        return self.__certainty
+        return float(self.__certainty)
 
     @property
     def source_node(self):

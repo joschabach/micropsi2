@@ -110,14 +110,10 @@ class TheanoNodenet(Nodenet):
 
             #self.timeout_locks()
 
-            print(self.a.get_value())
-
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
             self.netapi._step()
-
-            print(self.a.get_value())
 
             self.__step += 1
 

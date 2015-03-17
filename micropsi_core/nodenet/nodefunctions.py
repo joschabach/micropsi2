@@ -237,12 +237,13 @@ def trigger(netapi, node=None, sheaf="default", **params):
     else:
         waitfrom = node.get_state("waitfrom") or -1
 
+        timeout = node.get_parameter("timeout") or 10        # todo: use emo_resolution
+        condition = node.get_parameter("condition") or "="
+        response = node.get_parameter("response")
+        if response is None:
+            response = 1
+
         if node.get_slot('sub').activation > 0:
-            timeout = node.get_parameter("timeout") or 10        # todo: use emo_resolution
-            condition = node.get_parameter("condition") or "="
-            response = node.get_parameter("response")
-            if response is None:
-                response = 1
             currentstep = netapi.step
 
             success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
@@ -257,8 +258,18 @@ def trigger(netapi, node=None, sheaf="default", **params):
             else:                                   # perform burst
                 sub = 1
                 node.set_state("waitfrom", currentstep)
-        elif waitfrom > 0:
-            node.set_state("waitfrom", -1)
+                sur = node.get_slot('sur').activation
+
+        else:
+
+            if waitfrom > 0:
+                node.set_state("waitfrom", -1)
+
+            if node.get_slot('sur').activation:
+                success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
+                          (condition == ">" and node.get_slot('sur').activation > int(response))
+                if success:
+                    sur = node.get_slot('sur').activation
 
     gen = sur
     node.activation = gen

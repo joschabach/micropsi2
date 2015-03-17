@@ -141,3 +141,33 @@ def test_node_trigger_logic_good_after_fail(fixed_nodenet):
     net.step()
 
     assert n_trigger.get_gate("sur").activation == 1
+
+
+def test_trigger_bubbling(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    trigger = netapi.create_node("Trigger", "Root", "Trigger")
+    trigger.set_parameter("response", 0.5)
+    trigger.set_parameter("timeout", 1)
+    trigger.set_parameter("condition", ">")
+    pipe = netapi.create_node("Pipe", "Root", "Pipe")
+
+    # link the trigger between source and pipe
+    netapi.link_with_reciprocal(pipe, trigger, 'subsur')
+    netapi.link(source, 'gen', trigger, 'sur')
+    # activate the source
+    source.activation = 0.7
+    net.step()
+    # activation should bubble through the trigger...
+    assert trigger.activation == 0.7
+    source.activation = 0.7  # hold activation
+    net.step()
+    # ... to the pipe
+    assert pipe.get_slot('sur').activation == 0.7
+    assert trigger.activation == 0.7
+    assert pipe.get_gate('sub').activation > 0  # pipe performs burst
+    source.activation == 0.7
+    # ... and stay on
+    net.step()
+    assert trigger.get_slot('sub').activation == 1  # burst arrived
+    assert pipe.get_slot('sur').activation == 0.7
+    assert trigger.get_gate('sur').activation == 0.7  # trigger keeps confirming

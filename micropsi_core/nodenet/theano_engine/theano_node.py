@@ -274,12 +274,12 @@ class TheanoGate(Gate):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        gaterow = w_matrix[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
-        links_indices = np.nonzero(gaterow)[0]
+        gatecolumn = w_matrix[:, from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
+        links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
             target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
             target_uid = int(int(index - target_slot_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
-            weight = gaterow[index]
+            weight = gatecolumn[index]
             target_node = self.__nodenet.get_node(to_id(target_uid))
             target_slot = target_node.get_slot(get_string_gate_type(target_slot_numerical))
             link = TheanoLink(self.__node, self, target_node, target_slot, weight)

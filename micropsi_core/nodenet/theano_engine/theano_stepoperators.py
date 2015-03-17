@@ -15,4 +15,4 @@ class TheanoPropagate(Propagate):
 
     """
     def execute(self, nodenet, nodes, netapi):
-        nodenet.a = shared(T.dot(T.transpose(nodenet.w), nodenet.a).eval(), name="a", borrow=True)
+        nodenet.a = shared(T.dot(nodenet.w, nodenet.a).eval(), name="a", borrow=True)

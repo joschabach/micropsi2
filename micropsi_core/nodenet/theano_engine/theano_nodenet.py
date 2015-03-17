@@ -194,7 +194,7 @@ class TheanoNodenet(Nodenet):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        w_matrix[from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt][from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst] = weight
+        w_matrix[from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst][from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt] = weight
         self.w.set_value(w_matrix, borrow=True)
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):

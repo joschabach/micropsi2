@@ -258,6 +258,7 @@ def trigger(netapi, node=None, sheaf="default", **params):
             else:                                   # perform burst
                 sub = 1
                 node.set_state("waitfrom", currentstep)
+                sur = node.get_slot('sur').activation
 
         else:
 

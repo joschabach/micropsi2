@@ -7,6 +7,7 @@ from copy import deepcopy
 
 import json
 import os
+import copy
 
 import theano
 from theano import tensor as T
@@ -23,9 +24,22 @@ from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 
+
+STANDARD_NODETYPES = {
+    #"Nodespace": {
+    #    "name": "Nodespace"
+    #},
+    "Register": {
+        "name": "Register",
+        "slottypes": ["gen"],
+        "nodefunction_name": "register",
+        "gatetypes": ["gen"]
+    }
+}
+
 NODENET_VERSION = 1
 
-NUMBER_OF_NODES = 5
+NUMBER_OF_NODES = 100
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
 
 
@@ -71,19 +85,19 @@ class TheanoNodenet(Nodenet):
         return data
 
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
         super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
-        self.__nodetypes = nodetypes
+        self.__nodetypes = STANDARD_NODETYPES
 
         # this conversion of dicts to living objects in the same variable name really isn't pretty.
         # dict_nodenet is also doing it, and it's evil and should be fixed.
         self.__nodetypes = {}
-        for type, data in nodetypes.items():
+        for type, data in STANDARD_NODETYPES.items():
             self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
@@ -281,3 +295,9 @@ class TheanoNodenet(Nodenet):
 
     def update_node_positions(self):
         pass
+
+    def get_standard_nodetype_definitions(self):
+        """
+        Returns the standard node types supported by this nodenet
+        """
+        return copy.deepcopy(STANDARD_NODETYPES)

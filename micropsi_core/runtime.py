@@ -261,7 +261,7 @@ def load_nodenet(nodenet_uid):
                     os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
-                    nodetypes=TheanoNodenet.STANDARD_NODETYPES, native_modules=native_modules)
+                    native_modules=native_modules)
             # Add additional engine types here
             else:
                 nodenet_lock.release()

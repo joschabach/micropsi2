@@ -60,7 +60,9 @@ class TheanoNodenet(Nodenet):
 
     g_factor = None     # vector of gate factors, controlled by directional activators
     g_threshold = None  # vector of thresholds (gate parameters)
-
+    g_amplification = None  # vector of amplification factors
+    g_min = None        # vector of lower bounds
+    g_max = None        # vector of upper bounds
 
     theta = None        # vector of thetas (i.e. biases)
 
@@ -118,7 +120,16 @@ class TheanoNodenet(Nodenet):
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
         g_threshold_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
-        self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_factor", borrow=True)
+        self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
+
+        g_amplification_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
+
+        g_min_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
+
+        g_max_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 

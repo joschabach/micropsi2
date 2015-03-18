@@ -55,7 +55,16 @@ class TheanoCalculate(Calculate):
         thresholded_gate_function_output = \
             T.switch(T.ge(gate_function_output,nodenet.g_threshold),gate_function_output,0)
 
-        gatefunctions = thresholded_gate_function_output
+        # apply amplification
+        amplified_gate_function_output = thresholded_gate_function_output * nodenet.g_amplification
+
+        # apply minimum
+        min_limited_gate_function_output = T.minimum(amplified_gate_function_output, nodenet.g_max)
+
+        # apply maximum
+        max_limited_gate_function_output = T.maximum(min_limited_gate_function_output, nodenet.g_min)
+
+        gatefunctions = max_limited_gate_function_output
 
         # put the theano graph into a callable function to be executed
         self.calculate = theano.function([], nodenet.a, updates={nodenet.a: gatefunctions})

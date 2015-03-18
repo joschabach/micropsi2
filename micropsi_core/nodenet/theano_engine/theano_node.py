@@ -194,16 +194,34 @@ class TheanoNode(Node):
             g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
             g_threshold_array[elementindex] = value
             self._nodenet.g_threshold.set_value(g_threshold_array, borrow=True)
+        elif parameter == 'amplification':
+            g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True, return_internal_type=True)
+            g_amplification_array[elementindex] = value
+            self._nodenet.g_amplification.set_value(g_amplification_array, borrow=True)
+        elif parameter == 'minimum':
+            g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
+            g_min_array[elementindex] = value
+            self._nodenet.g_min.set_value(g_min_array, borrow=True)
+        elif parameter == 'maximum':
+            g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
+            g_max_array[elementindex] = value
+            self._nodenet.g_max.set_value(g_max_array, borrow=True)
 
     def get_gate_parameters(self):
         # todo: implement defaulting mechanism for gate parameters
 
         g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
+        g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True, return_internal_type=True)
+        g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
+        g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
 
         result = {}
         for numericalgate in range(0, NUMBER_OF_ELEMENTS_PER_NODE):
             gate_parameters = {
-                'threshold': g_threshold_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate]
+                'threshold': g_threshold_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
+                'amplification': g_amplification_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
+                'minimum': g_min_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
+                'maximum': g_max_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
             }
             result[get_string_gate_type(numericalgate)] = gate_parameters
         return result

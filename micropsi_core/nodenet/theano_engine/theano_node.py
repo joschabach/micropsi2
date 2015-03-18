@@ -226,22 +226,22 @@ class TheanoNode(Node):
         return links
 
     def get_parameter(self, parameter):
-        pass                    # todo: implement node parameters
+        return None             # todo: implement node parameters
 
     def set_parameter(self, parameter, value):
         pass                    # todo: implement node parameters
 
     def clone_parameters(self):
-        pass
+        return {}               # todo: implement node parameters
 
     def get_state(self, state):
-        pass
+        return None             # todo: implement node state
 
     def set_state(self, state, value):
-        pass
+        pass                    # todo: implement node state
 
     def clone_state(self):
-        pass
+        return {}               # todo: implement node szaze
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves

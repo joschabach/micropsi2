@@ -124,7 +124,7 @@ class TheanoNode(Node):
     _nodenet = None
     _id =-1
 
-    def __init__(self, nodenet, uid=0, type=0, **_):
+    def __init__(self, nodenet, uid, type, **_):
 
         strtype = get_string_node_type(type)
 
@@ -276,6 +276,12 @@ class TheanoGate(Gate):
     @property
     def activation(self):
         return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype])
+
+    @activation.setter
+    def activation(self, value):
+        a_array = self.__nodenet.a.get_value(borrow=True, return_internal_type=True)
+        a_array[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype] = value
+        self.__nodenet.a.set_value(a_array, borrow=True)
 
     @property
     def activations(self):

@@ -93,12 +93,13 @@ class TheanoNodenet(Nodenet):
         self.__step = 0
         self.__modulators = {}
         self.__nodetypes = STANDARD_NODETYPES
+        self.filename = filename
 
         # this conversion of dicts to living objects in the same variable name really isn't pretty.
         # dict_nodenet is also doing it, and it's evil and should be fixed.
-        self.__nodetypes = {}
-        for type, data in STANDARD_NODETYPES.items():
-            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
+        #self.__nodetypes = {}
+        #for type, data in STANDARD_NODETYPES.items():
+        #    self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
@@ -123,6 +124,141 @@ class TheanoNodenet(Nodenet):
 
         self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
         self.stepoperators.sort(key=lambda op: op.priority)
+
+        self.load()
+
+    def load(self, string=None):
+        """Load the node net from a file"""
+        # try to access file
+        with self.netlock:
+
+            initfrom = {}
+
+            if string:
+                self.logger.info("Loading nodenet %s from string", self.name)
+                try:
+                    initfrom.update(json.loads(string))
+                except ValueError:
+                    warnings.warn("Could not read nodenet data from string")
+                    return False
+            else:
+                try:
+                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
+                    with open(self.filename) as file:
+                        initfrom.update(json.load(file))
+                except ValueError:
+                    warnings.warn("Could not read nodenet data")
+                    return False
+                except IOError:
+                    warnings.warn("Could not open nodenet file")
+
+            if self.__version == NODENET_VERSION:
+                self.initialize_nodenet(initfrom)
+                return True
+            else:
+                raise NotImplementedError("Wrong version of nodenet data, cannot import.")
+
+    def initialize_nodenet(self, initfrom):
+        """Called after reading new nodenet state.
+
+        Parses the nodenet state and set up the non-persistent data structures necessary for efficient
+        computation of the node net
+        """
+
+        nodetypes = {}
+        for type, data in self.__nodetypes.items():
+            nodetypes[type] = Nodetype(nodenet=self, **data)
+        self.__nodetypes = nodetypes
+
+        # todo: implement native modules
+        #native_modules = {}
+        #for type, data in self.__native_modules.items():
+        #    native_modules[type] = Nodetype(nodenet=self, **data)
+        #self.__native_modules = native_modules
+        #
+        #self.__modulators = initfrom.get("modulators", {})
+
+        # todo: implement nodespaces
+        # set up nodespaces; make sure that parent nodespaces exist before children are initialized
+        #self.__nodespaces = {}
+        #self.__nodespaces["Root"] = TheanoNodespace(self) #, None, (0, 0), name="Root", uid="Root")
+
+        # now merge in all init data (from the persisted file typically)
+        self.merge_data(initfrom)
+
+    def merge_data(self, nodenet_data):
+        """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
+
+        # Because of the horrible initialize_nodenet design that replaces existing dictionary objects with
+        # Python objects between initial loading and first use, none of the nodenet setup code is reusable.
+        # Instantiation should be a state-independent method or a set of state-independent methods that can be
+        # called whenever new data needs to be merged in, initially or later on.
+        # Potentially, initialize_nodenet can be replaced with merge_data.
+
+        # net will have the name of the one to be merged into us
+        self.name = nodenet_data['name']
+
+        # todo: implement nodespaces
+        # merge in spaces, make sure that parent nodespaces exist before children are initialized
+        #nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
+        #for nodespace in nodespaces_to_merge:
+        #    self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
+
+        # merge in nodes
+        for uid in nodenet_data.get('nodes', {}):
+            data = nodenet_data['nodes'][uid]
+            if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
+                self.create_node(
+                    data['type'],
+                    data['parent_nodespace'],
+                    data['position'],
+                    name=data['name'],
+                    uid=data['uid'],
+                    parameters=data['parameters'],
+                    gate_parameters=data['gate_parameters'])
+                node = self.get_node(uid)
+                for gatetype in data['gate_activations']:   # todo: implement sheaves
+                    node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+
+                #self.__nodes[uid] = TheanoNode(self, **data)
+                #pos = self.__nodes[uid].position
+                #xpos = int(pos[0] - (pos[0] % 100))
+                #ypos = int(pos[1] - (pos[1] % 100))
+                #if xpos not in self.__nodes_by_coords:
+                #    self.__nodes_by_coords[xpos] = {}
+                #    if xpos > self.max_coords['x']:
+                #        self.max_coords['x'] = xpos
+                #if ypos not in self.__nodes_by_coords[xpos]:
+                #    self.__nodes_by_coords[xpos][ypos] = []
+                #    if ypos > self.max_coords['y']:
+                #        self.max_coords['y'] = ypos
+                #self.__nodes_by_coords[xpos][ypos].append(uid)
+            else:
+                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+
+        # merge in links
+        for uid in nodenet_data.get('links', {}):
+            data = nodenet_data['links'][uid]
+            self.create_link(
+                data['source_node_uid'],
+                data['source_gate_name'],
+                data['target_node_uid'],
+                data['target_slot_name'],
+                data['weight']
+            )
+
+        # todo: implement monitors
+        #for uid in nodenet_data.get('monitors', {}):
+        #    data = nodenet_data['monitors'][uid]
+        #    if 'classname' in data:
+        #        if hasattr(monitor, data['classname']):
+        #            getattr(monitor, data['classname'])(self, **data)
+        #        else:
+        #            self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+        #    else:
+        #        # Compatibility mode
+        #        monitor.NodeMonitor(self, name=data['node_name'], **data)
+
 
     def step(self):
         #self.user_prompt = None                        # todo: re-introduce user prompts when looking into native modules
@@ -156,22 +292,25 @@ class TheanoNodenet(Nodenet):
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
 
-        uid = -1
-        while uid < 0:
-            for i in range((self.last_allocated_node+1), NUMBER_OF_NODES):
-                if self.allocated_nodes[i] == 0:
-                    uid = i
-                    break
+        if uid is None:
+            uid = -1
+            while uid < 0:
+                for i in range((self.last_allocated_node+1), NUMBER_OF_NODES):
+                    if self.allocated_nodes[i] == 0:
+                        uid = i
+                        break
 
-        if uid < 0:
-            for i in range(self.last_allocated_node-1):
-                if self.allocated_nodes[i] == 0:
-                    uid = i
-                    break
+            if uid < 0:
+                for i in range(self.last_allocated_node-1):
+                    if self.allocated_nodes[i] == 0:
+                        uid = i
+                        break
 
-        if uid < 0:
-            self.logger.warning("Cannot find free id, all "+NUMBER_OF_NODES+" node entries already in use.")
-            return None
+            if uid < 0:
+                self.logger.warning("Cannot find free id, all "+NUMBER_OF_NODES+" node entries already in use.")
+                return None
+        else:
+            uid = from_id(uid)
 
         self.last_allocated_node = uid
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
@@ -233,9 +372,6 @@ class TheanoNodenet(Nodenet):
 
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         return self.data                    # todo: implement
-
-    def merge_data(self, nodenet_data):
-        pass
 
     def is_locked(self, lock):
         pass

@@ -126,6 +126,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
     else:
         gen += node.get_slot("gen").get_activation(sheaf)
         if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
+
+    # commented: trigger and pipes should be able to escape the [-1;1] cage on gen
     # if gen > 1: gen = 1
     # if gen < -1: gen = -1
 
@@ -258,7 +260,8 @@ def trigger(netapi, node=None, sheaf="default", **params):
             else:                                   # perform burst
                 sub = 1
                 node.set_state("waitfrom", currentstep)
-                sur = node.get_slot('sur').activation
+                if success:
+                    sur = 1
 
         else:
 
@@ -269,9 +272,12 @@ def trigger(netapi, node=None, sheaf="default", **params):
                 success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
                           (condition == ">" and node.get_slot('sur').activation > int(response))
                 if success:
-                    sur = node.get_slot('sur').activation
+                    sur = 1
 
-    gen = sur
+    # see pipe implementation: trigger and pipes should be able to
+    # escape the [-1;1] cage on gen
+    gen = node.get_slot('sur').activation + node.get_slot('gen').activation
+
     node.activation = gen
 
     node.get_gate("gen").gate_function(gen, sheaf)

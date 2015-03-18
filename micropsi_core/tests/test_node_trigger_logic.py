@@ -159,15 +159,19 @@ def test_trigger_bubbling(fixed_nodenet):
     net.step()
     # activation should bubble through the trigger...
     assert trigger.activation == 0.7
+    assert trigger.get_gate('gen').activation == 0.7
+    assert trigger.get_gate('sur').activation == 1
     source.activation = 0.7  # hold activation
     net.step()
     # ... to the pipe
-    assert pipe.get_slot('sur').activation == 0.7
-    assert trigger.activation == 0.7
+    assert pipe.get_slot('sur').activation == 1
+    assert trigger.get_gate('gen').activation == 0.7
+    assert trigger.get_gate('sur').activation == 1
     assert pipe.get_gate('sub').activation > 0  # pipe performs burst
     source.activation == 0.7
     # ... and stay on
     net.step()
     assert trigger.get_slot('sub').activation == 1  # burst arrived
-    assert pipe.get_slot('sur').activation == 0.7
-    assert trigger.get_gate('sur').activation == 0.7  # trigger keeps confirming
+    assert pipe.get_slot('sur').activation == 1
+    assert trigger.get_gate('gen').activation == 0.7  # gen = sur + gen
+    assert trigger.get_gate('sur').activation == 1  # trigger keeps confirming

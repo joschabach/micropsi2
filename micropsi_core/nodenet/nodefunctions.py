@@ -126,8 +126,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
     else:
         gen += node.get_slot("gen").get_activation(sheaf)
         if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
-    if gen > 1: gen = 1
-    if gen < -1: gen = -1
+    # if gen > 1: gen = 1
+    # if gen < -1: gen = -1
 
     sub += max(node.get_slot("sur").get_activation(sheaf), 0)
     sub += node.get_slot("sub").get_activation(sheaf)

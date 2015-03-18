@@ -381,15 +381,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['sleep'] = -1
 
-            # read fovea actors, trigger sampling, and provide action feedback
-            if not (self.datatargets['fov_x'] == 0. and self.datatargets['fov_y'] == 0.):
-                # update fovea sensors
-                self.datasources['fov_x'] = self.datatargets['fov_x'] - 1.
-                self.datasources['fov_y'] = self.datatargets['fov_y'] - 1.
-                # print("fovea values (%.3f,%.3f)" % (self.datasources['fov_x'], self.datasources['fov_y']))
-                self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'])
-
-            # provide action feedback
+            # sample all the time
+            # update fovea sensors, get sensory input, provide action feedback
+            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1.
+            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1.
+            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'])
             # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
             self.datatarget_feedback['fov_x'] = 1
             self.datatarget_feedback['fov_y'] = 1

@@ -14,7 +14,7 @@ __date__ = '10.05.12'
 
 from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING
 
-from micropsi_core.nodenet.node import Node, Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet.node import Node, Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.nodespace import Nodespace
 
@@ -23,9 +23,6 @@ from copy import deepcopy
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch
-
-from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
-from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
 
 import os
 import sys
@@ -48,7 +45,6 @@ configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 
 worlds = {}
 nodenets = {}
-nodetypes = STANDARD_NODETYPES
 native_modules = {}
 
 runner = {'timestep': 1000, 'runner': None, 'factor': 1}
@@ -250,20 +246,22 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
-            engine = "theano_engine"
+            #engine = "theano_engine"
 
             if engine == 'dict_engine':
+                from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
                     os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
-                    nodetypes=nodetypes, native_modules=native_modules)
-            elif engine == 'theano_engine':
-                nodenets[nodenet_uid] = TheanoNodenet(
-                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
-                    name=data.name, worldadapter=worldadapter,
-                    world=world, owner=data.owner, uid=data.uid,
-                    nodetypes=nodetypes, native_modules=native_modules)
+                    native_modules=native_modules)
+            #elif engine == 'theano_engine':
+                #from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+                #nodenets[nodenet_uid] = TheanoNodenet(
+                #    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
+                #    name=data.name, worldadapter=worldadapter,
+                #    world=world, owner=data.owner, uid=data.uid,
+                #    nodetypes=TheanoNodenet.STANDARD_NODETYPES, native_modules=native_modules)
             # Add additional engine types here
             else:
                 nodenet_lock.release()
@@ -291,7 +289,7 @@ def get_nodenet_data(nodenet_uid, nodespace, coordinates):
         data = nodenet.data
     data.update(get_nodenet_area(nodenet_uid, nodespace, **coordinates))
     data.update({
-        'nodetypes': nodetypes,
+        'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'native_modules': native_modules
     })
     return data
@@ -851,10 +849,11 @@ def delete_node(nodenet_uid, node_uid):
     return False
 
 
-def get_available_node_types(nodenet_uid=None):
+def get_available_node_types(nodenet_uid):
     """Returns a list of available node types. (Including native modules.)"""
+    nodenet = nodenets[nodenet_uid]
     all_nodetypes = native_modules.copy()
-    all_nodetypes.update(nodetypes)
+    all_nodetypes.update(nodenet.get_standard_nodetype_definitions())
     return all_nodetypes
 
 

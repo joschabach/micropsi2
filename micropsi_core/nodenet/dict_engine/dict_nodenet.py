@@ -5,12 +5,160 @@ import os
 
 import warnings
 from micropsi_core.nodenet import monitor
-from micropsi_core.nodenet.node import Nodetype, STANDARD_NODETYPES
+from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
 from .dict_stepoperators import DictPropagate, DictCalculate, DictDoernerianEmotionalModulators
 from .dict_node import DictNode
 from .dict_nodespace import DictNodespace
+import copy
 
+STANDARD_NODETYPES = {
+    "Nodespace": {
+        "name": "Nodespace"
+    },
+
+    "Comment": {
+        "name": "Comment",
+        "symbol": "#",
+        'parameters': ['comment'],
+        "shape": "Rectangle"
+    },
+
+    "Register": {
+        "name": "Register",
+        "slottypes": ["gen"],
+        "nodefunction_name": "register",
+        "gatetypes": ["gen"]
+    },
+    "Sensor": {
+        "name": "Sensor",
+        "parameters": ["datasource"],
+        "nodefunction_name": "sensor",
+        "gatetypes": ["gen"]
+    },
+    "Actor": {
+        "name": "Actor",
+        "parameters": ["datatarget"],
+        "nodefunction_name": "actor",
+        "slottypes": ["gen"],
+        "gatetypes": ["gen"]
+    },
+    "Concept": {
+        "name": "Concept",
+        "slottypes": ["gen"],
+        "nodefunction_name": "concept",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
+    },
+    "Script": {
+        "name": "Script",
+        "slottypes": ["gen", "por", "ret", "sub", "sur"],
+        "nodefunction_name": "script",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"],
+        "gate_defaults": {
+            "por": {
+                "threshold": -1
+            },
+            "ret": {
+                "threshold": -1
+            },
+            "sub": {
+                "threshold": -1
+            },
+            "sur": {
+                "threshold": -1
+            }
+        }
+    },
+    "Pipe": {
+        "name": "Pipe",
+        "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "nodefunction_name": "pipe",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            },
+            "por": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            },
+            "ret": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            },
+            "sub": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": True
+            },
+            "sur": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            },
+            "cat": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 1
+            },
+            "exp": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            }
+        },
+        'symbol': 'πp',
+        'shape': 'Rectangle'
+    },
+    "Trigger": {
+        "name": "Trigger",
+        "slottypes": ["gen", "sub", "sur"],
+        "nodefunction_name": "trigger",
+        "gatetypes": ["gen", "sub", "sur"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            },
+            "sub": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            },
+            "sur": {
+                "minimum": -100,
+                "maximum": 100,
+                "threshold": -100,
+                "spreadsheaves": 0
+            }
+        },
+        "parameters": ["timeout", "condition", "response"],
+        "parameter_values": {
+            "condition": ["=", ">"]
+        }
+    },
+    "Activator": {
+        "name": "Activator",
+        "slottypes": ["gen"],
+        "parameters": ["type"],
+        "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
+        "nodefunction_name": "activator"
+    }
+}
 
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
@@ -54,7 +202,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self.__step
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, nodetypes={}, native_modules={}):
+    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -80,7 +228,7 @@ class DictNodenet(Nodenet):
             self.worldadapter = worldadapter
 
         self.__nodes = {}
-        self.__nodetypes = nodetypes
+        self.__nodetypes = STANDARD_NODETYPES
         self.__native_modules = native_modules
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
@@ -568,3 +716,9 @@ class DictNodenet(Nodenet):
         Changes the value of the given global modulator to the given value
         """
         self.__modulators[modulator] = value
+
+    def get_standard_nodetype_definitions(self):
+        """
+        Returns the standard node types supported by this nodenet
+        """
+        return copy.deepcopy(STANDARD_NODETYPES)

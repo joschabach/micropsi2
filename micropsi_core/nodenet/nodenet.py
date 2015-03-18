@@ -392,6 +392,13 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    @abstractmethod
+    def get_standard_nodetype_definitions(self):
+        """
+        Returns the standard node types supported by this nodenet
+        """
+        pass  # pragma: no cover
+
     def clear(self):
         self.__monitors = {}
 

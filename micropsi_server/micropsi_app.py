@@ -1042,7 +1042,7 @@ def align_nodes(nodenet_uid, nodespace):
 
 
 @rpc("get_available_node_types")
-def get_available_node_types(nodenet_uid=None):
+def get_available_node_types(nodenet_uid):
     return True, runtime.get_available_node_types(nodenet_uid)
 
 

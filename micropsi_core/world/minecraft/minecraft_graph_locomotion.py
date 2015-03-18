@@ -295,8 +295,12 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     # bot is outside our graph, teleport to a random graph location to get started.
                     target = random.choice(list(self.loco_nodes.keys()))
                     self.locomote(target)
+                self.spockplugin.clientinfo.position['pitch'] = 0
+                self.spockplugin.clientinfo.position['yaw'] = 0
 
         else:
+            self.spockplugin.clientinfo.position['pitch'] = (self.spockplugin.clientinfo.position['pitch'] + 1) % 10  # range in 0;10
+            self.spockplugin.clientinfo.position['yaw'] = (self.spockplugin.clientinfo.position['pitch'] + 1) % 10  # range in 0;10
 
             #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees

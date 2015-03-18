@@ -349,11 +349,22 @@ class TheanoSlot(Slot):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
-        self.__tyoe = get_numerical_gate_type(type)
+        self.__numerictype = get_numerical_gate_type(type)
 
     def get_activation(self, sheaf="default"):
         return              # theano slots never report activation to anybody
 
-
     def get_links(self):
-        pass                # todo: implement links
+        links = []
+        w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
+        slotrow = w_matrix[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
+        links_indices = np.nonzero(slotrow)[0]
+        for index in links_indices:
+            source_gate_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
+            source_uid = int(int(index - source_gate_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
+            weight = slotrow[index]
+            source_node = self.__nodenet.get_node(to_id(source_uid))
+            source_gate = source_node.get_slot(get_string_gate_type(source_gate_numerical))
+            link = TheanoLink(source_node, source_gate, self.__node, self, weight)
+            links.append(link)
+        return links

@@ -4,6 +4,7 @@ from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calcula
 import theano
 from theano import tensor as T
 from theano import shared
+from theano.tensor import nnet as N
 import numpy as np
 
 class TheanoPropagate(Propagate):
@@ -33,13 +34,32 @@ class TheanoCalculate(Calculate):
         implements node and gate functions as a theano graph.
 
     """
+
+    calculate = None
+
+    def __init__(self, nodenet):
+
+        # node functions implemented with identity for now
+        nodefunctions = nodenet.a
+
+        # gate logic
+
+        # multiply with gate factor for the node space
+        gated_nodefunctions = nodefunctions * nodenet.g_factor
+
+        # apply actual gate function
+        # implemented with identity for now
+        gate_function_output = gated_nodefunctions
+
+        # apply threshold
+        thresholded_gate_function_output = \
+            T.switch(T.ge(gate_function_output,nodenet.g_threshold),gate_function_output,0)
+
+        gatefunctions = thresholded_gate_function_output
+
+        # put the theano graph into a callable function to be executed
+        self.calculate = theano.function([], nodenet.a, updates={nodenet.a: gatefunctions})
+
     def execute(self, nodenet, nodes, netapi):
-        pass
-        """
-        a = T.dvector("a")
-
-        nodefunctions = theano.function([], a)
-        gatefunctions = theano.function([], a)
-
-        nodenet.a = shared(gatefunctions(nodefunctions(nodenet.a)).eval(), name="a", borrow=True)
-        """
+        self.calculate()
+        ##N.sigmoid(nodefunctions)

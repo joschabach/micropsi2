@@ -43,6 +43,11 @@ class TheanoNodenet(Nodenet):
     # theano tensors for performing operations
     w = None            # matrix of weights
     a = None            # vector of activations
+
+    g_factor = None     # vector of gate factors, controlled by directional activators
+    g_threshold = None  # vector of thresholds (gate parameters)
+
+
     theta = None        # vector of thetas (i.e. biases)
 
     @property
@@ -94,9 +99,15 @@ class TheanoNodenet(Nodenet):
         theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.theta = theano.shared(value=theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
+        g_factor_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
+
+        g_threshold_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_factor", borrow=True)
+
         self.rootnodespace = TheanoNodespace(self)
 
-        self.stepoperators = [TheanoPropagate(self), TheanoCalculate()]
+        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def step(self):

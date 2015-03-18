@@ -55,7 +55,7 @@ def get_string_gate_type(type):
     elif type == RET:
         return "ret"
     elif type == SUB:
-        return "ret"
+        return "sub"
     elif type == SUR:
         return "sur"
     elif type == CAT:
@@ -187,10 +187,29 @@ class TheanoNode(Node):
         return TheanoGate(type, self, self._nodenet)
 
     def set_gate_parameter(self, gate_type, parameter, value):
-        pass                    # todo: implement gate parameters
+
+        # todo: implement the other gate parameters
+        elementindex = self._id * NUMBER_OF_ELEMENTS_PER_NODE + get_numerical_gate_type(gate_type)
+        if parameter == 'threshold':
+            g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
+            g_threshold_array[elementindex] = value
+            self._nodenet.g_threshold.set_value(g_threshold_array, borrow=True)
+
+    def get_gate_parameters(self):
+        # todo: implement defaulting mechanism for gate parameters
+
+        g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
+
+        result = {}
+        for numericalgate in range(0, NUMBER_OF_ELEMENTS_PER_NODE):
+            gate_parameters = {
+                'threshold': g_threshold_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate]
+            }
+            result[get_string_gate_type(numericalgate)] = gate_parameters
+        return result
 
     def clone_non_default_gate_parameters(self, gate_type):
-        pass                    # todo: implement gate parameters
+        return self.get_gate_parameters()               # todo: implement gate parameters
 
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
@@ -214,9 +233,6 @@ class TheanoNode(Node):
 
     def clone_parameters(self):
         pass
-
-    def get_gate_parameters(self):
-        return {}               # todo: implement gate parameters
 
     def get_state(self, state):
         pass

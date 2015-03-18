@@ -70,9 +70,6 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
-        self.stepoperators = [TheanoPropagate()]
-        self.stepoperators.sort(key=lambda op: op.priority)
-
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
@@ -98,6 +95,9 @@ class TheanoNodenet(Nodenet):
         self.theta = theano.shared(value=theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
+
+        self.stepoperators = [TheanoPropagate(self), TheanoCalculate()]
+        self.stepoperators.sort(key=lambda op: op.priority)
 
     def step(self):
         #self.user_prompt = None                        # todo: re-introduce user prompts when looking into native modules

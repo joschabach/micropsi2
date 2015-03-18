@@ -1,8 +1,10 @@
 import math
 
 from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
+import theano
 from theano import tensor as T
 from theano import shared
+import numpy as np
 
 class TheanoPropagate(Propagate):
     """
@@ -14,5 +16,30 @@ class TheanoPropagate(Propagate):
         and the weight values, i.e. the dot product of weight matrix and activation vector
 
     """
+
+    propagate = None
+
+    def __init__(self, nodenet):
+        self.propagate = theano.function([], [nodenet.w, nodenet.a], updates={nodenet.a: T.dot(nodenet.w, nodenet.a)})
+
     def execute(self, nodenet, nodes, netapi):
-        nodenet.a = shared(T.dot(nodenet.w, nodenet.a).eval(), name="a", borrow=True)
+        self.propagate()
+
+
+class TheanoCalculate(Calculate):
+    """
+        theano implementation of the Calculate operator.
+
+        implements node and gate functions as a theano graph.
+
+    """
+    def execute(self, nodenet, nodes, netapi):
+        pass
+        """
+        a = T.dvector("a")
+
+        nodefunctions = theano.function([], a)
+        gatefunctions = theano.function([], a)
+
+        nodenet.a = shared(gatefunctions(nodefunctions(nodenet.a)).eval(), name="a", borrow=True)
+        """

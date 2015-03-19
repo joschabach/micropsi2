@@ -40,7 +40,9 @@
                     <div class="controls">
                         <select class="input-xlarge" id="nn_engine" name="nn_engine">
                             <option value="dict_engine">dict_engine</option>
+                            %if theano_available:
                             <option value="theano_engine">theano_engine (experimental)</option>
+                            %end
                         </select>
                     </div>
                 </div>

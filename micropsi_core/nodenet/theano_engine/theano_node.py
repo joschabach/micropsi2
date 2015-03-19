@@ -29,7 +29,7 @@ SUR = 4
 CAT = 5
 EXP = 6
 
-NUMBER_OF_ELEMENTS_PER_NODE = 1
+NUMBER_OF_ELEMENTS_PER_NODE = 7
 
 
 def get_numerical_gate_type(type):

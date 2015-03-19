@@ -320,6 +320,8 @@ class TheanoGate(Gate):
             target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
             target_uid = int(int(index - target_slot_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
             weight = gatecolumn[index]
+            if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                weight = float(weight.data)
             target_node = self.__nodenet.get_node(to_id(target_uid))
             target_slot = target_node.get_slot(get_string_gate_type(target_slot_numerical))
             link = TheanoLink(self.__node, self, target_node, target_slot, weight)

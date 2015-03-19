@@ -6,6 +6,7 @@ from theano import tensor as T
 from theano import shared
 from theano.tensor import nnet as N
 import numpy as np
+import theano.sparse as ST
 
 class TheanoPropagate(Propagate):
     """
@@ -21,7 +22,10 @@ class TheanoPropagate(Propagate):
     propagate = None
 
     def __init__(self, nodenet):
-        self.propagate = theano.function([], [nodenet.w, nodenet.a], updates={nodenet.a: T.dot(nodenet.w, nodenet.a)})
+        if nodenet.sparse:
+            self.propagate = theano.function([], [nodenet.w, nodenet.a], updates={nodenet.a: ST.dot(nodenet.w, nodenet.a)})
+        else:
+            self.propagate = theano.function([], [nodenet.w, nodenet.a], updates={nodenet.a: T.dot(nodenet.w, nodenet.a)})
 
     def execute(self, nodenet, nodes, netapi):
         self.propagate()

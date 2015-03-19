@@ -11,7 +11,10 @@ import copy
 
 import theano
 from theano import tensor as T
+from theano import sparse
 import numpy as np
+import scipy.sparse as sp
+import scipy
 
 import micropsi_core.tools
 
@@ -39,7 +42,7 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
-NUMBER_OF_NODES = 100
+NUMBER_OF_NODES = 50000
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
 
 
@@ -65,6 +68,8 @@ class TheanoNodenet(Nodenet):
     g_max = None        # vector of upper bounds
 
     theta = None        # vector of thetas (i.e. biases)
+
+    sparse = False
 
     @property
     def engine(self):
@@ -97,6 +102,9 @@ class TheanoNodenet(Nodenet):
         self.__nodetypes = STANDARD_NODETYPES
         self.filename = filename
 
+        # for now, fix sparse to True
+        self.sparse = True
+
         # this conversion of dicts to living objects in the same variable name really isn't pretty.
         # dict_nodenet is also doing it, and it's evil and should be fixed.
         #self.__nodetypes = {}
@@ -107,8 +115,11 @@ class TheanoNodenet(Nodenet):
 
         self.positions = [(10,10) for i in range(0,NUMBER_OF_NODES)]
 
-        w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
-        self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
+        if self.sparse:
+            self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float32), name="w")
+        else:
+            w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
+            self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
         a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
@@ -369,7 +380,12 @@ class TheanoNodenet(Nodenet):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        w_matrix[from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst][from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt] = weight
+        x = from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst
+        y = from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt
+        if self.sparse:
+            w_matrix[x, y] = weight
+        else:
+            w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):

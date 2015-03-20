@@ -69,7 +69,7 @@ class DictNode(NetEntity, Node):
             gate_parameters = {}
 
         if nodenet.is_node(uid):
-            raise KeyError("Node already exists")
+            raise KeyError("Node with uid %s already exists" % uid)
 
         Node.__init__(self, type, nodenet.get_nodetype(type))
 

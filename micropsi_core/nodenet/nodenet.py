@@ -69,7 +69,7 @@ class Nodenet(metaclass=ABCMeta):
         version
         """
 
-        #todo: data dicts will be replaced with a save/load/export API at some point.
+        # todo: data dicts will be replaced with a save/load/export API at some point.
 
         data = {
             'uid': self.uid,
@@ -314,8 +314,8 @@ class Nodenet(metaclass=ABCMeta):
         'monitors' - result of self.construct_monitors_dict()
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
-        #todo: data dicts will be replaced with a save/load/export API at some point.
-        #todo: Positional data will either be made entirely transient at some point, or moved somewhere else
+        # todo: data dicts will be replaced with a save/load/export API at some point.
+        # todo: Positional data will either be made entirely transient at some point, or moved somewhere else
         pass  # pragma: no cover
 
     @abstractmethod
@@ -331,7 +331,7 @@ class Nodenet(metaclass=ABCMeta):
         'monitors' - result of self.construct_monitors_dict()
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
-        #todo: data dicts will be replaced with a save/load/export API at some point.
+        # todo: data dicts will be replaced with a save/load/export API at some point.
         pass  # pragma: no cover
 
     @abstractmethod
@@ -341,7 +341,7 @@ class Nodenet(metaclass=ABCMeta):
         This is a legacy method from when the only available implementation was dict-based and will either be
         removed or implemented in the abstact base class as a generic JSON/dict import mechanism.
         """
-        #todo: data dicts will be replaced with a save/load/export API at some point.
+        # todo: data dicts will be replaced with a save/load/export API at some point.
         pass  # pragma: no cover
 
     @abstractmethod

@@ -387,6 +387,7 @@ class TheanoNodenet(Nodenet):
         else:
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
+        return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)

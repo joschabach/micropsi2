@@ -1,12 +1,11 @@
-import math
 
-from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
+from micropsi_core.nodenet.stepoperators import Propagate, Calculate
 import theano
 from theano import tensor as T
 from theano import shared
 from theano.tensor import nnet as N
-import numpy as np
 import theano.sparse as ST
+
 
 class TheanoPropagate(Propagate):
     """
@@ -57,7 +56,7 @@ class TheanoCalculate(Calculate):
 
         # apply threshold
         thresholded_gate_function_output = \
-            T.switch(T.ge(gate_function_output,nodenet.g_threshold),gate_function_output,0)
+            T.switch(T.ge(gate_function_output, nodenet.g_threshold), gate_function_output, 0)
 
         # apply amplification
         amplified_gate_function_output = thresholded_gate_function_output * nodenet.g_amplification

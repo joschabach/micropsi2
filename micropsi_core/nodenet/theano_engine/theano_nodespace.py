@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import warnings
-
-from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
 from micropsi_core.nodenet.nodespace import Nodespace
 from micropsi_core.nodenet.theano_engine.theano_node import *
-import micropsi_core.tools
 
 
 class TheanoNodespace(Nodespace):
@@ -18,7 +14,7 @@ class TheanoNodespace(Nodespace):
             "uid": "Root",
             "index": 0,
             "name": "Root",
-            "position": (0,0),
+            "position": (0, 0),
             "parent_nodespace": None,
             "gatefunctions": self.get_gatefunction_strings()
         }

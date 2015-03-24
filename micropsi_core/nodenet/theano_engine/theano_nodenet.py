@@ -3,25 +3,18 @@
 """
 Nodenet definition
 """
-from copy import deepcopy
-
 import json
 import os
 import copy
 
 import theano
 from theano import tensor as T
-from theano import sparse
 import numpy as np
 import scipy.sparse as sp
 import scipy
 
-import micropsi_core.tools
-
 from micropsi_core.nodenet.nodenet import Nodenet
-from micropsi_core.nodenet.node import Node, Nodetype
-from threading import Lock
-import logging
+from micropsi_core.nodenet.node import Nodetype
 
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
@@ -29,9 +22,9 @@ from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 
 
 STANDARD_NODETYPES = {
-    #"Nodespace": {
+    # "Nodespace": {
     #    "name": "Nodespace"
-    #},
+    # },
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
@@ -84,13 +77,12 @@ class TheanoNodenet(Nodenet):
         data = super(TheanoNodenet, self).data
         data['links'] = self.construct_links_dict()
         data['nodes'] = self.construct_nodes_dict()
-        #for uid in data['nodes']:
+        # for uid in data['nodes']:
         #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
         data['version'] = self.__version
         data['modulators'] = self.construct_modulators_dict()
         return data
-
 
     def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
@@ -107,13 +99,13 @@ class TheanoNodenet(Nodenet):
 
         # this conversion of dicts to living objects in the same variable name really isn't pretty.
         # dict_nodenet is also doing it, and it's evil and should be fixed.
-        #self.__nodetypes = {}
-        #for type, data in STANDARD_NODETYPES.items():
+        # self.__nodetypes = {}
+        # for type, data in STANDARD_NODETYPES.items():
         #    self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
-        self.positions = [(10,10) for i in range(0,NUMBER_OF_NODES)]
+        self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float32), name="w")
@@ -193,17 +185,17 @@ class TheanoNodenet(Nodenet):
         self.__nodetypes = nodetypes
 
         # todo: implement native modules
-        #native_modules = {}
-        #for type, data in self.__native_modules.items():
-        #    native_modules[type] = Nodetype(nodenet=self, **data)
-        #self.__native_modules = native_modules
+        # native_modules = {}
+        # for type, data in self.__native_modules.items():
+        #     native_modules[type] = Nodetype(nodenet=self, **data)
+        # self.__native_modules = native_modules
         #
-        #self.__modulators = initfrom.get("modulators", {})
+        # self.__modulators = initfrom.get("modulators", {})
 
         # todo: implement nodespaces
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
-        #self.__nodespaces = {}
-        #self.__nodespaces["Root"] = TheanoNodespace(self) #, None, (0, 0), name="Root", uid="Root")
+        # self.__nodespaces = {}
+        # self.__nodespaces["Root"] = TheanoNodespace(self) #, None, (0, 0), name="Root", uid="Root")
 
         # now merge in all init data (from the persisted file typically)
         self.merge_data(initfrom)
@@ -222,8 +214,8 @@ class TheanoNodenet(Nodenet):
 
         # todo: implement nodespaces
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
-        #nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
-        #for nodespace in nodespaces_to_merge:
+        # nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
+        # for nodespace in nodespaces_to_merge:
         #    self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
         # merge in nodes
@@ -242,19 +234,19 @@ class TheanoNodenet(Nodenet):
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
-                #self.__nodes[uid] = TheanoNode(self, **data)
-                #pos = self.__nodes[uid].position
-                #xpos = int(pos[0] - (pos[0] % 100))
-                #ypos = int(pos[1] - (pos[1] % 100))
-                #if xpos not in self.__nodes_by_coords:
-                #    self.__nodes_by_coords[xpos] = {}
-                #    if xpos > self.max_coords['x']:
-                #        self.max_coords['x'] = xpos
-                #if ypos not in self.__nodes_by_coords[xpos]:
-                #    self.__nodes_by_coords[xpos][ypos] = []
-                #    if ypos > self.max_coords['y']:
-                #        self.max_coords['y'] = ypos
-                #self.__nodes_by_coords[xpos][ypos].append(uid)
+                # self.__nodes[uid] = TheanoNode(self, **data)
+                # pos = self.__nodes[uid].position
+                # xpos = int(pos[0] - (pos[0] % 100))
+                # ypos = int(pos[1] - (pos[1] % 100))
+                # if xpos not in self.__nodes_by_coords:
+                #     self.__nodes_by_coords[xpos] = {}
+                #     if xpos > self.max_coords['x']:
+                #         self.max_coords['x'] = xpos
+                # if ypos not in self.__nodes_by_coords[xpos]:
+                #     self.__nodes_by_coords[xpos][ypos] = []
+                #     if ypos > self.max_coords['y']:
+                #         self.max_coords['y'] = ypos
+                # self.__nodes_by_coords[xpos][ypos].append(uid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
@@ -270,20 +262,19 @@ class TheanoNodenet(Nodenet):
             )
 
         # todo: implement monitors
-        #for uid in nodenet_data.get('monitors', {}):
-        #    data = nodenet_data['monitors'][uid]
-        #    if 'classname' in data:
-        #        if hasattr(monitor, data['classname']):
-        #            getattr(monitor, data['classname'])(self, **data)
-        #        else:
-        #            self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
-        #    else:
-        #        # Compatibility mode
-        #        monitor.NodeMonitor(self, name=data['node_name'], **data)
-
+        # for uid in nodenet_data.get('monitors', {}):
+        #     data = nodenet_data['monitors'][uid]
+        #     if 'classname' in data:
+        #         if hasattr(monitor, data['classname']):
+        #             getattr(monitor, data['classname'])(self, **data)
+        #         else:
+        #             self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+        #     else:
+        #         # Compatibility mode
+        #         monitor.NodeMonitor(self, name=data['node_name'], **data)
 
     def step(self):
-        #self.user_prompt = None                        # todo: re-introduce user prompts when looking into native modules
+        # self.user_prompt = None                       # todo: re-introduce user prompts when looking into native modules
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
@@ -291,7 +282,7 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
 
-            #self.timeout_locks()
+            # self.timeout_locks()
 
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
@@ -317,19 +308,19 @@ class TheanoNodenet(Nodenet):
         if uid is None:
             uid = -1
             while uid < 0:
-                for i in range((self.last_allocated_node+1), NUMBER_OF_NODES):
+                for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
                     if self.allocated_nodes[i] == 0:
                         uid = i
                         break
 
             if uid < 0:
-                for i in range(self.last_allocated_node-1):
+                for i in range(self.last_allocated_node - 1):
                     if self.allocated_nodes[i] == 0:
                         uid = i
                         break
 
             if uid < 0:
-                self.logger.warning("Cannot find free id, all "+NUMBER_OF_NODES+" node entries already in use.")
+                self.logger.warning("Cannot find free id, all " + NUMBER_OF_NODES + " node entries already in use.")
                 return None
         else:
             uid = from_id(uid)
@@ -342,7 +333,7 @@ class TheanoNodenet(Nodenet):
 
     def delete_node(self, uid):
         self.allocated_nodes[from_id(uid)] = 0
-        self.last_allocated_node = from_id(uid)-1
+        self.last_allocated_node = from_id(uid) - 1
 
     def get_nodespace(self, uid):
         if uid == "Root":
@@ -380,8 +371,8 @@ class TheanoNodenet(Nodenet):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        x = from_id(target_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + nst
-        y = from_id(source_node_uid)*NUMBER_OF_ELEMENTS_PER_NODE + ngt
+        x = from_id(target_node_uid) * NUMBER_OF_ELEMENTS_PER_NODE + nst
+        y = from_id(source_node_uid) * NUMBER_OF_ELEMENTS_PER_NODE + ngt
         if self.sparse:
             w_matrix[x, y] = weight
         else:
@@ -427,7 +418,7 @@ class TheanoNodenet(Nodenet):
             return self.__nodetypes[type]
         else:
             return None
-            #return self.__native_modules.get(type)         # todo: implement native modules
+            # return self.__native_modules.get(type)         # todo: implement native modules
 
     def construct_links_dict(self):
         data = {}

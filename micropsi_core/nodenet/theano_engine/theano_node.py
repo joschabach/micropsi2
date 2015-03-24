@@ -3,13 +3,8 @@
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 
-import theano
-from theano import tensor as T
 import numpy as np
 
-import warnings
-import micropsi_core.tools
-import logging
 
 REGISTER = 1
 SENSOR = 2
@@ -109,7 +104,7 @@ def get_string_node_type(type):
 
 
 def to_id(numericid):
-    return "n"+str(int(numericid))
+    return "n" + str(int(numericid))
 
 
 def from_id(stringid):
@@ -122,7 +117,7 @@ class TheanoNode(Node):
     """
 
     _nodenet = None
-    _id =-1
+    _id = -1
 
     def __init__(self, nodenet, uid, type, **_):
 
@@ -171,7 +166,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._id*NUMBER_OF_ELEMENTS_PER_NODE + GEN])
+        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._id * NUMBER_OF_ELEMENTS_PER_NODE + GEN])
 
     @property
     def activations(self):
@@ -180,7 +175,7 @@ class TheanoNode(Node):
     @activation.setter
     def activation(self, activation):
         a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
-        a_array[self._id*NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
+        a_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
         self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
@@ -268,7 +263,6 @@ class TheanoNode(Node):
         pass
 
 
-
 class TheanoGate(Gate):
     """
         theano gate proxy clas
@@ -289,21 +283,21 @@ class TheanoGate(Gate):
 
     @property
     def empty(self):
-       return True              # todo: implement empty
+        return True              # todo: implement empty
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
         a_array = self.__nodenet.a.get_value(borrow=True, return_internal_type=True)
-        a_array[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype] = value
+        a_array[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype] = value
         self.__nodenet.a.set_value(a_array, borrow=True)
 
     @property
     def activations(self):
-        return {'default': self.activation} # todo: implement sheaves
+        return {'default': self.activation}  # todo: implement sheaves
 
     def __init__(self, type, node, nodenet):
         self.__type = type
@@ -314,7 +308,7 @@ class TheanoGate(Gate):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        gatecolumn = w_matrix[:, from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
+        gatecolumn = w_matrix[:, from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
             target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
@@ -383,7 +377,7 @@ class TheanoSlot(Slot):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        slotrow = w_matrix[from_id(self.__node.uid)*NUMBER_OF_ELEMENTS_PER_NODE+self.__numerictype]
+        slotrow = w_matrix[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
         links_indices = np.nonzero(slotrow)[0]
         for index in links_indices:
             source_gate_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE

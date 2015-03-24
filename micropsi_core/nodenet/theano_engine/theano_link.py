@@ -3,6 +3,7 @@
 
 from micropsi_core.nodenet.link import Link
 
+
 class TheanoLink(Link):
     """
         theano link proxy class
@@ -50,5 +51,3 @@ class TheanoLink(Link):
         self.__target_slot = target_slot_name
         self.__weight = weight
         self.__certainty = 1
-
-

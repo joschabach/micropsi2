@@ -134,12 +134,12 @@ class Node(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @property
-    @abstractmethod
-    def activations(self):
-        """
-        This node's activation properties (dict of all sheaves) as calculated once per step by its node function
-        """
+    #@property
+    #@abstractmethod
+    #def activations(self):
+    #    """
+    #    This node's activation properties (dict of all sheaves) as calculated once per step by its node function
+    #    """
 
     @property
     @abstractmethod
@@ -491,155 +491,6 @@ class Slot(metaclass=ABCMeta):
         Returns a list of Link objects terminating at this slot
         """
         pass  # pragma: no cover
-
-
-STANDARD_NODETYPES = {
-    "Nodespace": {
-        "name": "Nodespace"
-    },
-
-    "Comment": {
-        "name": "Comment",
-        "symbol": "#",
-        'parameters': ['comment'],
-        "shape": "Rectangle"
-    },
-
-    "Register": {
-        "name": "Register",
-        "slottypes": ["gen"],
-        "nodefunction_name": "register",
-        "gatetypes": ["gen"]
-    },
-    "Sensor": {
-        "name": "Sensor",
-        "parameters": ["datasource"],
-        "nodefunction_name": "sensor",
-        "gatetypes": ["gen"]
-    },
-    "Actor": {
-        "name": "Actor",
-        "parameters": ["datatarget"],
-        "nodefunction_name": "actor",
-        "slottypes": ["gen"],
-        "gatetypes": ["gen"]
-    },
-    "Concept": {
-        "name": "Concept",
-        "slottypes": ["gen"],
-        "nodefunction_name": "concept",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]
-    },
-    "Script": {
-        "name": "Script",
-        "slottypes": ["gen", "por", "ret", "sub", "sur"],
-        "nodefunction_name": "script",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"],
-        "gate_defaults": {
-            "por": {
-                "threshold": -1
-            },
-            "ret": {
-                "threshold": -1
-            },
-            "sub": {
-                "threshold": -1
-            },
-            "sur": {
-                "threshold": -1
-            }
-        }
-    },
-    "Pipe": {
-        "name": "Pipe",
-        "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "nodefunction_name": "pipe",
-        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "por": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "ret": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "sub": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": True
-            },
-            "sur": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "cat": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 1
-            },
-            "exp": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            }
-        },
-        'symbol': 'πp',
-        'shape': 'Rectangle'
-    },
-    "Trigger": {
-        "name": "Trigger",
-        "slottypes": ["gen", "sub", "sur"],
-        "nodefunction_name": "trigger",
-        "gatetypes": ["gen", "sub", "sur"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "sub": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "sur": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            }
-        },
-        "parameters": ["timeout", "condition", "response"],
-        "parameter_values": {
-            "condition": ["=", ">"]
-        }
-    },
-    "Activator": {
-        "name": "Activator",
-        "slottypes": ["gen"],
-        "parameters": ["type"],
-        "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
-        "nodefunction_name": "activator"
-    }
-}
 
 
 class Nodetype(object):

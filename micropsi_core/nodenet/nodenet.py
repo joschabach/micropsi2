@@ -171,7 +171,7 @@ class Nodenet(metaclass=ABCMeta):
         self.netlock = Lock()
 
         self.logger = logging.getLogger("nodenet")
-        self.logger.info("Setting up nodenet %s", self.name)
+        self.logger.info("Setting up nodenet %s with engine %s", self.name, self.engine)
 
         self.user_prompt = None
 
@@ -390,6 +390,13 @@ class Nodenet(metaclass=ABCMeta):
     def set_modulator(self, modulator, value):
         """
         Changes the value of the given global modulator to the given value
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_standard_nodetype_definitions(self):
+        """
+        Returns the standard node types supported by this nodenet
         """
         pass  # pragma: no cover
 

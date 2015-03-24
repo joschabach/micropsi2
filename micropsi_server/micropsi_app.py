@@ -555,19 +555,26 @@ def edit_nodenet():
     user_id, permissions, token = get_request_data()
     # nodenet_id = request.params.get('id', None)
     title = 'Edit Nodenet' if id is not None else 'New Nodenet'
+
+    theano_available = True
+    try:
+        import theano
+    except ImportError:
+        theano_available = False
+
     return template("nodenet_form.tpl", title=title,
         # nodenet_uid=nodenet_uid,
         nodenets=runtime.get_available_nodenets(),
         templates=runtime.get_available_nodenets(),
         worlds=runtime.get_available_worlds(),
-        version=VERSION, user_id=user_id, permissions=permissions)
+        version=VERSION, user_id=user_id, permissions=permissions, theano_available=theano_available)
 
 
 @micropsi_app.route("/nodenet/edit", method="POST")
 def write_nodenet():
     user_id, permissions, token = get_request_data()
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], worldadapter=request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], engine=request.params['nn_engine'], worldadapter=request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -1042,7 +1049,7 @@ def align_nodes(nodenet_uid, nodespace):
 
 
 @rpc("get_available_node_types")
-def get_available_node_types(nodenet_uid=None):
+def get_available_node_types(nodenet_uid):
     return True, runtime.get_available_node_types(nodenet_uid)
 
 

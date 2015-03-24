@@ -36,6 +36,19 @@
                 </div>
 
                 <div class="control-group">
+                    <label class="control-label" for="nn_engine">Engine</label>
+                    <div class="controls">
+                        <select class="input-xlarge" id="nn_engine" name="nn_engine">
+                            <option value="dict_engine">dict_engine</option>
+                            %if theano_available:
+                            <option value="theano_engine">theano_engine (experimental)</option>
+                            %end
+                        </select>
+                    </div>
+                </div>
+
+
+                <div class="control-group">
                     <label class="control-label" for="nn_template">Template</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_template" name="nn_template">

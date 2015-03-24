@@ -788,12 +788,6 @@ def test_get_available_node_types(app, test_nodenet):
     assert 'Sensor' in response.json_body['data']
 
 
-def test_get_available_node_types_without_nodenet_uid(app, test_nodenet):
-    response = app.get_json('/rpc/get_available_node_types()')
-    assert_success(response)
-    assert 'Concept' in response.json_body['data']
-
-
 def test_get_available_native_module_types(app, test_nodenet):
     response = app.get_json('/rpc/get_available_native_module_types(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)

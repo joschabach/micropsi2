@@ -106,10 +106,15 @@ class DictPORRETDecay(StepOperator):
             netapi.unlink(link.target_node, 'ret', link.source_node, 'ret')
             left_boundaries.append(link.source_node)
 
+        archive_nodespace = None
+        for n in netapi.get_nodespaces():
+            if n.name == 'automatisms':
+                archive_nodespace = n
+
         for node in left_boundaries:
             step = node
             if not step.get_gate('ret').get_links():
-                # delete single steps without por/ret linkage
+                # delete single steps without por/ret linkage (and their subsur children)
                 nodes_to_delete = [step]
                 nodes_to_delete.extend([l.target_node for l in step.get_gate('sub').get_links()])
                 for n in nodes_to_delete:
@@ -117,11 +122,14 @@ class DictPORRETDecay(StepOperator):
             else:
                 # create new schema nodes for fragments
                 old_schema_node = step.get_gate('sur').get_links()[0].target_node
-                new_schema_node = netapi.create_node(old_schema_node.type, step.parent_nodespace, old_schema_node.name + ' Fragment')
+                new_schema_node = netapi.create_node(old_schema_node.type, archive_nodespace.uid, old_schema_node.name + ' Fragment')
                 while True:
                     netapi.unlink(old_schema_node, target_node=step)
                     netapi.unlink(step, target_node=old_schema_node)
                     netapi.link_with_reciprocal(new_schema_node, step, 'subsur')
+                    step.parent_nodespace = archive_nodespace.uid
+                    for l in step.get_gate('sub').get_links():
+                        l.target_node.parent_nodespace = archive_nodespace.uid
                     if step.get_gate('ret').get_links():
                         step = step.get_gate('ret').get_links()[0].target_node
                     else:

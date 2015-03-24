@@ -100,9 +100,32 @@ class DictPORRETDecay(StepOperator):
                             link.set_weight(max(link.weight + linkdelta, 0))
                         if link.weight == 0:
                             obsoletelinks.append(link)
+        left_boundaries = []
         for link in obsoletelinks:
             netapi.unlink(link.source_node, 'por', link.target_node, 'por')
             netapi.unlink(link.target_node, 'ret', link.source_node, 'ret')
+            left_boundaries.append(link.source_node)
+
+        for node in left_boundaries:
+            step = node
+            if not step.get_gate('ret').get_links():
+                # delete single steps without por/ret linkage
+                nodes_to_delete = [step]
+                nodes_to_delete.extend([l.target_node for l in step.get_gate('sub').get_links()])
+                for n in nodes_to_delete:
+                    netapi.delete_node(n)
+            else:
+                # create new schema nodes for fragments
+                old_schema_node = step.get_gate('sur').get_links()[0].target_node
+                new_schema_node = netapi.create_node(old_schema_node.type, step.parent_nodespace, old_schema_node.name + ' Fragment')
+                while True:
+                    netapi.unlink(old_schema_node, target_node=step)
+                    netapi.unlink(step, target_node=old_schema_node)
+                    netapi.link_with_reciprocal(new_schema_node, step, 'subsur')
+                    if step.get_gate('ret').get_links():
+                        step = step.get_gate('ret').get_links()[0].target_node
+                    else:
+                        break
 
 
 def gentle_sigmoid(x):

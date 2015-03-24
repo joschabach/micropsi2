@@ -1062,6 +1062,22 @@ def test_500(app):
     assert response.json_body['traceback'] is not None
 
 
+def test_get_userscripts(app, test_nodenet, scripts_def):
+    app.set_auth()
+    with open(scripts_def, 'w') as fp:
+        fp.write("""
+def foobar(netapi, quatsch=23):
+    return quatsch
+""")
+    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_available_userscripts()')
+    data = response.json_body['data']
+    assert 'foobar' in data
+    assert len(data['foobar']['parameters']) == 1
+    assert data['foobar']['parameters'][0]['name'] == 'quatsch'
+    assert data['foobar']['parameters'][0]['default'] == 23
+
+
 def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     app.set_auth()
     from micropsi_core.nodenet.node import Nodetype

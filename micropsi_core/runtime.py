@@ -967,6 +967,28 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 
+def get_available_userscripts():
+    """ Returns a dict of the available user-scripts """
+    scripts = {}
+    for name, data in userscripts.items():
+        scripts[name] = {
+            'name': name,
+            'parameters': data['parameters']
+        }
+    return scripts
+
+
+def run_userscript(nodenet_uid, name, parameters):
+    """ Calls the given userscript with the provided parameters, and returns the output, if any """
+    from functools import partial
+    netapi = nodenets[nodenet_uid].netapi
+    if name in userscripts:
+        func = userscripts[name]['function']
+        return True, func(netapi, **parameters)
+    else:
+        return False, "Script not found"
+
+
 # --- end of API
 
 def crawl_definition_files(path, type="definition"):

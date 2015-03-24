@@ -42,6 +42,11 @@ def nodefunc_def():
     return os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
 
 
+@pytest.fixture
+def scripts_def():
+    return os.path.join(configuration.RESOURCE_PATH, 'scripts.py')
+
+
 def set_logging_levels():
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)

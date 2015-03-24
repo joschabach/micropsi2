@@ -209,7 +209,7 @@ class Nodenet(metaclass=ABCMeta):
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         """
         Creates a new node of the given node type (string), in the nodespace with the given UID, at the given
-        position.
+        position and returns the uid of the new node
         """
         pass  # pragma: no cover
 

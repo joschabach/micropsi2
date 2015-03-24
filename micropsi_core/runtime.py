@@ -46,6 +46,7 @@ configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 worlds = {}
 nodenets = {}
 native_modules = {}
+userscripts = {}
 
 runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
@@ -1043,10 +1044,13 @@ def init_worlds(world_data):
 
 def load_user_files(do_reload=False):
     # see if we have additional nodetypes defined by the user.
+    import sys
     global native_modules
     old_native_modules = native_modules.copy()
     native_modules = {}
     custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
+    custom_scripts_file = os.path.join(RESOURCE_PATH, 'scripts.py')
+    custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodetype_file):
         try:
             with open(custom_nodetype_file) as fp:
@@ -1054,12 +1058,40 @@ def load_user_files(do_reload=False):
         except ValueError:
             warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
-    # respect user defined nodefunctions:
-    if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
-        import sys
-        sys.path.append(RESOURCE_PATH)
-
+    sys.path.append(RESOURCE_PATH)
+    parse_script_file()
     return native_modules
+
+
+def parse_script_file():
+    custom_scripts_file = os.path.join(RESOURCE_PATH, 'scripts.py')
+    if not os.path.isfile(custom_scripts_file):
+        return
+
+    import importlib.machinery
+    import inspect
+    global userscripts
+
+    loader = importlib.machinery.SourceFileLoader("scripts", custom_scripts_file)
+    scripts = loader.load_module()
+    # import scripts
+    userscripts = {}
+    all_functions = inspect.getmembers(scripts, inspect.isfunction)
+    for name, func in all_functions:
+        argspec = inspect.getargspec(func)
+        arguments = argspec.args[1:]
+        defaults = argspec.defaults
+        params = []
+        for i, arg in enumerate(arguments):
+            params.append({
+                'name': arg,
+                'default': defaults[i]
+            })
+        userscripts[name] = {
+            'name': name,
+            'parameters': params,
+            'function': func
+        }
 
 
 def reload_native_modules(nodenet_uid=None):

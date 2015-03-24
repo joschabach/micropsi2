@@ -100,9 +100,49 @@ class DictPORRETDecay(StepOperator):
                             link.set_weight(max(link.weight + linkdelta, 0))
                         if link.weight == 0:
                             obsoletelinks.append(link)
+        left_boundaries = []
         for link in obsoletelinks:
             netapi.unlink(link.source_node, 'por', link.target_node, 'por')
             netapi.unlink(link.target_node, 'ret', link.source_node, 'ret')
+            left_boundaries.append(link.source_node)
+
+        archive_nodespace = None
+        for n in netapi.get_nodespaces():
+            if n.name == 'automatisms':
+                archive_nodespace = n
+
+        for node in left_boundaries:
+            step = node
+            old_schema_node = step.get_gate('sur').get_links()[0].target_node
+            if not step.get_gate('ret').get_links():
+                # delete single steps without por/ret linkage (and their subsur children)
+                nodes_to_delete = [step]
+                nodes_to_delete.extend([l.target_node for l in step.get_gate('sub').get_links()])
+                for n in nodes_to_delete:
+                    netapi.delete_node(n)
+            else:
+                # create new schema nodes for fragments
+                new_schema_node = netapi.create_node(old_schema_node.type, archive_nodespace.uid, old_schema_node.name + ' Fragment')
+                while True:
+                    netapi.unlink(old_schema_node, target_node=step)
+                    netapi.unlink(step, target_node=old_schema_node)
+                    netapi.link_with_reciprocal(new_schema_node, step, 'subsur')
+                    step.parent_nodespace = archive_nodespace.uid
+                    for l in step.get_gate('sub').get_links():
+                        l.target_node.parent_nodespace = archive_nodespace.uid
+                    if step.get_gate('ret').get_links():
+                        step = step.get_gate('ret').get_links()[0].target_node
+                    else:
+                        break
+            if len(old_schema_node.get_gate('sub').get_links()) <= 1:
+                # schema node has 1 child or less, prune as whole
+                delete_nodes = [old_schema_node]
+                for l1 in old_schema_node.get_gate('sub').get_links():
+                    for l2 in l1.target_node.get_gate('sub').get_links():
+                        delete_nodes.append(l2.target_node)
+                    delete_nodes.append(l1.target_node)
+                for node in delete_nodes:
+                    netapi.delete_node(node)
 
 
 def gentle_sigmoid(x):

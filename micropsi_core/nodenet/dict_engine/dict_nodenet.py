@@ -7,7 +7,7 @@ import warnings
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype, STANDARD_NODETYPES
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
-from .dict_stepoperators import DictPropagate, DictCalculate, DictDoernerianEmotionalModulators
+from .dict_stepoperators import DictPropagate, DictPORRETDecay, DictCalculate, DictDoernerianEmotionalModulators
 from .dict_node import DictNode
 from .dict_nodespace import DictNodespace
 
@@ -67,7 +67,7 @@ class DictNodenet(Nodenet):
 
         super(DictNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
 
-        self.stepoperators = [DictPropagate(), DictCalculate(), DictDoernerianEmotionalModulators()]
+        self.stepoperators = [DictPropagate(), DictCalculate(), DictPORRETDecay(), DictDoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data

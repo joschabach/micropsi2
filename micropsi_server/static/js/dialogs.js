@@ -393,6 +393,63 @@ $(function() {
         });
     });
 
+
+    var userscripts = {};
+    var script_name_input = $('#script_name_input');
+
+    var update_parameters_for_userscript = function(){
+        var name = script_name_input.val();
+        if(name in userscripts){
+            var html = '';
+            for(var i in userscripts[name].parameters){
+                var param = userscripts[name].parameters[i];
+                html += '' +
+                '<div class="control-group">'+
+                    '<label class="control-label" for="params_'+param.name+'_input">'+param.name+'</label>'+
+                    '<div class="controls">'+
+                        '<input type="text" name="'+param.name+'" class="input-xlarge" id="params_'+param.name+'_input" value="'+(param.default || '')+'"/>'+
+                    '</div>'+
+                '</div>';
+            }
+            $('.script_param_container').html(html);
+        }
+    };
+
+    var run_userscript = function(){
+        var form = $('#userscript_modal form');
+        data = form.serializeArray();
+        parameters = {};
+        for(var i=0; i < data.length; i++){
+            if(data[i].name.substr(0, 7) == 'params_'){
+                parameters[data[i].name] = data[i].value
+            }
+        }
+        api.call('run_userscript', {
+            'nodenet_uid': currentNodenet,
+            'name': script_name_input.val(),
+            'parameters': parameters,
+        }, function(data){
+            window.location.reload();
+        });
+    };
+
+    script_name_input.on('change', update_parameters_for_userscript);
+    $('#userscript_modal .btn-primary').on('click', run_userscript);
+    $('#userscript_modal form').on('submit', run_userscript);
+
+    $('.run_userscript').on('click', function(event){
+        $('#userscript_modal').modal('show');
+        api.call('get_available_userscripts', {}, function(data){
+            userscripts = data;
+            var options = '';
+            for(var key in data){
+                options += '<option>' + data[key].name + '</option>';
+            }
+            script_name_input.html(options);
+            update_parameters_for_userscript();
+        });
+    });
+
 });
 
 

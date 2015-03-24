@@ -13,19 +13,19 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'fov_x',    # fovea sensors receive their input from the fovea actors
         'fov_y',
         'fov_hist__-01',  # these names must be the most commonly observed block types
+        'fov_hist__000',
         'fov_hist__001',
         'fov_hist__002',
         'fov_hist__003',
         'fov_hist__004',
+        'fov_hist__009',
         'fov_hist__012',
         'fov_hist__017',
         'fov_hist__018',
         'fov_hist__020',
+        'fov_hist__026',
         'fov_hist__031',
         'fov_hist__064',
-        'fov_hist__078',
-        'fov_hist__081',
-        'fov_hist__102',
         'fov_hist__106',
         'health',
         'food',
@@ -181,14 +181,19 @@ class MinecraftGraphLocomotion(WorldAdapter):
     logger = None
 
     # specs for vision /fovea
-    focal_length = 1  # distance of image plane from projective point /fovea
-    max_dist = 200    # maximum distance for raytracing
-    resolution = 4    # number of rays per tick in viewport /camera coordinate system
-    im_width = 32     # width of projection /image plane in the world
-    im_height = 16    # height of projection /image plane in the world
+    # focal length larger 0 means zoom in, smaller 0 means zoom out
+    # ( small values of focal length distort the image if things are close )
+    # image proportions define the part of the world that can be viewed
+    # patch dimensions define the size of the sampled patch that's stored to file
+    focal_length = 0.5   # distance of image plane from projective point /fovea
+    max_dist = 64     # maximum distance for raytracing
+    resolution = 1.    # number of rays per tick in viewport /camera coordinate system
+    im_width = 128     # width of projection /image plane in the world
+    im_height = 64     # height of projection /image plane in the world
     cam_width = 1.    # width of normalized device /camera /viewport
     cam_height = 1.   # height of normalized device /camera /viewport
-    patch_len = 16    # side length of a fovea patch
+    patch_width = 32  # width of a fovea patch  # 128
+    patch_height = 32  # height of a patch  # 64
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -242,8 +247,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.spockplugin.event.reg_event_handler('PLAY<Chat Message', self.server_chat_message)
 
         # add datasources for fovea
-        for i in range(self.patch_len):
-            for j in range(self.patch_len):
+        for i in range(self.patch_height):
+            for j in range(self.patch_width):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
 
@@ -299,8 +304,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.spockplugin.clientinfo.position['yaw'] = 0
 
         else:
-            self.spockplugin.clientinfo.position['pitch'] = (self.spockplugin.clientinfo.position['pitch'] + 1) % 10  # range in 0;10
-            self.spockplugin.clientinfo.position['yaw'] = (self.spockplugin.clientinfo.position['pitch'] + 1) % 10  # range in 0;10
+            # set pitch and yaw for sampling
+            # for patches pitch = 0 and yaw = random.randint(-10,10) were used
+            # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
+            self.spockplugin.clientinfo.position['pitch'] = 10
+            self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
 
             #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
@@ -309,8 +317,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # reset self.datasources
             # for k in self.datasources.keys():
-                # if k != 'hack_situation' and k != 'temperature':
-                    # self.datasources[k] = 0.
+            #     if k != 'hack_situation' and k != 'temperature':
+            #         self.datasources[k] = 0.
 
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
@@ -318,6 +326,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # don't reset self.datatargets because their activation is processed differently
             # depending on whether they fire continuously or not, see self.datatarget_history
+
+            # sample all the time
+            # update fovea sensors, get sensory input, provide action feedback
+            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1.
+            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1.
+            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], self.current_loco_node['name'])
+            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
+            self.datatarget_feedback['fov_x'] = 1
+            self.datatarget_feedback['fov_y'] = 1
 
             # health and food are in [0;20]
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
@@ -384,15 +401,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.register_action('sleep', self.sleep, self.check_waking_up)
                 else:
                     self.datatarget_feedback['sleep'] = -1
-
-            # sample all the time
-            # update fovea sensors, get sensory input, provide action feedback
-            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1.
-            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1.
-            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'])
-            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
-            self.datatarget_feedback['fov_x'] = 1
-            self.datatarget_feedback['fov_y'] = 1
 
             # impatience!
             self.check_for_action_feedback()
@@ -497,7 +505,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         }
         self.spockplugin.net.push(Packet(ident='PLAY>Player Block Placement', data=data))
 
-    def get_visual_input(self, fov_x, fov_y):
+    def get_visual_input(self, fov_x, fov_y, label):
         """
         Spans an image plane.
 
@@ -526,8 +534,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_height, tick_h)]
 
         # scale up fov_x, fov_y
-        fov_x = round(fov_x * (self.im_width * self.resolution - self.patch_len))
-        fov_y = round(fov_y * (self.im_height * self.resolution - self.patch_len))
+        fov_x = round(fov_x * (self.im_width * self.resolution - self.patch_width))
+        fov_y = round(fov_y * (self.im_height * self.resolution - self.patch_height))
 
         x0, y0, z0 = pos_x, pos_y, pos_z  # agent's position aka projective point
         zi = z0 + self.focal_length
@@ -536,8 +544,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         # compute block type values for the whole patch /fovea
         patch = []
-        for i in range(self.patch_len):
-            for j in range(self.patch_len):
+        for i in range(self.patch_height):
+            for j in range(self.patch_width):
                 try:
                     block_type, distance = self.project(h_line[fov_x + j], v_line[fov_y + i], zi, x0, y0, z0, yaw, pitch)
                 except IndexError:
@@ -547,7 +555,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         # write block type histogram values to self.datasources['fov_hist__*']
         # for every block type seen in patch, if there's a datasource for it, fill it with its normalized frequency
-        normalizer = self.patch_len ** 2
+        normalizer = self.patch_width * self.patch_height
         for bt in set(patch):
             name = "fov_hist__%03d" % bt
             if name in self.datasources:
@@ -572,10 +580,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
         patch_resc = [(1 + x) * 0.4 + 0.1 for x in patch_std]
 
         # write values to self.datasources['fov__']
-        for i in range(self.patch_len):
-            for j in range(self.patch_len):
+        for i in range(self.patch_height):
+            for j in range(self.patch_width):
                 name = 'fov__%02d_%02d' % (i, j)
-                self.datasources[name] = patch_resc[self.patch_len * i + j]
+                self.datasources[name] = patch_resc[self.patch_height * i + j]
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
@@ -586,7 +594,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         from math import sqrt
 
         distance = 0    # just a counter
-        block_type = -1
+        block_type = -1  # consider mapping nothingness to air, ie. -1 to 0
         xb, yb, zb = xi, yi, zi
 
         # compute difference vector between projective point and image point

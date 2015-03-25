@@ -16,6 +16,8 @@ except OSError:
 
 import configuration
 configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
+configuration.SERVER_SETTINGS_PATH = configuration.RESOURCE_PATH + '/server_config.json'
+configuration.USERMANAGER_PATH = configuration.RESOURCE_PATH + '/user-db.json'
 
 from micropsi_core import runtime as micropsi
 

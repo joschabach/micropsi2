@@ -7,6 +7,7 @@ from webtest import TestApp
 
 import configuration
 configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
+configuration.SERVER_SETTINGS_PATH = '/tmp/micropsi_tests'
 
 from micropsi_core import runtime as micropsi
 

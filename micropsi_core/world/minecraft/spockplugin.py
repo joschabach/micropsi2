@@ -4,6 +4,7 @@ from spock.mcp import mcdata, mcpacket
 from spock.mcp.mcpacket import Packet
 from spock.utils import pl_announce
 
+
 STANCE_ADDITION = 1.620
 STEP_LENGTH = 1.0
 JUMPING_MAGIC_NUMBER = 0  # 2 used to work
@@ -71,24 +72,22 @@ class MicropsiPlugin(object):
             self.clientinfo.position['on_ground'] = True
 
     def get_block_type(self, x, y, z):
-        """ Jonas' get_voxel_blocktype(..) """
-        key = (x // 16, z // 16)
-        columns = self.world.columns
-        if key not in columns:
-            return -1
-        current_column = columns[key]
-        if len(current_column.chunks) <= y // 16:
-            return -1
-        try:
-            current_section = current_column.chunks[y // 16]
-        except IndexError:
-            return -1
-        if current_section is None:
-            return -1
-        else:
-            block_type_id = current_section.block_data.get(x % 16, y % 16, z % 16)
-            # print('blocktype: %s' % str( block_type_id/ 16))
-            return int(block_type_id / 16)
+        """
+        Get the block type of a particular voxel.
+        """
+        x, y, z = int(x), int(y), int(z)
+        x, rx = divmod(x, 16)
+        y, ry = divmod(y, 16)
+        z, rz = divmod(z, 16)
+
+        if (x, z) not in self.world.columns or y > 0x0F:
+            return -1  # was 0
+        column = self.world.columns[(x, z)]
+        chunk = column.chunks[y]
+        if chunk is None:
+            return -1  # was 0
+
+        return chunk.block_data.get(rx, ry, rz) >> 4
 
     def get_biome_info(self, pos=None):
         from spock.mcmap.mapdata import biomes

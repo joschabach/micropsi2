@@ -394,15 +394,15 @@ $(function() {
     });
 
 
-    var userscripts = {};
-    var script_name_input = $('#script_name_input');
+    var recipes = {};
+    var recipe_name_input = $('#recipe_name_input');
 
-    var update_parameters_for_userscript = function(){
-        var name = script_name_input.val();
-        if(name in userscripts){
+    var update_parameters_for_recipe = function(){
+        var name = recipe_name_input.val();
+        if(name in recipes){
             var html = '';
-            for(var i in userscripts[name].parameters){
-                var param = userscripts[name].parameters[i];
+            for(var i in recipes[name].parameters){
+                var param = recipes[name].parameters[i];
                 html += '' +
                 '<div class="control-group">'+
                     '<label class="control-label" for="params_'+param.name+'_input">'+param.name+'</label>'+
@@ -411,12 +411,12 @@ $(function() {
                     '</div>'+
                 '</div>';
             }
-            $('.script_param_container').html(html);
+            $('.recipe_param_container').html(html);
         }
     };
 
-    var run_userscript = function(){
-        var form = $('#userscript_modal form');
+    var run_recipe = function(){
+        var form = $('#recipe_modal form');
         data = form.serializeArray();
         parameters = {};
         for(var i=0; i < data.length; i++){
@@ -424,29 +424,29 @@ $(function() {
                 parameters[data[i].name] = data[i].value
             }
         }
-        api.call('run_userscript', {
+        api.call('run_recipe', {
             'nodenet_uid': currentNodenet,
-            'name': script_name_input.val(),
+            'name': recipe_name_input.val(),
             'parameters': parameters,
         }, function(data){
             window.location.reload();
         });
     };
 
-    script_name_input.on('change', update_parameters_for_userscript);
-    $('#userscript_modal .btn-primary').on('click', run_userscript);
-    $('#userscript_modal form').on('submit', run_userscript);
+    recipe_name_input.on('change', update_parameters_for_recipe);
+    $('#recipe_modal .btn-primary').on('click', run_recipe);
+    $('#recipe_modal form').on('submit', run_recipe);
 
-    $('.run_userscript').on('click', function(event){
-        $('#userscript_modal').modal('show');
-        api.call('get_available_userscripts', {}, function(data){
-            userscripts = data;
+    $('.run_recipe').on('click', function(event){
+        $('#recipe_modal').modal('show');
+        api.call('get_available_recipes', {}, function(data){
+            recipes = data;
             var options = '';
             for(var key in data){
                 options += '<option>' + data[key].name + '</option>';
             }
-            script_name_input.html(options);
-            update_parameters_for_userscript();
+            recipe_name_input.html(options);
+            update_parameters_for_recipe();
         });
     });
 

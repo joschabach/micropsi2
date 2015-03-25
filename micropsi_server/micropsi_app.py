@@ -711,7 +711,7 @@ def load_nodenet(nodenet_uid, nodespace='Root', coordinates={}):
     if result:
         data = runtime.get_nodenet_data(nodenet_uid, nodespace, coordinates)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
-        data['scripts'] = runtime.get_available_userscripts()
+        data['recipes'] = runtime.get_available_recipes()
         return True, data
     else:
         return False, uid
@@ -1163,14 +1163,14 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0):
 
 # --- user scripts ---
 
-@rpc("run_userscript")
-def run_userscript(nodenet_uid, name, parameters):
-    return runtime.run_userscript(nodenet_uid, name, parameters)
+@rpc("run_recipe")
+def run_recipe(nodenet_uid, name, parameters):
+    return runtime.run_recipe(nodenet_uid, name, parameters)
 
 
-@rpc('get_available_userscripts')
-def get_available_userscripts():
-    return True, runtime.get_available_userscripts()
+@rpc('get_available_recipes')
+def get_available_recipes():
+    return True, runtime.get_available_recipes()
 
 
 # -----------------------------------------------------------------------------------------------

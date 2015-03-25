@@ -1062,15 +1062,15 @@ def test_500(app):
     assert response.json_body['traceback'] is not None
 
 
-def test_get_userscripts(app, test_nodenet, scripts_def):
+def test_get_recipes(app, test_nodenet, recipes_def):
     app.set_auth()
-    with open(scripts_def, 'w') as fp:
+    with open(recipes_def, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
     return quatsch
 """)
     response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
-    response = app.get_json('/rpc/get_available_userscripts()')
+    response = app.get_json('/rpc/get_available_recipes()')
     data = response.json_body['data']
     assert 'foobar' in data
     assert len(data['foobar']['parameters']) == 1

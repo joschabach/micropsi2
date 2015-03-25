@@ -46,7 +46,7 @@ configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 worlds = {}
 nodenets = {}
 native_modules = {}
-userscripts = {}
+custom_recipes = {}
 
 runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
@@ -967,23 +967,23 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 
-def get_available_userscripts():
-    """ Returns a dict of the available user-scripts """
-    scripts = {}
-    for name, data in userscripts.items():
-        scripts[name] = {
+def get_available_recipes():
+    """ Returns a dict of the available user-recipes """
+    recipes = {}
+    for name, data in custom_recipes.items():
+        recipes[name] = {
             'name': name,
             'parameters': data['parameters']
         }
-    return scripts
+    return recipes
 
 
-def run_userscript(nodenet_uid, name, parameters):
-    """ Calls the given userscript with the provided parameters, and returns the output, if any """
+def run_recipe(nodenet_uid, name, parameters):
+    """ Calls the given recipe with the provided parameters, and returns the output, if any """
     from functools import partial
     netapi = nodenets[nodenet_uid].netapi
-    if name in userscripts:
-        func = userscripts[name]['function']
+    if name in custom_recipes:
+        func = custom_recipes[name]['function']
         return True, func(netapi, **parameters)
     else:
         return False, "Script not found"
@@ -1071,7 +1071,7 @@ def load_user_files(do_reload=False):
     old_native_modules = native_modules.copy()
     native_modules = {}
     custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
-    custom_scripts_file = os.path.join(RESOURCE_PATH, 'scripts.py')
+    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
     custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodetype_file):
         try:
@@ -1081,24 +1081,24 @@ def load_user_files(do_reload=False):
             warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
     sys.path.append(RESOURCE_PATH)
-    parse_script_file()
+    parse_recipe_file()
     return native_modules
 
 
-def parse_script_file():
-    custom_scripts_file = os.path.join(RESOURCE_PATH, 'scripts.py')
-    if not os.path.isfile(custom_scripts_file):
+def parse_recipe_file():
+    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
+    if not os.path.isfile(custom_recipe_file):
         return
 
     import importlib.machinery
     import inspect
-    global userscripts
+    global custom_recipes
 
-    loader = importlib.machinery.SourceFileLoader("scripts", custom_scripts_file)
-    scripts = loader.load_module()
-    # import scripts
-    userscripts = {}
-    all_functions = inspect.getmembers(scripts, inspect.isfunction)
+    loader = importlib.machinery.SourceFileLoader("recipes", custom_recipe_file)
+    recipes = loader.load_module()
+    # import recipes
+    custom_recipes = {}
+    all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
         argspec = inspect.getargspec(func)
         arguments = argspec.args[1:]
@@ -1109,7 +1109,7 @@ def parse_script_file():
                 'name': arg,
                 'default': defaults[i]
             })
-        userscripts[name] = {
+        custom_recipes[name] = {
             'name': name,
             'parameters': params,
             'function': func

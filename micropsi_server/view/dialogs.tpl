@@ -62,23 +62,23 @@
     </div>
 </div>
 
-<div class="modal hide" id="userscript_modal">
+<div class="modal hide" id="recipe_modal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>
-        <h3>Run Script</h3>
+        <h3>Run Recipe</h3>
     </div>
     <div class="modal-body">
-        <p>You can place a python file with useful functions called "scripts.py" in your ressource-directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
+        <p>You can place a python file with useful functions called "recipes.py" in your ressource-directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
         <form class="form-horizontal">
             <fieldset>
                 <div class="control-group">
-                    <label class="control-label" for="script_name_input">Name</label>
+                    <label class="control-label" for="recipe_name_input">Name</label>
                     <div class="controls">
-                        <select name="script_name_input" class="input-xlarge" id="script_name_input"></select>
+                        <select name="recipe_name_input" class="input-xlarge" id="recipe_name_input"></select>
                     </div>
                 </div>
             </fieldset>
-            <fieldset class="script_param_container">
+            <fieldset class="recipe_param_container">
             </fieldset>
         </form>
     </div>

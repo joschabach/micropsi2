@@ -43,8 +43,8 @@ def nodefunc_def():
 
 
 @pytest.fixture
-def scripts_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'scripts.py')
+def recipes_def():
+    return os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
 
 
 def set_logging_levels():

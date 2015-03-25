@@ -982,9 +982,13 @@ def run_recipe(nodenet_uid, name, parameters):
     """ Calls the given recipe with the provided parameters, and returns the output, if any """
     from functools import partial
     netapi = nodenets[nodenet_uid].netapi
+    params = {}
+    for key in parameters:
+        if parameters[key] != '':
+            params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        return True, func(netapi, **parameters)
+        return True, func(netapi, **params)
     else:
         return False, "Script not found"
 

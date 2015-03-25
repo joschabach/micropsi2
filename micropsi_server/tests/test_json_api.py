@@ -1078,6 +1078,25 @@ def foobar(netapi, quatsch=23):
     assert data['foobar']['parameters'][0]['default'] == 23
 
 
+def test_run_recipes(app, test_nodenet, recipes_def):
+    app.set_auth()
+    with open(recipes_def, 'w') as fp:
+        fp.write("""
+def foobar(netapi, quatsch=23):
+    return quatsch
+""")
+    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.post_json('/rpc/run_recipe', {
+        'nodenet_uid': test_nodenet,
+        'name': 'foobar',
+        'parameters': {
+            'quatsch': ''
+        }
+    })
+    data = response.json_body['data']
+    assert data == 23
+
+
 def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     app.set_auth()
     from micropsi_core.nodenet.node import Nodetype

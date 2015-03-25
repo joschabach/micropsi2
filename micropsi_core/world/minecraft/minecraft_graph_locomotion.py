@@ -4,6 +4,7 @@ import random
 import logging
 import time
 from functools import partial
+from math import sqrt, radians, cos, sin
 from spock.mcp.mcpacket import Packet
 
 
@@ -329,8 +330,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # sample all the time
             # update fovea sensors, get sensory input, provide action feedback
-            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1.
-            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1.
+            # make sure fovea datasources don't go below 0.
+            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
+            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
             self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], self.current_loco_node['name'])
             # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
             self.datatarget_feedback['fov_x'] = 1
@@ -595,7 +597,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         distance = 0    # just a counter
         block_type = -1  # consider mapping nothingness to air, ie. -1 to 0
-        xb, yb, zb = xi, yi, zi
 
         # compute difference vector between projective point and image point
         diff = (xi - x0, yi - y0, zi - z0)
@@ -617,19 +618,16 @@ class MinecraftGraphLocomotion(WorldAdapter):
         # add diff to projection point aka agent's position
         xb, yb, zb = x0 + diff[0], y0 + diff[1], z0 + diff[2]
 
-        while block_type <= 0:  # which is air
+        while block_type <= 0:  # which is air and nothingness
 
             # check block type of next distance point along ray
             # aka add normalized difference vector to image point
-            xb = xb + norm[0]
-            yb = yb + norm[1]
-            zb = zb + norm[2]
+            # TODO: consider a more efficient way to move on the ray, eg. a log scale
+            xb += norm[0]
+            yb += norm[1]
+            zb += norm[2]
 
-            block_type = self.spockplugin.get_block_type(
-                int(xb),
-                int(yb),
-                int(zb),
-            )
+            block_type = self.spockplugin.get_block_type(xb, yb, zb)
 
             distance += 1
             if distance >= self.max_dist:
@@ -639,45 +637,42 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """
-        from math import radians, cos, sin
 
         # convert angle in degrees to radians
         theta = radians(angle)
 
         # rotate vector
-        x = pos[0]
-        y = pos[1] * cos(theta) - pos[2] * sin(theta)
-        z = pos[1] * sin(theta) + pos[2] * cos(theta)
+        xx, y, z = pos
+        yy = y * cos(theta) - z * sin(theta)
+        zz = y * sin(theta) + z * cos(theta)
 
-        return (x, y, z)
+        return (xx, yy, zz)
 
     def rotate_around_y_axis(self, pos, angle):
         """ Rotate a 3D point around the y-axis given a specific angle. """
-        from math import radians, cos, sin
 
         # convert angle in degrees to radians
         theta = radians(angle)
 
         # rotate vector
-        x = pos[0] * cos(theta) + pos[2] * sin(theta)
-        y = pos[1]
-        z = - pos[0] * sin(theta) + pos[2] * cos(theta)
+        x, yy, z = pos
+        xx = x * cos(theta) + z * sin(theta)
+        zz = - x * sin(theta) + z * cos(theta)
 
-        return (x, y, z)
+        return (xx, yy, zz)
 
     def rotate_around_z_axis(self, pos, angle):
         """ Rotate a 3D point around the z-axis given a specific angle. """
-        from math import radians, cos, sin
 
         # convert angle in degrees to radians
         theta = radians(angle)
 
         # rotate vector
-        x = pos[0] * cos(theta) - pos[1] * sin(theta)
-        y = pos[0] * sin(theta) + pos[1] * cos(theta)
-        z = pos[2]
+        x, y, zz = pos
+        xx = x * cos(theta) - y * sin(theta)
+        yy = x * sin(theta) + y * cos(theta)
 
-        return (x, y, z)
+        return (xx, yy, zz)
 
     def frange(self, start, end, step):
         """

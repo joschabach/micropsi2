@@ -420,7 +420,7 @@ $(function() {
         data = form.serializeArray();
         parameters = {};
         for(var i=0; i < data.length; i++){
-            if(data[i].name.substr(0, 7) == 'params_'){
+            if(data[i].name != 'recipe_name_input'){
                 parameters[data[i].name] = data[i].value
             }
         }

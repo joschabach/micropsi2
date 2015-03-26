@@ -687,7 +687,6 @@ def show_face():
     return template("viewer", mode="face", user_id=user_id, permissions=permissions, token=token, version=VERSION)
 
 
-
 #################################################################
 #
 #
@@ -712,6 +711,7 @@ def load_nodenet(nodenet_uid, nodespace='Root', coordinates={}):
     if result:
         data = runtime.get_nodenet_data(nodenet_uid, nodespace, coordinates)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
+        data['recipes'] = runtime.get_available_recipes()
         return True, data
     else:
         return False, uid
@@ -1159,6 +1159,18 @@ def get_logger_messages(logger=[], after=0):
 def get_monitoring_info(nodenet_uid, logger=[], after=0):
     data = runtime.get_monitoring_info(nodenet_uid, logger, after)
     return True, data
+
+
+# --- user scripts ---
+
+@rpc("run_recipe")
+def run_recipe(nodenet_uid, name, parameters):
+    return runtime.run_recipe(nodenet_uid, name, parameters)
+
+
+@rpc('get_available_recipes')
+def get_available_recipes():
+    return True, runtime.get_available_recipes()
 
 
 # -----------------------------------------------------------------------------------------------

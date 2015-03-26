@@ -193,3 +193,33 @@ def test_node_parameters_none(fixed_nodenet):
     micropsi.set_node_parameters(fixed_nodenet, node.uid, {'response': '', 'timeout': 0})
     assert node.get_parameter('response') is None
     assert node.get_parameter('timeout') == 0
+
+
+def test_get_recipes(fixed_nodenet, resourcepath):
+    from os import path, remove
+    with open(path.join(resourcepath, 'recipes.py'), 'w') as fp:
+        fp.write("""
+def testfoo(netapi, count=23):
+    return count
+""")
+    micropsi.reload_native_modules(fixed_nodenet)
+    recipes = micropsi.get_available_recipes()
+    assert 'testfoo' in recipes
+    assert len(recipes['testfoo']['parameters']) == 1
+    assert recipes['testfoo']['parameters'][0]['name'] == 'count'
+    assert recipes['testfoo']['parameters'][0]['default'] == 23
+    remove(path.join(resourcepath, 'recipes.py'))
+
+
+def test_run_recipe(fixed_nodenet, resourcepath):
+    from os import path, remove
+    with open(path.join(resourcepath, 'recipes.py'), 'w') as fp:
+        fp.write("""
+def testfoo(netapi, count=23):
+    return count
+""")
+    micropsi.reload_native_modules(fixed_nodenet)
+    state, result = micropsi.run_recipe(fixed_nodenet, 'testfoo', {'count': 42})
+    assert state
+    assert result == 42
+    remove(path.join(resourcepath, 'recipes.py'))

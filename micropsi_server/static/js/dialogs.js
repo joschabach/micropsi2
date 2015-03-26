@@ -393,6 +393,63 @@ $(function() {
         });
     });
 
+
+    var recipes = {};
+    var recipe_name_input = $('#recipe_name_input');
+
+    var update_parameters_for_recipe = function(){
+        var name = recipe_name_input.val();
+        if(name in recipes){
+            var html = '';
+            for(var i in recipes[name].parameters){
+                var param = recipes[name].parameters[i];
+                html += '' +
+                '<div class="control-group">'+
+                    '<label class="control-label" for="params_'+param.name+'_input">'+param.name+'</label>'+
+                    '<div class="controls">'+
+                        '<input type="text" name="'+param.name+'" class="input-xlarge" id="params_'+param.name+'_input" value="'+(param.default || '')+'"/>'+
+                    '</div>'+
+                '</div>';
+            }
+            $('.recipe_param_container').html(html);
+        }
+    };
+
+    var run_recipe = function(){
+        var form = $('#recipe_modal form');
+        data = form.serializeArray();
+        parameters = {};
+        for(var i=0; i < data.length; i++){
+            if(data[i].name != 'recipe_name_input'){
+                parameters[data[i].name] = data[i].value
+            }
+        }
+        api.call('run_recipe', {
+            'nodenet_uid': currentNodenet,
+            'name': recipe_name_input.val(),
+            'parameters': parameters,
+        }, function(data){
+            window.location.reload();
+        });
+    };
+
+    recipe_name_input.on('change', update_parameters_for_recipe);
+    $('#recipe_modal .btn-primary').on('click', run_recipe);
+    $('#recipe_modal form').on('submit', run_recipe);
+
+    $('.run_recipe').on('click', function(event){
+        $('#recipe_modal').modal('show');
+        api.call('get_available_recipes', {}, function(data){
+            recipes = data;
+            var options = '';
+            for(var key in data){
+                options += '<option>' + data[key].name + '</option>';
+            }
+            recipe_name_input.html(options);
+            update_parameters_for_recipe();
+        });
+    });
+
 });
 
 

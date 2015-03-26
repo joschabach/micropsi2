@@ -46,6 +46,7 @@ configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
 worlds = {}
 nodenets = {}
 native_modules = {}
+custom_recipes = {}
 
 runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
@@ -966,6 +967,32 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     nodenets[nodenet_uid].is_active = resume_nodenet
 
 
+def get_available_recipes():
+    """ Returns a dict of the available user-recipes """
+    recipes = {}
+    for name, data in custom_recipes.items():
+        recipes[name] = {
+            'name': name,
+            'parameters': data['parameters']
+        }
+    return recipes
+
+
+def run_recipe(nodenet_uid, name, parameters):
+    """ Calls the given recipe with the provided parameters, and returns the output, if any """
+    from functools import partial
+    netapi = nodenets[nodenet_uid].netapi
+    params = {}
+    for key in parameters:
+        if parameters[key] != '':
+            params[key] = parameters[key]
+    if name in custom_recipes:
+        func = custom_recipes[name]['function']
+        return True, func(netapi, **params)
+    else:
+        return False, "Script not found"
+
+
 # --- end of API
 
 def crawl_definition_files(path, type="definition"):
@@ -1043,10 +1070,13 @@ def init_worlds(world_data):
 
 def load_user_files(do_reload=False):
     # see if we have additional nodetypes defined by the user.
+    import sys
     global native_modules
     old_native_modules = native_modules.copy()
     native_modules = {}
     custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
+    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
+    custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodetype_file):
         try:
             with open(custom_nodetype_file) as fp:
@@ -1054,12 +1084,40 @@ def load_user_files(do_reload=False):
         except ValueError:
             warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
-    # respect user defined nodefunctions:
-    if os.path.isfile(os.path.join(RESOURCE_PATH, 'nodefunctions.py')):
-        import sys
-        sys.path.append(RESOURCE_PATH)
-
+    sys.path.append(RESOURCE_PATH)
+    parse_recipe_file()
     return native_modules
+
+
+def parse_recipe_file():
+    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
+    if not os.path.isfile(custom_recipe_file):
+        return
+
+    import importlib.machinery
+    import inspect
+    global custom_recipes
+
+    loader = importlib.machinery.SourceFileLoader("recipes", custom_recipe_file)
+    recipes = loader.load_module()
+    # import recipes
+    custom_recipes = {}
+    all_functions = inspect.getmembers(recipes, inspect.isfunction)
+    for name, func in all_functions:
+        argspec = inspect.getargspec(func)
+        arguments = argspec.args[1:]
+        defaults = argspec.defaults
+        params = []
+        for i, arg in enumerate(arguments):
+            params.append({
+                'name': arg,
+                'default': defaults[i]
+            })
+        custom_recipes[name] = {
+            'name': name,
+            'parameters': params,
+            'function': func
+        }
 
 
 def reload_native_modules(nodenet_uid=None):

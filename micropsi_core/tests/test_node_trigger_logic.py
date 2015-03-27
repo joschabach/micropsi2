@@ -191,3 +191,27 @@ def test_trigger_respect_sheaf(fixed_nodenet):
     assert sheafs['default'] == 0
     assert len(sheafs.keys()) == 2
     assert 1.0 in sheafs.values()
+
+
+def test_trigger_instafail(fixed_nodenet):
+    """ Triggers should not wait, if their sub-node indicates failing """
+    net, netapi, source = prepare(fixed_nodenet)
+    pipe1 = netapi.create_node("Pipe", "Root", "Pipe1")
+    netapi.link(source, 'gen', pipe1, 'sub')
+    trigger = netapi.create_node("Trigger", "Root", "Trigger")
+    trigger.set_parameter("response", 0.5)
+    trigger.set_parameter("timeout", 10)
+    trigger.set_parameter("condition", ">")
+    netapi.link_with_reciprocal(pipe1, trigger, 'subsur')
+
+    failer = netapi.create_node("Register", "Root", "Failer")
+    netapi.link(failer, 'gen', trigger, 'sur', weight=-1)
+    netapi.link(trigger, 'sub', failer, 'gen')
+
+    net.step()  # pipe1 requested
+    net.step()  # trigger requested
+    net.step()  # failer active
+    net.step()  # trigger failed
+
+    assert trigger.activation == -1
+    assert trigger.get_gate('sur').activation == -1

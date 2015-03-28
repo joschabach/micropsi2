@@ -124,7 +124,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
         gen += node.get_slot("sur").get_activation(sheaf)
         gen += node.get_slot("exp").get_activation(sheaf)
     else:
-        gen += node.get_slot("gen").get_activation(sheaf)
+        gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
         if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
 
     # commented: trigger and pipes should be able to escape the [-1;1] cage on gen
@@ -141,7 +141,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     sur += node.get_slot("sur").get_activation(sheaf)
     if sur == 0: sur += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
-    if abs(node.get_slot("gen").get_activation(sheaf)) > 0.2:               # cut off sur-reports from gen looping before the loop fades away
+    if abs(node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)) > 0.2:               # cut off sur-reports from gen looping before the loop fades away
         sur += 1 if node.get_slot("gen").get_activation(sheaf) > 0 else -1
     sur += node.get_slot("exp").get_activation(sheaf)
 
@@ -173,7 +173,6 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por > 0: por = 1
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
-    ret -= node.get_slot("por").get_activation(sheaf)
     if node.get_slot("por").get_activation(sheaf) >= 0:
         ret -= node.get_slot("sub").get_activation(sheaf)
     if ret > 1:

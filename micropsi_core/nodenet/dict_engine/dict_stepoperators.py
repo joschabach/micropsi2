@@ -136,7 +136,9 @@ class DictPORRETDecay(StepOperator):
                         break
             if len(old_schema_node.get_gate('sub').get_links()) <= 1:
                 # schema node has 1 child or less, prune as whole
-                delete_nodes = [old_schema_node]
+                delete_nodes = []
+                if not old_schema_node.get_slot('gen').get_links():
+                    delete_nodes.append(old_schema_node)
                 for l1 in old_schema_node.get_gate('sub').get_links():
                     for l2 in l1.target_node.get_gate('sub').get_links():
                         delete_nodes.append(l2.target_node)

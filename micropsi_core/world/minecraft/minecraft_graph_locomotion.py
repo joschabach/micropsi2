@@ -213,17 +213,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'sleep': 0
         }
 
-        # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
-        self.datatarget_history = {
-            'take_exit_one': 0,
-            'take_exit_two': 0,
-            'take_exit_three': 0,
-            'fov_x': 0,
-            'fov_y': 0,
-            'eat': 0,
-            'sleep': 0
-        }
-
         self.datasources['health'] = 1
         self.datasources['food'] = 1
         self.datasources['temperature'] = 0.5
@@ -326,7 +315,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.datatarget_feedback[k] = 0.
 
             # don't reset self.datatargets because their activation is processed differently
-            # depending on whether they fire continuously or not, see self.datatarget_history
+            # depending on whether they fire continuously or not
 
             # sample all the time
             # update fovea sensors, get sensory input, provide action feedback
@@ -355,7 +344,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # read locomotor values, trigger teleportation in the world, and provide action feedback
             # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-            if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
+            if self.datatargets['take_exit_one'] >= 1:
                 # if the current node on the transition graph has the selected exit
                 if self.current_loco_node['exit_one_uid'] is not None:
                     self.register_action(
@@ -366,7 +355,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_one'] = -1.
 
-            if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
+            if self.datatargets['take_exit_two'] >= 1:
                 if self.current_loco_node['exit_two_uid'] is not None:
                     self.register_action(
                         'take_exit_two',
@@ -376,7 +365,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_two'] = -1.
 
-            if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
+            if self.datatargets['take_exit_three'] >= 1:
                 if self.current_loco_node['exit_three_uid'] is not None:
                     self.register_action(
                         'take_exit_three',
@@ -386,7 +375,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_three'] = -1.
 
-            if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
+            if self.datatargets['eat'] >= 1:
                 if self.has_bread() and self.datasources['food'] < 1:
                     self.register_action(
                         'eat',
@@ -396,7 +385,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['eat'] = -1.
 
-            if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
+            if self.datatargets['sleep'] >= 1:
                 if self.check_movement_feedback(self.home_uid):
                     # if self.datasources['fatigue'] > 0:
                         # urge is only active at night, so we can sleep now:
@@ -406,10 +395,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # impatience!
             self.check_for_action_feedback()
-
-            # update datatarget history
-            for k in self.datatarget_history.keys():
-                self.datatarget_history[k] = self.datatargets[k]
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]

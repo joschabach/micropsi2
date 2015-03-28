@@ -244,17 +244,22 @@ def trigger(netapi, node=None, sheaf="default", **params):
         if response is None:
             response = 1
 
+        sur_in = node.get_slot('sur').get_activation(sheaf)
+        if sur_in == 0:
+            # no activation on our sheaf. maybe on default (sensors/actors)?
+            sur_in = node.get_slot('sur').get_activation("default")
+
         if node.get_slot('sub').get_activation(sheaf) > 0:
             currentstep = netapi.step
 
-            success = (condition == "=" and node.get_slot('sur').get_activation(sheaf) == int(response)) or \
-                      (condition == ">" and node.get_slot('sur').get_activation(sheaf) > int(response))
+            success = (condition == "=" and sur_in == int(response)) or \
+                      (condition == ">" and sur_in > int(response))
 
             if waitfrom > 0:                       # waiting for results
                 if success:
                     sur = 1
                     node.set_state("waitfrom", currentstep)
-                elif currentstep > waitfrom + int(timeout) or node.get_slot('sur').get_activation(sheaf) < 0:
+                elif currentstep > waitfrom + int(timeout) or sur_in < 0:
                     sur = -1
             else:                                   # perform burst
                 sub = 1
@@ -267,9 +272,9 @@ def trigger(netapi, node=None, sheaf="default", **params):
             if waitfrom > 0:
                 node.set_state("waitfrom", -1)
 
-            if node.get_slot('sur').get_activation(sheaf):
-                success = (condition == "=" and node.get_slot('sur').get_activation(sheaf) == int(response)) or \
-                          (condition == ">" and node.get_slot('sur').get_activation(sheaf) > int(response))
+            if sur_in:
+                success = (condition == "=" and sur_in == int(response)) or \
+                          (condition == ">" and sur_in > int(response))
                 if success:
                     sur = 1
 

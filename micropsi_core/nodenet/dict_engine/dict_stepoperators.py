@@ -139,10 +139,10 @@ class DictPORRETDecay(StepOperator):
                 delete_nodes = []
                 if not old_schema_node.get_slot('gen').get_links():
                     delete_nodes.append(old_schema_node)
-                for l1 in old_schema_node.get_gate('sub').get_links():
-                    for l2 in l1.target_node.get_gate('sub').get_links():
-                        delete_nodes.append(l2.target_node)
-                    delete_nodes.append(l1.target_node)
+                for l1 in old_schema_node.get_slot('sur').get_links():
+                    for l2 in l1.source_node.get_slot('sur').get_links():
+                        delete_nodes.append(l2.source_node)
+                    delete_nodes.append(l1.source_node)
                 for node in delete_nodes:
                     netapi.delete_node(node)
 

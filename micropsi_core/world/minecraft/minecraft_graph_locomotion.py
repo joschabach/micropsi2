@@ -421,14 +421,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     new_waiting_list.append(item)
 
-            for item in new_waiting_list:
-                if time.clock() - item['time'] > self.action_timeout:
-                    # re-trigger action
-                    if item['datatarget'] != 'sleep':
-                        self.logger.debug('re-triggering last action')
-                        item['action']()
-                    item['time'] = time.clock()
-
             self.waiting_list = new_waiting_list
 
     def register_action(self, datatarget, action_function, validation_function):

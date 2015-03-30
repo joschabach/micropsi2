@@ -123,6 +123,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if node.get_slot("gen").get_activation(sheaf) == 0:                     # only add to loop when not already in it
         gen += node.get_slot("sur").get_activation(sheaf)
         gen += node.get_slot("exp").get_activation(sheaf)
+        if node.get_slot("por").get_activation(sheaf) == 0 and not node.get_slot("por").empty:
+            # only start gen-loop if we are not waiting for por-activation
+            gen = 0
     else:
         gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
         if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold

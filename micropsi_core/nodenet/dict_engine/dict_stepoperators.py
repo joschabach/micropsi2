@@ -86,12 +86,13 @@ class DictPORRETDecay(StepOperator):
 
     def execute(self, nodenet, nodes, netapi):
         obsoletelinks = []
+        decay_factor = nodenet.get_modulator('base_porret_decay_factor')
         for uid, node in nodes.items():
             if node.type in ['Concept', 'Script', 'Pipe']:
                 confirmation = node.get_gate('gen').activation
 
                 porgate = node.get_gate('por')
-                pordecay = porgate.get_parameter('decay')
+                pordecay = porgate.get_parameter('decay') * decay_factor
                 if pordecay is not None and pordecay > 0:
                     for link in porgate.get_links():
                         linkdelta = - pordecay
@@ -241,6 +242,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("base_number_of_expected_events", 0)
         nodenet.set_modulator("base_number_of_unexpected_events", 0)
         nodenet.set_modulator("base_urge_change", 0)
+        nodenet.set_modulator("base_porret_decay_factor", 1)
 
         # setting emotional parameters
         nodenet.set_modulator("emo_pleasure", emo_pleasure)

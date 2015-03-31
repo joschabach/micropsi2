@@ -33,7 +33,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'temperature',
         'food_supply',
         'fatigue',
-        'hack_situation'
+        'hack_situation',
+        'hack_decay_factor'
     ]
 
     supported_datatargets = [
@@ -217,6 +218,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['food'] = 1
         self.datasources['temperature'] = 0.5
         self.datasources['hack_situation'] = -1
+        self.datasources['hack_decay_factor'] = 1
 
         # a collection of conditions to check on every update(..), eg., for action feedback
         self.waiting_list = []
@@ -270,6 +272,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         if not self.spockplugin.is_connected():
             raise RuntimeError("Lost connection to minecraft server")
+
+        self.datasources['hack_decay_factor'] = 0 if self.sleeping else 1
 
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:

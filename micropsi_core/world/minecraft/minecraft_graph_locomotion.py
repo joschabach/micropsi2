@@ -390,12 +390,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.datatarget_feedback['eat'] = -1.
 
             if self.datatargets['sleep'] >= 1:
-                if self.check_movement_feedback(self.home_uid):
-                    # if self.datasources['fatigue'] > 0:
-                        # urge is only active at night, so we can sleep now:
+                if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
+                    # we're home and it's night, so we can sleep now:
                     self.register_action('sleep', self.sleep, self.check_waking_up)
                 else:
-                    self.datatarget_feedback['sleep'] = -1
+                    self.datatarget_feedback['sleep'] = -1.
 
             # impatience!
             self.check_for_action_feedback()

@@ -40,7 +40,7 @@ class DictPropagate(Propagate):
                 for link in gate.get_links():
                     for sheaf in gate.sheaves:
                         targetsheaf = sheaf
-                        if link.target_node.type == "Actor":
+                        if link.target_node.type != "Pipe":
                             targetsheaf = "default"
 
                         if targetsheaf in link.target_slot.sheaves:

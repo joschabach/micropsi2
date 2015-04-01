@@ -87,6 +87,8 @@ class TheanoNodenet(Nodenet):
     g_min = None        # vector of lower bounds
     g_max = None        # vector of upper bounds
 
+    g_function_selector = None # vector of gate function selectors
+
     theta = None        # vector of thetas (i.e. biases)
 
     sparse = False
@@ -160,6 +162,9 @@ class TheanoNodenet(Nodenet):
 
         g_max_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
+
+        g_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 
@@ -370,6 +375,11 @@ class TheanoNodenet(Nodenet):
                 connectedactuators.append(uid)
                 self.actuatormap[datatarget] = connectedactuators
                 self.inverted_actuator_map[to_id(uid)] = datatarget
+
+        node = self.get_node(to_id(uid))
+        for gate, gate_parameters in gate_parameters.items():
+            for gate_parameter in gate_parameters:
+                node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
 
         return to_id(uid)
 

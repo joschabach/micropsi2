@@ -6,6 +6,13 @@ from theano import shared
 from theano.tensor import nnet as N
 import theano.sparse as ST
 
+GATE_FUNCTION_IDENTITY = 0
+GATE_FUNCTION_ABSOLUTE = 1
+GATE_FUNCTION_SIGMOID = 2
+GATE_FUNCTION_TANH = 3
+GATE_FUNCTION_RECT = 4
+GATE_FUNCTION_DIST = 5
+
 
 class TheanoPropagate(Propagate):
     """
@@ -55,9 +62,19 @@ class TheanoCalculate(Calculate):
         # multiply with gate factor for the node space
         gated_nodefunctions = nodefunctions * nodenet.g_factor
 
-        # apply actual gate function
-        # implemented with identity for now
+        # apply actual gate functions
         gate_function_output = gated_nodefunctions
+
+        # apply GATE_FUNCTION_ABS to masked gates
+        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
+        # apply GATE_FUNCTION_SIGMOID to masked gates
+        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output), gate_function_output)
+        # apply GATE_FUNCTION_TANH to masked gates
+        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output), gate_function_output)
+        # apply GATE_FUNCTION_RECT to masked gates
+        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output>0, gate_function_output, 0), gate_function_output)
+        # apply GATE_FUNCTION_DIST to masked gates
+        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1/gate_function_output, 0), gate_function_output)
 
         # apply threshold
         thresholded_gate_function_output = \

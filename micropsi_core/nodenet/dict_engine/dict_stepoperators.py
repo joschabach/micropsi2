@@ -40,7 +40,7 @@ class DictPropagate(Propagate):
                 for link in gate.get_links():
                     for sheaf in gate.sheaves:
                         targetsheaf = sheaf
-                        if link.target_node.type == "Actor":
+                        if link.target_node.type != "Pipe":
                             targetsheaf = "default"
 
                         if targetsheaf in link.target_slot.sheaves:
@@ -86,12 +86,13 @@ class DictPORRETDecay(StepOperator):
 
     def execute(self, nodenet, nodes, netapi):
         obsoletelinks = []
+        decay_factor = nodenet.get_modulator('base_porret_decay_factor')
         for uid, node in nodes.items():
             if node.type in ['Concept', 'Script', 'Pipe']:
                 confirmation = node.get_gate('gen').activation
 
                 porgate = node.get_gate('por')
-                pordecay = porgate.get_parameter('decay')
+                pordecay = porgate.get_parameter('decay') * decay_factor
                 if pordecay is not None and pordecay > 0:
                     for link in porgate.get_links():
                         linkdelta = - pordecay
@@ -134,13 +135,15 @@ class DictPORRETDecay(StepOperator):
                         step = step.get_gate('ret').get_links()[0].target_node
                     else:
                         break
-            if len(old_schema_node.get_gate('sub').get_links()) <= 1:
+            if len(old_schema_node.get_slot('sur').get_links()) <= 1:
                 # schema node has 1 child or less, prune as whole
-                delete_nodes = [old_schema_node]
-                for l1 in old_schema_node.get_gate('sub').get_links():
-                    for l2 in l1.target_node.get_gate('sub').get_links():
-                        delete_nodes.append(l2.target_node)
-                    delete_nodes.append(l1.target_node)
+                delete_nodes = []
+                if not old_schema_node.get_slot('gen').get_links():
+                    delete_nodes.append(old_schema_node)
+                for l1 in old_schema_node.get_slot('sur').get_links():
+                    for l2 in l1.source_node.get_slot('sur').get_links():
+                        delete_nodes.append(l2.source_node)
+                    delete_nodes.append(l1.source_node)
                 for node in delete_nodes:
                     netapi.delete_node(node)
 
@@ -239,6 +242,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("base_number_of_expected_events", 0)
         nodenet.set_modulator("base_number_of_unexpected_events", 0)
         nodenet.set_modulator("base_urge_change", 0)
+        nodenet.set_modulator("base_porret_decay_factor", 1)
 
         # setting emotional parameters
         nodenet.set_modulator("emo_pleasure", emo_pleasure)

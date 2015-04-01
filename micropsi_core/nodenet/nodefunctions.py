@@ -237,8 +237,8 @@ def trigger(netapi, node=None, sheaf="default", **params):
     sub = 0
     sur = 0
 
-    if abs(node.get_slot('gen').get_activation(sheaf)) != 0:
-        sur = node.get_slot('gen').get_activation(sheaf)
+    if abs(node.get_slot('gen').activation) != 0:
+        sur = node.get_slot('gen').activation
     else:
         waitfrom = node.get_state("waitfrom") or -1
 
@@ -248,17 +248,17 @@ def trigger(netapi, node=None, sheaf="default", **params):
         if response is None:
             response = 1
 
-        if node.get_slot('sub').get_activation(sheaf) > 0:
+        if node.get_slot('sub').activation > 0:
             currentstep = netapi.step
 
-            success = (condition == "=" and node.get_slot('sur').get_activation(sheaf) == int(response)) or \
-                      (condition == ">" and node.get_slot('sur').get_activation(sheaf) > int(response))
+            success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
+                      (condition == ">" and node.get_slot('sur').activation > int(response))
 
             if waitfrom > 0:                       # waiting for results
                 if success:
                     sur = 1
                     node.set_state("waitfrom", currentstep)
-                elif currentstep > waitfrom + int(timeout) or node.get_slot('sur').get_activation(sheaf) < 0:
+                elif currentstep > waitfrom + int(timeout) or node.get_slot('sur').activation < 0:
                     sur = -1
             else:                                   # perform burst
                 sub = 1
@@ -271,15 +271,15 @@ def trigger(netapi, node=None, sheaf="default", **params):
             if waitfrom > 0:
                 node.set_state("waitfrom", -1)
 
-            if node.get_slot('sur').get_activation(sheaf):
-                success = (condition == "=" and node.get_slot('sur').get_activation(sheaf) == int(response)) or \
-                          (condition == ">" and node.get_slot('sur').get_activation(sheaf) > int(response))
+            if node.get_slot('sur').activation:
+                success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
+                          (condition == ">" and node.get_slot('sur').activation > int(response))
                 if success:
                     sur = 1
 
     # see pipe implementation: trigger and pipes should be able to
     # escape the [-1;1] cage on gen
-    gen = node.get_slot('sur').get_activation(sheaf) + node.get_slot('gen').get_activation(sheaf)
+    gen = node.get_slot('sur').activation + node.get_slot('gen').activation
 
     node.activation = gen
 

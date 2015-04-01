@@ -105,5 +105,13 @@ class WorldAdapter(WorldObject):
 
 
 class Default(WorldAdapter):
-    datasources = {'default': 1}
-    datatargets = {'default': 0}
+
+    supported_datasources = ['static_on', 'random', 'static_off']
+    supported_datatargets = ['echo']
+
+    def update_data_sources_and_targets(self):
+        import random
+        if self.datatargets['echo'] != 0:
+            self.datatarget_feedback['echo'] = self.datatargets['echo']
+        self.datasources['static_on'] = 1
+        self.datasources['random'] = random.uniform(0, 1)

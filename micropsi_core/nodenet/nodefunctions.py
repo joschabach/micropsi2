@@ -120,12 +120,15 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
-    if node.get_slot("gen").get_activation(sheaf) == 0:                     # only add to loop when not already in it
+    gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
+    if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
+
+    if node.get_slot("por").get_activation(sheaf) == 0 and not node.get_slot("por").empty:
+        gen = 0
+
+    if gen == 0:
         gen += node.get_slot("sur").get_activation(sheaf)
         gen += node.get_slot("exp").get_activation(sheaf)
-    else:
-        gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
-        if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
 
     # commented: trigger and pipes should be able to escape the [-1;1] cage on gen
     # if gen > 1: gen = 1
@@ -165,10 +168,11 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur < -1:
         sur = -1
 
-    por += node.get_slot("sur").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
-    por *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1
+    por += node.get_slot("sur").get_activation(sheaf)
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
+    por *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1  # only por if por
+    por *= node.get_slot("sub").get_activation(sheaf)                                           # only por if sub
     por += node.get_slot("por").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
     if por > 0: por = 1
 

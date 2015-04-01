@@ -347,7 +347,8 @@ class TheanoNodenet(Nodenet):
             if datasource is not None:
                 connectedsensors = self.sensormap.get(datasource, [])
                 connectedsensors.append(uid)
-                self.inverted_sensor_map[uid] = datasource
+                self.sensormap[datasource] = connectedsensors
+                self.inverted_sensor_map[to_id(uid)] = datasource
 
         elif nodetype == "Actor":
            pass     # todo: implement actuator connectivity

@@ -65,7 +65,7 @@ def get_numerical_node_type(type):
     numerictype = 0
     if type == "Register":
         numerictype = REGISTER
-    elif type == "Actuator":
+    elif type == "Actor":
         numerictype = ACTUATOR
     elif type == "Sensor":
         numerictype = SENSOR
@@ -87,7 +87,7 @@ def get_string_node_type(type):
     if type == REGISTER:
         stringtype = "Register"
     elif type == ACTUATOR:
-        stringtype = "Actuator"
+        stringtype = "Actor"
     elif type == SENSOR:
         stringtype = "Sensor"
     elif type == ACTIVATOR:
@@ -239,13 +239,24 @@ class TheanoNode(Node):
         return links
 
     def get_parameter(self, parameter):
-        return None             # todo: implement node parameters
+        return self.clone_parameters().get(parameter)
 
     def set_parameter(self, parameter, value):
-        pass                    # todo: implement node parameters
+        if self.type == "Sensor" and parameter == "datasource":
+            olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
+            if self._id in self._nodenet.sensormap.get(olddatasource, []):
+                self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
+
+            connectedsensors = self._nodenet.sensormap.get(value, [])       # then, set the new one
+            connectedsensors.append(self._id)
+            self._nodenet.sensormap[value] = connectedsensors
+            self._nodenet.inverted_sensor_map[self.uid] = value
 
     def clone_parameters(self):
-        return {}               # todo: implement node parameters
+        parameters = {}
+        if self.type == "Sensor":
+            parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
+        return parameters
 
     def get_state(self, state):
         return None             # todo: implement node state

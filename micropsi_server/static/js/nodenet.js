@@ -609,6 +609,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.gate_parameters = item.gate_parameters;
         this.gate_activations = item.gate_activations;
         for(var i in nodetypes[type].gatetypes){
+            this.gates[nodetypes[type].gatetypes[i]].parameters = this.gate_parameters[nodetypes[type].gatetypes[i]];
             this.gates[nodetypes[type].gatetypes[i]].sheaves = this.gate_activations[nodetypes[type].gatetypes[i]];
         }
     };

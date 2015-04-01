@@ -175,24 +175,6 @@ def test_trigger_bubbling(fixed_nodenet):
     assert trigger.get_gate('sur').activation == 1  # trigger keeps confirming
 
 
-def test_trigger_respect_sheaf(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
-    pipe1 = netapi.create_node("Pipe", "Root", "Pipe1")
-    pipe2 = netapi.create_node("Pipe", "Root", "Pipe2")
-    trigger = netapi.create_node("Trigger", "Root", "Trigger")
-    netapi.link_with_reciprocal(pipe1, pipe2, 'catexp')
-    netapi.link_with_reciprocal(pipe2, trigger, 'subsur')
-    netapi.link(source, 'gen', pipe1, 'sub')
-    source.activation = 1
-    net.step()  # pipe1 requested
-    net.step()  # pipe2 sheaf
-    net.step()  # trigger sheaf
-    sheafs = trigger.get_gate('sub').activations
-    assert sheafs['default'] == 0
-    assert len(sheafs.keys()) == 2
-    assert 1.0 in sheafs.values()
-
-
 def test_trigger_instafail(fixed_nodenet):
     """ Triggers should not wait, if their sub-node indicates failing """
     net, netapi, source = prepare(fixed_nodenet)

@@ -66,7 +66,7 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
-    supported_worldadapters = []
+    supported_worldadapters = ['Default']
 
     def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION):
         """Create a new MicroPsi simulation environment.

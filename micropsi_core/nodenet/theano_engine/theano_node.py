@@ -2,6 +2,7 @@
 
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
+from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 
 import numpy as np
 
@@ -103,6 +104,40 @@ def get_string_node_type(type):
     return stringtype
 
 
+def get_numerical_gatefunction_type(type):
+    numerictype = 0
+    if type == "identity":
+        numerictype = GATE_FUNCTION_IDENTITY
+    elif type == "abs":
+        numerictype = GATE_FUNCTION_ABSOLUTE
+    elif type == "sigmoid":
+        numerictype = GATE_FUNCTION_SIGMOID
+    elif type == "tanh":
+        numerictype = GATE_FUNCTION_TANH
+    elif type == "rect":
+        numerictype = GATE_FUNCTION_RECT
+    elif type == "dist":
+        numerictype = GATE_FUNCTION_DIST
+    return numerictype
+
+
+def get_string_gatefunction_type(type):
+    stringtype = 0
+    if type == GATE_FUNCTION_IDENTITY:
+        stringtype = "identity"
+    elif type == GATE_FUNCTION_ABSOLUTE:
+        stringtype = "abs"
+    elif type == GATE_FUNCTION_SIGMOID:
+        stringtype = "sigmoid"
+    elif type == GATE_FUNCTION_TANH:
+        stringtype = "tanh"
+    elif type == GATE_FUNCTION_RECT:
+        stringtype = "rect"
+    elif type == GATE_FUNCTION_DIST:
+        stringtype = "dist"
+    return stringtype
+
+
 def to_id(numericid):
     return "n" + str(int(numericid))
 
@@ -201,6 +236,10 @@ class TheanoNode(Node):
             g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
             g_max_array[elementindex] = value
             self._nodenet.g_max.set_value(g_max_array, borrow=True)
+        elif parameter == 'gatefunction':
+            g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
+            g_function_selector[elementindex] = get_numerical_gatefunction_type(value)
+            self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
 
     def get_gate_parameters(self):
         # todo: implement defaulting mechanism for gate parameters
@@ -209,6 +248,7 @@ class TheanoNode(Node):
         g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True, return_internal_type=True)
         g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
         g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
+        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
 
         result = {}
         for numericalgate in range(0, NUMBER_OF_ELEMENTS_PER_NODE):
@@ -217,6 +257,7 @@ class TheanoNode(Node):
                 'amplification': g_amplification_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
                 'minimum': g_min_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
                 'maximum': g_max_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
+                'gatefunction': get_string_gate_type(g_function_selector[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate])
             }
             result[get_string_gate_type(numericalgate)] = gate_parameters
         return result
@@ -370,7 +411,7 @@ class TheanoGate(Gate):
         return links
 
     def get_parameter(self, parameter_name):
-        pass            # todo: implement parameters
+        return self.__node.get_gate_parameters(self.__type)[parameter_name]
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves

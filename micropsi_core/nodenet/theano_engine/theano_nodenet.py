@@ -376,6 +376,11 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap[datatarget] = connectedactuators
                 self.inverted_actuator_map[to_id(uid)] = datatarget
 
+        node = self.get_node(to_id(uid))
+        for gate, gate_parameters in gate_parameters.items():
+            for gate_parameter in gate_parameters:
+                node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
+
         return to_id(uid)
 
     def delete_node(self, uid):

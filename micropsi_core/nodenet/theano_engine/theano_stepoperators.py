@@ -77,16 +77,31 @@ class TheanoCalculate(Calculate):
         # put the theano graph into a callable function to be executed
         self.calculate = theano.function([], nodenet.a, updates={nodenet.a: gatefunctions})
 
-    def read_sensors(self):
+    def read_sensors_and_actuator_feedback(self):
         if self.worldadapter is None:
             return
+
         datasource_to_value_map = {}
         for datasource in self.worldadapter.get_available_datasources(self.nodenet.uid):
             datasource_to_value_map[datasource] = self.worldadapter.get_datasource(self.nodenet.uid, datasource)
 
-        self.nodenet.set_sensors_to_values(datasource_to_value_map)
+        datatarget_to_value_map = {}
+        for datatarget in self.worldadapter.get_available_datatargets(self.nodenet.uid):
+            datatarget_to_value_map[datatarget] = self.worldadapter.get_datatarget_feedback(self.nodenet.uid, datatarget)
+
+        self.nodenet.set_sensors_and_actuator_feedback_to_values(datasource_to_value_map, datatarget_to_value_map)
+
+    def write_actuators(self):
+        if self.worldadapter is None:
+            return
+
+        values_to_write = self.nodenet.read_actuators()
+        for datatarget in values_to_write:
+            self.worldadapter.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
 
     def execute(self, nodenet, nodes, netapi):
 
+        self.write_actuators()
         self.calculate()
-        self.read_sensors()
+        self.read_sensors_and_actuator_feedback()
+

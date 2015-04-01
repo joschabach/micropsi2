@@ -37,7 +37,14 @@ STANDARD_NODETYPES = {
         "parameters": ["datasource"],
         "nodefunction_name": "sensor",
         "gatetypes": ["gen"]
-    }
+    },
+    "Actor": {
+        "name": "Actor",
+        "parameters": ["datatarget"],
+        "nodefunction_name": "actor",
+        "slottypes": ["gen"],
+        "gatetypes": ["gen"]
+    },
 }
 
 NODENET_VERSION = 1
@@ -62,6 +69,13 @@ class TheanoNodenet(Nodenet):
 
     # map of numerical node IDs to data sources
     inverted_sensor_map = {}
+
+    # map of data targets to numerical node IDs
+    actuatormap = {}
+
+    # map of numerical node IDs to data targets
+    inverted_actuator_map = {}
+
 
     # theano tensors for performing operations
     w = None            # matrix of weights
@@ -349,9 +363,13 @@ class TheanoNodenet(Nodenet):
                 connectedsensors.append(uid)
                 self.sensormap[datasource] = connectedsensors
                 self.inverted_sensor_map[to_id(uid)] = datasource
-
         elif nodetype == "Actor":
-           pass     # todo: implement actuator connectivity
+            datatarget = parameters["datatarget"]
+            if datatarget is not None:
+                connectedactuators = self.actuatormap.get(datatarget, [])
+                connectedactuators.append(uid)
+                self.actuatormap[datatarget] = connectedactuators
+                self.inverted_actuator_map[to_id(uid)] = datatarget
 
         return to_id(uid)
 
@@ -481,7 +499,7 @@ class TheanoNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def set_sensors_to_values(self, datasource_to_value_map):
+    def set_sensors_and_actuator_feedback_to_values(self, datasource_to_value_map, datatarget_to_value_map):
         """
         Sets the sensors for the given data sources to the given values
         """
@@ -495,4 +513,32 @@ class TheanoNodenet(Nodenet):
             for sensor_uid in sensor_uids:
                 a_array[sensor_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
 
+        for datatarget in datatarget_to_value_map:
+            value = datatarget_to_value_map.get(datatarget)
+            actuator_uids = self.actuatormap.get(datatarget, [])
+
+            for actuator_uid in actuator_uids:
+                a_array[actuator_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
+
         self.a.set_value(a_array, borrow=True)
+
+    def read_actuators(self):
+        """
+        Returns a map of datatargets to values for writing back to the world adapter
+        """
+
+        actuator_values_to_write = {}
+
+        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+
+        for datatarget in self.actuatormap:
+            actuator_node_activations = 0
+            for actuator_id in self.actuatormap[datatarget]:
+                index = actuator_id * NUMBER_OF_ELEMENTS_PER_NODE + GEN
+                actuator_node_activations += a_array[actuator_id * NUMBER_OF_ELEMENTS_PER_NODE + GEN]
+
+            actuator_values_to_write[datatarget] = actuator_node_activations
+
+        self.a.set_value(a_array, borrow=True)
+
+        return actuator_values_to_write

@@ -251,11 +251,22 @@ class TheanoNode(Node):
             connectedsensors.append(self._id)
             self._nodenet.sensormap[value] = connectedsensors
             self._nodenet.inverted_sensor_map[self.uid] = value
+        if self.type == "Actor" and parameter == "datatarget":
+            olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
+            if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
+                self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
+
+            connectedactuators = self._nodenet.actuatormap.get(value, [])       # then, set the new one
+            connectedactuators.append(self._id)
+            self._nodenet.actuatormap[value] = connectedactuators
+            self._nodenet.inverted_actuator_map[self.uid] = value
 
     def clone_parameters(self):
         parameters = {}
         if self.type == "Sensor":
             parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
+        elif self.type == "Actor":
+            parameters['datatarget'] = self._nodenet.inverted_actuator_map[self.uid]
         return parameters
 
     def get_state(self, state):

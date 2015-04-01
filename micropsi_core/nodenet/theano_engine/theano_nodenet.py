@@ -6,6 +6,7 @@ Nodenet definition
 import json
 import os
 import copy
+import warnings
 
 import theano
 from theano import tensor as T
@@ -30,6 +31,12 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "nodefunction_name": "register",
         "gatetypes": ["gen"]
+    },
+    "Sensor": {
+        "name": "Sensor",
+        "parameters": ["datasource"],
+        "nodefunction_name": "sensor",
+        "gatetypes": ["gen"]
     }
 }
 
@@ -49,6 +56,12 @@ class TheanoNodenet(Nodenet):
 
     # todo: get rid of positions
     positions = []
+
+    # map of data sources to numerical node IDs
+    sensormap = {}
+
+    # map of numerical node IDs to data sources
+    inverted_sensor_map = {}
 
     # theano tensors for performing operations
     w = None            # matrix of weights
@@ -329,6 +342,16 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
         self.positions[uid] = position
 
+        if nodetype == "Sensor":
+            datasource = parameters["datasource"]
+            if datasource is not None:
+                connectedsensors = self.sensormap.get(datasource, [])
+                connectedsensors.append(uid)
+                self.inverted_sensor_map[uid] = datasource
+
+        elif nodetype == "Actor":
+           pass     # todo: implement actuator connectivity
+
         return to_id(uid)
 
     def delete_node(self, uid):
@@ -456,3 +479,19 @@ class TheanoNodenet(Nodenet):
         Returns the standard node types supported by this nodenet
         """
         return copy.deepcopy(STANDARD_NODETYPES)
+
+    def set_sensors_to_values(self, datasource_to_value_map):
+        """
+        Sets the sensors for the given data sources to the given values
+        """
+
+        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+
+        for datasource in datasource_to_value_map:
+            value = datasource_to_value_map.get(datasource)
+            sensor_uids = self.sensormap.get(datasource, [])
+
+            for sensor_uid in sensor_uids:
+                a_array[sensor_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
+
+        self.a.set_value(a_array, borrow=True)

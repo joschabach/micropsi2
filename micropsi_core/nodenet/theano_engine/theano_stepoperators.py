@@ -38,9 +38,14 @@ class TheanoCalculate(Calculate):
 
     """
 
+    worldadapter = None
+    nodenet = None
     calculate = None
 
     def __init__(self, nodenet):
+
+        self.nodenet = nodenet
+        self.worldadapter = nodenet.world
 
         # node functions implemented with identity for now
         nodefunctions = nodenet.a
@@ -72,6 +77,16 @@ class TheanoCalculate(Calculate):
         # put the theano graph into a callable function to be executed
         self.calculate = theano.function([], nodenet.a, updates={nodenet.a: gatefunctions})
 
+    def read_sensors(self):
+        if self.worldadapter is None:
+            return
+        datasource_to_value_map = {}
+        for datasource in self.worldadapter.get_available_datasources(self.nodenet.uid):
+            datasource_to_value_map[datasource] = self.worldadapter.get_datasource(self.nodenet.uid, datasource)
+
+        self.nodenet.set_sensors_to_values(datasource_to_value_map)
+
     def execute(self, nodenet, nodes, netapi):
+
         self.calculate()
-        ##N.sigmoid(nodefunctions)
+        self.read_sensors()

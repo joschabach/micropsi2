@@ -238,6 +238,31 @@ class TheanoNode(Node):
         links.extend(self.get_gate("exp").get_links())
         return links
 
+    def unlink_completely(self):
+
+        # there's a simpler implementation for this that just clears the
+        # node's row and column in the weight matrix. Probably depends on the matrix implementation
+        # whether that's actually faster.
+
+        links = []
+        links.extend(self.get_gate("gen").get_links())
+        links.extend(self.get_gate("por").get_links())
+        links.extend(self.get_gate("ret").get_links())
+        links.extend(self.get_gate("sub").get_links())
+        links.extend(self.get_gate("sur").get_links())
+        links.extend(self.get_gate("cat").get_links())
+        links.extend(self.get_gate("exp").get_links())
+
+        links.extend(self.get_slot("gen").get_links())
+        links.extend(self.get_slot("por").get_links())
+        links.extend(self.get_slot("ret").get_links())
+        links.extend(self.get_slot("sub").get_links())
+        links.extend(self.get_slot("sur").get_links())
+        links.extend(self.get_slot("cat").get_links())
+        links.extend(self.get_slot("exp").get_links())
+        for link in links:
+            self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
+
     def get_parameter(self, parameter):
         return self.clone_parameters().get(parameter)
 
@@ -400,11 +425,13 @@ class TheanoSlot(Slot):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
         slotrow = w_matrix[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
-        links_indices = np.nonzero(slotrow)[0]
+        links_indices = np.nonzero(slotrow)[1]
         for index in links_indices:
             source_gate_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
             source_uid = int(int(index - source_gate_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
-            weight = slotrow[index]
+            weight = slotrow[: , index]
+            if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                weight = float(weight.data)
             source_node = self.__nodenet.get_node(to_id(source_uid))
             source_gate = source_node.get_slot(get_string_gate_type(source_gate_numerical))
             link = TheanoLink(source_node, source_gate, self.__node, self, weight)

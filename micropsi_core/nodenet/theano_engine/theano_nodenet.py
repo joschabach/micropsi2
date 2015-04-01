@@ -374,7 +374,14 @@ class TheanoNodenet(Nodenet):
         return to_id(uid)
 
     def delete_node(self, uid):
+
+        # unlink
+        self.get_node(uid).unlink_completely()
+
+        # forget
         self.allocated_nodes[from_id(uid)] = 0
+
+        # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1
 
     def get_nodespace(self, uid):

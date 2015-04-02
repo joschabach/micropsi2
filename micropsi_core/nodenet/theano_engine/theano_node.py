@@ -295,13 +295,20 @@ class TheanoNode(Node):
 
     def get_associated_links(self):
         links = []
-        links.extend(self.get_gate("gen").get_links())
-        links.extend(self.get_gate("por").get_links())
-        links.extend(self.get_gate("ret").get_links())
-        links.extend(self.get_gate("sub").get_links())
-        links.extend(self.get_gate("sur").get_links())
-        links.extend(self.get_gate("cat").get_links())
-        links.extend(self.get_gate("exp").get_links())
+        if 'gen' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("gen").get_links())
+        if 'por' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("por").get_links())
+        if 'ret' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("ret").get_links())
+        if 'sub' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("sub").get_links())
+        if 'sur' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("sur").get_links())
+        if 'cat' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("cat").get_links())
+        if 'exp' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("exp").get_links())
         return links
 
     def unlink_completely(self):
@@ -310,22 +317,22 @@ class TheanoNode(Node):
         # node's row and column in the weight matrix. Probably depends on the matrix implementation
         # whether that's actually faster.
 
-        links = []
-        links.extend(self.get_gate("gen").get_links())
-        links.extend(self.get_gate("por").get_links())
-        links.extend(self.get_gate("ret").get_links())
-        links.extend(self.get_gate("sub").get_links())
-        links.extend(self.get_gate("sur").get_links())
-        links.extend(self.get_gate("cat").get_links())
-        links.extend(self.get_gate("exp").get_links())
+        links = self.get_associated_links()
 
-        links.extend(self.get_slot("gen").get_links())
-        links.extend(self.get_slot("por").get_links())
-        links.extend(self.get_slot("ret").get_links())
-        links.extend(self.get_slot("sub").get_links())
-        links.extend(self.get_slot("sur").get_links())
-        links.extend(self.get_slot("cat").get_links())
-        links.extend(self.get_slot("exp").get_links())
+        if 'gen' in self.nodetype.slottypes:
+            links.extend(self.get_slot("gen").get_links())
+        if 'por' in self.nodetype.slottypes:
+            links.extend(self.get_slot("por").get_links())
+        if 'ret' in self.nodetype.slottypes:
+            links.extend(self.get_slot("ret").get_links())
+        if 'sub' in self.nodetype.slottypes:
+            links.extend(self.get_slot("sub").get_links())
+        if 'sur' in self.nodetype.slottypes:
+            links.extend(self.get_slot("sur").get_links())
+        if 'cat' in self.nodetype.slottypes:
+            links.extend(self.get_slot("cat").get_links())
+        if 'exp' in self.nodetype.slottypes:
+            links.extend(self.get_slot("exp").get_links())
         for link in links:
             self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
 

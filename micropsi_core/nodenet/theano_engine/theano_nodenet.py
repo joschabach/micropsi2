@@ -470,7 +470,7 @@ class TheanoNodenet(Nodenet):
 
         nodetype = None
         if self.allocated_nodes[from_id(source_node_uid)] > MAX_STD_NODETYPE:
-            self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)]), self.native_modules)
+            nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)], self.native_modules))
 
         ngt = get_numerical_gate_type(gate_type, nodetype)
         nst = get_numerical_slot_type(slot_type, nodetype)

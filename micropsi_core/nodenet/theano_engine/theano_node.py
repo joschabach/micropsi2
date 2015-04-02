@@ -29,7 +29,7 @@ EXP = 6
 
 
 def get_numerical_gate_type(type, nodetype=None):
-    if nodetype is not None:
+    if nodetype is not None and len(nodetype.gatetypes) > 0:
         return nodetype.gatetypes.index(type)
     elif type == "gen":
         return GEN
@@ -50,7 +50,7 @@ def get_numerical_gate_type(type, nodetype=None):
 
 
 def get_string_gate_type(type, nodetype=None):
-    if nodetype is not None:
+    if nodetype is not None and len(nodetype.gatetypes) > 0:
         return nodetype.gatetypes[type]
     elif type == GEN:
         return "gen"
@@ -71,7 +71,7 @@ def get_string_gate_type(type, nodetype=None):
 
 
 def get_numerical_slot_type(type, nodetype=None):
-    if nodetype is not None:
+    if nodetype is not None and len(nodetype.slottypes) > 0:
         return nodetype.slottypes.index(type)
     elif type == "gen":
         return GEN
@@ -92,7 +92,7 @@ def get_numerical_slot_type(type, nodetype=None):
 
 
 def get_string_slot_type(type, nodetype=None):
-    if nodetype is not None:
+    if nodetype is not None and len(nodetype.slottypes) > 0:
         return nodetype.slottypes[type]
     elif type == GEN:
         return "gen"
@@ -350,20 +350,8 @@ class TheanoNode(Node):
 
     def get_associated_links(self):
         links = []
-        if 'gen' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("gen").get_links())
-        if 'por' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("por").get_links())
-        if 'ret' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("ret").get_links())
-        if 'sub' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("sub").get_links())
-        if 'sur' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("sur").get_links())
-        if 'cat' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("cat").get_links())
-        if 'exp' in self.nodetype.gatetypes:
-            links.extend(self.get_gate("exp").get_links())
+        for gatetype in self.nodetype.gatetypes:
+            links.extend(self.get_gate(gatetype).get_links())
         return links
 
     def unlink_completely(self):
@@ -373,21 +361,8 @@ class TheanoNode(Node):
         # whether that's actually faster.
 
         links = self.get_associated_links()
-
-        if 'gen' in self.nodetype.slottypes:
-            links.extend(self.get_slot("gen").get_links())
-        if 'por' in self.nodetype.slottypes:
-            links.extend(self.get_slot("por").get_links())
-        if 'ret' in self.nodetype.slottypes:
-            links.extend(self.get_slot("ret").get_links())
-        if 'sub' in self.nodetype.slottypes:
-            links.extend(self.get_slot("sub").get_links())
-        if 'sur' in self.nodetype.slottypes:
-            links.extend(self.get_slot("sur").get_links())
-        if 'cat' in self.nodetype.slottypes:
-            links.extend(self.get_slot("cat").get_links())
-        if 'exp' in self.nodetype.slottypes:
-            links.extend(self.get_slot("exp").get_links())
+        for slottype in self.nodetype.slottypes:
+            links.extend(self.get_slot(slottype).get_links())
         for link in links:
             self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
 

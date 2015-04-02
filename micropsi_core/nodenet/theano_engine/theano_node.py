@@ -233,12 +233,20 @@ class TheanoNode(Node):
     _numerictype = 0
     _id = -1
 
-    def __init__(self, nodenet, uid, type, **_):
+    parameters = None
+
+    def __init__(self, nodenet, uid, type, parameters={}, **_):
 
         self._numerictype = type
         strtype = get_string_node_type(type, nodenet.native_modules)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
+
+        if strtype in nodenet.native_modules:
+            if parameters is not None:
+                self.parameters = parameters.copy()
+            else:
+                self.parameters = {}
 
         self._nodenet = nodenet
         self._id = from_id(uid)
@@ -367,7 +375,12 @@ class TheanoNode(Node):
             self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
 
     def get_parameter(self, parameter):
-        return self.clone_parameters().get(parameter)
+        if self.type == "Sensor" and parameter == "datasource":
+            return self._nodenet.inverted_sensor_map[self.uid]
+        elif self.type == "Actor" and parameter == "datatarget":
+            return self._nodenet.inverted_actuator_map[self.uid]
+        elif self.type in self._nodenet.native_modules:
+            return self.parameters.get(parameter, None)
 
     def set_parameter(self, parameter, value):
         if self.type == "Sensor" and parameter == "datasource":
@@ -379,7 +392,7 @@ class TheanoNode(Node):
             connectedsensors.append(self._id)
             self._nodenet.sensormap[value] = connectedsensors
             self._nodenet.inverted_sensor_map[self.uid] = value
-        if self.type == "Actor" and parameter == "datatarget":
+        elif self.type == "Actor" and parameter == "datatarget":
             olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
             if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
                 self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
@@ -388,6 +401,8 @@ class TheanoNode(Node):
             connectedactuators.append(self._id)
             self._nodenet.actuatormap[value] = connectedactuators
             self._nodenet.inverted_actuator_map[self.uid] = value
+        elif self.type in self._nodenet.native_modules:
+            self.parameters[parameter] = value
 
     def clone_parameters(self):
         parameters = {}
@@ -395,6 +410,15 @@ class TheanoNode(Node):
             parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
         elif self.type == "Actor":
             parameters['datatarget'] = self._nodenet.inverted_actuator_map[self.uid]
+        elif self.type in self._nodenet.native_modules:
+            parameters = self.parameters.copy()
+            for parameter in self.nodetype.parameters:
+                if parameter not in parameters:
+                    if parameter in self.nodetype.parameter_values:
+                        parameters[parameter] = self.nodetype.parameter_values[parameter]
+                    else:
+                        parameters[parameter] = None
+
         return parameters
 
     def get_state(self, state):

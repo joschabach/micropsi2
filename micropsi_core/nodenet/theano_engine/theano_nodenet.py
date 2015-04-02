@@ -329,7 +329,9 @@ class TheanoNodenet(Nodenet):
             self.__step += 1
 
     def get_node(self, uid):
-        if uid in self.get_node_uids():
+        if uid in self.native_module_instances:
+            return self.native_module_instances[uid]
+        elif uid in self.get_node_uids():
             return TheanoNode(self, uid, self.allocated_nodes[from_id(uid)])
         else:
             return None

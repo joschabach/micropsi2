@@ -16,6 +16,8 @@ SCRIPT = 6
 PIPE = 7
 TRIGGER = 8
 
+MAX_STD_NODETYPE = TRIGGER
+
 
 GEN = 0
 POR = 1
@@ -26,8 +28,10 @@ CAT = 5
 EXP = 6
 
 
-def get_numerical_gate_type(type):
-    if type == "gen":
+def get_numerical_gate_type(type, nodetype=None):
+    if nodetype is not None:
+        return nodetype.gatetypes.index(type)
+    elif type == "gen":
         return GEN
     elif type == "por":
         return POR
@@ -45,8 +49,10 @@ def get_numerical_gate_type(type):
         raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
 
 
-def get_string_gate_type(type):
-    if type == GEN:
+def get_string_gate_type(type, nodetype=None):
+    if nodetype is not None:
+        return nodetype.gatetypes[type]
+    elif type == GEN:
         return "gen"
     elif type == POR:
         return "por"
@@ -64,7 +70,7 @@ def get_string_gate_type(type):
         raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
 
 
-def get_numerical_node_type(type):
+def get_numerical_node_type(type, nativemodules=None):
     if type == "Register":
         return REGISTER
     elif type == "Actor":
@@ -81,11 +87,13 @@ def get_numerical_node_type(type):
         return PIPE
     elif type == "Trigger":
         return TRIGGER
+    elif nativemodules is not None and type in nativemodules:
+        return MAX_STD_NODETYPE + 1 + sorted(nativemodules).index(type)
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
-def get_string_node_type(type):
+def get_string_node_type(type, nativemodules=None):
     if type == REGISTER:
         return "Register"
     elif type == ACTUATOR:
@@ -102,6 +110,8 @@ def get_string_node_type(type):
         return "Pipe"
     elif type == TRIGGER:
         return "Trigger"
+    elif nativemodules is not None and len(nativemodules) >= (type - MAX_STD_NODETYPE):
+        return sorted(nativemodules)[(type-1) - MAX_STD_NODETYPE]
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
@@ -140,7 +150,7 @@ def get_string_gatefunction_type(type):
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
 
-def get_elements_per_type(type):
+def get_elements_per_type(type, nativemodules=None):
     if type == REGISTER:
         return 1
     elif type == SENSOR:
@@ -157,6 +167,9 @@ def get_elements_per_type(type):
         return 7
     elif type == TRIGGER:
         return 3
+    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
+        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
+        return max(len(native_module_definition.gatetypes), len(native_module_definition.slottypes))
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
@@ -181,7 +194,7 @@ class TheanoNode(Node):
     def __init__(self, nodenet, uid, type, **_):
 
         self._numerictype = type
-        strtype = get_string_node_type(type)
+        strtype = get_string_node_type(type, nodenet.native_modules)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
@@ -244,7 +257,7 @@ class TheanoNode(Node):
     def set_gate_parameter(self, gate_type, parameter, value):
 
         # todo: implement the other gate parameters
-        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type)
+        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
         if parameter == 'threshold':
             g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
             g_threshold_array[elementindex] = value
@@ -276,7 +289,7 @@ class TheanoNode(Node):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
 
         result = {}
-        for numericalgate in range(0, get_elements_per_type(self._numerictype)):
+        for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
             gate_parameters = {
                 'threshold': g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
@@ -423,7 +436,7 @@ class TheanoGate(Gate):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
-        self.__numerictype = get_numerical_gate_type(type)
+        self.__numerictype = get_numerical_gate_type(type, node.nodetype)
 
     def get_links(self):
         links = []
@@ -490,7 +503,7 @@ class TheanoSlot(Slot):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
-        self.__numerictype = get_numerical_gate_type(type)
+        self.__numerictype = get_numerical_gate_type(type, node.nodetype)
 
     def get_activation(self, sheaf="default"):
         return              # theano slots never report activation to anybody

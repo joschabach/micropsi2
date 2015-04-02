@@ -127,6 +127,7 @@ class TheanoNodenet(Nodenet):
         self.__step = 0
         self.__modulators = {}
         self.__nodetypes = STANDARD_NODETYPES
+        self.native_modules = native_modules
         self.filename = filename
 
         # for now, fix sparse to True
@@ -218,12 +219,12 @@ class TheanoNodenet(Nodenet):
             nodetypes[type] = Nodetype(nodenet=self, **data)
         self.__nodetypes = nodetypes
 
-        # todo: implement native modules
-        # native_modules = {}
-        # for type, data in self.__native_modules.items():
-        #     native_modules[type] = Nodetype(nodenet=self, **data)
-        # self.__native_modules = native_modules
-        #
+        native_modules = {}
+        for type, data in self.native_modules.items():
+             native_modules[type] = Nodetype(nodenet=self, **data)
+        self.native_modules = native_modules
+
+        # todo: implement modulators
         # self.__modulators = initfrom.get("modulators", {})
 
         # todo: implement nodespaces
@@ -255,7 +256,7 @@ class TheanoNodenet(Nodenet):
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
-            if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
+            if data['type'] in self.__nodetypes or data['type'] in self.native_modules:
                 self.create_node(
                     data['type'],
                     data['parent_nodespace'],
@@ -358,9 +359,8 @@ class TheanoNodenet(Nodenet):
         else:
             uid = from_id(uid)
 
-
         # now find a range of free elements to be used by this node
-        number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype))
+        number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)
         has_restarted_from_zero = False
         offset = 0
         i = self.last_allocated_offset + 1
@@ -386,10 +386,10 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_node = uid
         self.last_allocated_offset = offset
-        self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
+        self.allocated_nodes[uid] = get_numerical_node_type(nodetype, self.native_modules)
         self.allocated_node_offsets[uid] = offset
 
-        for element in range (0, get_elements_per_type(self.allocated_nodes[uid])):
+        for element in range (0, get_elements_per_type(self.allocated_nodes[uid], self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = uid
 
         self.positions[uid] = position
@@ -467,8 +467,13 @@ class TheanoNodenet(Nodenet):
         return True, link
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        ngt = get_numerical_gate_type(gate_type)
-        nst = get_numerical_gate_type(slot_type)
+
+        nodetype = None
+        if self.allocated_nodes[from_id(source_node_uid)] > MAX_STD_NODETYPE:
+            self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)]), self.native_modules)
+
+        ngt = get_numerical_gate_type(gate_type, nodetype)
+        nst = get_numerical_gate_type(slot_type, nodetype)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
         x = self.allocated_node_offsets[from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[from_id(source_node_uid)] + ngt
@@ -516,8 +521,7 @@ class TheanoNodenet(Nodenet):
         if type in self.__nodetypes:
             return self.__nodetypes[type]
         else:
-            return None
-            # return self.__native_modules.get(type)         # todo: implement native modules
+            return self.native_modules.get(type)
 
     def construct_links_dict(self):
         data = {}

@@ -49,8 +49,10 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
+
 NUMBER_OF_NODES = 50000
-NUMBER_OF_ELEMENTS = 100000
+NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
 class TheanoNodenet(Nodenet):
@@ -340,7 +342,7 @@ class TheanoNodenet(Nodenet):
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             uid = 0
-            while uid < 1:
+            while uid < 1 and self.last_allocated_node+1 < NUMBER_OF_NODES:
                 for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
                     if self.allocated_nodes[i] == 0:
                         uid = i
@@ -353,20 +355,20 @@ class TheanoNodenet(Nodenet):
                         break
 
             if uid < 1:
-                self.logger.warning("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
-                return None
+                raise MemoryError("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
         else:
             uid = from_id(uid)
 
 
         # now find a range of free elements to be used by this node
         number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype))
+        has_restarted_from_zero = False
         offset = 0
         i = self.last_allocated_offset + 1
         while offset < 1:
             freecount = 0
-            for j in range(i, i + number_of_elements):
-                if self.allocated_elements_to_nodes[i+j] == 0:
+            for j in range(0, number_of_elements):
+                if i+j < len(self.allocated_elements_to_nodes) and self.allocated_elements_to_nodes[i+j] == 0:
                     freecount += 1
                 else:
                     break
@@ -376,6 +378,12 @@ class TheanoNodenet(Nodenet):
             else:
                 i += freecount+1
 
+            if i >= NUMBER_OF_ELEMENTS:
+                if not has_restarted_from_zero:
+                    i = 0
+                    has_restarted_from_zero = True
+                else:
+                    raise MemoryError("Cannot find "+str(number_of_elements)+" consecutive free elements for new node " + str(uid))
 
         self.last_allocated_node = uid
         self.last_allocated_offset = offset

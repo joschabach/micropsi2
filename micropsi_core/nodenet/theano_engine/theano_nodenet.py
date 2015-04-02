@@ -67,6 +67,8 @@ class TheanoNodenet(Nodenet):
     last_allocated_node = 0
     last_allocated_offset = 0
 
+    native_module_instances = {}
+
     # todo: get rid of positions
     positions = []
 
@@ -414,6 +416,9 @@ class TheanoNodenet(Nodenet):
             for gate, gate_parameters in gate_parameters.items():
                 for gate_parameter in gate_parameters:
                     node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
+
+        if nodetype not in STANDARD_NODETYPES:
+            self.native_module_instances[to_id(uid)] = node
 
         return to_id(uid)
 

@@ -410,7 +410,13 @@ class TheanoNode(Node):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
 
     def node_function(self):
-        pass
+        try:
+            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default")
+        except Exception:
+            self._nodenet.is_active = False
+            #self.activation = -1
+            raise
+
 
 
 class TheanoGate(Gate):

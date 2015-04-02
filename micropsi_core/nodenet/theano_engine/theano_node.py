@@ -418,7 +418,6 @@ class TheanoNode(Node):
             raise
 
 
-
 class TheanoGate(Gate):
     """
         theano gate proxy clas
@@ -485,8 +484,9 @@ class TheanoGate(Gate):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
 
     def gate_function(self, input_activation, sheaf="default"):
-        # todo: forcing the existenc of a gate function in python looks like a bad idea, change the interface
-        pass    # pragma: no cover
+        # in the theano implementation, this will only be called for native module gates, and simply write
+        # the value back to the activation vector for the theano math to take over
+        self.activation = input_activation
 
     def open_sheaf(self, input_activation, sheaf="default"):
         pass            # todo: implement sheaves

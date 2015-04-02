@@ -506,7 +506,7 @@ class TheanoSlot(Slot):
         links_indices = np.nonzero(slotrow)[1]
         for index in links_indices:
             source_uid = self.__nodenet.allocated_elements_to_nodes[index]
-            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[target_uid]
+            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_uid]
             weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)

@@ -132,7 +132,7 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
-        self.allocated_elements_to_nodes[:] = np.NAN
+        self.allocated_elements_to_nodes[:] = -1
 
         self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
@@ -391,11 +391,17 @@ class TheanoNodenet(Nodenet):
 
     def delete_node(self, uid):
 
+        type = self.allocated_nodes[from_id(uid)]
+        offset = self.allocated_node_offsets[from_id(uid)]
+
         # unlink
         self.get_node(uid).unlink_completely()
 
         # forget
         self.allocated_nodes[from_id(uid)] = 0
+        self.allocated_node_offsets[from_id(uid)] = 0
+        for element in range (0, get_elements_per_type(type)):
+            self.allocated_elements_to_nodes[offset + element] = -1
 
         # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1

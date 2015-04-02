@@ -44,6 +44,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'take_exit_three',
         'fov_x',
         'fov_y',
+        'pitch',
+        'yaw',
         'eat',
         'sleep'
     ]
@@ -298,11 +300,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.spockplugin.clientinfo.position['yaw'] = 0
 
         else:
-            # set pitch and yaw for sampling
-            # for patches pitch = 0 and yaw = random.randint(-10,10) were used
-            # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
-            self.spockplugin.clientinfo.position['pitch'] = 10
-            self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
+            # change pitch and yaw every three world steps
+            # < ensures some stability to enable learning in the autoencoder
+            if self.world.current_step % 5 == 0:
+                # for patches pitch = 0 and yaw = random.randint(-10,10) were used
+                # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
+                self.datatargets['pitch'] = 10
+                self.datatargets['yaw'] = random.randint(-10, 10)
+            self.spockplugin.clientinfo.position['pitch'] = self.datatargets['pitch']
+            self.spockplugin.clientinfo.position['yaw'] = self.datatargets['yaw']
 
             #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
@@ -318,9 +324,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
 
-            # don't reset self.datatargets because their activation is processed differently
-            # depending on whether they fire continuously or not
-
             # sample all the time
             # update fovea sensors, get sensory input, provide action feedback
             # make sure fovea datasources don't go below 0.
@@ -328,8 +331,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
             self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], self.current_loco_node['name'])
             # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
-            self.datatarget_feedback['fov_x'] = 1
-            self.datatarget_feedback['fov_y'] = 1
+            if self.datatargets['fov_x'] > 0.0:
+                self.datatarget_feedback['fov_x'] = 1.0
+            if self.datatargets['fov_y'] > 0.0:
+                self.datatarget_feedback['fov_y'] = 1.0
 
             # health and food are in [0;20]
             self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20

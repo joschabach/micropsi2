@@ -50,7 +50,7 @@ STANDARD_NODETYPES = {
 NODENET_VERSION = 1
 
 NUMBER_OF_NODES = 50000
-NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
+NUMBER_OF_ELEMENTS = 100000
 
 
 class TheanoNodenet(Nodenet):
@@ -59,6 +59,7 @@ class TheanoNodenet(Nodenet):
     """
 
     allocated_nodes = None
+    allocated_node_offsets = None
     last_allocated_node = -1
 
     # todo: get rid of positions
@@ -126,13 +127,8 @@ class TheanoNodenet(Nodenet):
         # for now, fix sparse to True
         self.sparse = True
 
-        # this conversion of dicts to living objects in the same variable name really isn't pretty.
-        # dict_nodenet is also doing it, and it's evil and should be fixed.
-        # self.__nodetypes = {}
-        # for type, data in STANDARD_NODETYPES.items():
-        #    self.__nodetypes[type] = Nodetype(nodenet=self, **data)
-
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
+        self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
 
         self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
@@ -359,6 +355,7 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_node = uid
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
+        self.allocated_node_offsets[uid] = uid * DEPRECATED_CONSTANT_NOEPN
         self.positions[uid] = position
 
         if nodetype == "Sensor":
@@ -377,9 +374,10 @@ class TheanoNodenet(Nodenet):
                 self.inverted_actuator_map[to_id(uid)] = datatarget
 
         node = self.get_node(to_id(uid))
-        for gate, gate_parameters in gate_parameters.items():
-            for gate_parameter in gate_parameters:
-                node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
+        if gate_parameters is not None:
+            for gate, gate_parameters in gate_parameters.items():
+                for gate_parameter in gate_parameters:
+                    node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
 
         return to_id(uid)
 
@@ -430,8 +428,8 @@ class TheanoNodenet(Nodenet):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        x = from_id(target_node_uid) * NUMBER_OF_ELEMENTS_PER_NODE + nst
-        y = from_id(source_node_uid) * NUMBER_OF_ELEMENTS_PER_NODE + ngt
+        x = self.allocated_node_offsets[from_id(target_node_uid)] + nst
+        y = self.allocated_node_offsets[from_id(source_node_uid)] + ngt
         if self.sparse:
             w_matrix[x, y] = weight
         else:
@@ -528,14 +526,14 @@ class TheanoNodenet(Nodenet):
             sensor_uids = self.sensormap.get(datasource, [])
 
             for sensor_uid in sensor_uids:
-                a_array[sensor_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
+                a_array[self.allocated_node_offsets[sensor_uid] + GEN] = value
 
         for datatarget in datatarget_to_value_map:
             value = datatarget_to_value_map.get(datatarget)
             actuator_uids = self.actuatormap.get(datatarget, [])
 
             for actuator_uid in actuator_uids:
-                a_array[actuator_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
+                a_array[self.allocated_node_offsets[actuator_uid] + GEN] = value
 
         self.a.set_value(a_array, borrow=True)
 
@@ -551,8 +549,7 @@ class TheanoNodenet(Nodenet):
         for datatarget in self.actuatormap:
             actuator_node_activations = 0
             for actuator_id in self.actuatormap[datatarget]:
-                index = actuator_id * NUMBER_OF_ELEMENTS_PER_NODE + GEN
-                actuator_node_activations += a_array[actuator_id * NUMBER_OF_ELEMENTS_PER_NODE + GEN]
+                actuator_node_activations += a_array[self.allocated_node_offsets[actuator_id] + GEN]
 
             actuator_values_to_write[datatarget] = actuator_node_activations
 

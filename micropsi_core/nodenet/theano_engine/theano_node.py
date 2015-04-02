@@ -25,7 +25,7 @@ SUR = 4
 CAT = 5
 EXP = 6
 
-NUMBER_OF_ELEMENTS_PER_NODE = 7
+DEPRECATED_CONSTANT_NOEPN = 7
 
 
 def get_numerical_gate_type(type):
@@ -201,7 +201,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._id * NUMBER_OF_ELEMENTS_PER_NODE + GEN])
+        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._nodenet.allocated_node_offsets[self._id] + GEN])
 
     @property
     def activations(self):
@@ -210,7 +210,7 @@ class TheanoNode(Node):
     @activation.setter
     def activation(self, activation):
         a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
-        a_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
+        a_array[self._nodenet.allocated_node_offsets[self._id] + GEN] = activation
         self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
@@ -219,7 +219,7 @@ class TheanoNode(Node):
     def set_gate_parameter(self, gate_type, parameter, value):
 
         # todo: implement the other gate parameters
-        elementindex = self._id * NUMBER_OF_ELEMENTS_PER_NODE + get_numerical_gate_type(gate_type)
+        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type)
         if parameter == 'threshold':
             g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
             g_threshold_array[elementindex] = value
@@ -251,13 +251,13 @@ class TheanoNode(Node):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
 
         result = {}
-        for numericalgate in range(0, NUMBER_OF_ELEMENTS_PER_NODE):
+        for numericalgate in range(0, DEPRECATED_CONSTANT_NOEPN):
             gate_parameters = {
-                'threshold': g_threshold_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'amplification': g_amplification_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'minimum': g_min_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'maximum': g_max_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'gatefunction': get_string_gate_type(g_function_selector[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate])
+                'threshold': g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'minimum': g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'gatefunction': get_string_gate_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
             }
             result[get_string_gate_type(numericalgate)] = gate_parameters
         return result
@@ -375,12 +375,12 @@ class TheanoGate(Gate):
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
         a_array = self.__nodenet.a.get_value(borrow=True, return_internal_type=True)
-        a_array[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype] = value
+        a_array[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype] = value
         self.__nodenet.a.set_value(a_array, borrow=True)
 
     @property
@@ -396,11 +396,11 @@ class TheanoGate(Gate):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        gatecolumn = w_matrix[:, from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
+        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
-            target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
-            target_uid = int(int(index - target_slot_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
+            target_slot_numerical = index % DEPRECATED_CONSTANT_NOEPN
+            target_uid = int(int(index - target_slot_numerical) / int(DEPRECATED_CONSTANT_NOEPN))
             weight = gatecolumn[index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
@@ -465,11 +465,11 @@ class TheanoSlot(Slot):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        slotrow = w_matrix[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
+        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(slotrow)[1]
         for index in links_indices:
-            source_gate_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
-            source_uid = int(int(index - source_gate_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
+            source_gate_numerical = index % DEPRECATED_CONSTANT_NOEPN
+            source_uid = int(int(index - source_gate_numerical) / int(DEPRECATED_CONSTANT_NOEPN))
             weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)

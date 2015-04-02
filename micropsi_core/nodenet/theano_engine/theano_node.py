@@ -339,7 +339,7 @@ class TheanoNode(Node):
                 'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'gatefunction': get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
             }
-            result[get_string_gate_type(numericalgate)] = gate_parameters
+            result[get_string_gate_type(numericalgate, self.nodetype)] = gate_parameters
         return result
 
     def clone_non_default_gate_parameters(self, gate_type):

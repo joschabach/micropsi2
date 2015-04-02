@@ -342,11 +342,10 @@ class TheanoNodenet(Nodenet):
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             uid = 0
-            while uid < 1 and self.last_allocated_node+1 < NUMBER_OF_NODES:
-                for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
-                    if self.allocated_nodes[i] == 0:
-                        uid = i
-                        break
+            for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
+                if self.allocated_nodes[i] == 0:
+                    uid = i
+                    break
 
             if uid < 1:
                 for i in range(self.last_allocated_node - 1):

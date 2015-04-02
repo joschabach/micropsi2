@@ -62,7 +62,7 @@ class TheanoNodenet(Nodenet):
     allocated_node_offsets = None
     allocated_elements_to_nodes = None
 
-    last_allocated_node = -1
+    last_allocated_node = 0
 
     # todo: get rid of positions
     positions = []
@@ -132,7 +132,6 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
-        self.allocated_elements_to_nodes[:] = -1
 
         self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
@@ -338,21 +337,21 @@ class TheanoNodenet(Nodenet):
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
 
         if uid is None:
-            uid = -1
-            while uid < 0:
+            uid = 0
+            while uid < 1:
                 for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
                     if self.allocated_nodes[i] == 0:
                         uid = i
                         break
 
-            if uid < 0:
+            if uid < 1:
                 for i in range(self.last_allocated_node - 1):
                     if self.allocated_nodes[i] == 0:
                         uid = i
                         break
 
-            if uid < 0:
-                self.logger.warning("Cannot find free id, all " + NUMBER_OF_NODES + " node entries already in use.")
+            if uid < 1:
+                self.logger.warning("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
                 return None
         else:
             uid = from_id(uid)
@@ -401,7 +400,7 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodes[from_id(uid)] = 0
         self.allocated_node_offsets[from_id(uid)] = 0
         for element in range (0, get_elements_per_type(type)):
-            self.allocated_elements_to_nodes[offset + element] = -1
+            self.allocated_elements_to_nodes[offset + element] = 0
 
         # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1

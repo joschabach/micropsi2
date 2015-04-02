@@ -60,6 +60,8 @@ class TheanoNodenet(Nodenet):
 
     allocated_nodes = None
     allocated_node_offsets = None
+    allocated_elements_to_nodes = None
+
     last_allocated_node = -1
 
     # todo: get rid of positions
@@ -129,6 +131,8 @@ class TheanoNodenet(Nodenet):
 
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
+        self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
+        self.allocated_elements_to_nodes[:] = np.NAN
 
         self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
@@ -355,7 +359,11 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_node = uid
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
-        self.allocated_node_offsets[uid] = uid * DEPRECATED_CONSTANT_NOEPN
+        self.allocated_node_offsets[uid] = uid * 7                      # todo: dynamic offsets
+
+        for element in range (0, get_elements_per_type(self.allocated_nodes[uid])):
+            self.allocated_elements_to_nodes[self.allocated_node_offsets[uid] + element] = uid
+
         self.positions[uid] = position
 
         if nodetype == "Sensor":

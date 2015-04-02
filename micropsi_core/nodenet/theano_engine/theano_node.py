@@ -25,11 +25,11 @@ SUR = 4
 CAT = 5
 EXP = 6
 
-DEPRECATED_CONSTANT_NOEPN = 7
-
 
 def get_numerical_gate_type(type):
-    if type == "por":
+    if type == "gen":
+        return GEN
+    elif type == "por":
         return POR
     elif type == "ret":
         return RET
@@ -42,11 +42,13 @@ def get_numerical_gate_type(type):
     elif type == "exp":
         return EXP
     else:
-        return GEN
+        raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
 
 
 def get_string_gate_type(type):
-    if type == POR:
+    if type == GEN:
+        return "gen"
+    elif type == POR:
         return "por"
     elif type == RET:
         return "ret"
@@ -59,7 +61,7 @@ def get_string_gate_type(type):
     elif type == EXP:
         return "exp"
     else:
-        return "gen"
+        raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
 
 
 def get_numerical_node_type(type):
@@ -80,6 +82,9 @@ def get_numerical_node_type(type):
         numerictype = PIPE
     elif type == "Trigger":
         numerictype = TRIGGER
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
+
     return numerictype
 
 
@@ -101,6 +106,9 @@ def get_string_node_type(type):
         stringtype = "Pipe"
     elif type == TRIGGER:
         stringtype = "Trigger"
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
+
     return stringtype
 
 
@@ -118,6 +126,9 @@ def get_numerical_gatefunction_type(type):
         numerictype = GATE_FUNCTION_RECT
     elif type == "dist":
         numerictype = GATE_FUNCTION_DIST
+    else:
+        raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
+
     return numerictype
 
 
@@ -135,7 +146,31 @@ def get_string_gatefunction_type(type):
         stringtype = "rect"
     elif type == GATE_FUNCTION_DIST:
         stringtype = "dist"
+    else:
+        raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
+
     return stringtype
+
+
+def get_elements_per_type(type):
+    if type == REGISTER:
+        return 1
+    elif type == SENSOR:
+        return 1
+    elif type == ACTUATOR:
+        return 1
+    elif type == ACTIVATOR:
+        return 1
+    elif type == CONCEPT:
+        return 7
+    elif type == SCRIPT:
+        return 7
+    elif type == PIPE:
+        return 7
+    elif type == TRIGGER:
+        return 3
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
 def to_id(numericid):
@@ -152,10 +187,12 @@ class TheanoNode(Node):
     """
 
     _nodenet = None
+    _numerictype = 0
     _id = -1
 
     def __init__(self, nodenet, uid, type, **_):
 
+        self._numerictype = type
         strtype = get_string_node_type(type)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
@@ -251,13 +288,13 @@ class TheanoNode(Node):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
 
         result = {}
-        for numericalgate in range(0, DEPRECATED_CONSTANT_NOEPN):
+        for numericalgate in range(0, get_elements_per_type(self._numerictype)):
             gate_parameters = {
                 'threshold': g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'minimum': g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'gatefunction': get_string_gate_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
+                'gatefunction': get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
             }
             result[get_string_gate_type(numericalgate)] = gate_parameters
         return result
@@ -399,8 +436,8 @@ class TheanoGate(Gate):
         gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
-            target_slot_numerical = index % DEPRECATED_CONSTANT_NOEPN
-            target_uid = int(int(index - target_slot_numerical) / int(DEPRECATED_CONSTANT_NOEPN))
+            target_uid = self.__nodenet.allocated_elements_to_nodes[index]
+            target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_uid]
             weight = gatecolumn[index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
@@ -468,8 +505,8 @@ class TheanoSlot(Slot):
         slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(slotrow)[1]
         for index in links_indices:
-            source_gate_numerical = index % DEPRECATED_CONSTANT_NOEPN
-            source_uid = int(int(index - source_gate_numerical) / int(DEPRECATED_CONSTANT_NOEPN))
+            source_uid = self.__nodenet.allocated_elements_to_nodes[index]
+            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[target_uid]
             weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)

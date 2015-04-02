@@ -473,7 +473,7 @@ class TheanoNodenet(Nodenet):
             self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)]), self.native_modules)
 
         ngt = get_numerical_gate_type(gate_type, nodetype)
-        nst = get_numerical_gate_type(slot_type, nodetype)
+        nst = get_numerical_slot_type(slot_type, nodetype)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
         x = self.allocated_node_offsets[from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[from_id(source_node_uid)] + ngt

@@ -46,7 +46,7 @@ def get_numerical_gate_type(type, nodetype=None):
     elif type == "exp":
         return EXP
     else:
-        raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
+        raise ValueError("Supplied type is not a valid gate type: "+str(type))
 
 
 def get_string_gate_type(type, nodetype=None):
@@ -67,7 +67,49 @@ def get_string_gate_type(type, nodetype=None):
     elif type == EXP:
         return "exp"
     else:
-        raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
+        raise ValueError("Supplied type is not a valid gate type: "+str(type))
+
+
+def get_numerical_slot_type(type, nodetype=None):
+    if nodetype is not None:
+        return nodetype.slottypes.index(type)
+    elif type == "gen":
+        return GEN
+    elif type == "por":
+        return POR
+    elif type == "ret":
+        return RET
+    elif type == "sub":
+        return SUB
+    elif type == "sur":
+        return SUR
+    elif type == "cat":
+        return CAT
+    elif type == "exp":
+        return EXP
+    else:
+        raise ValueError("Supplied type is not a valid slot type: "+str(type))
+
+
+def get_string_slot_type(type, nodetype=None):
+    if nodetype is not None:
+        return nodetype.slottypes[type]
+    elif type == GEN:
+        return "gen"
+    elif type == POR:
+        return "por"
+    elif type == RET:
+        return "ret"
+    elif type == SUB:
+        return "sub"
+    elif type == SUR:
+        return "sur"
+    elif type == CAT:
+        return "cat"
+    elif type == EXP:
+        return "exp"
+    else:
+        raise ValueError("Supplied type is not a valid slot type: "+str(type))
 
 
 def get_numerical_node_type(type, nativemodules=None):
@@ -450,7 +492,7 @@ class TheanoGate(Gate):
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
             target_node = self.__nodenet.get_node(to_id(target_uid))
-            target_slot = target_node.get_slot(get_string_gate_type(target_slot_numerical))
+            target_slot = target_node.get_slot(get_string_slot_type(target_slot_numerical))
             link = TheanoLink(self.__node, self, target_node, target_slot, weight)
             links.append(link)
         return links
@@ -503,7 +545,7 @@ class TheanoSlot(Slot):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
-        self.__numerictype = get_numerical_gate_type(type, node.nodetype)
+        self.__numerictype = get_numerical_slot_type(type, node.nodetype)
 
     def get_activation(self, sheaf="default"):
         return              # theano slots never report activation to anybody
@@ -520,7 +562,7 @@ class TheanoSlot(Slot):
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
             source_node = self.__nodenet.get_node(to_id(source_uid))
-            source_gate = source_node.get_slot(get_string_gate_type(source_gate_numerical))
+            source_gate = source_node.get_gate(get_string_gate_type(source_gate_numerical))
             link = TheanoLink(source_node, source_gate, self.__node, self, weight)
             links.append(link)
         return links

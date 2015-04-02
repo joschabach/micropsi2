@@ -65,91 +65,79 @@ def get_string_gate_type(type):
 
 
 def get_numerical_node_type(type):
-    numerictype = 0
     if type == "Register":
-        numerictype = REGISTER
+        return REGISTER
     elif type == "Actor":
-        numerictype = ACTUATOR
+        return ACTUATOR
     elif type == "Sensor":
-        numerictype = SENSOR
+        return SENSOR
     elif type == "Activator":
-        numerictype = ACTIVATOR
+        return ACTIVATOR
     elif type == "Concept":
         numerictype = CONCEPT
     elif type == "Script":
-        numerictype = SCRIPT
+        return SCRIPT
     elif type == "Pipe":
-        numerictype = PIPE
+        return PIPE
     elif type == "Trigger":
-        numerictype = TRIGGER
+        return TRIGGER
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
-
-    return numerictype
 
 
 def get_string_node_type(type):
-    stringtype = 0
     if type == REGISTER:
-        stringtype = "Register"
+        return "Register"
     elif type == ACTUATOR:
-        stringtype = "Actor"
+        return "Actor"
     elif type == SENSOR:
-        stringtype = "Sensor"
+        return "Sensor"
     elif type == ACTIVATOR:
-        stringtype = "Activator"
+        return "Activator"
     elif type == CONCEPT:
-        stringtype = "Concept"
+        return "Concept"
     elif type == SCRIPT:
-        stringtype = "Script"
+        return "Script"
     elif type == PIPE:
-        stringtype = "Pipe"
+        return "Pipe"
     elif type == TRIGGER:
-        stringtype = "Trigger"
+        return "Trigger"
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
-    return stringtype
-
 
 def get_numerical_gatefunction_type(type):
-    numerictype = 0
     if type == "identity":
-        numerictype = GATE_FUNCTION_IDENTITY
+        return GATE_FUNCTION_IDENTITY
     elif type == "abs":
-        numerictype = GATE_FUNCTION_ABSOLUTE
+        return GATE_FUNCTION_ABSOLUTE
     elif type == "sigmoid":
-        numerictype = GATE_FUNCTION_SIGMOID
+        return GATE_FUNCTION_SIGMOID
     elif type == "tanh":
-        numerictype = GATE_FUNCTION_TANH
+        return GATE_FUNCTION_TANH
     elif type == "rect":
-        numerictype = GATE_FUNCTION_RECT
+        return GATE_FUNCTION_RECT
     elif type == "dist":
-        numerictype = GATE_FUNCTION_DIST
+        return GATE_FUNCTION_DIST
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
-
-    return numerictype
 
 
 def get_string_gatefunction_type(type):
-    stringtype = 0
     if type == GATE_FUNCTION_IDENTITY:
-        stringtype = "identity"
+        return "identity"
     elif type == GATE_FUNCTION_ABSOLUTE:
-        stringtype = "abs"
+        return "abs"
     elif type == GATE_FUNCTION_SIGMOID:
-        stringtype = "sigmoid"
+        return "sigmoid"
     elif type == GATE_FUNCTION_TANH:
-        stringtype = "tanh"
+        return "tanh"
     elif type == GATE_FUNCTION_RECT:
-        stringtype = "rect"
+        return "rect"
     elif type == GATE_FUNCTION_DIST:
-        stringtype = "dist"
+        return "dist"
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
-
-    return stringtype
 
 
 def get_elements_per_type(type):

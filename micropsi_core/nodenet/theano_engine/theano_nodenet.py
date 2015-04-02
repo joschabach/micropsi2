@@ -63,6 +63,7 @@ class TheanoNodenet(Nodenet):
     allocated_elements_to_nodes = None
 
     last_allocated_node = 0
+    last_allocated_offset = 0
 
     # todo: get rid of positions
     positions = []
@@ -336,6 +337,7 @@ class TheanoNodenet(Nodenet):
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
 
+        # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             uid = 0
             while uid < 1:
@@ -356,12 +358,32 @@ class TheanoNodenet(Nodenet):
         else:
             uid = from_id(uid)
 
+
+        # now find a range of free elements to be used by this node
+        number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype))
+        offset = 0
+        i = self.last_allocated_offset + 1
+        while offset < 1:
+            freecount = 0
+            for j in range(i, i + number_of_elements):
+                if self.allocated_elements_to_nodes[i+j] == 0:
+                    freecount += 1
+                else:
+                    break
+            if freecount >= number_of_elements:
+                offset = i
+                break
+            else:
+                i += freecount+1
+
+
         self.last_allocated_node = uid
+        self.last_allocated_offset = offset
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
-        self.allocated_node_offsets[uid] = uid * 7                      # todo: dynamic offsets
+        self.allocated_node_offsets[uid] = offset
 
         for element in range (0, get_elements_per_type(self.allocated_nodes[uid])):
-            self.allocated_elements_to_nodes[self.allocated_node_offsets[uid] + element] = uid
+            self.allocated_elements_to_nodes[offset + element] = uid
 
         self.positions[uid] = position
 

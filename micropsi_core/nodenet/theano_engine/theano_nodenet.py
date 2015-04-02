@@ -49,8 +49,10 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
+
 NUMBER_OF_NODES = 50000
-NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * NUMBER_OF_ELEMENTS_PER_NODE
+NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
 class TheanoNodenet(Nodenet):
@@ -59,7 +61,11 @@ class TheanoNodenet(Nodenet):
     """
 
     allocated_nodes = None
-    last_allocated_node = -1
+    allocated_node_offsets = None
+    allocated_elements_to_nodes = None
+
+    last_allocated_node = 0
+    last_allocated_offset = 0
 
     # todo: get rid of positions
     positions = []
@@ -126,13 +132,9 @@ class TheanoNodenet(Nodenet):
         # for now, fix sparse to True
         self.sparse = True
 
-        # this conversion of dicts to living objects in the same variable name really isn't pretty.
-        # dict_nodenet is also doing it, and it's evil and should be fixed.
-        # self.__nodetypes = {}
-        # for type, data in STANDARD_NODETYPES.items():
-        #    self.__nodetypes[type] = Nodetype(nodenet=self, **data)
-
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
+        self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
+        self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
 
         self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
@@ -337,28 +339,59 @@ class TheanoNodenet(Nodenet):
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
 
+        # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
-            uid = -1
-            while uid < 0:
-                for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
-                    if self.allocated_nodes[i] == 0:
-                        uid = i
-                        break
+            uid = 0
+            for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
+                if self.allocated_nodes[i] == 0:
+                    uid = i
+                    break
 
-            if uid < 0:
+            if uid < 1:
                 for i in range(self.last_allocated_node - 1):
                     if self.allocated_nodes[i] == 0:
                         uid = i
                         break
 
-            if uid < 0:
-                self.logger.warning("Cannot find free id, all " + NUMBER_OF_NODES + " node entries already in use.")
-                return None
+            if uid < 1:
+                raise MemoryError("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
         else:
             uid = from_id(uid)
 
+
+        # now find a range of free elements to be used by this node
+        number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype))
+        has_restarted_from_zero = False
+        offset = 0
+        i = self.last_allocated_offset + 1
+        while offset < 1:
+            freecount = 0
+            for j in range(0, number_of_elements):
+                if i+j < len(self.allocated_elements_to_nodes) and self.allocated_elements_to_nodes[i+j] == 0:
+                    freecount += 1
+                else:
+                    break
+            if freecount >= number_of_elements:
+                offset = i
+                break
+            else:
+                i += freecount+1
+
+            if i >= NUMBER_OF_ELEMENTS:
+                if not has_restarted_from_zero:
+                    i = 0
+                    has_restarted_from_zero = True
+                else:
+                    raise MemoryError("Cannot find "+str(number_of_elements)+" consecutive free elements for new node " + str(uid))
+
         self.last_allocated_node = uid
+        self.last_allocated_offset = offset
         self.allocated_nodes[uid] = get_numerical_node_type(nodetype)
+        self.allocated_node_offsets[uid] = offset
+
+        for element in range (0, get_elements_per_type(self.allocated_nodes[uid])):
+            self.allocated_elements_to_nodes[offset + element] = uid
+
         self.positions[uid] = position
 
         if nodetype == "Sensor":
@@ -377,19 +410,26 @@ class TheanoNodenet(Nodenet):
                 self.inverted_actuator_map[to_id(uid)] = datatarget
 
         node = self.get_node(to_id(uid))
-        for gate, gate_parameters in gate_parameters.items():
-            for gate_parameter in gate_parameters:
-                node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
+        if gate_parameters is not None:
+            for gate, gate_parameters in gate_parameters.items():
+                for gate_parameter in gate_parameters:
+                    node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
 
         return to_id(uid)
 
     def delete_node(self, uid):
+
+        type = self.allocated_nodes[from_id(uid)]
+        offset = self.allocated_node_offsets[from_id(uid)]
 
         # unlink
         self.get_node(uid).unlink_completely()
 
         # forget
         self.allocated_nodes[from_id(uid)] = 0
+        self.allocated_node_offsets[from_id(uid)] = 0
+        for element in range (0, get_elements_per_type(type)):
+            self.allocated_elements_to_nodes[offset + element] = 0
 
         # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1
@@ -430,8 +470,8 @@ class TheanoNodenet(Nodenet):
         ngt = get_numerical_gate_type(gate_type)
         nst = get_numerical_gate_type(slot_type)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        x = from_id(target_node_uid) * NUMBER_OF_ELEMENTS_PER_NODE + nst
-        y = from_id(source_node_uid) * NUMBER_OF_ELEMENTS_PER_NODE + ngt
+        x = self.allocated_node_offsets[from_id(target_node_uid)] + nst
+        y = self.allocated_node_offsets[from_id(source_node_uid)] + ngt
         if self.sparse:
             w_matrix[x, y] = weight
         else:
@@ -528,14 +568,14 @@ class TheanoNodenet(Nodenet):
             sensor_uids = self.sensormap.get(datasource, [])
 
             for sensor_uid in sensor_uids:
-                a_array[sensor_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
+                a_array[self.allocated_node_offsets[sensor_uid] + GEN] = value
 
         for datatarget in datatarget_to_value_map:
             value = datatarget_to_value_map.get(datatarget)
             actuator_uids = self.actuatormap.get(datatarget, [])
 
             for actuator_uid in actuator_uids:
-                a_array[actuator_uid * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = value
+                a_array[self.allocated_node_offsets[actuator_uid] + GEN] = value
 
         self.a.set_value(a_array, borrow=True)
 
@@ -551,8 +591,7 @@ class TheanoNodenet(Nodenet):
         for datatarget in self.actuatormap:
             actuator_node_activations = 0
             for actuator_id in self.actuatormap[datatarget]:
-                index = actuator_id * NUMBER_OF_ELEMENTS_PER_NODE + GEN
-                actuator_node_activations += a_array[actuator_id * NUMBER_OF_ELEMENTS_PER_NODE + GEN]
+                actuator_node_activations += a_array[self.allocated_node_offsets[actuator_id] + GEN]
 
             actuator_values_to_write[datatarget] = actuator_node_activations
 

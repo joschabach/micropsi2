@@ -25,11 +25,11 @@ SUR = 4
 CAT = 5
 EXP = 6
 
-NUMBER_OF_ELEMENTS_PER_NODE = 7
-
 
 def get_numerical_gate_type(type):
-    if type == "por":
+    if type == "gen":
+        return GEN
+    elif type == "por":
         return POR
     elif type == "ret":
         return RET
@@ -42,11 +42,13 @@ def get_numerical_gate_type(type):
     elif type == "exp":
         return EXP
     else:
-        return GEN
+        raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
 
 
 def get_string_gate_type(type):
-    if type == POR:
+    if type == GEN:
+        return "gen"
+    elif type == POR:
         return "por"
     elif type == RET:
         return "ret"
@@ -59,83 +61,104 @@ def get_string_gate_type(type):
     elif type == EXP:
         return "exp"
     else:
-        return "gen"
+        raise ValueError("Supplied type is not a valid slot/gate type: "+str(type))
 
 
 def get_numerical_node_type(type):
-    numerictype = 0
     if type == "Register":
-        numerictype = REGISTER
+        return REGISTER
     elif type == "Actor":
-        numerictype = ACTUATOR
+        return ACTUATOR
     elif type == "Sensor":
-        numerictype = SENSOR
+        return SENSOR
     elif type == "Activator":
-        numerictype = ACTIVATOR
+        return ACTIVATOR
     elif type == "Concept":
         numerictype = CONCEPT
     elif type == "Script":
-        numerictype = SCRIPT
+        return SCRIPT
     elif type == "Pipe":
-        numerictype = PIPE
+        return PIPE
     elif type == "Trigger":
-        numerictype = TRIGGER
-    return numerictype
+        return TRIGGER
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
 def get_string_node_type(type):
-    stringtype = 0
     if type == REGISTER:
-        stringtype = "Register"
+        return "Register"
     elif type == ACTUATOR:
-        stringtype = "Actor"
+        return "Actor"
     elif type == SENSOR:
-        stringtype = "Sensor"
+        return "Sensor"
     elif type == ACTIVATOR:
-        stringtype = "Activator"
+        return "Activator"
     elif type == CONCEPT:
-        stringtype = "Concept"
+        return "Concept"
     elif type == SCRIPT:
-        stringtype = "Script"
+        return "Script"
     elif type == PIPE:
-        stringtype = "Pipe"
+        return "Pipe"
     elif type == TRIGGER:
-        stringtype = "Trigger"
-    return stringtype
+        return "Trigger"
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
 def get_numerical_gatefunction_type(type):
-    numerictype = 0
     if type == "identity":
-        numerictype = GATE_FUNCTION_IDENTITY
+        return GATE_FUNCTION_IDENTITY
     elif type == "abs":
-        numerictype = GATE_FUNCTION_ABSOLUTE
+        return GATE_FUNCTION_ABSOLUTE
     elif type == "sigmoid":
-        numerictype = GATE_FUNCTION_SIGMOID
+        return GATE_FUNCTION_SIGMOID
     elif type == "tanh":
-        numerictype = GATE_FUNCTION_TANH
+        return GATE_FUNCTION_TANH
     elif type == "rect":
-        numerictype = GATE_FUNCTION_RECT
+        return GATE_FUNCTION_RECT
     elif type == "dist":
-        numerictype = GATE_FUNCTION_DIST
-    return numerictype
+        return GATE_FUNCTION_DIST
+    else:
+        raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
 
 def get_string_gatefunction_type(type):
-    stringtype = 0
     if type == GATE_FUNCTION_IDENTITY:
-        stringtype = "identity"
+        return "identity"
     elif type == GATE_FUNCTION_ABSOLUTE:
-        stringtype = "abs"
+        return "abs"
     elif type == GATE_FUNCTION_SIGMOID:
-        stringtype = "sigmoid"
+        return "sigmoid"
     elif type == GATE_FUNCTION_TANH:
-        stringtype = "tanh"
+        return "tanh"
     elif type == GATE_FUNCTION_RECT:
-        stringtype = "rect"
+        return "rect"
     elif type == GATE_FUNCTION_DIST:
-        stringtype = "dist"
-    return stringtype
+        return "dist"
+    else:
+        raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
+
+
+def get_elements_per_type(type):
+    if type == REGISTER:
+        return 1
+    elif type == SENSOR:
+        return 1
+    elif type == ACTUATOR:
+        return 1
+    elif type == ACTIVATOR:
+        return 1
+    elif type == CONCEPT:
+        return 7
+    elif type == SCRIPT:
+        return 7
+    elif type == PIPE:
+        return 7
+    elif type == TRIGGER:
+        return 3
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
 def to_id(numericid):
@@ -152,10 +175,12 @@ class TheanoNode(Node):
     """
 
     _nodenet = None
+    _numerictype = 0
     _id = -1
 
     def __init__(self, nodenet, uid, type, **_):
 
+        self._numerictype = type
         strtype = get_string_node_type(type)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
@@ -201,7 +226,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._id * NUMBER_OF_ELEMENTS_PER_NODE + GEN])
+        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._nodenet.allocated_node_offsets[self._id] + GEN])
 
     @property
     def activations(self):
@@ -210,7 +235,7 @@ class TheanoNode(Node):
     @activation.setter
     def activation(self, activation):
         a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
-        a_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + GEN] = activation
+        a_array[self._nodenet.allocated_node_offsets[self._id] + GEN] = activation
         self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
@@ -219,7 +244,7 @@ class TheanoNode(Node):
     def set_gate_parameter(self, gate_type, parameter, value):
 
         # todo: implement the other gate parameters
-        elementindex = self._id * NUMBER_OF_ELEMENTS_PER_NODE + get_numerical_gate_type(gate_type)
+        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type)
         if parameter == 'threshold':
             g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
             g_threshold_array[elementindex] = value
@@ -251,32 +276,39 @@ class TheanoNode(Node):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
 
         result = {}
-        for numericalgate in range(0, NUMBER_OF_ELEMENTS_PER_NODE):
+        for numericalgate in range(0, get_elements_per_type(self._numerictype)):
             gate_parameters = {
-                'threshold': g_threshold_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'amplification': g_amplification_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'minimum': g_min_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'maximum': g_max_array[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate],
-                'gatefunction': get_string_gate_type(g_function_selector[self._id * NUMBER_OF_ELEMENTS_PER_NODE + numericalgate])
+                'threshold': g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'minimum': g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
+                'gatefunction': get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
             }
             result[get_string_gate_type(numericalgate)] = gate_parameters
         return result
 
     def clone_non_default_gate_parameters(self, gate_type):
-        return self.get_gate_parameters()               # todo: implement gate parameters
+        return self.get_gate_parameters()               # todo: implement gate parameter defaulting
 
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
 
     def get_associated_links(self):
         links = []
-        links.extend(self.get_gate("gen").get_links())
-        links.extend(self.get_gate("por").get_links())
-        links.extend(self.get_gate("ret").get_links())
-        links.extend(self.get_gate("sub").get_links())
-        links.extend(self.get_gate("sur").get_links())
-        links.extend(self.get_gate("cat").get_links())
-        links.extend(self.get_gate("exp").get_links())
+        if 'gen' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("gen").get_links())
+        if 'por' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("por").get_links())
+        if 'ret' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("ret").get_links())
+        if 'sub' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("sub").get_links())
+        if 'sur' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("sur").get_links())
+        if 'cat' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("cat").get_links())
+        if 'exp' in self.nodetype.gatetypes:
+            links.extend(self.get_gate("exp").get_links())
         return links
 
     def unlink_completely(self):
@@ -285,22 +317,22 @@ class TheanoNode(Node):
         # node's row and column in the weight matrix. Probably depends on the matrix implementation
         # whether that's actually faster.
 
-        links = []
-        links.extend(self.get_gate("gen").get_links())
-        links.extend(self.get_gate("por").get_links())
-        links.extend(self.get_gate("ret").get_links())
-        links.extend(self.get_gate("sub").get_links())
-        links.extend(self.get_gate("sur").get_links())
-        links.extend(self.get_gate("cat").get_links())
-        links.extend(self.get_gate("exp").get_links())
+        links = self.get_associated_links()
 
-        links.extend(self.get_slot("gen").get_links())
-        links.extend(self.get_slot("por").get_links())
-        links.extend(self.get_slot("ret").get_links())
-        links.extend(self.get_slot("sub").get_links())
-        links.extend(self.get_slot("sur").get_links())
-        links.extend(self.get_slot("cat").get_links())
-        links.extend(self.get_slot("exp").get_links())
+        if 'gen' in self.nodetype.slottypes:
+            links.extend(self.get_slot("gen").get_links())
+        if 'por' in self.nodetype.slottypes:
+            links.extend(self.get_slot("por").get_links())
+        if 'ret' in self.nodetype.slottypes:
+            links.extend(self.get_slot("ret").get_links())
+        if 'sub' in self.nodetype.slottypes:
+            links.extend(self.get_slot("sub").get_links())
+        if 'sur' in self.nodetype.slottypes:
+            links.extend(self.get_slot("sur").get_links())
+        if 'cat' in self.nodetype.slottypes:
+            links.extend(self.get_slot("cat").get_links())
+        if 'exp' in self.nodetype.slottypes:
+            links.extend(self.get_slot("exp").get_links())
         for link in links:
             self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
 
@@ -342,7 +374,7 @@ class TheanoNode(Node):
         pass                    # todo: implement node state
 
     def clone_state(self):
-        return {}               # todo: implement node szaze
+        return {}               # todo: implement node state
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
@@ -375,12 +407,12 @@ class TheanoGate(Gate):
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
         a_array = self.__nodenet.a.get_value(borrow=True, return_internal_type=True)
-        a_array[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype] = value
+        a_array[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype] = value
         self.__nodenet.a.set_value(a_array, borrow=True)
 
     @property
@@ -396,11 +428,11 @@ class TheanoGate(Gate):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        gatecolumn = w_matrix[:, from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
+        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
-            target_slot_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
-            target_uid = int(int(index - target_slot_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
+            target_uid = self.__nodenet.allocated_elements_to_nodes[index]
+            target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_uid]
             weight = gatecolumn[index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
@@ -417,7 +449,8 @@ class TheanoGate(Gate):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
 
     def gate_function(self, input_activation, sheaf="default"):
-        pass            # todo: implement gate function - or rather, don't, who'd be calling this?
+        # todo: forcing the existenc of a gate function in python looks like a bad idea, change the interface
+        pass    # pragma: no cover
 
     def open_sheaf(self, input_activation, sheaf="default"):
         pass            # todo: implement sheaves
@@ -465,11 +498,11 @@ class TheanoSlot(Slot):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
-        slotrow = w_matrix[from_id(self.__node.uid) * NUMBER_OF_ELEMENTS_PER_NODE + self.__numerictype]
+        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(slotrow)[1]
         for index in links_indices:
-            source_gate_numerical = index % NUMBER_OF_ELEMENTS_PER_NODE
-            source_uid = int(int(index - source_gate_numerical) / int(NUMBER_OF_ELEMENTS_PER_NODE))
+            source_uid = self.__nodenet.allocated_elements_to_nodes[index]
+            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_uid]
             weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)

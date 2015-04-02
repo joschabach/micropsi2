@@ -300,7 +300,7 @@ class TheanoNode(Node):
         return result
 
     def clone_non_default_gate_parameters(self, gate_type):
-        return self.get_gate_parameters()               # todo: implement gate parameters
+        return self.get_gate_parameters()               # todo: implement gate parameter defaulting
 
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
@@ -379,7 +379,7 @@ class TheanoNode(Node):
         pass                    # todo: implement node state
 
     def clone_state(self):
-        return {}               # todo: implement node szaze
+        return {}               # todo: implement node state
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
@@ -454,7 +454,8 @@ class TheanoGate(Gate):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
 
     def gate_function(self, input_activation, sheaf="default"):
-        pass            # todo: implement gate function - or rather, don't, who'd be calling this?
+        # todo: forcing the existenc of a gate function in python looks like a bad idea, change the interface
+        pass    # pragma: no cover
 
     def open_sheaf(self, input_activation, sheaf="default"):
         pass            # todo: implement sheaves

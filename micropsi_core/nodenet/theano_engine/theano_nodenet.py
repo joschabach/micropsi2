@@ -433,11 +433,16 @@ class TheanoNodenet(Nodenet):
         # forget
         self.allocated_nodes[from_id(uid)] = 0
         self.allocated_node_offsets[from_id(uid)] = 0
-        for element in range (0, get_elements_per_type(type)):
+        for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
 
         # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1
+
+        # remove the native module instance if there should ne one
+        if uid in self.native_module_instances:
+            del self.native_module_instances[uid]
+
 
     def get_nodespace(self, uid):
         if uid == "Root":

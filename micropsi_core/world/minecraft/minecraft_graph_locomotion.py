@@ -4,7 +4,7 @@ import random
 import logging
 import time
 from functools import partial
-from math import sqrt, radians, cos, sin
+from math import sqrt, radians, cos, sin, tan
 from spock.mcp.mcpacket import Packet
 
 
@@ -300,19 +300,25 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.spockplugin.clientinfo.position['yaw'] = 0
 
         else:
-            # change pitch and yaw every three world steps
+            # reset self.datatarget_feedback
+            for k in self.datatarget_feedback.keys():
+                self.datatarget_feedback[k] = 0.
+
+            # change pitch and yaw every x world steps to increase sensory variation
             # < ensures some stability to enable learning in the autoencoder
             if self.world.current_step % 5 == 0:
-                # for patches pitch = 0 and yaw = random.randint(-10,10) were used
+                # for patches pitch = 10 and yaw = random.randint(-10,10) were used
                 # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
-                self.datatargets['pitch'] = 10
-                self.datatargets['yaw'] = random.randint(-10, 10)
-            self.spockplugin.clientinfo.position['pitch'] = self.datatargets['pitch']
-            self.spockplugin.clientinfo.position['yaw'] = self.datatargets['yaw']
+                self.spockplugin.clientinfo.position['pitch'] = 10
+                self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
+                self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
+                self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
+                self.datatarget_feedback['pitch'] = 1.0
+                self.datatarget_feedback['yaw'] = 1.0
 
             #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
-            self.datatarget_feedback['orientation'] = 1
+            self.datatarget_feedback['orientation'] = 1.0
             # self.datatargets['orientation'] = 0
 
             # reset self.datasources
@@ -320,16 +326,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
             #     if k != 'hack_situation' and k != 'temperature':
             #         self.datasources[k] = 0.
 
-            # reset self.datatarget_feedback
-            for k in self.datatarget_feedback.keys():
-                self.datatarget_feedback[k] = 0.
-
             # sample all the time
             # update fovea sensors, get sensory input, provide action feedback
             # make sure fovea datasources don't go below 0.
             self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
             self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
-            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], self.current_loco_node['name'])
+            loco_label = self.current_loco_node['name']  # because python uses call-by-object
+            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
             # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
             if self.datatargets['fov_x'] > 0.0:
                 self.datatarget_feedback['fov_x'] = 1.0
@@ -499,8 +502,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         Note that the image plane is walked left to right, top to bottom ( before rotation )!
         This means that fov__00_00 gets the top left pixel, fov__15_15 gets the bottom right pixel.
         """
-        from math import radians, tan
-
         # set agent position
         pos_x = self.spockplugin.clientinfo.position['x']
         pos_y = self.spockplugin.clientinfo.position['y'] + 0.620  # add some stance to y pos ( which is ground + 1 )
@@ -578,8 +579,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         ray to find the nearest block type that isn't air and its distance from
         the projective plane.
         """
-        from math import sqrt
-
         distance = 0    # just a counter
         block_type = -1  # consider mapping nothingness to air, ie. -1 to 0
 

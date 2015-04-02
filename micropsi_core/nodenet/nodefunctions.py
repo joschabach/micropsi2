@@ -242,23 +242,21 @@ def trigger(netapi, node=None, sheaf="default", **params):
     else:
         waitfrom = node.get_state("waitfrom") or -1
 
-        timeout = node.get_parameter("timeout") or 10        # todo: use emo_resolution
+        timeout = int(node.get_parameter("timeout") or 10)         # todo: use emo_resolution
         condition = node.get_parameter("condition") or "="
-        response = node.get_parameter("response")
-        if response is None:
-            response = 1
+        response = float(node.get_parameter("response") or 1)
 
         if node.get_slot('sub').activation > 0:
             currentstep = netapi.step
 
-            success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
-                      (condition == ">" and node.get_slot('sur').activation > int(response))
+            success = (condition == "=" and node.get_slot('sur').activation == response) or \
+                      (condition == ">" and node.get_slot('sur').activation > response)
 
             if waitfrom > 0:                       # waiting for results
                 if success:
                     sur = 1
                     node.set_state("waitfrom", currentstep)
-                elif currentstep > waitfrom + int(timeout) or node.get_slot('sur').activation < 0:
+                elif currentstep > waitfrom + timeout or node.get_slot('sur').activation < 0:
                     sur = -1
             else:                                   # perform burst
                 sub = 1
@@ -272,8 +270,8 @@ def trigger(netapi, node=None, sheaf="default", **params):
                 node.set_state("waitfrom", -1)
 
             if node.get_slot('sur').activation:
-                success = (condition == "=" and node.get_slot('sur').activation == int(response)) or \
-                          (condition == ">" and node.get_slot('sur').activation > int(response))
+                success = (condition == "=" and node.get_slot('sur').activation == response) or \
+                          (condition == ">" and node.get_slot('sur').activation > response)
                 if success:
                     sur = 1
 

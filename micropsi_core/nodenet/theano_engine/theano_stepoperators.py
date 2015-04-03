@@ -116,9 +116,14 @@ class TheanoCalculate(Calculate):
         for datatarget in values_to_write:
             self.worldadapter.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
 
-    def execute(self, nodenet, nodes, netapi):
+    def calculate_native_modules(self):
+        for uid, instance in self.nodenet.native_module_instances.items():
+            instance.take_slot_activation_snapshot()
+            instance.node_function()
 
+    def execute(self, nodenet, nodes, netapi):
         self.write_actuators()
+        self.calculate_native_modules()
         self.calculate()
         self.read_sensors_and_actuator_feedback()
 

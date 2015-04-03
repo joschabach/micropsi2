@@ -471,7 +471,9 @@ class TheanoGate(Gate):
 
     @property
     def empty(self):
-        return True              # todo: implement empty
+        w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
+        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
+        return len(np.nonzero(gatecolumn)[0]) == 0
 
     @property
     def activation(self):
@@ -545,7 +547,9 @@ class TheanoSlot(Slot):
 
     @property
     def empty(self):
-        pass                    # implement links
+        w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
+        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
+        return len(np.nonzero(slotrow)[1]) == 0
 
     @property
     def activation(self):

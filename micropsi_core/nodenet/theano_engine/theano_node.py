@@ -337,6 +337,10 @@ class TheanoNode(Node):
             g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
             g_function_selector[elementindex] = get_numerical_gatefunction_type(value)
             self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
+        elif parameter == 'theta':
+            g_theta_array = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
+            g_theta_array[elementindex] = value
+            self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_gate_parameters(self):
         # todo: implement defaulting mechanism for gate parameters
@@ -346,6 +350,7 @@ class TheanoNode(Node):
         g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
         g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        g_theta = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
 
         result = {}
         for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
@@ -354,7 +359,8 @@ class TheanoNode(Node):
                 'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'minimum': g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'gatefunction': get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
+                'gatefunction': get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate]),
+                'theta': g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
             }
             result[get_string_gate_type(numericalgate, self.nodetype)] = gate_parameters
         return result

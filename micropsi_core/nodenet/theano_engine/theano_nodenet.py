@@ -101,7 +101,7 @@ class TheanoNodenet(Nodenet):
 
     g_function_selector = None # vector of gate function selectors
 
-    theta = None        # vector of thetas (i.e. biases)
+    g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
 
     sparse = False
 
@@ -152,8 +152,8 @@ class TheanoNodenet(Nodenet):
         a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
-        self.theta = theano.shared(value=theta_array.astype(T.config.floatX), name="theta", borrow=True)
+        g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
         g_factor_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)

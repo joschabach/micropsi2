@@ -501,6 +501,7 @@ class TheanoNodenet(Nodenet):
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
+        return True
 
     def reload_native_modules(self, native_modules):
         pass

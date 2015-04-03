@@ -242,9 +242,15 @@ def trigger(netapi, node=None, sheaf="default", **params):
     else:
         waitfrom = node.get_state("waitfrom") or -1
 
-        timeout = int(node.get_parameter("timeout") or 10)         # todo: use emo_resolution
         condition = node.get_parameter("condition") or "="
-        response = float(node.get_parameter("response") or 1)
+        try:
+            timeout = int(node.get_parameter("timeout"))         # todo: use emo_resolution
+        except TypeError or ValueError:
+            timeout = 10
+        try:
+            response = float(node.get_parameter("response"))
+        except TypeError or ValueError:
+            response = 1
 
         if node.get_slot('sub').activation > 0:
             currentstep = netapi.step

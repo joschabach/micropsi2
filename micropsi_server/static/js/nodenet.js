@@ -3625,7 +3625,7 @@ function getNodeParameterHTML(parameters, parameter_values){
                         }
                         input = "<select name=\""+name+"\" class=\"inplace\" id=\"node_"+name+"\">"+input+"</select>";
                     } else {
-                        if(!value) value = '';
+                        if(value == null) value = '';
                         input = "<input name=\""+name+"\" class=\"inplace\" value=\""+value+"\"/>";
                     }
             }

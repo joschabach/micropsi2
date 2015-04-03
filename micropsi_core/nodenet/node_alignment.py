@@ -35,7 +35,8 @@ def align(nodenet, nodespace):
         key = lambda i: nodenet.get_node(i).index)
     sensors = [ s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor" ]
     actors = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor" ]
-    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor") ]
+    activators = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Activator" ]
+    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor", "Activator") ]
 
 
     # position nodespaces
@@ -55,7 +56,9 @@ def align(nodenet, nodespace):
     group_with_same_parent(por_groups)
     # put sensors and actors below
     sensor_group = HorizontalGroup([ DisplayNode(i) for i in sensors ] + [ DisplayNode(i) for i in actors ])
+    actviator_group = HorizontalGroup([ DisplayNode(i) for i in activators ])
     por_groups.append(sensor_group)
+    por_groups.append(actviator_group)
     # calculate actual coordinates by traversing the group structure
     por_groups.arrange(nodenet, start_position)
 

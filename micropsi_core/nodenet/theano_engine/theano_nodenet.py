@@ -70,7 +70,7 @@ class TheanoNodenet(Nodenet):
     native_module_instances = {}
 
     # todo: get rid of positions
-    positions = []
+    positions = {}
 
     # map of data sources to numerical node IDs
     sensormap = {}
@@ -138,8 +138,6 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
-
-        self.positions = [(10, 10) for i in range(0, NUMBER_OF_NODES)]
 
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float32), name="w")
@@ -396,7 +394,7 @@ class TheanoNodenet(Nodenet):
         for element in range (0, get_elements_per_type(self.allocated_nodes[uid], self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = uid
 
-        self.positions[uid] = position
+        self.positions[to_id(uid)] = position
 
         if nodetype == "Sensor":
             datasource = parameters["datasource"]

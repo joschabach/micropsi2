@@ -348,22 +348,24 @@ class TheanoNodenet(Nodenet):
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
-            uid = 0
+            id = 0
             for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
                 if self.allocated_nodes[i] == 0:
-                    uid = i
+                    id = i
                     break
 
-            if uid < 1:
+            if id < 1:
                 for i in range(self.last_allocated_node - 1):
                     if self.allocated_nodes[i] == 0:
-                        uid = i
+                        id = i
                         break
 
-            if uid < 1:
+            if id < 1:
                 raise MemoryError("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
         else:
-            uid = from_id(uid)
+            id = from_id(uid)
+
+        uid = to_id(id)
 
         # now find a range of free elements to be used by this node
         number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)
@@ -388,46 +390,46 @@ class TheanoNodenet(Nodenet):
                     i = 0
                     has_restarted_from_zero = True
                 else:
-                    raise MemoryError("Cannot find "+str(number_of_elements)+" consecutive free elements for new node " + str(uid))
+                    raise MemoryError("Cannot find "+str(number_of_elements)+" consecutive free elements for new node " + uid)
 
-        self.last_allocated_node = uid
+        self.last_allocated_node = id
         self.last_allocated_offset = offset
-        self.allocated_nodes[uid] = get_numerical_node_type(nodetype, self.native_modules)
-        self.allocated_node_offsets[uid] = offset
+        self.allocated_nodes[id] = get_numerical_node_type(nodetype, self.native_modules)
+        self.allocated_node_offsets[id] = offset
 
-        for element in range (0, get_elements_per_type(self.allocated_nodes[uid], self.native_modules)):
-            self.allocated_elements_to_nodes[offset + element] = uid
+        for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.native_modules)):
+            self.allocated_elements_to_nodes[offset + element] = id
 
         if position is not None:
-            self.positions[to_id(uid)] = position
-        if name is not None and name != "" and name != to_id(uid):
-            self.names[to_id(uid)] = name
+            self.positions[uid] = position
+        if name is not None and name != "" and name != uid:
+            self.names[uid] = name
 
         if nodetype == "Sensor":
             datasource = parameters["datasource"]
             if datasource is not None:
                 connectedsensors = self.sensormap.get(datasource, [])
-                connectedsensors.append(uid)
+                connectedsensors.append(id)
                 self.sensormap[datasource] = connectedsensors
-                self.inverted_sensor_map[to_id(uid)] = datasource
+                self.inverted_sensor_map[uid] = datasource
         elif nodetype == "Actor":
             datatarget = parameters["datatarget"]
             if datatarget is not None:
                 connectedactuators = self.actuatormap.get(datatarget, [])
-                connectedactuators.append(uid)
+                connectedactuators.append(id)
                 self.actuatormap[datatarget] = connectedactuators
-                self.inverted_actuator_map[to_id(uid)] = datatarget
+                self.inverted_actuator_map[uid] = datatarget
 
-        node = self.get_node(to_id(uid))
+        node = self.get_node(uid)
         if gate_parameters is not None:
             for gate, gate_parameters in gate_parameters.items():
                 for gate_parameter in gate_parameters:
                     node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
 
         if nodetype not in STANDARD_NODETYPES:
-            self.native_module_instances[to_id(uid)] = node
+            self.native_module_instances[uid] = node
 
-        return to_id(uid)
+        return uid
 
     def delete_node(self, uid):
 

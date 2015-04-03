@@ -267,22 +267,26 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(to_id(self._id), None)       # todo: get rid of positions
+        return self._nodenet.positions.get(self.uid, None)       # todo: get rid of positions
 
     @position.setter
     def position(self, position):
-        if position is None and to_id(self._id) in self._nodenet.positions:
-            del self._nodenet.positions[to_id(self._id)]
+        if position is None and self.uid in self._nodenet.positions:
+            del self._nodenet.positions[self.uid]
         else:
-            self._nodenet.positions[to_id(self._id)] = position         # todo: get rid of positions
+            self._nodenet.positions[self.uid] = position         # todo: get rid of positions
 
     @property
     def name(self):
-        return self.uid         # todo: implement name
+        return self._nodenet.names.get(self.uid, self.uid)
 
     @name.setter
     def name(self, name):
-        pass                    # todo: implement name
+        if name is None or name == "" or name == self.uid:
+            if self.uid in self._nodenet.names:
+                del self._nodenet.names[self.uid]
+        else:
+            self._nodenet.names[self.uid] = name
 
     @property
     def parent_nodespace(self):

@@ -73,6 +73,9 @@ class TheanoNodenet(Nodenet):
     # map of string uids to positions. Not all nodes necessarily have an entry.
     positions = {}
 
+    # map of string uids to names. Not all nodes neccessarily have an entry.
+    names = {}
+
     # map of data sources to numerical node IDs
     sensormap = {}
 
@@ -341,7 +344,7 @@ class TheanoNodenet(Nodenet):
     def is_node(self, uid):
         return uid in self.get_node_uids()
 
-    def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
+    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None):
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
@@ -395,7 +398,10 @@ class TheanoNodenet(Nodenet):
         for element in range (0, get_elements_per_type(self.allocated_nodes[uid], self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = uid
 
-        self.positions[to_id(uid)] = position
+        if position is not None:
+            self.positions[to_id(uid)] = position
+        if name is not None and name != "" and name != to_id(uid):
+            self.names[to_id(uid)] = name
 
         if nodetype == "Sensor":
             datasource = parameters["datasource"]

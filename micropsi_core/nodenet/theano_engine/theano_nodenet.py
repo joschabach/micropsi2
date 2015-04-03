@@ -480,12 +480,15 @@ class TheanoNodenet(Nodenet):
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
 
-        nodetype = None
+        source_nodetype = None
+        target_nodetype = None
         if self.allocated_nodes[from_id(source_node_uid)] > MAX_STD_NODETYPE:
-            nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)], self.native_modules))
+            source_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)], self.native_modules))
+        if self.allocated_nodes[from_id(target_node_uid)] > MAX_STD_NODETYPE:
+            target_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(target_node_uid)], self.native_modules))
 
-        ngt = get_numerical_gate_type(gate_type, nodetype)
-        nst = get_numerical_slot_type(slot_type, nodetype)
+        ngt = get_numerical_gate_type(gate_type, source_nodetype)
+        nst = get_numerical_slot_type(slot_type, target_nodetype)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
         x = self.allocated_node_offsets[from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[from_id(source_node_uid)] + ngt

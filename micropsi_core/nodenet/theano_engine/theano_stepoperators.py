@@ -118,6 +118,7 @@ class TheanoCalculate(Calculate):
 
     def calculate_native_modules(self):
         for uid, instance in self.nodenet.native_module_instances.items():
+            instance.take_slot_activation_snapshot()
             instance.node_function()
 
     def execute(self, nodenet, nodes, netapi):

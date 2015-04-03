@@ -243,6 +243,8 @@ class TheanoNode(Node):
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
         if strtype in nodenet.native_modules:
+            self.slot_activation_snapshot = {}
+
             if parameters is not None:
                 self.parameters = parameters.copy()
             else:
@@ -352,6 +354,13 @@ class TheanoNode(Node):
 
     def clone_non_default_gate_parameters(self, gate_type):
         return self.get_gate_parameters()               # todo: implement gate parameter defaulting
+
+    def take_slot_activation_snapshot(self):
+        a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
+        self.slot_activation_snapshot.clear()
+        for slottype in self.nodetype.slottypes:
+            self.slot_activation_snapshot[slottype] =  \
+                a_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
 
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
@@ -496,7 +505,7 @@ class TheanoGate(Gate):
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
             target_node = self.__nodenet.get_node(to_id(target_uid))
-            target_slot = target_node.get_slot(get_string_slot_type(target_slot_numerical))
+            target_slot = target_node.get_slot(get_string_slot_type(target_slot_numerical, target_node.nodetype))
             link = TheanoLink(self.__node, self, target_node, target_slot, weight)
             links.append(link)
         return links
@@ -540,11 +549,13 @@ class TheanoSlot(Slot):
 
     @property
     def activation(self):
-        return 0                # theano slots never report activation to anybody
+        return self.__node.slot_activation_snapshot[self.__type]
 
     @property
     def activations(self):
-        return None             # theano slots never report activation to anybody
+        return {
+            "default": self.activation
+        }
 
     def __init__(self, type, node, nodenet):
         self.__type = type
@@ -553,7 +564,7 @@ class TheanoSlot(Slot):
         self.__numerictype = get_numerical_slot_type(type, node.nodetype)
 
     def get_activation(self, sheaf="default"):
-        return              # theano slots never report activation to anybody
+        return self.activation
 
     def get_links(self):
         links = []
@@ -567,7 +578,7 @@ class TheanoSlot(Slot):
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
             source_node = self.__nodenet.get_node(to_id(source_uid))
-            source_gate = source_node.get_gate(get_string_gate_type(source_gate_numerical))
+            source_gate = source_node.get_gate(get_string_gate_type(source_gate_numerical, source_node.nodetype))
             link = TheanoLink(source_node, source_gate, self.__node, self, weight)
             links.append(link)
         return links

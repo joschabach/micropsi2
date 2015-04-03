@@ -267,11 +267,14 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return self._nodenet.positions[to_id(self._id)]      # todo: get rid of positions
+        return self._nodenet.positions.get(to_id(self._id), None)       # todo: get rid of positions
 
     @position.setter
     def position(self, position):
-        self._nodenet.positions[to_id(self._id)] = position  # todo: get rid of positions
+        if position is None and to_id(self._id) in self._nodenet.positions:
+            del self._nodenet.positions[to_id(self._id)]
+        else:
+            self._nodenet.positions[to_id(self._id)] = position         # todo: get rid of positions
 
     @property
     def name(self):

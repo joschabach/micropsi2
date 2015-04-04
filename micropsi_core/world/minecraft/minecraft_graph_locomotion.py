@@ -237,7 +237,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.logger = logging.getLogger("world")
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
         self.spockplugin.event.reg_event_handler('PLAY<Player Position and Look', self.server_set_position)
-        self.spockplugin.event.reg_event_handler('PLAY<Use Bed', self.server_use_bed)
         self.spockplugin.event.reg_event_handler('PLAY<Chat Message', self.server_chat_message)
 
         # add datasources for fovea
@@ -252,16 +251,12 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.datatarget_feedback['sleep'] = -1
                 self.sleeping = False
 
-    def server_use_bed(self, event, data):
-        # TODO: check if it's us, that has gone to sleep
-        # Currently however there's an issue parsing the use-bed packet from the
-        # server. we'll just assume it's us.
-        # if data.data['eid'] == self.spockplugin.clientinfo.eid
-        self.sleeping = True
-
     def server_set_position(self, event, data):
         """ Interprete this as waking up, if we're sleeping, and it's morning"""
-        if self.sleeping and abs(24000 * round(self.spockplugin.world.time_of_day / 24000) - self.spockplugin.world.time_of_day) < 1200:
+        if (abs(round(data.data['x']) + 102.5)) < 1 and (abs(round(data.data['z']) - 59.5) < 1):
+            # server set our position to bed
+            self.sleeping = True
+        elif self.sleeping:
             self.sleeping = False
             self.last_slept = self.spockplugin.world.age
 
@@ -403,9 +398,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.register_action('sleep', self.sleep, self.check_waking_up)
                 else:
                     self.datatarget_feedback['sleep'] = -1.
-
-            # impatience!
-            self.check_for_action_feedback()
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]

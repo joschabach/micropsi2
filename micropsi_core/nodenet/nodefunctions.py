@@ -281,9 +281,13 @@ def trigger(netapi, node=None, sheaf="default", **params):
                 if success:
                     sur = 1
 
-    # see pipe implementation: trigger and pipes should be able to
-    # escape the [-1;1] cage on gen
-    gen = node.get_slot('sur').activation + node.get_slot('gen').activation
+    if sur < 0:
+        # if trigger is failing, gen should also propagate failing
+        gen = sur
+    else:
+        # otherwise, gen should be allowed to pass on the original sur-activation
+        # and not be confined to {0;1}
+        gen = node.get_slot('sur').activation + node.get_slot('gen').activation
 
     node.activation = gen
 

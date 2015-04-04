@@ -345,6 +345,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # timeofday = self.spockplugin.world.time_of_day % 24000
             no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
             fatigue = no_sleep * 0.2
+            if self.sleeping:
+                fatigue = 0
             self.datasources['fatigue'] = fatigue
 
             self.check_for_action_feedback()

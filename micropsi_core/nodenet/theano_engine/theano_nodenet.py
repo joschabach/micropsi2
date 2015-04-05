@@ -52,7 +52,7 @@ NODENET_VERSION = 1
 
 AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
 
-NUMBER_OF_NODES = 50000
+NUMBER_OF_NODES = 1000
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
@@ -93,6 +93,8 @@ class TheanoNodenet(Nodenet):
     # theano tensors for performing operations
     w = None            # matrix of weights
     a = None            # vector of activations
+    a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
+                        # this is a view on the activation values instrumental in calculating concept node functions
 
     g_factor = None     # vector of gate factors, controlled by directional activators
     g_threshold = None  # vector of thresholds (gate parameters)
@@ -103,6 +105,8 @@ class TheanoNodenet(Nodenet):
     g_function_selector = None # vector of gate function selectors
 
     g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
+
+    n_function_selector = None # vector of per-gate node function selectors
 
     sparse = False
 
@@ -153,6 +157,9 @@ class TheanoNodenet(Nodenet):
         a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 6), strides=(8, 8))
+        self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
+
         g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
@@ -173,6 +180,9 @@ class TheanoNodenet(Nodenet):
 
         g_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
         self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
+
+        n_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 

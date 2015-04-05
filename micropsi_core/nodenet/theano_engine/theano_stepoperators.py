@@ -3,8 +3,10 @@ from micropsi_core.nodenet.stepoperators import Propagate, Calculate
 import theano
 from theano import tensor as T
 from theano import shared
+from theano import function
 from theano.tensor import nnet as N
 import theano.sparse as ST
+import numpy as np
 
 GATE_FUNCTION_IDENTITY = 0
 GATE_FUNCTION_ABSOLUTE = 1
@@ -12,6 +14,15 @@ GATE_FUNCTION_SIGMOID = 2
 GATE_FUNCTION_TANH = 3
 GATE_FUNCTION_RECT = 4
 GATE_FUNCTION_DIST = 5
+
+NFPG_PIPE_NON = 0
+NFPG_PIPE_GEN = 1
+NFPG_PIPE_POR = 2
+NFPG_PIPE_RET = 3
+NFPG_PIPE_SUB = 4
+NFPG_PIPE_SUR = 5
+NFPG_PIPE_CAT = 6
+NFPG_PIPE_EXP = 7
 
 
 class TheanoPropagate(Propagate):
@@ -54,8 +65,27 @@ class TheanoCalculate(Calculate):
         self.nodenet = nodenet
         self.worldadapter = nodenet.world
 
-        # node functions implemented with identity for now
+        # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = nodenet.a
+
+        x = T.fvector()
+
+        # pipe logic
+        pipe_gen = nodenet.a + nodenet.a_shifted[:, 1]
+        #pipe_por = abs
+        #pipe_ret = abs
+        #pipe_sub = abs
+        #pipe_sur = abs
+        #pipe_cat = abs
+        #pipe_exp = abs
+
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+        #ndefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
 
         # gate logic
 

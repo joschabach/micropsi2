@@ -18,7 +18,6 @@ TRIGGER = 8
 
 MAX_STD_NODETYPE = TRIGGER
 
-
 GEN = 0
 POR = 1
 RET = 2
@@ -27,6 +26,7 @@ SUR = 4
 CAT = 5
 EXP = 6
 
+MAX_STD_GATE = EXP
 
 def get_numerical_gate_type(type, nodetype=None):
     if nodetype is not None and len(nodetype.gatetypes) > 0:

@@ -14,6 +14,7 @@ import numpy as np
 import scipy.sparse as sp
 import scipy
 
+from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.node import Nodetype
 
@@ -300,20 +301,19 @@ class TheanoNodenet(Nodenet):
                 data['weight']
             )
 
-        # todo: implement monitors
-        # for uid in nodenet_data.get('monitors', {}):
-        #     data = nodenet_data['monitors'][uid]
-        #     if 'classname' in data:
-        #         if hasattr(monitor, data['classname']):
-        #             getattr(monitor, data['classname'])(self, **data)
-        #         else:
-        #             self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
-        #     else:
-        #         # Compatibility mode
-        #         monitor.NodeMonitor(self, name=data['node_name'], **data)
+        for uid in nodenet_data.get('monitors', {}):
+            data = nodenet_data['monitors'][uid]
+            if 'classname' in data:
+                if hasattr(monitor, data['classname']):
+                    getattr(monitor, data['classname'])(self, **data)
+                else:
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+            else:
+                # Compatibility mode
+                monitor.NodeMonitor(self, name=data['node_name'], **data)
 
     def step(self):
-        # self.user_prompt = None                       # todo: re-introduce user prompts when looking into native modules
+        self.user_prompt = None                       # todo: re-introduce user prompts when looking into native modules
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
@@ -522,7 +522,16 @@ class TheanoNodenet(Nodenet):
         return self.data                    # todo: implement
 
     def get_nodespace_data(self, nodespace_uid, max_nodes):
-        return self.data                    # todo: implement
+        data = {
+            'nodes': self.construct_nodes_dict(max_nodes),
+            'links': self.construct_links_dict(),
+            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
+            'monitors': self.construct_monitors_dict()
+        }
+        if self.user_prompt is not None:
+            data['user_prompt'] = self.user_prompt.copy()
+            self.user_prompt = None
+        return data
 
     def is_locked(self, lock):
         pass

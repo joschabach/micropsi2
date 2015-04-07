@@ -242,7 +242,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
+    def create_nodespace(self, parent_uid, position, name="", uid=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.
         """

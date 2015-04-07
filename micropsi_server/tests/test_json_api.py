@@ -1185,7 +1185,6 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     # Nodespaces
     #assert data['nodespaces']['NS1']['index'] == 3
     assert data['nodespaces']['NS1']['name'] == 'Test-Node-Space'
-    assert data['nodespaces']['NS1']['gatefunctions'] == {}
     assert data['nodespaces']['NS1']['parent_nodespace'] == 'Root'
     assert data['nodespaces']['NS1']['position'] == [23, 23]
 

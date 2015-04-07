@@ -437,8 +437,7 @@ class DictGate(Gate):
             self.sheaves[sheaf]['activation'] = 0
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = self.node.nodenet.get_nodespace(self.node.parent_nodespace).get_gatefunction(self.node.type,
-            self.type)
+        gatefunction = None
         if gatefunction:
             activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
         else:

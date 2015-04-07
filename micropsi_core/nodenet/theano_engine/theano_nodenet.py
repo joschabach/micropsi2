@@ -46,13 +46,64 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
+    "Pipe": {
+        "name": "Pipe",
+        "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "nodefunction_name": "pipe",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "por": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "ret": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "sub": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": True
+            },
+            "sur": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "cat": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 1
+            },
+            "exp": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            }
+        },
+        'symbol': 'πp'
+    },
 }
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 7
 
-NUMBER_OF_NODES = 1000
+NUMBER_OF_NODES = 500
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
@@ -106,7 +157,10 @@ class TheanoNodenet(Nodenet):
 
     g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
 
-    n_function_selector = None # vector of per-gate node function selectors
+    n_function_selector = None      # vector of per-gate node function selectors
+    n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
+                                    # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                    # but for now, we manually track this property
 
     sparse = False
 
@@ -157,7 +211,7 @@ class TheanoNodenet(Nodenet):
         a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 6), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
         g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
@@ -183,6 +237,9 @@ class TheanoNodenet(Nodenet):
 
         n_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
         self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
+
+        n_node_porlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 
@@ -429,6 +486,16 @@ class TheanoNodenet(Nodenet):
                 connectedactuators.append(id)
                 self.actuatormap[datatarget] = connectedactuators
                 self.inverted_actuator_map[uid] = datatarget
+        elif nodetype == "Pipe":
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
+            n_function_selector_array[offset + POR] = NFPG_PIPE_POR
+            n_function_selector_array[offset + RET] = NFPG_PIPE_RET
+            n_function_selector_array[offset + SUB] = NFPG_PIPE_SUB
+            n_function_selector_array[offset + SUR] = NFPG_PIPE_SUR
+            n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
+            n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         node = self.get_node(uid)
         if gate_parameters is not None:
@@ -454,6 +521,16 @@ class TheanoNodenet(Nodenet):
         self.allocated_node_offsets[from_id(uid)] = 0
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+        n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+        n_function_selector_array[offset + RET] = NFPG_PIPE_NON
+        n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
+        n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
+        n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
+        n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+        self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # clear from name and positions dicts
         if uid in self.names:
@@ -519,6 +596,17 @@ class TheanoNodenet(Nodenet):
         else:
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
+
+        if gate_type == "por" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True, return_internal_tyoe=True)
+            if weight == 0:
+                for g in range(7):
+                    n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
+            else:
+                for g in range(7):
+                    n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
+            self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
+
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
@@ -649,3 +737,8 @@ class TheanoNodenet(Nodenet):
         self.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
+
+    def rebuild_shifted(self):
+        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
+        self.a_shifted.set_value(a_shifted_matrix, borrow=True)

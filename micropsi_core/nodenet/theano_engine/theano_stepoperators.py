@@ -6,7 +6,7 @@ from theano import shared
 from theano import function
 from theano.tensor import nnet as N
 import theano.sparse as ST
-import numpy as np
+from micropsi_core.nodenet.theano_engine.theano_node import *
 
 GATE_FUNCTION_IDENTITY = 0
 GATE_FUNCTION_ABSOLUTE = 1
@@ -68,24 +68,28 @@ class TheanoCalculate(Calculate):
         # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = nodenet.a
 
-        x = T.fvector()
-
         # pipe logic
-        pipe_gen = nodenet.a + nodenet.a_shifted[:, 1]
-        #pipe_por = abs
-        #pipe_ret = abs
-        #pipe_sub = abs
-        #pipe_sur = abs
-        #pipe_cat = abs
-        #pipe_exp = abs
+
+        sur_exp = nodenet.a_shifted[:, 4] + nodenet.a_shifted[:, 6]     # sum of sur and exp
+        pipe_gen = nodenet.a_shifted[:, 0] * nodenet.a_shifted[:, 3]    # gen * sub
+        pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, sur_exp)     # drop to 0 if below 0.1
+                                                                        # drop to 0 if por == 0 and por slot is linked
+        pipe_gen = T.switch(T.eq(nodenet.a_shifted[:, 1], 0) and T.eq(nodenet.n_node_porlinked, 1), sur_exp, pipe_gen)
+
+        pipe_por = 0
+        pipe_ret = 0
+        pipe_sub = 0
+        pipe_sur = 0
+        pipe_cat = 0
+        pipe_exp = 0
 
         nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
-        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
-        #ndefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
-        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
-        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
-        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
-        #nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
 
         # gate logic
 
@@ -151,6 +155,9 @@ class TheanoCalculate(Calculate):
     def execute(self, nodenet, nodes, netapi):
         self.write_actuators()
         self.calculate_native_modules()
+
+        self.nodenet.rebuild_shifted()
+
         self.calculate()
         self.read_sensors_and_actuator_feedback()
 

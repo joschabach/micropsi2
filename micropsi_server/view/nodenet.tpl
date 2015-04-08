@@ -111,27 +111,6 @@
                         <td><label for="nodespace_name">Name</label></td>
                         <td><input type="text" name="nodespace_name" id="nodespace_name"></td>
                     </tr>
-                    <tr>
-                        <td><label for="nodespace_gatefunction_nodetype">Gatefunction</label></td>
-                        <td><select name="nodespace_gatefunction_nodetype" id="nodespace_gatefunction_nodetype"></select></td>
-                    </tr>
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td><select name="nodespace_gatefunction_gate" id="nodespace_gatefunction_gate"></select></td>
-                    </tr>
-                    <tr>
-                        <td>&nbsp;</td>
-                        <td><div class="pythoncode">
-                                <div class="textareafake">
-                                    <span class="loc">def gatefunction(x, r, t):</span>
-                                    <span class="loc indent">import math</span>
-                                    <div class="textarea indent1">
-                                        <textarea class="loc" name="nodespace_gatefunction" id="nodespace_gatefunction"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
                 </table>
                 <div class="controls">
                     <button type="submit" class="btn btn-primary">Apply</button>
@@ -209,7 +188,8 @@
                     <tr>
                         <td><label for="">Gatefunction</label></td>
                         <td>
-                           <textarea name="gatefunction" id="" disabled="disabled"></textarea>
+                           <select name="gate_gatefunction" id="gate_gatefunction">
+                           </select>
                         </td>
                     </tr>
                 </table>

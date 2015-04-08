@@ -677,11 +677,11 @@ def test_set_gate_function(fixed_nodenet):
 
     netapi.set_gatefunction("Root", "Register", "gen", "sigmoid")
 
-    source.get_gate('gen').parameters["theta"] = 1
+    source.set_gate_parameter('gen', 'theta', 1)
 
     net.step()
 
-    assert source.get_gate("gen").activation == 0.5
+    assert source.get_gate("gen").activation == sigmoid(0, 0, 1)
     assert some_other_node_type.get_gate("gen").activation == 0
 
 

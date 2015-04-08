@@ -666,6 +666,7 @@ def test_node_netapi_import_sensors(fixed_nodenet):
 
 def test_set_gate_function(fixed_nodenet):
     # test setting a custom gate function
+    from micropsi_core.nodenet.gatefunctions import sigmoid
     net, netapi, source = prepare(fixed_nodenet)
 
     some_other_node_type = netapi.create_node("Concept", "Root")
@@ -674,7 +675,7 @@ def test_set_gate_function(fixed_nodenet):
     net.step()
     assert source.get_gate("gen").activation == 0
 
-    netapi.set_gatefunction("Root", "Register", "gen", "return 1/(1+math.exp(-t*x))")
+    netapi.set_gatefunction("Root", "Register", "gen", "sigmoid")
 
     source.get_gate('gen').parameters["theta"] = 1
 

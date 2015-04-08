@@ -721,3 +721,11 @@ class DictNodenet(Nodenet):
         Returns the standard node types supported by this nodenet
         """
         return copy.deepcopy(STANDARD_NODETYPES)
+
+    def get_available_gatefunctions(self):
+        """
+        Returns a list of available gate functions
+        """
+        from inspect import getmembers, isfunction
+        from micropsi_core.nodenet import gatefunctions
+        return sorted([name for name, func in getmembers(gatefunctions, isfunction)])

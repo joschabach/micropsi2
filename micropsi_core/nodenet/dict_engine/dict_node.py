@@ -17,6 +17,7 @@ import copy
 from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
 from .dict_link import DictLink
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
+import micropsi_core.nodenet.gatefunctions as gatefunctions
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -64,7 +65,7 @@ class DictNode(NetEntity, Node):
             self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
-                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, **_):
+                 name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, gate_functions=None, **_):
         if not gate_parameters:
             gate_parameters = {}
 
@@ -82,6 +83,7 @@ class DictNode(NetEntity, Node):
 
         self.__gates = {}
         self.__slots = {}
+        self.__gatefunctions = gate_functions or {}
 
         self.__parameters = dict((key, None) for key in self.nodetype.parameters)
         if parameters is not None:
@@ -113,18 +115,21 @@ class DictNode(NetEntity, Node):
                     gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
 
         for gate in self.nodetype.gatetypes:
+            if gate not in self.__gatefunctions:
+                self.__gatefunctions[gate] = gatefunctions.identity
+            else:
+                self.__gatefunctions[gate] = getattr(gatefunctions, self.__gatefunctions[gate])
             if gate_activations is None or gate not in gate_activations:
                 sheaves_to_use = None
             else:
                 sheaves_to_use = gate_activations[gate]
-            self.__gates[gate] = DictGate(gate, self, sheaves=sheaves_to_use, gate_function=None, parameters=gate_parameters.get(gate))
+            self.__gates[gate] = DictGate(gate, self, sheaves=sheaves_to_use, parameters=gate_parameters.get(gate))
         for slot in self.nodetype.slottypes:
             self.__slots[slot] = DictSlot(slot, self)
         if state:
             self.__state = state
         nodenet._register_node(self)
         self.sheaves = {"default": emptySheafElement.copy()}
-
         self.activation = activation
 
     def node_function(self):
@@ -251,6 +256,33 @@ class DictNode(NetEntity, Node):
             elif parameter in self.__non_default_gate_parameters.get(gate_type, {}):
                 del self.__non_default_gate_parameters[gate_type][parameter]
         self.get_gate(gate_type).parameters[parameter] = value
+
+    def get_gatefunction(self, gate_type):
+        if self.get_gate(gate_type):
+            return self.__gatefunctions[gate_type]
+        raise KeyError("Wrong Gatetype")
+
+    def get_gatefunction_name(self, gate_type):
+        if self.get_gate(gate_type):
+            return self.__gatefunctions[gate_type].__name__
+        raise KeyError("Wrong Gatetype")
+
+    def set_gatefunction_name(self, gate_type, gatefunction):
+        if self.get_gate(gate_type):
+            if gatefunction is None:
+                self.__gatefunctions[gate_type] = gatefunctions.identity
+            if hasattr(gatefunctions, gatefunction):
+                self.__gatefunctions[gate_type] = getattr(gatefunctions, gatefunction)
+            else:
+                raise NameError("Unknown Gatefunction")
+        else:
+            raise KeyError("Wrong Gatetype")
+
+    def get_gatefunction_names(self):
+        ret = {}
+        for key in self.__gatefunctions:
+            ret[key] = self.__gatefunctions[key].__name__
+        return ret
 
     def reset_slots(self):
         for slottype in self.get_slot_types():
@@ -437,7 +469,7 @@ class DictGate(Gate):
             self.sheaves[sheaf]['activation'] = 0
             return  # if the gate is closed, we don't need to execute the gate function
             # simple linear threshold function; you might want to use a sigmoid for neural learning
-        gatefunction = None
+        gatefunction = self.__node.get_gatefunction(self.__type)
         if gatefunction:
             activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
         else:

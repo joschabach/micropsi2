@@ -870,22 +870,25 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return True
 
 
-def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
-    """Returns a string with the gate function of the given node and gate within the current nodespace.
-    Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
+def get_gatefunction(nodenet_uid, node_uid, gate_type):
     """
-    return None
+    Returns the name of the gate function configured for that given node and gate
+    """
+    return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction(gate_type)
 
 
-def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
-    """Sets the gate function of the given node and gate within the current nodespace.
-    Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
-    The default function is a threshold with parameter t=0.
-    None reverts the custom gate function of the given node and gate within the current nodespace to the default.
-    Parameters is a list of keys for values of the gate function.
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
     """
+    Sets the gate function of the given node and gate.
+    """
+    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gate_function)
     return True
 
+def get_available_gatefunctions(nodenet_uid):
+    """
+    Returns a list of names of the available gatefunctions
+    """
+    return nodenets[nodenet_uid].get_available_gatefunctions()
 
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""

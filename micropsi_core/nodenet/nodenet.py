@@ -400,6 +400,13 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    @abstractmethod
+    def get_available_gatefunctions(self):
+        """
+        Returns a list of available gate functions
+        """
+        pass  # pragma: no cover
+
     def clear(self):
         self.__monitors = {}
 

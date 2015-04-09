@@ -71,6 +71,13 @@ GATE_DEFAULTS = {
     "theta": 0
 }
 
+gatefunction_icons = {
+    'sigmoid': 'Σ',
+    'abs': '|x|',
+    'distance': '1/x',
+    'identity': ''
+}
+
 gridLayer = new Layer();
 gridLayer.name = 'GridLayer';
 linkLayer = new Layer();
@@ -633,7 +640,9 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.gatechecksum = function(){
         var gatechecksum = "";
         for(var i in nodetypes[type].gatetypes){
-            gatechecksum += "-" + this.gates[nodetypes[type].gatetypes[i]].sheaves[currentSheaf].activation;
+            var gatetype = nodetypes[type].gatetypes[i];
+            gatechecksum += "-" + this.gates[gatetype].sheaves[currentSheaf].activation;
+            gatechecksum += ':' + this.gates[gatetype].gatefunction;
         }
         return gatechecksum;
     };
@@ -1551,13 +1560,40 @@ function createCompactNodeSkeleton(node) {
 // render the symbol within the compact node body
 function createCompactNodeBodyLabel(node) {
     var bounds = node.bounds;
-    var symbolText = new PointText(new Point(bounds.x+bounds.width/2,
-        bounds.y+bounds.height/2+viewProperties.symbolSize/2*viewProperties.zoomFactor));
+    var pos = new Point(bounds.x+bounds.width/2,
+        bounds.y+bounds.height/2+viewProperties.symbolSize/2*viewProperties.zoomFactor);
+    var symbolText = new PointText(pos);
     symbolText.fillColor = viewProperties.nodeForegroundColor;
     symbolText.content = node.symbol;
     symbolText.fontSize = viewProperties.symbolSize*viewProperties.zoomFactor;
     symbolText.paragraphStyle.justification = 'center';
-    return symbolText;
+    pos.x += 1 * viewProperties.zoomFactor;
+    pos.y -= 5 * viewProperties.zoomFactor;
+    gatefuncHint = new PointText(pos);
+    gatefuncHint.content = '';
+    gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
+    gatefuncHint.fontSize = viewProperties.fontSize*viewProperties.zoomFactor;
+    var non_standard_gatefunc = [];
+    for (var k in node.gate_functions){
+        if(node.gate_functions[k] && node.gate_functions[k] != 'identity'){
+            if(non_standard_gatefunc.indexOf(node.gate_functions[k]) < 0){
+                non_standard_gatefunc.push(node.gate_functions[k]);
+            }
+        }
+    }
+    if(non_standard_gatefunc.length > 0){
+        if(non_standard_gatefunc.length == 1){
+            gatefuncHint.content = gatefunction_icons[non_standard_gatefunc[0]];
+        } else {
+            gatefuncHint.content = '*';
+        }
+    }
+    if(gatefuncHint.content){
+        symbolText.point.x -= 3 * viewProperties.zoomFactor;
+        symbolText.fontSize = viewProperties.fontSize*viewProperties.zoomFactor;
+    }
+    var g = new Group([symbolText, gatefuncHint]);
+    return g;
 }
 
 // render the activation part of a compact node
@@ -3199,7 +3235,13 @@ function handleEditGate(event){
             node_uid: node.uid,
             gate_type: gate.name,
             gate_function: gatefunc
-        }, api.defaultSuccessCallback, api.defaultErrorCallback);
+        }, function(data){
+            node.gate_functions[gate.name] = gatefunc;
+            gate.gatefunction = gatefunc;
+            api.defaultSuccessCallback();
+            redrawNode(node, true);
+            view.draw();
+        }, api.defaultErrorCallback);
     }
     api.call('set_gate_parameters', {
         nodenet_uid: currentNodenet,

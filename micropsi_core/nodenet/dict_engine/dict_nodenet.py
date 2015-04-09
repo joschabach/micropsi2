@@ -290,8 +290,7 @@ class DictNodenet(Nodenet):
                 data[id].get('position'),
                 name=data[id].get('name', 'Root'),
                 uid=id,
-                index=data[id].get('index'),
-                gatefunction_strings=data[id].get('gatefunctions'))
+                index=data[id].get('index'))
 
     def initialize_nodenet(self, initfrom):
         """Called after reading new nodenet state.
@@ -566,8 +565,8 @@ class DictNodenet(Nodenet):
         self.update_node_positions()
         return node.uid
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
-        nodespace = DictNodespace(self, parent_uid, position=position, name=name, uid=uid, gatefunction_strings=gatefunction_strings)
+    def create_nodespace(self, parent_uid, position, name="", uid=None):
+        nodespace = DictNodespace(self, parent_uid, position=position, name=name, uid=uid)
         return nodespace.uid
 
     def get_node(self, uid):
@@ -722,3 +721,11 @@ class DictNodenet(Nodenet):
         Returns the standard node types supported by this nodenet
         """
         return copy.deepcopy(STANDARD_NODETYPES)
+
+    def get_available_gatefunctions(self):
+        """
+        Returns a list of available gate functions
+        """
+        from inspect import getmembers, isfunction
+        from micropsi_core.nodenet import gatefunctions
+        return sorted([name for name, func in getmembers(gatefunctions, isfunction)])

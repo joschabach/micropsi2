@@ -639,3 +639,6 @@ class TheanoNodenet(Nodenet):
         self.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
+
+    def get_available_gatefunctions(self):
+        return []

@@ -16,14 +16,10 @@ class Nodespace(metaclass=ABCMeta):
     parent nodespace is None.
 
     Nodespaces define for their direct children nodes:
-    - the gate function per gate type (if no gate function is set for a gate type, the default linear gate function
-        will be used
     - the scope for directional activators
 
-    gate functions and directional activator scope are not heritable.
+    directional activator scope are not heritable.
     """
-
-    __gatefunction_strings = {}
 
     @property
     def data(self):
@@ -33,7 +29,6 @@ class Nodespace(metaclass=ABCMeta):
             "name": self.name,
             "position": self.position,
             "parent_nodespace": self.parent_nodespace,
-            "gatefunctions": self.__gatefunction_strings
         }
         return data
 
@@ -147,34 +142,6 @@ class Nodespace(metaclass=ABCMeta):
 
         Alternative implementations are free to handle directional activators in node functions directly and
         can pass on the implementation of this method.
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def set_gate_function_string(self, nodetype, gatetype, gatefunction, parameters=None):
-        """
-        Sets (and typically compiles) the gate function for a given node type / gate type combination in this
-        nodespace.
-        Implemetations with a fixed set of gate functions can use the gatefunction parameter as a key identifying
-        which of the fixed gate functions to select
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_gatefunction_string(self, nodetype, gatetype):
-        """
-        Returns the gate function for a given node type / gate type combination in this nodespace.
-        Implementations with a fixed set of gate functions can return the key of the currently configured
-        gate function
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_gatefunction_strings(self):
-        """
-        Returns a dict of gate functions for all node type / gate type combinations in this nodespace.
-        Implementations with a fixed set of gate functions can return the keys of the currently configured
-        gate functions
         """
         pass  # pragma: no cover
 

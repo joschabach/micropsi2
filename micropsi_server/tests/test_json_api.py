@@ -815,33 +815,38 @@ def test_set_node_parameters(app, test_nodenet):
 
 
 def test_get_gate_function(app, test_nodenet):
-    response = app.post_json('/rpc/get_gate_function', params={
+    response = app.post_json('/rpc/get_gatefunction', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root',
-        'node_type': 'Concept',
-        'gate_type': 'sub'
+        'node_uid': 'N1',
+        'gate_type': 'gen'
     })
     assert_success(response)
-    assert response.json_body['data'] == ''
+    assert response.json_body['data'] == 'identity'
 
 
 def test_set_gate_function(app, test_nodenet):
     app.set_auth()
-    response = app.post_json('/rpc/set_gate_function', params={
+    response = app.post_json('/rpc/set_gatefunction', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root',
-        'node_type': 'Concept',
-        'gate_type': 'sub',
-        'gate_function': 'return -0.5'
+        'node_uid': 'N1',
+        'gate_type': 'gen',
+        'gate_function': 'sigmoid'
     })
     assert_success(response)
-    response = app.post_json('/rpc/get_gate_function', params={
+    response = app.post_json('/rpc/get_gatefunction', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root',
-        'node_type': 'Concept',
-        'gate_type': 'sub'
+        'node_uid': 'N1',
+        'gate_type': 'gen',
     })
-    assert response.json_body['data'] == 'return -0.5'
+    assert response.json_body['data'] == 'sigmoid'
+
+
+def test_get_available_gatefunctions(app, test_nodenet):
+    response = app.post_json('/rpc/get_available_gatefunctions', params={'nodenet_uid': test_nodenet})
+    funcs = response.json_body['data']
+    assert 'sigmoid' in funcs
+    assert 'identity' in funcs
+    assert 'abs' in funcs
 
 
 def test_set_gate_parameters(app, test_nodenet):
@@ -1162,9 +1167,11 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert 'N2' not in data['nodes']
     assert 'NS1' not in data['nodes']
 
+    # gates
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp', 'sym', 'ref']:
         assert data['nodes']['N1']['gate_activations'][key]['default']['activation'] == 0
         assert data['nodes']['N1']['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
+        assert data['nodes']['N1']['gate_functions'][key] == 'identity'
 
     assert data['nodes']['N1']['name'] == 'N1'
     assert data['nodes']['N1']['parameters'] == {}
@@ -1185,7 +1192,6 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     # Nodespaces
     #assert data['nodespaces']['NS1']['index'] == 3
     assert data['nodespaces']['NS1']['name'] == 'Test-Node-Space'
-    assert data['nodespaces']['NS1']['gatefunctions'] == {}
     assert data['nodespaces']['NS1']['parent_nodespace'] == 'Root'
     assert data['nodespaces']['NS1']['position'] == [23, 23]
 

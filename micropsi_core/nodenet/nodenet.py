@@ -242,7 +242,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
+    def create_nodespace(self, parent_uid, position, name="", uid=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.
         """
@@ -397,6 +397,13 @@ class Nodenet(metaclass=ABCMeta):
     def get_standard_nodetype_definitions(self):
         """
         Returns the standard node types supported by this nodenet
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_available_gatefunctions(self):
+        """
+        Returns a list of available gate functions
         """
         pass  # pragma: no cover
 

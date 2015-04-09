@@ -463,6 +463,15 @@ class TheanoNode(Node):
             #self.activation = -1
             raise
 
+    def get_gatefunction_name(self, gate_type):
+        pass
+
+    def set_gatefunction_name(self, gate_type, gatefunction):
+        pass
+
+    def get_gatefunction_names(self):
+        return {}
+
 
 class TheanoGate(Gate):
     """

@@ -596,8 +596,7 @@ def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_
             target_nodespace,
             original.position,
             original.name,
-            uid,
-            deepcopy(original.get_gatefunction_strings()))
+            uid)
 
     # set the parents (needs to happen in seperate loop to ensure nodespaces are already created
     for nodespace_uid in nodespaces:
@@ -669,7 +668,6 @@ def get_nodespace_list(nodenet_uid):
             'name': nodespace.name,
             'parent': nodespace.parent_nodespace,
             'nodes': {},
-            'gatefunctions': {}
         }
         for nid in nodespace.get_known_ids('nodes'):
             data[uid]['nodes'][nid] = {
@@ -677,7 +675,6 @@ def get_nodespace_list(nodenet_uid):
                 'name': nodenet.get_node(nid).name,
                 'type': nodenet.get_node(nid).type
             }
-        data[uid]['gatefunctions'] = nodespace.get_gatefunction_strings()
     return data
 
 
@@ -873,24 +870,25 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return True
 
 
-def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
-    """Returns a string with the gate function of the given node and gate within the current nodespace.
-    Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
+def get_gatefunction(nodenet_uid, node_uid, gate_type):
     """
-    return nodenets[nodenet_uid].get_nodespace(nodespace).get_gatefunction_string(node_type, gate_type)
+    Returns the name of the gate function configured for that given node and gate
+    """
+    return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction(gate_type)
 
 
-def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
-    """Sets the gate function of the given node and gate within the current nodespace.
-    Gate functions are defined per nodespace, and handed the parameters dictionary. They must return an activation.
-    The default function is a threshold with parameter t=0.
-    None reverts the custom gate function of the given node and gate within the current nodespace to the default.
-    Parameters is a list of keys for values of the gate function.
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
     """
-    nodenets[nodenet_uid].get_nodespace(nodespace).set_gate_function_string(node_type, gate_type, gate_function,
-        parameters)
+    Sets the gate function of the given node and gate.
+    """
+    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gate_function)
     return True
 
+def get_available_gatefunctions(nodenet_uid):
+    """
+    Returns a list of names of the available gatefunctions
+    """
+    return nodenets[nodenet_uid].get_available_gatefunctions()
 
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""

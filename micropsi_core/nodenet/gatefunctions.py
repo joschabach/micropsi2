@@ -10,7 +10,7 @@ def identity(input_activation, rho, theta):
     return input_activation
 
 
-def abs(input_activation, rho, theta):
+def absolute(input_activation, rho, theta):
     return abs(input_activation)
 
 
@@ -19,4 +19,4 @@ def sigmoid(input_activation, rho, theta):
 
 
 def one_over_x(input_activation, rho, theta):
-    return 0.0 if x == 0.0 else 1.0 / x
+    return 0.0 if input_activation == 0.0 else 1.0 / input_activation

@@ -1231,7 +1231,8 @@ function renderFullNode(node) {
         var activations = createFullNodeActivations(node);
         var titleBar = createFullNodeLabel(node);
         var sheavesAnnotation = createSheavesAnnotation(node);
-        nodeItem = new Group([activations, skeleton, titleBar, sheavesAnnotation]);
+        var gateAnnotations = createGateAnnotation(node);
+        nodeItem = new Group([activations, skeleton, titleBar, gateAnnotations, sheavesAnnotation]);
     }
     nodeItem.name = node.uid;
     nodeItem.isCompact = false;
@@ -1414,6 +1415,23 @@ function createSheavesAnnotation(node) {
     titleText.name = "text";
     label.addChild(titleText);
     return label;
+}
+
+function createGateAnnotation(node){
+    var labels = [];
+    for (i = 0; i< node.gateIndexes.length; i++){
+        var g = node.gateIndexes[i];
+        var gatebounds = getGateBounds(node, i);
+        if (node.gate_functions[g] && node.gate_functions[g] != 'identity'){
+            var gatefuncHint = new PointText(new Point(gatebounds.right-(8*viewProperties.zoomFactor),gatebounds.center.y - 2*viewProperties.zoomFactor));
+            gatefuncHint.content = gatefunction_icons[node.gate_functions[g]];
+            gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
+            gatefuncHint.fontSize = (viewProperties.fontSize-2) * viewProperties.zoomFactor;
+            labels.push(gatefuncHint);
+        }
+    }
+    var g = new Group(labels);
+    return g;
 }
 
 // draw a line below the title bar

@@ -846,7 +846,7 @@ def test_get_available_gatefunctions(app, test_nodenet):
     funcs = response.json_body['data']
     assert 'sigmoid' in funcs
     assert 'identity' in funcs
-    assert 'abs' in funcs
+    assert 'absolute' in funcs
 
 
 def test_set_gate_parameters(app, test_nodenet):

@@ -336,7 +336,8 @@ class TheanoNodenet(Nodenet):
                     name=data['name'],
                     uid=data['uid'],
                     parameters=data['parameters'],
-                    gate_parameters=data['gate_parameters'])
+                    gate_parameters=data['gate_parameters'],
+                    gate_functions=data['gate_functions'])
                 node = self.get_node(uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
@@ -411,7 +412,7 @@ class TheanoNodenet(Nodenet):
     def is_node(self, uid):
         return uid in self.get_node_uids()
 
-    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None):
+    def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
@@ -503,6 +504,10 @@ class TheanoNodenet(Nodenet):
                 for gate_parameter in gate_parameters:
                     node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
 
+        if gate_functions is not None:
+            for gate, gate_function in gate_functions.items():
+                node.set_gatefunction_name(gate, gate_function)
+
         if nodetype not in STANDARD_NODETYPES:
             self.native_module_instances[uid] = node
 
@@ -521,6 +526,7 @@ class TheanoNodenet(Nodenet):
         self.allocated_node_offsets[from_id(uid)] = 0
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
+            self.g_function_selector[offset + element] = 0
 
         n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
         n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
@@ -737,6 +743,9 @@ class TheanoNodenet(Nodenet):
         self.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
+
+    def get_available_gatefunctions(self):
+        return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 
     def rebuild_shifted(self):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)

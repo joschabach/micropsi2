@@ -15,8 +15,7 @@ class TheanoNodespace(Nodespace):
             "index": 0,
             "name": "Root",
             "position": (0, 0),
-            "parent_nodespace": None,
-            "gatefunctions": self.get_gatefunction_strings()
+            "parent_nodespace": None
         }
         return data
 
@@ -78,15 +77,3 @@ class TheanoNodespace(Nodespace):
 
     def unset_activator_value(self, type):
         self.__activators.pop(type, None)
-
-    def set_gate_function_string(self, nodetype, gatetype, gatefunction, parameters=None):
-        pass                            # todo: gate functions in the theano implementation will have to be special
-
-    def get_gatefunction(self, nodetype, gatetype):
-        return None                     # todo: gate functions in the theano implementation will have to be special
-
-    def get_gatefunction_string(self, nodetype, gatetype):
-        return ''                       # todo: gate functions in the theano implementation will have to be special
-
-    def get_gatefunction_strings(self):
-        return {}                       # todo: gate functions in the theano implementation will have to be special

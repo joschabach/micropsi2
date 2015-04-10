@@ -48,7 +48,8 @@ class Node(metaclass=ABCMeta):
             "gate_parameters": self.get_gate_parameters(),
             "sheaves": self.clone_sheaves(),
             "activation": self.activation,
-            "gate_activations": self.construct_gates_dict()
+            "gate_activations": self.construct_gates_dict(),
+            "gate_functions": self.get_gatefunction_names()
         }
         return data
 
@@ -198,6 +199,27 @@ class Node(metaclass=ABCMeta):
         """
         Returns a copy of all gate parameters set to a non-default value.
         Write access to this dict will not affect the node.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def set_gatefunction_name(self, gate_type, gatefunction_name):
+        """
+        sets the gatefunction of the given gate to the one with the given name
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_gatefunction_name(self, gate_type):
+        """
+        returns the name of the gatefunction configured for this gate
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_gatefunction_names(self):
+        """
+        Returns a map of gates and their gatefunctions
         """
         pass  # pragma: no cover
 

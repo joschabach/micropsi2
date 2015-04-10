@@ -1063,20 +1063,19 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
     return runtime.set_node_parameters(nodenet_uid, node_uid, parameters)
 
 
-@rpc("get_gate_function")
-def get_gate_function(nodenet_uid, nodespace, node_type, gate_type):
-    try:
-        return True, runtime.get_gate_function(nodenet_uid, nodespace, node_type, gate_type)
-    except KeyError:
-        return dict(status='error', data='Unknown nodenet or nodespace')
+@rpc("get_gatefunction")
+def get_gatefunction(nodenet_uid, node_uid, gate_type):
+    return True, runtime.get_gatefunction(nodenet_uid, node_uid, gate_type).__name__
 
 
-@rpc("set_gate_function", permission_required="manage nodenets")
-def set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=None, parameters=None):
-    try:
-        return runtime.set_gate_function(nodenet_uid, nodespace, node_type, gate_type, gate_function=gate_function)
-    except KeyError:
-        return dict(status='error', data='Unknown nodenet or nodespace')
+@rpc("set_gatefunction", permission_required="manage nodenets")
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
+    return runtime.set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=gate_function)
+
+
+@rpc("get_available_gatefunctions")
+def get_available_gatefunctions(nodenet_uid):
+    return True, runtime.get_available_gatefunctions(nodenet_uid)
 
 
 @rpc("set_gate_parameters", permission_required="manage nodenets")

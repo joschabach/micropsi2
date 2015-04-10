@@ -161,7 +161,7 @@ def get_string_node_type(type, nativemodules=None):
 def get_numerical_gatefunction_type(type):
     if type == "identity":
         return GATE_FUNCTION_IDENTITY
-    elif type == "abs":
+    elif type == "absolute":
         return GATE_FUNCTION_ABSOLUTE
     elif type == "sigmoid":
         return GATE_FUNCTION_SIGMOID
@@ -169,7 +169,7 @@ def get_numerical_gatefunction_type(type):
         return GATE_FUNCTION_TANH
     elif type == "rect":
         return GATE_FUNCTION_RECT
-    elif type == "dist":
+    elif type == "one_over_x":
         return GATE_FUNCTION_DIST
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
@@ -179,7 +179,7 @@ def get_string_gatefunction_type(type):
     if type == GATE_FUNCTION_IDENTITY:
         return "identity"
     elif type == GATE_FUNCTION_ABSOLUTE:
-        return "abs"
+        return "absolute"
     elif type == GATE_FUNCTION_SIGMOID:
         return "sigmoid"
     elif type == GATE_FUNCTION_TANH:
@@ -187,7 +187,7 @@ def get_string_gatefunction_type(type):
     elif type == GATE_FUNCTION_RECT:
         return "rect"
     elif type == GATE_FUNCTION_DIST:
-        return "dist"
+        return "one_over_x"
     else:
         raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
 
@@ -313,6 +313,24 @@ class TheanoNode(Node):
     def get_gate(self, type):
         return TheanoGate(type, self, self._nodenet)
 
+    def set_gatefunction_name(self, gate_type, gatefunction_name):
+        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
+        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
+        self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
+
+    def get_gatefunction_name(self, gate_type):
+        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        return get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type,self.nodetype)]),
+
+    def get_gatefunction_names(self):
+        result = {}
+        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
+            result[get_string_gate_type(numericalgate, self.nodetype)] = \
+                get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
+        return result
+
     def set_gate_parameter(self, gate_type, parameter, value):
 
         # todo: implement the other gate parameters
@@ -333,10 +351,6 @@ class TheanoNode(Node):
             g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
             g_max_array[elementindex] = value
             self._nodenet.g_max.set_value(g_max_array, borrow=True)
-        elif parameter == 'gatefunction':
-            g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
-            g_function_selector[elementindex] = get_numerical_gatefunction_type(value)
-            self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
         elif parameter == 'theta':
             g_theta_array = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
             g_theta_array[elementindex] = value
@@ -359,7 +373,6 @@ class TheanoNode(Node):
                 'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'minimum': g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
                 'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'gatefunction': get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate]),
                 'theta': g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
             }
             result[get_string_gate_type(numericalgate, self.nodetype)] = gate_parameters

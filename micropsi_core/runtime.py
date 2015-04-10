@@ -385,7 +385,7 @@ def delete_nodenet(nodenet_uid):
     return True
 
 
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, settings={}):
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = nodenets[nodenet_uid]
@@ -403,7 +403,6 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         nodenet.name = nodenet_name
     if owner:
         nodenet.owner = owner
-    nodenet.settings = settings.copy()
     return True
 
 

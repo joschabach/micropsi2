@@ -234,7 +234,7 @@ function setNodenetValues(data){
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     $('#nodenet_snap').attr('checked', data.snap_to_grid);
-    $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
+    $('#nodenet_renderlinks').val(nodenet_data.renderlinks);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -272,10 +272,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             }
 
             nodenet_data = data;
-            if(!nodenet_data.settings['renderlinks']){
-                // default nodenet settings
-                nodenet_data.settings['renderlinks'] = 'always';
-            }
+            nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
@@ -1094,10 +1091,10 @@ function createPlaceholder(node, direction, point){
 
 // draw link
 function renderLink(link, force) {
-    if(nodenet_data.settings.renderlinks == 'no' && !force){
+    if(nodenet_data.renderlinks == 'no' && !force){
         return;
     }
-    if(nodenet_data.settings.renderlinks == 'hover' && !force){
+    if(nodenet_data.renderlinks == 'hover' && !force){
         if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
             return;
         }
@@ -1757,7 +1754,7 @@ function deselectLink(linkUid) {
         delete selection[linkUid];
         if(linkUid in linkLayer.children){
             var linkShape = linkLayer.children[linkUid].children["link"];
-            if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
+            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'hover'){
                 linkLayer.children[linkUid].remove();
             }
             linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
@@ -3396,9 +3393,10 @@ function handleEditNodenet(event){
     if(worldadapter){
         params.worldadapter = worldadapter;
     }
-    nodenet_data.settings['renderlinks'] = $('#nodenet_renderlinks').val();
-    params.settings = nodenet_data.settings;
-    $.cookie('snap_to_grid', $('#nodenet_snap').attr('checked') || '', {path: '/', expires: 7})
+    nodenet_data.renderlinks = $('#nodenet_renderlinks').val();
+    $.cookie('renderlinks', nodenet_data.renderlinks || '', {path: '/', expires: 7})
+    nodenet_data.snap_to_grid = $('#nodenet_snap').attr('checked');
+    $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');

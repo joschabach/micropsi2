@@ -524,9 +524,11 @@ class TheanoNodenet(Nodenet):
         # forget
         self.allocated_nodes[from_id(uid)] = 0
         self.allocated_node_offsets[from_id(uid)] = 0
+        g_function_selector_array = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
-            self.g_function_selector[offset + element] = 0
+            g_function_selector_array[offset + element] = 0
+        self.g_function_selector.set_value(g_function_selector_array, borrow=True)
 
         n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
         n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
@@ -749,5 +751,6 @@ class TheanoNodenet(Nodenet):
 
     def rebuild_shifted(self):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
+        a_rolled_array = np.roll(a_array, 7)
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(NUMBER_OF_ELEMENTS, 14), strides=(8, 8))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)

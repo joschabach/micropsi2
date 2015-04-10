@@ -70,11 +70,28 @@ class TheanoCalculate(Calculate):
 
         # pipe logic
 
-        sur_exp = nodenet.a_shifted[:, 4] + nodenet.a_shifted[:, 6]     # sum of sur and exp
-        pipe_gen = nodenet.a_shifted[:, 0] * nodenet.a_shifted[:, 3]    # gen * sub
-        pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, sur_exp)     # drop to 0 if below 0.1
-                                                                        # drop to 0 if por == 0 and por slot is linked
-        pipe_gen = T.switch(T.eq(nodenet.a_shifted[:, 1], 0) and T.eq(nodenet.n_node_porlinked, 1), sur_exp, pipe_gen)
+        ###############################################################
+        # lookup table for source activation in a_shifted
+        # when calculating the gate on the y axis...
+        # ... find the slot at the given index on the x axis
+        #
+        #       0   1   2   3   4   5   6   7   8   9   10  11  12  13
+        # gen                               gen por ret sub sur cat exp
+        # por                           gen por ret sub sur cat exp
+        # ret                       gen por ret sub sur cat exp
+        # sub                   gen por ret sub sur cat exp
+        # sur               gen por ret sub sur cat exp
+        # cat           gen por ret sub sur cat exp
+        # exp       gen por ret sub sur cat exp
+        #
+
+        pipe_gen_sur_exp = nodenet.a_shifted[:, 11] + nodenet.a_shifted[:, 13]      # sum of sur and exp as default
+        pipe_gen = nodenet.a_shifted[:, 7] * nodenet.a_shifted[:, 10]               # gen * sub
+        pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
+                                                                                    # drop to def. if por == 0 and por slot is linked
+        #pipe_gen = T.switch(T.eq(nodenet.a_shifted[:, 1], 0) and T.eq(nodenet.n_node_porlinked, 1), sur_exp, pipe_gen)
+
+        pipe_gen = pipe_gen
 
         pipe_por = 0
         pipe_ret = 0

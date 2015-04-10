@@ -694,24 +694,23 @@ def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
 def get_node(nodenet_uid, node_uid):
     """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
     structured as follows:
-        {
-            uid: unique identifier,
-            name (optional): display name,
-            type: node type,
-            parent: parent nodespace,
-            x (optional): x position,
-            y (optional): y position,
-            activation: activation value,
-            symbol (optional): a short string for compact display purposes,
-            slots (optional): a list of lists [slot_type, {activation: activation_value,
-                                                           links (optional): [link_uids]} (optional)]
-            gates (optional): a list of lists [gate_type, {activation: activation_value,
-                                                           function: gate_function (optional),
-                                                           params: {gate_parameters} (optional),
-                                                           links (optional): [link_uids]} (optional)]
-            parameters (optional): a dict of arbitrary parameters that can make nodes stateful
-        }
-     """
+
+    {
+        "index" (int): index for auto-alignment,
+        "uid" (str): unique identifier,
+        "state" (dict): a dictionary of node states and their values,
+        "type" (string): the type of this node,
+        "parameters" (dict): a dictionary of the node parameters
+        "activation" (float): the activation of this node,
+        "gate_parameters" (dict): a dictionary containing dicts of parameters for each gate of this node
+        "name" (str): display name
+        "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
+        "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
+        "position" (list): the x, y coordinates of this node, as a list
+        "sheaves" (dict): a dict of sheaf-activations for this node
+        "parent_nodespace" (str): the uid of the nodespace this node lives in
+    }
+    """
     return nodenets[nodenet_uid].get_node(node_uid).data
 
 

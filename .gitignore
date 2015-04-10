@@ -21,3 +21,5 @@
 .coverage
 /htmlcov/
 /src/
+/*.sublime-project
+/*.sublime-workspace

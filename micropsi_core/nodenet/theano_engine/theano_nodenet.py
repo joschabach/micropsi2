@@ -447,9 +447,11 @@ class TheanoNodenet(Nodenet):
         # forget
         self.allocated_nodes[from_id(uid)] = 0
         self.allocated_node_offsets[from_id(uid)] = 0
+        g_function_selector_array = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
-            self.g_function_selector[offset + element] = 0
+            g_function_selector_array[offset + element] = 0
+        self.g_function_selector.set_value(g_function_selector_array, borrow=True)
 
         # clear from name and positions dicts
         if uid in self.names:

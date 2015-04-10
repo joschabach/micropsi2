@@ -248,6 +248,7 @@ function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
         nodespace = "Root";
     }
+    $('#loading').show();
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
@@ -259,6 +260,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             }
         },
         function(data){
+            $('#loading').hide();
             nodenetscope.activate();
             toggleButtons(true);
 

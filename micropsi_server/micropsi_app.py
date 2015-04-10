@@ -1069,8 +1069,8 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
 
 
 @rpc("set_gatefunction", permission_required="manage nodenets")
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
-    return runtime.set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=gate_function)
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
+    return runtime.set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=gatefunction)
 
 
 @rpc("get_available_gatefunctions")

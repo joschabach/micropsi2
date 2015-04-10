@@ -814,7 +814,7 @@ def test_set_node_parameters(app, test_nodenet):
     assert response.json_body['data']['parameters']['type'] == 'sub'
 
 
-def test_get_gate_function(app, test_nodenet):
+def test_get_gatefunction(app, test_nodenet):
     response = app.post_json('/rpc/get_gatefunction', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -824,13 +824,13 @@ def test_get_gate_function(app, test_nodenet):
     assert response.json_body['data'] == 'identity'
 
 
-def test_set_gate_function(app, test_nodenet):
+def test_set_gatefunction(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/set_gatefunction', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
         'gate_type': 'gen',
-        'gate_function': 'sigmoid'
+        'gatefunction': 'sigmoid'
     })
     assert_success(response)
     response = app.post_json('/rpc/get_gatefunction', params={

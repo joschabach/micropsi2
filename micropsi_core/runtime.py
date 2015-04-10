@@ -877,11 +877,11 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
     return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction(gate_type)
 
 
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
     """
     Sets the gate function of the given node and gate.
     """
-    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gate_function)
+    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
     return True
 
 def get_available_gatefunctions(nodenet_uid):

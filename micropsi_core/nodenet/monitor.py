@@ -61,7 +61,7 @@ class NodeMonitor(Monitor):
         return data
 
     def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, **_):
-        name = name or "%s %s @ Node %s" % (type, target, nodenet.netapi.get_node(node_uid).name)
+        name = name or "%s %s @ Node %s" % (type, target, nodenet.netapi.get_node(node_uid).name or nodenet.netapi.get_node(node_uid).uid)
         super(NodeMonitor, self).__init__(nodenet, name, uid)
         self.node_uid = node_uid
         self.type = type

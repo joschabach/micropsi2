@@ -1657,7 +1657,7 @@ function createCompactNodeLabel(node) {
     if (node.name.length) { // only display a label for named nodes
         var labelText = new PointText(new Point(node.bounds.x + node.bounds.width/2,
             node.bounds.bottom+viewProperties.lineHeight));
-        labelText.content = node.name ? node.name : node.uid;
+        labelText.content = node.name || '';
         labelText.characterStyle = {
             fontSize: viewProperties.fontSize,
             fillColor: viewProperties.nodeForegroundColor

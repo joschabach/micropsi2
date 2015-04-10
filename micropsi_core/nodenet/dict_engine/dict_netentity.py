@@ -55,7 +55,7 @@ class NetEntity(object):
 
     @property
     def name(self):
-        return self.__name or self.uid
+        return self.__name
 
     @name.setter
     def name(self, name):

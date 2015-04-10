@@ -52,7 +52,7 @@ fixed_nodenet_data = """{
         "A1": {
             "activation": 0,
             "index": 2,
-            "name": "",
+            "name": "A1",
             "parameters": {},
             "parent_nodespace": "Root",
             "position": [
@@ -80,7 +80,7 @@ fixed_nodenet_data = """{
         "A2": {
             "activation": 0,
             "index": 4,
-            "name": "testnode",
+            "name": "A2",
             "parameters": {
                 "foo": "23"
             },

@@ -131,9 +131,20 @@ class TheanoCalculate(Calculate):
         pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
 
+        ### cat plumbing
+        pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)
+        pipe_cat_cond = pipe_cat_cond * T.eq(slots[:, 2], 0)                        # and (gen == 0)
 
-        pipe_cat = 0
-        pipe_exp = 0
+        pipe_cat = T.clip(slots[:, 6], 0, 1)                                        # bubble: start with sur if sur > 0
+        pipe_cat = pipe_cat + slots[:, 5]                                           # add sub
+        pipe_cat = pipe_cat + slots[:, 7]                                           # add cat
+        pipe_cat = pipe_cat * pipe_cat_cond                                         # apply conditions
+                                                                                    # add cat (for search) if sub=sur=0
+        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0))
+
+        ### exp plumbing
+        pipe_exp = slots[:, 5]                                                      # start with sur
+        pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
 
         nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
         nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)

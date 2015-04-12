@@ -61,10 +61,10 @@ class TheanoCalculate(Calculate):
     calculate = None
 
     def __init__(self, nodenet):
-
         self.nodenet = nodenet
         self.worldadapter = nodenet.world
 
+    def compile_theano_functions(self, nodenet):
         slots = nodenet.a_shifted
         por_linked = nodenet.n_node_porlinked
         ret_linked = nodenet.n_node_retlinked
@@ -146,13 +146,14 @@ class TheanoCalculate(Calculate):
         pipe_exp = slots[:, 5]                                                      # start with sur
         pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
 
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
-        nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
+        if nodenet.has_pipes:
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
 
         # gate logic
 
@@ -163,15 +164,20 @@ class TheanoCalculate(Calculate):
         gate_function_output = gated_nodefunctions
 
         # apply GATE_FUNCTION_ABS to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
+        if nodenet.has_gatefunction_absolute:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output - nodenet.g_theta), gate_function_output)
+        if nodenet.has_gatefunction_sigmoid:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output - nodenet.g_theta), gate_function_output)
         # apply GATE_FUNCTION_TANH to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output - nodenet.g_theta), gate_function_output)
+        if nodenet.has_gatefunction_tanh:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output - nodenet.g_theta), gate_function_output)
         # apply GATE_FUNCTION_RECT to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output - nodenet.g_theta >0, gate_function_output - nodenet.g_theta, 0), gate_function_output)
+        if nodenet.has_gatefunction_rect:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output - nodenet.g_theta >0, gate_function_output - nodenet.g_theta, 0), gate_function_output)
         # apply GATE_FUNCTION_DIST to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1/gate_function_output, 0), gate_function_output)
+        if nodenet.has_gatefunction_one_over_x:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1/gate_function_output, 0), gate_function_output)
 
         # apply threshold
         thresholded_gate_function_output = \
@@ -216,6 +222,11 @@ class TheanoCalculate(Calculate):
             instance.node_function()
 
     def execute(self, nodenet, nodes, netapi):
+
+        if nodenet.has_new_usages:
+            self.compile_theano_functions(nodenet)
+            nodenet.has_new_usages = False
+            
         self.write_actuators()
         self.calculate_native_modules()
 

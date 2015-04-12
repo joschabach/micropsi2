@@ -140,7 +140,6 @@ class TheanoNodenet(Nodenet):
     # map of numerical node IDs to data targets
     inverted_actuator_map = {}
 
-
     # theano tensors for performing operations
     w = None            # matrix of weights
     a = None            # vector of activations
@@ -163,7 +162,15 @@ class TheanoNodenet(Nodenet):
                                     # but for now, we manually track this property
     n_node_retlinked = None         # same for ret
 
-    sparse = False
+    sparse = True
+
+    __has_new_usages = False
+    __has_pipes = False
+    __has_gatefunction_absolute = False
+    __has_gatefunction_sigmoid = False
+    __has_gatefunction_tanh = False
+    __has_gatefunction_rect = False
+    __has_gatefunction_one_over_x = False
 
     @property
     def engine(self):
@@ -184,6 +191,74 @@ class TheanoNodenet(Nodenet):
         data['version'] = self.__version
         data['modulators'] = self.construct_modulators_dict()
         return data
+
+    @property
+    def has_new_usages(self):
+        return self.__has_new_usages
+
+    @has_new_usages.setter
+    def has_new_usages(self, value):
+        self.__has_new_usages = value
+
+    @property
+    def has_pipes(self):
+        return self.__has_pipes
+
+    @has_pipes.setter
+    def has_pipes(self, value):
+        if value != self.__has_pipes:
+            self.__has_new_usages = True
+            self.__has_pipes = value
+
+    @property
+    def has_gatefunction_absolute(self):
+        return self.__has_gatefunction_absolute
+
+    @has_gatefunction_absolute.setter
+    def has_gatefunction_absolute(self, value):
+        if value != self.__has_gatefunction_absolute:
+            self.__has_new_usages = True
+            self.__has_gatefunction_absolute = value
+
+    @property
+    def has_gatefunction_sigmoid(self):
+        return self.__has_gatefunction_sigmoid
+
+    @has_gatefunction_sigmoid.setter
+    def has_gatefunction_sigmoid(self, value):
+        if value != self.__has_gatefunction_sigmoid:
+            self.__has_new_usages = True
+            self.__has_gatefunction_sigmoid = value
+
+    @property
+    def has_gatefunction_tanh(self):
+        return self.__has_gatefunction_tanh
+
+    @has_gatefunction_tanh.setter
+    def has_gatefunction_tanh(self, value):
+        if value != self.__has_gatefunction_tanh:
+            self.__has_new_usages = True
+            self.__has_gatefunction_tanh = value
+
+    @property
+    def has_gatefunction_rect(self):
+        return self.__has_gatefunction_rect
+
+    @has_gatefunction_rect.setter
+    def has_gatefunction_rect(self, value):
+        if value != self.__has_gatefunction_rect:
+            self.__has_new_usages = True
+            self.__has_gatefunction_rect = value
+
+    @property
+    def has_gatefunction_one_over_x(self):
+        return self.__has_gatefunction_one_over_x
+
+    @has_gatefunction_one_over_x.setter
+    def has_gatefunction_one_over_x(self, value):
+        if value != self.__has_gatefunction_one_over_x:
+            self.__has_new_usages = True
+            self.__has_gatefunction_one_over_x = value
 
     def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
@@ -492,6 +567,7 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap[datatarget] = connectedactuators
                 self.inverted_actuator_map[uid] = datatarget
         elif nodetype == "Pipe":
+            self.has_pipes = True
             n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
             n_function_selector_array[offset + POR] = NFPG_PIPE_POR

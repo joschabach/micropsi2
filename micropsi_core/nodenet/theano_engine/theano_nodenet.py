@@ -503,10 +503,13 @@ class TheanoNodenet(Nodenet):
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         node = self.get_node(uid)
+        for gate, parameters in self.__nodetypes[nodetype].gate_defaults.items():
+            for gate_parameter in parameters:
+                node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:
-            for gate, gate_parameters in gate_parameters.items():
-                for gate_parameter in gate_parameters:
-                    node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
+            for gate, parameters in gate_parameters.items():
+                for gate_parameter in parameters:
+                    node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
 
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():

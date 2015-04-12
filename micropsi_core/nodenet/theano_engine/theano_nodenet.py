@@ -161,6 +161,7 @@ class TheanoNodenet(Nodenet):
     n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
                                     # node. This could in theory be inferred with T.max() on upshifted versions of w,
                                     # but for now, we manually track this property
+    n_node_retlinked = None         # same for ret
 
     sparse = False
 
@@ -240,6 +241,9 @@ class TheanoNodenet(Nodenet):
 
         n_node_porlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
         self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
+
+        n_node_retlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 
@@ -605,8 +609,8 @@ class TheanoNodenet(Nodenet):
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
 
-        if gate_type == "por" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
-            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True, return_internal_tyoe=True)
+        if slot_type == "por" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
             if weight == 0:
                 for g in range(7):
                     n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
@@ -614,6 +618,16 @@ class TheanoNodenet(Nodenet):
                 for g in range(7):
                     n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
             self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
+
+        if slot_type == "ret" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+            if weight == 0:
+                for g in range(7):
+                    n_node_retlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
+            else:
+                for g in range(7):
+                    n_node_retlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
+            self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
         return True
 

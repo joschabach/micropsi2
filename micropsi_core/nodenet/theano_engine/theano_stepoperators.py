@@ -67,6 +67,7 @@ class TheanoCalculate(Calculate):
 
         slots = nodenet.a_shifted
         por_linked = nodenet.n_node_porlinked
+        ret_linked = nodenet.n_node_retlinked
 
         # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = nodenet.a
@@ -114,14 +115,23 @@ class TheanoCalculate(Calculate):
         pipe_sub_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 5], 0), 1)      # (if linked, por must be > 0)
         pipe_sub_cond = pipe_sub_cond * T.eq(slots[:, 4], 0)                        # and (gen == 0)
 
-        pipe_sub = T.max(slots[:, 8], 0)                                            # bubble: start with sur if sur > 0
+        pipe_sub = T.clip(slots[:, 8], 0, 1)                                        # bubble: start with sur if sur > 0
         pipe_sub = pipe_sub + slots[:, 7]                                           # add sub
         pipe_sub = pipe_sub + slots[:, 9]                                           # add cat
         pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
 
+        ### sur plumbing
+        pipe_sur_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 4], 0), 1)      # (if linked, por must be > 0)
+                                                                                    # and we aren't first in a script
+        pipe_sur_cond = pipe_sur_cond * T.switch(T.eq(ret_linked, 1), T.eq(por_linked, 1), 1)
+        pipe_sur_cond = pipe_sur_cond * T.ge(slots[:, 5], 0)                        # and (ret >= 0)
+
+        pipe_sur = slots[:, 7]                                                      # start with sur
+        pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
+        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
+        pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
 
 
-        pipe_sur = 0
         pipe_cat = 0
         pipe_exp = 0
 

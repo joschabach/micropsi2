@@ -65,6 +65,9 @@ class TheanoCalculate(Calculate):
         self.nodenet = nodenet
         self.worldadapter = nodenet.world
 
+        slots = nodenet.a_shifted
+        por_linked = nodenet.n_node_porlinked
+
         # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = nodenet.a
 
@@ -85,17 +88,39 @@ class TheanoCalculate(Calculate):
         # exp       gen por ret sub sur cat exp
         #
 
-        pipe_gen_sur_exp = nodenet.a_shifted[:, 11] + nodenet.a_shifted[:, 13]      # sum of sur and exp as default
-        pipe_gen = nodenet.a_shifted[:, 7] * nodenet.a_shifted[:, 10]               # gen * sub
+        ### gen plumbing
+        pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+        pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
         pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
                                                                                     # drop to def. if por == 0 and por slot is linked
-        #pipe_gen = T.switch(T.eq(nodenet.a_shifted[:, 1], 0) and T.eq(nodenet.n_node_porlinked, 1), sur_exp, pipe_gen)
+        pipe_gen = T.switch(T.eq(slots[:, 8], 0) * T.eq(por_linked, 1), pipe_gen_sur_exp, pipe_gen)
 
-        pipe_gen = pipe_gen
+        ### por plumbing
+        pipe_por_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 7], 0), 1)      # (if linked, por must be > 0)
+        pipe_por_cond = pipe_por_cond * T.gt(slots[:, 9], 0)                        # and (sub > 0)
 
-        pipe_por = 0
-        pipe_ret = 0
-        pipe_sub = 0
+        pipe_por = slots[:, 10]                                                     # start with sur
+        pipe_por = pipe_por + (T.gt(slots[:, 6], 0.1) * T.gt(slots[:, 7], 0))       # add gen-loop 1 if por > 0
+        pipe_por = pipe_por * pipe_por_cond                                         # apply conditions
+                                                                                    # add por (for search) if sub=sur=0
+        pipe_por = pipe_por + (slots[:, 7] * T.eq(slots[:, 9], 0) * T.eq(slots[:, 10], 0))
+
+        ### ret plumbing
+        pipe_ret = -slots[:, 8] * T.ge(slots[:, 6], 0)                              # start with -sub if por >= 0
+                                                                                    # add ret (for search) if sub=sur=0
+        pipe_ret = pipe_ret + (slots[:, 7] * T.eq(slots[:, 8], 0) * T.eq(slots[:, 9], 0))
+
+        ### sub plumbing
+        pipe_sub_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 5], 0), 1)      # (if linked, por must be > 0)
+        pipe_sub_cond = pipe_sub_cond * T.eq(slots[:, 4], 0)                        # and (gen == 0)
+
+        pipe_sub = T.max(slots[:, 8], 0)                                            # bubble: start with sur if sur > 0
+        pipe_sub = pipe_sub + slots[:, 7]                                           # add sub
+        pipe_sub = pipe_sub + slots[:, 9]                                           # add cat
+        pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
+
+
+
         pipe_sur = 0
         pipe_cat = 0
         pipe_exp = 0

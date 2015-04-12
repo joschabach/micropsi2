@@ -226,7 +226,7 @@ class TheanoCalculate(Calculate):
         if nodenet.has_new_usages:
             self.compile_theano_functions(nodenet)
             nodenet.has_new_usages = False
-            
+
         self.write_actuators()
         self.calculate_native_modules()
 

@@ -101,7 +101,7 @@ class TheanoCalculate(Calculate):
         pipe_por_cond = pipe_por_cond * T.gt(slots[:, 9], 0)                        # and (sub > 0)
 
         pipe_por = slots[:, 10]                                                     # start with sur
-        pipe_por = pipe_por + (T.gt(slots[:, 6], 0.1) * T.gt(slots[:, 7], 0))       # add gen-loop 1 if por > 0
+        pipe_por = pipe_por + T.gt(slots[:, 6], 0.1)                                # add gen-loop 1 if por > 0
         pipe_por = pipe_por * pipe_por_cond                                         # apply conditions
                                                                                     # add por (for search) if sub=sur=0
         pipe_por = pipe_por + (slots[:, 7] * T.eq(slots[:, 9], 0) * T.eq(slots[:, 10], 0))

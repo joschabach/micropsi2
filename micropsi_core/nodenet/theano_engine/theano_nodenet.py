@@ -164,7 +164,7 @@ class TheanoNodenet(Nodenet):
 
     sparse = True
 
-    __has_new_usages = False
+    __has_new_usages = True
     __has_pipes = False
     __has_gatefunction_absolute = False
     __has_gatefunction_sigmoid = False

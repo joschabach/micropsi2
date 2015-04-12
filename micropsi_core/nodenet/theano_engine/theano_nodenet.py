@@ -46,13 +46,64 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen"],
         "gatetypes": ["gen"]
     },
+    "Pipe": {
+        "name": "Pipe",
+        "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "nodefunction_name": "pipe",
+        "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "por": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "ret": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "sub": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": True
+            },
+            "sur": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            },
+            "cat": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 1
+            },
+            "exp": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "spreadsheaves": 0
+            }
+        },
+        'symbol': 'πp'
+    },
 }
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 7
 
-NUMBER_OF_NODES = 50000
+NUMBER_OF_NODES = 5000
 NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
@@ -89,10 +140,11 @@ class TheanoNodenet(Nodenet):
     # map of numerical node IDs to data targets
     inverted_actuator_map = {}
 
-
     # theano tensors for performing operations
     w = None            # matrix of weights
     a = None            # vector of activations
+    a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
+                        # this is a view on the activation values instrumental in calculating concept node functions
 
     g_factor = None     # vector of gate factors, controlled by directional activators
     g_threshold = None  # vector of thresholds (gate parameters)
@@ -104,7 +156,21 @@ class TheanoNodenet(Nodenet):
 
     g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
 
-    sparse = False
+    n_function_selector = None      # vector of per-gate node function selectors
+    n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
+                                    # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                    # but for now, we manually track this property
+    n_node_retlinked = None         # same for ret
+
+    sparse = True
+
+    __has_new_usages = False
+    __has_pipes = False
+    __has_gatefunction_absolute = False
+    __has_gatefunction_sigmoid = False
+    __has_gatefunction_tanh = False
+    __has_gatefunction_rect = False
+    __has_gatefunction_one_over_x = False
 
     @property
     def engine(self):
@@ -125,6 +191,74 @@ class TheanoNodenet(Nodenet):
         data['version'] = self.__version
         data['modulators'] = self.construct_modulators_dict()
         return data
+
+    @property
+    def has_new_usages(self):
+        return self.__has_new_usages
+
+    @has_new_usages.setter
+    def has_new_usages(self, value):
+        self.__has_new_usages = value
+
+    @property
+    def has_pipes(self):
+        return self.__has_pipes
+
+    @has_pipes.setter
+    def has_pipes(self, value):
+        if value != self.__has_pipes:
+            self.__has_new_usages = True
+            self.__has_pipes = value
+
+    @property
+    def has_gatefunction_absolute(self):
+        return self.__has_gatefunction_absolute
+
+    @has_gatefunction_absolute.setter
+    def has_gatefunction_absolute(self, value):
+        if value != self.__has_gatefunction_absolute:
+            self.__has_new_usages = True
+            self.__has_gatefunction_absolute = value
+
+    @property
+    def has_gatefunction_sigmoid(self):
+        return self.__has_gatefunction_sigmoid
+
+    @has_gatefunction_sigmoid.setter
+    def has_gatefunction_sigmoid(self, value):
+        if value != self.__has_gatefunction_sigmoid:
+            self.__has_new_usages = True
+            self.__has_gatefunction_sigmoid = value
+
+    @property
+    def has_gatefunction_tanh(self):
+        return self.__has_gatefunction_tanh
+
+    @has_gatefunction_tanh.setter
+    def has_gatefunction_tanh(self, value):
+        if value != self.__has_gatefunction_tanh:
+            self.__has_new_usages = True
+            self.__has_gatefunction_tanh = value
+
+    @property
+    def has_gatefunction_rect(self):
+        return self.__has_gatefunction_rect
+
+    @has_gatefunction_rect.setter
+    def has_gatefunction_rect(self, value):
+        if value != self.__has_gatefunction_rect:
+            self.__has_new_usages = True
+            self.__has_gatefunction_rect = value
+
+    @property
+    def has_gatefunction_one_over_x(self):
+        return self.__has_gatefunction_one_over_x
+
+    @has_gatefunction_one_over_x.setter
+    def has_gatefunction_one_over_x(self, value):
+        if value != self.__has_gatefunction_one_over_x:
+            self.__has_new_usages = True
+            self.__has_gatefunction_one_over_x = value
 
     def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
@@ -153,6 +287,9 @@ class TheanoNodenet(Nodenet):
         a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
+        self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
+
         g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
@@ -173,6 +310,15 @@ class TheanoNodenet(Nodenet):
 
         g_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
         self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
+
+        n_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
+
+        n_node_porlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
+
+        n_node_retlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 
@@ -420,12 +566,26 @@ class TheanoNodenet(Nodenet):
                 connectedactuators.append(id)
                 self.actuatormap[datatarget] = connectedactuators
                 self.inverted_actuator_map[uid] = datatarget
+        elif nodetype == "Pipe":
+            self.has_pipes = True
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
+            n_function_selector_array[offset + POR] = NFPG_PIPE_POR
+            n_function_selector_array[offset + RET] = NFPG_PIPE_RET
+            n_function_selector_array[offset + SUB] = NFPG_PIPE_SUB
+            n_function_selector_array[offset + SUR] = NFPG_PIPE_SUR
+            n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
+            n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         node = self.get_node(uid)
+        for gate, parameters in self.__nodetypes[nodetype].gate_defaults.items():
+            for gate_parameter in parameters:
+                node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:
-            for gate, gate_parameters in gate_parameters.items():
-                for gate_parameter in gate_parameters:
-                    node.set_gate_parameter(gate, gate_parameter, gate_parameters[gate_parameter])
+            for gate, parameters in gate_parameters.items():
+                for gate_parameter in parameters:
+                    node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
 
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():
@@ -452,6 +612,16 @@ class TheanoNodenet(Nodenet):
             self.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+        n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+        n_function_selector_array[offset + RET] = NFPG_PIPE_NON
+        n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
+        n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
+        n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
+        n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+        self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # clear from name and positions dicts
         if uid in self.names:
@@ -517,6 +687,27 @@ class TheanoNodenet(Nodenet):
         else:
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
+
+        if slot_type == "por" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
+            if weight == 0:
+                for g in range(7):
+                    n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
+            else:
+                for g in range(7):
+                    n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
+            self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
+
+        if slot_type == "ret" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+            if weight == 0:
+                for g in range(7):
+                    n_node_retlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
+            else:
+                for g in range(7):
+                    n_node_retlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
+            self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
+
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
@@ -650,3 +841,9 @@ class TheanoNodenet(Nodenet):
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
+
+    def rebuild_shifted(self):
+        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        a_rolled_array = np.roll(a_array, 7)
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(NUMBER_OF_ELEMENTS, 14), strides=(8, 8))
+        self.a_shifted.set_value(a_shifted_matrix, borrow=True)

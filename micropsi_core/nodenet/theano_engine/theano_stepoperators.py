@@ -3,8 +3,10 @@ from micropsi_core.nodenet.stepoperators import Propagate, Calculate
 import theano
 from theano import tensor as T
 from theano import shared
+from theano import function
 from theano.tensor import nnet as N
 import theano.sparse as ST
+from micropsi_core.nodenet.theano_engine.theano_node import *
 
 GATE_FUNCTION_IDENTITY = 0
 GATE_FUNCTION_ABSOLUTE = 1
@@ -12,6 +14,15 @@ GATE_FUNCTION_SIGMOID = 2
 GATE_FUNCTION_TANH = 3
 GATE_FUNCTION_RECT = 4
 GATE_FUNCTION_DIST = 5
+
+NFPG_PIPE_NON = 0
+NFPG_PIPE_GEN = 1
+NFPG_PIPE_POR = 2
+NFPG_PIPE_RET = 3
+NFPG_PIPE_SUB = 4
+NFPG_PIPE_SUR = 5
+NFPG_PIPE_CAT = 6
+NFPG_PIPE_EXP = 7
 
 
 class TheanoPropagate(Propagate):
@@ -50,12 +61,99 @@ class TheanoCalculate(Calculate):
     calculate = None
 
     def __init__(self, nodenet):
-
         self.nodenet = nodenet
         self.worldadapter = nodenet.world
 
-        # node functions implemented with identity for now
+    def compile_theano_functions(self, nodenet):
+        slots = nodenet.a_shifted
+        por_linked = nodenet.n_node_porlinked
+        ret_linked = nodenet.n_node_retlinked
+
+        # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = nodenet.a
+
+        # pipe logic
+
+        ###############################################################
+        # lookup table for source activation in a_shifted
+        # when calculating the gate on the y axis...
+        # ... find the slot at the given index on the x axis
+        #
+        #       0   1   2   3   4   5   6   7   8   9   10  11  12  13
+        # gen                               gen por ret sub sur cat exp
+        # por                           gen por ret sub sur cat exp
+        # ret                       gen por ret sub sur cat exp
+        # sub                   gen por ret sub sur cat exp
+        # sur               gen por ret sub sur cat exp
+        # cat           gen por ret sub sur cat exp
+        # exp       gen por ret sub sur cat exp
+        #
+
+        ### gen plumbing
+        pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+        pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
+        pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
+                                                                                    # drop to def. if por == 0 and por slot is linked
+        pipe_gen = T.switch(T.eq(slots[:, 8], 0) * T.eq(por_linked, 1), pipe_gen_sur_exp, pipe_gen)
+
+        ### por plumbing
+        pipe_por_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 7], 0), 1)      # (if linked, por must be > 0)
+        pipe_por_cond = pipe_por_cond * T.gt(slots[:, 9], 0)                        # and (sub > 0)
+
+        pipe_por = slots[:, 10]                                                     # start with sur
+        pipe_por = pipe_por + T.gt(slots[:, 6], 0.1)                                # add gen-loop 1 if por > 0
+        pipe_por = pipe_por * pipe_por_cond                                         # apply conditions
+                                                                                    # add por (for search) if sub=sur=0
+        pipe_por = pipe_por + (slots[:, 7] * T.eq(slots[:, 9], 0) * T.eq(slots[:, 10], 0))
+
+        ### ret plumbing
+        pipe_ret = -slots[:, 8] * T.ge(slots[:, 6], 0)                              # start with -sub if por >= 0
+                                                                                    # add ret (for search) if sub=sur=0
+        pipe_ret = pipe_ret + (slots[:, 7] * T.eq(slots[:, 8], 0) * T.eq(slots[:, 9], 0))
+
+        ### sub plumbing
+        pipe_sub_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 5], 0), 1)      # (if linked, por must be > 0)
+        pipe_sub_cond = pipe_sub_cond * T.eq(slots[:, 4], 0)                        # and (gen == 0)
+
+        pipe_sub = T.clip(slots[:, 8], 0, 1)                                        # bubble: start with sur if sur > 0
+        pipe_sub = pipe_sub + slots[:, 7]                                           # add sub
+        pipe_sub = pipe_sub + slots[:, 9]                                           # add cat
+        pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
+
+        ### sur plumbing
+        pipe_sur_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 4], 0), 1)      # (if linked, por must be > 0)
+                                                                                    # and we aren't first in a script
+        pipe_sur_cond = pipe_sur_cond * T.switch(T.eq(ret_linked, 1), T.eq(por_linked, 1), 1)
+        pipe_sur_cond = pipe_sur_cond * T.ge(slots[:, 5], 0)                        # and (ret >= 0)
+
+        pipe_sur = slots[:, 7]                                                      # start with sur
+        pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
+        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
+        pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
+
+        ### cat plumbing
+        pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)
+        pipe_cat_cond = pipe_cat_cond * T.eq(slots[:, 2], 0)                        # and (gen == 0)
+
+        pipe_cat = T.clip(slots[:, 6], 0, 1)                                        # bubble: start with sur if sur > 0
+        pipe_cat = pipe_cat + slots[:, 5]                                           # add sub
+        pipe_cat = pipe_cat + slots[:, 7]                                           # add cat
+        pipe_cat = pipe_cat * pipe_cat_cond                                         # apply conditions
+                                                                                    # add cat (for search) if sub=sur=0
+        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0))
+
+        ### exp plumbing
+        pipe_exp = slots[:, 5]                                                      # start with sur
+        pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
+
+        if nodenet.has_pipes:
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
 
         # gate logic
 
@@ -66,15 +164,20 @@ class TheanoCalculate(Calculate):
         gate_function_output = gated_nodefunctions
 
         # apply GATE_FUNCTION_ABS to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
+        if nodenet.has_gatefunction_absolute:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output - nodenet.g_theta), gate_function_output)
+        if nodenet.has_gatefunction_sigmoid:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output - nodenet.g_theta), gate_function_output)
         # apply GATE_FUNCTION_TANH to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output - nodenet.g_theta), gate_function_output)
+        if nodenet.has_gatefunction_tanh:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output - nodenet.g_theta), gate_function_output)
         # apply GATE_FUNCTION_RECT to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output - nodenet.g_theta >0, gate_function_output - nodenet.g_theta, 0), gate_function_output)
+        if nodenet.has_gatefunction_rect:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output - nodenet.g_theta >0, gate_function_output - nodenet.g_theta, 0), gate_function_output)
         # apply GATE_FUNCTION_DIST to masked gates
-        gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1/gate_function_output, 0), gate_function_output)
+        if nodenet.has_gatefunction_one_over_x:
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1/gate_function_output, 0), gate_function_output)
 
         # apply threshold
         thresholded_gate_function_output = \
@@ -119,8 +222,16 @@ class TheanoCalculate(Calculate):
             instance.node_function()
 
     def execute(self, nodenet, nodes, netapi):
+
+        if nodenet.has_new_usages:
+            self.compile_theano_functions(nodenet)
+            nodenet.has_new_usages = False
+
         self.write_actuators()
         self.calculate_native_modules()
+
+        self.nodenet.rebuild_shifted()
+
         self.calculate()
         self.read_sensors_and_actuator_feedback()
 

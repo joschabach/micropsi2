@@ -937,7 +937,8 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         certainty (optional): a probabilistic parameter for the link
     """
     nodenet = nodenets[nodenet_uid]
-    success, link = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    with nodenet.netlock:
+        success, link = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
     return success, link.uid
 
 

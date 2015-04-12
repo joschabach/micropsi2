@@ -18,7 +18,6 @@ TRIGGER = 8
 
 MAX_STD_NODETYPE = TRIGGER
 
-
 GEN = 0
 POR = 1
 RET = 2
@@ -27,6 +26,7 @@ SUR = 4
 CAT = 5
 EXP = 6
 
+MAX_STD_GATE = EXP
 
 def get_numerical_gate_type(type, nodetype=None):
     if nodetype is not None and len(nodetype.gatetypes) > 0:
@@ -318,6 +318,16 @@ class TheanoNode(Node):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
         g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
         self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
+        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
+            self._nodenet.has_gatefunction_absolute = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
+            self._nodenet.has_gatefunction_sigmoid = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
+            self._nodenet.has_gatefunction_tanh = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
+            self._nodenet.has_gatefunction_rect = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
+            self._nodenet.has_gatefunction_one_over_x = True
 
     def get_gatefunction_name(self, gate_type):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)

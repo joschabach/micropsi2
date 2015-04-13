@@ -256,6 +256,20 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def get_sensors(self, nodespace=None):
+        """
+        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_actors(self, nodespace=None):
+        """
+        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         """
         Creates a new link between the given node/gate and node/slot

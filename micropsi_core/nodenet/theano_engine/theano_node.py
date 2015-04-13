@@ -542,9 +542,8 @@ class TheanoGate(Gate):
             weight = gatecolumn[index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
-            target_node = self.__nodenet.get_node(to_id(target_uid))
-            target_slot = target_node.get_slot(get_string_slot_type(target_slot_numerical, target_node.nodetype))
-            link = TheanoLink(self.__node, self, target_node, target_slot, weight)
+            target_slot_type = get_string_slot_type(target_slot_numerical) #, target_node.nodetype) # todo: fix native modules
+            link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, to_id(target_uid), target_slot_type, weight)
             links.append(link)
         return links
 
@@ -617,8 +616,7 @@ class TheanoSlot(Slot):
             weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
-            source_node = self.__nodenet.get_node(to_id(source_uid))
-            source_gate = source_node.get_gate(get_string_gate_type(source_gate_numerical, source_node.nodetype))
-            link = TheanoLink(source_node, source_gate, self.__node, self, weight)
+            source_gate_type = get_string_gate_type(source_gate_numerical) #, source_node.nodetype)) todo: fix native modules
+            link = TheanoLink(self.__nodenet, to_id(source_uid), source_gate_type, self.__node.uid, self.__type, weight)
             links.append(link)
         return links

@@ -584,7 +584,7 @@ class TheanoNodenet(Nodenet):
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         node = self.get_node(uid)
-        for gate, parameters in self.__nodetypes[nodetype].gate_defaults.items():
+        for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
             for gate_parameter in parameters:
                 node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:

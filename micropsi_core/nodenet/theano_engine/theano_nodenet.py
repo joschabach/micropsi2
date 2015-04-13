@@ -421,19 +421,6 @@ class TheanoNodenet(Nodenet):
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
-                # self.__nodes[uid] = TheanoNode(self, **data)
-                # pos = self.__nodes[uid].position
-                # xpos = int(pos[0] - (pos[0] % 100))
-                # ypos = int(pos[1] - (pos[1] % 100))
-                # if xpos not in self.__nodes_by_coords:
-                #     self.__nodes_by_coords[xpos] = {}
-                #     if xpos > self.max_coords['x']:
-                #         self.max_coords['x'] = xpos
-                # if ypos not in self.__nodes_by_coords[xpos]:
-                #     self.__nodes_by_coords[xpos][ypos] = []
-                #     if ypos > self.max_coords['y']:
-                #         self.max_coords['y'] = ypos
-                # self.__nodes_by_coords[xpos][ypos].append(uid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
@@ -460,7 +447,7 @@ class TheanoNodenet(Nodenet):
                 monitor.NodeMonitor(self, name=data['node_name'], **data)
 
     def step(self):
-        self.user_prompt = None                       # todo: re-introduce user prompts when looking into native modules
+        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,

@@ -90,8 +90,10 @@ var dialogs = {
         event.preventDefault();
         var el = $('#remote_form_dialog');
         form = $('form', el);
+        $('#loading').show();
         form.ajaxSubmit({
             success: function(data){
+                $('#loading').hide();
                 $(document).trigger('form_submit', form.attr('action'), form.serializeArray());
                 if(data.redirect){
                     window.location.replace(data.redirect);
@@ -162,9 +164,11 @@ var api = {
         });
     },
     defaultSuccessCallback: function (data){
+        $('#loading').hide();
         dialogs.notification("Changes saved", 'success');
     },
     defaultErrorCallback: function (data, outcome, type){
+        $('#loading').hide();
         var msg = '';
         if(data.status == 0){
             msg = "Server not reachable.";
@@ -424,19 +428,23 @@ $(function() {
                 parameters[data[i].name] = data[i].value
             }
         }
+        $('#recipe_modal button').attr('disabled', 'disabled');
+        $('#loading').show();
         api.call('run_recipe', {
             'nodenet_uid': currentNodenet,
             'name': recipe_name_input.val(),
             'parameters': parameters,
         }, function(data){
             window.location.reload();
+        }, function(data){
+            $('#recipe_modal button').removeAttr('disabled');
+            api.defaultErrorCallback(data);
         });
     };
 
     recipe_name_input.on('change', update_parameters_for_recipe);
     $('#recipe_modal .btn-primary').on('click', run_recipe);
     $('#recipe_modal form').on('submit', run_recipe);
-
     $('.run_recipe').on('click', function(event){
         $('#recipe_modal').modal('show');
         api.call('get_available_recipes', {}, function(data){
@@ -576,6 +584,7 @@ function resetNodenet(event){
     event.preventDefault();
     nodenetRunning = false;
     if(currentNodenet){
+        $('#loading').show();
         api.call(
             'revert_nodenet',
             {nodenet_uid: currentNodenet},

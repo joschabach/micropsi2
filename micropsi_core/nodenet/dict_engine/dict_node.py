@@ -271,7 +271,7 @@ class DictNode(NetEntity, Node):
         if self.get_gate(gate_type):
             if gatefunction is None:
                 self.__gatefunctions[gate_type] = gatefunctions.identity
-            if hasattr(gatefunctions, gatefunction):
+            elif hasattr(gatefunctions, gatefunction):
                 self.__gatefunctions[gate_type] = getattr(gatefunctions, gatefunction)
             else:
                 raise NameError("Unknown Gatefunction")
@@ -384,10 +384,8 @@ class DictGate(Gate):
     Attributes:
         type: a string that determines the type of the gate
         node: the parent node of the gate
-        activation: a numerical value which is calculated at every step by the gate function
+        sheaves: a dict of sheaves this gate initially has to support
         parameters: a dictionary of values used by the gate function
-        gate_function: called by the node function, updates the activation
-        outgoing: the set of links originating at the gate
     """
 
     __type = None
@@ -413,7 +411,7 @@ class DictGate(Gate):
     def activations(self):
         return dict((k, v['activation']) for k, v in self.sheaves.items())
 
-    def __init__(self, type, node, sheaves=None, gate_function=None, parameters=None):
+    def __init__(self, type, node, sheaves=None, parameters=None):
         """create a gate.
 
         Parameters:
@@ -430,7 +428,6 @@ class DictGate(Gate):
             for key in sheaves:
                 self.sheaves[key] = dict(uid=sheaves[key]['uid'], name=sheaves[key]['name'], activation=sheaves[key]['activation'])
         self.__outgoing = {}
-        self.gate_function = gate_function or self.gate_function
         self.parameters = parameters.copy()
         self.monitor = None
 

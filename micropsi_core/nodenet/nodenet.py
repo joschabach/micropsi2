@@ -84,7 +84,6 @@ class Nodenet(metaclass=ABCMeta):
             'nodespaces': {},
             'world': self.__world_uid,
             'worldadapter': self.__worldadapter_uid,
-            'settings': self.settings,
             'monitors': self.construct_monitors_dict(),
             'modulators': {},
             'version': "abstract"

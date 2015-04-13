@@ -234,7 +234,7 @@ function setNodenetValues(data){
     $('#nodenet_uid').val(currentNodenet);
     $('#nodenet_name').val(data.name);
     $('#nodenet_snap').attr('checked', data.snap_to_grid);
-    $('#nodenet_renderlinks').val(nodenet_data.settings['renderlinks']);
+    $('#nodenet_renderlinks').val(nodenet_data.renderlinks);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -248,6 +248,7 @@ function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
         nodespace = "Root";
     }
+    $('#loading').show();
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
@@ -259,6 +260,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             }
         },
         function(data){
+            $('#loading').hide();
             nodenetscope.activate();
             toggleButtons(true);
 
@@ -272,10 +274,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             }
 
             nodenet_data = data;
-            if(!nodenet_data.settings['renderlinks']){
-                // default nodenet settings
-                nodenet_data.settings['renderlinks'] = 'always';
-            }
+            nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
@@ -562,7 +561,7 @@ function updateModulators(data){
 
 
 // data structure for net entities
-function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gate_functions) {
+function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, gate_activations, gate_parameters, gatefunctions) {
 	this.uid = uid;
 	this.x = x;
 	this.y = y;
@@ -584,7 +583,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.gateIndexes = [];
     this.gate_parameters = gate_parameters || {};
     this.gate_activations = gate_activations || {};
-    this.gate_functions = gate_functions || {};
+    this.gatefunctions = gatefunctions || {};
 	if(type == "Nodespace") {
         this.symbol = "NS";
     } else {
@@ -609,7 +608,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
             for(var key in this.gate_parameters[gatetype]){
                 parameters[key] = this.gate_parameters[gatetype][key];
             }
-            this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gate_functions[gatetype]);
+            this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype]);
         }
         this.slotIndexes = Object.keys(this.slots);
         this.gateIndexes = Object.keys(this.gates);
@@ -627,12 +626,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.parameters = item.parameters;
         this.gate_parameters = item.gate_parameters;
         this.gate_activations = item.gate_activations;
-        this.gate_functions = item.gate_functions;
+        this.gatefunctions = item.gatefunctions;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
             this.gates[gatetype].parameters = this.gate_parameters[gatetype];
             this.gates[gatetype].sheaves = this.gate_activations[gatetype];
-            this.gates[gatetype].gate_function = this.gate_functions[gatetype];
+            this.gates[gatetype].gatefunction = this.gatefunctions[gatetype];
 
         }
     };
@@ -1094,10 +1093,10 @@ function createPlaceholder(node, direction, point){
 
 // draw link
 function renderLink(link, force) {
-    if(nodenet_data.settings.renderlinks == 'no' && !force){
+    if(nodenet_data.renderlinks == 'no' && !force){
         return;
     }
-    if(nodenet_data.settings.renderlinks == 'hover' && !force){
+    if(nodenet_data.renderlinks == 'hover' && !force){
         if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
             return;
         }
@@ -1422,9 +1421,9 @@ function createGateAnnotation(node){
     for (i = 0; i< node.gateIndexes.length; i++){
         var g = node.gateIndexes[i];
         var gatebounds = getGateBounds(node, i);
-        if (node.gate_functions[g] && node.gate_functions[g] != 'identity'){
+        if (node.gatefunctions[g] && node.gatefunctions[g] != 'identity'){
             var gatefuncHint = new PointText(new Point(gatebounds.right-(8*viewProperties.zoomFactor),gatebounds.center.y - 2*viewProperties.zoomFactor));
-            gatefuncHint.content = gatefunction_icons[node.gate_functions[g]];
+            gatefuncHint.content = gatefunction_icons[node.gatefunctions[g]];
             gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
             gatefuncHint.fontSize = (viewProperties.fontSize-2) * viewProperties.zoomFactor;
             labels.push(gatefuncHint);
@@ -1592,10 +1591,10 @@ function createCompactNodeBodyLabel(node) {
     gatefuncHint.fillColor = viewProperties.nodeForegroundColor;
     gatefuncHint.fontSize = viewProperties.fontSize*viewProperties.zoomFactor;
     var non_standard_gatefunc = [];
-    for (var k in node.gate_functions){
-        if(node.gate_functions[k] && node.gate_functions[k] != 'identity'){
-            if(non_standard_gatefunc.indexOf(node.gate_functions[k]) < 0){
-                non_standard_gatefunc.push(node.gate_functions[k]);
+    for (var k in node.gatefunctions){
+        if(node.gatefunctions[k] && node.gatefunctions[k] != 'identity'){
+            if(non_standard_gatefunc.indexOf(node.gatefunctions[k]) < 0){
+                non_standard_gatefunc.push(node.gatefunctions[k]);
             }
         }
     }
@@ -1657,7 +1656,7 @@ function createCompactNodeLabel(node) {
     if (node.name.length) { // only display a label for named nodes
         var labelText = new PointText(new Point(node.bounds.x + node.bounds.width/2,
             node.bounds.bottom+viewProperties.lineHeight));
-        labelText.content = node.name ? node.name : node.uid;
+        labelText.content = node.name || '';
         labelText.characterStyle = {
             fontSize: viewProperties.fontSize,
             fillColor: viewProperties.nodeForegroundColor
@@ -1757,7 +1756,7 @@ function deselectLink(linkUid) {
         delete selection[linkUid];
         if(linkUid in linkLayer.children){
             var linkShape = linkLayer.children[linkUid].children["link"];
-            if(nodenet_data.settings.renderlinks == 'no' || nodenet_data.settings.renderlinks == 'hover'){
+            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'hover'){
                 linkLayer.children[linkUid].remove();
             }
             linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
@@ -3252,9 +3251,9 @@ function handleEditGate(event){
             nodenet_uid: currentNodenet,
             node_uid: node.uid,
             gate_type: gate.name,
-            gate_function: gatefunc
+            gatefunction: gatefunc
         }, function(data){
-            node.gate_functions[gate.name] = gatefunc;
+            node.gatefunctions[gate.name] = gatefunc;
             gate.gatefunction = gatefunc;
             api.defaultSuccessCallback();
             redrawNode(node, true);
@@ -3388,7 +3387,7 @@ function handleEditNodenet(event){
         params.world_uid = nodenet_world;
     }
     if(nodenet_world != nodenet_data.world){
-        if(nodenet_data.world == currentWorld || nodenet_world == currentWorld){
+        if(typeof currentWorld != 'undefined' && (nodenet_data.world == currentWorld || nodenet_world == currentWorld)){
             reload = true;
         }
     }
@@ -3396,9 +3395,10 @@ function handleEditNodenet(event){
     if(worldadapter){
         params.worldadapter = worldadapter;
     }
-    nodenet_data.settings['renderlinks'] = $('#nodenet_renderlinks').val();
-    params.settings = nodenet_data.settings;
-    $.cookie('snap_to_grid', $('#nodenet_snap').attr('checked') || '', {path: '/', expires: 7})
+    nodenet_data.renderlinks = $('#nodenet_renderlinks').val();
+    $.cookie('renderlinks', nodenet_data.renderlinks || '', {path: '/', expires: 7})
+    nodenet_data.snap_to_grid = $('#nodenet_snap').attr('checked');
+    $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');

@@ -221,7 +221,6 @@ class DictNodenet(Nodenet):
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
-        self.settings = {}
 
         self.filename = filename
         if world and worldadapter:

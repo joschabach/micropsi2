@@ -385,7 +385,7 @@ def delete_nodenet(nodenet_uid):
     return True
 
 
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, settings={}):
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = nodenets[nodenet_uid]
@@ -403,7 +403,6 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         nodenet.name = nodenet_name
     if owner:
         nodenet.owner = owner
-    nodenet.settings = settings.copy()
     return True
 
 
@@ -694,24 +693,23 @@ def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
 def get_node(nodenet_uid, node_uid):
     """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
     structured as follows:
-        {
-            uid: unique identifier,
-            name (optional): display name,
-            type: node type,
-            parent: parent nodespace,
-            x (optional): x position,
-            y (optional): y position,
-            activation: activation value,
-            symbol (optional): a short string for compact display purposes,
-            slots (optional): a list of lists [slot_type, {activation: activation_value,
-                                                           links (optional): [link_uids]} (optional)]
-            gates (optional): a list of lists [gate_type, {activation: activation_value,
-                                                           function: gate_function (optional),
-                                                           params: {gate_parameters} (optional),
-                                                           links (optional): [link_uids]} (optional)]
-            parameters (optional): a dict of arbitrary parameters that can make nodes stateful
-        }
-     """
+
+    {
+        "index" (int): index for auto-alignment,
+        "uid" (str): unique identifier,
+        "state" (dict): a dictionary of node states and their values,
+        "type" (string): the type of this node,
+        "parameters" (dict): a dictionary of the node parameters
+        "activation" (float): the activation of this node,
+        "gate_parameters" (dict): a dictionary containing dicts of parameters for each gate of this node
+        "name" (str): display name
+        "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
+        "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
+        "position" (list): the x, y coordinates of this node, as a list
+        "sheaves" (dict): a dict of sheaf-activations for this node
+        "parent_nodespace" (str): the uid of the nodespace this node lives in
+    }
+    """
     return nodenets[nodenet_uid].get_node(node_uid).data
 
 
@@ -877,11 +875,11 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
     return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction(gate_type)
 
 
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
     """
     Sets the gate function of the given node and gate.
     """
-    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gate_function)
+    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
     return True
 
 def get_available_gatefunctions(nodenet_uid):

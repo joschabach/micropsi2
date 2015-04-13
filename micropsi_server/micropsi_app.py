@@ -768,8 +768,8 @@ def delete_nodenet(nodenet_uid):
 
 
 @rpc("set_nodenet_properties", permission_required="manage nodenets")
-def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None, settings={}):
-    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner, settings=settings)
+def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
+    return runtime.set_nodenet_properties(nodenet_uid, nodenet_name=nodenet_name, worldadapter=worldadapter, world_uid=world_uid, owner=owner)
 
 
 @rpc("set_node_state")
@@ -1069,8 +1069,8 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
 
 
 @rpc("set_gatefunction", permission_required="manage nodenets")
-def set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=None):
-    return runtime.set_gatefunction(nodenet_uid, node_uid, gate_type, gate_function=gate_function)
+def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
+    return runtime.set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=gatefunction)
 
 
 @rpc("get_available_gatefunctions")

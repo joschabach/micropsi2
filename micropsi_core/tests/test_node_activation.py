@@ -108,10 +108,27 @@ def test_gate_arithmetics_directional_activator_threshold(fixed_nodenet):
     assert register.get_gate("gen").activation == 2
 
 
-def test_gate_arithmetics_gatefunction(fixed_nodenet):
+def test_gatefunction_sigmoid(fixed_nodenet):
     # set a node function for gen gates, expect it to be used
     from micropsi_core.nodenet.gatefunctions import sigmoid
     net, netapi, source, register = prepare(fixed_nodenet)
     register.set_gatefunction_name("gen", "sigmoid")
     net.step()
     assert register.get_gate("gen").activation == sigmoid(1, 0, 0)
+
+
+def test_gatefunction_none_is_identity(fixed_nodenet):
+    from micropsi_core.nodenet.gatefunctions import identity
+    net, netapi, source, register = prepare(fixed_nodenet)
+    register.set_gatefunction_name("gen", None)
+    net.step()
+    assert register.get_gate("gen").activation == identity(1, 0, 0)
+
+
+def test_gatefunctions(fixed_nodenet):
+    # call every gatefunction once
+    import micropsi_core.nodenet.gatefunctions as funcs
+    assert funcs.absolute(-1., 0, 0) == 1
+    assert funcs.one_over_x(2., 0, 0) == 0.5
+    assert funcs.identity(1, 0, 0) == 1
+    assert funcs.sigmoid(0, 0, 0) == 0.5

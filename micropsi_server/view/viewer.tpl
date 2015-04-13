@@ -4,6 +4,12 @@
 <script src="/static/js/paper-full.js" type="text/javascript"></script>
 
 <div class="row-fluid">
+    <div id="loading" class="modal">
+        <p>
+            <img src="static/img/loading_bubbles.gif"/><br/>
+            Loading
+        </p>
+    </div>
 %if mode == "nodenet":
     %include nodenet
 % end

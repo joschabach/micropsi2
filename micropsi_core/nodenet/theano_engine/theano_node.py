@@ -429,18 +429,20 @@ class TheanoNode(Node):
 
     def set_parameter(self, parameter, value):
         if self.type == "Sensor" and parameter == "datasource":
-            olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
-            if self._id in self._nodenet.sensormap.get(olddatasource, []):
-                self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
+            if self.uid in self._nodenet.inverted_sensor_map:
+                olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
+                if self._id in self._nodenet.sensormap.get(olddatasource, []):
+                    self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
 
             connectedsensors = self._nodenet.sensormap.get(value, [])       # then, set the new one
             connectedsensors.append(self._id)
             self._nodenet.sensormap[value] = connectedsensors
             self._nodenet.inverted_sensor_map[self.uid] = value
         elif self.type == "Actor" and parameter == "datatarget":
-            olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
-            if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
-                self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
+            if self.uid in self._nodenet.inverted_actuator_map:
+                olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
+                if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
+                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
 
             connectedactuators = self._nodenet.actuatormap.get(value, [])       # then, set the new one
             connectedactuators.append(self._id)

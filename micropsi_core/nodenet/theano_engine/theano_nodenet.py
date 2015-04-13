@@ -552,20 +552,25 @@ class TheanoNodenet(Nodenet):
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
 
+        if parameters is None:
+            parameters = {}
+
         if nodetype == "Sensor":
-            datasource = parameters["datasource"]
-            if datasource is not None:
-                connectedsensors = self.sensormap.get(datasource, [])
-                connectedsensors.append(id)
-                self.sensormap[datasource] = connectedsensors
-                self.inverted_sensor_map[uid] = datasource
+            if 'datasource' in parameters:
+                datasource = parameters['datasource']
+                if datasource is not None:
+                    connectedsensors = self.sensormap.get(datasource, [])
+                    connectedsensors.append(id)
+                    self.sensormap[datasource] = connectedsensors
+                    self.inverted_sensor_map[uid] = datasource
         elif nodetype == "Actor":
-            datatarget = parameters["datatarget"]
-            if datatarget is not None:
-                connectedactuators = self.actuatormap.get(datatarget, [])
-                connectedactuators.append(id)
-                self.actuatormap[datatarget] = connectedactuators
-                self.inverted_actuator_map[uid] = datatarget
+            if 'datatarget' in parameters:
+                datatarget = parameters['datatarget']
+                if datatarget is not None:
+                    connectedactuators = self.actuatormap.get(datatarget, [])
+                    connectedactuators.append(id)
+                    self.actuatormap[datatarget] = connectedactuators
+                    self.inverted_actuator_map[uid] = datatarget
         elif nodetype == "Pipe":
             self.has_pipes = True
             n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
@@ -656,14 +661,18 @@ class TheanoNodenet(Nodenet):
 
     def get_sensors(self, nodespace=None):
         sensors = {}
-        for uid in self.sensormap.values():
-            sensors[uid] = self.get_node(uid)
+        for sensorlist in self.sensormap.values():
+            for id in sensorlist:
+                uid = to_id(id)
+                sensors[uid] = self.get_node(uid)
         return sensors
 
     def get_actors(self, nodespace=None):
         actuators = {}
-        for uid in self.actuatormap.values():
-            actuators[uid] = self.get_node(uid)
+        for actuatorlist in self.actuatormap.values():
+            for id in actuatorlist:
+                uid = to_id(id)
+                actuators[uid] = self.get_node(uid)
         return actuators
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):

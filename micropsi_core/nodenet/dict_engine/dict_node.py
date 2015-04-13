@@ -271,7 +271,7 @@ class DictNode(NetEntity, Node):
         if self.get_gate(gate_type):
             if gatefunction is None:
                 self.__gatefunctions[gate_type] = gatefunctions.identity
-            if hasattr(gatefunctions, gatefunction):
+            elif hasattr(gatefunctions, gatefunction):
                 self.__gatefunctions[gate_type] = getattr(gatefunctions, gatefunction)
             else:
                 raise NameError("Unknown Gatefunction")

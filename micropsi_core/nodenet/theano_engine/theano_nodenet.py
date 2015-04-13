@@ -396,20 +396,23 @@ class TheanoNodenet(Nodenet):
         # for nodespace in nodespaces_to_merge:
         #    self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
+        uidmap = {}
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
             if data['type'] in self.__nodetypes or data['type'] in self.native_modules:
-                self.create_node(
+                new_uid = self.create_node(
                     data['type'],
                     data['parent_nodespace'],
                     data['position'],
                     name=data['name'],
-                    uid=data['uid'],
+                    uid=None,
                     parameters=data['parameters'],
                     gate_parameters=data['gate_parameters'],
                     gate_functions=data['gate_functions'])
-                node = self.get_node(uid)
+                uidmap[uid] = new_uid
+                node = self.get_node(new_uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
@@ -417,23 +420,25 @@ class TheanoNodenet(Nodenet):
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
         # merge in links
-        for uid in nodenet_data.get('links', {}):
-            data = nodenet_data['links'][uid]
+        for linkid in nodenet_data.get('links', {}):
+            data = nodenet_data['links'][linkid]
             self.create_link(
-                data['source_node_uid'],
+                uidmap[data['source_node_uid']],
                 data['source_gate_name'],
-                data['target_node_uid'],
+                uidmap[data['target_node_uid']],
                 data['target_slot_name'],
                 data['weight']
             )
 
-        for uid in nodenet_data.get('monitors', {}):
-            data = nodenet_data['monitors'][uid]
+        for monitorid in nodenet_data.get('monitors', {}):
+            data = nodenet_data['monitors'][monitorid]
+            old_node_uid = data['node_uid']
+            data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
                     getattr(monitor, data['classname'])(self, **data)
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 monitor.NodeMonitor(self, name=data['node_name'], **data)

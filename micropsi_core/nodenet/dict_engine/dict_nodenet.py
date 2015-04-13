@@ -4,6 +4,7 @@ import json
 import os
 
 import warnings
+import micropsi_core
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
@@ -474,12 +475,17 @@ class DictNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
+        uidmap = {}
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
+            newuid = micropsi_core.tools.generate_uid()
+            data['uid'] = newuid
+            uidmap[uid] = newuid
             if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
-                self.__nodes[uid] = DictNode(self, **data)
-                pos = self.__nodes[uid].position
+                self.__nodes[newuid] = DictNode(self, **data)
+                pos = self.__nodes[newuid].position
                 xpos = int(pos[0] - (pos[0] % 100))
                 ypos = int(pos[1] - (pos[1] % 100))
                 if xpos not in self.__nodes_by_coords:
@@ -490,28 +496,30 @@ class DictNodenet(Nodenet):
                     self.__nodes_by_coords[xpos][ypos] = []
                     if ypos > self.max_coords['y']:
                         self.max_coords['y'] = ypos
-                self.__nodes_by_coords[xpos][ypos].append(uid)
+                self.__nodes_by_coords[xpos][ypos].append(newuid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
         # merge in links
-        for uid in nodenet_data.get('links', {}):
-            data = nodenet_data['links'][uid]
-            if data['source_node_uid'] in self.__nodes:
-                source_node = self.__nodes[data['source_node_uid']]
-                source_node.link(data['source_gate_name'],
-                                 data['target_node_uid'],
-                                 data['target_slot_name'],
-                                 data['weight'],
-                                 data['certainty'])
+        for linkid in nodenet_data.get('links', {}):
+            data = nodenet_data['links'][linkid]
+            self.create_link(
+                uidmap[data['source_node_uid']],
+                data['source_gate_name'],
+                uidmap[data['target_node_uid']],
+                data['target_slot_name'],
+                data['weight']
+            )
 
-        for uid in nodenet_data.get('monitors', {}):
-            data = nodenet_data['monitors'][uid]
+        for monitorid in nodenet_data.get('monitors', {}):
+            data = nodenet_data['monitors'][monitorid]
+            old_node_uid = data['node_uid']
+            data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
                     getattr(monitor, data['classname'])(self, **data)
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 monitor.NodeMonitor(self, name=data['node_name'], **data)

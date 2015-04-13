@@ -260,16 +260,13 @@ class TheanoNodenet(Nodenet):
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
+        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
-        self.__nodetypes = STANDARD_NODETYPES
-        self.native_modules = native_modules
-        self.filename = filename
 
         # for now, fix sparse to True
         self.sparse = True
@@ -325,9 +322,24 @@ class TheanoNodenet(Nodenet):
         self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
         self.stepoperators.sort(key=lambda op: op.priority)
 
-        self.load()
+        nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+            nodetypes[type] = Nodetype(nodenet=self, **data)
+        self.__nodetypes = nodetypes
 
-    def load(self, string=None):
+        native_modules = {}
+        for type, data in native_modules.items():
+            native_modules[type] = Nodetype(nodenet=self, **data)
+        self.native_modules = native_modules
+
+        self.initialize_nodenet({})
+
+    def save(self, filename):
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(self.data, sort_keys=True, indent=4))
+        fp.close()
+
+    def load(self, filename, string=None):
         """Load the node net from a file"""
         # try to access file
         with self.netlock:
@@ -341,10 +353,10 @@ class TheanoNodenet(Nodenet):
                 except ValueError:
                     warnings.warn("Could not read nodenet data from string")
                     return False
-            else:
+            elif os.path.isfile(filename):
                 try:
-                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
-                    with open(self.filename) as file:
+                    self.logger.info("Loading nodenet %s from file %s", self.name, filename)
+                    with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
                     warnings.warn("Could not read nodenet data")
@@ -359,21 +371,6 @@ class TheanoNodenet(Nodenet):
                 raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
     def initialize_nodenet(self, initfrom):
-        """Called after reading new nodenet state.
-
-        Parses the nodenet state and set up the non-persistent data structures necessary for efficient
-        computation of the node net
-        """
-
-        nodetypes = {}
-        for type, data in self.__nodetypes.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.__nodetypes = nodetypes
-
-        native_modules = {}
-        for type, data in self.native_modules.items():
-             native_modules[type] = Nodetype(nodenet=self, **data)
-        self.native_modules = native_modules
 
         # todo: implement modulators
         # self.__modulators = initfrom.get("modulators", {})
@@ -383,17 +380,12 @@ class TheanoNodenet(Nodenet):
         # self.__nodespaces = {}
         # self.__nodespaces["Root"] = TheanoNodespace(self) #, None, (0, 0), name="Root", uid="Root")
 
-        # now merge in all init data (from the persisted file typically)
-        self.merge_data(initfrom)
+        if len(initfrom) != 0:
+            # now merge in all init data (from the persisted file typically)
+            self.merge_data(initfrom)
 
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-
-        # Because of the horrible initialize_nodenet design that replaces existing dictionary objects with
-        # Python objects between initial loading and first use, none of the nodenet setup code is reusable.
-        # Instantiation should be a state-independent method or a set of state-independent methods that can be
-        # called whenever new data needs to be merged in, initially or later on.
-        # Potentially, initialize_nodenet can be replaced with merge_data.
 
         # net will have the name of the one to be merged into us
         self.name = nodenet_data['name']
@@ -421,19 +413,6 @@ class TheanoNodenet(Nodenet):
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
-                # self.__nodes[uid] = TheanoNode(self, **data)
-                # pos = self.__nodes[uid].position
-                # xpos = int(pos[0] - (pos[0] % 100))
-                # ypos = int(pos[1] - (pos[1] % 100))
-                # if xpos not in self.__nodes_by_coords:
-                #     self.__nodes_by_coords[xpos] = {}
-                #     if xpos > self.max_coords['x']:
-                #         self.max_coords['x'] = xpos
-                # if ypos not in self.__nodes_by_coords[xpos]:
-                #     self.__nodes_by_coords[xpos][ypos] = []
-                #     if ypos > self.max_coords['y']:
-                #         self.max_coords['y'] = ypos
-                # self.__nodes_by_coords[xpos][ypos].append(uid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 

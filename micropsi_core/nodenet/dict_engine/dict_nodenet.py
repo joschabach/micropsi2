@@ -466,12 +466,6 @@ class DictNodenet(Nodenet):
     def merge_data(self, nodenet_data):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
-        # Because of the horrible initialize_nodenet design that replaces existing dictionary objects with
-        # Python objects between initial loading and first use, none of the nodenet setup code is reusable.
-        # Instantiation should be a state-independent method or a set of state-independent methods that can be
-        # called whenever new data needs to be merged in, initially or later on.
-        # Potentially, initialize_nodenet can be replaced with merge_data.
-
         # net will have the name of the one to be merged into us
         self.name = nodenet_data['name']
 

@@ -267,9 +267,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
-        if not self.spockplugin.is_connected():
-            raise RuntimeError("Lost connection to minecraft server")
-
         self.datasources['hack_decay_factor'] = 0 if self.sleeping else 1
 
         # first thing when spock initialization is done, determine current loco node
@@ -296,6 +293,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         else:
             # reset self.datatarget_feedback
+
+            if not (self.spockplugin.is_connected()):
+                return
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
 

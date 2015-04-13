@@ -256,16 +256,16 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_sensors(self, nodespace=None):
+    def get_sensors(self, nodespace=None, datasource=None):
         """
-        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace
+        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace and data source
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_actors(self, nodespace=None):
+    def get_actors(self, nodespace=None, datatarget=None):
         """
-        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace
+        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace and data target
         """
         pass  # pragma: no cover
 

@@ -659,20 +659,31 @@ class TheanoNodenet(Nodenet):
     def delete_nodespace(self, uid):
         pass
 
-    def get_sensors(self, nodespace=None):
+    def get_sensors(self, nodespace=None, datasource=None):
         sensors = {}
-        for sensorlist in self.sensormap.values():
-            for id in sensorlist:
-                uid = to_id(id)
-                sensors[uid] = self.get_node(uid)
+        sensorlist = []
+        if datasource is None:
+            for ds_sensors in self.sensormap.values():
+                sensorlist.extend(ds_sensors)
+        elif datasource in self.sensormap:
+            sensorlist = self.sensormap[datasource]
+
+        for id in sensorlist:
+            uid = to_id(id)
+            sensors[uid] = self.get_node(uid)
         return sensors
 
-    def get_actors(self, nodespace=None):
+    def get_actors(self, nodespace=None, datatarget=None):
         actuators = {}
-        for actuatorlist in self.actuatormap.values():
-            for id in actuatorlist:
-                uid = to_id(id)
-                actuators[uid] = self.get_node(uid)
+        actuatorlist = []
+        if datatarget is None:
+            for dt_actuators in self.actuatormap.values():
+                actuatorlist.extend(dt_actuators)
+        elif datatarget in self.actuatormap:
+            actuatorlist = self.actuatormap[datatarget]
+        for id in actuatorlist:
+            uid = to_id(id)
+            actuators[uid] = self.get_node(uid)
         return actuators
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):

@@ -657,11 +657,8 @@ class DictNodenet(Nodenet):
         if source_node is None:
             return False, None
 
-        link = source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
-        if link is None:
-            return False, None
-        else:
-            return True, link
+        source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
+        return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""

@@ -35,8 +35,6 @@ class MicropsiPlugin(object):
         self.micropsi_world.spockplugin = self
 
     def chat(self, message):
-        if not (self.is_connected()):
-            raise RuntimeError("Spock is not connected")
         # else push chat message
         self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
 

@@ -6,6 +6,7 @@ from spock.plugins.core.event import EventPlugin
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
 from spock.plugins.helpers.world import WorldPlugin
+from spock.plugins.helpers.reconnect import ReConnectPlugin
 
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
@@ -52,6 +53,7 @@ class Minecraft(World):
         plugins.append(MovementPlugin)
         plugins.append(WorldPlugin)
         plugins.append(MicropsiPlugin)
+        plugins.append(ReConnectPlugin)
 
         # get spock configs
         settings = self.get_config()

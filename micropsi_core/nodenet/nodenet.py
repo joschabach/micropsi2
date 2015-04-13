@@ -341,9 +341,11 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def merge_data(self, nodenet_data):
+    def merge_data(self, nodenet_data, keep_uids=False):
         """
         Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
+        If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,
+        so only tests should use keep_uids=True
         """
         pass  # pragma: no cover
 

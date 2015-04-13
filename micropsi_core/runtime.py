@@ -508,16 +508,17 @@ def import_nodenet(string, owner=None):
     return import_data['uid']
 
 
-def merge_nodenet(nodenet_uid, string):
+def merge_nodenet(nodenet_uid, string, keep_uids=False):
     """Merges the nodenet data with an existing nodenet, instantiates the nodenet.
 
     Arguments:
         nodenet_uid: the uid of the existing nodenet (may overwrite existing nodenet)
         string: a string that contains the nodenet data that is to be merged in JSON format.
+        keep_uids: if true, no uid replacement will be performed. Dangerous.
     """
     nodenet = nodenets[nodenet_uid]
     data = json.loads(string)
-    nodenet.merge_data(data)
+    nodenet.merge_data(data, keep_uids)
     save_nodenet(nodenet_uid)
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)

@@ -382,9 +382,9 @@ class TheanoNodenet(Nodenet):
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
-            self.merge_data(initfrom)
+            self.merge_data(initfrom, keep_uids=True)
 
-    def merge_data(self, nodenet_data):
+    def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
         # net will have the name of the one to be merged into us
@@ -402,12 +402,15 @@ class TheanoNodenet(Nodenet):
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
             if data['type'] in self.__nodetypes or data['type'] in self.native_modules:
+                olduid = None
+                if keep_uids:
+                    olduid = uid
                 new_uid = self.create_node(
                     data['type'],
                     data['parent_nodespace'],
                     data['position'],
                     name=data['name'],
-                    uid=None,
+                    uid=olduid,
                     parameters=data['parameters'],
                     gate_parameters=data['gate_parameters'],
                     gate_functions=data['gate_functions'])
@@ -432,8 +435,10 @@ class TheanoNodenet(Nodenet):
 
         for monitorid in nodenet_data.get('monitors', {}):
             data = nodenet_data['monitors'][monitorid]
-            old_node_uid = data['node_uid']
-            data['node_uid'] = uidmap[old_node_uid]
+            if 'node_uid' in data:
+                old_node_uid = data['node_uid']
+                if old_node_uid in uidmap:
+                    data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
                     getattr(monitor, data['classname'])(self, **data)

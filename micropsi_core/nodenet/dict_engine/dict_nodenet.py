@@ -288,7 +288,7 @@ class DictNodenet(Nodenet):
             self.__native_modules[key].reload_nodefunction()
         saved = self.data
         self.clear()
-        self.merge_data(saved)
+        self.merge_data(saved, keep_uids=True)
 
     def initialize_nodespace(self, id, data):
         if id not in self.__nodespaces:
@@ -317,7 +317,7 @@ class DictNodenet(Nodenet):
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
-            self.merge_data(initfrom)
+            self.merge_data(initfrom, keep_uids=True)
 
     def construct_links_dict(self):
         data = {}
@@ -464,7 +464,7 @@ class DictNodenet(Nodenet):
     def _register_nodespace(self, nodespace):
         self.__nodespaces[nodespace.uid] = nodespace
 
-    def merge_data(self, nodenet_data):
+    def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
         # net will have the name of the one to be merged into us
@@ -480,7 +480,10 @@ class DictNodenet(Nodenet):
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
-            newuid = micropsi_core.tools.generate_uid()
+            if not keep_uids:
+                newuid = micropsi_core.tools.generate_uid()
+            else:
+                newuid = uid
             data['uid'] = newuid
             uidmap[uid] = newuid
             if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
@@ -513,8 +516,10 @@ class DictNodenet(Nodenet):
 
         for monitorid in nodenet_data.get('monitors', {}):
             data = nodenet_data['monitors'][monitorid]
-            old_node_uid = data['node_uid']
-            data['node_uid'] = uidmap[old_node_uid]
+            if 'node_uid' in data:
+                old_node_uid = data['node_uid']
+                if old_node_uid in uidmap:
+                    data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
                     getattr(monitor, data['classname'])(self, **data)

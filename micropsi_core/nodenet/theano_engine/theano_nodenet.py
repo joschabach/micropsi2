@@ -740,7 +740,7 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
-        return self.data                    # todo: implement
+        return self.get_nodespace_data(nodespace_uid, NUMBER_OF_NODES)               # todo: implement
 
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         data = {
@@ -783,10 +783,33 @@ class TheanoNodenet(Nodenet):
 
     def construct_links_dict(self):
         data = {}
-        for node_uid in self.get_node_uids():
-            links = self.get_node(node_uid).get_associated_links()
-            for link in links:
-                data[link.uid] = link.data
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        for source_id in np.nonzero(self.allocated_nodes)[0]:
+            source_type = self.allocated_nodes[source_id]
+            for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
+                gatecolumn = w_matrix[:, self.allocated_node_offsets[source_id] + gate_type]
+                links_indices = np.nonzero(gatecolumn)[0]
+                for index in links_indices:
+                    target_id = self.allocated_elements_to_nodes[index]
+                    target_type = self.allocated_nodes[target_id]
+                    target_slot_numerical = index - self.allocated_node_offsets[target_id]
+                    target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                    source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                    weight = gatecolumn[index]
+                    if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                        weight = float(weight.data)
+
+                    linkuid = to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+to_id(target_id)
+                    linkdata = {
+                        "uid": linkuid,
+                        "weight": weight,
+                        "certainty": 1,
+                        "source_gate_name": source_gate_type,
+                        "source_node_uid": to_id(source_id),
+                        "target_slot_name": target_slot_type,
+                        "target_node_uid": to_id(target_id)
+                    }
+                    data[linkuid] = linkdata
         return data
 
     def construct_nodes_dict(self, max_nodes=-1):

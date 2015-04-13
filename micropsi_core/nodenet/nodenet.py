@@ -177,6 +177,13 @@ class Nodenet(metaclass=ABCMeta):
         self.netapi = NetAPI(self)
 
     @abstractmethod
+    def save(self, filename):
+        """
+        Saves the nodenet to the given main metadata json file.
+        """
+        pass
+
+    @abstractmethod
     def step(self):
         """
         Performs one calculation step, propagating activation accross links
@@ -337,10 +344,7 @@ class Nodenet(metaclass=ABCMeta):
     def merge_data(self, nodenet_data):
         """
         Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
-        This is a legacy method from when the only available implementation was dict-based and will either be
-        removed or implemented in the abstact base class as a generic JSON/dict import mechanism.
         """
-        # todo: data dicts will be replaced with a save/load/export API at some point.
         pass  # pragma: no cover
 
     @abstractmethod

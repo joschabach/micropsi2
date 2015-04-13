@@ -247,19 +247,15 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
-            #engine = "theano_engine"
-
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
-                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
                     native_modules=native_modules)
             elif engine == 'theano_engine':
                 from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                 nodenets[nodenet_uid] = TheanoNodenet(
-                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
                     native_modules=native_modules)
@@ -267,6 +263,8 @@ def load_nodenet(nodenet_uid):
             else:
                 nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+
+            nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
@@ -340,36 +338,31 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         nodenet_uid if successful,
         None if failure
     """
-    if template is not None and template in nodenet_data:
-        if template in nodenets:
-            data = nodenets[template].data
-        else:
-            data = nodenet_data[template]
-    else:
-        data = dict(
-            nodes=dict(),
-            links=dict(),
-            step=0,
-            version=1
-        )
-
     if not uid:
         uid = tools.generate_uid()
-    data.update(dict(
+
+    data = dict(
+        version=1,
+        step=0,
         uid=uid,
         name=nodenet_name,
         worldadapter=worldadapter,
         owner=owner,
         world=world_uid,
         settings={},
-        engine=engine
-    ))
+        engine=engine)
+
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
-    with open(filename, 'w+') as fp:
-        fp.write(json.dumps(data, sort_keys=True, indent=4))
-    fp.close()
     load_nodenet(data['uid'])
+
+    if template is not None and template in nodenet_data:
+        load_nodenet(template)
+        data_to_merge = nodenets[template].data
+        data_to_merge.update(data)
+        nodenets[uid].merge_data(data_to_merge)
+
+    nodenets[uid].save(filename)
     return True, data['uid']
 
 
@@ -476,9 +469,7 @@ def revert_nodenet(nodenet_uid):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'), 'w+') as fp:
-        fp.write(json.dumps(nodenet.data, sort_keys=True, indent=4))
-    fp.close()
+    nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
     nodenet_data[nodenet_uid] = Bunch(**nodenet.data)
     return True
 

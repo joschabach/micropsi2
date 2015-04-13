@@ -169,7 +169,6 @@ class DictNodenet(Nodenet):
         state: a dict of persistent nodenet data; everything stored within the state can be stored and exported
         uid: a unique identifier for the node net
         name: an optional name for the node net
-        filename: the path and file name to the file storing the persisted net data
         nodespaces: a dictionary of node space UIDs and respective node spaces
         nodes: a dictionary of node UIDs and respective nodes
         links: a dictionary of link UIDs and respective links
@@ -202,18 +201,17 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self.__step
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
         """Create a new MicroPsi agent.
 
         Arguments:
-            filename: the path and filename of the agent
             agent_type (optional): the interface of this agent to its environment
             name (optional): the name of the agent
             owner (optional): the user that created this agent
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super(DictNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
+        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
         self.stepoperators = [DictPropagate(), DictCalculate(), DictPORRETDecay(), DictDoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
@@ -222,22 +220,34 @@ class DictNodenet(Nodenet):
         self.__step = 0
         self.__modulators = {}
 
-        self.filename = filename
         if world and worldadapter:
             self.worldadapter = worldadapter
 
         self.__nodes = {}
-        self.__nodetypes = STANDARD_NODETYPES
-        self.__native_modules = native_modules
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self.__locks = {}
         self.__nodes_by_coords = {}
 
-        self.load()
+        nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+            nodetypes[type] = Nodetype(nodenet=self, **data)
+        self.__nodetypes = nodetypes
 
-    def load(self, string=None):
+        native_modules = {}
+        for type, data in native_modules.items():
+            native_modules[type] = Nodetype(nodenet=self, **data)
+        self.__native_modules = native_modules
+
+        self.initialize_nodenet({})
+
+    def save(self, filename):
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(self.data, sort_keys=True, indent=4))
+        fp.close()
+
+    def load(self, filename, string=None):
         """Load the node net from a file"""
         # try to access file
         with self.netlock:
@@ -251,10 +261,10 @@ class DictNodenet(Nodenet):
                 except ValueError:
                     warnings.warn("Could not read nodenet data from string")
                     return False
-            else:
+            elif os.path.isfile(filename):
                 try:
-                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
-                    with open(self.filename) as file:
+                    self.logger.info("Loading nodenet %s from file %s", self.name, filename)
+                    with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
                     warnings.warn("Could not read nodenet data")
@@ -298,24 +308,15 @@ class DictNodenet(Nodenet):
         computation of the node net
         """
 
-        nodetypes = {}
-        for type, data in self.__nodetypes.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.__nodetypes = nodetypes
-
-        native_modules = {}
-        for type, data in self.__native_modules.items():
-            native_modules[type] = Nodetype(nodenet=self, **data)
-        self.__native_modules = native_modules
-
         self.__modulators = initfrom.get("modulators", {})
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        # now merge in all init data (from the persisted file typically)
-        self.merge_data(initfrom)
+        if len(initfrom) != 0:
+            # now merge in all init data (from the persisted file typically)
+            self.merge_data(initfrom)
 
     def construct_links_dict(self):
         data = {}

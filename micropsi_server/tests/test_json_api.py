@@ -67,13 +67,12 @@ def test_delete_nodenet(app, test_nodenet):
 
 def test_set_nodenet_properties(app, test_nodenet, test_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world, settings={'foo': 'bar'}))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'new_name'
     assert data['worldadapter'] == 'Braitenberg'
-    assert data['settings']['foo'] == 'bar'
 
 
 def test_set_node_state(app, test_nodenet):
@@ -162,7 +161,7 @@ def test_get_current_state(app, test_nodenet, test_world):
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
     assert response.json_body['data']['current_step'] == 0
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world, settings={'foo': 'bar'}))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
 
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -207,7 +206,7 @@ def test_get_current_state(app, test_nodenet, test_world):
 
 def test_revert_nodenet(app, test_nodenet, test_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world, settings={'foo': 'bar'}))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
     assert_success(response)
     response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
@@ -215,12 +214,11 @@ def test_revert_nodenet(app, test_nodenet, test_world):
     data = response.json_body['data']
     assert data['name'] == 'Testnet'
     assert data['worldadapter'] == 'Default'
-    assert data['settings'] == {}
 
 
 def test_save_nodenet(app, test_nodenet, test_world):
     app.set_auth()
-    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world, settings={'foo': 'bar'}))
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
     assert_success(response)
     response = app.get_json('/rpc/save_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
@@ -230,7 +228,6 @@ def test_save_nodenet(app, test_nodenet, test_world):
     data = response.json_body['data']
     assert data['name'] == 'new_name'
     assert data['worldadapter'] == 'Braitenberg'
-    assert data['settings']['foo'] == 'bar'
 
     # now delete the nodenet, to get default state back.
     app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet)

@@ -58,6 +58,7 @@ class TheanoLink(Link):
         return self.target_node.get_slot(self.__target_slot_type)
 
     def __init__(self, nodenet, source_node_uid, source_gate_type, target_node_uid, target_slot_type, weight=1):
+        self.__nodenet = nodenet
         self.__source_node_uid = source_node_uid
         self.__source_gate_type = source_gate_type
         self.__target_node_uid = target_node_uid

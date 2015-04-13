@@ -3387,7 +3387,7 @@ function handleEditNodenet(event){
         params.world_uid = nodenet_world;
     }
     if(nodenet_world != nodenet_data.world){
-        if(nodenet_data.world == currentWorld || nodenet_world == currentWorld){
+        if(typeof currentWorld != 'undefined' && (nodenet_data.world == currentWorld || nodenet_world == currentWorld)){
             reload = true;
         }
     }

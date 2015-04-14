@@ -442,6 +442,7 @@ function get_nodenet_data(){
     return {
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
+        'include_links': $.cookie('renderlinks') != 'no',
         'coordinates': {
             x1: loaded_coordinates.x[0],
             x2: loaded_coordinates.x[1],

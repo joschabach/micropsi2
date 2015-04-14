@@ -262,6 +262,9 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
+        # todo: move to float32 and handle casting issues on the way back to Python doubles (JSON-serialization...)
+        T.config.floatX = "float64"
+
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
@@ -276,33 +279,33 @@ class TheanoNodenet(Nodenet):
         self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
 
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float32), name="w")
+            self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float64), name="w")
         else:
-            w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
+            w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float64)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_factor_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_threshold_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_amplification_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_min_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_max_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float64)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
         g_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)

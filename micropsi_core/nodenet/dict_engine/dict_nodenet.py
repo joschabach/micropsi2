@@ -231,15 +231,13 @@ class DictNodenet(Nodenet):
         self.__locks = {}
         self.__nodes_by_coords = {}
 
-        nodetypes = {}
+        self.__nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.__nodetypes = nodetypes
+            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        native_modules = {}
+        self.__native_modules = {}
         for type, data in native_modules.items():
-            native_modules[type] = Nodetype(nodenet=self, **data)
-        self.__native_modules = native_modules
+            self.__native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.initialize_nodenet({})
 

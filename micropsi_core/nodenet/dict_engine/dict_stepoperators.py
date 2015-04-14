@@ -225,14 +225,14 @@ class DictDoernerianEmotionalModulators(StepOperator):
         emo_selection_threshold = emo_activation
 
         pleasure_from_expectation = gentle_sigmoid((base_number_of_expected_events - base_number_of_unexpected_events) / 10)
-        pleasure_from_satisfaction = gentle_sigmoid(base_urge_change)
+        pleasure_from_satisfaction = gentle_sigmoid(base_urge_change * 3)
 
         emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
 
-        pleasurefactor = COMPETENCE_DECAY_FACTOR if emo_pleasure >= 0 else -COMPETENCE_DECAY_FACTOR
-        divisorbaseline = COMPETENCE_DECAY_FACTOR if emo_pleasure >= 0 else 2*COMPETENCE_DECAY_FACTOR
-        youthful_exuberance_term = base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
-        emo_competence = ((emo_competence_prev + (emo_pleasure * youthful_exuberance_term)) /
+        pleasurefactor = 1 if emo_pleasure >= 0 else -1
+        divisorbaseline = 1 if emo_pleasure >= 0 else 2
+        youthful_exuberance_term = 1 #base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
+        emo_competence = (((emo_competence_prev*COMPETENCE_DECAY_FACTOR) + (emo_pleasure * youthful_exuberance_term)) /
                           (divisorbaseline + (pleasurefactor * emo_competence_prev)))
         emo_competence = max(min(emo_competence, 0.99), 0.01)
 

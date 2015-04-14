@@ -754,9 +754,27 @@ class TheanoNodenet(Nodenet):
         # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1
 
-        # remove the native module instance if there should ne one
+        # remove the native module instance if there should be one
         if uid in self.native_module_instances:
             del self.native_module_instances[uid]
+
+        # remove sensor association if there should be one
+        if uid in self.inverted_sensor_map:
+            sensor = self.inverted_sensor_map[uid]
+            del self.inverted_sensor_map[uid]
+            if sensor in self.sensormap:
+                self.sensormap[sensor].remove(from_id(uid))
+            if len(self.sensormap[sensor]) == 0:
+                del self.sensormap[sensor]
+
+        # remove actuator association if there should be one
+        if uid in self.inverted_actuator_map:
+            actuator = self.inverted_actuator_map[uid]
+            del self.inverted_actuator_map[uid]
+            if actuator in self.actuatormap:
+                self.actuatormap[actuator].remove(from_id(uid))
+            if len(self.actuatormap[actuator]) == 0:
+                del self.actuatormap[actuator]
 
     def get_nodespace(self, uid):
         if uid == "Root":

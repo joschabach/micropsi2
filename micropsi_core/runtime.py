@@ -779,7 +779,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     for uid, l in copylinks.items():
         source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
         target_uid = uidmap.get(l.target_node.uid, l.target_node.uid)
-        success, link = nodenet.create_link(
+        success = nodenet.create_link(
             source_uid,
             l.source_gate.type,
             target_uid,
@@ -787,6 +787,12 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
             l.weight,
             l.certainty)
         if success:
+            links = nodenet.get_node(source_uid).get_gate(l.source_gate.type).get_links()
+            link = None
+            for candidate in links:
+                if candidate.target_slot.type == l.target_slot.type and candidate.target_node.uid == target_uid:
+                    link = candidate
+                    break
             result['links'].append(link.data)
         else:
             logger.warning('Could not duplicate link: ' + uid)
@@ -936,8 +942,11 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
     """
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        success, link = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
-    return success, link.uid
+        success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    uid = None
+    if success:                                                       # todo: check whether clients need these uids
+        uid = source_node_uid+":"+gate_type+":"+slot_type+":"+target_node_uid
+    return success, uid
 
 
 def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):

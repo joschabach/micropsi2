@@ -253,9 +253,9 @@ class NetAPI(object):
         for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
-                for uid, candidate in self.__nodenet.get_actors(nodespace).items():
-                    if candidate.get_parameter('datatarget') == datatarget:
-                        actor = candidate
+                for uid, candidate in self.__nodenet.get_actors(nodespace, datatarget).items():
+                    actor = candidate
+                    break
                 if actor is None:
                     actor = self.create_node("Actor", nodespace, datatarget)
                     actor.set_parameter('datatarget', datatarget)
@@ -274,9 +274,9 @@ class NetAPI(object):
         for datasource in self.world.get_available_datasources(self.__nodenet.uid):
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None
-                for uid, candidate in self.__nodenet.get_sensors(nodespace).items():
-                    if candidate.get_parameter('datasource') == datasource:
-                        sensor = candidate
+                for uid, candidate in self.__nodenet.get_sensors(nodespace, datasource).items():
+                    sensor = candidate
+                    break
                 if sensor is None:
                     sensor = self.create_node("Sensor", nodespace, datasource)
                     sensor.set_parameter('datasource', datasource)

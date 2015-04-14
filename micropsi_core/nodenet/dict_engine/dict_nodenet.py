@@ -605,22 +605,24 @@ class DictNodenet(Nodenet):
                     activators.update({uid: self.__nodes[uid]})
         return activators
 
-    def get_sensors(self, nodespace=None):
+    def get_sensors(self, nodespace=None, datasource=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
         nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         sensors = {}
         for uid in nodes:
             if self.__nodes[uid].type == 'Sensor':
-                sensors[uid] = self.__nodes[uid]
+                if datasource is None or self.__nodes[uid].get_parameter('datasource') == datasource:
+                    sensors[uid] = self.__nodes[uid]
         return sensors
 
-    def get_actors(self, nodespace=None):
+    def get_actors(self, nodespace=None, datatarget=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
         nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
         actors = {}
         for uid in nodes:
             if self.__nodes[uid].type == 'Actor':
-                actors[uid] = self.__nodes[uid]
+                if datatarget is None or self.__nodes[uid].get_parameter('datatarget') == datatarget:
+                    actors[uid] = self.__nodes[uid]
         return actors
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
@@ -656,11 +658,8 @@ class DictNodenet(Nodenet):
         if source_node is None:
             return False, None
 
-        link = source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
-        if link is None:
-            return False, None
-        else:
-            return True, link
+        source_node.link(gate_type, target_node_uid, slot_type, weight, certainty)
+        return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
         """Delete the given link."""

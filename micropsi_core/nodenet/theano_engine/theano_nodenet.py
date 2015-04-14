@@ -339,21 +339,14 @@ class TheanoNodenet(Nodenet):
             fp.write(json.dumps(self.data, sort_keys=True, indent=4))
         fp.close()
 
-    def load(self, filename, string=None):
+    def load(self, filename):
         """Load the node net from a file"""
         # try to access file
         with self.netlock:
 
             initfrom = {}
 
-            if string:
-                self.logger.info("Loading nodenet %s from string", self.name)
-                try:
-                    initfrom.update(json.loads(string))
-                except ValueError:
-                    warnings.warn("Could not read nodenet data from string")
-                    return False
-            elif os.path.isfile(filename):
+            if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s from file %s", self.name, filename)
                     with open(filename) as file:

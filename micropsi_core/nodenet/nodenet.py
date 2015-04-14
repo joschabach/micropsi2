@@ -188,7 +188,14 @@ class Nodenet(metaclass=ABCMeta):
         """
         Saves the nodenet to the given main metadata json file.
         """
-        pass
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def load(self, filename):
+        """
+        Loads the node net from the given main metadata json file.
+        """
+        pass  # pragma: no cover
 
     @abstractmethod
     def step(self):
@@ -327,7 +334,6 @@ class Nodenet(metaclass=ABCMeta):
         'monitors' - result of self.construct_monitors_dict()
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
-        # todo: data dicts will be replaced with a save/load/export API at some point.
         # todo: Positional data will either be made entirely transient at some point, or moved somewhere else
         pass  # pragma: no cover
 
@@ -344,7 +350,6 @@ class Nodenet(metaclass=ABCMeta):
         'monitors' - result of self.construct_monitors_dict()
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
-        # todo: data dicts will be replaced with a save/load/export API at some point.
         pass  # pragma: no cover
 
     @abstractmethod

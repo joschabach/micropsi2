@@ -281,12 +281,12 @@ def load_nodenet(nodenet_uid):
     return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
 
 
-def get_nodenet_data(nodenet_uid, nodespace, coordinates):
+def get_nodenet_data(nodenet_uid, nodespace, include_links=True, coordinates={}):
     """ returns the current state of the nodenet """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         data = nodenet.data
-    data.update(get_nodenet_area(nodenet_uid, nodespace, **coordinates))
+    data.update(get_nodenet_area(nodenet_uid, nodespace, include_links=include_links, **coordinates))
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'native_modules': native_modules
@@ -309,7 +309,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
+def get_nodenet_area(nodenet_uid, nodespace="Root", include_links=True, x1=0, x2=-1, y1=0, y2=-1):
     """ returns part of the nodespace for representation in the UI
     Either you specify an area to be retrieved, or the retrieval is limited to 500 nodes currently
     """
@@ -317,9 +317,9 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         nodespace = "Root"
     with nodenets[nodenet_uid].netlock:
         if x2 < 0 or y2 < 0:
-            data = nodenets[nodenet_uid].get_nodespace_data(nodespace, 500)
+            data = nodenets[nodenet_uid].get_nodespace_data(nodespace, 500, include_links)
         else:
-            data = nodenets[nodenet_uid].get_nodespace_area_data(nodespace, x1, x2, y1, y2)
+            data = nodenets[nodenet_uid].get_nodespace_area_data(nodespace, include_links, x1, x2, y1, y2)
         data['nodespace'] = nodespace
         return data
 
@@ -669,7 +669,7 @@ def get_nodespace_list(nodenet_uid):
     return data
 
 
-def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
+def get_nodespace(nodenet_uid, nodespace, step=0, include_links=True, coordinates={}):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}
     if nodenet_uid in MicropsiRunner.last_nodenet_exception:
@@ -677,7 +677,7 @@ def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
         del MicropsiRunner.last_nodenet_exception[nodenet_uid]
         raise Exception("Error during stepping nodenet").with_traceback(e[2]) from e[1]
     if step < nodenets[nodenet_uid].current_step:
-        data = get_nodenet_area(nodenet_uid, nodespace, **coordinates)
+        data = get_nodenet_area(nodenet_uid, nodespace, include_links, **coordinates)
         data.update({'current_step': nodenets[nodenet_uid].current_step, 'is_active': nodenets[nodenet_uid].is_active})
     return data
 

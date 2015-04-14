@@ -849,16 +849,19 @@ class TheanoNodenet(Nodenet):
     def reload_native_modules(self, native_modules):
         pass
 
-    def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
-        return self.get_nodespace_data(nodespace_uid, NUMBER_OF_NODES)               # todo: implement
+    def get_nodespace_area_data(self, nodespace_uid, include_links, x1, x2, y1, y2):
+        return self.get_nodespace_data(nodespace_uid, NUMBER_OF_NODES, include_links)               # todo: implement
 
-    def get_nodespace_data(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links=True):
         data = {
+            'links': {},
             'nodes': self.construct_nodes_dict(max_nodes),
-            'links': self.construct_links_dict(),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict()
         }
+        if include_links:
+            data['links'] = self.construct_links_dict(),
+
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
             self.user_prompt = None

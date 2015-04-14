@@ -706,10 +706,10 @@ def select_nodenet(nodenet_uid):
 
 
 @rpc("load_nodenet")
-def load_nodenet(nodenet_uid, nodespace='Root', coordinates={}):
+def load_nodenet(nodenet_uid, nodespace='Root', include_links=True, coordinates={}):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if result:
-        data = runtime.get_nodenet_data(nodenet_uid, nodespace, coordinates)
+        data = runtime.get_nodenet_data(nodenet_uid, nodespace, include_links, coordinates)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
         data['recipes'] = runtime.get_available_recipes()
         return True, data
@@ -1009,8 +1009,8 @@ def get_nodespace_list(nodenet_uid):
 
 
 @rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step, **coordinates):
-    return True, runtime.get_nodespace(nodenet_uid, nodespace, step, **coordinates)
+def get_nodespace(nodenet_uid, nodespace, step, include_links=True, **coordinates):
+    return True, runtime.get_nodespace(nodenet_uid, nodespace, step, include_links, **coordinates)
 
 
 @rpc("get_node")

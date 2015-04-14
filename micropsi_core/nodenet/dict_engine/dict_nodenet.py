@@ -348,7 +348,7 @@ class DictNodenet(Nodenet):
         else:
             return self.__native_modules.get(type)
 
-    def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
+    def get_nodespace_area_data(self, nodespace, include_links, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
         y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
 
@@ -383,10 +383,12 @@ class DictNodenet(Nodenet):
                                     data['max_coords']['x'] = node.position[0]
                                 if node.position[1] > data['max_coords']['y']:
                                     data['max_coords']['y'] = node.position[1]
-                                links.extend(self.get_node(uid).get_associated_links())
+                                if include_links:
+                                    links.extend(self.get_node(uid).get_associated_links())
                                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
-        for link in links:
-            data['links'][link.uid] = link.data
+        if include_links:
+            for link in links:
+                data['links'][link.uid] = link.data
         for uid in followupnodes:
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.get_node(uid).data
@@ -432,14 +434,16 @@ class DictNodenet(Nodenet):
     def delete_nodespace(self, uid):
         self.delete_node(uid)
 
-    def get_nodespace_data(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links):
         """returns the nodes and links in a given nodespace"""
         data = {
+            'links': {},
             'nodes': self.construct_nodes_dict(max_nodes),
-            'links': self.construct_links_dict(),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict()
         }
+        if include_links:
+            data['links'] = self.construct_links_dict()
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
             self.user_prompt = None

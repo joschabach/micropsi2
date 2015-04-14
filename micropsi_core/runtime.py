@@ -994,15 +994,16 @@ def crawl_definition_files(path, type="definition"):
 
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
-            try:
-                filename = os.path.join(user_directory_name, definition_file_name)
-                with open(filename) as file:
-                    data = parse_definition(json.load(file), filename)
-                    result[data.uid] = data
-            except ValueError:
-                warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
-            except IOError:
-                warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
+            if definition_file_name.endswith(".json"):
+                try:
+                    filename = os.path.join(user_directory_name, definition_file_name)
+                    with open(filename) as file:
+                        data = parse_definition(json.load(file), filename)
+                        result[data.uid] = data
+                except ValueError:
+                    warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
+                except IOError:
+                    warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
     return result
 
 

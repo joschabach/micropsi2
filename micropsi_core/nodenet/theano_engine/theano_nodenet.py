@@ -556,7 +556,7 @@ class TheanoNodenet(Nodenet):
                 monitor.NodeMonitor(self, name=data['node_name'], **data)
 
     def step(self):
-        self.user_prompt = None                       # todo: re-introduce user prompts when looking into native modules
+        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
@@ -648,20 +648,25 @@ class TheanoNodenet(Nodenet):
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
 
+        if parameters is None:
+            parameters = {}
+
         if nodetype == "Sensor":
-            datasource = parameters["datasource"]
-            if datasource is not None:
-                connectedsensors = self.sensormap.get(datasource, [])
-                connectedsensors.append(id)
-                self.sensormap[datasource] = connectedsensors
-                self.inverted_sensor_map[uid] = datasource
+            if 'datasource' in parameters:
+                datasource = parameters['datasource']
+                if datasource is not None:
+                    connectedsensors = self.sensormap.get(datasource, [])
+                    connectedsensors.append(id)
+                    self.sensormap[datasource] = connectedsensors
+                    self.inverted_sensor_map[uid] = datasource
         elif nodetype == "Actor":
-            datatarget = parameters["datatarget"]
-            if datatarget is not None:
-                connectedactuators = self.actuatormap.get(datatarget, [])
-                connectedactuators.append(id)
-                self.actuatormap[datatarget] = connectedactuators
-                self.inverted_actuator_map[uid] = datatarget
+            if 'datatarget' in parameters:
+                datatarget = parameters['datatarget']
+                if datatarget is not None:
+                    connectedactuators = self.actuatormap.get(datatarget, [])
+                    connectedactuators.append(id)
+                    self.actuatormap[datatarget] = connectedactuators
+                    self.inverted_actuator_map[uid] = datatarget
         elif nodetype == "Pipe":
             self.has_pipes = True
             n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
@@ -675,7 +680,7 @@ class TheanoNodenet(Nodenet):
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         node = self.get_node(uid)
-        for gate, parameters in self.__nodetypes[nodetype].gate_defaults.items():
+        for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
             for gate_parameter in parameters:
                 node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:
@@ -750,19 +755,36 @@ class TheanoNodenet(Nodenet):
     def delete_nodespace(self, uid):
         pass
 
+    def get_sensors(self, nodespace=None, datasource=None):
+        sensors = {}
+        sensorlist = []
+        if datasource is None:
+            for ds_sensors in self.sensormap.values():
+                sensorlist.extend(ds_sensors)
+        elif datasource in self.sensormap:
+            sensorlist = self.sensormap[datasource]
+
+        for id in sensorlist:
+            uid = to_id(id)
+            sensors[uid] = self.get_node(uid)
+        return sensors
+
+    def get_actors(self, nodespace=None, datatarget=None):
+        actuators = {}
+        actuatorlist = []
+        if datatarget is None:
+            for dt_actuators in self.actuatormap.values():
+                actuatorlist.extend(dt_actuators)
+        elif datatarget in self.actuatormap:
+            actuatorlist = self.actuatormap[datatarget]
+        for id in actuatorlist:
+            uid = to_id(id)
+            actuators[uid] = self.get_node(uid)
+        return actuators
+
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
         self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
-
-        # todo: the interface for create_link makes no sense: it always returns true and a link object that is only
-        # being used to query the UID which is useless
-        links = self.get_node(source_node_uid).get_gate(gate_type).get_links()
-        link = None
-        for candidate in links:
-            if candidate.target_slot.type == slot_type and candidate.target_node.uid == target_node_uid:
-                link = candidate
-                break
-
-        return True, link
+        return True
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
 
@@ -814,7 +836,7 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
-        return self.data                    # todo: implement
+        return self.get_nodespace_data(nodespace_uid, NUMBER_OF_NODES)               # todo: implement
 
     def get_nodespace_data(self, nodespace_uid, max_nodes):
         data = {
@@ -857,10 +879,33 @@ class TheanoNodenet(Nodenet):
 
     def construct_links_dict(self):
         data = {}
-        for node_uid in self.get_node_uids():
-            links = self.get_node(node_uid).get_associated_links()
-            for link in links:
-                data[link.uid] = link.data
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        for source_id in np.nonzero(self.allocated_nodes)[0]:
+            source_type = self.allocated_nodes[source_id]
+            for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
+                gatecolumn = w_matrix[:, self.allocated_node_offsets[source_id] + gate_type]
+                links_indices = np.nonzero(gatecolumn)[0]
+                for index in links_indices:
+                    target_id = self.allocated_elements_to_nodes[index]
+                    target_type = self.allocated_nodes[target_id]
+                    target_slot_numerical = index - self.allocated_node_offsets[target_id]
+                    target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                    source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                    weight = gatecolumn[index]
+                    if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                        weight = float(weight.data)
+
+                    linkuid = to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+to_id(target_id)
+                    linkdata = {
+                        "uid": linkuid,
+                        "weight": weight,
+                        "certainty": 1,
+                        "source_gate_name": source_gate_type,
+                        "source_node_uid": to_id(source_id),
+                        "target_slot_name": target_slot_type,
+                        "target_node_uid": to_id(target_id)
+                    }
+                    data[linkuid] = linkdata
         return data
 
     def construct_nodes_dict(self, max_nodes=-1):

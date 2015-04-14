@@ -367,29 +367,45 @@ class TheanoNode(Node):
             self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_gate_parameters(self):
-        # todo: implement defaulting mechanism for gate parameters
-
         g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
         g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True, return_internal_type=True)
         g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
         g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
-        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True, return_internal_type=True)
         g_theta = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
 
         result = {}
         for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
-            gate_parameters = {
-                'threshold': g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'amplification': g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'minimum': g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'maximum': g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate],
-                'theta': g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
-            }
+            gate_type = get_string_gate_type(numericalgate, self.nodetype)
+            gate_parameters = {}
+
+            threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
+                gate_parameters['threshold'] = threshold
+
+            amplification = g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
+                gate_parameters['amplification'] = amplification
+
+            minimum = g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
+                gate_parameters['minimum'] = minimum
+
+            maximum = g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
+                gate_parameters['maximum'] = maximum
+
+            theta = g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
+                gate_parameters['theta'] = theta
+
             result[get_string_gate_type(numericalgate, self.nodetype)] = gate_parameters
-        return result
+        if len(result) > 0:
+            return result
+        else:
+            return None
 
     def clone_non_default_gate_parameters(self, gate_type):
-        return self.get_gate_parameters()               # todo: implement gate parameter defaulting
+        return self.get_gate_parameters()
 
     def take_slot_activation_snapshot(self):
         a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
@@ -429,18 +445,20 @@ class TheanoNode(Node):
 
     def set_parameter(self, parameter, value):
         if self.type == "Sensor" and parameter == "datasource":
-            olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
-            if self._id in self._nodenet.sensormap.get(olddatasource, []):
-                self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
+            if self.uid in self._nodenet.inverted_sensor_map:
+                olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
+                if self._id in self._nodenet.sensormap.get(olddatasource, []):
+                    self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
 
             connectedsensors = self._nodenet.sensormap.get(value, [])       # then, set the new one
             connectedsensors.append(self._id)
             self._nodenet.sensormap[value] = connectedsensors
             self._nodenet.inverted_sensor_map[self.uid] = value
         elif self.type == "Actor" and parameter == "datatarget":
-            olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
-            if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
-                self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
+            if self.uid in self._nodenet.inverted_actuator_map:
+                olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
+                if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
+                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
 
             connectedactuators = self._nodenet.actuatormap.get(value, [])       # then, set the new one
             connectedactuators.append(self._id)
@@ -537,14 +555,15 @@ class TheanoGate(Gate):
         gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
-            target_uid = self.__nodenet.allocated_elements_to_nodes[index]
-            target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_uid]
+            target_id = self.__nodenet.allocated_elements_to_nodes[index]
+            target_type = self.__nodenet.allocated_nodes[target_id]
+            target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
+            target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
+            target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
             weight = gatecolumn[index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
-            target_node = self.__nodenet.get_node(to_id(target_uid))
-            target_slot = target_node.get_slot(get_string_slot_type(target_slot_numerical, target_node.nodetype))
-            link = TheanoLink(self.__node, self, target_node, target_slot, weight)
+            link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, to_id(target_id), target_slot_type, weight)
             links.append(link)
         return links
 
@@ -612,13 +631,14 @@ class TheanoSlot(Slot):
         slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(slotrow)[1]
         for index in links_indices:
-            source_uid = self.__nodenet.allocated_elements_to_nodes[index]
-            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_uid]
+            source_id = self.__nodenet.allocated_elements_to_nodes[index]
+            source_type = self.__nodenet.allocated_nodes[source_id]
+            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
+            source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
+            source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
             weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                 weight = float(weight.data)
-            source_node = self.__nodenet.get_node(to_id(source_uid))
-            source_gate = source_node.get_gate(get_string_gate_type(source_gate_numerical, source_node.nodetype))
-            link = TheanoLink(source_node, source_gate, self.__node, self, weight)
+            link = TheanoLink(self.__nodenet, to_id(source_id), source_gate_type, self.__node.uid, self.__type, weight)
             links.append(link)
         return links

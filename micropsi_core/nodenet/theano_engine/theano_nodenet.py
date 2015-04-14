@@ -322,8 +322,7 @@ class TheanoNodenet(Nodenet):
 
         self.rootnodespace = TheanoNodespace(self)
 
-        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
-        self.stepoperators.sort(key=lambda op: op.priority)
+        self.initialize_stepoperators()
 
         nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -337,36 +336,139 @@ class TheanoNodenet(Nodenet):
 
         self.initialize_nodenet({})
 
+    def initialize_stepoperators(self):
+        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
+        self.stepoperators.sort(key=lambda op: op.priority)
+
     def save(self, filename):
+
+        # write json metadata, which will be used by runtime to manage the net
         with open(filename, 'w+') as fp:
-            fp.write(json.dumps(self.data, sort_keys=True, indent=4))
+            metadata = self.metadata
+            metadata['positions'] = self.positions
+            metadata['names'] = self.names
+            fp.write(json.dumps(metadata, sort_keys=True, indent=4))
         fp.close()
+
+        # write bulk data to our own numpy-based file format
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data")
+
+        allocated_nodes = self.allocated_nodes
+        allocated_node_offsets = self.allocated_node_offsets
+        allocated_elements_to_nodes = self.allocated_elements_to_nodes
+
+        w = self.w.get_value(borrow=True, return_internal_type=True)
+        a = self.a.get_value(borrow=True, return_internal_type=True)
+        g_theta = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_factor = self.g_factor.get_value(borrow=True, return_internal_type=True)
+        g_threshold = self.g_threshold.get_value(borrow=True, return_internal_type=True)
+        g_amplification = self.g_amplification.get_value(borrow=True, return_internal_type=True)
+        g_min = self.g_min.get_value(borrow=True, return_internal_type=True)
+        g_max = self.g_max.get_value(borrow=True, return_internal_type=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_function_selector = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
+        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+
+        sizeinformation = [NUMBER_OF_NODES, NUMBER_OF_ELEMENTS]
+
+        np.savez(datafilename,
+                 allocated_nodes=allocated_nodes,
+                 allocated_node_offsets=allocated_node_offsets,
+                 allocated_elements_to_nodes=allocated_elements_to_nodes,
+                 w_data=w.data,
+                 w_indices=w.indices,
+                 w_indptr=w.indptr,
+                 a=a,
+                 g_theta=g_theta,
+                 g_factor=g_factor,
+                 g_threshold=g_threshold,
+                 g_amplification=g_amplification,
+                 g_min=g_min,
+                 g_max=g_max,
+                 g_function_selector=g_function_selector,
+                 n_function_selector=n_function_selector,
+                 n_node_porlinked=n_node_porlinked,
+                 n_node_retlinked=n_node_retlinked,
+                 sizeinformation=sizeinformation)
+
 
     def load(self, filename):
         """Load the node net from a file"""
         # try to access file
+
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
+
         with self.netlock:
-
             initfrom = {}
-
+            datafile = None
             if os.path.isfile(filename):
                 try:
-                    self.logger.info("Loading nodenet %s from file %s", self.name, filename)
+                    self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet data")
+                    warnings.warn("Could not read nodenet metadata from file %s", filename)
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet file")
+                    warnings.warn("Could not open nodenet metadata file %s", filename)
+                    return False
 
-            if self.__version == NODENET_VERSION:
-                self.initialize_nodenet(initfrom)
-                return True
-            else:
-                raise NotImplementedError("Wrong version of nodenet data, cannot import.")
+            if os.path.isfile(datafilename):
+                try:
+                    self.logger.info("Loading nodenet %s bulk data from file %s", self.name, datafilename)
+                    datafile = np.load(datafilename)
+                except ValueError:
+                    warnings.warn("Could not read nodenet data from file %", datafile)
+                    return False
+                except IOError:
+                    warnings.warn("Could not open nodenet file %s", datafile)
+                    return False
+
+            # initialize with metadata
+            self.initialize_nodenet(initfrom)
+
+            if datafile:
+                # todo: this will crash if we change the NUMBER_OF_NODES or NUMBER_OF_ELEMENTS constants, use sizeinformation
+
+                # the load bulk data into numpy arrays
+                self.allocated_nodes = datafile['allocated_nodes']
+                self.allocated_node_offsets = datafile['allocated_node_offsets']
+                self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
+
+                w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS))
+                self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
+                self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
+
+                self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+                self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
+                self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
+                self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
+                self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
+                self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
+
+                self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
+                self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
+
+                self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
+                self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
+
+                self.has_new_usages = True
+                self.has_pipes = PIPE in self.allocated_nodes
+                self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in self.g_function_selector
+                self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in self.g_function_selector
+                self.has_gatefunction_tanh = GATE_FUNCTION_TANH in self.g_function_selector
+                self.has_gatefunction_rect = GATE_FUNCTION_RECT in self.g_function_selector
+                self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in self.g_function_selector
+
+            # re-initialize step operators for theano recompile to new shared variables
+            self.initialize_stepoperators()
+
+            return True
 
     def remove(self, filename):
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
+        os.remove(datafilename)
         os.remove(filename)
 
     def initialize_nodenet(self, initfrom):
@@ -382,6 +484,11 @@ class TheanoNodenet(Nodenet):
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
+            if 'names' in initfrom:
+                self.names = initfrom['names']
+            if 'positions' in initfrom:
+                self.positions = initfrom['positions']
+
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""

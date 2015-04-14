@@ -101,10 +101,10 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 7
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 3
 
-NUMBER_OF_NODES = 5000
-NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
+DEFAULT_NUMBER_OF_NODES = 2000
+DEFAULT_NUMBER_OF_ELEMENTS = DEFAULT_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
 class TheanoNodenet(Nodenet):
@@ -267,6 +267,9 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
+        self.NoN = DEFAULT_NUMBER_OF_NODES
+        self.NoE = DEFAULT_NUMBER_OF_ELEMENTS
+
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
@@ -274,50 +277,50 @@ class TheanoNodenet(Nodenet):
         # for now, fix sparse to True
         self.sparse = True
 
-        self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
-        self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
-        self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
+        self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
 
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float64), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipy.float64), name="w")
         else:
-            w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float64)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=np.float64)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        a_array = np.zeros(self.NoE, dtype=np.float64)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(8, 8))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        g_theta_array = np.zeros(self.NoE, dtype=np.float64)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        g_factor_array = np.ones(self.NoE, dtype=np.float64)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        g_threshold_array = np.zeros(self.NoE, dtype=np.float64)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        g_amplification_array = np.ones(self.NoE, dtype=np.float64)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        g_min_array = np.zeros(self.NoE, dtype=np.float64)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float64)
+        g_max_array = np.ones(self.NoE, dtype=np.float64)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
-        g_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
 
-        n_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
 
-        n_node_porlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
 
-        n_node_retlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
@@ -372,7 +375,7 @@ class TheanoNodenet(Nodenet):
         n_node_porlinked = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
         n_node_retlinked = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
 
-        sizeinformation = [NUMBER_OF_NODES, NUMBER_OF_ELEMENTS]
+        sizeinformation = [self.NoN, self.NoE]
 
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
@@ -431,6 +434,10 @@ class TheanoNodenet(Nodenet):
             self.initialize_nodenet(initfrom)
 
             if datafile:
+
+                self.NoN = datafile['sizeinformation'][0]
+                self.NoE = datafile['sizeinformation'][1]
+
                 # todo: this will crash if we change the NUMBER_OF_NODES or NUMBER_OF_ELEMENTS constants, use sizeinformation
 
                 # the load bulk data into numpy arrays
@@ -438,7 +445,7 @@ class TheanoNodenet(Nodenet):
                 self.allocated_node_offsets = datafile['allocated_node_offsets']
                 self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
 
-                w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS))
+                w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
                 self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
                 self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
 
@@ -606,7 +613,7 @@ class TheanoNodenet(Nodenet):
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             id = 0
-            for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
+            for i in range((self.last_allocated_node + 1), self.NoN):
                 if self.allocated_nodes[i] == 0:
                     id = i
                     break
@@ -618,7 +625,7 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                raise MemoryError("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
+                raise MemoryError("Cannot find free id, all " + str(self.NoN) + " node entries already in use.")
         else:
             id = from_id(uid)
 
@@ -642,7 +649,7 @@ class TheanoNodenet(Nodenet):
             else:
                 i += freecount+1
 
-            if i >= NUMBER_OF_ELEMENTS:
+            if i >= self.NoE:
                 if not has_restarted_from_zero:
                     i = 0
                     has_restarted_from_zero = True
@@ -850,7 +857,7 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_nodespace_area_data(self, nodespace_uid, include_links, x1, x2, y1, y2):
-        return self.get_nodespace_data(nodespace_uid, NUMBER_OF_NODES, include_links)               # todo: implement
+        return self.get_nodespace_data(nodespace_uid, self.NoN, include_links)               # todo: implement
 
     def get_nodespace_data(self, nodespace_uid, max_nodes, include_links=True):
         data = {
@@ -1003,5 +1010,5 @@ class TheanoNodenet(Nodenet):
     def rebuild_shifted(self):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)
         a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(NUMBER_OF_ELEMENTS, 14), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(8, 8))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)

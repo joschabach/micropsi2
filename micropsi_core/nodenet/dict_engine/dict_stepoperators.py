@@ -189,7 +189,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
 
     def execute(self, nodenet, nodes, netapi):
 
-        COMPETENCE_DECAY_FACTOR = 0.2
+        COMPETENCE_DECAY_FACTOR = 2
 
         base_sum_importance_of_intentions = netapi.get_modulator("base_sum_importance_of_intentions")
         base_sum_urgency_of_intentions = netapi.get_modulator("base_sum_urgency_of_intentions")
@@ -232,8 +232,8 @@ class DictDoernerianEmotionalModulators(StepOperator):
         pleasurefactor = 1 if emo_pleasure >= 0 else -1
         divisorbaseline = 1 if emo_pleasure >= 0 else 2
         youthful_exuberance_term = 1 #base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
-        emo_competence = (((emo_competence_prev*COMPETENCE_DECAY_FACTOR) + (emo_pleasure * youthful_exuberance_term)) /
-                          (divisorbaseline + (pleasurefactor * emo_competence_prev)))
+        emo_competence = (((emo_competence_prev) + (emo_pleasure * youthful_exuberance_term)) /
+                          (divisorbaseline + (pleasurefactor * emo_competence_prev*COMPETENCE_DECAY_FACTOR)))
         emo_competence = max(min(emo_competence, 0.99), 0.01)
 
         # setting technical parameters

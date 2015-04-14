@@ -198,6 +198,14 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def remove(self, filename):
+        """
+        Removes the node net's given main metadata json file, plus any additional files the node net may
+        have created for persistency
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def step(self):
         """
         Performs one calculation step, propagating activation accross links

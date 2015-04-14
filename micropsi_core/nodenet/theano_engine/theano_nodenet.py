@@ -363,6 +363,9 @@ class TheanoNodenet(Nodenet):
             else:
                 raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
+    def remove(self, filename):
+        os.remove(filename)
+
     def initialize_nodenet(self, initfrom):
 
         # todo: implement modulators

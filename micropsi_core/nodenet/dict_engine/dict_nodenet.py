@@ -273,6 +273,9 @@ class DictNodenet(Nodenet):
             else:
                 raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
+    def remove(self, filename):
+        os.remove(filename)
+
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""

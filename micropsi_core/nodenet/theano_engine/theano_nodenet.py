@@ -867,7 +867,7 @@ class TheanoNodenet(Nodenet):
             'monitors': self.construct_monitors_dict()
         }
         if include_links:
-            data['links'] = self.construct_links_dict(),
+            data['links'] = self.construct_links_dict()
 
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()

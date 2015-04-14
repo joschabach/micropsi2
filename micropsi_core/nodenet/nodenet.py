@@ -93,7 +93,7 @@ class Nodenet(metaclass=ABCMeta):
             'current_step': self.current_step,
             'world': self.__world_uid,
             'worldadapter': self.__worldadapter_uid,
-            'version': "abstract"
+            'version': NODENET_VERSION
         }
         return data
 

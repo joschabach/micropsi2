@@ -285,11 +285,12 @@ def get_nodenet_data(nodenet_uid, nodespace, include_links=True, coordinates={})
     """ returns the current state of the nodenet """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
-        data = nodenet.data
+        data = nodenet.metadata
     data.update(get_nodenet_area(nodenet_uid, nodespace, include_links=include_links, **coordinates))
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
-        'native_modules': native_modules
+        'native_modules': native_modules,
+        'monitors': nodenet.construct_monitors_dict()
     })
     return data
 

@@ -68,24 +68,31 @@ class Nodenet(metaclass=ABCMeta):
         nodespaces
         version
         """
+        data = self.metadata
+        data.update({
+            'links': {},
+            'nodes': {},
+            'max_coords': self.max_coords,
+            'nodespaces': {},
+            'monitors': self.construct_monitors_dict(),
+            'modulators': {},
+        })
+        return data
 
-        # todo: data dicts will be replaced with a save/load/export API at some point.
-
+    @property
+    def metadata(self):
+        """
+        Returns a dict representing the node net meta data (a subset of .data).
+        """
         data = {
             'uid': self.uid,
             'engine': self.engine,
             'owner': self.owner,
-            'links': {},
-            'nodes': {},
             'name': self.name,
-            'max_coords': self.max_coords,
             'is_active': self.is_active,
             'current_step': self.current_step,
-            'nodespaces': {},
             'world': self.__world_uid,
             'worldadapter': self.__worldadapter_uid,
-            'monitors': self.construct_monitors_dict(),
-            'modulators': {},
             'version': "abstract"
         }
         return data

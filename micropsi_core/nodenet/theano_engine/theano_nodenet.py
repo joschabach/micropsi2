@@ -447,6 +447,7 @@ class TheanoNodenet(Nodenet):
                 self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
                 self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
 
+                g_function_selector = datafile['g_function_selector']
                 self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
                 self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
 
@@ -455,11 +456,11 @@ class TheanoNodenet(Nodenet):
 
                 self.has_new_usages = True
                 self.has_pipes = PIPE in self.allocated_nodes
-                self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in self.g_function_selector
-                self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in self.g_function_selector
-                self.has_gatefunction_tanh = GATE_FUNCTION_TANH in self.g_function_selector
-                self.has_gatefunction_rect = GATE_FUNCTION_RECT in self.g_function_selector
-                self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in self.g_function_selector
+                self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
+                self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
+                self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
+                self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+                self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()

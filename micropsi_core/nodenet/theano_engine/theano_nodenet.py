@@ -21,6 +21,7 @@ from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
+from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 
 
 STANDARD_NODETYPES = {
@@ -266,6 +267,8 @@ class TheanoNodenet(Nodenet):
         T.config.floatX = "float64"
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
+        self.netapi = TheanoNetAPI(self)
 
         self.NoN = DEFAULT_NUMBER_OF_NODES
         self.NoE = DEFAULT_NUMBER_OF_ELEMENTS

@@ -347,6 +347,8 @@ class TheanoNodenet(Nodenet):
             metadata = self.metadata
             metadata['positions'] = self.positions
             metadata['names'] = self.names
+            metadata['actuatormap'] = self.actuatormap
+            metadata['sensormap'] = self.sensormap
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
         fp.close()
 
@@ -454,6 +456,7 @@ class TheanoNodenet(Nodenet):
                 self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
                 self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
 
+                # reconstruct other states
                 self.has_new_usages = True
                 self.has_pipes = PIPE in self.allocated_nodes
                 self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
@@ -461,6 +464,13 @@ class TheanoNodenet(Nodenet):
                 self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
                 self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
                 self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+
+            for sensor, id_list in self.sensormap.items():
+                for id in id_list:
+                    self.inverted_sensor_map[to_id(id)] = sensor
+            for actuator, id_list in self.actuatormap.items():
+                for id in id_list:
+                    self.inverted_actuator_map[to_id(id)] = actuator
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -489,6 +499,10 @@ class TheanoNodenet(Nodenet):
                 self.names = initfrom['names']
             if 'positions' in initfrom:
                 self.positions = initfrom['positions']
+            if 'actuatormap' in initfrom:
+                self.actuatormap = initfrom['actuatormap']
+            if 'sensormap' in initfrom:
+                self.sensormap = initfrom['sensormap']
 
 
     def merge_data(self, nodenet_data, keep_uids=False):

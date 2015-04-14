@@ -586,14 +586,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 name = 'fov__%02d_%02d' % (i, j)
                 self.datasources[name] = patch_resc[(self.patch_height * (i + top_rim)) + j + left_rim]
 
-        if not zero_patch:
-            # if bot hasn't teleported in the meantime and thereby made data unreliable, write data to file
-            if label == self.current_loco_node['name']:
-                data = "{0}".format(",".join(str(b) for b in patch))
-                self.f.write("%s,%s,%d,%d\n" % (data, label, pitch, yaw))
-            else:
-                self.logger.warn('potentially corrupt data were ignored')
-
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """
         Given a point on the projection plane and the agent's position, cast a

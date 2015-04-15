@@ -351,7 +351,6 @@ class TheanoNodenet(Nodenet):
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
-        fp.close()
 
         # write bulk data to our own numpy-based file format
         datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data")

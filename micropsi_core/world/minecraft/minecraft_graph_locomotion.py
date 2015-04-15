@@ -593,8 +593,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def simulate_visual_input(self):
         if self.world.current_step % 4 == 0:
-            print("Simulating vision in world step "+str(self.world.current_step))
             entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
+            if entry_index == 0:
+                self.logger.info("Simulating vision from data file with %i entries...", len(self.simulated_vision_data))
             self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index])
 
     def write_visual_input_to_datasources(self, patch):

@@ -246,6 +246,9 @@ class DictNodenet(Nodenet):
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(self.data, sort_keys=True, indent=4))
         fp.close()
+        if os.path.getsize(filename) < 100:
+            # kind of hacky, but we don't really know what was going on
+            raise RuntimeError("Error writing nodenet file")
 
     def load(self, filename):
         """Load the node net from a file"""

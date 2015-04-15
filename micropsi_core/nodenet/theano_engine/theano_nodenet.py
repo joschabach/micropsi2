@@ -1025,7 +1025,7 @@ class TheanoNodenet(Nodenet):
 
     def group_nodes_by_names(self, nodespace=None, node_name_prefix=None):
         ids = []
-        for uid, name in self.names:                # todo: implement nodespaces
+        for uid, name in self.names.items():                # todo: implement nodespaces
             if name.startswith(node_name_prefix):
                 ids.append(uid)
         self.group_nodes_by_ids(ids, node_name_prefix)

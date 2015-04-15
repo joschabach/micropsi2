@@ -10,27 +10,36 @@ class TheanoNetAPI(NetAPI):
 
     def __init__(self, nodenet):
         super(TheanoNetAPI, self).__init__(nodenet)
+        self.__nodenet = nodenet
 
-    def group_nodes(self, nodespace=None, node_name_prefix=None):
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        pass
+        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix)
 
-    def group_nodes(self, group):
+    def group_nodes_by_ids(self, node_ids, group_name):
+        """
+        Will group the given set of nodes.
+        Groups can be used in bulk operations.
+        Grouped nodes will have stable sorting accross all bulk operations.
+        """
+        self.__nodenet.group_nodes_by_ids(node_ids, group_name)
+
+    def ungroup_nodes(self, group):
         """
         Deletes the given group (not the nodes, just the group assignment)
         """
-        pass
+        self.__nodenet.ungroup_nodes(group)
 
     def get_activations(self, group):
         """
         Returns an array of activations for the given group.
         For multi-gate nodes, the activations of the gen gates will be returned.
         """
-        pass
+        return self.__nodenet.get_activations(group)
 
     def get_thetas(self, group):
         """

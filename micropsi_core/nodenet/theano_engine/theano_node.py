@@ -267,7 +267,7 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, None)       # todo: get rid of positions
+        return self._nodenet.positions.get(self.uid, (10,10))       # todo: get rid of positions
 
     @position.setter
     def position(self, position):

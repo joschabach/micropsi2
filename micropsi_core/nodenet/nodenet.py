@@ -68,25 +68,32 @@ class Nodenet(metaclass=ABCMeta):
         nodespaces
         version
         """
+        data = self.metadata
+        data.update({
+            'links': {},
+            'nodes': {},
+            'max_coords': self.max_coords,
+            'nodespaces': {},
+            'monitors': self.construct_monitors_dict(),
+            'modulators': {},
+        })
+        return data
 
-        # todo: data dicts will be replaced with a save/load/export API at some point.
-
+    @property
+    def metadata(self):
+        """
+        Returns a dict representing the node net meta data (a subset of .data).
+        """
         data = {
             'uid': self.uid,
             'engine': self.engine,
             'owner': self.owner,
-            'links': {},
-            'nodes': {},
             'name': self.name,
-            'max_coords': self.max_coords,
             'is_active': self.is_active,
             'current_step': self.current_step,
-            'nodespaces': {},
             'world': self.__world_uid,
             'worldadapter': self.__worldadapter_uid,
-            'monitors': self.construct_monitors_dict(),
-            'modulators': {},
-            'version': "abstract"
+            'version': NODENET_VERSION
         }
         return data
 
@@ -175,6 +182,28 @@ class Nodenet(metaclass=ABCMeta):
         self.user_prompt = None
 
         self.netapi = NetAPI(self)
+
+    @abstractmethod
+    def save(self, filename):
+        """
+        Saves the nodenet to the given main metadata json file.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def load(self, filename):
+        """
+        Loads the node net from the given main metadata json file.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def remove(self, filename):
+        """
+        Removes the node net's given main metadata json file, plus any additional files the node net may
+        have created for persistency
+        """
+        pass  # pragma: no cover
 
     @abstractmethod
     def step(self):
@@ -315,7 +344,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
+    def get_nodespace_area_data(self, nodespace_uid, include_links, x1, x2, y1, y2):
         """
         Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
         nodespace, and within the given rectangle.
@@ -327,12 +356,10 @@ class Nodenet(metaclass=ABCMeta):
         'monitors' - result of self.construct_monitors_dict()
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
-        # todo: data dicts will be replaced with a save/load/export API at some point.
-        # todo: Positional data will either be made entirely transient at some point, or moved somewhere else
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_data(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links):
         """
         Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
         nodespace and limited to the given number of nodes.
@@ -344,17 +371,15 @@ class Nodenet(metaclass=ABCMeta):
         'monitors' - result of self.construct_monitors_dict()
         'user_prompt' - self.user_prompt if set, should be cleared then
         """
-        # todo: data dicts will be replaced with a save/load/export API at some point.
         pass  # pragma: no cover
 
     @abstractmethod
-    def merge_data(self, nodenet_data):
+    def merge_data(self, nodenet_data, keep_uids=False):
         """
         Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
-        This is a legacy method from when the only available implementation was dict-based and will either be
-        removed or implemented in the abstact base class as a generic JSON/dict import mechanism.
+        If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,
+        so only tests should use keep_uids=True
         """
-        # todo: data dicts will be replaced with a save/load/export API at some point.
         pass  # pragma: no cover
 
     @abstractmethod

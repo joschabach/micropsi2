@@ -4,6 +4,7 @@ import json
 import os
 
 import warnings
+import micropsi_core
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
@@ -169,7 +170,6 @@ class DictNodenet(Nodenet):
         state: a dict of persistent nodenet data; everything stored within the state can be stored and exported
         uid: a unique identifier for the node net
         name: an optional name for the node net
-        filename: the path and file name to the file storing the persisted net data
         nodespaces: a dictionary of node space UIDs and respective node spaces
         nodes: a dictionary of node UIDs and respective nodes
         links: a dictionary of link UIDs and respective links
@@ -202,18 +202,17 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self.__step
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
         """Create a new MicroPsi agent.
 
         Arguments:
-            filename: the path and filename of the agent
             agent_type (optional): the interface of this agent to its environment
             name (optional): the name of the agent
             owner (optional): the user that created this agent
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super(DictNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
+        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
         self.stepoperators = [DictPropagate(), DictCalculate(), DictPORRETDecay(), DictDoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
@@ -222,39 +221,45 @@ class DictNodenet(Nodenet):
         self.__step = 0
         self.__modulators = {}
 
-        self.filename = filename
         if world and worldadapter:
             self.worldadapter = worldadapter
 
         self.__nodes = {}
-        self.__nodetypes = STANDARD_NODETYPES
-        self.__native_modules = native_modules
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self.__locks = {}
         self.__nodes_by_coords = {}
 
-        self.load()
+        self.__nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
-    def load(self, string=None):
+        self.__native_modules = {}
+        for type, data in native_modules.items():
+            self.__native_modules[type] = Nodetype(nodenet=self, **data)
+
+        self.initialize_nodenet({})
+
+    def save(self, filename):
+        # dict_engine saves metadata and data into the same json file, so just dump .data
+        with open(filename, 'w+') as fp:
+            fp.write(json.dumps(self.data, sort_keys=True, indent=4))
+        if os.path.getsize(filename) < 100:
+            # kind of hacky, but we don't really know what was going on
+            raise RuntimeError("Error writing nodenet file")
+
+    def load(self, filename):
         """Load the node net from a file"""
         # try to access file
         with self.netlock:
 
             initfrom = {}
 
-            if string:
-                self.logger.info("Loading nodenet %s from string", self.name)
+            if os.path.isfile(filename):
                 try:
-                    initfrom.update(json.loads(string))
-                except ValueError:
-                    warnings.warn("Could not read nodenet data from string")
-                    return False
-            else:
-                try:
-                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
-                    with open(self.filename) as file:
+                    self.logger.info("Loading nodenet %s from file %s", self.name, filename)
+                    with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
                     warnings.warn("Could not read nodenet data")
@@ -268,6 +273,9 @@ class DictNodenet(Nodenet):
             else:
                 raise NotImplementedError("Wrong version of nodenet data, cannot import.")
 
+    def remove(self, filename):
+        os.remove(filename)
+
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
@@ -277,7 +285,7 @@ class DictNodenet(Nodenet):
             self.__native_modules[key].reload_nodefunction()
         saved = self.data
         self.clear()
-        self.merge_data(saved)
+        self.merge_data(saved, keep_uids=True)
 
     def initialize_nodespace(self, id, data):
         if id not in self.__nodespaces:
@@ -298,24 +306,15 @@ class DictNodenet(Nodenet):
         computation of the node net
         """
 
-        nodetypes = {}
-        for type, data in self.__nodetypes.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.__nodetypes = nodetypes
-
-        native_modules = {}
-        for type, data in self.__native_modules.items():
-            native_modules[type] = Nodetype(nodenet=self, **data)
-        self.__native_modules = native_modules
-
         self.__modulators = initfrom.get("modulators", {})
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        # now merge in all init data (from the persisted file typically)
-        self.merge_data(initfrom)
+        if len(initfrom) != 0:
+            # now merge in all init data (from the persisted file typically)
+            self.merge_data(initfrom, keep_uids=True)
 
     def construct_links_dict(self):
         data = {}
@@ -349,7 +348,7 @@ class DictNodenet(Nodenet):
         else:
             return self.__native_modules.get(type)
 
-    def get_nodespace_area_data(self, nodespace, x1, x2, y1, y2):
+    def get_nodespace_area_data(self, nodespace, include_links, x1, x2, y1, y2):
         x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
         y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
 
@@ -384,10 +383,12 @@ class DictNodenet(Nodenet):
                                     data['max_coords']['x'] = node.position[0]
                                 if node.position[1] > data['max_coords']['y']:
                                     data['max_coords']['y'] = node.position[1]
-                                links.extend(self.get_node(uid).get_associated_links())
+                                if include_links:
+                                    links.extend(self.get_node(uid).get_associated_links())
                                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
-        for link in links:
-            data['links'][link.uid] = link.data
+        if include_links:
+            for link in links:
+                data['links'][link.uid] = link.data
         for uid in followupnodes:
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.get_node(uid).data
@@ -433,14 +434,16 @@ class DictNodenet(Nodenet):
     def delete_nodespace(self, uid):
         self.delete_node(uid)
 
-    def get_nodespace_data(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links):
         """returns the nodes and links in a given nodespace"""
         data = {
+            'links': {},
             'nodes': self.construct_nodes_dict(max_nodes),
-            'links': self.construct_links_dict(),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict()
         }
+        if include_links:
+            data['links'] = self.construct_links_dict()
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
             self.user_prompt = None
@@ -462,14 +465,8 @@ class DictNodenet(Nodenet):
     def _register_nodespace(self, nodespace):
         self.__nodespaces[nodespace.uid] = nodespace
 
-    def merge_data(self, nodenet_data):
+    def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-
-        # Because of the horrible initialize_nodenet design that replaces existing dictionary objects with
-        # Python objects between initial loading and first use, none of the nodenet setup code is reusable.
-        # Instantiation should be a state-independent method or a set of state-independent methods that can be
-        # called whenever new data needs to be merged in, initially or later on.
-        # Potentially, initialize_nodenet can be replaced with merge_data.
 
         # net will have the name of the one to be merged into us
         self.name = nodenet_data['name']
@@ -479,12 +476,20 @@ class DictNodenet(Nodenet):
         for nodespace in nodespaces_to_merge:
             self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
+        uidmap = {}
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
+            if not keep_uids:
+                newuid = micropsi_core.tools.generate_uid()
+            else:
+                newuid = uid
+            data['uid'] = newuid
+            uidmap[uid] = newuid
             if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
-                self.__nodes[uid] = DictNode(self, **data)
-                pos = self.__nodes[uid].position
+                self.__nodes[newuid] = DictNode(self, **data)
+                pos = self.__nodes[newuid].position
                 xpos = int(pos[0] - (pos[0] % 100))
                 ypos = int(pos[1] - (pos[1] % 100))
                 if xpos not in self.__nodes_by_coords:
@@ -495,28 +500,32 @@ class DictNodenet(Nodenet):
                     self.__nodes_by_coords[xpos][ypos] = []
                     if ypos > self.max_coords['y']:
                         self.max_coords['y'] = ypos
-                self.__nodes_by_coords[xpos][ypos].append(uid)
+                self.__nodes_by_coords[xpos][ypos].append(newuid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
         # merge in links
-        for uid in nodenet_data.get('links', {}):
-            data = nodenet_data['links'][uid]
-            if data['source_node_uid'] in self.__nodes:
-                source_node = self.__nodes[data['source_node_uid']]
-                source_node.link(data['source_gate_name'],
-                                 data['target_node_uid'],
-                                 data['target_slot_name'],
-                                 data['weight'],
-                                 data['certainty'])
+        for linkid in nodenet_data.get('links', {}):
+            data = nodenet_data['links'][linkid]
+            self.create_link(
+                uidmap[data['source_node_uid']],
+                data['source_gate_name'],
+                uidmap[data['target_node_uid']],
+                data['target_slot_name'],
+                data['weight']
+            )
 
-        for uid in nodenet_data.get('monitors', {}):
-            data = nodenet_data['monitors'][uid]
+        for monitorid in nodenet_data.get('monitors', {}):
+            data = nodenet_data['monitors'][monitorid]
+            if 'node_uid' in data:
+                old_node_uid = data['node_uid']
+                if old_node_uid in uidmap:
+                    data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
                     getattr(monitor, data['classname'])(self, **data)
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 monitor.NodeMonitor(self, name=data['node_name'], **data)

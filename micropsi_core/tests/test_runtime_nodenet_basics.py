@@ -55,7 +55,7 @@ def test_user_prompt(fixed_nodenet):
         "foobar",
         options
     )
-    data = micropsi.get_nodespace(fixed_nodenet, 'Root', -1)
+    data = micropsi.get_nodespace(fixed_nodenet, 'Root', -1, True)
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
     assert data['user_prompt']['node']['uid'] == 'A1'

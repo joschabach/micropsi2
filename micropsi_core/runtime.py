@@ -247,19 +247,15 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
-            #engine = "theano_engine"
-
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
-                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
                     native_modules=native_modules)
             elif engine == 'theano_engine':
                 from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                 nodenets[nodenet_uid] = TheanoNodenet(
-                    os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'),
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
                     native_modules=native_modules)
@@ -267,6 +263,8 @@ def load_nodenet(nodenet_uid):
             else:
                 nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
+
+            nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
@@ -283,15 +281,16 @@ def load_nodenet(nodenet_uid):
     return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
 
 
-def get_nodenet_data(nodenet_uid, nodespace, coordinates):
+def get_nodenet_data(nodenet_uid, nodespace, include_links=True, coordinates={}):
     """ returns the current state of the nodenet """
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
-        data = nodenet.data
-    data.update(get_nodenet_area(nodenet_uid, nodespace, **coordinates))
+        data = nodenet.metadata
+    data.update(get_nodenet_area(nodenet_uid, nodespace, include_links=include_links, **coordinates))
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
-        'native_modules': native_modules
+        'native_modules': native_modules,
+        'monitors': nodenet.construct_monitors_dict()
     })
     return data
 
@@ -311,7 +310,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
+def get_nodenet_area(nodenet_uid, nodespace="Root", include_links=True, x1=0, x2=-1, y1=0, y2=-1):
     """ returns part of the nodespace for representation in the UI
     Either you specify an area to be retrieved, or the retrieval is limited to 500 nodes currently
     """
@@ -319,9 +318,9 @@ def get_nodenet_area(nodenet_uid, nodespace="Root", x1=0, x2=-1, y1=0, y2=-1):
         nodespace = "Root"
     with nodenets[nodenet_uid].netlock:
         if x2 < 0 or y2 < 0:
-            data = nodenets[nodenet_uid].get_nodespace_data(nodespace, 500)
+            data = nodenets[nodenet_uid].get_nodespace_data(nodespace, 500, include_links)
         else:
-            data = nodenets[nodenet_uid].get_nodespace_area_data(nodespace, x1, x2, y1, y2)
+            data = nodenets[nodenet_uid].get_nodespace_area_data(nodespace, include_links, x1, x2, y1, y2)
         data['nodespace'] = nodespace
         return data
 
@@ -340,36 +339,31 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         nodenet_uid if successful,
         None if failure
     """
-    if template is not None and template in nodenet_data:
-        if template in nodenets:
-            data = nodenets[template].data
-        else:
-            data = nodenet_data[template]
-    else:
-        data = dict(
-            nodes=dict(),
-            links=dict(),
-            step=0,
-            version=1
-        )
-
     if not uid:
         uid = tools.generate_uid()
-    data.update(dict(
+
+    data = dict(
+        version=1,
+        step=0,
         uid=uid,
         name=nodenet_name,
         worldadapter=worldadapter,
         owner=owner,
         world=world_uid,
         settings={},
-        engine=engine
-    ))
+        engine=engine)
+
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
-    with open(filename, 'w+') as fp:
-        fp.write(json.dumps(data, sort_keys=True, indent=4))
-    fp.close()
     load_nodenet(data['uid'])
+
+    if template is not None and template in nodenet_data:
+        load_nodenet(template)
+        data_to_merge = nodenets[template].data
+        data_to_merge.update(data)
+        nodenets[uid].merge_data(data_to_merge)
+
+    nodenets[uid].save(filename)
     return True, data['uid']
 
 
@@ -378,9 +372,9 @@ def delete_nodenet(nodenet_uid):
 
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
-    unload_nodenet(nodenet_uid)
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    os.remove(filename)
+    nodenets[nodenet_uid].remove(filename)
+    unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
     return True
 
@@ -476,13 +470,7 @@ def revert_nodenet(nodenet_uid):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    with open(filename, 'w+') as fp:
-        content = json.dumps(nodenet.data, sort_keys=True, indent=4)
-        fp.write(content)
-    if os.path.getsize(filename) < 100:
-        # kind of hacky, but we don't really know what was going on
-        raise RuntimeError("Error writing nodenet file")
+    nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
     nodenet_data[nodenet_uid] = Bunch(**nodenet.data)
     return True
 
@@ -515,22 +503,22 @@ def import_nodenet(string, owner=None):
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(import_data))
-    fp.close()
     nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
     load_nodenet(import_data['uid'])
     return import_data['uid']
 
 
-def merge_nodenet(nodenet_uid, string):
+def merge_nodenet(nodenet_uid, string, keep_uids=False):
     """Merges the nodenet data with an existing nodenet, instantiates the nodenet.
 
     Arguments:
         nodenet_uid: the uid of the existing nodenet (may overwrite existing nodenet)
         string: a string that contains the nodenet data that is to be merged in JSON format.
+        keep_uids: if true, no uid replacement will be performed. Dangerous.
     """
     nodenet = nodenets[nodenet_uid]
     data = json.loads(string)
-    nodenet.merge_data(data)
+    nodenet.merge_data(data, keep_uids)
     save_nodenet(nodenet_uid)
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
@@ -681,7 +669,7 @@ def get_nodespace_list(nodenet_uid):
     return data
 
 
-def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
+def get_nodespace(nodenet_uid, nodespace, step=0, include_links=True, coordinates={}):
     """Returns the current state of the nodespace for UI purposes, if current step is newer than supplied one."""
     data = {}
     if nodenet_uid in MicropsiRunner.last_nodenet_exception:
@@ -689,7 +677,7 @@ def get_nodespace(nodenet_uid, nodespace, step=0, coordinates={}):
         del MicropsiRunner.last_nodenet_exception[nodenet_uid]
         raise Exception("Error during stepping nodenet").with_traceback(e[2]) from e[1]
     if step < nodenets[nodenet_uid].current_step:
-        data = get_nodenet_area(nodenet_uid, nodespace, **coordinates)
+        data = get_nodenet_area(nodenet_uid, nodespace, include_links, **coordinates)
         data.update({'current_step': nodenets[nodenet_uid].current_step, 'is_active': nodenets[nodenet_uid].is_active})
     return data
 
@@ -1015,15 +1003,16 @@ def crawl_definition_files(path, type="definition"):
 
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:
-            try:
-                filename = os.path.join(user_directory_name, definition_file_name)
-                with open(filename) as file:
-                    data = parse_definition(json.load(file), filename)
-                    result[data.uid] = data
-            except ValueError:
-                warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
-            except IOError:
-                warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
+            if definition_file_name.endswith(".json"):
+                try:
+                    filename = os.path.join(user_directory_name, definition_file_name)
+                    with open(filename) as file:
+                        data = parse_definition(json.load(file), filename)
+                        result[data.uid] = data
+                except ValueError:
+                    warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
+                except IOError:
+                    warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
     return result
 
 
@@ -1058,7 +1047,6 @@ def load_definitions():
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
-        fp.close()
     return nodenet_data, world_data
 
 

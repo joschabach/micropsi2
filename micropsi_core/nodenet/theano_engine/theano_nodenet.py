@@ -101,10 +101,10 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 7
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 3
 
-NUMBER_OF_NODES = 5000
-NUMBER_OF_ELEMENTS = NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
+DEFAULT_NUMBER_OF_NODES = 2000
+DEFAULT_NUMBER_OF_ELEMENTS = DEFAULT_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
 
 class TheanoNodenet(Nodenet):
@@ -260,120 +260,238 @@ class TheanoNodenet(Nodenet):
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
 
-    def __init__(self, filename, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        super(TheanoNodenet, self).__init__(name or os.path.basename(filename), worldadapter, world, owner, uid)
+        # todo: move to float32 and handle casting issues on the way back to Python doubles (JSON-serialization...)
+        T.config.floatX = "float64"
+
+        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
+        self.NoN = DEFAULT_NUMBER_OF_NODES
+        self.NoE = DEFAULT_NUMBER_OF_ELEMENTS
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
-        self.__nodetypes = STANDARD_NODETYPES
-        self.native_modules = native_modules
-        self.filename = filename
 
         # for now, fix sparse to True
         self.sparse = True
 
-        self.allocated_nodes = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
-        self.allocated_node_offsets = np.zeros(NUMBER_OF_NODES, dtype=np.int32)
-        self.allocated_elements_to_nodes = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int32)
+        self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
 
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=scipy.float32), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipy.float64), name="w")
         else:
-            w_matrix = np.zeros((NUMBER_OF_ELEMENTS, NUMBER_OF_ELEMENTS), dtype=np.float32)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=np.float64)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        a_array = np.zeros(self.NoE, dtype=np.float64)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(NUMBER_OF_ELEMENTS, 7), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(8, 8))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_theta_array = np.zeros(self.NoE, dtype=np.float64)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_factor_array = np.ones(self.NoE, dtype=np.float64)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_threshold_array = np.zeros(self.NoE, dtype=np.float64)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_amplification_array = np.ones(self.NoE, dtype=np.float64)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_min_array = np.zeros(self.NoE, dtype=np.float64)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(NUMBER_OF_ELEMENTS, dtype=np.float32)
+        g_max_array = np.ones(self.NoE, dtype=np.float64)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
-        g_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
 
-        n_function_selector_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
 
-        n_node_porlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
 
-        n_node_retlinked_array = np.zeros(NUMBER_OF_ELEMENTS, dtype=np.int8)
+        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
         self.rootnodespace = TheanoNodespace(self)
 
+        self.initialize_stepoperators()
+
+        self.__nodetypes = {}
+        for type, data in STANDARD_NODETYPES.items():
+            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
+
+        self.native_modules = {}
+        for type, data in native_modules.items():
+            self.native_modules[type] = Nodetype(nodenet=self, **data)
+
+        self.initialize_nodenet({})
+
+    def initialize_stepoperators(self):
         self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
         self.stepoperators.sort(key=lambda op: op.priority)
 
-        self.load()
+    def save(self, filename):
 
-    def load(self, string=None):
+        # write json metadata, which will be used by runtime to manage the net
+        with open(filename, 'w+') as fp:
+            metadata = self.metadata
+            metadata['positions'] = self.positions
+            metadata['names'] = self.names
+            metadata['actuatormap'] = self.actuatormap
+            metadata['sensormap'] = self.sensormap
+            fp.write(json.dumps(metadata, sort_keys=True, indent=4))
+
+        # write bulk data to our own numpy-based file format
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data")
+
+        allocated_nodes = self.allocated_nodes
+        allocated_node_offsets = self.allocated_node_offsets
+        allocated_elements_to_nodes = self.allocated_elements_to_nodes
+
+        w = self.w.get_value(borrow=True, return_internal_type=True)
+        a = self.a.get_value(borrow=True, return_internal_type=True)
+        g_theta = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_factor = self.g_factor.get_value(borrow=True, return_internal_type=True)
+        g_threshold = self.g_threshold.get_value(borrow=True, return_internal_type=True)
+        g_amplification = self.g_amplification.get_value(borrow=True, return_internal_type=True)
+        g_min = self.g_min.get_value(borrow=True, return_internal_type=True)
+        g_max = self.g_max.get_value(borrow=True, return_internal_type=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_function_selector = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
+        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+
+        sizeinformation = [self.NoN, self.NoE]
+
+        np.savez(datafilename,
+                 allocated_nodes=allocated_nodes,
+                 allocated_node_offsets=allocated_node_offsets,
+                 allocated_elements_to_nodes=allocated_elements_to_nodes,
+                 w_data=w.data,
+                 w_indices=w.indices,
+                 w_indptr=w.indptr,
+                 a=a,
+                 g_theta=g_theta,
+                 g_factor=g_factor,
+                 g_threshold=g_threshold,
+                 g_amplification=g_amplification,
+                 g_min=g_min,
+                 g_max=g_max,
+                 g_function_selector=g_function_selector,
+                 n_function_selector=n_function_selector,
+                 n_node_porlinked=n_node_porlinked,
+                 n_node_retlinked=n_node_retlinked,
+                 sizeinformation=sizeinformation)
+
+
+    def load(self, filename):
         """Load the node net from a file"""
         # try to access file
+
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
+
         with self.netlock:
-
             initfrom = {}
-
-            if string:
-                self.logger.info("Loading nodenet %s from string", self.name)
+            datafile = None
+            if os.path.isfile(filename):
                 try:
-                    initfrom.update(json.loads(string))
-                except ValueError:
-                    warnings.warn("Could not read nodenet data from string")
-                    return False
-            else:
-                try:
-                    self.logger.info("Loading nodenet %s from file %s", self.name, self.filename)
-                    with open(self.filename) as file:
+                    self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
+                    with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet data")
+                    warnings.warn("Could not read nodenet metadata from file %s", filename)
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet file")
+                    warnings.warn("Could not open nodenet metadata file %s", filename)
+                    return False
 
-            if self.__version == NODENET_VERSION:
-                self.initialize_nodenet(initfrom)
-                return True
-            else:
-                raise NotImplementedError("Wrong version of nodenet data, cannot import.")
+            if os.path.isfile(datafilename):
+                try:
+                    self.logger.info("Loading nodenet %s bulk data from file %s", self.name, datafilename)
+                    datafile = np.load(datafilename)
+                except ValueError:
+                    warnings.warn("Could not read nodenet data from file %", datafile)
+                    return False
+                except IOError:
+                    warnings.warn("Could not open nodenet file %s", datafile)
+                    return False
+
+            # initialize with metadata
+            self.initialize_nodenet(initfrom)
+
+            if datafile:
+
+                self.NoN = datafile['sizeinformation'][0]
+                self.NoE = datafile['sizeinformation'][1]
+
+                # todo: this will crash if we change the NUMBER_OF_NODES or NUMBER_OF_ELEMENTS constants, use sizeinformation
+
+                # the load bulk data into numpy arrays
+                self.allocated_nodes = datafile['allocated_nodes']
+                self.allocated_node_offsets = datafile['allocated_node_offsets']
+                self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
+
+                w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
+                self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
+                self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
+
+                self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+                self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
+                self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
+                self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
+                self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
+                self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
+
+                g_function_selector = datafile['g_function_selector']
+                self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
+                self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
+
+                self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
+                self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
+
+                # reconstruct other states
+                self.has_new_usages = True
+                self.has_pipes = PIPE in self.allocated_nodes
+                self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
+                self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
+                self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
+                self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+                self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+
+                for id in range(len(self.allocated_nodes)):
+                    if self.allocated_nodes[id] > MAX_STD_NODETYPE:
+                        uid = to_id(id)
+                        self.native_module_instances[uid] = self.get_node(uid)
+
+            for sensor, id_list in self.sensormap.items():
+                for id in id_list:
+                    self.inverted_sensor_map[to_id(id)] = sensor
+            for actuator, id_list in self.actuatormap.items():
+                for id in id_list:
+                    self.inverted_actuator_map[to_id(id)] = actuator
+
+            # re-initialize step operators for theano recompile to new shared variables
+            self.initialize_stepoperators()
+
+            return True
+
+    def remove(self, filename):
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
+        os.remove(datafilename)
+        os.remove(filename)
 
     def initialize_nodenet(self, initfrom):
-        """Called after reading new nodenet state.
-
-        Parses the nodenet state and set up the non-persistent data structures necessary for efficient
-        computation of the node net
-        """
-
-        nodetypes = {}
-        for type, data in self.__nodetypes.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.__nodetypes = nodetypes
-
-        native_modules = {}
-        for type, data in self.native_modules.items():
-             native_modules[type] = Nodetype(nodenet=self, **data)
-        self.native_modules = native_modules
 
         # todo: implement modulators
         # self.__modulators = initfrom.get("modulators", {})
@@ -383,17 +501,21 @@ class TheanoNodenet(Nodenet):
         # self.__nodespaces = {}
         # self.__nodespaces["Root"] = TheanoNodespace(self) #, None, (0, 0), name="Root", uid="Root")
 
-        # now merge in all init data (from the persisted file typically)
-        self.merge_data(initfrom)
+        if len(initfrom) != 0:
+            # now merge in all init data (from the persisted file typically)
+            self.merge_data(initfrom, keep_uids=True)
+            if 'names' in initfrom:
+                self.names = initfrom['names']
+            if 'positions' in initfrom:
+                self.positions = initfrom['positions']
+            if 'actuatormap' in initfrom:
+                self.actuatormap = initfrom['actuatormap']
+            if 'sensormap' in initfrom:
+                self.sensormap = initfrom['sensormap']
 
-    def merge_data(self, nodenet_data):
+
+    def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-
-        # Because of the horrible initialize_nodenet design that replaces existing dictionary objects with
-        # Python objects between initial loading and first use, none of the nodenet setup code is reusable.
-        # Instantiation should be a state-independent method or a set of state-independent methods that can be
-        # called whenever new data needs to be merged in, initially or later on.
-        # Potentially, initialize_nodenet can be replaced with merge_data.
 
         # net will have the name of the one to be merged into us
         self.name = nodenet_data['name']
@@ -404,20 +526,26 @@ class TheanoNodenet(Nodenet):
         # for nodespace in nodespaces_to_merge:
         #    self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
+        uidmap = {}
+
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
             if data['type'] in self.__nodetypes or data['type'] in self.native_modules:
-                self.create_node(
+                olduid = None
+                if keep_uids:
+                    olduid = uid
+                new_uid = self.create_node(
                     data['type'],
                     data['parent_nodespace'],
                     data['position'],
                     name=data['name'],
-                    uid=data['uid'],
+                    uid=olduid,
                     parameters=data['parameters'],
                     gate_parameters=data['gate_parameters'],
                     gate_functions=data['gate_functions'])
-                node = self.get_node(uid)
+                uidmap[uid] = new_uid
+                node = self.get_node(new_uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
@@ -425,23 +553,27 @@ class TheanoNodenet(Nodenet):
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
         # merge in links
-        for uid in nodenet_data.get('links', {}):
-            data = nodenet_data['links'][uid]
+        for linkid in nodenet_data.get('links', {}):
+            data = nodenet_data['links'][linkid]
             self.create_link(
-                data['source_node_uid'],
+                uidmap[data['source_node_uid']],
                 data['source_gate_name'],
-                data['target_node_uid'],
+                uidmap[data['target_node_uid']],
                 data['target_slot_name'],
                 data['weight']
             )
 
-        for uid in nodenet_data.get('monitors', {}):
-            data = nodenet_data['monitors'][uid]
+        for monitorid in nodenet_data.get('monitors', {}):
+            data = nodenet_data['monitors'][monitorid]
+            if 'node_uid' in data:
+                old_node_uid = data['node_uid']
+                if old_node_uid in uidmap:
+                    data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
                     getattr(monitor, data['classname'])(self, **data)
                 else:
-                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], uid))
+                    self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
                 monitor.NodeMonitor(self, name=data['node_name'], **data)
@@ -483,7 +615,7 @@ class TheanoNodenet(Nodenet):
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             id = 0
-            for i in range((self.last_allocated_node + 1), NUMBER_OF_NODES):
+            for i in range((self.last_allocated_node + 1), self.NoN):
                 if self.allocated_nodes[i] == 0:
                     id = i
                     break
@@ -495,7 +627,7 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                raise MemoryError("Cannot find free id, all " + str(NUMBER_OF_NODES) + " node entries already in use.")
+                raise MemoryError("Cannot find free id, all " + str(self.NoN) + " node entries already in use.")
         else:
             id = from_id(uid)
 
@@ -519,7 +651,7 @@ class TheanoNodenet(Nodenet):
             else:
                 i += freecount+1
 
-            if i >= NUMBER_OF_ELEMENTS:
+            if i >= self.NoE:
                 if not has_restarted_from_zero:
                     i = 0
                     has_restarted_from_zero = True
@@ -624,9 +756,27 @@ class TheanoNodenet(Nodenet):
         # hint at the free ID
         self.last_allocated_node = from_id(uid) - 1
 
-        # remove the native module instance if there should ne one
+        # remove the native module instance if there should be one
         if uid in self.native_module_instances:
             del self.native_module_instances[uid]
+
+        # remove sensor association if there should be one
+        if uid in self.inverted_sensor_map:
+            sensor = self.inverted_sensor_map[uid]
+            del self.inverted_sensor_map[uid]
+            if sensor in self.sensormap:
+                self.sensormap[sensor].remove(from_id(uid))
+            if len(self.sensormap[sensor]) == 0:
+                del self.sensormap[sensor]
+
+        # remove actuator association if there should be one
+        if uid in self.inverted_actuator_map:
+            actuator = self.inverted_actuator_map[uid]
+            del self.inverted_actuator_map[uid]
+            if actuator in self.actuatormap:
+                self.actuatormap[actuator].remove(from_id(uid))
+            if len(self.actuatormap[actuator]) == 0:
+                del self.actuatormap[actuator]
 
     def get_nodespace(self, uid):
         if uid == "Root":
@@ -726,16 +876,19 @@ class TheanoNodenet(Nodenet):
     def reload_native_modules(self, native_modules):
         pass
 
-    def get_nodespace_area_data(self, nodespace_uid, x1, x2, y1, y2):
-        return self.get_nodespace_data(nodespace_uid, NUMBER_OF_NODES)               # todo: implement
+    def get_nodespace_area_data(self, nodespace_uid, include_links, x1, x2, y1, y2):
+        return self.get_nodespace_data(nodespace_uid, self.NoN, include_links)               # todo: implement
 
-    def get_nodespace_data(self, nodespace_uid, max_nodes):
+    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links=True):
         data = {
+            'links': {},
             'nodes': self.construct_nodes_dict(max_nodes),
-            'links': self.construct_links_dict(),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict()
         }
+        if include_links:
+            data['links'] = self.construct_links_dict()
+
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
             self.user_prompt = None
@@ -877,5 +1030,5 @@ class TheanoNodenet(Nodenet):
     def rebuild_shifted(self):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)
         a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(NUMBER_OF_ELEMENTS, 14), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(8, 8))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)

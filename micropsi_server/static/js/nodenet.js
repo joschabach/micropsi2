@@ -252,6 +252,7 @@ function setCurrentNodenet(uid, nodespace, changed){
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
+            include_links: $.cookie('renderlinks') != 'no',
             coordinates: {
                 x1: loaded_coordinates.x[0],
                 x2: loaded_coordinates.x[1],
@@ -441,6 +442,7 @@ function get_nodenet_data(){
     return {
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
+        'include_links': $.cookie('renderlinks') != 'no',
         'coordinates': {
             x1: loaded_coordinates.x[0],
             x2: loaded_coordinates.x[1],
@@ -473,6 +475,7 @@ function refreshNodespace(nodespace, coordinates, step, callback){
     if(step){
         params.step = step;
     }
+    params.include_links = nodenet_data['renderlinks'] != 'no';
     params.coordinates = {
         x1: parseInt(coordinates.x[0]),
         x2: parseInt(coordinates.x[1]),

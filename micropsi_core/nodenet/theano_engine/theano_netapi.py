@@ -4,7 +4,7 @@ from micropsi_core.nodenet.netapi import NetAPI
 
 class TheanoNetAPI(NetAPI):
     """
-    Theano / numpy extension of the NatAPI, giving native modules access to bulk operations and efficient
+    Theano / numpy extension of the NetAPI, giving native modules access to bulk operations and efficient
     data structures for machine learning purposes.
     """
 

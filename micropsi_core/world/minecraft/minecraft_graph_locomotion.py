@@ -1,5 +1,6 @@
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core import tools
+from configuration import config as cfg
 import random
 import logging
 import time
@@ -248,6 +249,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
 
+        self.simulated_vision = False
+        if 'simulate_vision' in cfg['minecraft']:
+            self.simulated_vision = True
+            self.simulated_vision_datafile = cfg['minecraft']['simulate_vision']
+            self.logger.info("Setting up minecraft_graph_locomotor to simulate vision from data file %s", self.simulated_vision_datafile)
+            from numpy import genfromtxt
+            self.simulated_vision_data = genfromtxt(self.simulated_vision_datafile, delimiter=',')
+
     def server_chat_message(self, event, data):
         if data.data and 'json_data' in data.data:
             if data.data['json_data'].get('translate') == 'tile.bed.noSleep':
@@ -330,7 +339,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
             self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
             loco_label = self.current_loco_node['name']  # because python uses call-by-object
-            self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
+            if not self.simulated_vision:
+                self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
+            else:
+                self.simulate_visual_input()
             # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
             if self.datatargets['fov_x'] > 0.0:
                 self.datatarget_feedback['fov_x'] = 1.0
@@ -577,6 +589,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # scale from [-1,+1] to [0.1,0.9] and write values to sensors
             patch_resc = [(1.0 + x) * 0.4 + 0.1 for x in patch_std]
 
+        self.write_visual_input_to_datasources(patch_resc)
+
+    def simulate_visual_input(self):
+        if self.world.current_step % 4 == 0:
+            print("Simulating vision in world step "+str(self.world.current_step))
+            entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
+            self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index])
+
+    def write_visual_input_to_datasources(self, patch):
         # write values to self.datasources['fov__']
         # if num_fov < patch height and width, write the left-right centered, top-bottom 3/4 chunk to fov__
         left_rim = (int(self.patch_width - self.num_fov) // 2) - 1
@@ -584,7 +605,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         for i in range(self.num_fov):
             for j in range(self.num_fov):
                 name = 'fov__%02d_%02d' % (i, j)
-                self.datasources[name] = patch_resc[(self.patch_height * (i + top_rim)) + j + left_rim]
+                self.datasources[name] = patch[(self.patch_height * (i + top_rim)) + j + left_rim]
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

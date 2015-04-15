@@ -1058,10 +1058,16 @@ class TheanoNodenet(Nodenet):
 
     def get_link_weights(self, group_from, group_to):
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        return w_matrix[:,self.nodegroups[group_from]][self.nodegroups[group_to]]
+        return w_matrix[:,self.nodegroups[group_from]][self.nodegroups[group_to]].todense()
 
     def set_link_weights(self, group_from, group_to, new_w):
-        pass
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        grp_from = self.nodegroups[group_from]
+        grp_to = self.nodegroups[group_to]
+        for row_index in range(len(grp_to)):
+            for col_index in range(len(grp_from)):
+                w_matrix[grp_to[row_index],grp_from[col_index]] = new_w[row_index, col_index]
+        self.w.set_value(w_matrix, borrow=True)
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]

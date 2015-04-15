@@ -70,4 +70,4 @@ class TheanoNetAPI(NetAPI):
         Rows are group_to slots, columns are group_from gates.
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
-        pass
+        self.__nodenet.set_link_weights(group_from, group_to, new_w)

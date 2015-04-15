@@ -46,7 +46,7 @@ class TheanoNetAPI(NetAPI):
         Returns an array of theta values for the given group.
         For multi-gate nodes, the thetas of the gen gates will be returned
         """
-        pass
+        return self.__nodenet.get_thetas(group)
 
     def set_thetas(self, group, new_thetas):
         """
@@ -54,7 +54,7 @@ class TheanoNetAPI(NetAPI):
         For multi-gate nodes, the thetas of the gen gates will be set
         new_thetas dimensionality has to match the group length
         """
-        pass
+        self.__nodenet.set_thetas(group, new_thetas)
 
     def get_link_weights(self, group_from, group_to):
         """

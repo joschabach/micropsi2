@@ -1047,6 +1047,15 @@ class TheanoNodenet(Nodenet):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)
         return a_array[self.nodegroups[group]]
 
+    def get_thetas(self, group):
+        g_theta_array = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        return g_theta_array[self.nodegroups[group]]
+
+    def set_thetas(self, group, thetas):
+        g_theta_array = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_theta_array[self.nodegroups[group]] = thetas
+        self.g_theta.set_value(g_theta_array, borrow=True)
+
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 

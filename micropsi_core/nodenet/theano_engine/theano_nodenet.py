@@ -1036,6 +1036,7 @@ class TheanoNodenet(Nodenet):
 
     def group_nodes_by_ids(self, node_ids, group_name):
         ids = [from_id(uid) for uid in node_ids]
+        ids = sorted(ids)
         self.nodegroups[group_name] = self.allocated_node_offsets[ids]
 
     def ungroup_nodes(self, group):

@@ -62,7 +62,7 @@ class TheanoNetAPI(NetAPI):
         Rows are group_to slots, columns are group_from gates.
         Non-existing links will be returned as 0-entries in the matrix.
         """
-        pass
+        return self.__nodenet.get_link_weights(group_from, group_to)
 
     def set_link_weights(self, group_from, group_to, new_w):
         """

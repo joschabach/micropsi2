@@ -1056,6 +1056,13 @@ class TheanoNodenet(Nodenet):
         g_theta_array[self.nodegroups[group]] = thetas
         self.g_theta.set_value(g_theta_array, borrow=True)
 
+    def get_link_weights(self, group_from, group_to):
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        return w_matrix[:,self.nodegroups[group_from]][self.nodegroups[group_to]]
+
+    def set_link_weights(self, group_from, group_to, new_w):
+        pass
+
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 

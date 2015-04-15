@@ -470,6 +470,11 @@ class TheanoNodenet(Nodenet):
                 self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
                 self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
 
+                for id in range(len(self.allocated_nodes)):
+                    if self.allocated_nodes[id] > MAX_STD_NODETYPE:
+                        uid = to_id(id)
+                        self.native_module_instances[uid] = self.get_node(uid)
+
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
                     self.inverted_sensor_map[to_id(id)] = sensor

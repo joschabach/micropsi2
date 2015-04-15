@@ -68,7 +68,7 @@
         <h3>Run Recipe</h3>
     </div>
     <div class="modal-body">
-        <p>You can place a python file with useful functions called "recipes.py" in your ressource-directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
+        <p>You can place a python file with useful functions called "recipes.py" in your resource directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
         <form class="form-horizontal">
             <fieldset>
                 <div class="control-group">

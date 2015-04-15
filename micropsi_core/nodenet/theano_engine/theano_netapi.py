@@ -11,54 +11,54 @@ class TheanoNetAPI(NetAPI):
     def __init__(self, nodenet):
         super(TheanoNetAPI, self).__init__(nodenet)
 
-    def tag_nodes(self, nodespace=None, node_name_prefix=None):
+    def group_nodes(self, nodespace=None, node_name_prefix=None):
         """
-        Will tag the given set of nodes.
-        Tags can be used in bulk operations.
-        Tagged nodes will have stable sorting accross all bulk operations.
-        """
-        pass
-
-    def untag_nodes(self, tag):
-        """
-        Deletes the given tag
+        Will group the given set of nodes.
+        Groups can be used in bulk operations.
+        Grouped nodes will have stable sorting accross all bulk operations.
         """
         pass
 
-    def get_activations(self, tag):
+    def group_nodes(self, group):
         """
-        Returns an array of activations for the given tag.
+        Deletes the given group (not the nodes, just the group assignment)
+        """
+        pass
+
+    def get_activations(self, group):
+        """
+        Returns an array of activations for the given group.
         For multi-gate nodes, the activations of the gen gates will be returned.
         """
         pass
 
-    def get_thetas(self, tag):
+    def get_thetas(self, group):
         """
-        Returns an array of theta values for the given tag.
+        Returns an array of theta values for the given group.
         For multi-gate nodes, the thetas of the gen gates will be returned
         """
         pass
 
-    def set_thetas(self, tag, new_thetas):
+    def set_thetas(self, group, new_thetas):
         """
-        Bulk-sets thetas for the given tag.
+        Bulk-sets thetas for the given group.
         For multi-gate nodes, the thetas of the gen gates will be set
-        new_thetas dimensionality has to match the tag length
+        new_thetas dimensionality has to match the group length
         """
         pass
 
-    def get_link_weights(self, tag_from, tag_to):
+    def get_link_weights(self, group_from, group_to):
         """
-        Returns the weights of links between two tags as a matrix.
-        Rows are tag_to slots, columns are tag_from gates.
+        Returns the weights of links between two groups as a matrix.
+        Rows are group_to slots, columns are group_from gates.
         Non-existing links will be returned as 0-entries in the matrix.
         """
         pass
 
-    def set_link_weights(self, tag_from, tag_to, new_w):
+    def set_link_weights(self, group_from, group_to, new_w):
         """
-        Sets the weights of links between two tags from the given matrix new_w.
-        Rows are tag_to slots, columns are tag_from gates.
+        Sets the weights of links between two groups from the given matrix new_w.
+        Rows are group_to slots, columns are group_from gates.
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
         pass

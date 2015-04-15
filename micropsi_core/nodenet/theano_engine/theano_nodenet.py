@@ -21,6 +21,7 @@ from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
+from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 
 
 STANDARD_NODETYPES = {
@@ -267,6 +268,8 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
+        self.netapi = TheanoNetAPI(self)
+
         self.NoN = DEFAULT_NUMBER_OF_NODES
         self.NoE = DEFAULT_NUMBER_OF_ELEMENTS
 
@@ -334,6 +337,8 @@ class TheanoNodenet(Nodenet):
         self.native_modules = {}
         for type, data in native_modules.items():
             self.native_modules[type] = Nodetype(nodenet=self, **data)
+
+        self.nodegroups = {}
 
         self.initialize_nodenet({})
 
@@ -434,8 +439,6 @@ class TheanoNodenet(Nodenet):
 
                 self.NoN = datafile['sizeinformation'][0]
                 self.NoE = datafile['sizeinformation'][1]
-
-                # todo: this will crash if we change the NUMBER_OF_NODES or NUMBER_OF_ELEMENTS constants, use sizeinformation
 
                 # the load bulk data into numpy arrays
                 self.allocated_nodes = datafile['allocated_nodes']
@@ -1023,6 +1026,48 @@ class TheanoNodenet(Nodenet):
         self.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
+
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None):
+        ids = []
+        for uid, name in self.names.items():                # todo: implement nodespaces
+            if name.startswith(node_name_prefix):
+                ids.append(uid)
+        self.group_nodes_by_ids(ids, node_name_prefix)
+
+    def group_nodes_by_ids(self, node_ids, group_name):
+        ids = [from_id(uid) for uid in node_ids]
+        ids = sorted(ids)
+        self.nodegroups[group_name] = self.allocated_node_offsets[ids]
+
+    def ungroup_nodes(self, group):
+        if group in self.nodegroups:
+            del self.nodegroups[group]
+
+    def get_activations(self, group):
+        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        return a_array[self.nodegroups[group]]
+
+    def get_thetas(self, group):
+        g_theta_array = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        return g_theta_array[self.nodegroups[group]]
+
+    def set_thetas(self, group, thetas):
+        g_theta_array = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_theta_array[self.nodegroups[group]] = thetas
+        self.g_theta.set_value(g_theta_array, borrow=True)
+
+    def get_link_weights(self, group_from, group_to):
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        return w_matrix[:,self.nodegroups[group_from]][self.nodegroups[group_to]].todense()
+
+    def set_link_weights(self, group_from, group_to, new_w):
+        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        grp_from = self.nodegroups[group_from]
+        grp_to = self.nodegroups[group_to]
+        for row_index in range(len(grp_to)):
+            for col_index in range(len(grp_from)):
+                w_matrix[grp_to[row_index],grp_from[col_index]] = new_w[row_index, col_index]
+        self.w.set_value(w_matrix, borrow=True)
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]

@@ -245,7 +245,6 @@ class DictNodenet(Nodenet):
         # dict_engine saves metadata and data into the same json file, so just dump .data
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(self.data, sort_keys=True, indent=4))
-        fp.close()
         if os.path.getsize(filename) < 100:
             # kind of hacky, but we don't really know what was going on
             raise RuntimeError("Error writing nodenet file")

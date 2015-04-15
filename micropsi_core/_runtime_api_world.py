@@ -107,7 +107,6 @@ def new_world(world_name, world_type, owner="", uid=None):
                                                   owner=owner)
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
-    fp.close()
     try:
         kwargs = micropsi_core.runtime.world_data[uid]
         micropsi_core.runtime.worlds[uid] = get_world_class_from_name(world_type)(**kwargs)
@@ -161,7 +160,6 @@ def save_world(world_uid):
     with open(os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY,
                            world_uid) + '.json', 'w+') as fp:
         fp.write(json.dumps(micropsi_core.runtime.worlds[world_uid].data, sort_keys=True, indent=4))
-    fp.close()
     return True
 
 
@@ -184,7 +182,6 @@ def import_world(worlddata, owner=None):
     data['filename'] = filename
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(data))
-    fp.close()
     micropsi_core.runtime.world_data[data['uid']] = micropsi_core.runtime.parse_definition(data, filename)
     micropsi_core.runtime.worlds[data['uid']] = get_world_class_from_name(
         micropsi_core.runtime.world_data[data['uid']].world_type)(

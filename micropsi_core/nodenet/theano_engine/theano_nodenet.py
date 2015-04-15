@@ -327,15 +327,13 @@ class TheanoNodenet(Nodenet):
 
         self.initialize_stepoperators()
 
-        nodetypes = {}
+        self.__nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
-            nodetypes[type] = Nodetype(nodenet=self, **data)
-        self.__nodetypes = nodetypes
+            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        native_modules = {}
+        self.native_modules = {}
         for type, data in native_modules.items():
-            native_modules[type] = Nodetype(nodenet=self, **data)
-        self.native_modules = native_modules
+            self.native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.initialize_nodenet({})
 

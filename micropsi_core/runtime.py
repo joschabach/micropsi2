@@ -476,9 +476,13 @@ def revert_nodenet(nodenet_uid):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    with open(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'), 'w+') as fp:
-        fp.write(json.dumps(nodenet.data, sort_keys=True, indent=4))
-    fp.close()
+    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
+    with open(filename, 'w+') as fp:
+        content = json.dumps(nodenet.data, sort_keys=True, indent=4)
+        fp.write(content)
+    if os.path.getsize(filename) < 100:
+        # kind of hacky, but we don't really know what was going on
+        raise RuntimeError("Error writing nodenet file")
     nodenet_data[nodenet_uid] = Bunch(**nodenet.data)
     return True
 

@@ -356,7 +356,6 @@ class TheanoNodenet(Nodenet):
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
-        fp.close()
 
         # write bulk data to our own numpy-based file format
         datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data")
@@ -472,6 +471,11 @@ class TheanoNodenet(Nodenet):
                 self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
                 self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
                 self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+
+                for id in range(len(self.allocated_nodes)):
+                    if self.allocated_nodes[id] > MAX_STD_NODETYPE:
+                        uid = to_id(id)
+                        self.native_module_instances[uid] = self.get_node(uid)
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:

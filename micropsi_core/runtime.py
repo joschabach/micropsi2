@@ -503,7 +503,6 @@ def import_nodenet(string, owner=None):
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(import_data))
-    fp.close()
     nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
     load_nodenet(import_data['uid'])
     return import_data['uid']
@@ -1048,7 +1047,6 @@ def load_definitions():
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
-        fp.close()
     return nodenet_data, world_data
 
 

@@ -183,8 +183,6 @@ class Minecraft2D(Minecraft):
         # -90 is looking straight up, and 90 is looking straight down. "
 
         # perspective of particular yaw values
-        # i get the impression that while the agent turns to the right at eg. 90 degrees yaw
-        # the proejection i get is turned left #doublecheck!
         #   0 -
         #  90 -
         # 180 -
@@ -261,14 +259,6 @@ class Minecraft2D(Minecraft):
                 projection += (block_name, distance)
 
         self.data['projection'] = projection
-
-        # problems:
-        # depending on the depth to compute there's considerable perceptual delay
-        # things that aren't part of the world cannot be seen from the world data
-
-        # ideas:
-        # increase number of rays per pixel with increasing distance
-        # make a non-linear image plane, eg. with higher resolution in the middle
 
     def rotate_around_x_axis(self, pos, angle):
         """ Rotate a 3D point around the x-axis given a specific angle. """

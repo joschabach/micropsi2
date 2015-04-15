@@ -189,15 +189,18 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # ( small values of focal length distort the image if things are close )
     # image proportions define the part of the world that can be viewed
     # patch dimensions define the size of the sampled patch that's stored to file
-    focal_length = 0.5   # distance of image plane from projective point /fovea
-    max_dist = 64     # maximum distance for raytracing
-    resolution = 1.    # number of rays per tick in viewport /camera coordinate system
-    im_width = 128     # width of projection /image plane in the world
-    im_height = 64     # height of projection /image plane in the world
-    cam_width = 1.    # width of normalized device /camera /viewport
-    cam_height = 1.   # height of normalized device /camera /viewport
-    patch_width = 32  # width of a fovea patch  # 128
-    patch_height = 32  # height of a patch  # 64
+    focal_length = 0.5    # distance of image plane from projective point /fovea
+    max_dist = 64         # maximum distance for raytracing
+    resolution_w = 1.0    # number of rays per tick in viewport /camera coordinate system
+    resolution_h = 1.0    # number of rays per tick in viewport /camera coordinate system
+    im_width = 128        # width of projection /image plane in the world
+    im_height = 64        # height of projection /image plane in the world
+    cam_width = 1.        # width of normalized device /camera /viewport
+    cam_height = 1.       # height of normalized device /camera /viewport
+    # Note: adapt patch width to be smaller than or equal to resolution x image dimension
+    patch_width = 32      # width of a fovea patch  # 128 || 32
+    patch_height = 32     # height of a patch  # 64 || 32
+    num_fov = 16          # the root number of fov__ sensors, ie. there are num_fov x num_fov
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -240,8 +243,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.spockplugin.event.reg_event_handler('PLAY<Chat Message', self.server_chat_message)
 
         # add datasources for fovea
-        for i in range(self.patch_height):
-            for j in range(self.patch_width):
+        for i in range(self.num_fov):
+            for j in range(self.num_fov):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
 
@@ -299,6 +302,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
 
+            # reset self.datasources
+            # for k in self.datasources.keys():
+            #     if k != 'hack_situation' and k != 'temperature':
+            #         self.datasources[k] = 0.
+
             # change pitch and yaw every x world steps to increase sensory variation
             # < ensures some stability to enable learning in the autoencoder
             if self.world.current_step % 5 == 0:
@@ -315,11 +323,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
             self.datatarget_feedback['orientation'] = 1.0
             # self.datatargets['orientation'] = 0
-
-            # reset self.datasources
-            # for k in self.datasources.keys():
-            #     if k != 'hack_situation' and k != 'temperature':
-            #         self.datasources[k] = 0.
 
             # sample all the time
             # update fovea sensors, get sensory input, provide action feedback
@@ -507,8 +510,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         pitch = self.spockplugin.clientinfo.position['pitch']
 
         # compute ticks per dimension
-        tick_w = self.cam_width / self.im_width / self.resolution
-        tick_h = self.cam_height / self.im_height / self.resolution
+        tick_w = self.cam_width / self.im_width / self.resolution_w
+        tick_h = self.cam_height / self.im_height / self.resolution_h
 
         # span image plane
         # the horizontal plane is split half-half, the vertical plane is shifted upwards
@@ -516,8 +519,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_height, tick_h)]
 
         # scale up fov_x, fov_y
-        fov_x = round(fov_x * (self.im_width * self.resolution - self.patch_width))
-        fov_y = round(fov_y * (self.im_height * self.resolution - self.patch_height))
+        fov_x = round(fov_x * (self.im_width * self.resolution_w - self.patch_width))
+        fov_y = round(fov_y * (self.im_height * self.resolution_h - self.patch_height))
 
         x0, y0, z0 = pos_x, pos_y, pos_z  # agent's position aka projective point
         zi = z0 + self.focal_length
@@ -543,29 +546,45 @@ class MinecraftGraphLocomotion(WorldAdapter):
             if name in self.datasources:
                 self.datasources[name] = patch.count(bt) / normalizer
 
-        # normalize block type values
-        # subtract patch mean
-        mean = float(sum(patch)) / len(patch)
-        patch_avg = [x - mean for x in patch]
+        # COMPUTE VALUES FOR fov__%02d_%02d SENSORS
+        # if all values in the patch are the same, write zeros
+        if patch[1:] == patch[:-1]:
 
-        # truncate to +/- 3 standard deviations and scale to -1 and +1
-        var = [x ** 2 for x in patch_avg]
-        std = (sum(var) / len(var)) ** 0.5
-        pstd = 3 * std
-        # if block types are all the same number, eg. -1, std will be 0, therefore
-        if pstd == 0:
-            patch_std = [0 for x in patch_avg]
+            zero_patch = True
+            patch_resc = [0.0] * self.patch_width * self.patch_height
+
         else:
-            patch_std = [max(min(x, pstd), -pstd) / pstd for x in patch_avg]
 
-        # scale from [-1,+1] to [0.1,0.9] and write values to sensors
-        patch_resc = [(1 + x) * 0.4 + 0.1 for x in patch_std]
+            zero_patch = False
+            # convert block types into binary values: map air and emptiness to white (1), everything else to black (0)
+            patch_ = [0.0 if v <= 0 else 1.0 for v in patch]
+
+            # normalize block type values
+            # subtract patch mean
+            mean = float(sum(patch_)) / len(patch_)
+            patch_avg = [x - mean for x in patch_]  # TODO: throws error in ipython - why not here !?
+
+            # truncate to +/- 3 standard deviations and scale to -1 and +1
+            var = [x ** 2.0 for x in patch_avg]
+            std = (sum(var) / len(var)) ** 0.5
+            pstd = 3.0 * std
+            # if block types are all the same number, eg. -1, std will be 0, therefore
+            if pstd == 0.0:
+                patch_std = [0.0 for x in patch_avg]
+            else:
+                patch_std = [max(min(x, pstd), -pstd) / pstd for x in patch_avg]
+
+            # scale from [-1,+1] to [0.1,0.9] and write values to sensors
+            patch_resc = [(1.0 + x) * 0.4 + 0.1 for x in patch_std]
 
         # write values to self.datasources['fov__']
-        for i in range(self.patch_height):
-            for j in range(self.patch_width):
+        # if num_fov < patch height and width, write the left-right centered, top-bottom 3/4 chunk to fov__
+        left_rim = (int(self.patch_width - self.num_fov) // 2) - 1
+        top_rim = (int(self.patch_height - self.num_fov) // 4 * 3) - 1
+        for i in range(self.num_fov):
+            for j in range(self.num_fov):
                 name = 'fov__%02d_%02d' % (i, j)
-                self.datasources[name] = patch_resc[self.patch_height * i + j]
+                self.datasources[name] = patch_resc[(self.patch_height * (i + top_rim)) + j + left_rim]
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

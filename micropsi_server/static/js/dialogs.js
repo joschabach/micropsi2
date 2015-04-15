@@ -241,6 +241,7 @@ $(function() {
         if(typeof currentNodenet == 'undefined'){
             return dialogs.notification("there is no current nodenet selected");
         }
+        $('#loading').show();
         api.call('save_nodenet', {nodenet_uid: currentNodenet});
     });
 

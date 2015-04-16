@@ -168,7 +168,7 @@ class TheanoCalculate(Calculate):
             gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
         if nodenet.has_gatefunction_sigmoid:
-            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output - nodenet.g_theta), gate_function_output)
+            gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output + nodenet.g_theta), gate_function_output)
         # apply GATE_FUNCTION_TANH to masked gates
         if nodenet.has_gatefunction_tanh:
             gate_function_output = T.switch(T.eq(nodenet.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output - nodenet.g_theta), gate_function_output)
@@ -229,10 +229,9 @@ class TheanoCalculate(Calculate):
 
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
-        self.calculate_native_modules()
 
         self.nodenet.rebuild_shifted()
 
         self.calculate()
-#        self.read_sensors_and_actuator_feedback()
 
+        self.calculate_native_modules()

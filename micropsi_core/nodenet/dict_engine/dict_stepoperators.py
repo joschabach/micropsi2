@@ -189,7 +189,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
 
     def execute(self, nodenet, nodes, netapi):
 
-        COMPETENCE_DECAY_FACTOR = 2
+        COMPETENCE_DECAY_FACTOR = 0.1
 
         base_sum_importance_of_intentions = netapi.get_modulator("base_sum_importance_of_intentions")
         base_sum_urgency_of_intentions = netapi.get_modulator("base_sum_urgency_of_intentions")

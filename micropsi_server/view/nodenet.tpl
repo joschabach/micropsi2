@@ -124,7 +124,7 @@
                         <td><label for="link_weight_input">Weight</label></td>
                         <td><input type="text" class="" name="link_weight" id="link_weight_input"></td>
                     </tr>
-                    <tr>
+                    <tr style="display:none">
                         <td><label for="link_certainty_input">Certainty</label></td>
                         <td><input type="text" class="" name="link_certainty" id="link_certainty_input"></td>
                     </tr>
@@ -158,7 +158,7 @@
                         <td><label for="gate_maximum">Maximum</label></td>
                         <td><input type="text" class="" name="maximum" id="gate_maximum"></td>
                     </tr>
-                    <tr>
+                    <tr style="display:none">
                         <td><label for="gate_certainty">Certainty</label></td>
                         <td><input type="text" class="" name="certainty" id="gate_certainty"></td>
                     </tr>

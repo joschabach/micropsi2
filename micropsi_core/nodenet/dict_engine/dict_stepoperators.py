@@ -190,6 +190,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
     def execute(self, nodenet, nodes, netapi):
 
         COMPETENCE_DECAY_FACTOR = 0.1
+        JOY_DECAY_FACTOR = 0.01
 
         base_sum_importance_of_intentions = netapi.get_modulator("base_sum_importance_of_intentions")
         base_sum_urgency_of_intentions = netapi.get_modulator("base_sum_urgency_of_intentions")
@@ -206,6 +207,7 @@ class DictDoernerianEmotionalModulators(StepOperator):
         base_unexpectedness_prev = netapi.get_modulator("base_unexpectedness")
 
         emo_competence_prev = netapi.get_modulator("emo_competence")
+        emo_sustaining_joy_prev = netapi.get_modulator("emo_sustaining_joy")
 
         base_age += 1
 
@@ -228,6 +230,20 @@ class DictDoernerianEmotionalModulators(StepOperator):
         pleasure_from_satisfaction = gentle_sigmoid(base_urge_change * 3)
 
         emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
+
+        if emo_pleasure != 0:
+            if math.copysign(1, emo_pleasure) == math.copysign(1, emo_sustaining_joy_prev):
+                if abs(emo_pleasure) >= abs(emo_sustaining_joy_prev):
+                    emo_sustaining_joy = emo_pleasure
+                else:
+                    emo_sustaining_joy = emo_sustaining_joy_prev
+            else:
+                emo_sustaining_joy = emo_pleasure
+        else:
+            if abs(emo_sustaining_joy_prev) < JOY_DECAY_FACTOR:
+                emo_sustaining_joy = 0
+            else:
+                emo_sustaining_joy = emo_sustaining_joy_prev - math.copysign(JOY_DECAY_FACTOR, emo_sustaining_joy_prev)
 
         pleasurefactor = 1 if emo_pleasure >= 0 else -1
         divisorbaseline = 1 if emo_pleasure >= 0 else 2
@@ -253,4 +269,5 @@ class DictDoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("emo_resolution", emo_resolution)
         nodenet.set_modulator("emo_selection_threshold", emo_selection_threshold)
         nodenet.set_modulator("emo_competence", emo_competence)
+        nodenet.set_modulator("emo_sustaining_joy", emo_sustaining_joy)
 

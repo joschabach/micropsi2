@@ -218,11 +218,12 @@ def pipe(netapi, node=None, sheaf="default", **params):
     node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
     node.get_gate("exp").gate_function(exp, sheaf)
-    if cat > 0 and node.get_slot("sub").get_activation(sheaf) > 0:     # cats will be checked in their own sheaf
-        node.get_gate("cat").open_sheaf(cat, sheaf)
-        node.get_gate("cat").gate_function(0, sheaf)
-    else:
-        node.get_gate("cat").gate_function(cat, sheaf)
+    node.get_gate("cat").gate_function(cat, sheaf)
+    #if cat > 0 and node.get_slot("sub").get_activation(sheaf) > 0:     # cats will be checked in their own sheaf
+    #    node.get_gate("cat").open_sheaf(cat, sheaf)
+    #    node.get_gate("cat").gate_function(0, sheaf)
+    #else:
+    #    node.get_gate("cat").gate_function(cat, sheaf)
 
 
 def trigger(netapi, node=None, sheaf="default", **params):

@@ -228,10 +228,11 @@ class TheanoCalculate(Calculate):
             nodenet.has_new_usages = False
 
         self.write_actuators()
+        self.read_sensors_and_actuator_feedback()
         self.calculate_native_modules()
 
         self.nodenet.rebuild_shifted()
 
         self.calculate()
-        self.read_sensors_and_actuator_feedback()
+#        self.read_sensors_and_actuator_feedback()
 

@@ -250,6 +250,7 @@ $(function() {
         if(typeof currentNodenet == 'undefined'){
             return dialogs.notification("there is no current nodenet selected");
         }
+        $('#loading').show();
         api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(data){
             dialogs.notification("nodenet reverted");
             //setCurrentNodenet(nodenet_uid);  -- TODO: does not work yet (due to paperscript missing proper js integration)
@@ -262,6 +263,7 @@ $(function() {
         if(typeof currentNodenet == 'undefined'){
             return dialogs.notification("there is no current nodenet selected");
         }
+        $('#loading').show();
         api.call('reload_native_modules', {nodenet_uid: currentNodenet}, function(){
             dialogs.notification("reload successful");
             window.location.reload();

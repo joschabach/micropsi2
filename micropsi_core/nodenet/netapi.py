@@ -146,7 +146,6 @@ class NetAPI(object):
         else:
             uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
             entity = self.__nodenet.get_node(uid)
-        self.__nodenet.update_node_positions()
         return entity
 
     def link(self, source_node, source_gate, target_node, target_slot, weight=1, certainty=1):

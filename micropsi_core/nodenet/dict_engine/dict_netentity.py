@@ -51,7 +51,6 @@ class NetEntity(object):
     @position.setter
     def position(self, position):
         self.__position = position
-        self.nodenet.update_node_positions()
 
     @property
     def name(self):

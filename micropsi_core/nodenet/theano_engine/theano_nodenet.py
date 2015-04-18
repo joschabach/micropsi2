@@ -975,9 +975,6 @@ class TheanoNodenet(Nodenet):
     def construct_modulators_dict(self):
         return {}
 
-    def update_node_positions(self):
-        pass
-
     def get_standard_nodetype_definitions(self):
         """
         Returns the standard node types supported by this nodenet

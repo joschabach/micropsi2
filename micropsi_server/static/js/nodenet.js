@@ -122,7 +122,6 @@ loaded_coordinates = {
     y: [0, canvas_container.height() * 2]
 };
 max_coordinates = {};
-canvas_container.on('scroll', refreshViewPortData);
 
 var clipboard = {};
 
@@ -434,8 +433,8 @@ function setNodespaceData(data, changed){
             promptUser(data.user_prompt);
         }
     }
-    drawGridLines(view.element);
     updateViewSize();
+    drawGridLines(view.element);
 }
 
 function get_nodenet_data(){
@@ -503,23 +502,6 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             callback(data);
         }
     });
-}
-
-
-function refreshViewPortData(){
-    var top = parseInt(canvas_container.scrollTop() / viewProperties.zoomFactor);
-    var left = parseInt(canvas_container.scrollLeft() / viewProperties.zoomFactor);
-    var width = parseInt(canvas_container.width() / viewProperties.zoomFactor);
-    var height = parseInt(canvas_container.height() / viewProperties.zoomFactor);
-    if(top + height > loaded_coordinates.y[1] ||
-        left + width > loaded_coordinates.x[1] ||
-        top < loaded_coordinates.y[0] ||
-        left < loaded_coordinates.x[0]) {
-        if(nodenet_loaded) refreshNodespace(currentNodeSpace, {
-            x:[Math.max(0, left - width), left + 2*width],
-            y:[Math.max(0, top-height), top + 2*height]
-        }, currentSimulationStep - 1);
-    }
 }
 
 function updateModulators(data){
@@ -850,8 +832,8 @@ function redrawNodeNet() {
             renderLink(links[i]);
         }
     }
-    drawGridLines(view.element);
     updateViewSize();
+    drawGridLines(view.element);
 }
 
 // like activation change, only put the node elsewhere and redraw the links
@@ -2268,7 +2250,6 @@ function zoomOut(event){
 }
 
 function onResize(event) {
-    refreshViewPortData();
     updateViewSize();
 }
 

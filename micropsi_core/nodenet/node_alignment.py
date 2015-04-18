@@ -62,8 +62,6 @@ def align(nodenet, nodespace):
     # calculate actual coordinates by traversing the group structure
     por_groups.arrange(nodenet, start_position)
 
-    nodenet.update_node_positions()
-
     return True
 
 INVERSE_DIRECTIONS = { "s": "n", "w": "e", "nw": "se", "ne": "sw",

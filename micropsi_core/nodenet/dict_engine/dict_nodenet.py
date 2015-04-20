@@ -347,7 +347,7 @@ class DictNodenet(Nodenet):
         else:
             return self.__native_modules.get(type)
 
-    def get_nodespace_area_data(self, nodespace, include_links, x1, x2, y1, y2):
+    def get_nodespace_data(self, nodespace, include_links):
         world_uid = self.world.uid if self.world is not None else None
 
         data = {
@@ -406,21 +406,6 @@ class DictNodenet(Nodenet):
 
     def delete_nodespace(self, uid):
         self.delete_node(uid)
-
-    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links):
-        """returns the nodes and links in a given nodespace"""
-        data = {
-            'links': {},
-            'nodes': self.construct_nodes_dict(max_nodes),
-            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict()
-        }
-        if include_links:
-            data['links'] = self.construct_links_dict()
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
-        return data
 
     def clear(self):
         super(DictNodenet, self).clear()

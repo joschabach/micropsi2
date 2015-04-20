@@ -117,10 +117,7 @@ initializeControls();
 initializeSidebarForms();
 
 canvas_container = $('#nodenet').parent();
-loaded_coordinates = {
-    x: [0, canvas_container.width() * 2],
-    y: [0, canvas_container.height() * 2]
-};
+
 max_coordinates = {};
 
 var clipboard = {};
@@ -252,12 +249,6 @@ function setCurrentNodenet(uid, nodespace, changed){
         {nodenet_uid: uid,
             nodespace: nodespace,
             include_links: $.cookie('renderlinks') != 'no',
-            coordinates: {
-                x1: loaded_coordinates.x[0],
-                x2: loaded_coordinates.x[1],
-                y1: loaded_coordinates.y[0],
-                y2: loaded_coordinates.y[1]
-            }
         },
         function(data){
             $('#loading').hide();
@@ -442,45 +433,26 @@ function get_nodenet_data(){
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
         'include_links': $.cookie('renderlinks') != 'no',
-        'coordinates': {
-            x1: loaded_coordinates.x[0],
-            x2: loaded_coordinates.x[1],
-            y1: loaded_coordinates.y[0],
-            y2: loaded_coordinates.y[1]
-        },
     }
 }
 
 register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
 
-function refreshNodespace(nodespace, coordinates, step, callback){
+function refreshNodespace(nodespace, step, callback){
     if(!nodespace) nodespace = currentNodeSpace;
     if(!currentNodenet || !nodespace){
         return;
     }
-    if(coordinates)
-        loaded_coordinates = coordinates;
     nodespace = nodespace || currentNodeSpace;
     params = {
         nodenet_uid: currentNodenet,
         nodespace: nodespace,
         step: currentSimulationStep
     };
-    if (coordinates){
-        // params.step = -1;
-    } else {
-        coordinates = loaded_coordinates;
-    }
     if(step){
         params.step = step;
     }
     params.include_links = nodenet_data['renderlinks'] != 'no';
-    params.coordinates = {
-        x1: parseInt(coordinates.x[0]),
-        x2: parseInt(coordinates.x[1]),
-        y1: parseInt(coordinates.y[0]),
-        y2: parseInt(coordinates.y[1])
-    };
     api.call('get_nodespace', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
@@ -490,7 +462,6 @@ function refreshNodespace(nodespace, coordinates, step, callback){
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
-        loaded_coordinates = coordinates;
         nodenetRunning = data.is_active;
 
         if (linkCreationStart){
@@ -2311,10 +2282,7 @@ function initializeControls(){
         event.preventDefault();
         var nodespace = $(event.target).attr('data-nodespace');
         if(nodespace != currentNodeSpace){
-            refreshNodespace(nodespace, {
-                x: [0, canvas_container.width() * 2],
-                y: [0, canvas_container.height() * 2]
-            }, -1);
+            refreshNodespace(nodespace, -1);
         }
     });
 }
@@ -3340,10 +3308,7 @@ function handleSelectDatatargetModal(event){
 function handleEnterNodespace(nodespaceUid) {
     if (nodespaceUid in nodes) {
         deselectAll();
-        refreshNodespace(nodespaceUid, {
-            x: [0, canvas_container.width() * 2],
-            y: [0, canvas_container.height() * 2]
-        }, -1);
+        refreshNodespace(nodespaceUid, -1);
     }
 }
 
@@ -3351,10 +3316,7 @@ function handleEnterNodespace(nodespaceUid) {
 function handleNodespaceUp() {
     deselectAll();
     if (nodespaces[currentNodeSpace].parent) { // not yet root nodespace
-        refreshNodespace(nodespaces[currentNodeSpace].parent, {
-            x: [0, canvas_container.width() * 2],
-            y: [0, canvas_container.height() * 2]
-        }, -1);
+        refreshNodespace(nodespaces[currentNodeSpace].parent, -1);
     }
 }
 
@@ -3470,10 +3432,7 @@ function scrollToNode(node, doShowNodeForm){
     var x = Math.max(0, node.x*viewProperties.zoomFactor-width/2);
     var y = Math.max(0, node.y*viewProperties.zoomFactor-height/2);
     if(isOutsideNodespace(node)){
-        refreshNodespace(node.parent, {
-            x: [0, canvas_container.width() * 2],
-            y: [0, canvas_container.height() * 2]
-        }, -1, function(){
+        refreshNodespace(node.parent, -1, function(){
             deselectAll();
             canvas_container.scrollTop(y);
             canvas_container.scrollLeft(x);
@@ -3855,6 +3814,8 @@ function ApplyLineBreaks(strTextAreaId) {
 }
 
 var drawGridLines = function(element) {
+    console.log(element);
+    console.log(element.height);
     gridLayer.removeChildren();
     if(nodenet_data.snap_to_grid){
         var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;

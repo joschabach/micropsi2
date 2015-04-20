@@ -344,25 +344,10 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_nodespace_area_data(self, nodespace_uid, include_links, x1, x2, y1, y2):
+    def get_nodespace_data(self, nodespace_uid, include_links):
         """
         Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
-        nodespace, and within the given rectangle.
-
-        Implementations are expected to fill the following keys:
-        'nodes' - map of nodes it the given rectangle
-        'links' - map of links ending or originating in the given rectangle
-        'nodespaces' - map of nodespaces positioned in the given rectangle
-        'monitors' - result of self.construct_monitors_dict()
-        'user_prompt' - self.user_prompt if set, should be cleared then
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links):
-        """
-        Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
-        nodespace and limited to the given number of nodes.
+        nodespace.
 
         Implementations are expected to fill the following keys:
         'nodes' - map of nodes it the given rectangle

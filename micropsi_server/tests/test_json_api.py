@@ -29,7 +29,7 @@ def test_select_nodenet(app, test_nodenet):
 
 
 def test_load_nodenet(app, test_nodenet):
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     data = response.json_body['data']
     assert 'nodetypes' in data
@@ -46,7 +46,7 @@ def test_new_nodenet(app):
     assert_success(response)
     uid = response.json_body['data']
     assert uid is not None
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % uid)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % uid)
     assert_success(response)
     assert response.json_body['data']['name'] == 'FooBarTestNet'
     assert response.json_body['data']['nodes'] == {}
@@ -69,7 +69,7 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     app.set_auth()
     response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'new_name'
     assert data['worldadapter'] == 'Braitenberg'
@@ -82,7 +82,7 @@ def test_set_node_state(app, test_nodenet):
         'state': {'foo': 'bar'}
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['nodes']['N1']['state'] == {'foo': 'bar'}
 
 
@@ -93,17 +93,17 @@ def test_set_node_activation(app, test_nodenet):
         'activation': '0.734'
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     sheaves = response.json_body['data']['nodes']['N1']['sheaves']
     assert sheaves['default']['activation'] == 0.734
 
 
 def test_start_simulation(app, test_nodenet):
     app.set_auth()
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     response = app.post_json('/rpc/start_simulation', params=dict(nodenet_uid=test_nodenet))
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['is_active']
 
 
@@ -147,19 +147,19 @@ def test_stop_simulation(app, test_nodenet):
 
 def test_step_simulation(app, test_nodenet):
     app.set_auth()
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['current_step'] == 0
     response = app.get_json('/rpc/step_simulation(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert response.json_body['data'] == 1
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['current_step'] == 1
 
 
 def test_get_current_state(app, test_nodenet, test_world):
     from time import sleep
     app.set_auth()
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['current_step'] == 0
     response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))
 
@@ -210,7 +210,7 @@ def test_revert_nodenet(app, test_nodenet, test_world):
     assert_success(response)
     response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'Testnet'
     assert data['worldadapter'] == 'Default'
@@ -224,7 +224,7 @@ def test_save_nodenet(app, test_nodenet, test_world):
     assert_success(response)
     response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'new_name'
     assert data['worldadapter'] == 'Braitenberg'
@@ -252,7 +252,7 @@ def test_import_nodenet(app, test_nodenet):
     assert_success(response)
     uid = response.json_body['data']
     assert uid is not None
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % uid)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % uid)
     assert list(response.json_body['data']['nodes'].keys()) == ['N1']
     assert response.json_body['data']['name'] == 'Testnet'
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
@@ -275,7 +275,7 @@ def test_merge_nodenet(app, test_nodenet):
         'nodenet_data': json.dumps(data)
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % uid)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % uid)
     assert len(list(response.json_body['data']['nodes'].keys())) == 1
     assert response.json_body['data']['name'] == 'Testnet'
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
@@ -678,8 +678,8 @@ def test_get_nodespace(app, test_nodenet):
     response = app.post_json('/rpc/get_nodespace', params={
         'nodenet_uid': test_nodenet,
         'nodespace': 'Root',
+        'include_links': True,
         'step': -1,
-        'coordinates': {'x1': 0, 'x2': 100, 'y1': 0, 'y2': 100}
     })
     assert_success(response)
     assert 'N1' in response.json_body['data']['nodes']
@@ -754,7 +754,7 @@ def test_delete_node(app, test_nodenet):
         'node_uid': 'N1'
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['nodes'] == {}
 
 
@@ -1135,10 +1135,10 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     })
     monitor_uid = response.json_body['data']
 
-    response_1 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response_1 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     response = app.get_json('/rpc/save_nodenet(nodenet_uid="%s")' % test_nodenet)
     response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
-    response_2 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s",coordinates={"x1":0,"x2":100,"y1":0,"y2":100})' % test_nodenet)
+    response_2 = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
 
     assert response_1.json_body['data'] == response_2.json_body['data']
 

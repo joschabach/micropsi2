@@ -39,7 +39,7 @@ class TheanoLink(Link):
 
     @property
     def certainty(self):
-        return float(self.__certainty)
+        return 1
 
     @property
     def source_node(self):

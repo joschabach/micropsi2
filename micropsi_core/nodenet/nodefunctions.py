@@ -210,6 +210,13 @@ def pipe(netapi, node=None, sheaf="default", **params):
             if netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
                 netapi.unlock(sub_lock_needed)
 
+    if node.get_slot('sub').get_activation(sheaf) > 0:
+        if sur > 0:
+            netapi.change_modulator('base_number_of_expected_events', 1)
+        elif sur < 0:
+            severity = len(node.get_gate("sub").get_links()) + len(node.get_gate("cat").get_links())
+            netapi.change_modulator('base_number_of_unexpected_events', severity)
+
     # set gates
     node.set_sheaf_activation(gen, sheaf)
     node.get_gate("gen").gate_function(gen, sheaf)
@@ -218,11 +225,12 @@ def pipe(netapi, node=None, sheaf="default", **params):
     node.get_gate("sub").gate_function(sub, sheaf)
     node.get_gate("sur").gate_function(sur, sheaf)
     node.get_gate("exp").gate_function(exp, sheaf)
-    if cat > 0 and node.get_slot("sub").get_activation(sheaf) > 0:     # cats will be checked in their own sheaf
-        node.get_gate("cat").open_sheaf(cat, sheaf)
-        node.get_gate("cat").gate_function(0, sheaf)
-    else:
-        node.get_gate("cat").gate_function(cat, sheaf)
+    node.get_gate("cat").gate_function(cat, sheaf)
+    #if cat > 0 and node.get_slot("sub").get_activation(sheaf) > 0:     # cats will be checked in their own sheaf
+    #    node.get_gate("cat").open_sheaf(cat, sheaf)
+    #    node.get_gate("cat").gate_function(0, sheaf)
+    #else:
+    #    node.get_gate("cat").gate_function(cat, sheaf)
 
 
 def trigger(netapi, node=None, sheaf="default", **params):

@@ -601,21 +601,23 @@ class MinecraftGraphLocomotion(WorldAdapter):
             line = [float(entry) for entry in line]
             self.write_visual_input_to_datasources(line, self.num_fov, self.num_fov)
 
-        #if self.world.current_step % 4 == 0:
+        # if self.world.current_step % 4 == 0:
         #    entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
         #    if entry_index == 0:
         #        self.logger.info("Simulating vision from data file with %i entries...", len(self.simulated_vision_data))
         #    self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index], self.num_fov, self.num_fov)
 
     def write_visual_input_to_datasources(self, patch, patch_width, patch_height):
-        # write values to self.datasources['fov__']
-        # if num_fov < patch height and width, write the left-right centered, top-bottom 3/4 chunk to fov__
-        left_rim = (int(patch_width - self.num_fov) // 2) - 1
-        top_rim = (int(patch_height - self.num_fov) // 4 * 3) - 1
+        """
+        Write a patch of the size self.num_fov times self.num_fov to self.datasourcesp['fov__*_*'].
+        If num_fov is less than patch height and width, chose the horizontally centered , vertically 3/4 lower patch.
+        """
+        left_margin = max(0, (int(patch_width - self.num_fov) // 2) - 1)
+        top_margin = max(0, (int(patch_height - self.num_fov) // 4 * 3) - 1)
         for i in range(self.num_fov):
             for j in range(self.num_fov):
                 name = 'fov__%02d_%02d' % (i, j)
-                self.datasources[name] = patch[(patch_height * (i + top_rim)) + j + left_rim]
+                self.datasources[name] = patch[(patch_height * (i + top_margin)) + j + left_margin]
 
     def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
         """

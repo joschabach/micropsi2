@@ -338,8 +338,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # make sure fovea datasources don't go below 0.
             self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
             self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
-            loco_label = self.current_loco_node['name']  # because python uses call-by-object
             if not self.simulated_vision:
+                loco_label = self.current_loco_node['name']  # because python uses call-by-object
                 self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
             else:
                 self.simulate_visual_input()

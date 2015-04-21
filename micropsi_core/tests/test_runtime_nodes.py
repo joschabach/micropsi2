@@ -186,6 +186,31 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
 
 
+def test_engine_specific_nodetype(fixed_nodenet, resourcepath):
+    from os import path, remove
+    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write('{"Testnode": {\
+            "engine": "theano_engine",\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t",\
+            "gate_defaults":{\
+              "foo": {\
+                "amplification": 13\
+              }\
+            }}}')
+    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    micropsi.reload_native_modules(fixed_nodenet)
+    data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
+    assert "Testnode" not in data['native_modules']
+    remove(path.join(resourcepath, 'nodetypes.json'))
+    remove(path.join(resourcepath, 'nodefunctions.py'))
+
+
 def test_node_parameters_none(fixed_nodenet):
     nodenet = micropsi.nodenets[fixed_nodenet]
     micropsi.add_node(fixed_nodenet, 'Trigger', [30, 30], uid='testtrigger', name='test')

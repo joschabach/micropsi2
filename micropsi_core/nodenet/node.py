@@ -598,7 +598,7 @@ class Nodetype(object):
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None):
+                 symbol=None, shape=None, engine=None):
         """Initializes or creates a nodetype.
 
         Arguments:

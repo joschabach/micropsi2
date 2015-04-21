@@ -252,13 +252,13 @@ def load_nodenet(nodenet_uid):
                 nodenets[nodenet_uid] = DictNodenet(
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
-                    native_modules=native_modules)
+                    native_modules=filter_native_modules(engine))
             elif engine == 'theano_engine':
                 from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                 nodenets[nodenet_uid] = TheanoNodenet(
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
-                    native_modules=native_modules)
+                    native_modules=filter_native_modules(engine))
             # Add additional engine types here
             else:
                 nodenet_lock.release()
@@ -294,7 +294,7 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
         data['nodespace'] = nodespace
         data.update({
             'nodetypes': nodenet.get_standard_nodetype_definitions(),
-            'native_modules': native_modules,
+            'native_modules': filter_native_modules(nodenet.engine),
             'monitors': nodenet.construct_monitors_dict()
         })
     return data
@@ -823,7 +823,7 @@ def delete_node(nodenet_uid, node_uid):
 def get_available_node_types(nodenet_uid):
     """Returns a list of available node types. (Including native modules.)"""
     nodenet = nodenets[nodenet_uid]
-    all_nodetypes = native_modules.copy()
+    all_nodetypes = filter_native_modules(nodenet.engine)
     all_nodetypes.update(nodenet.get_standard_nodetype_definitions())
     return all_nodetypes
 
@@ -831,7 +831,7 @@ def get_available_node_types(nodenet_uid):
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-    return native_modules
+    return filter_native_modules(nodenets[nodenet_uid].engine)
 
 
 def set_node_parameters(nodenet_uid, node_uid, parameters):
@@ -970,6 +970,14 @@ def run_recipe(nodenet_uid, name, parameters):
 
 # --- end of API
 
+def filter_native_modules(engine=None):
+    data = {}
+    for key in native_modules:
+        if native_modules[key].get('engine') is None or engine is None or engine == native_modules[key]['engine']:
+            data[key] = native_modules[key].copy()
+    return data
+
+
 def crawl_definition_files(path, type="definition"):
     """Traverse the directories below the given path for JSON definitions of nodenets and worlds,
     and return a dictionary with the signatures of these nodenets or worlds.
@@ -1098,7 +1106,7 @@ def parse_recipe_file():
 def reload_native_modules(nodenet_uid=None):
     load_user_files(True)
     if nodenet_uid:
-        nodenets[nodenet_uid].reload_native_modules(native_modules)
+        nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     return True
 
 

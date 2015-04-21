@@ -254,8 +254,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.simulated_vision = True
             self.simulated_vision_datafile = cfg['minecraft']['simulate_vision']
             self.logger.info("Setting up minecraft_graph_locomotor to simulate vision from data file %s", self.simulated_vision_datafile)
-            from numpy import genfromtxt
-            self.simulated_vision_data = genfromtxt(self.simulated_vision_datafile, delimiter=',')
+            import csv
+            self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
 
     def server_chat_message(self, event, data):
         if data.data and 'json_data' in data.data:
@@ -593,10 +593,20 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def simulate_visual_input(self):
         if self.world.current_step % 4 == 0:
-            entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
-            if entry_index == 0:
-                self.logger.info("Simulating vision from data file with %i entries...", len(self.simulated_vision_data))
-            self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index], self.num_fov, self.num_fov)
+            line = next(self.simulated_vision_datareader, None)
+            if line is None:
+                self.logger.info("Simulating vision from data file, starting over...")
+                import csv
+                self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
+                line = next(self.simulated_vision_datareader)
+            line = [float(entry) for entry in line]
+            self.write_visual_input_to_datasources(line, self.num_fov, self.num_fov)
+
+        #if self.world.current_step % 4 == 0:
+        #    entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
+        #    if entry_index == 0:
+        #        self.logger.info("Simulating vision from data file with %i entries...", len(self.simulated_vision_data))
+        #    self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index], self.num_fov, self.num_fov)
 
     def write_visual_input_to_datasources(self, patch, patch_width, patch_height):
         # write values to self.datasources['fov__']

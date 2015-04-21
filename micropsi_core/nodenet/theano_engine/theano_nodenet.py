@@ -879,10 +879,10 @@ class TheanoNodenet(Nodenet):
     def reload_native_modules(self, native_modules):
         pass
 
-    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links=True):
+    def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
             'links': {},
-            'nodes': self.construct_nodes_dict(max_nodes),
+            'nodes': self.construct_nodes_dict(self.NoN),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict()
         }

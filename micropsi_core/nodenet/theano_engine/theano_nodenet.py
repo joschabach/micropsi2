@@ -879,9 +879,6 @@ class TheanoNodenet(Nodenet):
     def reload_native_modules(self, native_modules):
         pass
 
-    def get_nodespace_area_data(self, nodespace_uid, include_links, x1, x2, y1, y2):
-        return self.get_nodespace_data(nodespace_uid, self.NoN, include_links)               # todo: implement
-
     def get_nodespace_data(self, nodespace_uid, max_nodes, include_links=True):
         data = {
             'links': {},
@@ -974,9 +971,6 @@ class TheanoNodenet(Nodenet):
 
     def construct_modulators_dict(self):
         return {}
-
-    def update_node_positions(self):
-        pass
 
     def get_standard_nodetype_definitions(self):
         """

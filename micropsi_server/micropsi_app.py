@@ -706,10 +706,10 @@ def select_nodenet(nodenet_uid):
 
 
 @rpc("load_nodenet")
-def load_nodenet(nodenet_uid, nodespace='Root', include_links=True, coordinates={}):
+def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if result:
-        data = runtime.get_nodenet_data(nodenet_uid, nodespace, include_links, coordinates)
+        data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
         data['recipes'] = runtime.get_available_recipes()
         return True, data
@@ -740,7 +740,7 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
         if nodenet is not None:
-            data['nodenet'] = runtime.get_nodespace(nodenet_uid=nodenet_uid, **nodenet)
+            data['nodenet'] = runtime.get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
         if world is not None and nodenet_obj.world:
             data['world'] = runtime.get_world_view(world_uid=nodenet_obj.world.uid, **world)
         if monitors is not None:
@@ -1009,8 +1009,8 @@ def get_nodespace_list(nodenet_uid):
 
 
 @rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step, include_links=True, **coordinates):
-    return True, runtime.get_nodespace(nodenet_uid, nodespace, step, include_links, **coordinates)
+def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
+    return True, runtime.get_nodenet_data(nodenet_uid, nodespace, step, include_links)
 
 
 @rpc("get_node")

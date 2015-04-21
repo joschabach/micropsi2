@@ -338,13 +338,7 @@ var inputs = {};
 function get_nodenet_data(){
     return {
         'nodespace': "Root",
-        'step': 0,
-        'coordinates': {
-            x1: 0,
-            x2: 0,
-            y1: 0,
-            y2: 0
-        }
+        'step': 0
     }
 }
 

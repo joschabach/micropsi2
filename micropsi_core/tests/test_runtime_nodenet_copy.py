@@ -45,7 +45,7 @@ def test_copy_nodes():
     micropsi.save_nodenet(nodenet_uid1)
     micropsi.save_nodenet(nodenet_uid2)
 
-    target = micropsi.get_nodespace(nodenet_uid2, "Root", -1, True)
+    target = micropsi.nodenets[nodenet_uid2].data
     assert len(target["nodes"]) == 4 + 2
     assert len(target["nodespaces"]) == 2 + 2
 

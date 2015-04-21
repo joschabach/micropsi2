@@ -229,7 +229,6 @@ class DictNodenet(Nodenet):
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self.__locks = {}
-        self.__nodes_by_coords = {}
 
         self.__nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -348,10 +347,7 @@ class DictNodenet(Nodenet):
         else:
             return self.__native_modules.get(type)
 
-    def get_nodespace_area_data(self, nodespace, include_links, x1, x2, y1, y2):
-        x_range = (x1 - (x1 % 100), 100 + x2 - (x2 % 100), 100)
-        y_range = (y1 - (y1 % 100), 100 + y2 - (y2 % 100), 100)
-
+    def get_nodespace_data(self, nodespace, include_links):
         world_uid = self.world.uid if self.world is not None else None
 
         data = {
@@ -371,21 +367,17 @@ class DictNodenet(Nodenet):
             self.user_prompt = None
         links = []
         followupnodes = []
-        for x in range(*x_range):
-            if x in self.__nodes_by_coords:
-                for y in range(*y_range):
-                    if y in self.__nodes_by_coords[x]:
-                        for uid in self.__nodes_by_coords[x][y]:
-                            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
-                                node = self.get_node(uid)
-                                data['nodes'][uid] = node.data
-                                if node.position[0] > data['max_coords']['x']:
-                                    data['max_coords']['x'] = node.position[0]
-                                if node.position[1] > data['max_coords']['y']:
-                                    data['max_coords']['y'] = node.position[1]
-                                if include_links:
-                                    links.extend(self.get_node(uid).get_associated_links())
-                                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+        for uid in self.__nodes:
+            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
+                node = self.get_node(uid)
+                data['nodes'][uid] = node.data
+                if node.position[0] > data['max_coords']['x']:
+                    data['max_coords']['x'] = node.position[0]
+                if node.position[1] > data['max_coords']['y']:
+                    data['max_coords']['y'] = node.position[1]
+                if include_links:
+                    links.extend(self.get_node(uid).get_associated_links())
+                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
         if include_links:
             for link in links:
                 data['links'][link.uid] = link.data
@@ -393,24 +385,6 @@ class DictNodenet(Nodenet):
             if uid not in data['nodes']:
                 data['nodes'][uid] = self.get_node(uid).data
         return data
-
-    def update_node_positions(self):
-        """ recalculates the position hash """
-        self.__nodes_by_coords = {}
-        self.max_coords = {'x': 0, 'y': 0}
-        for uid in self.get_node_uids():
-            pos = self.get_node(uid).position
-            xpos = int(pos[0] - (pos[0] % 100))
-            ypos = int(pos[1] - (pos[1] % 100))
-            if xpos not in self.__nodes_by_coords:
-                self.__nodes_by_coords[xpos] = {}
-                if xpos > self.max_coords['x']:
-                    self.max_coords['x'] = xpos
-            if ypos not in self.__nodes_by_coords[xpos]:
-                self.__nodes_by_coords[xpos][ypos] = []
-                if ypos > self.max_coords['y']:
-                    self.max_coords['y'] = ypos
-            self.__nodes_by_coords[xpos][ypos].append(uid)
 
     def delete_node(self, node_uid):
         if node_uid in self.__nodespaces:
@@ -429,31 +403,14 @@ class DictNodenet(Nodenet):
             if self.__nodes[node_uid].type == "Activator":
                 parent_nodespace.unset_activator_value(self.__nodes[node_uid].get_parameter('type'))
             del self.__nodes[node_uid]
-            self.update_node_positions()
 
     def delete_nodespace(self, uid):
         self.delete_node(uid)
-
-    def get_nodespace_data(self, nodespace_uid, max_nodes, include_links):
-        """returns the nodes and links in a given nodespace"""
-        data = {
-            'links': {},
-            'nodes': self.construct_nodes_dict(max_nodes),
-            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict()
-        }
-        if include_links:
-            data['links'] = self.construct_links_dict()
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
-        return data
 
     def clear(self):
         super(DictNodenet, self).clear()
         self.__nodes = {}
 
-        self.__nodes_by_coords = {}
         self.max_coords = {'x': 0, 'y': 0}
 
         self.__nodespaces = {}
@@ -489,18 +446,6 @@ class DictNodenet(Nodenet):
             uidmap[uid] = newuid
             if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
                 self.__nodes[newuid] = DictNode(self, **data)
-                pos = self.__nodes[newuid].position
-                xpos = int(pos[0] - (pos[0] % 100))
-                ypos = int(pos[1] - (pos[1] % 100))
-                if xpos not in self.__nodes_by_coords:
-                    self.__nodes_by_coords[xpos] = {}
-                    if xpos > self.max_coords['x']:
-                        self.max_coords['x'] = xpos
-                if ypos not in self.__nodes_by_coords[xpos]:
-                    self.__nodes_by_coords[xpos][ypos] = []
-                    if ypos > self.max_coords['y']:
-                        self.max_coords['y'] = ypos
-                self.__nodes_by_coords[xpos][ypos].append(newuid)
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
 
@@ -570,7 +515,6 @@ class DictNodenet(Nodenet):
             uid=uid,
             parameters=parameters,
             gate_parameters=gate_parameters)
-        self.update_node_positions()
         return node.uid
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):

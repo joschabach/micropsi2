@@ -2384,7 +2384,7 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
-            if(Object.keys(native_modules).length > 6 ){
+            if(Object.keys(native_modules).length > 8 ){
                 html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
             } else {
                 html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';

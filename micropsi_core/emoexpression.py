@@ -15,6 +15,7 @@ def calc_emoexpression_parameters(nodenet):
     emo_securing_rate = nodenet.get_modulator("emo_securing_rate")
     emo_resolution = nodenet.get_modulator("emo_resolution")
     emo_pleasure = nodenet.get_modulator("emo_pleasure")
+    emo_joy = nodenet.get_modulator("emo_sustaining_joy")
     emo_competence = nodenet.get_modulator("emo_competence")
     emo_activation = nodenet.get_modulator("emo_activation")
     base_unexpectedness = nodenet.get_modulator("base_unexpectedness")
@@ -28,7 +29,7 @@ def calc_emoexpression_parameters(nodenet):
     exp_surprise = base_unexpectedness
     exp_anger = (1 - emo_competence) * emo_activation
     exp_sadness = (1 - emo_competence) * (1 - emo_activation)
-    exp_joy = emo_pleasure
+    exp_joy = emo_joy + 0.3     # baseline
     exp_fear = 0                # todo: get fear from emo once we know how to calculate it
     exp_helplessness = 0        # todo: probably introduce base_ parameter to be set by motivation
 

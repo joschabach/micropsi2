@@ -1058,9 +1058,8 @@ class TheanoNodenet(Nodenet):
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
         grp_from = self.nodegroups[group_from]
         grp_to = self.nodegroups[group_to]
-        for row_index in range(len(grp_to)):
-            for col_index in range(len(grp_from)):
-                w_matrix[grp_to[row_index],grp_from[col_index]] = new_w[row_index, col_index]
+        cols, rows = np.meshgrid(grp_from, grp_to)
+        w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
     def get_available_gatefunctions(self):

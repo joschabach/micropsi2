@@ -48,7 +48,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'pitch',
         'yaw',
         'eat',
-        'sleep'
+        'sleep',
+        'vision_simulator'
     ]
 
     loco_node_template = {
@@ -201,7 +202,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # Note: adapt patch width to be smaller than or equal to resolution x image dimension
     patch_width = 32      # width of a fovea patch  # 128 || 32
     patch_height = 32     # height of a patch  # 64 || 32
-    num_fov = 16          # the root number of fov__ sensors, ie. there are num_fov x num_fov
+    num_fov = 16          # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -567,7 +568,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         else:
 
             zero_patch = False
-            # convert block types into binary values: map air and emptiness to white (1), everything else to black (0)
+            # convert block types into binary values: map air and emptiness to black (0), everything else to white (1)
             patch_ = [0.0 if v <= 0 else 1.0 for v in patch]
 
             # normalize block type values
@@ -591,7 +592,12 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.write_visual_input_to_datasources(patch_resc, self.patch_width, self.patch_height)
 
     def simulate_visual_input(self):
+        # simulate actor that triggers change in visual input
         if self.world.current_step % 4 == 0:
+            self.datatargets['vision_simulator'] = 1.0
+            self.datatarget_feedback['vision_simulator'] = 1.0
+        # change visual input
+        elif self.world.current_step % 4 == 1:
             line = next(self.simulated_vision_datareader, None)
             if line is None:
                 self.logger.info("Simulating vision from data file, starting over...")

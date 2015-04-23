@@ -288,7 +288,7 @@ class TheanoNodenet(Nodenet):
         self.sparse = True
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
-        self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_node_parents = np.ones(self.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
@@ -347,7 +347,7 @@ class TheanoNodenet(Nodenet):
 
         self.nodegroups = {}
 
-        self.create_nodespace(None, None, "Root", nodespace.to_id(0))
+        self.create_nodespace(None, None, "Root", nodespace.to_id(1))
 
         self.initialize_nodenet({})
 
@@ -794,11 +794,13 @@ class TheanoNodenet(Nodenet):
                 del self.actuatormap[actuator]
 
     def get_nodespace(self, uid):
+        if uid is None:
+            uid = nodespace.to_id(1)
         return TheanoNodespace(self, uid)
 
     def get_nodespace_uids(self):
         ids = [nodespace.to_id(id) for id in np.nonzero(self.allocated_nodespaces)[0]]
-        ids.append(nodespace.to_id(0))
+        ids.append(nodespace.to_id(1))
         return ids
 
     def is_nodespace(self, uid):
@@ -837,6 +839,8 @@ class TheanoNodenet(Nodenet):
             self.names[uid] = name
         if position is not None:
             self.positions[uid] = position
+
+        return uid
 
     def delete_nodespace(self, uid):
         pass
@@ -922,8 +926,6 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_nodespace_data(self, nodespace_uid, include_links):
-        if nodespace_uid == "Root":
-            nodespace_uid = "s0"
         data = {
             'links': {},
             'nodes': self.construct_nodes_dict(self.NoN),

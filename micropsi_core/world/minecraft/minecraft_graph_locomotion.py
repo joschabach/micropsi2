@@ -553,6 +553,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
         # write block type histogram values to self.datasources['fov_hist__*']
         # for every block type seen in patch, if there's a datasource for it, fill it with its normalized frequency
         normalizer = self.patch_width * self.patch_height
+        # reset fov_hist sensors, then fill them with new values
+        for k in self.datasources.keys():
+            if k.startswith('fov_hist__'):
+                self.datasources[k] = 0.
         for bt in set(patch):
             name = "fov_hist__%03d" % bt
             if name in self.datasources:

@@ -27,7 +27,7 @@ class TheanoNodespace(Nodespace):
             "index": 0,
             "name": self.name,
             "position": self.position,
-            "parent_nodespace": None
+            "parent_nodespace": self.parent_nodespace
         }
         return data
 
@@ -68,10 +68,11 @@ class TheanoNodespace(Nodespace):
 
     @property
     def parent_nodespace(self):
-        return None
+        return to_id(self._nodenet.allocated_nodespaces[self._id])
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
+        raise "hell"
         pass
 
     def __init__(self, nodenet, uid):

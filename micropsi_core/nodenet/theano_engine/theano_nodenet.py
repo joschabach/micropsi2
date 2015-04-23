@@ -1010,9 +1010,12 @@ class TheanoNodenet(Nodenet):
 
     def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
-        for nodespace_candidate_uid in self.get_nodespace_uids():
-            if self.get_nodespace(nodespace_candidate_uid).parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
-                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
+        nodespace_id = nodespace.from_id(nodespace_uid)
+        nodespace_ids = np.nonzero(self.allocated_nodespaces)[0]
+        nodespace_ids = np.append(nodespace_ids, 1)
+        for candidate_id in nodespace_ids:
+            if candidate_id == nodespace_id or self.allocated_nodespaces[candidate_id] == nodespace_id:
+                data[nodespace.to_id(candidate_id)] = self.get_nodespace(nodespace.to_id(candidate_id)).data
         return data
 
     def construct_modulators_dict(self):

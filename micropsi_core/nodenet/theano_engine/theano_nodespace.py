@@ -4,24 +4,36 @@ from micropsi_core.nodenet.nodespace import Nodespace
 from micropsi_core.nodenet.theano_engine.theano_node import *
 
 
+def to_id(numericid):
+    return "s" + str(int(numericid))
+
+
+def from_id(stringid):
+    return int(stringid[1:])
+
+
 class TheanoNodespace(Nodespace):
     """
         theano nodespace implementation
     """
+
+    _nodenet = None
+    _id = -1
+
     @property
     def data(self):
         data = {
-            "uid": "Root",
+            "uid": self.uid,
             "index": 0,
-            "name": "Root",
-            "position": (0, 0),
+            "name": self.name,
+            "position": self.position,
             "parent_nodespace": None
         }
         return data
 
     @property
     def uid(self):
-        return "Root"
+        return to_id(self._id)
 
     @property
     def index(self):
@@ -33,19 +45,26 @@ class TheanoNodespace(Nodespace):
 
     @property
     def position(self):
-        return (0,0)
+        return self._nodenet.positions.get(self.uid, (10,10))       # todo: get rid of positions
 
     @position.setter
     def position(self, position):
-        pass
+        if position is None and self.uid in self._nodenet.positions:
+            del self._nodenet.positions[self.uid]
+        else:
+            self._nodenet.positions[self.uid] = position         # todo: get rid of positions
 
     @property
     def name(self):
-        return "Root"
+        return self._nodenet.names.get(self.uid, self.uid)
 
     @name.setter
     def name(self, name):
-        pass
+        if name is None or name == "" or name == self.uid:
+            if self.uid in self._nodenet.names:
+                del self._nodenet.names[self.uid]
+        else:
+            self._nodenet.names[self.uid] = name
 
     @property
     def parent_nodespace(self):
@@ -55,16 +74,16 @@ class TheanoNodespace(Nodespace):
     def parent_nodespace(self, uid):
         pass
 
-    def __init__(self, nodenet):
+    def __init__(self, nodenet, uid):
         self.__activators = {}
-        self.__nodenet = nodenet
-        uid = "Root"                    # todo: find out how to implement hierarchy of spaces
+        self._nodenet = nodenet
+        self._id = from_id(uid)
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return self.__nodenet.get_node_uids()
+            return self._nodenet.get_node_uids()
         else:
-            return ["Root"]
+            return self._nodenet.get_nodespace_uids()
 
     def has_activator(self, type):
         return type in self.__activators

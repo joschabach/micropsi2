@@ -18,6 +18,8 @@ from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.node import Nodetype
 
+from micropsi_core.nodenet.theano_engine import theano_node as node
+from micropsi_core.nodenet.theano_engine import theano_nodespace as nodespace
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
@@ -25,9 +27,9 @@ from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 
 
 STANDARD_NODETYPES = {
-    # "Nodespace": {
-    #    "name": "Nodespace"
-    # },
+    "Nodespace": {
+        "name": "Nodespace"
+    },
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
@@ -106,7 +108,7 @@ AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 3
 
 DEFAULT_NUMBER_OF_NODES = 2000
 DEFAULT_NUMBER_OF_ELEMENTS = DEFAULT_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-
+DEFAULT_NUMBER_OF_NODESPACES = 100
 
 class TheanoNodenet(Nodenet):
     """
@@ -115,10 +117,14 @@ class TheanoNodenet(Nodenet):
 
     allocated_nodes = None
     allocated_node_offsets = None
+    allocated_node_parents = None
     allocated_elements_to_nodes = None
+
+    allocated_nodespaces = None
 
     last_allocated_node = 0
     last_allocated_offset = 0
+    last_allocated_nodespace = 0
 
     native_module_instances = {}
 
@@ -272,6 +278,7 @@ class TheanoNodenet(Nodenet):
 
         self.NoN = DEFAULT_NUMBER_OF_NODES
         self.NoE = DEFAULT_NUMBER_OF_ELEMENTS
+        self.NoNS = DEFAULT_NUMBER_OF_NODESPACES
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
@@ -281,8 +288,10 @@ class TheanoNodenet(Nodenet):
         self.sparse = True
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
+        self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
 
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipy.float64), name="w")
@@ -326,8 +335,6 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
-        self.rootnodespace = TheanoNodespace(self)
-
         self.initialize_stepoperators()
 
         self.__nodetypes = {}
@@ -339,6 +346,8 @@ class TheanoNodenet(Nodenet):
             self.native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.nodegroups = {}
+
+        self.create_nodespace(None, None, "Root", nodespace.to_id(0))
 
         self.initialize_nodenet({})
 
@@ -474,15 +483,15 @@ class TheanoNodenet(Nodenet):
 
                 for id in range(len(self.allocated_nodes)):
                     if self.allocated_nodes[id] > MAX_STD_NODETYPE:
-                        uid = to_id(id)
+                        uid = node.to_id(id)
                         self.native_module_instances[uid] = self.get_node(uid)
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
-                    self.inverted_sensor_map[to_id(id)] = sensor
+                    self.inverted_sensor_map[node.to_id(id)] = sensor
             for actuator, id_list in self.actuatormap.items():
                 for id in id_list:
-                    self.inverted_actuator_map[to_id(id)] = actuator
+                    self.inverted_actuator_map[node.to_id(id)] = actuator
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -548,9 +557,9 @@ class TheanoNodenet(Nodenet):
                     gate_parameters=data['gate_parameters'],
                     gate_functions=data['gate_functions'])
                 uidmap[uid] = new_uid
-                node = self.get_node(new_uid)
+                node_proxy = self.get_node(new_uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
-                    node.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
@@ -603,12 +612,12 @@ class TheanoNodenet(Nodenet):
         if uid in self.native_module_instances:
             return self.native_module_instances[uid]
         elif uid in self.get_node_uids():
-            return TheanoNode(self, uid, self.allocated_nodes[from_id(uid)])
+            return TheanoNode(self, uid, self.allocated_nodes[node.from_id(uid)])
         else:
             return None
 
     def get_node_uids(self):
-        return [to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
+        return [node.to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
 
     def is_node(self, uid):
         return uid in self.get_node_uids()
@@ -632,9 +641,9 @@ class TheanoNodenet(Nodenet):
             if id < 1:
                 raise MemoryError("Cannot find free id, all " + str(self.NoN) + " node entries already in use.")
         else:
-            id = from_id(uid)
+            id = node.from_id(uid)
 
-        uid = to_id(id)
+        uid = node.to_id(id)
 
         # now find a range of free elements to be used by this node
         number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)
@@ -705,18 +714,18 @@ class TheanoNodenet(Nodenet):
             n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
-        node = self.get_node(uid)
+        node_proxy = self.get_node(uid)
         for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
             for gate_parameter in parameters:
-                node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+                node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:
             for gate, parameters in gate_parameters.items():
                 for gate_parameter in parameters:
-                    node.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+                    node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
 
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():
-                node.set_gatefunction_name(gate, gate_function)
+                node_proxy.set_gatefunction_name(gate, gate_function)
 
         if nodetype not in STANDARD_NODETYPES:
             self.native_module_instances[uid] = node
@@ -725,15 +734,15 @@ class TheanoNodenet(Nodenet):
 
     def delete_node(self, uid):
 
-        type = self.allocated_nodes[from_id(uid)]
-        offset = self.allocated_node_offsets[from_id(uid)]
+        type = self.allocated_nodes[node.from_id(uid)]
+        offset = self.allocated_node_offsets[node.from_id(uid)]
 
         # unlink
         self.get_node(uid).unlink_completely()
 
         # forget
-        self.allocated_nodes[from_id(uid)] = 0
-        self.allocated_node_offsets[from_id(uid)] = 0
+        self.allocated_nodes[node.from_id(uid)] = 0
+        self.allocated_node_offsets[node.from_id(uid)] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
@@ -757,7 +766,7 @@ class TheanoNodenet(Nodenet):
             del self.positions[uid]
 
         # hint at the free ID
-        self.last_allocated_node = from_id(uid) - 1
+        self.last_allocated_node = node.from_id(uid) - 1
 
         # remove the native module instance if there should be one
         if uid in self.native_module_instances:
@@ -768,7 +777,7 @@ class TheanoNodenet(Nodenet):
             sensor = self.inverted_sensor_map[uid]
             del self.inverted_sensor_map[uid]
             if sensor in self.sensormap:
-                self.sensormap[sensor].remove(from_id(uid))
+                self.sensormap[sensor].remove(node.from_id(uid))
             if len(self.sensormap[sensor]) == 0:
                 del self.sensormap[sensor]
 
@@ -777,24 +786,54 @@ class TheanoNodenet(Nodenet):
             actuator = self.inverted_actuator_map[uid]
             del self.inverted_actuator_map[uid]
             if actuator in self.actuatormap:
-                self.actuatormap[actuator].remove(from_id(uid))
+                self.actuatormap[actuator].remove(node.from_id(uid))
             if len(self.actuatormap[actuator]) == 0:
                 del self.actuatormap[actuator]
 
     def get_nodespace(self, uid):
-        if uid == "Root":
-            return self.rootnodespace
-        else:
-            return None
+        return TheanoNodespace(self, uid)
 
     def get_nodespace_uids(self):
-        return ["Root"]
+        ids = [nodespace.to_id(id) for id in np.nonzero(self.allocated_nodespaces)[0]]
+        ids.append(nodespace.to_id(0))
+        return ids
 
     def is_nodespace(self, uid):
-        return uid == "Root"
+        return uid.startswith("s") and self.allocated_nodespaces[nodespace.from_id(uid)] > 0
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None, gatefunction_strings=None):
-        pass
+    def create_nodespace(self, parent_uid, position, name="", uid=None):
+
+        # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
+        if uid is None:
+            id = 0
+            for i in range((self.last_allocated_nodespace + 1), self.NoNS):
+                if self.allocated_nodespaces[i] == 0:
+                    id = i
+                    break
+
+            if id < 1:
+                for i in range(self.last_allocated_nodespace - 1):
+                    if self.allocated_nodespaces[i] == 0:
+                        id = i
+                        break
+
+            if id < 1:
+                raise MemoryError("Cannot find free id, all " + str(self.NoNS) + " nodespace entries already in use.")
+        else:
+            id = nodespace.from_id(uid)
+
+        self.last_allocated_nodespace = id
+
+        parent_id = 0
+        if parent_uid is not None:
+            parent_id = nodespace.from_id(parent_uid)
+        uid = nodespace.to_id(id)
+
+        self.allocated_nodespaces[id] = parent_id
+        if name is not None and len(name) > 0 and name != uid:
+            self.names[uid] = name
+        if position is not None:
+            self.positions[uid] = position
 
     def delete_nodespace(self, uid):
         pass
@@ -809,7 +848,7 @@ class TheanoNodenet(Nodenet):
             sensorlist = self.sensormap[datasource]
 
         for id in sensorlist:
-            uid = to_id(id)
+            uid = node.to_id(id)
             sensors[uid] = self.get_node(uid)
         return sensors
 
@@ -822,7 +861,7 @@ class TheanoNodenet(Nodenet):
         elif datatarget in self.actuatormap:
             actuatorlist = self.actuatormap[datatarget]
         for id in actuatorlist:
-            uid = to_id(id)
+            uid = node.to_id(id)
             actuators[uid] = self.get_node(uid)
         return actuators
 
@@ -834,40 +873,40 @@ class TheanoNodenet(Nodenet):
 
         source_nodetype = None
         target_nodetype = None
-        if self.allocated_nodes[from_id(source_node_uid)] > MAX_STD_NODETYPE:
-            source_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(source_node_uid)], self.native_modules))
-        if self.allocated_nodes[from_id(target_node_uid)] > MAX_STD_NODETYPE:
-            target_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[from_id(target_node_uid)], self.native_modules))
+        if self.allocated_nodes[node.from_id(source_node_uid)] > MAX_STD_NODETYPE:
+            source_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[node.from_id(source_node_uid)], self.native_modules))
+        if self.allocated_nodes[node.from_id(target_node_uid)] > MAX_STD_NODETYPE:
+            target_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[node.from_id(target_node_uid)], self.native_modules))
 
         ngt = get_numerical_gate_type(gate_type, source_nodetype)
         nst = get_numerical_slot_type(slot_type, target_nodetype)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
-        x = self.allocated_node_offsets[from_id(target_node_uid)] + nst
-        y = self.allocated_node_offsets[from_id(source_node_uid)] + ngt
+        x = self.allocated_node_offsets[node.from_id(target_node_uid)] + nst
+        y = self.allocated_node_offsets[node.from_id(source_node_uid)] + ngt
         if self.sparse:
             w_matrix[x, y] = weight
         else:
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
 
-        if slot_type == "por" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+        if slot_type == "por" and self.allocated_nodes[node.from_id(target_node_uid)] == PIPE:
             n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
             if weight == 0:
                 for g in range(7):
-                    n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
+                    n_node_porlinked_array[self.allocated_node_offsets[node.from_id(target_node_uid)] + g] = 0
             else:
                 for g in range(7):
-                    n_node_porlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
+                    n_node_porlinked_array[self.allocated_node_offsets[node.from_id(target_node_uid)] + g] = 1
             self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
 
-        if slot_type == "ret" and self.allocated_nodes[from_id(target_node_uid)] == PIPE:
+        if slot_type == "ret" and self.allocated_nodes[node.from_id(target_node_uid)] == PIPE:
             n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
             if weight == 0:
                 for g in range(7):
-                    n_node_retlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 0
+                    n_node_retlinked_array[self.allocated_node_offsets[node.from_id(target_node_uid)] + g] = 0
             else:
                 for g in range(7):
-                    n_node_retlinked_array[self.allocated_node_offsets[from_id(target_node_uid)] + g] = 1
+                    n_node_retlinked_array[self.allocated_node_offsets[node.from_id(target_node_uid)] + g] = 1
             self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
         return True
@@ -939,15 +978,15 @@ class TheanoNodenet(Nodenet):
                     if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                         weight = float(weight.data)
 
-                    linkuid = to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+to_id(target_id)
+                    linkuid = node.to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+node.to_id(target_id)
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
                         "certainty": 1,
                         "source_gate_name": source_gate_type,
-                        "source_node_uid": to_id(source_id),
+                        "source_node_uid": node.to_id(source_id),
                         "target_slot_name": target_slot_type,
-                        "target_node_uid": to_id(target_id)
+                        "target_node_uid": node.to_id(target_id)
                     }
                     data[linkuid] = linkdata
         return data
@@ -1029,7 +1068,7 @@ class TheanoNodenet(Nodenet):
         self.group_nodes_by_ids(ids, node_name_prefix)
 
     def group_nodes_by_ids(self, node_ids, group_name):
-        ids = [from_id(uid) for uid in node_ids]
+        ids = [node.from_id(uid) for uid in node_ids]
         ids = sorted(ids)
         self.nodegroups[group_name] = self.allocated_node_offsets[ids]
 

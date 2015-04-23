@@ -843,7 +843,23 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_nodespace(self, uid):
-        pass
+        nodespace_id = nodespace.from_id(uid)
+        children_ids = np.where(self.allocated_nodespaces == nodespace_id)[0]
+        for child_id in children_ids:
+            self.delete_nodespace(nodespace.to_id(child_id))
+        node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
+        for node_id in node_ids:
+            self.delete_node(node.to_id(node_id))
+
+        # clear from name and positions dicts
+        if uid in self.names:
+            del self.names[uid]
+        if uid in self.positions:
+            del self.positions[uid]
+
+        self.allocated_nodespaces[nodespace_id] = 0
+
+        self.last_allocated_nodespace = nodespace_id
 
     def get_sensors(self, nodespace=None, datasource=None):
         sensors = {}

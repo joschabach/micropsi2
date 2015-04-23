@@ -525,6 +525,8 @@ class DictNodenet(Nodenet):
         return self.__nodes[uid]
 
     def get_nodespace(self, uid):
+        if uid is None:
+            uid = "Root"
         return self.__nodespaces[uid]
 
     def get_node_uids(self):

@@ -252,6 +252,7 @@ class Nodenet(metaclass=ABCMeta):
     def get_nodespace(self, uid):
         """
         Returns the Nodespace object with the given UID or None if no such Nodespace object exists
+        Passing none will return the root nodespace
         """
         pass  # pragma: no cover
 

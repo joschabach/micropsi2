@@ -289,7 +289,7 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
         return data
     with nodenet.netlock:
         if not nodenets[nodenet_uid].is_nodespace(nodespace):
-            nodespace = "Root"
+            nodespace = nodenets[nodenet_uid].get_nodespace(None).uid
         data.update(nodenets[nodenet_uid].get_nodespace_data(nodespace, include_links))
         data['nodespace'] = nodespace
         data.update({
@@ -515,10 +515,10 @@ def merge_nodenet(nodenet_uid, string, keep_uids=False):
     return True
 
 
-def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespace_uid="Root",
+def copy_nodes(node_uids, source_nodenet_uid, target_nodenet_uid, target_nodespace_uid=None,
                copy_associated_links=True):
     """Copies a set of netentities, either between nodenets or within a nodenet. If a target nodespace
-    is supplied, all nodes will be inserted below that target nodespace, otherwise below "Root".
+    is supplied, all nodes will be inserted below that target nodespace, otherwise below the root nodespace.
     If parent nodespaces are included in the set of node_uids, the contained nodes will remain in
     these parent nodespaces.
     Only explicitly listed nodes and nodespaces will be copied.
@@ -563,7 +563,7 @@ def _perform_copy_nodes(nodenet, nodes, nodespaces, target_nodespace=None, copy_
     rename_nodes = {}
     rename_nodespaces = {}
     if not target_nodespace:
-        target_nodespace = "Root"
+        target_nodespace = nodenet.get_nodespace(None).uid
         # first, check for nodespace naming conflicts
     for nodespace_uid in nodespaces:
         if nodespace_uid in nodenet.get_nodespace_uids():
@@ -682,7 +682,7 @@ def get_node(nodenet_uid, node_uid):
     return nodenets[nodenet_uid].get_node(node_uid).data
 
 
-def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, name="", parameters=None):
+def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
     """Creates a new node. (Including nodespace, native module.)
 
     Arguments:
@@ -699,6 +699,8 @@ def add_node(nodenet_uid, type, pos, nodespace="Root", state=None, uid=None, nam
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
+    if nodespace is None:
+        nodespace = nodenet.get_nodespace(None).uid
     if type == "Nodespace":
         uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
     else:

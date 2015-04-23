@@ -194,7 +194,7 @@ class TheanoNodenet(Nodenet):
         data['nodes'] = self.construct_nodes_dict()
         # for uid in data['nodes']:
         #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
-        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['nodespaces'] = self.construct_nodespaces_dict(None)
         data['version'] = self.__version
         data['modulators'] = self.construct_modulators_dict()
         return data
@@ -612,7 +612,9 @@ class TheanoNodenet(Nodenet):
         if uid in self.native_module_instances:
             return self.native_module_instances[uid]
         elif uid in self.get_node_uids():
-            return TheanoNode(self, uid, self.allocated_nodes[node.from_id(uid)])
+            id = node.from_id(uid)
+            parent_id = self.allocated_node_parents[id]
+            return TheanoNode(self, nodespace.to_id(parent_id), uid, self.allocated_nodes[id])
         else:
             return None
 
@@ -673,6 +675,7 @@ class TheanoNodenet(Nodenet):
         self.last_allocated_node = id
         self.last_allocated_offset = offset
         self.allocated_nodes[id] = get_numerical_node_type(nodetype, self.native_modules)
+        self.allocated_node_parents[id] = nodespace.from_id(nodespace_uid)
         self.allocated_node_offsets[id] = offset
 
         for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.native_modules)):
@@ -799,7 +802,7 @@ class TheanoNodenet(Nodenet):
         return ids
 
     def is_nodespace(self, uid):
-        return uid.startswith("s") and self.allocated_nodespaces[nodespace.from_id(uid)] > 0
+        return uid in self.get_nodespace_uids()
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 
@@ -919,6 +922,8 @@ class TheanoNodenet(Nodenet):
         pass
 
     def get_nodespace_data(self, nodespace_uid, include_links):
+        if nodespace_uid == "Root":
+            nodespace_uid = "s0"
         data = {
             'links': {},
             'nodes': self.construct_nodes_dict(self.NoN),

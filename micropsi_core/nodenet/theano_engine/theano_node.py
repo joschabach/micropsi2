@@ -3,6 +3,7 @@
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
+from micropsi_core.nodenet.theano_engine import theano_nodespace as nodespace
 
 import numpy as np
 
@@ -232,10 +233,11 @@ class TheanoNode(Node):
     _nodenet = None
     _numerictype = 0
     _id = -1
+    _parent_id = -1
 
     parameters = None
 
-    def __init__(self, nodenet, uid, type, parameters={}, **_):
+    def __init__(self, nodenet, parent_uid, uid, type, parameters={}, **_):
 
         self._numerictype = type
         strtype = get_string_node_type(type, nodenet.native_modules)
@@ -252,6 +254,7 @@ class TheanoNode(Node):
 
         self._nodenet = nodenet
         self._id = from_id(uid)
+        self._parent_id = nodespace.from_id(parent_uid)
 
     @property
     def uid(self):
@@ -290,10 +293,11 @@ class TheanoNode(Node):
 
     @property
     def parent_nodespace(self):
-        return "Root"           # todo: implement nodespace
+        return nodespace.to_id(self._parent_id)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
+        raise "hell"
         pass                    # todo: implement nodespace
 
     @property

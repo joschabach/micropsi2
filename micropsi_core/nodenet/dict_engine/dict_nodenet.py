@@ -335,8 +335,20 @@ class DictNodenet(Nodenet):
 
     def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
+        if nodespace_uid is None:
+            nodespace_uid = "Root"
         for nodespace_candidate_uid in self.get_nodespace_uids():
-            if self.get_nodespace(nodespace_candidate_uid).parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
+            is_in_hierarchy = False
+            if nodespace_candidate_uid == nodespace_uid:
+                is_in_hierarchy = True
+            else:
+                parent_uid = self.get_nodespace(nodespace_candidate_uid).parent_nodespace
+                while parent_uid is not None and parent_uid != nodespace_uid:
+                    parent_uid = self.get_nodespace(parent_uid).parent_nodespace
+                if parent_uid == nodespace_uid:
+                    is_in_hierarchy = True
+
+            if is_in_hierarchy:
                 data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
         return data
 

@@ -760,7 +760,7 @@ class TheanoNodenet(Nodenet):
                 node_proxy.set_gatefunction_name(gate, gate_function)
 
         if nodetype not in STANDARD_NODETYPES:
-            self.native_module_instances[uid] = node
+            self.native_module_instances[uid] = node_proxy
 
         return uid
 

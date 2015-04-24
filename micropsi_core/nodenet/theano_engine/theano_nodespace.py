@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from micropsi_core.nodenet.nodespace import Nodespace
-from micropsi_core.nodenet.theano_engine.theano_node import *
+import numpy as np
 
 
 def to_id(numericid):
@@ -85,9 +85,10 @@ class TheanoNodespace(Nodespace):
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return self._nodenet.get_node_uids()
+            from micropsi_core.nodenet.theano_engine.theano_node import to_id as node_to_id
+            return [node_to_id(id) for id in np.where(self._nodenet.allocated_node_parents == self._id)[0]]
         else:
-            return self._nodenet.get_nodespace_uids()
+            return [to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
 
     def has_activator(self, type):
         return type in self.__activators

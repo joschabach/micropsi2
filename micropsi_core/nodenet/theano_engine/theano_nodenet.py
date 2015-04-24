@@ -115,11 +115,19 @@ class TheanoNodenet(Nodenet):
         theano runtime engine implementation
     """
 
+    # array, index is node id, value is numeric node type
     allocated_nodes = None
+
+    # array, index is node id, value is offset in a and w
     allocated_node_offsets = None
+
+    # array, index is node id, value is nodespace id
     allocated_node_parents = None
+
+    # array, index is element index, value is node id
     allocated_elements_to_nodes = None
 
+    # array, index is nodespace id, value is parent nodespace id
     allocated_nodespaces = None
 
     last_allocated_node = 0

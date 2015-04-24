@@ -1069,7 +1069,7 @@ class TheanoNodenet(Nodenet):
             else:
                 parent_id = self.allocated_nodespaces[candidate_id]
                 while parent_id > 0 and parent_id != nodespace_id:
-                    parent_id = self.allocated_nodespaces[candidate_id]
+                    parent_id = self.allocated_nodespaces[parent_id]
                 if parent_id == nodespace_id:
                     is_in_hierarchy = True
 

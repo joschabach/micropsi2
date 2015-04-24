@@ -1059,12 +1059,26 @@ class TheanoNodenet(Nodenet):
 
     def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
         nodespace_id = tnodespace.from_id(nodespace_uid)
         nodespace_ids = np.nonzero(self.allocated_nodespaces)[0]
         nodespace_ids = np.append(nodespace_ids, 1)
         for candidate_id in nodespace_ids:
-            if candidate_id == nodespace_id or self.allocated_nodespaces[candidate_id] == nodespace_id:
+            is_in_hierarchy = False
+            if candidate_id == nodespace_id:
+                is_in_hierarchy = True
+            else:
+                parent_id = self.allocated_nodespaces[candidate_id]
+                while parent_id > 0 and parent_id != nodespace_id:
+                    parent_id = self.allocated_nodespaces[candidate_id]
+                if parent_id == nodespace_id:
+                    is_in_hierarchy = True
+
+            if is_in_hierarchy:
                 data[tnodespace.to_id(candidate_id)] = self.get_nodespace(tnodespace.to_id(candidate_id)).data
+
         return data
 
     def construct_modulators_dict(self):

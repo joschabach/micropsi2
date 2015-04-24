@@ -76,8 +76,7 @@ class TheanoNodespace(Nodespace):
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        raise "hell"
-        pass
+        self._nodenet.allocated_nodespaces[self._id] = from_id(uid)
 
     def __init__(self, nodenet, uid):
         self.__activators = {}

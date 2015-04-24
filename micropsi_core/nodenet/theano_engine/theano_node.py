@@ -297,8 +297,7 @@ class TheanoNode(Node):
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        raise "hell"
-        pass                    # todo: implement nodespace
+        self._nodenet.allocated_node_parents[self._id] = nodespace.from_id(uid)
 
     @property
     def activation(self):

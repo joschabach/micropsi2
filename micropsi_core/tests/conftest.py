@@ -94,6 +94,7 @@ def fixed_nodenet(request, test_world):
     success, uid = micropsi.new_nodenet("Fixednet", worldadapter="Braitenberg", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
     micropsi.get_nodenet(uid)
     micropsi.merge_nodenet(uid, fixed_nodenet_data, keep_uids=True)
+    micropsi.save_nodenet(uid)
 
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:

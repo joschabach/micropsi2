@@ -23,8 +23,8 @@
                         <li><a href="#" class="reload_native_modules">Reload Native Modules</a></li>
                         <li class="divider"></li>
                         <li><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
-                        <li><a href="/nodenet/import" class="nodenet_import">Import from file...</a></li>
-                        <li><a href="/nodenet/merge" class="nodenet_merge">Merge with file...</a></li>
+                        <li><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
+                        <li><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
                         %if "manage nodenets" in permissions:
                         <li class="divider"></li>
                         <li><a href="/nodenet_mgt">Show nodenet console...</a></li>

@@ -509,9 +509,6 @@ def merge_nodenet(nodenet_uid, string, keep_uids=False):
     nodenet = nodenets[nodenet_uid]
     data = json.loads(string)
     nodenet.merge_data(data, keep_uids)
-    save_nodenet(nodenet_uid)
-    unload_nodenet(nodenet_uid)
-    load_nodenet(nodenet_uid)
     return True
 
 

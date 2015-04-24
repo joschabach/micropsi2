@@ -458,43 +458,109 @@ class TheanoNodenet(Nodenet):
 
             if datafile:
 
-                self.NoN = datafile['sizeinformation'][0]
-                self.NoE = datafile['sizeinformation'][1]
+                if 'sizeinformation' in datafile:
+                    self.NoN = datafile['sizeinformation'][0]
+                    self.NoE = datafile['sizeinformation'][1]
+                else:
+                    self.logger.warn("no sizeinformation in file, falling back to defaults")
 
                 # the load bulk data into numpy arrays
-                self.allocated_nodes = datafile['allocated_nodes']
-                self.allocated_node_offsets = datafile['allocated_node_offsets']
-                self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
-                if 'allocated_node_parents' in datafile:
+                if 'allocated_nodes' in datafile:
+                    self.allocated_nodes = datafile['allocated_nodes']
+                else:
+                    self.logger.warn("no allocated_nodes in file, falling back to defaults")
+
+                if 'allocated_node_offsets' in datafile:
+                    self.allocated_node_offsets = datafile['allocated_node_offsets']
+                else:
+                    self.logger.warn("no allocated_node_offsets in file, falling back to defaults")
+
+                if 'allocated_elements_to_nodes' in datafile:
+                    self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
+                else:
+                    self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")
+
+                if 'allocated_nodespaces' in datafile:
                     self.allocated_nodespaces = datafile['allocated_nodespaces']
+                else:
+                    self.logger.warn("no allocated_nodespaces in file, falling back to defaults")
+
+                if 'allocated_node_parents' in datafile:
                     self.allocated_node_parents = datafile['allocated_node_parents']
+                else:
+                    self.logger.warn("no allocated_node_parents in file, falling back to defaults")
 
-                w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
-                self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
-                self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
 
-                self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
-                self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
-                self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
-                self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
-                self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
-                self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
+                if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
+                    w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
+                    self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
+                    self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
+                else:
+                    self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
 
-                g_function_selector = datafile['g_function_selector']
-                self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
-                self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
+                if 'g_theta' in datafile:
+                    self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+                else:
+                    self.logger.warn("no g_theta in file, falling back to defaults")
 
-                self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
-                self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
+                if 'g_factor' in datafile:
+                    self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
+                else:
+                    self.logger.warn("no g_factor in file, falling back to defaults")
+
+                if 'g_threshold' in datafile:
+                    self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
+                else:
+                    self.logger.warn("no g_threshold in file, falling back to defaults")
+
+                if 'g_amplification' in datafile:
+                    self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
+                else:
+                    self.logger.warn("no g_amplification in file, falling back to defaults")
+
+                if 'g_min' in datafile:
+                    self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
+                else:
+                    self.logger.warn("no g_min in file, falling back to defaults")
+
+                if 'g_max' in datafile:
+                    self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
+                else:
+                    self.logger.warn("no g_max in file, falling back to defaults")
+
+                if 'g_function_selector' in datafile:
+                    self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
+                else:
+                    self.logger.warn("no g_function_selector in file, falling back to defaults")
+
+                if 'n_function_selector' in datafile:
+                    self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
+                else:
+                    self.logger.warn("no n_function_selector in file, falling back to defaults")
+
+
+                if 'n_node_porlinked' in datafile:
+                    self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
+                else:
+                    self.logger.warn("no n_node_porlinked in file, falling back to defaults")
+
+                if 'n_node_retlinked' in datafile:
+                    self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
+                else:
+                    self.logger.warn("no n_node_retlinked in file, falling back to defaults")
 
                 # reconstruct other states
-                self.has_new_usages = True
-                self.has_pipes = PIPE in self.allocated_nodes
-                self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
-                self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
-                self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
-                self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
-                self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+                if 'g_function_selector' in datafile:
+                    g_function_selector = datafile['g_function_selector']
+                    self.has_new_usages = True
+                    self.has_pipes = PIPE in self.allocated_nodes
+                    self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
+                    self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
+                    self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
+                    self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+                    self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+                else:
+                    self.logger.warn("no g_function_selector in file, falling back to defaults")
 
                 for id in range(len(self.allocated_nodes)):
                     if self.allocated_nodes[id] > MAX_STD_NODETYPE:

@@ -68,7 +68,11 @@ class TheanoNodespace(Nodespace):
 
     @property
     def parent_nodespace(self):
-        return to_id(self._nodenet.allocated_nodespaces[self._id])
+        parent_nodespace_id = self._nodenet.allocated_nodespaces[self._id]
+        if parent_nodespace_id == 0:
+            return None
+        else:
+            return to_id(parent_nodespace_id)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):

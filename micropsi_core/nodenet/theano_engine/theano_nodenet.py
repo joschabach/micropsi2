@@ -296,7 +296,7 @@ class TheanoNodenet(Nodenet):
         self.sparse = True
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
-        self.allocated_node_parents = np.ones(self.NoN, dtype=np.int32)
+        self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
@@ -542,6 +542,9 @@ class TheanoNodenet(Nodenet):
         uidmap = {}
         # for dict_engine compatibility
         uidmap["Root"] = "s1"
+
+        # re-use the root nodespace
+        uidmap["s1"] = "s1"
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
@@ -989,7 +992,7 @@ class TheanoNodenet(Nodenet):
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
             'links': {},
-            'nodes': self.construct_nodes_dict(self.NoN),
+            'nodes': self.construct_nodes_dict(nodespace_uid, self.NoN),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict()
         }
@@ -1059,11 +1062,16 @@ class TheanoNodenet(Nodenet):
                     data[linkuid] = linkdata
         return data
 
-    def construct_nodes_dict(self, max_nodes=-1):
+    def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1):
         data = {}
         i = 0
-        for node_uid in self.get_node_uids():
+        nodeids = np.nonzero(self.allocated_nodes)[0]
+        if nodespace_uid is not None:
+            parent_id = tnodespace.from_id(nodespace_uid)
+            nodeids = np.where(self.allocated_node_parents == parent_id)[0]
+        for node_id in nodeids:
             i += 1
+            node_uid = tnode.to_id(node_id)
             data[node_uid] = self.get_node(node_uid).data
             if max_nodes > 0 and i > max_nodes:
                 break

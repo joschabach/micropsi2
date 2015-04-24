@@ -508,11 +508,6 @@ class TheanoNodenet(Nodenet):
         # todo: implement modulators
         # self.__modulators = initfrom.get("modulators", {})
 
-        # todo: implement nodespaces
-        # set up nodespaces; make sure that parent nodespaces exist before children are initialized
-        # self.__nodespaces = {}
-        # self.__nodespaces["Root"] = TheanoNodespace(self) #, None, (0, 0), name="Root", uid="Root")
-
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
@@ -532,24 +527,28 @@ class TheanoNodenet(Nodenet):
         # net will have the name of the one to be merged into us
         self.name = nodenet_data['name']
 
-        # todo: implement nodespaces
-        # merge in spaces, make sure that parent nodespaces exist before children are initialized
-        # nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
-        # for nodespace in nodespaces_to_merge:
-        #    self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
-
         uidmap = {}
+        # for dict_engine compatibility
+        uidmap["Root"] = "s1"
+
+        # merge in spaces, make sure that parent nodespaces exist before children are initialized
+        nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
+        for nodespace in nodespaces_to_merge:
+            self.merge_nodespace_data(nodespace, nodenet_data['nodespaces'], uidmap, keep_uids)
 
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
+            parent_uid = data['parent_nodespace']
+            if not keep_uids:
+                parent_uid = uidmap[data['parent_nodespace']]
             if data['type'] in self.__nodetypes or data['type'] in self.native_modules:
                 olduid = None
                 if keep_uids:
                     olduid = uid
                 new_uid = self.create_node(
                     data['type'],
-                    data['parent_nodespace'],
+                    parent_uid,
                     data['position'],
                     name=data['name'],
                     uid=olduid,
@@ -589,6 +588,39 @@ class TheanoNodenet(Nodenet):
             else:
                 # Compatibility mode
                 monitor.NodeMonitor(self, name=data['node_name'], **data)
+
+    def merge_nodespace_data(self, nodespace_uid, data, uidmap, keep_uids=False):
+        """
+        merges the given nodespace with the given nodespace data dict
+        This will make sure all parent nodespaces for the given nodespace exist (and create the parents
+        if necessary)
+        """
+        if keep_uids:
+            id = tnodespace.from_id(nodespace_uid)
+            if self.allocated_nodespaces[id] == 0:
+                # move up the nodespace tree until we find an existing parent or hit root
+                if id != 1:
+                    parent_id = tnodespace.from_id(data[nodespace_uid].get('parent_nodespace'))
+                    if self.allocated_nodespaces[parent_id] == 0:
+                        self.merge_nodespace_data(tnodespace.to_id(parent_id), data, uidmap, keep_uids)
+                self.create_nodespace(
+                    data[nodespace_uid].get('parent_nodespace'),
+                    data[nodespace_uid].get('position'),
+                    name=data[nodespace_uid].get('name', 'Root'),
+                    uid=nodespace_uid
+                )
+        else:
+            if not nodespace_uid in uidmap:
+                parent_uid = data[nodespace_uid].get('parent_nodespace')
+                if not parent_uid in uidmap:
+                    self.merge_nodespace_data(parent_uid, data, uidmap, keep_uids)
+                newuid = self.create_nodespace(
+                    uidmap[data[nodespace_uid].get('parent_nodespace')],
+                    data[nodespace_uid].get('position'),
+                    name=data[nodespace_uid].get('name', 'Root'),
+                    uid=None
+                )
+                uidmap[nodespace_uid] = newuid
 
     def step(self):
         self.user_prompt = None

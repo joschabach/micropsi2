@@ -380,6 +380,8 @@ class TheanoNodenet(Nodenet):
         allocated_nodes = self.allocated_nodes
         allocated_node_offsets = self.allocated_node_offsets
         allocated_elements_to_nodes = self.allocated_elements_to_nodes
+        allocated_node_parents = self.allocated_node_parents
+        allocated_nodespaces = self.allocated_nodespaces
 
         w = self.w.get_value(borrow=True, return_internal_type=True)
         a = self.a.get_value(borrow=True, return_internal_type=True)
@@ -394,12 +396,14 @@ class TheanoNodenet(Nodenet):
         n_node_porlinked = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
         n_node_retlinked = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
 
-        sizeinformation = [self.NoN, self.NoE]
+        sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
                  allocated_node_offsets=allocated_node_offsets,
                  allocated_elements_to_nodes=allocated_elements_to_nodes,
+                 allocated_node_parents=allocated_node_parents,
+                 allocated_nodespaces=allocated_nodespaces,
                  w_data=w.data,
                  w_indices=w.indices,
                  w_indptr=w.indptr,
@@ -461,6 +465,9 @@ class TheanoNodenet(Nodenet):
                 self.allocated_nodes = datafile['allocated_nodes']
                 self.allocated_node_offsets = datafile['allocated_node_offsets']
                 self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
+                if 'allocated_node_parents' in datafile:
+                    self.allocated_nodespaces = datafile['allocated_nodespaces']
+                    self.allocated_node_parents = datafile['allocated_node_parents']
 
                 w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
                 self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)

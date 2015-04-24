@@ -277,7 +277,7 @@ def test_merge_nodenet(app, test_nodenet):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % uid)
     assert len(list(response.json_body['data']['nodes'].keys())) == 1
-    assert response.json_body['data']['name'] == 'Testnet'
+    assert response.json_body['data']['name'] == 'ImporterNet'
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
 
 

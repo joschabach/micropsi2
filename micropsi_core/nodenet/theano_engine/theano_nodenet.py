@@ -524,9 +524,6 @@ class TheanoNodenet(Nodenet):
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
-        # net will have the name of the one to be merged into us
-        self.name = nodenet_data['name']
-
         uidmap = {}
         # for dict_engine compatibility
         uidmap["Root"] = "s1"

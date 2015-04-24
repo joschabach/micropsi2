@@ -437,9 +437,6 @@ class DictNodenet(Nodenet):
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
-        # net will have the name of the one to be merged into us
-        self.name = nodenet_data['name']
-
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
         for nodespace in nodespaces_to_merge:

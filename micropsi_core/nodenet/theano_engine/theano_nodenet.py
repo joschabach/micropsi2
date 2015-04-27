@@ -1065,6 +1065,14 @@ class TheanoNodenet(Nodenet):
         if include_links:
             data['links'] = self.construct_links_dict()
 
+            followupnodes = []
+            for uid in data['nodes']:
+                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+
+            for uid in followupnodes:
+                if self.allocated_node_parents[tnode.from_id(uid)] != tnodespace.from_id(nodespace_uid):
+                    data['nodes'].append(self.get_node(uid))
+
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()
             self.user_prompt = None

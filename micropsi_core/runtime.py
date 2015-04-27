@@ -810,13 +810,14 @@ def delete_node(nodenet_uid, node_uid):
     # todo: There should be a separate JSON API method for deleting node spaces -- they're entities, but NOT nodes!
 
     nodenet = nodenets[nodenet_uid]
-    if nodenet.is_nodespace(node_uid):
-        nodenet.delete_nodespace(node_uid)
-        return True
-    elif nodenet.is_node(node_uid):
-        nodenets[nodenet_uid].delete_node(node_uid)
-        return True
-    return False
+    with nodenet.netlock:
+        if nodenet.is_nodespace(node_uid):
+            nodenet.delete_nodespace(node_uid)
+            return True
+        elif nodenet.is_node(node_uid):
+            nodenets[nodenet_uid].delete_node(node_uid)
+            return True
+        return False
 
 
 def get_available_node_types(nodenet_uid):

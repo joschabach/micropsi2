@@ -408,6 +408,15 @@ class TheanoNodenet(Nodenet):
         allocated_elements_to_nodes = self.allocated_elements_to_nodes
         allocated_node_parents = self.allocated_node_parents
         allocated_nodespaces = self.allocated_nodespaces
+        allocated_elements_to_activators = self.allocated_elements_to_activators
+
+        allocated_nodespaces_por_activators = self.allocated_nodespaces_por_activators
+        allocated_nodespaces_ret_activators = self.allocated_nodespaces_ret_activators
+        allocated_nodespaces_sub_activators = self.allocated_nodespaces_sub_activators
+        allocated_nodespaces_sur_activators = self.allocated_nodespaces_sur_activators
+        allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
+        allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
+
 
         w = self.w.get_value(borrow=True, return_internal_type=True)
         a = self.a.get_value(borrow=True, return_internal_type=True)
@@ -444,8 +453,14 @@ class TheanoNodenet(Nodenet):
                  n_function_selector=n_function_selector,
                  n_node_porlinked=n_node_porlinked,
                  n_node_retlinked=n_node_retlinked,
-                 sizeinformation=sizeinformation)
-
+                 sizeinformation=sizeinformation,
+                 allocated_elements_to_activators=allocated_elements_to_activators,
+                 allocated_nodespaces_por_activators=allocated_nodespaces_por_activators,
+                 allocated_nodespaces_ret_activators=allocated_nodespaces_ret_activators,
+                 allocated_nodespaces_sub_activators=allocated_nodespaces_sub_activators,
+                 allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
+                 allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
+                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators)
 
     def load(self, filename):
         """Load the node net from a file"""
@@ -515,6 +530,41 @@ class TheanoNodenet(Nodenet):
                     self.allocated_node_parents = datafile['allocated_node_parents']
                 else:
                     self.logger.warn("no allocated_node_parents in file, falling back to defaults")
+
+                if 'allocated_elements_to_activators' in datafile:
+                    self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
+                else:
+                    self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")
+
+                if 'allocated_nodespaces_por_activators' in datafile:
+                    self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
+                else:
+                    self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
+
+                if 'allocated_nodespaces_ret_activators' in datafile:
+                    self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
+                else:
+                    self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")
+
+                if 'allocated_nodespaces_sub_activators' in datafile:
+                    self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
+                else:
+                    self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")
+
+                if 'allocated_nodespaces_sur_activators' in datafile:
+                    self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
+                else:
+                    self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")
+
+                if 'allocated_nodespaces_cat_activators' in datafile:
+                    self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
+                else:
+                    self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")
+
+                if 'allocated_nodespaces_exp_activators' in datafile:
+                    self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
+                else:
+                    self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
 
 
                 if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:

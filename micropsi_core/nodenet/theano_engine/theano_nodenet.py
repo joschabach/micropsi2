@@ -859,6 +859,7 @@ class TheanoNodenet(Nodenet):
         # forget
         self.allocated_nodes[tnode.from_id(uid)] = 0
         self.allocated_node_offsets[tnode.from_id(uid)] = 0
+        self.allocated_node_parents[tnode.from_id(uid)] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0

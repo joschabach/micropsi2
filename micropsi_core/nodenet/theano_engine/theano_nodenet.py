@@ -307,7 +307,10 @@ class TheanoNodenet(Nodenet):
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
         # todo: move to float32 and handle casting issues on the way back to Python doubles (JSON-serialization...)
-        T.config.floatX = "float64"
+        T.config.floatX = "float32"
+        scipyfloatX = scipy.float32
+        numpyfloatX = np.float32
+        self.byte_per_float = 4
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
@@ -339,33 +342,33 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
 
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipy.float64), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipyfloatX), name="w")
         else:
-            w_matrix = np.zeros((self.NoE, self.NoE), dtype=np.float64)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(self.NoE, dtype=np.float64)
+        a_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(self.NoE, dtype=np.float64)
+        g_theta_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(self.NoE, dtype=np.float64)
+        g_factor_array = np.ones(self.NoE, dtype=numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(self.NoE, dtype=np.float64)
+        g_threshold_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(self.NoE, dtype=np.float64)
+        g_amplification_array = np.ones(self.NoE, dtype=numpyfloatX)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(self.NoE, dtype=np.float64)
+        g_min_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(self.NoE, dtype=np.float64)
+        g_max_array = np.ones(self.NoE, dtype=numpyfloatX)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
         g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
@@ -1427,5 +1430,5 @@ class TheanoNodenet(Nodenet):
     def rebuild_shifted(self):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)
         a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)

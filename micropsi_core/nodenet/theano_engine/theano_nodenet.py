@@ -855,6 +855,18 @@ class TheanoNodenet(Nodenet):
             n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
             n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+            self.allocated_elements_to_activators[offset + POR] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_por_activators[tnodespace.from_id(nodespace_uid)]]
+            self.allocated_elements_to_activators[offset + RET] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_ret_activators[tnodespace.from_id(nodespace_uid)]]
+            self.allocated_elements_to_activators[offset + SUB] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sub_activators[tnodespace.from_id(nodespace_uid)]]
+            self.allocated_elements_to_activators[offset + SUR] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sur_activators[tnodespace.from_id(nodespace_uid)]]
+            self.allocated_elements_to_activators[offset + CAT] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_cat_activators[tnodespace.from_id(nodespace_uid)]]
+            self.allocated_elements_to_activators[offset + EXP] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[tnodespace.from_id(nodespace_uid)]]
         elif nodetype == "Activator":
             activator_type = parameters.get("type")
             if activator_type is not None and len(activator_type) > 0:

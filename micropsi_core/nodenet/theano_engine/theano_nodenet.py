@@ -923,7 +923,7 @@ class TheanoNodenet(Nodenet):
                 del self.actuatormap[actuator]
 
         # clear activator usage
-        used_as_activator_by = np.where(self.allocated_elements_to_activators == tnode.from_id(uid))
+        used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)
         if len(used_as_activator_by) > 0:
             self.allocated_elements_to_activators[used_as_activator_by] = 0
 
@@ -935,7 +935,7 @@ class TheanoNodenet(Nodenet):
         for nid in nodes_in_nodespace:
             if self.allocated_nodes[nid] == PIPE:
                 self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
-                                                      get_numerical_gate_type(gate_type)] = activator_id
+                                                      get_numerical_gate_type(gate_type)] = self.allocated_node_offsets[activator_id]
 
     def get_nodespace(self, uid):
         if uid is None:

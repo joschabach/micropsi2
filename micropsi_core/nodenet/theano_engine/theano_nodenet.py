@@ -130,6 +130,9 @@ class TheanoNodenet(Nodenet):
     # array, index is nodespace id, value is parent nodespace id
     allocated_nodespaces = None
 
+    # directional activators mapping, index is gate, value is element id
+    allocated_elements_to_activators = None
+
     last_allocated_node = 0
     last_allocated_offset = 0
     last_allocated_nodespace = 0
@@ -299,6 +302,7 @@ class TheanoNodenet(Nodenet):
         self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
+        self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
 
         if self.sparse:

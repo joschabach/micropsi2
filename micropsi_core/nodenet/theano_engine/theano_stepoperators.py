@@ -40,9 +40,9 @@ class TheanoPropagate(Propagate):
 
     def __init__(self, nodenet):
         if nodenet.sparse:
-            self.propagate = theano.function([], [nodenet.w, nodenet.a], updates={nodenet.a: ST.dot(nodenet.w, nodenet.a)})
+            self.propagate = theano.function([], None, updates={nodenet.a: ST.dot(nodenet.w, nodenet.a)})
         else:
-            self.propagate = theano.function([], [nodenet.w, nodenet.a], updates={nodenet.a: T.dot(nodenet.w, nodenet.a)})
+            self.propagate = theano.function([], None, updates={nodenet.a: T.dot(nodenet.w, nodenet.a)})
 
     def execute(self, nodenet, nodes, netapi):
         self.propagate()
@@ -192,7 +192,8 @@ class TheanoCalculate(Calculate):
         gatefunctions = limited_gate_function_output
 
         # put the theano graph into a callable function to be executed
-        self.calculate = theano.function([], nodenet.a, updates={nodenet.a: gatefunctions})
+        self.calculate = theano.function([], None, updates={nodenet.a: gatefunctions})
+
 
     def read_sensors_and_actuator_feedback(self):
         if self.worldadapter is None:
@@ -224,6 +225,12 @@ class TheanoCalculate(Calculate):
         for uid, instance in self.nodenet.native_module_instances.items():
             instance.node_function()
 
+    def calculate_g_factors(self):
+        a = self.nodenet.a.get_value(borrow=True, return_internal_type=True)
+        a[0] = 1.
+        g_factor = a[self.nodenet.allocated_elements_to_activators]
+        self.nodenet.g_factor.set_value(g_factor, borrow=True)
+
     def execute(self, nodenet, nodes, netapi):
 
         if nodenet.has_new_usages:
@@ -234,5 +241,6 @@ class TheanoCalculate(Calculate):
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
         self.nodenet.rebuild_shifted()
+        self.calculate_g_factors()
         self.calculate()
         self.calculate_native_modules()

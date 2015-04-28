@@ -874,6 +874,7 @@ class TheanoNodenet(Nodenet):
         # forget
         self.allocated_nodes[tnode.from_id(uid)] = 0
         self.allocated_node_offsets[tnode.from_id(uid)] = 0
+        self.allocated_node_parents[tnode.from_id(uid)] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
@@ -1101,7 +1102,7 @@ class TheanoNodenet(Nodenet):
 
             for uid in followupnodes:
                 if self.allocated_node_parents[tnode.from_id(uid)] != tnodespace.from_id(nodespace_uid):
-                    data['nodes'].append(self.get_node(uid))
+                    data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()

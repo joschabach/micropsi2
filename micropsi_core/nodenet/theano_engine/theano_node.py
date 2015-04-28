@@ -123,7 +123,7 @@ def get_numerical_node_type(type, nativemodules=None):
     elif type == "Activator":
         return ACTIVATOR
     elif type == "Concept":
-        numerictype = CONCEPT
+        return CONCEPT
     elif type == "Script":
         return SCRIPT
     elif type == "Pipe":
@@ -422,12 +422,6 @@ class TheanoNode(Node):
 
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
-
-    def get_associated_links(self):
-        links = []
-        for gatetype in self.nodetype.gatetypes:
-            links.extend(self.get_gate(gatetype).get_links())
-        return links
 
     def unlink_completely(self):
 

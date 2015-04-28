@@ -1071,7 +1071,7 @@ class TheanoNodenet(Nodenet):
 
             for uid in followupnodes:
                 if self.allocated_node_parents[tnode.from_id(uid)] != tnodespace.from_id(nodespace_uid):
-                    data['nodes'].append(self.get_node(uid))
+                    data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()

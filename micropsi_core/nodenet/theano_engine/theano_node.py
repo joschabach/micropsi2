@@ -420,12 +420,6 @@ class TheanoNode(Node):
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
 
-    def get_associated_links(self):
-        links = []
-        for gatetype in self.nodetype.gatetypes:
-            links.extend(self.get_gate(gatetype).get_links())
-        return links
-
     def unlink_completely(self):
 
         # there's a simpler implementation for this that just clears the

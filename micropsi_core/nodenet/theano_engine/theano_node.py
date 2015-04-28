@@ -377,7 +377,10 @@ class TheanoNode(Node):
         g_theta = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
 
         result = {}
-        for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
+        number_of_gates = get_elements_per_type(self._numerictype, self._nodenet.native_modules)
+        if self._numerictype == ACTIVATOR:
+            number_of_gates = 0
+        for numericalgate in range(0, number_of_gates):
             gate_type = get_string_gate_type(numericalgate, self.nodetype)
             gate_parameters = {}
 
@@ -467,6 +470,8 @@ class TheanoNode(Node):
             connectedactuators.append(self._id)
             self._nodenet.actuatormap[value] = connectedactuators
             self._nodenet.inverted_actuator_map[self.uid] = value
+        elif self.type == "Activator" and parameter == "type":
+            self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
 

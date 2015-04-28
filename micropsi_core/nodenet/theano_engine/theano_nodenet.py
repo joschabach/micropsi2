@@ -100,6 +100,13 @@ STANDARD_NODETYPES = {
         },
         'symbol': 'πp'
     },
+    "Activator": {
+        "name": "Activator",
+        "slottypes": ["gen"],
+        "parameters": ["type"],
+        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp"]},
+        "nodefunction_name": "activator"
+    }
 }
 
 NODENET_VERSION = 1
@@ -833,6 +840,10 @@ class TheanoNodenet(Nodenet):
             n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
             n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+        elif nodetype == "Activator":
+            activator_type = parameters.get("type")
+            if activator_type is not None and len(activator_type) > 0:
+                self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
 
         node_proxy = self.get_node(uid)
         for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
@@ -909,6 +920,21 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap[actuator].remove(tnode.from_id(uid))
             if len(self.actuatormap[actuator]) == 0:
                 del self.actuatormap[actuator]
+
+        # clear activator usage
+        used_as_activator_by = np.where(self.allocated_elements_to_activators == tnode.from_id(uid))
+        if len(used_as_activator_by) > 0:
+            self.allocated_elements_to_activators[used_as_activator_by] = 0
+
+    def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
+        nodes_in_nodespace = np.where(self.allocated_node_parents == tnodespace.from_id(nodespace_uid))[0]
+        activator_id = 0
+        if activator_uid is not None and len(activator_uid) > 0:
+            activator_id = tnode.from_id(activator_uid)
+        for nid in nodes_in_nodespace:
+            if self.allocated_nodes[nid] == PIPE:
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
+                                                      get_numerical_gate_type(gate_type)] = activator_id
 
     def get_nodespace(self, uid):
         if uid is None:

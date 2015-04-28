@@ -158,10 +158,11 @@ class TheanoCalculate(Calculate):
         # gate logic
 
         # multiply with gate factor for the node space
-        gated_nodefunctions = nodefunctions * nodenet.g_factor
+        if nodenet.has_directional_activators:
+            nodefunctions = nodefunctions * nodenet.g_factor
 
         # apply actual gate functions
-        gate_function_output = gated_nodefunctions
+        gate_function_output = nodefunctions
 
         # apply GATE_FUNCTION_ABS to masked gates
         if nodenet.has_gatefunction_absolute:
@@ -241,6 +242,7 @@ class TheanoCalculate(Calculate):
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
         self.nodenet.rebuild_shifted()
-        self.calculate_g_factors()
+        if nodenet.has_directional_activators:
+            self.calculate_g_factors()
         self.calculate()
         self.calculate_native_modules()

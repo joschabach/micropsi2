@@ -199,6 +199,7 @@ class TheanoNodenet(Nodenet):
 
     __has_new_usages = True
     __has_pipes = False
+    __has_directional_activators = False
     __has_gatefunction_absolute = False
     __has_gatefunction_sigmoid = False
     __has_gatefunction_tanh = False
@@ -242,6 +243,16 @@ class TheanoNodenet(Nodenet):
         if value != self.__has_pipes:
             self.__has_new_usages = True
             self.__has_pipes = value
+
+    @property
+    def has_directional_activators(self):
+        return self.__has_directional_activators
+
+    @has_directional_activators.setter
+    def has_directional_activators(self, value):
+        if value != self.__has_directional_activators:
+            self.__has_new_usages = True
+            self.__has_directional_activators = value
 
     @property
     def has_gatefunction_absolute(self):
@@ -630,6 +641,7 @@ class TheanoNodenet(Nodenet):
                     g_function_selector = datafile['g_function_selector']
                     self.has_new_usages = True
                     self.has_pipes = PIPE in self.allocated_nodes
+                    self.has_directional_activators = ACTIVATOR in self.allocated_nodes
                     self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
                     self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
                     self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
@@ -918,6 +930,7 @@ class TheanoNodenet(Nodenet):
             self.allocated_elements_to_activators[offset + EXP] = \
                 self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[tnodespace.from_id(nodespace_uid)]]
         elif nodetype == "Activator":
+            self.has_directional_activators = True
             activator_type = parameters.get("type")
             if activator_type is not None and len(activator_type) > 0:
                 self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)

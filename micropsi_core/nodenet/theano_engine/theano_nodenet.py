@@ -25,6 +25,8 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 
+from configuration import config as settings
+
 
 STANDARD_NODETYPES = {
     "Nodespace": {
@@ -306,13 +308,25 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        # todo: move to float32 and handle casting issues on the way back to Python doubles (JSON-serialization...)
-        T.config.floatX = "float32"
-        scipyfloatX = scipy.float32
-        numpyfloatX = np.float32
-        self.byte_per_float = 4
-
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
+        precision = settings['theano']['precision']
+        if precision == "32":
+            T.config.floatX = "float32"
+            scipyfloatX = scipy.float32
+            numpyfloatX = np.float32
+            self.byte_per_float = 4
+        elif precision == "64":
+            T.config.floatX = "float64"
+            scipyfloatX = scipy.float64
+            numpyfloatX = np.float64
+            self.byte_per_float = 8
+        else:
+            self.logger.warn("Unsupported precision value from configuration: %s, falling back to float64", precision)
+            T.config.floatX = "float64"
+            scipyfloatX = scipy.float64
+            numpyfloatX = np.float64
+            self.byte_per_float = 8
 
         self.netapi = TheanoNetAPI(self)
 

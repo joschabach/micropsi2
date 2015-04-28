@@ -38,3 +38,9 @@ port = 25565
 level_system = WARNING
 level_world = WARNING
 level_nodenet = WARNING
+
+[theano]
+
+# floating point precision for theano_engine. 32 or 64.
+precision = 32
+cuda_root = /Developer/NVIDIA/CUDA-7.0/

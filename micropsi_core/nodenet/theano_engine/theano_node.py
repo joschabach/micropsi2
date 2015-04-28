@@ -475,6 +475,21 @@ class TheanoNode(Node):
             parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
         elif self.type == "Actor":
             parameters['datatarget'] = self._nodenet.inverted_actuator_map[self.uid]
+        elif self.type == "Activator":
+            activator_type = None
+            if self._id in self._nodenet.allocated_nodespaces_por_activators:
+                activator_type = "por"
+            elif self._id in self._nodenet.allocated_nodespaces_ret_activators:
+                activator_type = "ret"
+            elif self._id in self._nodenet.allocated_nodespaces_sub_activators:
+                activator_type = "sub"
+            elif self._id in self._nodenet.allocated_nodespaces_sur_activators:
+                activator_type = "sur"
+            elif self._id in self._nodenet.allocated_nodespaces_cat_activators:
+                activator_type = "cat"
+            elif self._id in self._nodenet.allocated_nodespaces_exp_activators:
+                activator_type = "exp"
+            parameters['type'] = activator_type
         elif self.type in self._nodenet.native_modules:
             parameters = self.parameters.copy()
             for parameter in self.nodetype.parameters:

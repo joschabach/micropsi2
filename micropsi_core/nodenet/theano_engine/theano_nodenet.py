@@ -137,7 +137,15 @@ class TheanoNodenet(Nodenet):
     # array, index is nodespace id, value is parent nodespace id
     allocated_nodespaces = None
 
-    # directional activators mapping, index is gate, value is element id
+    # directional activator assignment, key is nodespace ID, value is activator ID
+    allocated_nodespaces_por_activators = None
+    allocated_nodespaces_ret_activators = None
+    allocated_nodespaces_sub_activators = None
+    allocated_nodespaces_sur_activators = None
+    allocated_nodespaces_cat_activators = None
+    allocated_nodespaces_exp_activators = None
+
+    # directional activators map, index is element id, value is the directional activator's element id
     allocated_elements_to_activators = None
 
     last_allocated_node = 0
@@ -311,6 +319,13 @@ class TheanoNodenet(Nodenet):
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
+
+        self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_ret_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_sub_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_sur_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_cat_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
 
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipy.float64), name="w")
@@ -867,6 +882,7 @@ class TheanoNodenet(Nodenet):
 
         type = self.allocated_nodes[tnode.from_id(uid)]
         offset = self.allocated_node_offsets[tnode.from_id(uid)]
+        parent = self.allocated_node_parents[tnode.from_id(uid)]
 
         # unlink
         self.get_node(uid).unlink_completely()
@@ -922,16 +938,46 @@ class TheanoNodenet(Nodenet):
             if len(self.actuatormap[actuator]) == 0:
                 del self.actuatormap[actuator]
 
-        # clear activator usage
+        # clear activator usage if there should be one
         used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)
         if len(used_as_activator_by) > 0:
             self.allocated_elements_to_activators[used_as_activator_by] = 0
 
+        if self.allocated_nodespaces_por_activators[parent] == tnode.from_id(uid):
+            self.allocated_nodespaces_por_activators[parent] = 0
+        elif self.allocated_nodespaces_ret_activators[parent] == tnode.from_id(uid):
+            self.allocated_nodespaces_ret_activators[parent] = 0
+        elif self.allocated_nodespaces_sub_activators[parent] == tnode.from_id(uid):
+            self.allocated_nodespaces_sub_activators[parent] = 0
+        elif self.allocated_nodespaces_sur_activators[parent] == tnode.from_id(uid):
+            self.allocated_nodespaces_sur_activators[parent] = 0
+        elif self.allocated_nodespaces_cat_activators[parent] == tnode.from_id(uid):
+            self.allocated_nodespaces_cat_activators[parent] = 0
+        elif self.allocated_nodespaces_exp_activators[parent] == tnode.from_id(uid):
+            self.allocated_nodespaces_exp_activators[parent] = 0
+
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
-        nodes_in_nodespace = np.where(self.allocated_node_parents == tnodespace.from_id(nodespace_uid))[0]
+
         activator_id = 0
         if activator_uid is not None and len(activator_uid) > 0:
             activator_id = tnode.from_id(activator_uid)
+
+        nodespace_id = tnodespace.from_id(nodespace_uid)
+
+        if gate_type == "por":
+            self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
+        elif gate_type == "ret":
+            self.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
+        elif gate_type == "sub":
+            self.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
+        elif gate_type == "sur":
+            self.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
+        elif gate_type == "cat":
+            self.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
+        elif gate_type == "exp":
+            self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
+
+        nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
         for nid in nodes_in_nodespace:
             if self.allocated_nodes[nid] == PIPE:
                 self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +

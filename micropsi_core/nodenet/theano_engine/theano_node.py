@@ -123,7 +123,7 @@ def get_numerical_node_type(type, nativemodules=None):
     elif type == "Activator":
         return ACTIVATOR
     elif type == "Concept":
-        numerictype = CONCEPT
+        return CONCEPT
     elif type == "Script":
         return SCRIPT
     elif type == "Pipe":

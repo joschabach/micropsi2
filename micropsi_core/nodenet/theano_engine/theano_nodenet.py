@@ -338,11 +338,12 @@ class TheanoNodenet(Nodenet):
             numpyfloatX = np.float64
             self.byte_per_float = 8
 
-        cuda_root = None
-        if "CUDA_ROOT" in os.environ:
-            cuda_root = os.environ['CUDA_ROOT']
-        if cuda_root is not None:
-            self.logger.info("Configuring theano to use CUDA with cuda_root=%s", cuda_root)
+        device = T.config.device
+        self.logger.info("Theano configured to use %s", device)
+        if device.startswith("gpu"):
+            self.logger.info("Using CUDA with cuda_root=%s and theano_flags=%s", os.environ["CUDA_ROOT"], os.environ["THEANO_FLAGS"])
+            if T.config.floatX != "float32":
+                self.logger.warn("Precision set to %s, but using gpu.", precision)
 
         self.netapi = TheanoNetAPI(self)
 

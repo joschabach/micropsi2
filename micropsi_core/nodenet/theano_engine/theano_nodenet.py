@@ -310,6 +310,16 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
+        self.sparse = True
+        configuredsparse = settings['theano']['sparse_weight_matrix']
+        if configuredsparse == "True":
+            self.sparse = True
+        elif configuredsparse == "False":
+            self.sparse = False
+        else:
+            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            self.sparse = True
+
         precision = settings['theano']['precision']
         if precision == "32":
             T.config.floatX = "float32"
@@ -328,6 +338,14 @@ class TheanoNodenet(Nodenet):
             numpyfloatX = np.float64
             self.byte_per_float = 8
 
+        cuda_root = None
+        if "CUDA_ROOT" in os.environ:
+            cuda_root = os.environ['CUDA_ROOT']
+        if cuda_root is not None:
+            self.logger.info("Configuring theano to use CUDA with cuda_root=%s", cuda_root)
+            #T.config.print_active_device=True
+            #T.config.fastmath=True
+
         self.netapi = TheanoNetAPI(self)
 
         self.NoN = DEFAULT_NUMBER_OF_NODES
@@ -337,9 +355,6 @@ class TheanoNodenet(Nodenet):
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
-
-        # for now, fix sparse to True
-        self.sparse = True
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
@@ -446,18 +461,18 @@ class TheanoNodenet(Nodenet):
         allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
 
 
-        w = self.w.get_value(borrow=True, return_internal_type=True)
-        a = self.a.get_value(borrow=True, return_internal_type=True)
-        g_theta = self.g_theta.get_value(borrow=True, return_internal_type=True)
-        g_factor = self.g_factor.get_value(borrow=True, return_internal_type=True)
-        g_threshold = self.g_threshold.get_value(borrow=True, return_internal_type=True)
-        g_amplification = self.g_amplification.get_value(borrow=True, return_internal_type=True)
-        g_min = self.g_min.get_value(borrow=True, return_internal_type=True)
-        g_max = self.g_max.get_value(borrow=True, return_internal_type=True)
-        g_function_selector = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
-        n_function_selector = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
-        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
-        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+        w = self.w.get_value(borrow=True)
+        a = self.a.get_value(borrow=True)
+        g_theta = self.g_theta.get_value(borrow=True)
+        g_factor = self.g_factor.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        n_function_selector = self.n_function_selector.get_value(borrow=True)
+        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True)
+        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True)
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
@@ -1288,9 +1303,10 @@ class TheanoNodenet(Nodenet):
                     target_slot_numerical = index - self.allocated_node_offsets[target_id]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
                     source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                    weight = gatecolumn[index]
                     if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                        weight = float(weight.data)
+                        weight = float(gatecolumn[index].data)
+                    else:
+                        weight = gatecolumn[index].item()
 
                     linkuid = tnode.to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+tnode.to_id(target_id)
                     linkdata = {

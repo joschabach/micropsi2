@@ -301,7 +301,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return float(self._nodenet.a.get_value(borrow=True, return_internal_type=True)[self._nodenet.allocated_node_offsets[self._id] + GEN])
+        return float(self._nodenet.a.get_value(borrow=True)[self._nodenet.allocated_node_offsets[self._id] + GEN])
 
     @property
     def activations(self):
@@ -349,32 +349,32 @@ class TheanoNode(Node):
         # todo: implement the other gate parameters
         elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
         if parameter == 'threshold':
-            g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
+            g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
             g_threshold_array[elementindex] = value
             self._nodenet.g_threshold.set_value(g_threshold_array, borrow=True)
         elif parameter == 'amplification':
-            g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True, return_internal_type=True)
+            g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
             g_amplification_array[elementindex] = value
             self._nodenet.g_amplification.set_value(g_amplification_array, borrow=True)
         elif parameter == 'minimum':
-            g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
+            g_min_array = self._nodenet.g_min.get_value(borrow=True)
             g_min_array[elementindex] = value
             self._nodenet.g_min.set_value(g_min_array, borrow=True)
         elif parameter == 'maximum':
-            g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
+            g_max_array = self._nodenet.g_max.get_value(borrow=True)
             g_max_array[elementindex] = value
             self._nodenet.g_max.set_value(g_max_array, borrow=True)
         elif parameter == 'theta':
-            g_theta_array = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
+            g_theta_array = self._nodenet.g_theta.get_value(borrow=True)
             g_theta_array[elementindex] = value
             self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_gate_parameters(self):
-        g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True, return_internal_type=True)
-        g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True, return_internal_type=True)
-        g_min_array = self._nodenet.g_min.get_value(borrow=True, return_internal_type=True)
-        g_max_array = self._nodenet.g_max.get_value(borrow=True, return_internal_type=True)
-        g_theta = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
+        g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
+        g_min_array = self._nodenet.g_min.get_value(borrow=True)
+        g_max_array = self._nodenet.g_max.get_value(borrow=True)
+        g_theta = self._nodenet.g_theta.get_value(borrow=True)
 
         result = {}
         number_of_gates = get_elements_per_type(self._numerictype, self._nodenet.native_modules)
@@ -548,7 +548,7 @@ class TheanoGate(Gate):
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True, return_internal_type=True)[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True)[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
@@ -577,9 +577,10 @@ class TheanoGate(Gate):
             target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
             target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
             target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-            weight = gatecolumn[index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                weight = float(weight.data)
+                weight = float(gatecolumn[index].data)
+            else:
+                weight = gatecolumn[index].item()
             link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, to_id(target_id), target_slot_type, weight)
             links.append(link)
         return links
@@ -646,16 +647,20 @@ class TheanoSlot(Slot):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
         slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
-        links_indices = np.nonzero(slotrow)[1]
+        if self.__nodenet.sparse:
+            links_indices = np.nonzero(slotrow)[1]
+        else:
+            links_indices = np.nonzero(slotrow)[0]
         for index in links_indices:
             source_id = self.__nodenet.allocated_elements_to_nodes[index]
             source_type = self.__nodenet.allocated_nodes[source_id]
             source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
             source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
             source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-            weight = slotrow[: , index]
             if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                weight = float(weight.data)
+                weight = float(slotrow[: , index].data)
+            else:
+                weight = slotrow[index].item()
             link = TheanoLink(self.__nodenet, to_id(source_id), source_gate_type, self.__node.uid, self.__type, weight)
             links.append(link)
         return links

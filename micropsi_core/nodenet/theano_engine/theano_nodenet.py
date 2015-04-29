@@ -1215,7 +1215,7 @@ class TheanoNodenet(Nodenet):
             'monitors': self.construct_monitors_dict()
         }
         if include_links:
-            data['links'] = self.construct_links_dict()
+            data['links'] = self.construct_links_dict(nodespace_uid)
 
             followupnodes = []
             for uid in data['nodes']:
@@ -1257,8 +1257,10 @@ class TheanoNodenet(Nodenet):
         else:
             return self.native_modules.get(type)
 
-    def construct_links_dict(self):
+    def construct_links_dict(self, nodespace_uid=None):
         data = {}
+        if nodespace_uid is not None:
+            parent = tnodespace.from_id(nodespace_uid)
         w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
         for source_id in np.nonzero(self.allocated_nodes)[0]:
             source_type = self.allocated_nodes[source_id]
@@ -1267,6 +1269,9 @@ class TheanoNodenet(Nodenet):
                 links_indices = np.nonzero(gatecolumn)[0]
                 for index in links_indices:
                     target_id = self.allocated_elements_to_nodes[index]
+                    if nodespace_uid is not None:
+                        if self.allocated_node_parents[source_id] != parent and self.allocated_node_parents[target_id] != parent:
+                            continue
                     target_type = self.allocated_nodes[target_id]
                     target_slot_numerical = index - self.allocated_node_offsets[target_id]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))

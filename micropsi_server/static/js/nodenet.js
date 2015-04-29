@@ -262,6 +262,7 @@ function setCurrentNodenet(uid, nodespace, changed){
                 $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
                 selection = {};
+                nodespaces = {};
             }
 
             nodenet_data = data;
@@ -370,6 +371,9 @@ function setNodespaceData(data, changed){
             }
         }
         for(uid in data.nodespaces){
+            if(!(uid in nodespaces)){
+                nodespaces[uid] = data.nodespaces[uid];
+            }
             item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
             if(uid in nodes){
                 redrawNode(item);
@@ -3063,9 +3067,13 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                         weight: link.weight
                     }, function(uid){
                         link.uid = uid;
-                        if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                            if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                            if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                        if(!(link.sourceNodeUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                            if(link.targetNodeUid in nodes) {
+                                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                            }
+                            if(link.sourceNodeUid in nodes){
+                                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                            }
                         }
                         addLink(link);
                     });
@@ -3814,8 +3822,6 @@ function ApplyLineBreaks(strTextAreaId) {
 }
 
 var drawGridLines = function(element) {
-    console.log(element);
-    console.log(element.height);
     gridLayer.removeChildren();
     if(nodenet_data.snap_to_grid){
         var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;

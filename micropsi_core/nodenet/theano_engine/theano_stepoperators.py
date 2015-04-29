@@ -241,7 +241,8 @@ class TheanoCalculate(Calculate):
         self.take_native_module_slot_snapshots()
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
-        self.nodenet.rebuild_shifted()
+        if nodenet.has_pipes:
+            self.nodenet.rebuild_shifted()
         if nodenet.has_directional_activators:
             self.calculate_g_factors()
         self.calculate()

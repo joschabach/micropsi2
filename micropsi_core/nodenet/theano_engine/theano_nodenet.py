@@ -1299,7 +1299,7 @@ class TheanoNodenet(Nodenet):
 
     def construct_links_dict(self):
         data = {}
-        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.w.get_value(borrow=True)
         for source_id in np.nonzero(self.allocated_nodes)[0]:
             source_type = self.allocated_nodes[source_id]
             for gate_type in range(get_elements_per_type(source_type, self.native_modules)):

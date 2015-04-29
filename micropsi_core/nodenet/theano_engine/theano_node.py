@@ -568,7 +568,7 @@ class TheanoGate(Gate):
 
     def get_links(self):
         links = []
-        w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.__nodenet.w.get_value(borrow=True)
         gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
@@ -645,7 +645,7 @@ class TheanoSlot(Slot):
 
     def get_links(self):
         links = []
-        w_matrix = self.__nodenet.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.__nodenet.w.get_value(borrow=True)
         slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
         if self.__nodenet.sparse:
             links_indices = np.nonzero(slotrow)[1]

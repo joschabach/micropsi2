@@ -309,7 +309,7 @@ class TheanoNode(Node):
 
     @activation.setter
     def activation(self, activation):
-        a_array = self._nodenet.a.get_value(borrow=True, return_internal_type=True)
+        a_array = self._nodenet.a.get_value(borrow=True)
         a_array[self._nodenet.allocated_node_offsets[self._id] + GEN] = activation
         self._nodenet.a.set_value(a_array, borrow=True)
 

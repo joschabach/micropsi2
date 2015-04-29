@@ -462,6 +462,11 @@ class TheanoNodenet(Nodenet):
 
 
         w = self.w.get_value(borrow=True)
+
+        # if we're sparse, convert to sparse matrix for persistency
+        if not self.sparse:
+            w = sp.csr_matrix(w)
+
         a = self.a.get_value(borrow=True)
         g_theta = self.g_theta.get_value(borrow=True)
         g_factor = self.g_factor.get_value(borrow=True)
@@ -612,6 +617,9 @@ class TheanoNodenet(Nodenet):
 
                 if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
                     w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
+                    # if we're configured to be dense, convert from csr
+                    if not self.sparse:
+                        w = w.todense()
                     self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
                     self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
                 else:

@@ -3818,8 +3818,6 @@ function ApplyLineBreaks(strTextAreaId) {
 }
 
 var drawGridLines = function(element) {
-    console.log(element);
-    console.log(element.height);
     gridLayer.removeChildren();
     if(nodenet_data.snap_to_grid){
         var size = 20 //* viewProperties.zoomFactor; //boundingRect.width / num_rectangles_wide;

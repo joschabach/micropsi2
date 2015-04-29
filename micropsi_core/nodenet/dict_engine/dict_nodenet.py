@@ -335,8 +335,20 @@ class DictNodenet(Nodenet):
 
     def construct_nodespaces_dict(self, nodespace_uid):
         data = {}
+        if nodespace_uid is None:
+            nodespace_uid = "Root"
         for nodespace_candidate_uid in self.get_nodespace_uids():
-            if self.get_nodespace(nodespace_candidate_uid).parent_nodespace == nodespace_uid or nodespace_candidate_uid == nodespace_uid:
+            is_in_hierarchy = False
+            if nodespace_candidate_uid == nodespace_uid:
+                is_in_hierarchy = True
+            else:
+                parent_uid = self.get_nodespace(nodespace_candidate_uid).parent_nodespace
+                while parent_uid is not None and parent_uid != nodespace_uid:
+                    parent_uid = self.get_nodespace(parent_uid).parent_nodespace
+                if parent_uid == nodespace_uid:
+                    is_in_hierarchy = True
+
+            if is_in_hierarchy:
                 data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
         return data
 
@@ -424,9 +436,6 @@ class DictNodenet(Nodenet):
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-
-        # net will have the name of the one to be merged into us
-        self.name = nodenet_data['name']
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
@@ -525,6 +534,8 @@ class DictNodenet(Nodenet):
         return self.__nodes[uid]
 
     def get_nodespace(self, uid):
+        if uid is None:
+            uid = "Root"
         return self.__nodespaces[uid]
 
     def get_node_uids(self):

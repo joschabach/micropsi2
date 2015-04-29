@@ -3,6 +3,7 @@
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
+from micropsi_core.nodenet.theano_engine import theano_nodespace as nodespace
 
 import numpy as np
 
@@ -122,7 +123,7 @@ def get_numerical_node_type(type, nativemodules=None):
     elif type == "Activator":
         return ACTIVATOR
     elif type == "Concept":
-        numerictype = CONCEPT
+        return CONCEPT
     elif type == "Script":
         return SCRIPT
     elif type == "Pipe":
@@ -232,10 +233,11 @@ class TheanoNode(Node):
     _nodenet = None
     _numerictype = 0
     _id = -1
+    _parent_id = -1
 
     parameters = None
 
-    def __init__(self, nodenet, uid, type, parameters={}, **_):
+    def __init__(self, nodenet, parent_uid, uid, type, parameters={}, **_):
 
         self._numerictype = type
         strtype = get_string_node_type(type, nodenet.native_modules)
@@ -252,6 +254,7 @@ class TheanoNode(Node):
 
         self._nodenet = nodenet
         self._id = from_id(uid)
+        self._parent_id = nodespace.from_id(parent_uid)
 
     @property
     def uid(self):
@@ -290,11 +293,11 @@ class TheanoNode(Node):
 
     @property
     def parent_nodespace(self):
-        return "Root"           # todo: implement nodespace
+        return nodespace.to_id(self._parent_id)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        pass                    # todo: implement nodespace
+        self._nodenet.allocated_node_parents[self._id] = nodespace.from_id(uid)
 
     @property
     def activation(self):
@@ -374,7 +377,10 @@ class TheanoNode(Node):
         g_theta = self._nodenet.g_theta.get_value(borrow=True, return_internal_type=True)
 
         result = {}
-        for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
+        number_of_gates = get_elements_per_type(self._numerictype, self._nodenet.native_modules)
+        if self._numerictype == ACTIVATOR:
+            number_of_gates = 0
+        for numericalgate in range(0, number_of_gates):
             gate_type = get_string_gate_type(numericalgate, self.nodetype)
             gate_parameters = {}
 
@@ -417,12 +423,6 @@ class TheanoNode(Node):
     def get_slot(self, type):
         return TheanoSlot(type, self, self._nodenet)
 
-    def get_associated_links(self):
-        links = []
-        for gatetype in self.nodetype.gatetypes:
-            links.extend(self.get_gate(gatetype).get_links())
-        return links
-
     def unlink_completely(self):
 
         # there's a simpler implementation for this that just clears the
@@ -464,6 +464,8 @@ class TheanoNode(Node):
             connectedactuators.append(self._id)
             self._nodenet.actuatormap[value] = connectedactuators
             self._nodenet.inverted_actuator_map[self.uid] = value
+        elif self.type == "Activator" and parameter == "type":
+            self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
 
@@ -473,6 +475,21 @@ class TheanoNode(Node):
             parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
         elif self.type == "Actor":
             parameters['datatarget'] = self._nodenet.inverted_actuator_map[self.uid]
+        elif self.type == "Activator":
+            activator_type = None
+            if self._id in self._nodenet.allocated_nodespaces_por_activators:
+                activator_type = "por"
+            elif self._id in self._nodenet.allocated_nodespaces_ret_activators:
+                activator_type = "ret"
+            elif self._id in self._nodenet.allocated_nodespaces_sub_activators:
+                activator_type = "sub"
+            elif self._id in self._nodenet.allocated_nodespaces_sur_activators:
+                activator_type = "sur"
+            elif self._id in self._nodenet.allocated_nodespaces_cat_activators:
+                activator_type = "cat"
+            elif self._id in self._nodenet.allocated_nodespaces_exp_activators:
+                activator_type = "exp"
+            parameters['type'] = activator_type
         elif self.type in self._nodenet.native_modules:
             parameters = self.parameters.copy()
             for parameter in self.nodetype.parameters:

@@ -25,6 +25,8 @@ from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
 
+from configuration import config as settings
+
 
 STANDARD_NODETYPES = {
     "Nodespace": {
@@ -306,10 +308,42 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        # todo: move to float32 and handle casting issues on the way back to Python doubles (JSON-serialization...)
-        T.config.floatX = "float64"
-
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
+        self.sparse = True
+        configuredsparse = settings['theano']['sparse_weight_matrix']
+        if configuredsparse == "True":
+            self.sparse = True
+        elif configuredsparse == "False":
+            self.sparse = False
+        else:
+            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            self.sparse = True
+
+        precision = settings['theano']['precision']
+        if precision == "32":
+            T.config.floatX = "float32"
+            scipyfloatX = scipy.float32
+            numpyfloatX = np.float32
+            self.byte_per_float = 4
+        elif precision == "64":
+            T.config.floatX = "float64"
+            scipyfloatX = scipy.float64
+            numpyfloatX = np.float64
+            self.byte_per_float = 8
+        else:
+            self.logger.warn("Unsupported precision value from configuration: %s, falling back to float64", precision)
+            T.config.floatX = "float64"
+            scipyfloatX = scipy.float64
+            numpyfloatX = np.float64
+            self.byte_per_float = 8
+
+        device = T.config.device
+        self.logger.info("Theano configured to use %s", device)
+        if device.startswith("gpu"):
+            self.logger.info("Using CUDA with cuda_root=%s and theano_flags=%s", os.environ["CUDA_ROOT"], os.environ["THEANO_FLAGS"])
+            if T.config.floatX != "float32":
+                self.logger.warn("Precision set to %s, but attempting to use gpu.", precision)
 
         self.netapi = TheanoNetAPI(self)
 
@@ -320,9 +354,6 @@ class TheanoNodenet(Nodenet):
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
-
-        # for now, fix sparse to True
-        self.sparse = True
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
@@ -339,33 +370,33 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
 
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipy.float64), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipyfloatX), name="w")
         else:
-            w_matrix = np.zeros((self.NoE, self.NoE), dtype=np.float64)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(self.NoE, dtype=np.float64)
+        a_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(self.NoE, dtype=np.float64)
+        g_theta_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(self.NoE, dtype=np.float64)
+        g_factor_array = np.ones(self.NoE, dtype=numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(self.NoE, dtype=np.float64)
+        g_threshold_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(self.NoE, dtype=np.float64)
+        g_amplification_array = np.ones(self.NoE, dtype=numpyfloatX)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(self.NoE, dtype=np.float64)
+        g_min_array = np.zeros(self.NoE, dtype=numpyfloatX)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(self.NoE, dtype=np.float64)
+        g_max_array = np.ones(self.NoE, dtype=numpyfloatX)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
         g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
@@ -429,18 +460,23 @@ class TheanoNodenet(Nodenet):
         allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
 
 
-        w = self.w.get_value(borrow=True, return_internal_type=True)
-        a = self.a.get_value(borrow=True, return_internal_type=True)
-        g_theta = self.g_theta.get_value(borrow=True, return_internal_type=True)
-        g_factor = self.g_factor.get_value(borrow=True, return_internal_type=True)
-        g_threshold = self.g_threshold.get_value(borrow=True, return_internal_type=True)
-        g_amplification = self.g_amplification.get_value(borrow=True, return_internal_type=True)
-        g_min = self.g_min.get_value(borrow=True, return_internal_type=True)
-        g_max = self.g_max.get_value(borrow=True, return_internal_type=True)
-        g_function_selector = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
-        n_function_selector = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
-        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
-        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+        w = self.w.get_value(borrow=True)
+
+        # if we're sparse, convert to sparse matrix for persistency
+        if not self.sparse:
+            w = sp.csr_matrix(w)
+
+        a = self.a.get_value(borrow=True)
+        g_theta = self.g_theta.get_value(borrow=True)
+        g_factor = self.g_factor.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        n_function_selector = self.n_function_selector.get_value(borrow=True)
+        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True)
+        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True)
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
@@ -580,6 +616,9 @@ class TheanoNodenet(Nodenet):
 
                 if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
                     w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
+                    # if we're configured to be dense, convert from csr
+                    if not self.sparse:
+                        w = w.todense()
                     self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
                     self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
                 else:
@@ -1169,7 +1208,7 @@ class TheanoNodenet(Nodenet):
 
         ngt = get_numerical_gate_type(gate_type, source_nodetype)
         nst = get_numerical_slot_type(slot_type, target_nodetype)
-        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.w.get_value(borrow=True)
         x = self.allocated_node_offsets[tnode.from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[tnode.from_id(source_node_uid)] + ngt
         if self.sparse:
@@ -1261,7 +1300,7 @@ class TheanoNodenet(Nodenet):
         data = {}
         if nodespace_uid is not None:
             parent = tnodespace.from_id(nodespace_uid)
-        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.w.get_value(borrow=True)
         for source_id in np.nonzero(self.allocated_nodes)[0]:
             source_type = self.allocated_nodes[source_id]
             for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
@@ -1276,9 +1315,10 @@ class TheanoNodenet(Nodenet):
                     target_slot_numerical = index - self.allocated_node_offsets[target_id]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
                     source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                    weight = gatecolumn[index]
                     if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                        weight = float(weight.data)
+                        weight = float(gatecolumn[index].data)
+                    else:
+                        weight = gatecolumn[index].item()
 
                     linkuid = tnode.to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+tnode.to_id(target_id)
                     linkdata = {
@@ -1432,5 +1472,5 @@ class TheanoNodenet(Nodenet):
     def rebuild_shifted(self):
         a_array = self.a.get_value(borrow=True, return_internal_type=True)
         a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(8, 8))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)

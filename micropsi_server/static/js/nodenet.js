@@ -3067,9 +3067,13 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                         weight: link.weight
                     }, function(uid){
                         link.uid = uid;
-                        if(!(link.sourceUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
-                            if(link.targetNodeUid in nodes) nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
-                            if(link.sourceNodeUid in nodes) nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                        if(!(link.sourceNodeUid in nodes) || nodes[link.sourceNodeUid].parent != currentNodeSpace){
+                            if(link.targetNodeUid in nodes) {
+                                nodes[link.targetNodeUid].linksFromOutside.push(link.uid);
+                            }
+                            if(link.sourceNodeUid in nodes){
+                                nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
+                            }
                         }
                         addLink(link);
                     });

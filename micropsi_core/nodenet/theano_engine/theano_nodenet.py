@@ -343,8 +343,6 @@ class TheanoNodenet(Nodenet):
             cuda_root = os.environ['CUDA_ROOT']
         if cuda_root is not None:
             self.logger.info("Configuring theano to use CUDA with cuda_root=%s", cuda_root)
-            #T.config.print_active_device=True
-            #T.config.fastmath=True
 
         self.netapi = TheanoNetAPI(self)
 
@@ -1209,7 +1207,7 @@ class TheanoNodenet(Nodenet):
 
         ngt = get_numerical_gate_type(gate_type, source_nodetype)
         nst = get_numerical_slot_type(slot_type, target_nodetype)
-        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.w.get_value(borrow=True)
         x = self.allocated_node_offsets[tnode.from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[tnode.from_id(source_node_uid)] + ngt
         if self.sparse:

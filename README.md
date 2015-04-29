@@ -24,12 +24,12 @@ Run with Minecraft
 * Also see [micropsi_core/world/minecraft/README.md](/micropsi_core/world/minecraft/README.md) for setup instructions.
 
 
-Run with theano
+Run with Theano
 -----
-* To run micropsi with an optional and experimental node net implementation based on theano, you need to install theano
+* To run micropsi with an optional and experimental node net implementation based on Theano, you need to install Theano
 * Call 'make' after checkout
 * Call 'source bin/activate'
-* Follow theano's "bleeding edge install instructions" directions at [here](http://deeplearning.net/software/theano/install.html)
+* Follow Theano's "bleeding edge install instructions" directions at [here](http://deeplearning.net/software/theano/install.html)
 * When creating a new node net, you should now be able to chose theano_engine
 
 Tests
@@ -45,3 +45,4 @@ Attribution
 * [spock](https://github.com/nickelpro/spock)
 * [paperjs](http://github.com/paperjs/paper.js)
 * [three.js](https://github.com/mrdoob/three.js)
+* [theano](git://github.com/Theano/Theano)

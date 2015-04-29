@@ -45,4 +45,4 @@ Attribution
 * [spock](https://github.com/nickelpro/spock)
 * [paperjs](http://github.com/paperjs/paper.js)
 * [three.js](https://github.com/mrdoob/three.js)
-* [theano](git://github.com/Theano/Theano)
+* [theano](https://github.com/Theano/Theano)

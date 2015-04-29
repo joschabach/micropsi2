@@ -782,10 +782,10 @@ updateViewSize = function() {
     if(newSize.height && newSize.width){
         view.viewSize = newSize;
     }
-    view.draw(true);
     for(var uid in nodes){
         redrawNode(nodes[uid]);
     }
+    view.draw(true);
 };
 
 // complete redraw of the current node space
@@ -3843,6 +3843,7 @@ var drawGridLines = function(element) {
             aLine.opacity = 0.3;
             gridLayer.addChild(aLine);
         }
+        view.draw(true);
     }
 }
 

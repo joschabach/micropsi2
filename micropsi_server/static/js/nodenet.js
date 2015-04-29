@@ -262,6 +262,7 @@ function setCurrentNodenet(uid, nodespace, changed){
                 $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
                 selection = {};
+                nodespaces = {};
             }
 
             nodenet_data = data;
@@ -370,6 +371,9 @@ function setNodespaceData(data, changed){
             }
         }
         for(uid in data.nodespaces){
+            if(!(uid in nodespaces)){
+                nodespaces[uid] = data.nodespaces[uid];
+            }
             item = new Node(uid, data.nodespaces[uid]['position'][0], data.nodespaces[uid]['position'][1], data.nodespaces[uid].parent_nodespace, data.nodespaces[uid].name, "Nodespace", 0, data.nodespaces[uid].state);
             if(uid in nodes){
                 redrawNode(item);

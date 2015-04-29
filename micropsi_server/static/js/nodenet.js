@@ -94,7 +94,6 @@ currentNodenet = $.cookie('selected_nodenet') || '';
 currentNodeSpace = $.cookie('selected_nodespace') || '';
 
 currentWorldadapter = null;
-var rootNode = new Node("Root", 0, 0, 0, "Root", "Nodespace");
 
 var currentSheaf = "default";
 
@@ -276,7 +275,6 @@ function setCurrentNodenet(uid, nodespace, changed){
             nodes = {};
             links = {};
             nodeLayer.removeChildren();
-            addNode(rootNode);
             linkLayer.removeChildren();
 
             $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });

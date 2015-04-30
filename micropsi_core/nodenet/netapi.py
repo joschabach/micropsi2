@@ -32,7 +32,7 @@ class NetAPI(object):
         """
         return self.__nodenet.get_nodespace(uid)
 
-    def get_nodespaces(self, parent="Root"):
+    def get_nodespaces(self, parent=None):
         """
         Returns a list of all nodespaces in the given nodespace
         """

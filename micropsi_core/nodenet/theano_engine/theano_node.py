@@ -384,23 +384,23 @@ class TheanoNode(Node):
             gate_type = get_string_gate_type(numericalgate, self.nodetype)
             gate_parameters = {}
 
-            threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
             if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
                 gate_parameters['threshold'] = threshold
 
-            amplification = g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            amplification = g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
             if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
                 gate_parameters['amplification'] = amplification
 
-            minimum = g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            minimum = g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
             if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
                 gate_parameters['minimum'] = minimum
 
-            maximum = g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            maximum = g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
             if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
                 gate_parameters['maximum'] = maximum
 
-            theta = g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate]
+            theta = g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
             if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
                 gate_parameters['theta'] = theta
 

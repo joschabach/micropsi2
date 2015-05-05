@@ -66,6 +66,7 @@ class TheanoCalculate(Calculate):
 
     def compile_theano_functions(self, nodenet):
         slots = nodenet.a_shifted
+        countdown = nodenet.g_countdown
         por_linked = nodenet.n_node_porlinked
         ret_linked = nodenet.n_node_retlinked
 
@@ -121,6 +122,8 @@ class TheanoCalculate(Calculate):
         pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
 
         ### sur plumbing
+        countdown = T.switch(T.le(slots[:, 6],0), 10, countdown - 1)                # count down countdown
+
         pipe_sur_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 4], 0), 1)      # (if linked, por must be > 0)
                                                                                     # and we aren't first in a script
         pipe_sur_cond = pipe_sur_cond * T.switch(T.eq(ret_linked, 1), T.eq(por_linked, 1), 1)
@@ -130,6 +133,10 @@ class TheanoCalculate(Calculate):
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
         pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
+
+        xpct = T.switch(T.ge(slots[:, 7], nodenet.g_expect), 1, -1)                 # expect sur to be >= expectation
+        xpct = T.switch(T.le(countdown, 0), xpct, 0)                                # only if countdown >= 0
+        pipe_sur = T.switch(T.ge(slots[:, 6], 1), xpct, pipe_sur)                   # only if we're requested
 
         ### cat plumbing
         pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)
@@ -193,7 +200,7 @@ class TheanoCalculate(Calculate):
         gatefunctions = limited_gate_function_output
 
         # put the theano graph into a callable function to be executed
-        self.calculate = theano.function([], None, updates={nodenet.a: gatefunctions})
+        self.calculate = theano.function([], None, updates=[(nodenet.a, gatefunctions), (nodenet.g_countdown, countdown)])
 
 
     def read_sensors_and_actuator_feedback(self):

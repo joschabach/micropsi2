@@ -133,10 +133,8 @@ class TheanoCalculate(Calculate):
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
         pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
-
-        xpct = T.switch(T.ge(slots[:, 7], nodenet.g_expect), 1, -1)                 # expect sur to be >= expectation
-        xpct = T.switch(T.le(countdown, 0), xpct, 0)                                # only if countdown >= 0
-        pipe_sur = T.switch(T.ge(slots[:, 6], 1), xpct, pipe_sur)                   # only if we're requested
+                                                                                    # check if we're in timeout
+        pipe_sur = T.switch(T.lt(pipe_sur, nodenet.g_expect) * T.le(countdown, 0), -1, pipe_sur)
 
         ### cat plumbing
         pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)

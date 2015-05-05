@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # -*- coding: utf-8 -*-
 
 if [[ -a bin/activate ]]; then

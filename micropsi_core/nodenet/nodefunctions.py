@@ -155,18 +155,18 @@ def pipe(netapi, node=None, sheaf="default", **params):
         sur += 1 if node.get_slot("gen").get_activation(sheaf) > 0 else -1
     sur += node.get_slot("exp").get_activation(sheaf)
 
-    if node.get_slot("ret").get_activation(sheaf) < 0:
-        sur = 0
-    if node.get_slot("por").empty and not node.get_slot("ret").empty and sur > 0:
-        sur = 0                                                             # first nodes in scripts can never report sur
-    if node.get_slot("por").get_activation(sheaf) <= 0 and not node.get_slot("por").empty:
-        sur = 0
-
-    if sur > 0 and sur < expectation:
+    if sur > 0 and sur < expectation:                                       # don't report anything below expectation
         sur = 0
 
     if countdown <= 0 and sur < expectation:                                # timeout, fail
         sur = -1
+
+    # silencing for pipes in in por-ret chains
+    if not node.get_slot("ret").empty:                                      # we're not-last in a chain
+        if not(node.get_slot("ret").get_activation(sheaf) == 0 and node.get_slot("sub").get_activation(sheaf) > 0):
+            sur = 0
+    if not node.get_slot("por").empty and node.get_slot("por").get_activation(sheaf) <= 0:
+        sur = 0
 
     if sur >= expectation:                                                  # success, reset countdown counter
         countdown = int(node.get_parameter("wait") or 1)

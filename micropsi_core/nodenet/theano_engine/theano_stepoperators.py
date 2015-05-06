@@ -98,14 +98,22 @@ class TheanoCalculate(Calculate):
         pipe_gen = T.switch(T.eq(slots[:, 8], 0) * T.eq(por_linked, 1), pipe_gen_sur_exp, pipe_gen)
 
         ### por plumbing
+                                                                                    # reset if no sub, or por-linked but 0
+        cdrc_por = T.le(slots[:, 9],0) + (T.eq(por_linked, 1) * T.le(slots[:, 7], 0))
+        countdown_por = T.switch(cdrc_por, self.nodenet.g_wait, countdown - 1)          # count down failure countdown
+
         pipe_por_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 7], 0), 1)      # (if linked, por must be > 0)
         pipe_por_cond = pipe_por_cond * T.gt(slots[:, 9], 0)                        # and (sub > 0)
 
         pipe_por = slots[:, 10]                                                     # start with sur
         pipe_por = pipe_por + T.gt(slots[:, 6], 0.1)                                # add gen-loop 1 if por > 0
+                                                                                    # check if we're in timeout
+        pipe_por = T.switch(T.le(countdown, 0) * T.lt(pipe_por, nodenet.g_expect), -1, pipe_por)
         pipe_por = pipe_por * pipe_por_cond                                         # apply conditions
                                                                                     # add por (for search) if sub=sur=0
         pipe_por = pipe_por + (slots[:, 7] * T.eq(slots[:, 9], 0) * T.eq(slots[:, 10], 0))
+                                                                                    # reset failure countdown on confirm
+        countdown_por = T.switch(T.ge(pipe_por, nodenet.g_expect), self.nodenet.g_wait, countdown_por)
 
         ### ret plumbing
         pipe_ret = -slots[:, 8] * T.ge(slots[:, 6], 0)                              # start with -sub if por >= 0
@@ -124,7 +132,7 @@ class TheanoCalculate(Calculate):
         ### sur plumbing
                                                                                     # reset if no sub, or por-linked but 0
         cd_reset_cond = T.le(slots[:, 6],0) + (T.eq(por_linked, 1) * T.le(slots[:, 4], 0))
-        countdown = T.switch(cd_reset_cond, self.nodenet.g_wait, countdown - 1)     # count down failure countdown
+        countdown_sur = T.switch(cd_reset_cond, self.nodenet.g_wait, countdown - 1)     # count down failure countdown
 
         pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
         pipe_sur_cond = pipe_sur_cond + (T.ge(slots[:, 5],0) * T.gt(slots[:, 6], 0))# or (ret is 0, but sub > 0))
@@ -139,7 +147,7 @@ class TheanoCalculate(Calculate):
                                                                                     # check if we're in timeout
         pipe_sur = T.switch(T.le(countdown, 0) * T.lt(pipe_sur, nodenet.g_expect), -1, pipe_sur)
                                                                                     # reset failure countdown on confirm
-        countdown = T.switch(T.ge(pipe_sur, nodenet.g_expect), self.nodenet.g_wait, countdown)
+        countdown_sur = T.switch(T.ge(pipe_sur, nodenet.g_expect), self.nodenet.g_wait, countdown_sur)
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
 
         ### cat plumbing
@@ -165,6 +173,8 @@ class TheanoCalculate(Calculate):
             nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
             nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
             nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
+            countdown = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
+            countdown = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
 
         # gate logic
 

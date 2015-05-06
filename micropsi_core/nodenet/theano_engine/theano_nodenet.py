@@ -488,6 +488,9 @@ class TheanoNodenet(Nodenet):
         g_min = self.g_min.get_value(borrow=True)
         g_max = self.g_max.get_value(borrow=True)
         g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_expect = self.g_expect.get_value(borrow=True)
+        g_countdown = self.g_countdown.get_value(borrow=True)
+        g_wait = self.g_wait.get_value(borrow=True)
         n_function_selector = self.n_function_selector.get_value(borrow=True)
         n_node_porlinked = self.n_node_porlinked.get_value(borrow=True)
         n_node_retlinked = self.n_node_retlinked.get_value(borrow=True)
@@ -511,6 +514,9 @@ class TheanoNodenet(Nodenet):
                  g_min=g_min,
                  g_max=g_max,
                  g_function_selector=g_function_selector,
+                 g_expect=g_expect,
+                 g_countdown=g_countdown,
+                 g_wait=g_wait,
                  n_function_selector=n_function_selector,
                  n_node_porlinked=n_node_porlinked,
                  n_node_retlinked=n_node_retlinked,
@@ -672,6 +678,22 @@ class TheanoNodenet(Nodenet):
                     self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
                 else:
                     self.logger.warn("no g_function_selector in file, falling back to defaults")
+
+                if 'g_expect' in datafile:
+                    self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
+                else:
+                    self.logger.warn("no g_expect in file, falling back to defaults")
+
+                if 'g_countdown' in datafile:
+                    self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
+                else:
+                    self.logger.warn("no g_countdown in file, falling back to defaults")
+
+                if 'g_wait' in datafile:
+                    self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
+                else:
+                    self.logger.warn("no g_wait in file, falling back to defaults")
+
 
                 if 'n_function_selector' in datafile:
                     self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)

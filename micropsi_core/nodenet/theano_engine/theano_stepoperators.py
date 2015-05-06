@@ -122,8 +122,9 @@ class TheanoCalculate(Calculate):
         pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
 
         ### sur plumbing
-                                                                                    # count down failure countdown
-        countdown = T.switch(T.le(slots[:, 6],0), self.nodenet.g_wait, countdown - 1)
+                                                                                    # reset if no sub, or por-linked but 0
+        cd_reset_cond = T.le(slots[:, 6],0) + (T.eq(por_linked, 1) * T.le(slots[:, 4], 0))
+        countdown = T.switch(cd_reset_cond, self.nodenet.g_wait, countdown - 1)     # count down failure countdown
 
         pipe_sur_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 4], 0), 1)      # (if linked, por must be > 0)
                                                                                     # and we aren't first in a script

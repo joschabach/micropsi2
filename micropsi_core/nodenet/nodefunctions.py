@@ -122,7 +122,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     countdown = int(node.get_state("countdown") or 0)
     expectation = float(node.get_parameter("expectation") or 1.0)
-    if node.get_slot("sub").activation <= 0:
+    if node.get_slot("sub").activation <= 0 or (not node.get_slot("por").empty and node.get_slot("por").activation <= 0):
         countdown = int(node.get_parameter("wait") or 1)
     else:
         countdown -= 1

@@ -162,7 +162,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if node.get_slot("por").get_activation(sheaf) <= 0 and not node.get_slot("por").empty:
         sur = 0
 
-    if sur < expectation:
+    if sur > 0 and sur < expectation:
         sur = 0
 
     if countdown <= 0 and sur < expectation:                                # timeout, fail

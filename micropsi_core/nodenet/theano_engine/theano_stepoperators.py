@@ -126,22 +126,21 @@ class TheanoCalculate(Calculate):
         cd_reset_cond = T.le(slots[:, 6],0) + (T.eq(por_linked, 1) * T.le(slots[:, 4], 0))
         countdown = T.switch(cd_reset_cond, self.nodenet.g_wait, countdown - 1)     # count down failure countdown
 
-        pipe_sur_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 4], 0), 1)      # (if linked, por must be > 0)
-                                                                                    # and we aren't first in a script
-        pipe_sur_cond = pipe_sur_cond * T.switch(T.eq(ret_linked, 1), T.eq(por_linked, 1), 1)
-        pipe_sur_cond = pipe_sur_cond * T.ge(slots[:, 5], 0)                        # and (ret >= 0)
+        pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
+        pipe_sur_cond = pipe_sur_cond + (T.ge(slots[:, 5],0) * T.gt(slots[:, 6], 0))# or (ret is 0, but sub > 0))
+        pipe_sur_cond = pipe_sur_cond * (T.eq(por_linked, 0) + T.gt(slots[:, 4], 0))# and (not por-linked or por > 0)
+        pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 
         pipe_sur = slots[:, 7]                                                      # start with sur
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
         pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
                                                                                     # drop to zero if < expectation
         pipe_sur = T.switch(T.lt(pipe_sur, nodenet.g_expect) * T.gt(pipe_sur, 0), 0, pipe_sur)
-        pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
                                                                                     # check if we're in timeout
         pipe_sur = T.switch(T.le(countdown, 0) * T.lt(pipe_sur, nodenet.g_expect), -1, pipe_sur)
                                                                                     # reset failure countdown on confirm
         countdown = T.switch(T.ge(pipe_sur, nodenet.g_expect), self.nodenet.g_wait, countdown)
-
+        pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
 
         ### cat plumbing
         pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)

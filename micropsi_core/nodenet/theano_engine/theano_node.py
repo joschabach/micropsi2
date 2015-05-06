@@ -440,6 +440,9 @@ class TheanoNode(Node):
             return self._nodenet.inverted_sensor_map[self.uid]
         elif self.type == "Actor" and parameter == "datatarget":
             return self._nodenet.inverted_actuator_map[self.uid]
+        elif self.type == "Pipe" and parameter == "expectation":
+            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
+            return g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
         elif self.type in self._nodenet.native_modules:
             return self.parameters.get(parameter, None)
 
@@ -466,6 +469,10 @@ class TheanoNode(Node):
             self._nodenet.inverted_actuator_map[self.uid] = value
         elif self.type == "Activator" and parameter == "type":
             self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
+        elif self.type == "Pipe" and parameter == "expectation":
+            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
+            g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
+            self._nodenet.g_expect.set_value(g_expect_array, borrow=True)
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
 
@@ -490,6 +497,10 @@ class TheanoNode(Node):
             elif self._id in self._nodenet.allocated_nodespaces_exp_activators:
                 activator_type = "exp"
             parameters['type'] = activator_type
+        elif self.type == "Pipe":
+            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
+            value = g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
+            parameters['expectation'] = value
         elif self.type in self._nodenet.native_modules:
             parameters = self.parameters.copy()
             for parameter in self.nodetype.parameters:

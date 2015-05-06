@@ -100,6 +100,7 @@ STANDARD_NODETYPES = {
                 "spreadsheaves": 0
             }
         },
+        "parameters": ["expectation"],
         'symbol': 'πp'
     },
     "Activator": {

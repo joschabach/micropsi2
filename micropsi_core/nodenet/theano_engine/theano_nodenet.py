@@ -100,7 +100,7 @@ STANDARD_NODETYPES = {
                 "spreadsheaves": 0
             }
         },
-        "parameters": ["expectation"],
+        "parameters": ["expectation", "wait"],
         'symbol': 'πp'
     },
     "Activator": {
@@ -194,6 +194,7 @@ class TheanoNodenet(Nodenet):
 
     g_expect = None     # vector of expectations
     g_countdown = None  # vector of number of steps until expectation needs to be met
+    g_wait = None       # vector of initial values for g_countdown
 
     n_function_selector = None      # vector of per-gate node function selectors
     n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
@@ -411,6 +412,9 @@ class TheanoNodenet(Nodenet):
 
         g_countdown_array = np.zeros(self.NoE, dtype=np.int8)
         self.g_countdown = theano.shared(value=g_countdown_array, name="countdown", borrow=True)
+
+        g_wait_array = np.ones(self.NoE, dtype=np.int8)
+        self.g_wait = theano.shared(value=g_wait_array, name="wait", borrow=True)
 
         n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)

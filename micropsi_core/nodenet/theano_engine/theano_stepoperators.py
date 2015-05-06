@@ -122,7 +122,8 @@ class TheanoCalculate(Calculate):
         pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
 
         ### sur plumbing
-        countdown = T.switch(T.le(slots[:, 6],0), 10, countdown - 1)                # count down failure countdown
+                                                                                    # count down failure countdown
+        countdown = T.switch(T.le(slots[:, 6],0), self.nodenet.g_wait, countdown - 1)
 
         pipe_sur_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 4], 0), 1)      # (if linked, por must be > 0)
                                                                                     # and we aren't first in a script
@@ -136,7 +137,8 @@ class TheanoCalculate(Calculate):
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
                                                                                     # check if we're in timeout
         pipe_sur = T.switch(T.le(countdown, 0) * T.lt(pipe_sur, nodenet.g_expect), -1, pipe_sur)
-        countdown = T.switch(T.ge(pipe_sur, nodenet.g_expect), 10, countdown)       # reset failure countdown on confirm
+                                                                                    # reset failure countdown on confirm
+        countdown = T.switch(T.ge(pipe_sur, nodenet.g_expect), self.nodenet.g_wait, countdown)
 
 
         ### cat plumbing

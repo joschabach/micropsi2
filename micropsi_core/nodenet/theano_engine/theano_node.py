@@ -443,6 +443,9 @@ class TheanoNode(Node):
         elif self.type == "Pipe" and parameter == "expectation":
             g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
             return g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
+        elif self.type == "Pipe" and parameter == "wait":
+            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
+            return g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
         elif self.type in self._nodenet.native_modules:
             return self.parameters.get(parameter, None)
 
@@ -473,6 +476,10 @@ class TheanoNode(Node):
             g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
             g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
             self._nodenet.g_expect.set_value(g_expect_array, borrow=True)
+        elif self.type == "Pipe" and parameter == "wait":
+            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
+            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = int(value)
+            self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
 
@@ -501,6 +508,8 @@ class TheanoNode(Node):
             g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
             value = g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
             parameters['expectation'] = value
+            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
+            parameters['wait'] = g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
         elif self.type in self._nodenet.native_modules:
             parameters = self.parameters.copy()
             for parameter in self.nodetype.parameters:

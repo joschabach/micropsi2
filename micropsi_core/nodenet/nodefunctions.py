@@ -191,25 +191,6 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 
-    # handle locking if configured for this node
-    sub_lock_needed = node.get_parameter('sublock')
-    if sub_lock_needed is not None:
-        surinput = node.get_slot("sur").get_activation(sheaf)
-        if sub > 0 and surinput < 1:
-            # we want to go sub, but we need to acquire a lock for that
-            if netapi.is_locked(sub_lock_needed):
-                if not netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
-                    # it's locked and not by us, so we need to pace ourselves and wait
-                    sub = 0
-            else:
-                # we can proceed, but we need to lock
-                netapi.lock(sub_lock_needed, node.uid+sheaf)
-
-        if surinput >= 1:
-            # we can clear a lock if it's us who had acquired it
-            if netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
-                netapi.unlock(sub_lock_needed)
-
     if node.get_slot('sub').get_activation(sheaf) > 0:
         if sur > 0:
             netapi.change_modulator('base_number_of_expected_events', 1)

@@ -442,6 +442,67 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     assert n_head.get_gate("gen").activation == -1
 
 
+def test_node_pipe_logic_timeout_fail(fixed_nodenet):
+    # test whether scripts work
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_head.set_parameter("wait", 100)
+    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_a.set_parameter("wait", 100)
+    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_b.set_parameter("wait", 5)
+    n_b.set_parameter("expectation", 0.8)
+    netapi.link_with_reciprocal(n_head, n_a, "subsur")
+    netapi.link_with_reciprocal(n_head, n_b, "subsur")
+    netapi.link_with_reciprocal(n_a, n_b, "porret")
+    netapi.link(source, "gen", n_head, "sub")
+    net.step()
+    net.step()
+
+    # quiet, first node requesting
+    assert n_head.get_gate("gen").activation == 0
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 0
+    assert n_b.get_gate("sur").activation == 0
+
+    # reply: good!
+    netapi.link(source, "gen", n_a, "sur")
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 0
+    assert n_b.get_gate("sur").activation == 0
+
+    # second node now requesting
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 1
+    assert n_b.get_gate("sur").activation == 0
+
+    # second node good, third requesting
+    netapi.link(source, "gen", n_b, "sur", 0.7)
+    net.step()
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 1
+    assert n_b.get_gate("sur").activation == 0
+    net.step()
+    net.step()
+    net.step()
+    net.step()
+    assert n_a.get_gate("sub").activation == 1
+    assert n_a.get_gate("sur").activation == 0
+    assert n_b.get_gate("sub").activation == 1
+    assert n_b.get_gate("sur").activation == -1
+
+    # overall script failed
+    net.step()
+    assert n_head.get_gate("gen").activation == -1
+
+
 def test_node_pipe_logic_feature_binding(fixed_nodenet):
     # check if the same feature can be checked and bound twice
     net, netapi, source = prepare(fixed_nodenet)

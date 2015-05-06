@@ -169,7 +169,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
         sur = -1
 
     if sur >= expectation:                                                  # success, reset countdown counter
-        countdown = countdown = int(node.get_parameter("wait") or 1)
+        countdown = int(node.get_parameter("wait") or 1)
 
     if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
         classifierelements = 0

@@ -99,8 +99,9 @@ class TheanoCalculate(Calculate):
 
         ### por plumbing
                                                                                     # reset if no sub, or por-linked but 0
-        cdrc_por = T.le(slots[:, 9],0) + (T.eq(por_linked, 1) * T.le(slots[:, 7], 0))
-        countdown_por = T.switch(cdrc_por, self.nodenet.g_wait, countdown - 1)          # count down failure countdown
+        cdrc_por = T.le(slots[:, 9], 0) + (T.eq(por_linked, 1) * T.le(slots[:, 7], 0))
+                                                                                    # count down failure countdown
+        countdown_por = T.switch(cdrc_por, self.nodenet.g_wait, T.maximum(countdown - 1, -1))
 
         pipe_por_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 7], 0), 1)      # (if linked, por must be > 0)
         pipe_por_cond = pipe_por_cond * T.gt(slots[:, 9], 0)                        # and (sub > 0)
@@ -132,7 +133,8 @@ class TheanoCalculate(Calculate):
         ### sur plumbing
                                                                                     # reset if no sub, or por-linked but 0
         cd_reset_cond = T.le(slots[:, 6],0) + (T.eq(por_linked, 1) * T.le(slots[:, 4], 0))
-        countdown_sur = T.switch(cd_reset_cond, self.nodenet.g_wait, countdown - 1)     # count down failure countdown
+                                                                                    # count down failure countdown
+        countdown_sur = T.switch(cd_reset_cond, self.nodenet.g_wait, T.maximum(countdown - 1, -1))
 
         pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
         pipe_sur_cond = pipe_sur_cond + (T.ge(slots[:, 5],0) * T.gt(slots[:, 6], 0))# or (ret is 0, but sub > 0))

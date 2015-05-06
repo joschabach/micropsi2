@@ -161,15 +161,15 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if countdown <= 0 and sur < expectation:                                # timeout, fail
         sur = -1
 
+    if sur >= expectation:                                                  # success, reset countdown counter
+        countdown = int(node.get_parameter("wait") or 1)
+
     # silencing for pipes in in por-ret chains
-    if not node.get_slot("ret").empty:                                      # we're not-last in a chain
+    if not node.get_slot("ret").empty:                    # we're not-last in a chain
         if not(node.get_slot("ret").get_activation(sheaf) == 0 and node.get_slot("sub").get_activation(sheaf) > 0):
             sur = 0
     if not node.get_slot("por").empty and node.get_slot("por").get_activation(sheaf) <= 0:
         sur = 0
-
-    if sur >= expectation:                                                  # success, reset countdown counter
-        countdown = int(node.get_parameter("wait") or 1)
 
     if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
         classifierelements = 0
@@ -187,9 +187,14 @@ def pipe(netapi, node=None, sheaf="default", **params):
     por += node.get_slot("sur").get_activation(sheaf)
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
+
+    if countdown <= 0 and por < expectation:
+        por = -1
+
     por *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1  # only por if por
     por *= node.get_slot("sub").get_activation(sheaf)                                           # only por if sub
     por += node.get_slot("por").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
+
     if por > 0: por = 1
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0

@@ -120,6 +120,13 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
+    countdown = int(node.get_state("countdown") or 0)
+    expectation = float(node.get_parameter("expectation"))
+    if node.get_slot("sub").activation <= 0:
+        countdown = int(node.get_parameter("wait"))
+    else:
+        countdown -= 1
+
     gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
     if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
 
@@ -154,6 +161,15 @@ def pipe(netapi, node=None, sheaf="default", **params):
         sur = 0                                                             # first nodes in scripts can never report sur
     if node.get_slot("por").get_activation(sheaf) <= 0 and not node.get_slot("por").empty:
         sur = 0
+
+    if sur < expectation:
+        sur = 0
+
+    if countdown <= 0 and sur < expectation:                                # timeout, fail
+        sur = -1
+
+    if sur >= expectation:                                                  # success, reset countdown counter
+        countdown = countdown = int(node.get_parameter("wait"))
 
     if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
         classifierelements = 0
@@ -197,6 +213,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
         elif sur < 0:
             severity = len(node.get_gate("sub").get_links()) + len(node.get_gate("cat").get_links())
             netapi.change_modulator('base_number_of_unexpected_events', severity)
+
+    node.set_state("countdown", countdown)
 
     # set gates
     node.set_sheaf_activation(gen, sheaf)

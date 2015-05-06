@@ -119,8 +119,9 @@ STANDARD_NODETYPES = {
                 "spreadsheaves": 0
             }
         },
-        'symbol': 'πp',
-        'shape': 'Rectangle'
+        "parameters": ["expectation", "wait"],
+        "symbol": "πp",
+        "shape": "Rectangle"
     },
     "Trigger": {
         "name": "Trigger",

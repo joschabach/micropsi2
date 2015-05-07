@@ -3594,8 +3594,16 @@ function getNodeParameterHTML(parameters, parameter_values){
     var input='';
     var is_array = jQuery.isArray(parameters);
     if(parameters && !jQuery.isEmptyObject(parameters)) {
+        var sorted_parameters = parameters;
+        if(!is_array) {
+            sorted_parameters = [];
+            for(var param in parameters) {
+                sorted_parameters.push(param);
+            }
+        }
+        sorted_parameters.sort();
         html = '';
-        for(var param in parameters){
+        sorted_parameters.forEach(function(param) {
             input = '';
             var name = (is_array) ? parameters[param] : param;
             var value = (is_array) ? '' : parameters[param];
@@ -3626,7 +3634,7 @@ function getNodeParameterHTML(parameters, parameter_values){
                     }
             }
             html += "<tr><td>"+name+"</td><td>"+input+"</td></tr>";
-        }
+        });
     }
     return html;
 }

@@ -283,26 +283,28 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['hack_decay_factor'] = 0 if self.sleeping else 1
 
         # first thing when spock initialization is done, determine current loco node
-        if self.waiting_for_spock and not self.simulated_vision:
+        if self.waiting_for_spock:
             # by substitution: spock init is considered done, when its client has a position unlike
             # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
-            if self.spockplugin.clientinfo.position['y'] != 0. \
-                    and self.spockplugin.clientinfo.position['x'] != 0:
+            if not self.simulated_vision:
+                if self.spockplugin.clientinfo.position['y'] != 0. \
+                        and self.spockplugin.clientinfo.position['x'] != 0:
+                    self.waiting_for_spock = False
+                    x = int(self.spockplugin.clientinfo.position['x'])
+                    y = int(self.spockplugin.clientinfo.position['y'])
+                    z = int(self.spockplugin.clientinfo.position['z'])
+                    for k, v in self.loco_nodes.items():
+                        if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
+                            self.current_loco_node = self.loco_nodes[k]
+
+                    self.last_slept = self.spockplugin.world.age
+                    if self.current_loco_node is None:
+                        # bot is outside our graph, teleport to a random graph location to get started.
+                        target = random.choice(list(self.loco_nodes.keys()))
+                        self.locomote(target)
+                    # self.locomote(self.village_uid)
+            else:
                 self.waiting_for_spock = False
-                x = int(self.spockplugin.clientinfo.position['x'])
-                y = int(self.spockplugin.clientinfo.position['y'])
-                z = int(self.spockplugin.clientinfo.position['z'])
-                for k, v in self.loco_nodes.items():
-                    if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
-                        self.current_loco_node = self.loco_nodes[k]
-
-                self.last_slept = self.spockplugin.world.age
-                if self.current_loco_node is None:
-                    # bot is outside our graph, teleport to a random graph location to get started.
-                    target = random.choice(list(self.loco_nodes.keys()))
-                    self.locomote(target)
-                # self.locomote(self.village_uid)
-
         else:
             # reset self.datatarget_feedback
 

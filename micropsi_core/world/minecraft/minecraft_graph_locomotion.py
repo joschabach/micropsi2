@@ -234,7 +234,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         self.current_loco_node = None
 
-        self.last_slept = None
+        self.last_slept = 0
         self.sleeping = False
 
         self.spockplugin = self.world.spockplugin
@@ -283,7 +283,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['hack_decay_factor'] = 0 if self.sleeping else 1
 
         # first thing when spock initialization is done, determine current loco node
-        if self.waiting_for_spock:
+        if self.waiting_for_spock and not self.simulated_vision:
             # by substitution: spock init is considered done, when its client has a position unlike
             # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
             if self.spockplugin.clientinfo.position['y'] != 0. \
@@ -306,7 +306,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         else:
             # reset self.datatarget_feedback
 
-            if not (self.spockplugin.is_connected()):
+            if not self.spockplugin.is_connected() and not self.simulated_vision:
                 return
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.

@@ -76,6 +76,8 @@ class MicropsiRunner(threading.Thread):
 
     sum_of_durations = 0
     number_of_samples = 0
+    total_steps = 0
+    granularity = 100
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -121,10 +123,18 @@ class MicropsiRunner(threading.Thread):
                 ms = elapsed.seconds + ((elapsed.microseconds // 1000) / 1000)
                 self.sum_of_durations += ms
                 self.number_of_samples += 1
+                self.total_steps +=1
                 average_duration = self.sum_of_durations / self.number_of_samples
-                if (average_duration < 0.01 and self.number_of_samples % 1000 == 0 and self.number_of_samples > 0) or \
-                   (0.01 < average_duration and self.number_of_samples % 100 == 0 and self.number_of_samples > 0):
-                    logging.getLogger("nodenet").debug("Step %d: Avg. %s sec" % (self.number_of_samples, str(average_duration)))
+                if self.total_steps % self.granularity == 0:
+                    logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    self.sum_of_durations = 0
+                    self.number_of_samples = 0
+                    if average_duration < 0.0001:
+                        self.granularity = 10000
+                    elif average_duration < 0.001:
+                        self.granularity = 1000
+                    else:
+                        self.granularity = 100
             left = step - elapsed
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())

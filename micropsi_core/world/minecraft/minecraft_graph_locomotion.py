@@ -193,8 +193,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # patch dimensions define the size of the sampled patch that's stored to file
     focal_length = 0.5    # distance of image plane from projective point /fovea
     max_dist = 64         # maximum distance for raytracing
-    resolution_w = 0.25   # number of rays per tick in viewport /camera coordinate system
-    resolution_h = 0.5    # number of rays per tick in viewport /camera coordinate system
+    resolution_w = 1.0    # number of rays per tick in viewport /camera coordinate system
+    resolution_h = 1.0    # number of rays per tick in viewport /camera coordinate system
     im_width = 128        # width of projection /image plane in the world
     im_height = 64        # height of projection /image plane in the world
     cam_width = 1.        # width of normalized device /camera /viewport
@@ -218,7 +218,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'fov_x': 0,
             'fov_y': 0,
             'eat': 0,
-            'sleep': 0
+            'sleep': 0,
+            'vision_simulator': 0
         }
 
         self.datasources['health'] = 1
@@ -256,13 +257,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.simulated_vision_datafile = cfg['minecraft']['simulate_vision']
             self.logger.info("Setting up minecraft_graph_locomotor to simulate vision from data file %s", self.simulated_vision_datafile)
 
-            import os, csv
+            import os
+            import csv
             self.simulated_vision_data = None
             self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
             if os.path.getsize(self.simulated_vision_datafile) < (500 * 1024 * 1024):
                 self.simulated_vision_data = [[float(datapoint) for datapoint in sample] for sample in self.simulated_vision_datareader]
                 self.simulated_data_entry_index = 0
-                self.simulated_data_entry_max = len(self.simulated_vision_data)-1
+                self.simulated_data_entry_max = len(self.simulated_vision_data) - 1
 
     def server_chat_message(self, event, data):
         if data.data and 'json_data' in data.data:
@@ -426,7 +428,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                         self.datatarget_feedback['sleep'] = -1.
             else:
                 self.simulate_visual_input()
-
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]
@@ -626,11 +627,10 @@ class MinecraftGraphLocomotion(WorldAdapter):
             else:
                 self.simulated_data_entry_index += 1
                 if self.simulated_data_entry_index > self.simulated_data_entry_max:
-                    self.logger.info("Simulating vision from memory, starting over, %s entries.", self.simulated_data_entry_max+1)
+                    self.logger.info("Simulating vision from memory, starting over, %s entries.", self.simulated_data_entry_max + 1)
                     self.simulated_data_entry_index = 0
                 line = self.simulated_vision_data[self.simulated_data_entry_index]
             self.write_visual_input_to_datasources(line, self.num_fov, self.num_fov)
-
 
     def write_visual_input_to_datasources(self, patch, patch_width, patch_height):
         """

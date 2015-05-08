@@ -72,10 +72,10 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
-stats = []
-
-
 class MicropsiRunner(threading.Thread):
+
+    sum_of_durations = 0
+    number_of_samples = 0
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -98,29 +98,33 @@ class MicropsiRunner(threading.Thread):
             start = datetime.now()
             log = False
             for uid in nodenets:
-                if nodenets[uid].is_active:
+                nodenet = nodenets[uid]
+                if nodenet.is_active:
                     log = True
                     try:
-                        nodenets[uid].step()
-                        nodenets[uid].update_monitors()
+                        nodenet.step()
+                        nodenet.update_monitors()
                     except:
-                        nodenets[uid].is_active = False
+                        nodenet.is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
                         MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                    if nodenets[uid].world and nodenets[uid].current_step % runner['factor'] == 0:
+                    if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                         try:
-                            nodenets[uid].world.step()
+                            nodenet.world.step()
                         except:
-                            nodenets[uid].is_active = False
+                            nodenet.is_active = False
                             logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
                             MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:
                 ms = elapsed.seconds + ((elapsed.microseconds // 1000) / 1000)
-                stats.append(ms)
-                if len(stats) % 100 == 0 and len(stats) > 0:
-                    logging.getLogger("nodenet").debug("AFTER %d RUNS: AVG. %s sec" % (len(stats), str(sum(stats) / len(stats))))
+                self.sum_of_durations += ms
+                self.number_of_samples += 1
+                average_duration = self.sum_of_durations / self.number_of_samples
+                if (average_duration < 0.01 and self.number_of_samples % 1000 == 0 and self.number_of_samples > 0) or \
+                   (0.01 < average_duration and self.number_of_samples % 100 == 0 and self.number_of_samples > 0):
+                    logging.getLogger("nodenet").debug("Step %d: Avg. %s sec" % (self.number_of_samples, str(average_duration)))
             left = step - elapsed
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())

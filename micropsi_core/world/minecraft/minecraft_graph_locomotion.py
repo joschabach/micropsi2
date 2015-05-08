@@ -255,8 +255,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.simulated_vision = True
             self.simulated_vision_datafile = cfg['minecraft']['simulate_vision']
             self.logger.info("Setting up minecraft_graph_locomotor to simulate vision from data file %s", self.simulated_vision_datafile)
-            import csv
+
+            import os, csv
+            self.simulated_vision_data = None
             self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
+            if os.path.getsize(self.simulated_vision_datafile) < (500 * 1024 * 1024):
+                self.simulated_vision_data = [[float(datapoint) for datapoint in sample] for sample in self.simulated_vision_datareader]
+                self.simulated_data_entry_index = 0
+                self.simulated_data_entry_max = len(self.simulated_vision_data)-1
 
     def server_chat_message(self, event, data):
         if data.data and 'json_data' in data.data:
@@ -604,20 +610,23 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datatarget_feedback['vision_simulator'] = 1.0
         # change visual input
         elif self.world.current_step % 4 == 1:
-            line = next(self.simulated_vision_datareader, None)
-            if line is None:
-                self.logger.info("Simulating vision from data file, starting over...")
-                import csv
-                self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
-                line = next(self.simulated_vision_datareader)
-            line = [float(entry) for entry in line]
+            line = None
+            if self.simulated_vision_data is None:
+                line = next(self.simulated_vision_datareader, None)
+                if line is None:
+                    self.logger.info("Simulating vision from data file, starting over...")
+                    import csv
+                    self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
+                    line = next(self.simulated_vision_datareader)
+                line = [float(entry) for entry in line]
+            else:
+                self.simulated_data_entry_index += 1
+                if self.simulated_data_entry_index > self.simulated_data_entry_max:
+                    self.logger.info("Simulating vision from memory, starting over, %s entries.", self.simulated_data_entry_max+1)
+                    self.simulated_data_entry_index = 0
+                line = self.simulated_vision_data[self.simulated_data_entry_index]
             self.write_visual_input_to_datasources(line, self.num_fov, self.num_fov)
 
-        # if self.world.current_step % 4 == 0:
-        #    entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
-        #    if entry_index == 0:
-        #        self.logger.info("Simulating vision from data file with %i entries...", len(self.simulated_vision_data))
-        #    self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index], self.num_fov, self.num_fov)
 
     def write_visual_input_to_datasources(self, patch, patch_width, patch_height):
         """

@@ -193,8 +193,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # patch dimensions define the size of the sampled patch that's stored to file
     focal_length = 0.5    # distance of image plane from projective point /fovea
     max_dist = 64         # maximum distance for raytracing
-    resolution_w = 1.0    # number of rays per tick in viewport /camera coordinate system
-    resolution_h = 1.0    # number of rays per tick in viewport /camera coordinate system
+    resolution_w = 0.25   # number of rays per tick in viewport /camera coordinate system
+    resolution_h = 0.5    # number of rays per tick in viewport /camera coordinate system
     im_width = 128        # width of projection /image plane in the world
     im_height = 64        # height of projection /image plane in the world
     cam_width = 1.        # width of normalized device /camera /viewport
@@ -202,7 +202,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # Note: adapt patch width to be smaller than or equal to resolution x image dimension
     patch_width = 32      # width of a fovea patch  # 128 || 32
     patch_height = 32     # height of a patch  # 64 || 32
-    num_fov = 16          # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
+    num_fov = 6           # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -314,115 +314,119 @@ class MinecraftGraphLocomotion(WorldAdapter):
         else:
             # reset self.datatarget_feedback
 
-            if not self.spockplugin.is_connected() and not self.simulated_vision:
-                return
             for k in self.datatarget_feedback.keys():
                 self.datatarget_feedback[k] = 0.
 
-            # reset self.datasources
-            # for k in self.datasources.keys():
-            #     if k != 'hack_situation' and k != 'temperature':
-            #         self.datasources[k] = 0.
-
-            # change pitch and yaw every x world steps to increase sensory variation
-            # < ensures some stability to enable learning in the autoencoder
-            if self.world.current_step % 5 == 0:
-                # for patches pitch = 10 and yaw = random.randint(-10,10) were used
-                # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
-                self.spockplugin.clientinfo.position['pitch'] = 10
-                self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
-                self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
-                self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
-                self.datatarget_feedback['pitch'] = 1.0
-                self.datatarget_feedback['yaw'] = 1.0
-
-            #
-            orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
-            self.datatarget_feedback['orientation'] = 1.0
-            # self.datatargets['orientation'] = 0
-
-            # sample all the time
-            # update fovea sensors, get sensory input, provide action feedback
-            # make sure fovea datasources don't go below 0.
-            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
-            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
             if not self.simulated_vision:
+
+                if not self.spockplugin.is_connected():
+                    return
+
+                # reset self.datasources
+                # for k in self.datasources.keys():
+                #     if k != 'hack_situation' and k != 'temperature':
+                #         self.datasources[k] = 0.
+
+                # change pitch and yaw every x world steps to increase sensory variation
+                # < ensures some stability to enable learning in the autoencoder
+                if self.world.current_step % 5 == 0:
+                    # for patches pitch = 10 and yaw = random.randint(-10,10) were used
+                    # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
+                    self.spockplugin.clientinfo.position['pitch'] = 10
+                    self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
+                    self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
+                    self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
+                    self.datatarget_feedback['pitch'] = 1.0
+                    self.datatarget_feedback['yaw'] = 1.0
+
+                #
+                orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
+                self.datatarget_feedback['orientation'] = 1.0
+                # self.datatargets['orientation'] = 0
+
+                # sample all the time
+                # update fovea sensors, get sensory input, provide action feedback
+                # make sure fovea datasources don't go below 0.
+                self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
+                self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
                 self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
+
+                # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
+                if self.datatargets['fov_x'] > 0.0:
+                    self.datatarget_feedback['fov_x'] = 1.0
+                if self.datatargets['fov_y'] > 0.0:
+                    self.datatarget_feedback['fov_y'] = 1.0
+
+                # health and food are in [0;20]
+                self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
+                self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
+                if self.spockplugin.get_temperature() is not None:
+                    self.datasources['temperature'] = self.spockplugin.get_temperature()
+                self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
+
+                # compute fatigue: 0.2 per half a day:
+                # timeofday = self.spockplugin.world.time_of_day % 24000
+                no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
+                fatigue = no_sleep * 0.2
+                if self.sleeping:
+                    fatigue = 0
+                self.datasources['fatigue'] = fatigue
+
+                self.check_for_action_feedback()
+
+                # read locomotor values, trigger teleportation in the world, and provide action feedback
+                # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
+                if self.datatargets['take_exit_one'] >= 1:
+                    # if the current node on the transition graph has the selected exit
+                    if self.current_loco_node['exit_one_uid'] is not None:
+                        self.register_action(
+                            'take_exit_one',
+                            partial(self.locomote, self.current_loco_node['exit_one_uid']),
+                            partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
+                        )
+                    else:
+                        self.datatarget_feedback['take_exit_one'] = -1.
+
+                if self.datatargets['take_exit_two'] >= 1:
+                    if self.current_loco_node['exit_two_uid'] is not None:
+                        self.register_action(
+                            'take_exit_two',
+                            partial(self.locomote, self.current_loco_node['exit_two_uid']),
+                            partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
+                        )
+                    else:
+                        self.datatarget_feedback['take_exit_two'] = -1.
+
+                if self.datatargets['take_exit_three'] >= 1:
+                    if self.current_loco_node['exit_three_uid'] is not None:
+                        self.register_action(
+                            'take_exit_three',
+                            partial(self.locomote, self.current_loco_node['exit_three_uid']),
+                            partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
+                        )
+                    else:
+                        self.datatarget_feedback['take_exit_three'] = -1.
+
+                if self.datatargets['eat'] >= 1:
+                    if self.has_bread() and self.datasources['food'] < 1:
+                        self.register_action(
+                            'eat',
+                            self.spockplugin.eat,
+                            partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
+                        )
+                    else:
+                        self.datatarget_feedback['eat'] = -1.
+
+                if self.datatargets['sleep'] >= 1:
+                    if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
+                        # we're home and it's night, so we can sleep now:
+                        self.register_action('sleep', self.sleep, self.check_waking_up)
+                    else:
+                        self.datatarget_feedback['sleep'] = -1.
             else:
                 self.simulate_visual_input()
-            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
-            if self.datatargets['fov_x'] > 0.0:
-                self.datatarget_feedback['fov_x'] = 1.0
-            if self.datatargets['fov_y'] > 0.0:
-                self.datatarget_feedback['fov_y'] = 1.0
 
-            # health and food are in [0;20]
-            self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
-            self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
-            if self.spockplugin.get_temperature() is not None:
-                self.datasources['temperature'] = self.spockplugin.get_temperature()
-            self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
-
-            # compute fatigue: 0.2 per half a day:
-            # timeofday = self.spockplugin.world.time_of_day % 24000
-            no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
-            fatigue = no_sleep * 0.2
-            if self.sleeping:
-                fatigue = 0
-            self.datasources['fatigue'] = fatigue
-
-            self.check_for_action_feedback()
-
-            # read locomotor values, trigger teleportation in the world, and provide action feedback
-            # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-            if self.datatargets['take_exit_one'] >= 1:
-                # if the current node on the transition graph has the selected exit
-                if self.current_loco_node['exit_one_uid'] is not None:
-                    self.register_action(
-                        'take_exit_one',
-                        partial(self.locomote, self.current_loco_node['exit_one_uid']),
-                        partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
-                    )
-                else:
-                    self.datatarget_feedback['take_exit_one'] = -1.
-
-            if self.datatargets['take_exit_two'] >= 1:
-                if self.current_loco_node['exit_two_uid'] is not None:
-                    self.register_action(
-                        'take_exit_two',
-                        partial(self.locomote, self.current_loco_node['exit_two_uid']),
-                        partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
-                    )
-                else:
-                    self.datatarget_feedback['take_exit_two'] = -1.
-
-            if self.datatargets['take_exit_three'] >= 1:
-                if self.current_loco_node['exit_three_uid'] is not None:
-                    self.register_action(
-                        'take_exit_three',
-                        partial(self.locomote, self.current_loco_node['exit_three_uid']),
-                        partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
-                    )
-                else:
-                    self.datatarget_feedback['take_exit_three'] = -1.
-
-            if self.datatargets['eat'] >= 1:
-                if self.has_bread() and self.datasources['food'] < 1:
-                    self.register_action(
-                        'eat',
-                        self.spockplugin.eat,
-                        partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
-                    )
-                else:
-                    self.datatarget_feedback['eat'] = -1.
-
-            if self.datatargets['sleep'] >= 1:
-                if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
-                    # we're home and it's night, so we can sleep now:
-                    self.register_action('sleep', self.sleep, self.check_waking_up)
-                else:
-                    self.datatarget_feedback['sleep'] = -1.
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]

@@ -117,7 +117,7 @@ AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 3
 
 DEFAULT_NUMBER_OF_NODES = 2000
 DEFAULT_NUMBER_OF_ELEMENTS = DEFAULT_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-DEFAULT_NUMBER_OF_NODESPACES = 100
+DEFAULT_NUMBER_OF_NODESPACES = 10
 
 class TheanoNodenet(Nodenet):
     """
@@ -1456,10 +1456,11 @@ class TheanoNodenet(Nodenet):
 
     def get_link_weights(self, group_from, group_to):
         w_matrix = self.w.get_value(borrow=True)
+        cols, rows = np.meshgrid(self.nodegroups[group_from], self.nodegroups[group_to])
         if self.sparse:
-            return w_matrix[:,self.nodegroups[group_from]][self.nodegroups[group_to]].todense()
+            return w_matrix[rows,cols].todense()
         else:
-            return w_matrix[:,self.nodegroups[group_from]][self.nodegroups[group_to]]
+            return w_matrix[rows,cols]
 
     def set_link_weights(self, group_from, group_to, new_w):
         w_matrix = self.w.get_value(borrow=True)

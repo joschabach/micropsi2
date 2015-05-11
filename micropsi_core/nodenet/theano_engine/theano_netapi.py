@@ -71,3 +71,29 @@ class TheanoNetAPI(NetAPI):
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
         self.__nodenet.set_link_weights(group_from, group_to, new_w)
+
+    def get_selectors(self, group):
+        """
+        Returns The indices for the elements for the given group, as an ndarray of ints.
+        These indices are valid in a, w, and theta.
+        """
+        return self.__nodenet.nodegroups[group]
+
+    def get_a(self):
+        """
+        Returns the theano shared variable with the activation vector
+        """
+        return self.__nodenet.a
+
+    def get_w(self):
+        """
+        Returns the theano shared variable with the link weights
+        Caution: Changing non-zero values to zero or zero-values to non-zero will lead to inconsistencies.
+        """
+        return self.__nodenet.w
+
+    def get_theta(self):
+        """
+        Returns the theano shared variable with the "theta" parameter values
+        """
+        return self.__nodenet.g_theta

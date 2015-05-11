@@ -104,7 +104,7 @@ STANDARD_NODETYPES = {
         "parameter_defaults": {
             "expectation": 1,
             "wait": 10
-        }
+        },
         'symbol': 'πp'
     },
     "Activator": {

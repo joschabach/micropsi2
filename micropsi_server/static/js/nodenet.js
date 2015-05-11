@@ -2735,12 +2735,17 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
         name: name,
         parameters: params },
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
-            view.draw();
-            selectNode(uid);
-            if(callback) callback(uid);
-            showNodeForm(uid);
-            getNodespaceList();
+            api.call('get_node', {
+                nodenet_uid: currentNodenet,
+                node_uid: uid
+            }, function(data){
+                addNode(new Node(uid, x, y, currentNodeSpace, data.name, type, null, null, data.parameters));
+                view.draw();
+                selectNode(uid);
+                if(callback) callback(uid);
+                showNodeForm(uid);
+                getNodespaceList();
+            });
         });
 }
 
@@ -3594,8 +3599,16 @@ function getNodeParameterHTML(parameters, parameter_values){
     var input='';
     var is_array = jQuery.isArray(parameters);
     if(parameters && !jQuery.isEmptyObject(parameters)) {
+        var sorted_parameters = parameters;
+        if(!is_array) {
+            sorted_parameters = [];
+            for(var param in parameters) {
+                sorted_parameters.push(param);
+            }
+        }
+        sorted_parameters.sort();
         html = '';
-        for(var param in parameters){
+        sorted_parameters.forEach(function(param) {
             input = '';
             var name = (is_array) ? parameters[param] : param;
             var value = (is_array) ? '' : parameters[param];
@@ -3626,7 +3639,7 @@ function getNodeParameterHTML(parameters, parameter_values){
                     }
             }
             html += "<tr><td>"+name+"</td><td>"+input+"</td></tr>";
-        }
+        });
     }
     return html;
 }

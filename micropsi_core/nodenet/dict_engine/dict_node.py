@@ -84,11 +84,11 @@ class DictNode(NetEntity, Node):
         self.__gates = {}
         self.__slots = {}
         self.__gatefunctions = gate_functions or {}
-
-        self.__parameters = dict((key, None) for key in self.nodetype.parameters)
+        self.__parameters = dict((key, self.nodetype.parameter_defaults.get(key)) for key in self.nodetype.parameters)
         if parameters is not None:
             for key in parameters:
-                self.set_parameter(key, parameters[key])
+                if parameters[key] is not None:
+                    self.set_parameter(key, parameters[key])
 
         for gate_name in gate_parameters:
             for key in gate_parameters[gate_name]:

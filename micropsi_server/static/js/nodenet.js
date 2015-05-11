@@ -2735,12 +2735,17 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
         name: name,
         parameters: params },
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
-            view.draw();
-            selectNode(uid);
-            if(callback) callback(uid);
-            showNodeForm(uid);
-            getNodespaceList();
+            api.call('get_node', {
+                nodenet_uid: currentNodenet,
+                node_uid: uid
+            }, function(data){
+                addNode(new Node(uid, x, y, currentNodeSpace, data.name, type, null, null, data.parameters));
+                view.draw();
+                selectNode(uid);
+                if(callback) callback(uid);
+                showNodeForm(uid);
+                getNodespaceList();
+            });
         });
 }
 

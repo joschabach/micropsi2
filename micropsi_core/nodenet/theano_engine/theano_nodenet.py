@@ -1008,6 +1008,21 @@ class TheanoNodenet(Nodenet):
                 self.allocated_node_offsets[self.allocated_nodespaces_cat_activators[tnodespace.from_id(nodespace_uid)]]
             self.allocated_elements_to_activators[offset + EXP] = \
                 self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[tnodespace.from_id(nodespace_uid)]]
+
+            if self.__nodetypes[nodetype].parameter_defaults.get('expectation'):
+                value = self.__nodetypes[nodetype].parameter_defaults['expectation']
+                g_expect_array = self.g_expect.get_value(borrow=True)
+                g_expect_array[offset + SUR] = float(value)
+                g_expect_array[offset + POR] = float(value)
+                self.g_expect.set_value(g_expect_array, borrow=True)
+
+            if self.__nodetypes[nodetype].parameter_defaults.get('wait'):
+                value = self.__nodetypes[nodetype].parameter_defaults['wait']
+                g_wait_array = self.g_wait.get_value(borrow=True)
+                g_wait_array[offset + SUR] = int(min(value, 128))
+                g_wait_array[offset + POR] = int(min(value, 128))
+                self.g_wait.set_value(g_wait_array, borrow=True)
+
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")

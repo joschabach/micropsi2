@@ -71,3 +71,15 @@ class TheanoNetAPI(NetAPI):
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
         self.__nodenet.set_link_weights(group_from, group_to, new_w)
+
+    def get_selectors(self, group):
+        return self.__nodenet.nodegroups[group]
+
+    def get_a(self):
+        return self.__nodenet.a
+
+    def get_w(self):
+        return self.__nodenet.w
+
+    def get_theta(self):
+        return self.__nodenet.g_theta

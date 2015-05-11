@@ -453,7 +453,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_waiting_list = []
             for index, item in enumerate(self.waiting_list):
                 if item['validation']():
-                    self.datatarget_feedback[item['datatarget']] = 1.
+                    if self.datatargets[item['datatarget']] != 0:
+                        self.datatarget_feedback[item['datatarget']] = 1.
                 else:
                     new_waiting_list.append(item)
 

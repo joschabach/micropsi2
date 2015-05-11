@@ -221,6 +221,18 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'sleep': 0
         }
 
+        # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
+        self.datatarget_history = {
+            'orientation': 0,
+            'take_exit_one': 0,
+            'take_exit_two': 0,
+            'take_exit_three': 0,
+            'fov_x': 0,
+            'fov_y': 0,
+            'eat': 0,
+            'sleep': 0
+        }
+
         self.datasources['health'] = 1
         self.datasources['food'] = 1
         self.datasources['temperature'] = 0.5
@@ -328,7 +340,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.datatarget_feedback['pitch'] = 1.0
                 self.datatarget_feedback['yaw'] = 1.0
 
-            #
             orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
             self.datatarget_feedback['orientation'] = 1.0
             # self.datatargets['orientation'] = 0
@@ -368,7 +379,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
             # read locomotor values, trigger teleportation in the world, and provide action feedback
             # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-            if self.datatargets['take_exit_one'] >= 1:
+            if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
                 # if the current node on the transition graph has the selected exit
                 if self.current_loco_node['exit_one_uid'] is not None:
                     self.register_action(
@@ -379,7 +390,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_one'] = -1.
 
-            if self.datatargets['take_exit_two'] >= 1:
+            if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
                 if self.current_loco_node['exit_two_uid'] is not None:
                     self.register_action(
                         'take_exit_two',
@@ -389,7 +400,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_two'] = -1.
 
-            if self.datatargets['take_exit_three'] >= 1:
+            if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
                 if self.current_loco_node['exit_three_uid'] is not None:
                     self.register_action(
                         'take_exit_three',
@@ -399,7 +410,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['take_exit_three'] = -1.
 
-            if self.datatargets['eat'] >= 1:
+            if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
                 if self.has_bread() and self.datasources['food'] < 1:
                     self.register_action(
                         'eat',
@@ -409,12 +420,17 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback['eat'] = -1.
 
-            if self.datatargets['sleep'] >= 1:
+            if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
                 if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
-                    # we're home and it's night, so we can sleep now:
+                    # if self.datasources['fatigue'] > 0:
+                        # urge is only active at night, so we can sleep now:
                     self.register_action('sleep', self.sleep, self.check_waking_up)
                 else:
                     self.datatarget_feedback['sleep'] = -1.
+
+            # update datatarget history
+            for k in self.datatarget_history.keys():
+                self.datatarget_history[k] = self.datatargets[k]
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]

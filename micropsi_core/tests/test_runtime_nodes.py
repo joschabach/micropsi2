@@ -248,3 +248,28 @@ def testfoo(netapi, count=23):
     assert state
     assert result == 42
     remove(path.join(resourcepath, 'recipes.py'))
+
+
+def test_node_parameter_defaults(fixed_nodenet, resourcepath):
+    from os import path, remove
+    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "parameters": ["testparam"],\
+            "parameter_defaults": {\
+                "testparam": 13\
+              }\
+            }}')
+    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    micropsi.reload_native_modules(fixed_nodenet)
+    data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
+    node = micropsi.nodenets[fixed_nodenet].get_node(uid)
+    assert node.get_parameter("testparam") == 13
+    remove(path.join(resourcepath, 'nodetypes.json'))
+    remove(path.join(resourcepath, 'nodefunctions.py'))

@@ -84,6 +84,8 @@ def test_nodenet(request):
 def pytest_runtest_call(item):
     if 'fixed_test_nodenet' in micropsi.nodenets:
         micropsi.revert_nodenet("fixed_test_nodenet")
+    for uid in micropsi.nodenets:
+        micropsi.reload_native_modules(uid)
     micropsi.logger.clear_logs()
     set_logging_levels()
 

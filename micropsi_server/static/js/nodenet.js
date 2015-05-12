@@ -2725,7 +2725,11 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     if (nodetypes[type]){
         for (var i in nodetypes[type].parameters){
             var param = nodetypes[type].parameters[i];
-            params[param] = parameters[param] || nodetypes[type].parameter_defaults[param];
+            var def = '';
+            if(nodetypes[type].parameter_defaults){
+                def = nodetypes[type].parameter_defaults[param] || '';
+            }
+            params[param] = parameters[param] || def;
         }
     }
     api.call("add_node", {

@@ -2724,7 +2724,8 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     if (!parameters) parameters = {};
     if (nodetypes[type]){
         for (var i in nodetypes[type].parameters){
-            params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
+            var param = nodetypes[type].parameters[i];
+            params[param] = parameters[param] || nodetypes[type].parameter_defaults[param];
         }
     }
     api.call("add_node", {
@@ -2735,18 +2736,14 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
         name: name,
         parameters: params },
         success=function(uid){
-            api.call('get_node', {
-                nodenet_uid: currentNodenet,
-                node_uid: uid
-            }, function(data){
-                addNode(new Node(uid, x, y, currentNodeSpace, data.name, type, null, null, data.parameters));
-                view.draw();
-                selectNode(uid);
-                if(callback) callback(uid);
-                showNodeForm(uid);
-                getNodespaceList();
-            });
-        });
+            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, params));
+            view.draw();
+            selectNode(uid);
+            if(callback) callback(uid);
+            showNodeForm(uid);
+            getNodespaceList();
+        }
+    );
 }
 
 

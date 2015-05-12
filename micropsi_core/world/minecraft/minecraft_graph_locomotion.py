@@ -184,6 +184,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     action_timeout = 10
 
+    actions = ['eat', 'sleep', 'take_exit_one', 'take_exit_two', 'take_exit_three']
+
     logger = None
 
     # specs for vision /fovea
@@ -316,12 +318,18 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 # self.locomote(self.village_uid)
 
         else:
-            # reset self.datatarget_feedback
 
             if not (self.spockplugin.is_connected()):
                 return
+
+            # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
-                self.datatarget_feedback[k] = 0.
+                # reset actions only if not requested anymore
+                if k in self.actions:
+                    if self.datatargets[k] == 0:
+                        self.datatarget_feedback[k] = 0.
+                else:
+                    self.datatarget_feedback[k] = 0.
 
             # reset self.datasources
             # for k in self.datasources.keys():

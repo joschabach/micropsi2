@@ -2096,7 +2096,7 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    function moveNode(uid, snap){
+    function moveNode(uid, snap, offset){
         var canvas = $('#nodenet');
         var pos = canvas.offset();
         var rounded = {
@@ -2109,9 +2109,18 @@ function onMouseDrag(event) {
         }
         nodeLayer.children[uid].nodeMoved = true;
         var node = nodes[uid];
+        var oldpos = {
+            'x': node.x,
+            'y': node.y
+        };
         if(snap){
-            node.x = rounded.x / viewProperties.zoomFactor;
-            node.y = rounded.y / viewProperties.zoomFactor;
+            if(offset){
+                node.x += offset.x;
+                node.y += offset.y;
+            } else {
+                node.x = rounded.x / viewProperties.zoomFactor;
+                node.y = rounded.y / viewProperties.zoomFactor;
+            }
         } else {
             node.x += event.delta.x/viewProperties.zoomFactor;
             node.y += event.delta.y/viewProperties.zoomFactor;
@@ -2127,12 +2136,20 @@ function onMouseDrag(event) {
             }
             redrawNodeLinks(node);
         }
+        return {
+            'x': node.x - oldpos.x,
+            'y': node.y - oldpos.y
+        };
     }
     if (movePath) {
         if(dragMultiples){
+            var offset = null;
+            if(nodenet_data.snap_to_grid){
+                offset = moveNode(path.name, true);
+            }
             for(var uid in selection){
-                if(uid in nodes){
-                    moveNode(uid);
+                if(uid in nodes && (!nodenet_data.snap_to_grid || uid != path.name)){
+                    moveNode(uid, nodenet_data.snap_to_grid, offset);
                 }
             }
         } else {

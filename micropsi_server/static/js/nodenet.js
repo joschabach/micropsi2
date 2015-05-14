@@ -2303,14 +2303,16 @@ function loadLinksForSelection(){
             uids.push(uid)
         }
     }
-    api.call('get_links_for_nodes',
-        {'nodenet_uid': currentNodenet,
-         'node_uids': uids },
-        function(data){
-            addLinks(data);
-            view.draw();
-        }
-    );
+    if(uids.length){
+        api.call('get_links_for_nodes',
+            {'nodenet_uid': currentNodenet,
+             'node_uids': uids },
+            function(data){
+                addLinks(data);
+                view.draw();
+            }
+        );
+    }
 }
 
 // menus -----------------------------------------------------------------------------

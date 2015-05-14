@@ -247,7 +247,7 @@ function setCurrentNodenet(uid, nodespace, changed){
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
-            include_links: $.cookie('renderlinks') != 'no',
+            include_links: $.cookie('renderlinks') == 'always',
         },
         function(data){
             $('#loading').hide();
@@ -380,40 +380,14 @@ function setNodespaceData(data, changed){
                 addNode(item);
             }
         }
-        var link, sourceId, targetId;
-        var outsideLinks = [];
 
         for(var uid in links) {
             if(!(uid in data.links)) {
                 removeLink(links[uid]);
             }
         }
-        for(uid in data.links){
-            sourceId = data.links[uid]['source_node_uid'];
-            targetId = data.links[uid]['target_node_uid'];
-            if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
-                link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                if(uid in links){
-                    redrawLink(link);
-                } else {
-                    addLink(link);
-                }
-            } else if(sourceId in nodes || targetId in nodes){
-                link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
-                    nodes[targetId].linksFromOutside.push(link.uid);
-                if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
-                    nodes[sourceId].linksToOutside.push(link.uid);
-                outsideLinks.push(link);
-            }
-        }
-        for(var index in outsideLinks){
-            if(outsideLinks[index].uid in links){
-                redrawLink(outsideLinks[index]);
-            } else {
-                addLink(outsideLinks[index]);
-            }
-        }
+        addLinks(data.links);
+
         updateModulators(data.modulators);
 
         if(data.monitors){
@@ -430,11 +404,43 @@ function setNodespaceData(data, changed){
     drawGridLines(view.element);
 }
 
+function addLinks(link_data){
+    var link, sourceId, targetId;
+    var outsideLinks = [];
+
+    for(uid in link_data){
+        sourceId = link_data[uid]['source_node_uid'];
+        targetId = link_data[uid]['target_node_uid'];
+        if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            if(uid in links){
+                redrawLink(link);
+            } else {
+                addLink(link);
+            }
+        } else if(sourceId in nodes || targetId in nodes){
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
+                nodes[targetId].linksFromOutside.push(link.uid);
+            if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
+                nodes[sourceId].linksToOutside.push(link.uid);
+            outsideLinks.push(link);
+        }
+    }
+    for(var index in outsideLinks){
+        if(outsideLinks[index].uid in links){
+            redrawLink(outsideLinks[index]);
+        } else {
+            addLink(outsideLinks[index]);
+        }
+    }
+}
+
 function get_nodenet_data(){
     return {
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
-        'include_links': $.cookie('renderlinks') != 'no',
+        'include_links': $.cookie('renderlinks') == 'always',
     }
 }
 
@@ -454,7 +460,7 @@ function refreshNodespace(nodespace, step, callback){
     if(step){
         params.step = step;
     }
-    params.include_links = nodenet_data['renderlinks'] != 'no';
+    params.include_links = nodenet_data['renderlinks'] == 'always';
     api.call('get_nodespace', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
@@ -2216,7 +2222,9 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-
+    if(nodenet_data['renderlinks'] == 'selection'){
+        loadLinksForSelection();
+    }
 }
 
 function onKeyDown(event) {
@@ -2286,6 +2294,23 @@ function updateSelection(event){
             }
         }
     }
+}
+
+function loadLinksForSelection(){
+    var uids = [];
+    for(var uid in selection){
+        if(uid in nodes){
+            uids.push(uid)
+        }
+    }
+    api.call('get_links_for_nodes',
+        {'nodenet_uid': currentNodenet,
+         'node_uids': uids },
+        function(data){
+            addLinks(data);
+            view.draw();
+        }
+    );
 }
 
 // menus -----------------------------------------------------------------------------

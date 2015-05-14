@@ -879,8 +879,6 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
 
-            # self.timeout_locks()
-
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
@@ -1323,18 +1321,6 @@ class TheanoNodenet(Nodenet):
             data['user_prompt'] = self.user_prompt.copy()
             self.user_prompt = None
         return data
-
-    def is_locked(self, lock):
-        pass
-
-    def is_locked_by(self, lock, key):
-        pass
-
-    def lock(self, lock, key, timeout=100):
-        pass
-
-    def unlock(self, lock):
-        pass
 
     def get_modulator(self, modulator):
         pass

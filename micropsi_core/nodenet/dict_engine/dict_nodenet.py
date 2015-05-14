@@ -234,8 +234,6 @@ class DictNodenet(Nodenet):
         self.__nodespaces = {}
         self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        self.__locks = {}
-
         self.__nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
             self.__nodetypes[type] = Nodetype(nodenet=self, **data)
@@ -500,26 +498,12 @@ class DictNodenet(Nodenet):
 
         with self.netlock:
 
-            self.timeout_locks()
-
             for operator in self.stepoperators:
                 operator.execute(self, self.__nodes.copy(), self.netapi)
 
             self.netapi._step()
 
             self.__step += 1
-
-    def timeout_locks(self):
-        """
-        Removes all locks that time out in the current step
-        """
-        locks_to_delete = []
-        for lock, data in self.__locks.items():
-            self.__locks[lock] = (data[0] + 1, data[1], data[2])
-            if data[0] + 1 >= data[1]:
-                locks_to_delete.append(lock)
-        for lock in locks_to_delete:
-            del self.__locks[lock]
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         node = DictNode(
@@ -639,26 +623,6 @@ class DictNodenet(Nodenet):
             return False, None
         source_node.unlink(gate_type, target_node_uid, slot_type)
         return True
-
-    def is_locked(self, lock):
-        """Returns true if a lock of the given name exists"""
-        return lock in self.__locks
-
-    def is_locked_by(self, lock, key):
-        """Returns true if a lock of the given name exists and the key used is the given one"""
-        return lock in self.__locks and self.__locks[lock][2] == key
-
-    def lock(self, lock, key, timeout=100):
-        """Creates a lock with the given name that will time out after the given number of steps
-        """
-        if self.is_locked(lock):
-            raise NodenetLockException("Lock %s is already locked." % lock)
-        self.__locks[lock] = (0, timeout, key)
-
-    def unlock(self, lock):
-        """Removes the given lock
-        """
-        del self.__locks[lock]
 
     def get_modulator(self, modulator):
         """

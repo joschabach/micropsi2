@@ -369,34 +369,6 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def is_locked(self, lock):
-        """
-        Returns true if a lock of the given name exists
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def is_locked_by(self, lock, key):
-        """
-        Returns true if a lock of the given name exists and the key used is the given one
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def lock(self, lock, key, timeout=100):
-        """
-        Creates a lock with the given name that will time out after the given number of steps
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def unlock(self, lock):
-        """
-        Removes the given lock
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
     def get_modulator(self, modulator):
         """
         Returns the numeric value of the given global modulator

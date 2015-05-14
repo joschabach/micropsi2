@@ -2096,7 +2096,7 @@ function onMouseDrag(event) {
     if(selectionStart){
         updateSelection(event);
     }
-    function moveNode(uid, snap){
+    function moveNode(uid, snap, offset){
         var canvas = $('#nodenet');
         var pos = canvas.offset();
         var rounded = {
@@ -2109,9 +2109,18 @@ function onMouseDrag(event) {
         }
         nodeLayer.children[uid].nodeMoved = true;
         var node = nodes[uid];
+        var oldpos = {
+            'x': node.x,
+            'y': node.y
+        };
         if(snap){
-            node.x = rounded.x / viewProperties.zoomFactor;
-            node.y = rounded.y / viewProperties.zoomFactor;
+            if(offset){
+                node.x += offset.x;
+                node.y += offset.y;
+            } else {
+                node.x = rounded.x / viewProperties.zoomFactor;
+                node.y = rounded.y / viewProperties.zoomFactor;
+            }
         } else {
             node.x += event.delta.x/viewProperties.zoomFactor;
             node.y += event.delta.y/viewProperties.zoomFactor;
@@ -2127,12 +2136,20 @@ function onMouseDrag(event) {
             }
             redrawNodeLinks(node);
         }
+        return {
+            'x': node.x - oldpos.x,
+            'y': node.y - oldpos.y
+        };
     }
     if (movePath) {
         if(dragMultiples){
+            var offset = null;
+            if(nodenet_data.snap_to_grid){
+                offset = moveNode(path.name, true);
+            }
             for(var uid in selection){
-                if(uid in nodes){
-                    moveNode(uid);
+                if(uid in nodes && (!nodenet_data.snap_to_grid || uid != path.name)){
+                    moveNode(uid, nodenet_data.snap_to_grid, offset);
                 }
             }
         } else {
@@ -2730,7 +2747,12 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     if (!parameters) parameters = {};
     if (nodetypes[type]){
         for (var i in nodetypes[type].parameters){
-            params[nodetypes[type].parameters[i]] = parameters[nodetypes[type].parameters[i]] || "";
+            var param = nodetypes[type].parameters[i];
+            var def = '';
+            if(nodetypes[type].parameter_defaults){
+                def = nodetypes[type].parameter_defaults[param] || '';
+            }
+            params[param] = parameters[param] || def;
         }
     }
     api.call("add_node", {
@@ -2741,13 +2763,14 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
         name: name,
         parameters: params },
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, name, type, null, null, params));
+            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, params));
             view.draw();
             selectNode(uid);
             if(callback) callback(uid);
             showNodeForm(uid);
             getNodespaceList();
-        });
+        }
+    );
 }
 
 
@@ -3600,8 +3623,16 @@ function getNodeParameterHTML(parameters, parameter_values){
     var input='';
     var is_array = jQuery.isArray(parameters);
     if(parameters && !jQuery.isEmptyObject(parameters)) {
+        var sorted_parameters = parameters;
+        if(!is_array) {
+            sorted_parameters = [];
+            for(var param in parameters) {
+                sorted_parameters.push(param);
+            }
+        }
+        sorted_parameters.sort();
         html = '';
-        for(var param in parameters){
+        sorted_parameters.forEach(function(param) {
             input = '';
             var name = (is_array) ? parameters[param] : param;
             var value = (is_array) ? '' : parameters[param];
@@ -3632,7 +3663,7 @@ function getNodeParameterHTML(parameters, parameter_values){
                     }
             }
             html += "<tr><td>"+name+"</td><td>"+input+"</td></tr>";
-        }
+        });
     }
     return html;
 }

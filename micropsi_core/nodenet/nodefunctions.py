@@ -120,6 +120,13 @@ def pipe(netapi, node=None, sheaf="default", **params):
     cat = 0.0
     exp = 0.0
 
+    countdown = int(node.get_state("countdown") or 0)
+    expectation = float(node.get_parameter("expectation") or 1.0)
+    if node.get_slot("sub").activation <= 0 or (not node.get_slot("por").empty and node.get_slot("por").activation <= 0):
+        countdown = int(node.get_parameter("wait") or 1)
+    else:
+        countdown -= 1
+
     gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
     if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
 
@@ -148,11 +155,20 @@ def pipe(netapi, node=None, sheaf="default", **params):
         sur += 1 if node.get_slot("gen").get_activation(sheaf) > 0 else -1
     sur += node.get_slot("exp").get_activation(sheaf)
 
-    if node.get_slot("ret").get_activation(sheaf) < 0:
+    if sur > 0 and sur < expectation:                                       # don't report anything below expectation
         sur = 0
-    if node.get_slot("por").empty and not node.get_slot("ret").empty and sur > 0:
-        sur = 0                                                             # first nodes in scripts can never report sur
-    if node.get_slot("por").get_activation(sheaf) <= 0 and not node.get_slot("por").empty:
+
+    if countdown <= 0 and sur < expectation:                                # timeout, fail
+        sur = -1
+
+    if sur >= expectation:                                                  # success, reset countdown counter
+        countdown = int(node.get_parameter("wait") or 1)
+
+    # silencing for pipes in in por-ret chains
+    if not node.get_slot("ret").empty:                    # we're not-last in a chain
+        if not(node.get_slot("ret").get_activation(sheaf) == 0 and node.get_slot("sub").get_activation(sheaf) > 0):
+            sur = 0
+    if not node.get_slot("por").empty and node.get_slot("por").get_activation(sheaf) <= 0:
         sur = 0
 
     if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
@@ -171,9 +187,14 @@ def pipe(netapi, node=None, sheaf="default", **params):
     por += node.get_slot("sur").get_activation(sheaf)
     por += (0 if node.get_slot("gen").get_activation(sheaf) < 0.1 else 1) * \
            (1+node.get_slot("por").get_activation(sheaf))
+
+    if countdown <= 0 and por < expectation:
+        por = -1
+
     por *= node.get_slot("por").get_activation(sheaf) if not node.get_slot("por").empty else 1  # only por if por
     por *= node.get_slot("sub").get_activation(sheaf)                                           # only por if sub
     por += node.get_slot("por").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
+
     if por > 0: por = 1
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
@@ -191,31 +212,14 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 
-    # handle locking if configured for this node
-    sub_lock_needed = node.get_parameter('sublock')
-    if sub_lock_needed is not None:
-        surinput = node.get_slot("sur").get_activation(sheaf)
-        if sub > 0 and surinput < 1:
-            # we want to go sub, but we need to acquire a lock for that
-            if netapi.is_locked(sub_lock_needed):
-                if not netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
-                    # it's locked and not by us, so we need to pace ourselves and wait
-                    sub = 0
-            else:
-                # we can proceed, but we need to lock
-                netapi.lock(sub_lock_needed, node.uid+sheaf)
-
-        if surinput >= 1:
-            # we can clear a lock if it's us who had acquired it
-            if netapi.is_locked_by(sub_lock_needed, node.uid+sheaf):
-                netapi.unlock(sub_lock_needed)
-
     if node.get_slot('sub').get_activation(sheaf) > 0:
         if sur > 0:
             netapi.change_modulator('base_number_of_expected_events', 1)
         elif sur < 0:
             severity = len(node.get_gate("sub").get_links()) + len(node.get_gate("cat").get_links())
             netapi.change_modulator('base_number_of_unexpected_events', severity)
+
+    node.set_state("countdown", countdown)
 
     # set gates
     node.set_sheaf_activation(gen, sheaf)

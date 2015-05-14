@@ -184,6 +184,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     action_timeout = 10
 
+    actions = ['eat', 'sleep', 'take_exit_one', 'take_exit_two', 'take_exit_three']
+
     logger = None
 
     # specs for vision /fovea
@@ -220,6 +222,18 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'eat': 0,
             'sleep': 0,
             'vision_simulator': 0
+        }
+
+        # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
+        self.datatarget_history = {
+            'orientation': 0,
+            'take_exit_one': 0,
+            'take_exit_two': 0,
+            'take_exit_three': 0,
+            'fov_x': 0,
+            'fov_y': 0,
+            'eat': 0,
+            'sleep': 0
         }
 
         self.datasources['health'] = 1
@@ -314,10 +328,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
             else:
                 self.waiting_for_spock = False
         else:
-            # reset self.datatarget_feedback
 
+            # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
-                self.datatarget_feedback[k] = 0.
+                # reset actions only if not requested anymore
+                if k in self.actions:
+                    if self.datatargets[k] == 0:
+                        self.datatarget_feedback[k] = 0.
+                else:
+                    self.datatarget_feedback[k] = 0.
 
             if not self.simulated_vision:
 
@@ -426,6 +445,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                         self.register_action('sleep', self.sleep, self.check_waking_up)
                     else:
                         self.datatarget_feedback['sleep'] = -1.
+
+                # update datatarget history
+                for k in self.datatarget_history.keys():
+                    self.datatarget_history[k] = self.datatargets[k]
+
             else:
                 self.simulate_visual_input()
 
@@ -450,7 +474,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             new_waiting_list = []
             for index, item in enumerate(self.waiting_list):
                 if item['validation']():
-                    self.datatarget_feedback[item['datatarget']] = 1.
+                    if self.datatargets[item['datatarget']] != 0:
+                        self.datatarget_feedback[item['datatarget']] = 1.
                 else:
                     new_waiting_list.append(item)
 

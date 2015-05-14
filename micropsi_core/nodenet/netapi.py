@@ -249,7 +249,10 @@ class NetAPI(object):
         if self.world is None:
             return all_actors
 
-        for datatarget in self.world.get_available_datatargets(self.__nodenet.uid):
+        datatargets = self.world.get_available_datatargets(self.__nodenet.uid)
+        datatargets = sorted(datatargets)
+
+        for datatarget in datatargets:
             if datatarget_prefix is None or datatarget.startswith(datatarget_prefix):
                 actor = None
                 for uid, candidate in self.__nodenet.get_actors(nodespace, datatarget).items():
@@ -270,7 +273,10 @@ class NetAPI(object):
         if self.world is None:
             return all_sensors
 
-        for datasource in self.world.get_available_datasources(self.__nodenet.uid):
+        datasources = self.world.get_available_datasources(self.__nodenet.uid)
+        datasources = sorted(datasources)
+
+        for datasource in datasources:
             if datasource_prefix is None or datasource.startswith(datasource_prefix):
                 sensor = None
                 for uid, candidate in self.__nodenet.get_sensors(nodespace, datasource).items():

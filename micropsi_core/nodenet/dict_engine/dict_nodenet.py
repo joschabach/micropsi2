@@ -119,8 +119,13 @@ STANDARD_NODETYPES = {
                 "spreadsheaves": 0
             }
         },
-        'symbol': 'πp',
-        'shape': 'Rectangle'
+        "parameters": ["expectation", "wait"],
+        "symbol": "πp",
+        "shape": "Rectangle",
+        "parameter_defaults": {
+            "expectation": 1,
+            "wait": 10
+        }
     },
     "Trigger": {
         "name": "Trigger",
@@ -147,6 +152,7 @@ STANDARD_NODETYPES = {
                 "spreadsheaves": 0
             }
         },
+        "symbol": "⃠",
         "parameters": ["timeout", "condition", "response"],
         "parameter_values": {
             "condition": ["=", ">"]

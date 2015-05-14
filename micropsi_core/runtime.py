@@ -1046,6 +1046,8 @@ def init_worlds(world_data):
                 worlds[uid] = world.World(**world_data[uid])
             except AttributeError as err:
                 warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
+            except:
+                warnings.warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
         else:
             worlds[uid] = world.World(**world_data[uid])
     return worlds

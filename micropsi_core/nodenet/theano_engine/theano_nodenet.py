@@ -122,7 +122,7 @@ AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
 
 INITIAL_NUMBER_OF_NODES = 5
 INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-INITIAL_NUMBER_OF_NODESPACES = 5
+INITIAL_NUMBER_OF_NODESPACES = 2
 
 class TheanoNodenet(Nodenet):
     """
@@ -921,6 +921,37 @@ class TheanoNodenet(Nodenet):
             self.allocated_node_offsets = new_allocated_node_offsets
             self.has_new_usages = True
 
+    def grow_number_of_nodespaces(self, growby):
+
+        new_NoNS = int(self.NoNS + growby)
+
+        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
+
+        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
+        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
+        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
+
+        with self.netlock:
+            self.NoNS = new_NoNS
+            self.allocated_nodespaces = new_allocated_nodespaces
+            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
+            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
+            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
+            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
+            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
+            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
+            self.has_new_usages = True
+
     def grow_number_of_elements(self, growby):
 
         new_NoE = int(self.NoE + growby)
@@ -1276,7 +1307,10 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                raise MemoryError("Cannot find free id, all " + str(self.NoNS) + " nodespace entries already in use.")
+                growby = self.NoNS // 2
+                self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.NoNS, growby))
+                id = self.NoNS
+                self.grow_number_of_nodespaces(growby)
         else:
             id = tnodespace.from_id(uid)
 

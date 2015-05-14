@@ -118,11 +118,11 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 3
+AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 10
 
-DEFAULT_NUMBER_OF_NODES = 2000
-DEFAULT_NUMBER_OF_ELEMENTS = DEFAULT_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-DEFAULT_NUMBER_OF_NODESPACES = 10
+INITIAL_NUMBER_OF_NODES = 5
+INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
+INITIAL_NUMBER_OF_NODESPACES = 5
 
 class TheanoNodenet(Nodenet):
     """
@@ -356,9 +356,9 @@ class TheanoNodenet(Nodenet):
 
         self.netapi = TheanoNetAPI(self)
 
-        self.NoN = DEFAULT_NUMBER_OF_NODES
-        self.NoE = DEFAULT_NUMBER_OF_ELEMENTS
-        self.NoNS = DEFAULT_NUMBER_OF_NODESPACES
+        self.NoN = INITIAL_NUMBER_OF_NODES
+        self.NoE = INITIAL_NUMBER_OF_ELEMENTS
+        self.NoNS = INITIAL_NUMBER_OF_NODESPACES
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
@@ -477,7 +477,6 @@ class TheanoNodenet(Nodenet):
         allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
         allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
 
-
         w = self.w.get_value(borrow=True)
 
         # if we're sparse, convert to sparse matrix for persistency
@@ -573,6 +572,7 @@ class TheanoNodenet(Nodenet):
                 if 'sizeinformation' in datafile:
                     self.NoN = datafile['sizeinformation'][0]
                     self.NoE = datafile['sizeinformation'][1]
+                    self.NoNS = datafile['sizeinformation'][2]
                 else:
                     self.logger.warn("no sizeinformation in file, falling back to defaults")
 
@@ -902,6 +902,25 @@ class TheanoNodenet(Nodenet):
     def is_node(self, uid):
         return uid in self.get_node_uids()
 
+    def grow_number_of_nodes(self, growby):
+
+        new_NoN = int(self.NoN + growby)
+
+        new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
+        new_allocated_node_parents = np.zeros(new_NoN, dtype=np.int32)
+        new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
+
+        new_allocated_nodes[0:self.NoN] = self.allocated_nodes
+        new_allocated_node_parents[0:self.NoN] = self.allocated_node_parents
+        new_allocated_node_offsets[0:self.NoN] = self.allocated_node_offsets
+
+        with self.netlock:
+            self.NoN = new_NoN
+            self.allocated_nodes = new_allocated_nodes
+            self.allocated_node_parents = new_allocated_node_parents
+            self.allocated_node_offsets = new_allocated_node_offsets
+            self.has_new_usages = True
+
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
@@ -919,7 +938,11 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                raise MemoryError("Cannot find free id, all " + str(self.NoN) + " node entries already in use.")
+                growby = self.NoN // 2
+                self.logger.info("All %d node IDs in use, growing elements vector by %d elements" % (self.NoN, growby))
+                id = self.NoN
+                self.grow_number_of_nodes(growby)
+
         else:
             id = tnode.from_id(uid)
 

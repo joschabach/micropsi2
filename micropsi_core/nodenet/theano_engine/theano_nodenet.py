@@ -1479,17 +1479,20 @@ class TheanoNodenet(Nodenet):
 
         return actuator_values_to_write
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None):
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, sortby='id'):
         ids = []
         for uid, name in self.names.items():
             if name.startswith(node_name_prefix) and \
                     (nodespace is None or self.allocated_node_parents[tnode.from_id(uid)] == tnodespace.from_id(nodespace)):
                 ids.append(uid)
-        self.group_nodes_by_ids(ids, node_name_prefix)
+        self.group_nodes_by_ids(ids, node_name_prefix, sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name):
+    def group_nodes_by_ids(self, node_ids, group_name, sortby='id'):
         ids = [tnode.from_id(uid) for uid in node_ids]
-        ids = sorted(ids)
+        if sortby == 'id':
+            ids = sorted(ids)
+        elif sortby == 'name':
+            ids = sorted(ids, key=lambda id: self.names(tnode.to_id(id)))
         self.nodegroups[group_name] = self.allocated_node_offsets[ids]
 
     def ungroup_nodes(self, group):

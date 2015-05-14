@@ -12,21 +12,21 @@ class TheanoNetAPI(NetAPI):
         super(TheanoNetAPI, self).__init__(nodenet)
         self.__nodenet = nodenet
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None):
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, sortby='id'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix)
+        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix, sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name):
+    def group_nodes_by_ids(self, node_ids, group_name, sortby='id'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_ids(node_ids, group_name)
+        self.__nodenet.group_nodes_by_ids(node_ids, group_name, sortby)
 
     def ungroup_nodes(self, group):
         """

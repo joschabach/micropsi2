@@ -1113,9 +1113,9 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
     return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
-@rpc("get_link")
-def get_link(nodenet_uid, link_uid):
-    return True, runtime.get_link(nodenet_uid, link_uid)
+@rpc("get_links_for_nodes")
+def get_links_for_nodes(nodenet_uid, node_uids = []):
+    return True, runtime.get_links_for_nodes(nodenet_uid, node_uids)
 
 
 @rpc("delete_link", permission_required="manage nodenets")

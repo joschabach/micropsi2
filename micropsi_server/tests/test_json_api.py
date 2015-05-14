@@ -950,6 +950,16 @@ def test_set_link_weight(app, test_nodenet):
     assert data['links']['N1:gen:gen:N1']['weight'] == 0.345
 
 
+def test_get_links_for_nodes(app, test_nodenet):
+    response = app.post_json('/rpc/get_links_for_nodes', params={
+        'nodenet_uid': test_nodenet,
+        'node_uids': ['N1']
+    })
+    assert_success(response)
+    data = response.json_body['data']
+    assert list(data.keys()) == ['N1:gen:gen:N1']
+
+
 def test_delete_link(app, test_nodenet):
     app.set_auth()
     response = app.post_json('/rpc/delete_link', params={

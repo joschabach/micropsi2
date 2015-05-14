@@ -1054,8 +1054,10 @@ function renderLink(link, force) {
     if(nodenet_data.renderlinks == 'no' && !force){
         return;
     }
-    if(nodenet_data.renderlinks == 'hover' && !force){
-        if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
+    if(nodenet_data.renderlinks == 'selection' && !force){
+        var is_hovered = hoverNode && (link.sourceNodeUid == hoverNode.uid || link.targetNodeUid == hoverNode.uid);
+        var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
+        if(!is_hovered && !is_selected){
             return;
         }
     }
@@ -1172,7 +1174,7 @@ function renderNode(node) {
     }
     setActivation(node);
     if(node.uid in selection){
-        selectNode(node.uid);
+        selectNode(node.uid, false);
     }
     node.zoomFactor = viewProperties.zoomFactor;
 }
@@ -1654,7 +1656,7 @@ function setActivation(node) {
 }
 
 // mark node as selected, and add it to the selected nodes
-function selectNode(nodeUid) {
+function selectNode(nodeUid, redraw) {
     if(!(nodeUid in nodes)) return;
     selection[nodeUid] = nodes[nodeUid];
     var outline;
@@ -1663,14 +1665,18 @@ function selectNode(nodeUid) {
     } else {
         outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
     }
+    nodes[nodeUid].renderCompact = false;
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
+    if (redraw !== false)
+        redrawNode(nodes[nodeUid], true);
 }
 
 // remove selection marking of node, and remove if from the set of selected nodes
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
+        nodes[nodeUid].renderCompact = null;
         if(nodeUid in nodeLayer.children){
             var outline;
             if(nodes[nodeUid].type == 'Comment'){
@@ -1680,6 +1686,7 @@ function deselectNode(nodeUid) {
             }
             outline.strokeColor = null;
             outline.strokeWidth = viewProperties.outlineWidth;
+            redrawNode(nodes[nodeUid], true);
         }
     }
 }
@@ -1714,7 +1721,7 @@ function deselectLink(linkUid) {
         delete selection[linkUid];
         if(linkUid in linkLayer.children){
             var linkShape = linkLayer.children[linkUid].children["link"];
-            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'hover'){
+            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'selection'){
                 linkLayer.children[linkUid].remove();
             }
             linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
@@ -1744,8 +1751,9 @@ function deselectGate(){
 }
 
 // deselect all nodes and links
-function deselectAll() {
+function deselectAll(except) {
     for (var uid in selection){
+        if (except && except.indexOf(uid) > -1) continue;
         if (uid in nodes) deselectNode(uid);
         if (uid in links) deselectLink(uid);
         if (uid == 'gate') deselectGate();
@@ -1756,6 +1764,7 @@ function deselectAll() {
 function isCompact(node) {
     if(node.renderCompact === false) return false;
     if(node.renderCompact === true) return true;
+    if(node.uid in selection) return false;
     if(viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     else return viewProperties.compactNodes;
 }
@@ -1960,13 +1969,27 @@ function onMouseDown(event) {
 
             if (path.name == "link") {
                 path = path.parent;
-                if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
+                if (!event.modifiers.shift && !event.modifiers.command) {
+                    var except = [];
+                    if(isRightClick(event)){
+                        // if rightclicking a link, nodes need not be deselected
+                        for(uid in selection){
+                            if(uid in nodes){
+                                except.push(uid);
+                            }
+                        }
+                    }
+                    deselectAll(except);
+                }
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
                 clickType = "link";
                 clickOriginUid = path.name;
-                if (isRightClick(event)) openContextMenu("#link_menu", event.event);
-                showLinkForm(path.name);
+                if (isRightClick(event)) {
+                    openContextMenu("#link_menu", event.event);
+                } else {
+                    showLinkForm(path.name);
+                }
             }
         }
     }
@@ -2181,7 +2204,8 @@ function onMouseUp(event) {
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
             if(path.name in nodes){
-                deselectAll();
+                var except = [path.name];
+                deselectAll(except);
                 selectNode(path.name);
             }
         }

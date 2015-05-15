@@ -246,11 +246,13 @@ class TheanoNode(Node):
 
         if strtype in nodenet.native_modules:
             self.slot_activation_snapshot = {}
+            self.state = {}
 
             if parameters is not None:
                 self.parameters = parameters.copy()
             else:
                 self.parameters = {}
+
 
         self._nodenet = nodenet
         self._id = from_id(uid)
@@ -270,14 +272,14 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))       # todo: get rid of positions
+        return self._nodenet.positions.get(self.uid, (10,10))
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
-            self._nodenet.positions[self.uid] = position         # todo: get rid of positions
+            self._nodenet.positions[self.uid] = position
 
     @property
     def name(self):
@@ -346,7 +348,6 @@ class TheanoNode(Node):
 
     def set_gate_parameter(self, gate_type, parameter, value):
 
-        # todo: implement the other gate parameters
         elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
         if parameter == 'threshold':
             g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
@@ -524,13 +525,16 @@ class TheanoNode(Node):
         return parameters
 
     def get_state(self, state):
-        return None             # todo: implement node state
+        return self.state[state]
 
     def set_state(self, state, value):
-        pass                    # todo: implement node state
+        self.state[state] = value
 
     def clone_state(self):
-        return {}               # todo: implement node state
+        if self._numerictype > MAX_STD_NODETYPE:
+            return self.state.copy()
+        else:
+            return None
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves

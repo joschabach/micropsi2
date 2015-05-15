@@ -820,6 +820,8 @@ class TheanoNodenet(Nodenet):
                 node_proxy = self.get_node(new_uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                for key, value in data['state'].items():
+                    node_proxy.set_state(key, value)
 
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))

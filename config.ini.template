@@ -46,3 +46,12 @@ precision = 32
 
 # use sparse weight matrix. True or False.
 sparse_weight_matrix = True
+
+# number of nodes to inizialize new theano_engine node nets with
+initial_number_of_nodes = 2000
+
+# number of elements to create per node initially
+# a node net with an expected ration of concept nodes / registers of 1:1
+# should use a (7 + 1) / 2 = 4 elements assumption
+# pure register nets can use a 1 element assumption
+elements_per_node_assumption = 4

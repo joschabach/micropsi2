@@ -118,12 +118,6 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 1
-
-INITIAL_NUMBER_OF_NODES = 5
-INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-INITIAL_NUMBER_OF_NODESPACES = 2
-
 class TheanoNodenet(Nodenet):
     """
         theano runtime engine implementation
@@ -318,6 +312,24 @@ class TheanoNodenet(Nodenet):
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
+        INITIAL_NUMBER_OF_NODESPACES = 10
+
+        AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4
+        configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
+        try:
+            AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = int(configured_elements_per_node_assumption)
+        except:
+            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+
+        INITIAL_NUMBER_OF_NODES = 2000
+        configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
+        try:
+            INITIAL_NUMBER_OF_NODES = int(configured_initial_number_of_nodes)
+        except:
+            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+
+        INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
         self.sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']

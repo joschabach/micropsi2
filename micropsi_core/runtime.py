@@ -1105,12 +1105,17 @@ def parse_recipe_file():
     for name, func in all_functions:
         argspec = inspect.getargspec(func)
         arguments = argspec.args[1:]
-        defaults = argspec.defaults
+        defaults = argspec.defaults or []
         params = []
+        diff = len(arguments) - len(defaults)
         for i, arg in enumerate(arguments):
+            if i >= diff:
+                default = defaults[i - diff]
+            else:
+                default = None
             params.append({
                 'name': arg,
-                'default': defaults[i]
+                'default': default
             })
         custom_recipes[name] = {
             'name': name,

@@ -1492,7 +1492,7 @@ class TheanoNodenet(Nodenet):
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':
-            ids = sorted(ids, key=lambda id: self.names(tnode.to_id(id)))
+            ids = sorted(ids, key=lambda id: self.names[tnode.to_id(id)])
         self.nodegroups[group_name] = self.allocated_node_offsets[ids]
 
     def ungroup_nodes(self, group):

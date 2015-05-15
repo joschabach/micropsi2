@@ -470,6 +470,7 @@ class TheanoNodenet(Nodenet):
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
+            metadata['nodes'] = self.construct_native_modules_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write bulk data to our own numpy-based file format
@@ -1159,7 +1160,6 @@ class TheanoNodenet(Nodenet):
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))
                 self.g_wait.set_value(g_wait_array, borrow=True)
-
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")
@@ -1167,6 +1167,12 @@ class TheanoNodenet(Nodenet):
                 self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
 
         node_proxy = self.get_node(uid)
+
+        if nodetype not in STANDARD_NODETYPES:
+            self.native_module_instances[uid] = node_proxy
+            for key, value in parameters.items():
+                node_proxy.set_parameter(key, value)
+
         for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
             for gate_parameter in parameters:
                 node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
@@ -1178,9 +1184,6 @@ class TheanoNodenet(Nodenet):
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():
                 node_proxy.set_gatefunction_name(gate, gate_function)
-
-        if nodetype not in STANDARD_NODETYPES:
-            self.native_module_instances[uid] = node_proxy
 
         return uid
 
@@ -1514,6 +1517,16 @@ class TheanoNodenet(Nodenet):
                         "target_node_uid": tnode.to_id(target_id)
                     }
                     data[linkuid] = linkdata
+        return data
+
+    def construct_native_modules_dict(self):
+        data = {}
+        i = 0
+        nodeids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)[0]
+        for node_id in nodeids:
+            i += 1
+            node_uid = tnode.to_id(node_id)
+            data[node_uid] = self.get_node(node_uid).data
         return data
 
     def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1):

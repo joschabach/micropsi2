@@ -1671,7 +1671,6 @@ function selectNode(nodeUid, redraw) {
     } else {
         outline = nodeLayer.children[nodeUid].children["activation"].children["body"];
     }
-    nodes[nodeUid].renderCompact = false;
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
     if (redraw !== false)
@@ -1770,7 +1769,6 @@ function deselectAll(except) {
 function isCompact(node) {
     if(node.renderCompact === false) return false;
     if(node.renderCompact === true) return true;
-    if(node.uid in selection) return false;
     if(viewProperties.zoomFactor < viewProperties.forceCompactBelowZoomFactor) return true;
     else return viewProperties.compactNodes;
 }
@@ -2031,8 +2029,10 @@ function onMouseMove(event) {
                 if(hoverNode && nodeUid != hoverNode.uid){
                     var oldHover = hoverNode.uid;
                     hoverNode = null;
-                    nodes[oldHover].renderCompact = null;
-                    redrawNode(nodes[oldHover], true);
+                    if(linkCreationStart){
+                        nodes[oldHover].renderCompact = null;
+                        redrawNode(nodes[oldHover], true);
+                    }
                 }
                 if(node.type == 'Comment'){
                     hover = nodeLayer.children[nodeUid].children['body'];
@@ -2049,8 +2049,10 @@ function onMouseMove(event) {
                 hover.fillColor = viewProperties.hoverColor;
                 if(isCompact(nodes[nodeUid])){
                     hoverNode = nodes[nodeUid];
-                    nodes[nodeUid].renderCompact = false;
-                    redrawNode(nodes[nodeUid], true);
+                    if(linkCreationStart){
+                        nodes[nodeUid].renderCompact = false;
+                        redrawNode(nodes[nodeUid], true);
+                    }
                 }
                 return;
             }
@@ -2059,8 +2061,10 @@ function onMouseMove(event) {
     if(hoverNode && hoverNode.uid in nodes){
         var oldHover = hoverNode.uid;
         hoverNode = null;
-        nodes[oldHover].renderCompact = null;
-        redrawNode(nodes[oldHover], true);
+        if(linkCreationStart){
+            nodes[oldHover].renderCompact = null;
+            redrawNode(nodes[oldHover], true);
+        }
     }
     hoverNode = null;
 

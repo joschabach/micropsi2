@@ -15,9 +15,9 @@ ACTIVATOR = 4
 CONCEPT = 5
 SCRIPT = 6
 PIPE = 7
-TRIGGER = 8
+COMMENT = 8
 
-MAX_STD_NODETYPE = TRIGGER
+MAX_STD_NODETYPE = COMMENT
 
 GEN = 0
 POR = 1
@@ -128,8 +128,8 @@ def get_numerical_node_type(type, nativemodules=None):
         return SCRIPT
     elif type == "Pipe":
         return PIPE
-    elif type == "Trigger":
-        return TRIGGER
+    elif type == "Comment":
+        return COMMENT
     elif nativemodules is not None and type in nativemodules:
         return MAX_STD_NODETYPE + 1 + sorted(nativemodules).index(type)
     else:
@@ -151,8 +151,8 @@ def get_string_node_type(type, nativemodules=None):
         return "Script"
     elif type == PIPE:
         return "Pipe"
-    elif type == TRIGGER:
-        return "Trigger"
+    elif type == COMMENT:
+        return "Comment"
     elif nativemodules is not None and len(nativemodules) >= (type - MAX_STD_NODETYPE):
         return sorted(nativemodules)[(type-1) - MAX_STD_NODETYPE]
     else:
@@ -208,8 +208,8 @@ def get_elements_per_type(type, nativemodules=None):
         return 7
     elif type == PIPE:
         return 7
-    elif type == TRIGGER:
-        return 3
+    elif type == COMMENT:
+        return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
         return max(len(native_module_definition.gatetypes), len(native_module_definition.slottypes))
@@ -244,7 +244,7 @@ class TheanoNode(Node):
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
-        if strtype in nodenet.native_modules:
+        if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
             self.state = {}
 
@@ -447,6 +447,8 @@ class TheanoNode(Node):
         elif self.type == "Pipe" and parameter == "wait":
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
             return g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
+        elif self.type == "Comment" and parameter == "comment":
+            return self.parameters.get(parameter, None)
         elif self.type in self._nodenet.native_modules:
             return self.parameters.get(parameter, None)
 
@@ -483,6 +485,8 @@ class TheanoNode(Node):
             g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = int(min(value, 128))
             g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = int(min(value, 128))
             self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
+        elif self.type == "Comment" and parameter == "comment":
+            self.parameters[parameter] = value
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
 
@@ -513,7 +517,7 @@ class TheanoNode(Node):
             parameters['expectation'] = value
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
             parameters['wait'] = g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
-        elif self.type in self._nodenet.native_modules:
+        elif self.type in self._nodenet.native_modules or self.type == "Comment":
             parameters = self.parameters.copy()
             for parameter in self.nodetype.parameters:
                 if parameter not in parameters:

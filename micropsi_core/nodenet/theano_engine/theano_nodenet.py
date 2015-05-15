@@ -32,6 +32,12 @@ STANDARD_NODETYPES = {
     "Nodespace": {
         "name": "Nodespace"
     },
+    "Comment": {
+        "name": "Comment",
+        "symbol": "#",
+        'parameters': ['comment'],
+        "shape": "Rectangle"
+    },
     "Register": {
         "name": "Register",
         "slottypes": ["gen"],
@@ -153,7 +159,7 @@ class TheanoNodenet(Nodenet):
     last_allocated_offset = 0
     last_allocated_nodespace = 0
 
-    native_module_instances = {}
+    instances = {}
 
     # map of string uids to positions. Not all nodes necessarily have an entry.
     positions = {}
@@ -744,7 +750,7 @@ class TheanoNodenet(Nodenet):
                 for id in range(len(self.allocated_nodes)):
                     if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                         uid = tnode.to_id(id)
-                        self.native_module_instances[uid] = self.get_node(uid)
+                        self.instances[uid] = self.get_node(uid)
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
@@ -819,8 +825,10 @@ class TheanoNodenet(Nodenet):
                 node_proxy = self.get_node(new_uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
                     node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
-                for key, value in data['state'].items():
-                    node_proxy.set_state(key, value)
+                state = data['state']
+                if state is not None:
+                    for key, value in state.items():
+                        node_proxy.set_state(key, value)
 
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
@@ -901,8 +909,8 @@ class TheanoNodenet(Nodenet):
             self.__step += 1
 
     def get_node(self, uid):
-        if uid in self.native_module_instances:
-            return self.native_module_instances[uid]
+        if uid in self.instances:
+            return self.instances[uid]
         elif uid in self.get_node_uids():
             id = tnode.from_id(uid)
             parent_id = self.allocated_node_parents[id]
@@ -1169,8 +1177,8 @@ class TheanoNodenet(Nodenet):
 
         node_proxy = self.get_node(uid)
 
-        if nodetype not in STANDARD_NODETYPES:
-            self.native_module_instances[uid] = node_proxy
+        if nodetype not in STANDARD_NODETYPES or nodetype == "Comment":
+            self.instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
 
@@ -1226,9 +1234,9 @@ class TheanoNodenet(Nodenet):
         # hint at the free ID
         self.last_allocated_node = tnode.from_id(uid) - 1
 
-        # remove the native module instance if there should be one
-        if uid in self.native_module_instances:
-            del self.native_module_instances[uid]
+        # remove the native module or comment instance if there should be one
+        if uid in self.instances:
+            del self.instances[uid]
 
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
@@ -1447,17 +1455,20 @@ class TheanoNodenet(Nodenet):
         for type, data in native_modules.items():
             self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
             self.native_modules[type].reload_nodefunction()
-        new_native_module_instances = {}
-        for id, native_module_instance in self.native_module_instances.items():
-            parameters = native_module_instance.clone_parameters()
-            state = native_module_instance.clone_state()
-            new_native_module_instance = TheanoNode(self, native_module_instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
-            for key, value in parameters.items():
-                new_native_module_instance.set_parameter(key, value)
-            for key, value in state.items():
-                new_native_module_instance.set_state(key, value)
-            new_native_module_instances[id] = new_native_module_instance
-        self.native_module_instances = new_native_module_instances
+        new_instances = {}
+        for id, instance in self.instances.items():
+            if instance.type not in STANDARD_NODETYPES:
+                parameters = instance.clone_parameters()
+                state = instance.clone_state()
+                new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
+                for key, value in parameters.items():
+                    new_native_module_instance.set_parameter(key, value)
+                for key, value in state.items():
+                    new_native_module_instance.set_state(key, value)
+                new_instances[id] = new_native_module_instance
+            else:
+                new_instances[id] = instance
+        self.instances = new_instances
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
@@ -1537,7 +1548,7 @@ class TheanoNodenet(Nodenet):
     def construct_native_modules_dict(self):
         data = {}
         i = 0
-        nodeids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)[0]
+        nodeids = np.where((self.allocated_nodes > MAX_STD_NODETYPE) | (self.allocated_nodes == COMMENT))[0]
         for node_id in nodeids:
             i += 1
             node_uid = tnode.to_id(node_id)

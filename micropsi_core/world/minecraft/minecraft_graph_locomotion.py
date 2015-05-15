@@ -398,7 +398,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
                 # read locomotor values, trigger teleportation in the world, and provide action feedback
                 # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-                if self.datatargets['take_exit_one'] >= 1:
+                if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
                     # if the current node on the transition graph has the selected exit
                     if self.current_loco_node['exit_one_uid'] is not None:
                         self.register_action(
@@ -409,7 +409,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     else:
                         self.datatarget_feedback['take_exit_one'] = -1.
 
-                if self.datatargets['take_exit_two'] >= 1:
+                if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
                     if self.current_loco_node['exit_two_uid'] is not None:
                         self.register_action(
                             'take_exit_two',
@@ -419,7 +419,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     else:
                         self.datatarget_feedback['take_exit_two'] = -1.
 
-                if self.datatargets['take_exit_three'] >= 1:
+                if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >=1:
                     if self.current_loco_node['exit_three_uid'] is not None:
                         self.register_action(
                             'take_exit_three',
@@ -429,7 +429,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     else:
                         self.datatarget_feedback['take_exit_three'] = -1.
 
-                if self.datatargets['eat'] >= 1:
+                if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
                     if self.has_bread() and self.datasources['food'] < 1:
                         self.register_action(
                             'eat',
@@ -439,7 +439,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     else:
                         self.datatarget_feedback['eat'] = -1.
 
-                if self.datatargets['sleep'] >= 1:
+                if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
                     if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
                         # we're home and it's night, so we can sleep now:
                         self.register_action('sleep', self.sleep, self.check_waking_up)

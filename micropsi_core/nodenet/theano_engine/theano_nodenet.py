@@ -1443,7 +1443,21 @@ class TheanoNodenet(Nodenet):
         return True
 
     def reload_native_modules(self, native_modules):
-        pass
+        self.native_modules = {}
+        for type, data in native_modules.items():
+            self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+            self.native_modules[type].reload_nodefunction()
+        new_native_module_instances = {}
+        for id, native_module_instance in self.native_module_instances.items():
+            parameters = native_module_instance.clone_parameters()
+            state = native_module_instance.clone_state()
+            new_native_module_instance = TheanoNode(self, native_module_instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
+            for key, value in parameters.items():
+                new_native_module_instance.set_parameter(key, value)
+            for key, value in state.items():
+                new_native_module_instance.set_state(key, value)
+            new_native_module_instances[id] = new_native_module_instance
+        self.native_module_instances = new_native_module_instances
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {

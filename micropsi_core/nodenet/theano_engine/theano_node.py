@@ -264,11 +264,11 @@ class TheanoNode(Node):
 
     @property
     def index(self):
-        return 0                # todo: implement index
+        return self._id
 
     @index.setter
     def index(self, index):
-        pass                    # todo: implement index
+        raise NotImplementedError("index can not be set in theano_engine")
 
     @property
     def position(self):

@@ -37,11 +37,11 @@ class TheanoNodespace(Nodespace):
 
     @property
     def index(self):
-        return 0
+        return self._id
 
     @index.setter
     def index(self, index):
-        pass
+        raise NotImplementedError("index can not be set in theano_engine")
 
     @property
     def position(self):

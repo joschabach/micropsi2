@@ -1876,7 +1876,7 @@ function onMouseDown(event) {
                 clickedSelected = nodeUid in selection;
                 if ( !clickedSelected && !event.modifiers.shift &&
                      !event.modifiers.command && !isRightClick(event)) {
-                         deselectAll();
+                        deselectAll();
                 }
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
@@ -1934,6 +1934,9 @@ function onMouseDown(event) {
                 }
                 else if (linkCreationStart) {
                     finalizeLinkHandler(nodeUid);
+                    path = null;
+                    movePath = false;
+                    return;
                 }
                 else {
                     movePath = true;
@@ -3063,9 +3066,15 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
 function finalizeLinkHandler(nodeUid, slotIndex) {
     var targetNode = nodes[nodeUid];
     var targetUid = nodeUid;
+
+    targetNode.renderCompact = null;
+    redrawNode(targetNode, true);
+    deselectAll();
+
     for(var i=0; i < linkCreationStart.length; i++){
         var sourceNode = linkCreationStart[i].sourceNode;
         var sourceUid = linkCreationStart[i].sourceNode.uid;
+        selectNode(sourceUid);
         var gateIndex = linkCreationStart[i].gateIndex;
 
         if (!slotIndex || slotIndex < 0) slotIndex = 0;
@@ -3151,7 +3160,9 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                                 nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
                             }
                         }
-                        addLink(link);
+                        if(nodenet_data.renderlinks == 'always'){
+                            addLink(link);
+                        }
                     });
                 }
             });

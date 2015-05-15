@@ -45,14 +45,14 @@ class TheanoNodespace(Nodespace):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))       # todo: get rid of positions
+        return self._nodenet.positions.get(self.uid, (10,10))
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
-            self._nodenet.positions[self.uid] = position         # todo: get rid of positions
+            self._nodenet.positions[self.uid] = position
 
     @property
     def name(self):

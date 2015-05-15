@@ -155,7 +155,6 @@ class TheanoNodenet(Nodenet):
 
     native_module_instances = {}
 
-    # todo: get rid of positions
     # map of string uids to positions. Not all nodes necessarily have an entry.
     positions = {}
 

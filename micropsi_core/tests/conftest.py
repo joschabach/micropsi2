@@ -31,6 +31,16 @@ logging.getLogger('world').setLevel(logging.WARNING)
 logging.getLogger('nodenet').setLevel(logging.WARNING)
 
 
+def pytest_addoption(parser):
+    parser.addoption("--engine", action="store", default=["dict_engine", "theano_engine"],
+        help="The engine that should be used for this testrun.")
+
+
+def pytest_generate_tests(metafunc):
+    if 'engine' in metafunc.fixturenames:
+        metafunc.parametrize("engine", metafunc.config.option.engine.split(','), scope="session")
+
+
 def set_logging_levels():
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
@@ -62,14 +72,14 @@ def test_world(request):
 
 
 @pytest.fixture(scope="session")
-def test_nodenet(request):
+def test_nodenet(request, engine):
     global nn_uid
     nodenets = micropsi.get_available_nodenets("Pytest User") or {}
     for uid, nn in nodenets.items():
         if(nn.name == 'Testnet'):
             nn_uid = list(nodenets.keys())[0]
     else:
-        success, nn_uid = micropsi.new_nodenet("Testnet", worldadapter="Default", owner="Pytest User", world_uid=world_uid, uid='Testnet')
+        success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, worldadapter="Default", owner="Pytest User", world_uid=world_uid, uid='Testnet')
 
     def fin():
         if DELETE_TEST_FILES_ON_EXIT:
@@ -91,9 +101,9 @@ def pytest_runtest_call(item):
 
 
 @pytest.fixture(scope="function")
-def fixed_nodenet(request, test_world):
+def fixed_nodenet(request, test_world, engine):
     from micropsi_core.tests.nodenet_data import fixed_nodenet_data
-    success, uid = micropsi.new_nodenet("Fixednet", worldadapter="Braitenberg", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
+    success, uid = micropsi.new_nodenet("Fixednet", engine=engine, worldadapter="Braitenberg", owner="Pytest User", world_uid=test_world, uid='fixed_test_nodenet')
     micropsi.get_nodenet(uid)
     micropsi.merge_nodenet(uid, fixed_nodenet_data, keep_uids=True)
     micropsi.save_nodenet(uid)

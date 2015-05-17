@@ -1215,15 +1215,16 @@ class TheanoNodenet(Nodenet):
             g_function_selector_array[offset + element] = 0
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
 
-        n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
-        n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
-        n_function_selector_array[offset + POR] = NFPG_PIPE_NON
-        n_function_selector_array[offset + RET] = NFPG_PIPE_NON
-        n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
-        n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
-        n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
-        n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
-        self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+        if type == PIPE:
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + RET] = NFPG_PIPE_NON
+            n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
+            n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
+            n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # clear from name and positions dicts
         if uid in self.names:

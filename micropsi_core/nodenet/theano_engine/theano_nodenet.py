@@ -752,6 +752,14 @@ class TheanoNodenet(Nodenet):
                         uid = tnode.to_id(id)
                         self.instances[uid] = self.get_node(uid)
 
+                # reloading native modules ensures the types in allocated_nodes are up to date
+                # (numerical native module types are runtime dependent and may differ from when allocated_nodes
+                # was saved).
+                native_module_data = {}
+                for key, value in self.native_modules.items():
+                    native_module_data[key] = value.data
+                self.reload_native_modules(native_module_data)
+
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
                     self.inverted_sensor_map[tnode.to_id(id)] = sensor
@@ -1452,16 +1460,39 @@ class TheanoNodenet(Nodenet):
         return True
 
     def reload_native_modules(self, native_modules):
+
+        # check which instances need to be recreated because of gate/slot changes and keep their .data
+        instances_to_recreate = {}
+        for uid, instance in self.instances.items():
+            numeric_id = tnode.from_id(uid)
+            number_of_elements = len(np.where(self.allocated_elements_to_nodes == numeric_id)[0])
+            new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
+            if number_of_elements != new_numer_of_elements:
+                self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                                (instance.type, number_of_elements, new_numer_of_elements, uid))
+                instances_to_recreate[uid] = instance.data
+
+        # actually remove the instances
+        for uid in instances_to_recreate.keys():
+            self.delete_node(uid)
+
+        # update the node functions of all Nodetypes
         self.native_modules = {}
         for type, data in native_modules.items():
             self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
             self.native_modules[type].reload_nodefunction()
+
+        # update the living instances that have the same slot/gate numbers
         new_instances = {}
         for id, instance in self.instances.items():
             if instance.type not in STANDARD_NODETYPES:
                 parameters = instance.clone_parameters()
                 state = instance.clone_state()
+                position = instance.position
+                name = instance.name
                 new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
+                new_native_module_instance.position = position
+                new_native_module_instance.name = name
                 for key, value in parameters.items():
                     new_native_module_instance.set_parameter(key, value)
                 for key, value in state.items():
@@ -1470,6 +1501,24 @@ class TheanoNodenet(Nodenet):
             else:
                 new_instances[id] = instance
         self.instances = new_instances
+
+        # recreate the deleted ones. Gate configurations and links will not be transferred.
+        for uid, data in instances_to_recreate.items():
+            new_uid = self.create_node(
+                data['type'],
+                data['parent_nodespace'],
+                data['position'],
+                name=data['name'],
+                uid=uid,
+                parameters=data['parameters'])
+
+        # update native modules numeric types, as these may have been set with a different native module
+        # node types list
+        native_module_ids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)
+        for id in native_module_ids:
+            instance = self.get_node(tnode.to_id(id))
+            self.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {

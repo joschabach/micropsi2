@@ -242,11 +242,11 @@ class TheanoCalculate(Calculate):
             self.worldadapter.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
 
     def take_native_module_slot_snapshots(self):
-        for uid, instance in self.nodenet.native_module_instances.items():
+        for uid, instance in self.nodenet.instances.items():
             instance.take_slot_activation_snapshot()
 
     def calculate_native_modules(self):
-        for uid, instance in self.nodenet.native_module_instances.items():
+        for uid, instance in self.nodenet.instances.items():
             instance.node_function()
 
     def calculate_g_factors(self):

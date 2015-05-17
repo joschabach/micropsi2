@@ -836,7 +836,8 @@ class TheanoNodenet(Nodenet):
                 uidmap[uid] = new_uid
                 node_proxy = self.get_node(new_uid)
                 for gatetype in data['gate_activations']:   # todo: implement sheaves
-                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                    if gatetype in node_proxy.nodetype.gatetypes:
+                        node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
                 state = data['state']
                 if state is not None:
                     for key, value in state.items():
@@ -1201,16 +1202,19 @@ class TheanoNodenet(Nodenet):
                 node_proxy.set_parameter(key, value)
 
         for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
-            for gate_parameter in parameters:
-                node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
-        if gate_parameters is not None:
-            for gate, parameters in gate_parameters.items():
+            if gate in node_proxy.nodetype.gatetypes:
                 for gate_parameter in parameters:
                     node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+        if gate_parameters is not None:
+            for gate, parameters in gate_parameters.items():
+                if gate in node_proxy.nodetype.gatetypes:
+                    for gate_parameter in parameters:
+                        node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
 
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():
-                node_proxy.set_gatefunction_name(gate, gate_function)
+                if gate in node_proxy.nodetype.gatetypes:
+                    node_proxy.set_gatefunction_name(gate, gate_function)
 
         return uid
 

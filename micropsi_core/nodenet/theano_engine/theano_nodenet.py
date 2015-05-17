@@ -453,8 +453,9 @@ class TheanoNodenet(Nodenet):
         for type, data in STANDARD_NODETYPES.items():
             self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
+        self.native_module_definitions = native_modules
         self.native_modules = {}
-        for type, data in native_modules.items():
+        for type, data in self.native_module_definitions.items():
             self.native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.nodegroups = {}
@@ -759,10 +760,7 @@ class TheanoNodenet(Nodenet):
                 # reloading native modules ensures the types in allocated_nodes are up to date
                 # (numerical native module types are runtime dependent and may differ from when allocated_nodes
                 # was saved).
-                native_module_data = {}
-                for key, value in self.native_modules.items():
-                    native_module_data[key] = value.data
-                self.reload_native_modules(native_module_data)
+                self.reload_native_modules(self.native_module_definitions)
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
@@ -797,7 +795,6 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
                 self.sensormap = initfrom['sensormap']
-
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -1236,6 +1233,7 @@ class TheanoNodenet(Nodenet):
             self.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
+        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == tnode.from_id(uid))[0]] = 0
 
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
@@ -1476,6 +1474,8 @@ class TheanoNodenet(Nodenet):
         return True
 
     def reload_native_modules(self, native_modules):
+
+        self.native_module_definitions = native_modules
 
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}

@@ -159,7 +159,8 @@ class TheanoNodenet(Nodenet):
     last_allocated_offset = 0
     last_allocated_nodespace = 0
 
-    instances = {}
+    native_module_instances = {}
+    comment_instances = {}
 
     # map of string uids to positions. Not all nodes necessarily have an entry.
     positions = {}
@@ -475,7 +476,7 @@ class TheanoNodenet(Nodenet):
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
-            metadata['nodes'] = self.construct_native_modules_dict()
+            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write bulk data to our own numpy-based file format
@@ -750,7 +751,10 @@ class TheanoNodenet(Nodenet):
                 for id in range(len(self.allocated_nodes)):
                     if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                         uid = tnode.to_id(id)
-                        self.instances[uid] = self.get_node(uid)
+                        self.native_module_instances[uid] = self.get_node(uid)
+                    elif self.allocated_nodes[id] == COMMENT:
+                        uid = tnode.to_id(id)
+                        self.comment_instances[uid] = self.get_node(uid)
 
                 # reloading native modules ensures the types in allocated_nodes are up to date
                 # (numerical native module types are runtime dependent and may differ from when allocated_nodes
@@ -917,8 +921,10 @@ class TheanoNodenet(Nodenet):
             self.__step += 1
 
     def get_node(self, uid):
-        if uid in self.instances:
-            return self.instances[uid]
+        if uid in self.native_module_instances:
+            return self.native_module_instances[uid]
+        elif uid in self.native_module_instances:
+            return self.comment_instances[uid]
         elif uid in self.get_node_uids():
             id = tnode.from_id(uid)
             parent_id = self.allocated_node_parents[id]
@@ -1185,8 +1191,12 @@ class TheanoNodenet(Nodenet):
 
         node_proxy = self.get_node(uid)
 
-        if nodetype not in STANDARD_NODETYPES or nodetype == "Comment":
-            self.instances[uid] = node_proxy
+        if nodetype not in STANDARD_NODETYPES:
+            self.native_module_instances[uid] = node_proxy
+            for key, value in parameters.items():
+                node_proxy.set_parameter(key, value)
+        elif nodetype == "Comment":
+            self.comment_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
 
@@ -1244,8 +1254,10 @@ class TheanoNodenet(Nodenet):
         self.last_allocated_node = tnode.from_id(uid) - 1
 
         # remove the native module or comment instance if there should be one
-        if uid in self.instances:
-            del self.instances[uid]
+        if uid in self.native_module_instances:
+            del self.native_module_instances[uid]
+        if uid in self.comment_instances:
+            del self.comment_instances[uid]
 
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
@@ -1463,7 +1475,7 @@ class TheanoNodenet(Nodenet):
 
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
-        for uid, instance in self.instances.items():
+        for uid, instance in self.native_module_instances.items():
             numeric_id = tnode.from_id(uid)
             number_of_elements = len(np.where(self.allocated_elements_to_nodes == numeric_id)[0])
             new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
@@ -1484,23 +1496,20 @@ class TheanoNodenet(Nodenet):
 
         # update the living instances that have the same slot/gate numbers
         new_instances = {}
-        for id, instance in self.instances.items():
-            if instance.type not in STANDARD_NODETYPES:
-                parameters = instance.clone_parameters()
-                state = instance.clone_state()
-                position = instance.position
-                name = instance.name
-                new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
-                new_native_module_instance.position = position
-                new_native_module_instance.name = name
-                for key, value in parameters.items():
-                    new_native_module_instance.set_parameter(key, value)
-                for key, value in state.items():
-                    new_native_module_instance.set_state(key, value)
-                new_instances[id] = new_native_module_instance
-            else:
-                new_instances[id] = instance
-        self.instances = new_instances
+        for id, instance in self.native_module_instances.items():
+            parameters = instance.clone_parameters()
+            state = instance.clone_state()
+            position = instance.position
+            name = instance.name
+            new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
+            new_native_module_instance.position = position
+            new_native_module_instance.name = name
+            for key, value in parameters.items():
+                new_native_module_instance.set_parameter(key, value)
+            for key, value in state.items():
+                new_native_module_instance.set_state(key, value)
+            new_instances[id] = new_native_module_instance
+        self.native_module_instances = new_instances
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():
@@ -1595,7 +1604,7 @@ class TheanoNodenet(Nodenet):
                     data[linkuid] = linkdata
         return data
 
-    def construct_native_modules_dict(self):
+    def construct_native_modules_and_comments_dict(self):
         data = {}
         i = 0
         nodeids = np.where((self.allocated_nodes > MAX_STD_NODETYPE) | (self.allocated_nodes == COMMENT))[0]

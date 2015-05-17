@@ -923,7 +923,7 @@ class TheanoNodenet(Nodenet):
     def get_node(self, uid):
         if uid in self.native_module_instances:
             return self.native_module_instances[uid]
-        elif uid in self.native_module_instances:
+        elif uid in self.comment_instances:
             return self.comment_instances[uid]
         elif uid in self.get_node_uids():
             id = tnode.from_id(uid)
@@ -1527,7 +1527,6 @@ class TheanoNodenet(Nodenet):
         for id in native_module_ids:
             instance = self.get_node(tnode.to_id(id))
             self.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
-
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {

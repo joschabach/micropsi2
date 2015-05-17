@@ -1527,7 +1527,7 @@ class TheanoNodenet(Nodenet):
 
         # update native modules numeric types, as these may have been set with a different native module
         # node types list
-        native_module_ids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)
+        native_module_ids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)[0]
         for id in native_module_ids:
             instance = self.get_node(tnode.to_id(id))
             self.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)

@@ -2,48 +2,40 @@
 fixed_nodenet_data = """{
     "uid": "fixed_test_nodenet",
     "links": {
-        "B1B2": {
+        "B1:sub:gen:B2": {
             "certainty": 1,
             "source_gate_name": "sub",
-            "source_node": "B1",
             "source_node_uid": "B1",
-            "target_node": "B2",
             "target_node_uid": "B2",
             "target_slot_name": "gen",
-            "uid": "B1B2",
+            "uid": "B1:sub:gen:B2",
             "weight": 1
         },
-        "A1A2": {
+        "A1:por:gen:A2": {
             "certainty": 1,
             "source_gate_name": "por",
-            "source_node": "A1",
             "source_node_uid": "A1",
-            "target_node": "A2",
             "target_node_uid": "A2",
             "target_slot_name": "gen",
-            "uid": "A1A2",
+            "uid": "A1:por:gen:A2",
             "weight": 1
         },
-        "SB1": {
+        "S:gen:gen:B1": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node": "S",
             "source_node_uid": "S",
-            "target_node": "B1",
             "target_node_uid": "B1",
             "target_slot_name": "gen",
-            "uid": "SB1",
+            "uid": "S:gen:gen:B1",
             "weight": 1
         },
-        "SA1": {
+        "S:gen:gen:A1": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node": "S",
             "source_node_uid": "S",
-            "target_node": "A1",
             "target_node_uid": "A1",
             "target_slot_name": "gen",
-            "uid": "SA1",
+            "uid": "S:gen:gen:A1",
             "weight": 1
         }
     },

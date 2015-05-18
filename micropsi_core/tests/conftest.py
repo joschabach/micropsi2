@@ -31,6 +31,12 @@ logging.getLogger('world').setLevel(logging.WARNING)
 logging.getLogger('nodenet').setLevel(logging.WARNING)
 
 
+def set_logging_levels():
+    logging.getLogger('system').setLevel(logging.WARNING)
+    logging.getLogger('world').setLevel(logging.WARNING)
+    logging.getLogger('nodenet').setLevel(logging.WARNING)
+
+
 def pytest_addoption(parser):
     parser.addoption("--engine", action="store", default=["dict_engine", "theano_engine"],
         help="The engine that should be used for this testrun.")
@@ -41,10 +47,18 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("engine", metafunc.config.option.engine.split(','), scope="session")
 
 
-def set_logging_levels():
-    logging.getLogger('system').setLevel(logging.WARNING)
-    logging.getLogger('world').setLevel(logging.WARNING)
-    logging.getLogger('nodenet').setLevel(logging.WARNING)
+def pytest_configure(config):
+    # register an additional marker
+    config.addinivalue_line("markers",
+        "engine(name): mark test to run only on the specified engine")
+
+
+def pytest_runtest_setup(item):
+    engine_marker = item.get_marker("engine")
+    if engine_marker is not None:
+        engine_marker = engine_marker.args[0]
+        if engine_marker != item.callspec.params['engine']:
+            pytest.skip("test requires engine %s" % engine_marker)
 
 
 @pytest.fixture(scope="session")

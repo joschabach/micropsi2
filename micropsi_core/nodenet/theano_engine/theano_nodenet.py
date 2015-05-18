@@ -800,12 +800,12 @@ class TheanoNodenet(Nodenet):
                     data['position'],
                     name=data['name'],
                     uid=olduid,
-                    parameters=data['parameters'],
-                    gate_parameters=data['gate_parameters'],
-                    gate_functions=data['gate_functions'])
+                    parameters=data.get('parameters'),
+                    gate_parameters=data.get('gate_parameters'),
+                    gate_functions=data.get('gate_functions'))
                 uidmap[uid] = new_uid
                 node_proxy = self.get_node(new_uid)
-                for gatetype in data['gate_activations']:   # todo: implement sheaves
+                for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
                     node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
             else:

@@ -51,7 +51,7 @@ fixed_nodenet_data = """{
                 367,
                 115
             ],
-            "type": "Concept",
+            "type": "Pipe",
             "uid": "n1"
         },
         "n5": {
@@ -81,7 +81,7 @@ fixed_nodenet_data = """{
                 567,
                 118
             ],
-            "type": "Concept",
+            "type": "Pipe",
             "uid": "n2"
         },
         "n3": {
@@ -94,7 +94,7 @@ fixed_nodenet_data = """{
                 367,
                 296
             ],
-            "type": "Concept",
+            "type": "Pipe",
             "uid": "n3"
         },
         "n6": {
@@ -122,7 +122,7 @@ fixed_nodenet_data = """{
                 568,
                 298
             ],
-            "type": "Concept",
+            "type": "Pipe",
             "uid": "n4"
         },
         "n7": {

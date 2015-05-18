@@ -38,7 +38,7 @@ def set_logging_levels():
 
 
 def pytest_addoption(parser):
-    parser.addoption("--engine", action="store", default=["dict_engine", "theano_engine"],
+    parser.addoption("--engine", action="store", default="dict_engine,theano_engine",
         help="The engine that should be used for this testrun.")
 
 

@@ -708,8 +708,8 @@ def test_autoalign(fixed_nodenet):
 def test_copy_nodes(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node('Nodespace', 'Root', name='copy')
-    a1 = netapi.get_node('A1')
-    a2 = netapi.get_node('A2')
+    a1 = netapi.get_node('n1')
+    a2 = netapi.get_node('n2')
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
     assert a2 in mapping

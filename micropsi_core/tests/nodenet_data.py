@@ -2,46 +2,46 @@
 fixed_nodenet_data = """{
     "uid": "fixed_test_nodenet",
     "links": {
-        "B1:sub:gen:B2": {
+        "n3:sub:gen:n4": {
             "certainty": 1,
             "source_gate_name": "sub",
-            "source_node_uid": "B1",
-            "target_node_uid": "B2",
+            "source_node_uid": "n3",
+            "target_node_uid": "n4",
             "target_slot_name": "gen",
-            "uid": "B1:sub:gen:B2",
+            "uid": "n3:sub:gen:n4",
             "weight": 1
         },
-        "A1:por:gen:A2": {
+        "n1:por:gen:n2": {
             "certainty": 1,
             "source_gate_name": "por",
-            "source_node_uid": "A1",
-            "target_node_uid": "A2",
+            "source_node_uid": "n1",
+            "target_node_uid": "n2",
             "target_slot_name": "gen",
-            "uid": "A1:por:gen:A2",
+            "uid": "n1:por:gen:n2",
             "weight": 1
         },
-        "S:gen:gen:B1": {
+        "n5:gen:gen:n3": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node_uid": "S",
-            "target_node_uid": "B1",
+            "source_node_uid": "n5",
+            "target_node_uid": "n3",
             "target_slot_name": "gen",
-            "uid": "S:gen:gen:B1",
+            "uid": "n5:gen:gen:n3",
             "weight": 1
         },
-        "S:gen:gen:A1": {
+        "n5:gen:gen:n1": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node_uid": "S",
-            "target_node_uid": "A1",
+            "source_node_uid": "n5",
+            "target_node_uid": "n1",
             "target_slot_name": "gen",
-            "uid": "S:gen:gen:A1",
+            "uid": "n5:gen:gen:n1",
             "weight": 1
         }
     },
     "name": "fixed",
     "nodes": {
-        "A1": {
+        "n1": {
             "activation": 0,
             "index": 2,
             "name": "A1",
@@ -52,12 +52,12 @@ fixed_nodenet_data = """{
                 115
             ],
             "type": "Concept",
-            "uid": "A1"
+            "uid": "n1"
         },
-        "S": {
+        "n5": {
             "activation": 0,
             "index": 1,
-            "name": "",
+            "name": "S",
             "parameters": {
                 "datasource": "brightness_l"
             },
@@ -67,9 +67,9 @@ fixed_nodenet_data = """{
                 138
             ],
             "type": "Sensor",
-            "uid": "S"
+            "uid": "n5"
         },
-        "A2": {
+        "n2": {
             "activation": 0,
             "index": 4,
             "name": "A2",
@@ -82,12 +82,12 @@ fixed_nodenet_data = """{
                 118
             ],
             "type": "Concept",
-            "uid": "A2"
+            "uid": "n2"
         },
-        "B1": {
+        "n3": {
             "activation": 0,
             "index": 3,
-            "name": "",
+            "name": "B1",
             "parameters": {},
             "parent_nodespace": "Root",
             "position": [
@@ -95,12 +95,12 @@ fixed_nodenet_data = """{
                 296
             ],
             "type": "Concept",
-            "uid": "B1"
+            "uid": "n3"
         },
-        "ACTA": {
+        "n6": {
             "activation": 0,
             "index": 6,
-            "name": "",
+            "name": "ACTA",
             "parameters": {
                 "type": "por"
             },
@@ -110,12 +110,12 @@ fixed_nodenet_data = """{
                 103
             ],
             "type": "Activator",
-            "uid": "ACTA"
+            "uid": "n6"
         },
-        "B2": {
+        "n4": {
             "activation": 0,
             "index": 5,
-            "name": "",
+            "name": "B2",
             "parameters": {},
             "parent_nodespace": "Root",
             "position": [
@@ -123,12 +123,12 @@ fixed_nodenet_data = """{
                 298
             ],
             "type": "Concept",
-            "uid": "B2"
+            "uid": "n4"
         },
-        "ACTB": {
+        "n7": {
             "activation": 0,
             "index": 7,
-            "name": "",
+            "name": "ACTB",
             "parameters": {
                 "type": "sub"
             },
@@ -138,7 +138,7 @@ fixed_nodenet_data = """{
                 336
             ],
             "type": "Activator",
-            "uid": "ACTB"
+            "uid": "n7"
         }
     }
 }"""

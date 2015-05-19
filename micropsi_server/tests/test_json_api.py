@@ -75,7 +75,7 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['worldadapter'] == 'Braitenberg'
 
 
-def test_set_node_state(app, test_nodenet):
+def test_set_node_state(app, test_nodenet, node):
     response = app.post_json('/rpc/set_node_state', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -86,7 +86,7 @@ def test_set_node_state(app, test_nodenet):
     assert response.json_body['data']['nodes']['N1']['state'] == {'foo': 'bar'}
 
 
-def test_set_node_activation(app, test_nodenet):
+def test_set_node_activation(app, test_nodenet, node):
     response = app.post_json('/rpc/set_node_activation', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -156,7 +156,7 @@ def test_step_simulation(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 1
 
 
-def test_get_current_state(app, test_nodenet, test_world):
+def test_get_current_state(app, test_nodenet, test_world, node):
     from time import sleep
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -233,7 +233,7 @@ def test_save_nodenet(app, test_nodenet, test_world):
     app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet)
 
 
-def test_export_nodenet(app, test_nodenet):
+def test_export_nodenet(app, test_nodenet, node):
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     data = json.loads(response.json_body['data'])
@@ -241,7 +241,7 @@ def test_export_nodenet(app, test_nodenet):
     assert data['nodes']['N1']['type'] == 'Concept'
 
 
-def test_import_nodenet(app, test_nodenet):
+def test_import_nodenet(app, test_nodenet, node):
     app.set_auth()
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
@@ -258,7 +258,7 @@ def test_import_nodenet(app, test_nodenet):
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
 
 
-def test_merge_nodenet(app, test_nodenet):
+def test_merge_nodenet(app, test_nodenet, node):
     app.set_auth()
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
@@ -531,7 +531,7 @@ def test_export_monitor_data_all(app, test_nodenet):
     assert response.json_body['data'] == {}
 
 
-def test_add_gate_monitor(app, test_nodenet):
+def test_add_gate_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -551,7 +551,7 @@ def test_add_gate_monitor(app, test_nodenet):
     assert response.json_body['data']['values'] == {}
 
 
-def test_add_slot_monitor(app, test_nodenet):
+def test_add_slot_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -572,7 +572,7 @@ def test_add_slot_monitor(app, test_nodenet):
     assert response.json_body['data']['values'] == {}
 
 
-def test_add_link_monitor(app, test_nodenet):
+def test_add_link_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_link_monitor', params={
         'nodenet_uid': test_nodenet,
         'source_node_uid': 'N1',
@@ -611,7 +611,7 @@ def test_add_custom_monitor(app, test_nodenet):
     assert response.json_body['data']['name'] == 'nodecount'
 
 
-def test_remove_monitor(app, test_nodenet):
+def test_remove_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -629,7 +629,7 @@ def test_remove_monitor(app, test_nodenet):
     assert uid not in response.json_body['data']
 
 
-def test_clear_monitor(app, test_nodenet):
+def test_clear_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -643,7 +643,7 @@ def test_clear_monitor(app, test_nodenet):
     assert_success(response)
 
 
-def test_get_monitor_data(app, test_nodenet):
+def test_get_monitor_data(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -666,7 +666,7 @@ def test_get_monitor_data(app, test_nodenet):
 ##
 ###################################################
 
-def test_get_nodespace_list(app, test_nodenet):
+def test_get_nodespace_list(app, test_nodenet, node):
     response = app.get_json('/rpc/get_nodespace_list(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     assert response.json_body['data']['Root']['name'] == 'Root'
@@ -674,7 +674,7 @@ def test_get_nodespace_list(app, test_nodenet):
     assert 'N1' in response.json_body['data']['Root']['nodes']
 
 
-def test_get_nodespace(app, test_nodenet):
+def test_get_nodespace(app, test_nodenet, node):
     response = app.post_json('/rpc/get_nodespace', params={
         'nodenet_uid': test_nodenet,
         'nodespace': 'Root',
@@ -685,7 +685,7 @@ def test_get_nodespace(app, test_nodenet):
     assert 'N1' in response.json_body['data']['nodes']
 
 
-def test_get_node(app, test_nodenet):
+def test_get_node(app, test_nodenet, node):
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
     assert_success(response)
     assert response.json_body['data']['type'] == 'Concept'
@@ -705,7 +705,7 @@ def test_add_node(app, test_nodenet):
     assert response.json_body['data'] == 'N2'
 
 
-def test_clone_nodes(app, test_nodenet):
+def test_clone_nodes(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/clone_nodes', params={
         'nodenet_uid': test_nodenet,
@@ -723,7 +723,7 @@ def test_clone_nodes(app, test_nodenet):
     assert link['target_node_uid'] == node['uid']
 
 
-def test_set_node_position(app, test_nodenet):
+def test_set_node_position(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_node_position', params={
         'nodenet_uid': test_nodenet,
@@ -735,7 +735,7 @@ def test_set_node_position(app, test_nodenet):
     assert response.json_body['data']['position'] == [42, 23]
 
 
-def test_set_node_name(app, test_nodenet):
+def test_set_node_name(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_node_name', params={
         'nodenet_uid': test_nodenet,
@@ -747,7 +747,7 @@ def test_set_node_name(app, test_nodenet):
     assert response.json_body['data']['name'] == 'changed'
 
 
-def test_delete_node(app, test_nodenet):
+def test_delete_node(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/delete_node', params={
         'nodenet_uid': test_nodenet,
@@ -811,7 +811,7 @@ def test_set_node_parameters(app, test_nodenet):
     assert response.json_body['data']['parameters']['type'] == 'sub'
 
 
-def test_get_gatefunction(app, test_nodenet):
+def test_get_gatefunction(app, test_nodenet, node):
     response = app.post_json('/rpc/get_gatefunction', params={
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -821,7 +821,7 @@ def test_get_gatefunction(app, test_nodenet):
     assert response.json_body['data'] == 'identity'
 
 
-def test_set_gatefunction(app, test_nodenet):
+def test_set_gatefunction(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_gatefunction', params={
         'nodenet_uid': test_nodenet,
@@ -846,7 +846,7 @@ def test_get_available_gatefunctions(app, test_nodenet):
     assert 'absolute' in funcs
 
 
-def test_set_gate_parameters(app, test_nodenet):
+def test_set_gate_parameters(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_gate_parameters', params={
         'nodenet_uid': test_nodenet,
@@ -916,7 +916,7 @@ def test_bind_datatarget_to_actor(app, test_nodenet):
     assert response.json_body['data']['parameters']['datatarget'] == 'engine_l'
 
 
-def test_add_link(app, test_nodenet):
+def test_add_link(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/add_link', params={
         'nodenet_uid': test_nodenet,
@@ -934,7 +934,7 @@ def test_add_link(app, test_nodenet):
     assert uid in data['links']
 
 
-def test_set_link_weight(app, test_nodenet):
+def test_set_link_weight(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_link_weight', params={
         'nodenet_uid': test_nodenet,
@@ -950,7 +950,7 @@ def test_set_link_weight(app, test_nodenet):
     assert data['links']['N1:gen:gen:N1']['weight'] == 0.345
 
 
-def test_delete_link(app, test_nodenet):
+def test_delete_link(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/delete_link', params={
         'nodenet_uid': test_nodenet,
@@ -987,7 +987,7 @@ def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['name'] == 'Testnode'
 
 
-def test_user_prompt_response(app, test_nodenet):
+def test_user_prompt_response(app, test_nodenet, node):
     response = app.post_json('/rpc/user_prompt_response', {
         'nodenet_uid': test_nodenet,
         'node_uid': 'N1',
@@ -1099,7 +1099,7 @@ def foobar(netapi, quatsch=23):
     assert data == 23
 
 
-def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
+def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, node):
     app.set_auth()
     from micropsi_core.nodenet.node import Nodetype
     with open(nodetype_def, 'w') as fp:

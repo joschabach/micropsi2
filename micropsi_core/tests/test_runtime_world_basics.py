@@ -105,9 +105,7 @@ def test_set_object_properties(test_world):
 
 def test_set_agent_properties(test_world, test_nodenet):
     world = runtime.worlds[test_world]
-    nodenet = runtime.get_nodenet(test_nodenet)
-    nodenet.world = world
-    runtime.load_nodenet(test_nodenet)
+    runtime.set_nodenet_properties(test_nodenet, worldadapter='Braitenberg', world_uid=test_world)
     runtime.set_worldagent_properties(test_world, test_nodenet, position=(5, 5))
     assert world.agents[test_nodenet].position == (5, 5)
     assert world.data['agents'][test_nodenet]['position'] == (5, 5)

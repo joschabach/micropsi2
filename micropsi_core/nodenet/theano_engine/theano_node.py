@@ -160,7 +160,7 @@ def get_string_node_type(type, nativemodules=None):
 
 
 def get_numerical_gatefunction_type(type):
-    if type == "identity":
+    if type == "identity" or type is None:
         return GATE_FUNCTION_IDENTITY
     elif type == "absolute":
         return GATE_FUNCTION_ABSOLUTE

@@ -174,7 +174,7 @@ def test_get_current_state(app, test_nodenet, test_world, node):
     response = app.post_json('/rpc/get_current_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {
-            'nodespace': 'Root',
+            'nodespace': None,
             'step': -1,
         },
         'monitors': {
@@ -677,7 +677,7 @@ def test_get_nodespace_list(app, test_nodenet, node):
 def test_get_nodespace(app, test_nodenet, node):
     response = app.post_json('/rpc/get_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root',
+        'nodespace': None,
         'include_links': True,
         'step': -1,
     })
@@ -697,7 +697,7 @@ def test_add_node(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Register',
         'position': [23, 42],
-        'nodespace': "Root",
+        'nodespace': None,
         'uid': "N2",
         'name': 'N2'
     })
@@ -711,7 +711,7 @@ def test_clone_nodes(app, test_nodenet, node):
         'nodenet_uid': test_nodenet,
         'node_uids': ['N1'],
         'clone_mode': 'all',
-        'nodespace': 'Root',
+        'nodespace': None,
         'offset': [23, 23]
     })
     assert_success(response)
@@ -764,13 +764,13 @@ def test_align_nodes(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Register',
         'position': [5, 5],
-        'nodespace': "Root",
+        'nodespace': None,
         'uid': "N2",
         'name': 'N2'
     })
     response = app.post_json('/rpc/align_nodes', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root'
+        'nodespace': None
     })
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N2")' % test_nodenet)
@@ -797,7 +797,7 @@ def test_set_node_parameters(app, test_nodenet):
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Activator',
-        'nodespace': 'Root',
+        'nodespace': None,
         'position': [23, 42],
         'uid': "A"
     })
@@ -884,7 +884,7 @@ def test_bind_datasource_to_sensor(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Sensor',
         'position': [23, 42],
-        'nodespace': 'Root',
+        'nodespace': None,
         'uid': 'S'
     })
     response = app.post_json('/rpc/bind_datasource_to_sensor', params={
@@ -903,7 +903,7 @@ def test_bind_datatarget_to_actor(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Actor',
         'position': [23, 42],
-        'nodespace': 'Root',
+        'nodespace': None,
         'uid': 'A'
     })
     response = app.post_json('/rpc/bind_datatarget_to_actor', params={
@@ -1116,7 +1116,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
         'nodenet_uid': test_nodenet,
         'type': 'Nodespace',
         'position': [23, 23],
-        'nodespace': 'Root',
+        'nodespace': None,
         'uid': 'NS1',
         'name': 'Test-Node-Space'
     })

@@ -13,7 +13,7 @@ def prepare(fixed_nodenet):
     netapi = nodenet.netapi
     netapi.delete_node(netapi.get_node("n6"))
     netapi.delete_node(netapi.get_node("n7"))
-    source = netapi.create_node("Register", "Root", "Source")
+    source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
     nodenet.step()
@@ -23,22 +23,22 @@ def prepare(fixed_nodenet):
 def add_directional_activators(fixed_nodenet):
     net = micropsi.get_nodenet(fixed_nodenet)
     netapi = net.netapi
-    sub_act = netapi.create_node("Activator", "Root", "sub-activator")
+    sub_act = netapi.create_node("Activator", None, "sub-activator")
     net.get_node(sub_act.uid).set_parameter("type", "sub")
 
-    sur_act = netapi.create_node("Activator", "Root", "sur-activator")
+    sur_act = netapi.create_node("Activator", None, "sur-activator")
     net.get_node(sur_act.uid).set_parameter("type", "sur")
 
-    por_act = netapi.create_node("Activator", "Root", "por-activator")
+    por_act = netapi.create_node("Activator", None, "por-activator")
     net.get_node(por_act.uid).set_parameter("type", "por")
 
-    ret_act = netapi.create_node("Activator", "Root", "ret-activator")
+    ret_act = netapi.create_node("Activator", None, "ret-activator")
     net.get_node(ret_act.uid).set_parameter("type", "ret")
 
-    cat_act = netapi.create_node("Activator", "Root", "cat-activator")
+    cat_act = netapi.create_node("Activator", None, "cat-activator")
     net.get_node(cat_act.uid).set_parameter("type", "cat")
 
-    exp_act = netapi.create_node("Activator", "Root", "exp-activator")
+    exp_act = netapi.create_node("Activator", None, "exp-activator")
     net.get_node(exp_act.uid).set_parameter("type", "exp")
 
     return sub_act, sur_act, por_act, ret_act, cat_act, exp_act
@@ -47,7 +47,7 @@ def add_directional_activators(fixed_nodenet):
 def test_node_pipe_logic_subtrigger(fixed_nodenet):
     # test a resting classifier, expect sub to be activated
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_head = netapi.create_node("Pipe", None, "Head")
 
     netapi.link(source, "gen", n_head, "sub", 1)
     net.step()
@@ -58,9 +58,9 @@ def test_node_pipe_logic_subtrigger(fixed_nodenet):
 def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
     # test a resting classifier, expect no activation
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
 
@@ -72,9 +72,9 @@ def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
 def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
     # test partial success of a classifier (fuzzyness)
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
 
@@ -94,9 +94,9 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
 def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
     # test fuzzyness with one node failing
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
 
@@ -116,10 +116,10 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
 def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
     # test a resting classifier, expect no activation
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
-    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
+    n_c = netapi.create_node("Pipe", None, "C")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
@@ -132,12 +132,12 @@ def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
 def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
     # test partial success of a classifier (fuzzyness)
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_b = netapi.create_node("Pipe", None, "B")
     n_b.set_parameter("wait", 100)
-    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_c = netapi.create_node("Pipe", None, "C")
     n_c.set_parameter("wait", 100)
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
@@ -165,10 +165,10 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
 def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
     # test fuzzyness with one node failing
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
-    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
+    n_c = netapi.create_node("Pipe", None, "C")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
@@ -195,10 +195,10 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
 def test_node_pipe_logic_two_script(fixed_nodenet):
     # test whether scripts work
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_b = netapi.create_node("Pipe", None, "B")
     n_b.set_parameter("wait", 100)
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
@@ -246,12 +246,12 @@ def test_node_pipe_logic_two_script(fixed_nodenet):
 def test_node_pipe_logic_three_script(fixed_nodenet):
     # test whether scripts work
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_b = netapi.create_node("Pipe", None, "B")
     n_b.set_parameter("wait", 100)
-    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_c = netapi.create_node("Pipe", None, "C")
     n_c.set_parameter("wait", 100)
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
@@ -337,16 +337,16 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
 def test_node_pipe_logic_alternatives(fixed_nodenet):
     # create a script with alternatives, let one fail, one one succeed
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
-    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_head = netapi.create_node("Pipe", None, "Head")
+    n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_b = netapi.create_node("Pipe", None, "B")
     n_b.set_parameter("wait", 100)
-    n_c = netapi.create_node("Pipe", "Root", "C")
+    n_c = netapi.create_node("Pipe", None, "C")
     n_c.set_parameter("wait", 100)
-    n_b_a1 = netapi.create_node("Pipe", "Root", "B-A1")
+    n_b_a1 = netapi.create_node("Pipe", None, "B-A1")
     n_b_a1.set_parameter("wait", 100)
-    n_b_a2 = netapi.create_node("Pipe", "Root", "B-A1")
+    n_b_a2 = netapi.create_node("Pipe", None, "B-A1")
     n_b_a2.set_parameter("wait", 100)
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
@@ -445,11 +445,11 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
 def test_node_pipe_logic_timeout_fail(fixed_nodenet):
     # test whether scripts work
     net, netapi, source = prepare(fixed_nodenet)
-    n_head = netapi.create_node("Pipe", "Root", "Head")
+    n_head = netapi.create_node("Pipe", None, "Head")
     n_head.set_parameter("wait", 100)
-    n_a = netapi.create_node("Pipe", "Root", "A")
+    n_a = netapi.create_node("Pipe", None, "A")
     n_a.set_parameter("wait", 100)
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_b = netapi.create_node("Pipe", None, "B")
     n_b.set_parameter("wait", 5)
     n_b.set_parameter("expectation", 0.8)
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
@@ -506,18 +506,18 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
 def test_node_pipe_logic_feature_binding(fixed_nodenet):
     # check if the same feature can be checked and bound twice
     net, netapi, source = prepare(fixed_nodenet)
-    schema = netapi.create_node("Pipe", "Root", "Schema")
-    element1 = netapi.create_node("Pipe", "Root", "Element1")
-    element2 = netapi.create_node("Pipe", "Root", "Element2")
+    schema = netapi.create_node("Pipe", None, "Schema")
+    element1 = netapi.create_node("Pipe", None, "Element1")
+    element2 = netapi.create_node("Pipe", None, "Element2")
     netapi.link_with_reciprocal(schema, element1, "subsur")
     netapi.link_with_reciprocal(schema, element2, "subsur")
 
-    concrete_feature1 = netapi.create_node("Pipe", "Root", "ConcreteFeature1")
-    concrete_feature2 = netapi.create_node("Pipe", "Root", "ConcreteFeature2")
+    concrete_feature1 = netapi.create_node("Pipe", None, "ConcreteFeature1")
+    concrete_feature2 = netapi.create_node("Pipe", None, "ConcreteFeature2")
     netapi.link_with_reciprocal(element1, concrete_feature1, "subsur")
     netapi.link_with_reciprocal(element2, concrete_feature2, "subsur")
 
-    abstract_feature = netapi.create_node("Pipe", "Root", "AbstractFeature")
+    abstract_feature = netapi.create_node("Pipe", None, "AbstractFeature")
     netapi.link_with_reciprocal(concrete_feature1, abstract_feature, "catexp")
     netapi.link_with_reciprocal(concrete_feature2, abstract_feature, "catexp")
 
@@ -541,8 +541,8 @@ def test_node_pipe_logic_feature_binding(fixed_nodenet):
 def test_node_pipe_logic_search_sub(fixed_nodenet):
     # check if sub-searches work
     net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "subsur")
 
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
@@ -561,8 +561,8 @@ def test_node_pipe_logic_search_sub(fixed_nodenet):
 def test_node_pipe_logic_search_sur(fixed_nodenet):
     # check if sur-searches work
     net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "subsur")
 
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
@@ -581,8 +581,8 @@ def test_node_pipe_logic_search_sur(fixed_nodenet):
 def test_node_pipe_logic_search_por(fixed_nodenet):
     # check if por-searches work
     net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "porret")
 
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
@@ -601,8 +601,8 @@ def test_node_pipe_logic_search_por(fixed_nodenet):
 def test_node_pipe_logic_search_ret(fixed_nodenet):
     # check if ret-searches work
     net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "porret")
 
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
@@ -621,8 +621,8 @@ def test_node_pipe_logic_search_ret(fixed_nodenet):
 def test_node_pipe_logic_search_cat(fixed_nodenet):
     # check if cat-searches work
     net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "catexp")
 
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)
@@ -641,8 +641,8 @@ def test_node_pipe_logic_search_cat(fixed_nodenet):
 def test_node_pipe_logic_search_exp(fixed_nodenet):
     # check if exp-searches work
     net, netapi, source = prepare(fixed_nodenet)
-    n_a = netapi.create_node("Pipe", "Root", "A")
-    n_b = netapi.create_node("Pipe", "Root", "B")
+    n_a = netapi.create_node("Pipe", None, "A")
+    n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_a, n_b, "catexp")
 
     sub_act, sur_act, por_act, ret_act, cat_act, exp_act = add_directional_activators(fixed_nodenet)

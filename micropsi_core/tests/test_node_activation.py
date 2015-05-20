@@ -11,11 +11,11 @@ from micropsi_core import runtime as micropsi
 def prepare(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     netapi = nodenet.netapi
-    source = netapi.create_node("Register", "Root", "Source")
+    source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
     nodenet.step()
-    register = netapi.create_node("Register", "Root")
+    register = netapi.create_node("Register", None)
     netapi.link(source, "gen", register, "gen")
     return nodenet, netapi, source, register
 
@@ -75,7 +75,7 @@ def test_gate_arithmetics_amplification_and_threshold(fixed_nodenet):
 def test_gate_arithmetics_directional_activator_amplification(fixed_nodenet):
     # set maximum and threshold with a directional activator in place
     net, netapi, source, register = prepare(fixed_nodenet)
-    genactivator = netapi.create_node("Activator", "Root")
+    genactivator = netapi.create_node("Activator", None)
     genactivator.set_parameter('type', 'gen')
     netapi.link(source, "gen", genactivator, "gen", 5)
     register.set_gate_parameter("gen", "maximum", 10)
@@ -87,7 +87,7 @@ def test_gate_arithmetics_directional_activator_amplification(fixed_nodenet):
 def test_gate_arithmetics_directional_activator_muting(fixed_nodenet):
     # have the directional activator mute the node
     net, netapi, source, register = prepare(fixed_nodenet)
-    genactivator = netapi.create_node("Activator", "Root")
+    genactivator = netapi.create_node("Activator", None)
     genactivator.set_parameter('type', 'gen')
     netapi.link(source, "gen", genactivator, "gen", 0)
     register.set_gate_parameter("gen", "maximum", 10)
@@ -99,7 +99,7 @@ def test_gate_arithmetics_directional_activator_muting(fixed_nodenet):
 def test_gate_arithmetics_directional_activator_threshold(fixed_nodenet):
     # have the directional activator amplify alpha above threshold
     net, netapi, source, register = prepare(fixed_nodenet)
-    genactivator = netapi.create_node("Activator", "Root")
+    genactivator = netapi.create_node("Activator", None)
     genactivator.set_parameter('type', 'gen')
     netapi.link(source, "gen", genactivator, "gen", 2)
     register.set_gate_parameter("gen", "maximum", 10)

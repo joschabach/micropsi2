@@ -76,7 +76,7 @@ def test_user_prompt(fixed_nodenet):
 
 
 def test_nodespace_removal(fixed_nodenet):
-    res, uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace="Root", name="testspace", uid='ns1')
+    res, uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100,100], nodespace=None, name="testspace", uid='ns1')
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100,100], nodespace=uid, name="sub1", uid='sub1')
     res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100,200], nodespace=uid, name="sub2", uid='sub2')
     micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1)
@@ -194,7 +194,7 @@ def test_clone_nodes_internal_links(fixed_nodenet):
 def test_clone_nodes_to_new_nodespace(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
 
-    micropsi.add_node(fixed_nodenet, 'Nodespace', [100, 100], nodespace="Root", name="testspace", uid='ns1')
+    micropsi.add_node(fixed_nodenet, 'Nodespace', [100, 100], nodespace=None, name="testspace", uid='ns1')
 
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n1', 'n2'], 'internal', nodespace='ns1')
 

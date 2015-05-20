@@ -11,40 +11,40 @@ __date__ = '29.10.12'
 
 
 def prepare_nodenet(test_nodenet):
-    micropsi.add_node(test_nodenet, "Concept", (200, 250), "Root", state=None, uid="node_a", name="A")
-    micropsi.add_node(test_nodenet, "Concept", (500, 350), "Root", state=None, uid="node_b", name="B")
-    micropsi.add_node(test_nodenet, "Concept", (300, 150), "Root", state=None, uid="node_c", name="C")
-    micropsi.add_node(test_nodenet, "Sensor", (200, 450), "Root", state=None, uid="node_s", name="S")
+    micropsi.add_node(test_nodenet, "Concept", (200, 250), None, state=None, uid="node_a", name="A")
+    micropsi.add_node(test_nodenet, "Concept", (500, 350), None, state=None, uid="node_b", name="B")
+    micropsi.add_node(test_nodenet, "Concept", (300, 150), None, state=None, uid="node_c", name="C")
+    micropsi.add_node(test_nodenet, "Sensor", (200, 450), None, state=None, uid="node_s", name="S")
 
 
 def test_add_node(test_nodenet):
     micropsi.load_nodenet(test_nodenet)
     # make sure nodenet is empty
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     try:
         for i in nodespace["nodes"]:
             micropsi.delete_node(test_nodenet, i)
     except:
         pass
 
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace.get("nodes", [])) == 0
     assert len(nodespace.get("links", [])) == 0
-    micropsi.add_node(test_nodenet, "Concept", (200, 250), "Root", state=None, uid="node_a", name="A")
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    micropsi.add_node(test_nodenet, "Concept", (200, 250), None, state=None, uid="node_a", name="A")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 1
     node1 = nodespace["nodes"]["node_a"]
     assert node1["name"] == "A"
     assert node1["position"] == (200, 250)
 
-    micropsi.add_node(test_nodenet, "Concept", (500, 350), "Root", state=None, uid="node_b", name="B")
-    micropsi.add_node(test_nodenet, "Concept", (300, 150), "Root", state=None, uid="node_c", name="C")
-    micropsi.add_node(test_nodenet, "Sensor", (200, 450), "Root", state=None, uid="node_s", name="S")
+    micropsi.add_node(test_nodenet, "Concept", (500, 350), None, state=None, uid="node_b", name="B")
+    micropsi.add_node(test_nodenet, "Concept", (300, 150), None, state=None, uid="node_c", name="C")
+    micropsi.add_node(test_nodenet, "Sensor", (200, 450), None, state=None, uid="node_s", name="S")
 
 
 def test_get_nodespace(test_nodenet):
     prepare_nodenet(test_nodenet)
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 4
     node1 = nodespace["nodes"]["node_a"]
     assert node1["name"] == "A"
@@ -62,7 +62,7 @@ def test_get_nodespace_list(test_nodenet):
 
 
 def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
-    micropsi.add_node(test_nodenet, "Nodespace", (200, 250), "Root", state=None, uid="foospace", name="Foospace")
+    micropsi.add_node(test_nodenet, "Nodespace", (200, 250), None, state=None, uid="foospace", name="Foospace")
     data = micropsi.get_nodespace_list(test_nodenet)
     assert data["foospace"]['nodes'] == {}
 
@@ -73,7 +73,7 @@ def test_add_link(test_nodenet):
     micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 1, 0.1)
     micropsi.add_link(test_nodenet, "node_c", "ret", "node_b", "gen", 1, 1)
 
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 4
     assert len(nodespace["links"]) == 2
     link1 = nodespace["links"]["node_a:por:gen:node_b"]
@@ -96,7 +96,7 @@ def test_delete_link(test_nodenet):
     success, link = micropsi.add_link(test_nodenet, "node_a", "por", "node_b", "gen", 0.5, 1)
     assert success
     micropsi.delete_link(test_nodenet, "node_a", "por", "node_b", "gen")
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["links"]) == 0
 
 
@@ -107,13 +107,13 @@ def test_save_nodenet(test_nodenet):
     # unload_nodenet
     micropsi.unload_nodenet(test_nodenet)
     try:
-        micropsi.get_nodenet_data(test_nodenet, "Root")
+        micropsi.get_nodenet_data(test_nodenet, None)
         assert False, "could fetch a Nodespace that should not have been in memory"
     except:
         pass
     # load_nodenet
     micropsi.load_nodenet(test_nodenet)
-    nodespace = micropsi.get_nodenet_data(test_nodenet, "Root")
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 4
     micropsi.delete_nodenet(test_nodenet)
 

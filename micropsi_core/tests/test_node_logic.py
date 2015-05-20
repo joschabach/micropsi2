@@ -38,7 +38,7 @@ class DummyWorldAdapter(WorldAdapter):
 def prepare(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     netapi = nodenet.netapi
-    source = netapi.create_node("Register", "Root", "Source")
+    source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1
     nodenet.step()
@@ -84,9 +84,9 @@ def test_node_logic_sum(fixed_nodenet):
     # propagate positive activation, expect sum
     net, netapi, source = prepare(fixed_nodenet)
 
-    reg_a = netapi.create_node("Register", "Root", "RegA")
-    reg_b = netapi.create_node("Register", "Root", "RegB")
-    reg_result = netapi.create_node("Register", "Root", "RegResult")
+    reg_a = netapi.create_node("Register", None, "RegA")
+    reg_b = netapi.create_node("Register", None, "RegB")
+    reg_result = netapi.create_node("Register", None, "RegResult")
 
     netapi.link(source, "gen", reg_a, "gen", 0.5)
     netapi.link(source, "gen", reg_b, "gen", 0.5)
@@ -102,10 +102,10 @@ def test_node_logic_cancel(fixed_nodenet):
     # propagate positive and negative activation, expect cancellation
     net, netapi, source = prepare(fixed_nodenet)
 
-    reg_a = netapi.create_node("Register", "Root", "RegA")
-    reg_b = netapi.create_node("Register", "Root", "RegB")
+    reg_a = netapi.create_node("Register", None, "RegA")
+    reg_b = netapi.create_node("Register", None, "RegB")
     reg_b.set_gate_parameter("gen", "threshold", -100)
-    reg_result = netapi.create_node("Register", "Root", "RegResult")
+    reg_result = netapi.create_node("Register", None, "RegResult")
 
     netapi.link(source, "gen", reg_a, "gen", 1)
     netapi.link(source, "gen", reg_b, "gen", -1)
@@ -121,10 +121,10 @@ def test_node_logic_store_and_forward(fixed_nodenet):
     # collect activation in one node, go forward only if both dependencies are met
     net, netapi, source = prepare(fixed_nodenet)
 
-    reg_a = netapi.create_node("Register", "Root", "RegA")
-    reg_b = netapi.create_node("Register", "Root", "RegB")
+    reg_a = netapi.create_node("Register", None, "RegA")
+    reg_b = netapi.create_node("Register", None, "RegB")
     reg_b.set_gate_parameter("gen", "threshold", -100)
-    reg_result = netapi.create_node("Register", "Root", "RegResult")
+    reg_result = netapi.create_node("Register", None, "RegResult")
     reg_b.set_gate_parameter("gen", "threshold", 1)
 
     netapi.link(source, "gen", reg_a, "gen")
@@ -155,7 +155,7 @@ def test_node_logic_sensor(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     world = add_dummyworld(fixed_nodenet)
 
-    register = netapi.create_node("Register", "Root")
+    register = netapi.create_node("Register", None)
     netapi.link_sensor(register, "test_source", "gen")
     world.step()
     net.step()
@@ -168,9 +168,9 @@ def test_node_logic_actor(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     world = add_dummyworld(fixed_nodenet)
 
-    register = netapi.create_node("Register", "Root")
+    register = netapi.create_node("Register", None)
     netapi.link_actor(source, "test_target", 0.5, 1, "gen", "gen")
-    actor = netapi.get_nodes("Root","test_target")[0]
+    actor = netapi.get_nodes(node_name_prefix="test_target")[0]
     netapi.link(actor, "gen", register, "gen")
     net.step()
     world.step()

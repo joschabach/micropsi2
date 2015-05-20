@@ -18,19 +18,19 @@ def test_copy_nodes():
     assert nodenet_uid1 in micropsi.nodenets
     assert nodenet_uid2 in micropsi.nodenets
 
-    micropsi.add_node(nodenet_uid1, "Nodespace", (100, 150), "Root", uid="ns1")
-    micropsi.add_node(nodenet_uid1, "Nodespace", (200, 150), "Root", uid="confl")
-    micropsi.add_node(nodenet_uid1, "Nodespace", (400, 150), "Root", uid="ns2")
-    micropsi.add_node(nodenet_uid2, "Nodespace", (200, 150), "Root", uid="confl")
+    micropsi.add_node(nodenet_uid1, "Nodespace", (100, 150), None, uid="ns1")
+    micropsi.add_node(nodenet_uid1, "Nodespace", (200, 150), None, uid="confl")
+    micropsi.add_node(nodenet_uid1, "Nodespace", (400, 150), None, uid="ns2")
+    micropsi.add_node(nodenet_uid2, "Nodespace", (200, 150), None, uid="confl")
 
-    micropsi.add_node(nodenet_uid1, "Register", (300, 140), "Root", uid="n1")
-    micropsi.add_node(nodenet_uid1, "Register", (300, 240), "Root", uid="n2")
-    micropsi.add_node(nodenet_uid1, "Register", (300, 340), "Root", uid="associated_node")
+    micropsi.add_node(nodenet_uid1, "Register", (300, 140), None, uid="n1")
+    micropsi.add_node(nodenet_uid1, "Register", (300, 240), None, uid="n2")
+    micropsi.add_node(nodenet_uid1, "Register", (300, 340), None, uid="associated_node")
     micropsi.add_node(nodenet_uid1, "Register", (400, 240), "ns1", uid="n3")
     micropsi.add_node(nodenet_uid1, "Register", (400, 240), "ns2", uid="n4")
     micropsi.add_node(nodenet_uid1, "Register", (100, 240), "confl", uid="n5")
-    micropsi.add_node(nodenet_uid2, "Register", (100, 140), "Root", uid="n1")
-    micropsi.add_node(nodenet_uid2, "Register", (150, 240), "Root", uid="nt2")
+    micropsi.add_node(nodenet_uid2, "Register", (100, 140), None, uid="n1")
+    micropsi.add_node(nodenet_uid2, "Register", (150, 240), None, uid="nt2")
 
     micropsi.add_link(nodenet_uid1, "n1", "gen", "n2", "gen")
     micropsi.add_link(nodenet_uid1, "n2", "gen", "n3", "gen")

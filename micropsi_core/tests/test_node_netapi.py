@@ -64,7 +64,7 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     #assert node.data['name'] == node.name
 
 
-def test_node_netapi_create_concept_node(fixed_nodenet):
+def test_node_netapi_create_pipe_node(fixed_nodenet):
     # test concept node generation
     from micropsi_core.nodenet.node import Nodetype
     net, netapi, source = prepare(fixed_nodenet)
@@ -74,6 +74,47 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node is not None
     assert node.parent_nodespace == netapi.get_nodespace(None).uid
     assert node.type == "Pipe"
+    assert node.uid is not None
+    assert node.nodenet is net
+    assert len(node.get_gate('gen').get_links()) == 0
+    assert len(node.get_gate('gen').activations) == 1
+    assert len(node.get_gate('sub').get_links()) == 0
+    assert len(node.get_gate('sub').activations) == 1
+    assert len(node.get_gate('sur').get_links()) == 0
+    assert len(node.get_gate('sur').activations) == 1
+    assert len(node.get_gate('por').get_links()) == 0
+    assert len(node.get_gate('por').activations) == 1
+    assert len(node.get_gate('ret').get_links()) == 0
+    assert len(node.get_gate('ret').activations) == 1
+    assert len(node.get_gate('cat').get_links()) == 0
+    assert len(node.get_gate('cat').activations) == 1
+    assert len(node.get_gate('exp').get_links()) == 0
+    assert len(node.get_gate('exp').activations) == 1
+
+    # frontend/persistency-oriented data dictionary test
+    assert node.data['uid'] == node.uid
+    for key in node.get_gate_types():
+        assert node.data['gate_parameters'][key] == node.nodetype.gate_defaults[key]
+        assert node.get_gate(key).parameters == node.nodetype.gate_defaults[key]
+    assert node.data['name'] == node.name
+    assert node.data['type'] == node.type
+
+    node = netapi.create_node("Pipe", None)
+    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    #assert node.data['name'] == node.name
+
+
+@pytest.mark.engine("dict_engine")
+def test_node_netapi_create_concept_node(fixed_nodenet):
+    # test concept node generation
+    from micropsi_core.nodenet.node import Nodetype
+    net, netapi, source = prepare(fixed_nodenet)
+    node = netapi.create_node("Concept", None, "TestName")
+
+    # basic logic tests
+    assert node is not None
+    assert node.parent_nodespace == netapi.get_nodespace(None).uid
+    assert node.type == "Concept"
     assert node.uid is not None
     assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
@@ -519,9 +560,6 @@ def test_node_netapi_link_with_reciprocal(fixed_nodenet):
     for link in n_b.get_gate("por").get_links():
         assert link.weight == 0.5
 
-    assert len(n_head.get_gate("cat").get_links()) == 1
-    assert len(n_head.get_slot("exp").get_links()) == 1
-
 
 @pytest.mark.engine("dict_engine")
 def test_node_netapi_link_with_reciprocal_and_concepts(fixed_nodenet):
@@ -535,6 +573,8 @@ def test_node_netapi_link_with_reciprocal_and_concepts(fixed_nodenet):
     netapi.link_with_reciprocal(n_d, n_e, "symref")
     assert len(n_d.get_gate("sym").get_links()) == 1
     assert len(n_d.get_slot("gen").get_links()) == 2
+    assert len(n_head.get_gate("cat").get_links()) == 1
+    assert len(n_head.get_slot("exp").get_links()) == 1
 
 
 def test_node_netapi_unlink(fixed_nodenet):

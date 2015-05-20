@@ -92,7 +92,7 @@ def test_nodespace_removal(fixed_nodenet):
     assert n2_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
     # assert that the links between the deleted nodes are gone
     linked_node_uids = []
-    for uid, link in micropsi.nodenets[fixed_nodenet].data['links']:
+    for uid, link in micropsi.nodenets[fixed_nodenet].data['links'].items():
         linked_node_uids.append(link['source_node_uid'])
         linked_node_uids.append(link['target_node_uid'])
     assert n1_uid not in linked_node_uids

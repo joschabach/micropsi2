@@ -366,7 +366,6 @@ class DictNode(NetEntity, Node):
             link.remove()
 
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
-        """Deletes all links originating from this node or ending at this node"""
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
             if gate_name is None or gate_name == gate_name_candidate:

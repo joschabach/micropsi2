@@ -112,7 +112,7 @@ def test_world(request):
     def fin():
         try:
             micropsi.delete_world(world_uid)
-        except KeyError:
+        except:
             pass  # world was deleted in test
     request.addfinalizer(fin)
     return world_uid

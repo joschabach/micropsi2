@@ -280,6 +280,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 self.simulated_data_entry_index = 0
                 self.simulated_data_entry_max = len(self.simulated_vision_data) - 1
 
+        if 'record_vision' in cfg['minecraft']:
+            self.record_file = open(cfg['minecraft']['record_vision'], 'a')
+
     def server_chat_message(self, event, data):
         if data.data and 'json_data' in data.data:
             if data.data['json_data'].get('translate') == 'tile.bed.noSleep':
@@ -614,13 +617,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
             patch_ = [0.0 if v <= 0 else 1.0 for v in patch]
 
             # normalize block type values
-            # subtract patch mean
+            # subtract the sample mean from each of its pixels
             mean = float(sum(patch_)) / len(patch_)
             patch_avg = [x - mean for x in patch_]  # TODO: throws error in ipython - why not here !?
 
             # truncate to +/- 3 standard deviations and scale to -1 and +1
+
             var = [x ** 2.0 for x in patch_avg]
-            std = (sum(var) / len(var)) ** 0.5
+            std = (sum(var) / len(var)) ** 0.5  # ASSUMPTION: all values of x are equally likely
             pstd = 3.0 * std
             # if block types are all the same number, eg. -1, std will be 0, therefore
             if pstd == 0.0:
@@ -632,6 +636,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
             patch_resc = [(1.0 + x) * 0.4 + 0.1 for x in patch_std]
 
         self.write_visual_input_to_datasources(patch_resc, self.patch_width, self.patch_height)
+
+        if 'record_vision' in cfg['minecraft']:
+            # do *not* record homogeneous and replayed patches
+            if not zero_patch and not self.simulated_vision:
+                if label == self.current_loco_node['name']:
+                    data = "{0}".format(",".join(str(b) for b in patch))
+                    self.record_file.write("%s,%s,%d,%d\n" % (data, label, pitch, yaw))
+                else:
+                    self.logger.warn('potentially corrupt data were ignored')
 
     def simulate_visual_input(self):
         # simulate actor that triggers change in visual input

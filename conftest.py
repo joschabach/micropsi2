@@ -137,5 +137,6 @@ def test_nodenet(request, test_world, engine):
 
 @pytest.fixture(scope="function")
 def node(request, test_nodenet):
-    micropsi.add_node(nn_uid, 'Concept', [10, 10], uid='N1', name='N1')
-    micropsi.add_link(nn_uid, 'N1', 'gen', 'N1', 'gen')
+    res, uid = micropsi.add_node(test_nodenet, 'Pipe', [10, 10], name='N1')
+    micropsi.add_link(test_nodenet, uid, 'gen', uid, 'gen')
+    return uid

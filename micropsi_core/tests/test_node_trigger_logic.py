@@ -6,8 +6,10 @@ Tests for node activation propagation and gate arithmetic
 """
 
 from micropsi_core import runtime as micropsi
+import pytest
 
 
+@pytest.mark.engine("dict_engine")
 def prepare(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     netapi = nodenet.netapi
@@ -20,6 +22,7 @@ def prepare(fixed_nodenet):
     return nodenet, netapi, source
 
 
+@pytest.mark.engine("dict_engine")
 def test_node_trigger_logic_good_after_five_steps(fixed_nodenet):
     # test a trigger that replies as expected after five steps
     net, netapi, source = prepare(fixed_nodenet)
@@ -45,6 +48,7 @@ def test_node_trigger_logic_good_after_five_steps(fixed_nodenet):
     assert n_trigger.get_gate("sur").activation == 0
 
 
+@pytest.mark.engine("dict_engine")
 def test_node_trigger_logic_good_after_five_steps_despite_timeout(fixed_nodenet):
     # test a trigger that succeeds beyond the timeout because the response matches
     net, netapi, source = prepare(fixed_nodenet)
@@ -70,6 +74,7 @@ def test_node_trigger_logic_good_after_five_steps_despite_timeout(fixed_nodenet)
     assert n_trigger.get_gate("sur").activation == 1
 
 
+@pytest.mark.engine("dict_engine")
 def test_node_trigger_logic_fail_after_five_steps(fixed_nodenet):
     # test a trigger that fails after the configured five steps
     net, netapi, source = prepare(fixed_nodenet)
@@ -91,6 +96,7 @@ def test_node_trigger_logic_fail_after_five_steps(fixed_nodenet):
     assert n_trigger.get_gate("sur").activation == -1
 
 
+@pytest.mark.engine("dict_engine")
 def test_node_trigger_logic_fail_after_five_steps_despite_response(fixed_nodenet):
     # test a trigger that fails after the configured five steps, despite some non-matching activation
     net, netapi, source = prepare(fixed_nodenet)
@@ -114,6 +120,7 @@ def test_node_trigger_logic_fail_after_five_steps_despite_response(fixed_nodenet
     assert n_trigger.get_gate("sur").activation == -1
 
 
+@pytest.mark.engine("dict_engine")
 def test_node_trigger_logic_good_after_fail(fixed_nodenet):
     # test a trigger that goes back to good after failing
     net, netapi, source = prepare(fixed_nodenet)
@@ -143,6 +150,7 @@ def test_node_trigger_logic_good_after_fail(fixed_nodenet):
     assert n_trigger.get_gate("sur").activation == 1
 
 
+@pytest.mark.engine("dict_engine")
 def test_trigger_bubbling(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     trigger = netapi.create_node("Trigger", "Root", "Trigger")
@@ -175,6 +183,7 @@ def test_trigger_bubbling(fixed_nodenet):
     assert trigger.get_gate('sur').activation == 1  # trigger keeps confirming
 
 
+@pytest.mark.engine("dict_engine")
 def test_trigger_instafail(fixed_nodenet):
     """ Triggers should not wait, if their sub-node indicates failing """
     net, netapi, source = prepare(fixed_nodenet)

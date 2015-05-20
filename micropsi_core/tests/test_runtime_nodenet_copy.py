@@ -10,9 +10,9 @@ __author__ = 'joscha'
 __date__ = '12.11.12'
 
 
-def test_copy_nodes():
-    success, nodenet_uid1 = micropsi.new_nodenet("Origin_Nodenet", worldadapter="Default", owner="tester")
-    success, nodenet_uid2 = micropsi.new_nodenet("Target_Nodenet", worldadapter="Default", owner="tester")
+def test_copy_nodes(engine):
+    success, nodenet_uid1 = micropsi.new_nodenet("Origin_Nodenet", engine=engine, worldadapter="Default", owner="tester")
+    success, nodenet_uid2 = micropsi.new_nodenet("Target_Nodenet", engine=engine, worldadapter="Default", owner="tester")
 
     # create a few nodes
     assert nodenet_uid1 in micropsi.nodenets

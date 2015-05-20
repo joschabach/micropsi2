@@ -38,10 +38,11 @@ def test_load_nodenet(app, test_nodenet):
     assert data['uid'] == test_nodenet
 
 
-def test_new_nodenet(app):
+def test_new_nodenet(app, engine):
     app.set_auth()
     response = app.post_json('/rpc/new_nodenet', params={
-        'name': 'FooBarTestNet'
+        'name': 'FooBarTestNet',
+        'engine': engine
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -258,12 +259,13 @@ def test_import_nodenet(app, test_nodenet, node):
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
 
 
-def test_merge_nodenet(app, test_nodenet, node):
+def test_merge_nodenet(app, test_nodenet, engine, node):
     app.set_auth()
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
     response = app.post_json('/rpc/new_nodenet', params={
         'name': 'ImporterNet',
+        'engine': engine,
         'worldadapter': 'Braitenberg',
         'owner': 'Pytest User'
     })

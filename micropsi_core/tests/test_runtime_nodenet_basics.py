@@ -13,8 +13,8 @@ __author__ = 'joscha'
 __date__ = '29.10.12'
 
 
-def test_new_nodenet(test_nodenet, resourcepath):
-    success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", worldadapter="Default", owner="tester")
+def test_new_nodenet(test_nodenet, resourcepath, engine):
+    success, nodenet_uid = micropsi.new_nodenet("Test_Nodenet", engine=engine, worldadapter="Default", owner="tester")
     assert success
     assert nodenet_uid != test_nodenet
     assert micropsi.get_available_nodenets("tester")[nodenet_uid].name == "Test_Nodenet"

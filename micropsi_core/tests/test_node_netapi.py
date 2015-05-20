@@ -169,8 +169,8 @@ def test_node_netapi_get_nodes(fixed_nodenet):
     node2 = netapi.create_node("Register", None, "TestName2")
 
     nodes = netapi.get_nodes(netapi.get_nodespace(None).uid)
-    assert node1 in nodes
-    assert node2 in nodes
+    assert node1.uid in [n.uid for n in nodes]
+    assert node2.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_by_name(fixed_nodenet):
@@ -181,8 +181,8 @@ def test_node_netapi_get_nodes_by_name(fixed_nodenet):
 
     nodes = netapi.get_nodes(netapi.get_nodespace(None).uid, node_name_prefix="TestName")
     assert len(nodes) == 2
-    assert node1 in nodes
-    assert node2 in nodes
+    assert node1.uid in [n.uid for n in nodes]
+    assert node2.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
@@ -194,8 +194,8 @@ def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
 
     nodes = netapi.get_nodes(nodespace.uid)
     assert len(nodes) == 2
-    assert node1 in nodes
-    assert node2 in nodes
+    assert node1.uid in [n.uid for n in nodes]
+    assert node2.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
@@ -207,7 +207,7 @@ def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
 
     nodes = netapi.get_nodes(nodespace.uid, "TestName")
     assert len(nodes) == 1
-    assert node2 in nodes
+    assert node2.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_in_gate_field(fixed_nodenet):
@@ -224,9 +224,9 @@ def test_node_netapi_get_nodes_in_gate_field(fixed_nodenet):
 
     nodes = netapi.get_nodes_in_gate_field(node1, "sub")
     assert len(nodes) == 3
-    assert node2 in nodes
-    assert node3 in nodes
-    assert node4 in nodes
+    assert node2.uid in [n.uid for n in nodes]
+    assert node3.uid in [n.uid for n in nodes]
+    assert node4.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_in_gate_field_all_links(fixed_nodenet):
@@ -243,8 +243,8 @@ def test_node_netapi_get_nodes_in_gate_field_all_links(fixed_nodenet):
 
     nodes = netapi.get_nodes_in_gate_field(node2)
     assert len(nodes) == 2
-    assert node1 in nodes
-    assert node3 in nodes
+    assert node1.uid in [n.uid for n in nodes]
+    assert node3.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_in_gate_field_with_limitations(fixed_nodenet):
@@ -261,8 +261,8 @@ def test_node_netapi_get_nodes_in_gate_field_with_limitations(fixed_nodenet):
 
     nodes = netapi.get_nodes_in_gate_field(node1, "sub", ["por"])
     assert len(nodes) == 2
-    assert node3 in nodes
-    assert node4 in nodes
+    assert node3.uid in [n.uid for n in nodes]
+    assert node4.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(fixed_nodenet):
@@ -279,7 +279,7 @@ def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(fixe
     netapi.link_with_reciprocal(node2, node3, "porret")
     nodes = netapi.get_nodes_in_gate_field(node1, "sub", ["por"], netapi.get_nodespace(None).uid)
     assert len(nodes) == 1
-    assert node3 in nodes
+    assert node3.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_in_slot_field(fixed_nodenet):
@@ -296,9 +296,9 @@ def test_node_netapi_get_nodes_in_slot_field(fixed_nodenet):
 
     nodes = netapi.get_nodes_in_slot_field(node1, "gen")
     assert len(nodes) == 3
-    assert node2 in nodes
-    assert node3 in nodes
-    assert node4 in nodes
+    assert node2.uid in [n.uid for n in nodes]
+    assert node3.uid in [n.uid for n in nodes]
+    assert node4.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_in_slot_field_all_links(fixed_nodenet):
@@ -316,9 +316,9 @@ def test_node_netapi_get_nodes_in_slot_field_all_links(fixed_nodenet):
 
     nodes = netapi.get_nodes_in_slot_field(node1)
     assert len(nodes) == 3
-    assert node2 in nodes
-    assert node3 in nodes
-    assert node4 in nodes
+    assert node2.uid in [n.uid for n in nodes]
+    assert node3.uid in [n.uid for n in nodes]
+    assert node4.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
@@ -336,8 +336,8 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
 
     nodes = netapi.get_nodes_in_slot_field(node1, "gen", None, netapi.get_nodespace(None).uid)
     assert len(nodes) == 2
-    assert node2 in nodes
-    assert node3 in nodes
+    assert node2.uid in [n.uid for n in nodes]
+    assert node3.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_active(fixed_nodenet):
@@ -360,13 +360,13 @@ def test_node_netapi_get_nodes_active(fixed_nodenet):
 
     nodes = netapi.get_nodes_active(netapi.get_nodespace(None).uid, "Register", 0.7, "gen")
     assert len(nodes) == 2
-    assert node1 in nodes
-    assert source in nodes
+    assert node1.uid in [n.uid for n in nodes]
+    assert source.uid in [n.uid for n in nodes]
 
     nodes = netapi.get_nodes_active(netapi.get_nodespace(None).uid, "Register")
     assert len(nodes) == 2
-    assert node1 in nodes
-    assert source in nodes
+    assert node1.uid in [n.uid for n in nodes]
+    assert source.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
@@ -389,7 +389,7 @@ def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
 
     nodes = netapi.get_nodes_active(nodespace.uid, "Register", 0.4)
     assert len(nodes) == 1
-    assert node4 in nodes
+    assert node4.uid in [n.uid for n in nodes]
 
 
 def test_node_netapi_delete_node(fixed_nodenet):
@@ -438,8 +438,8 @@ def test_node_netapi_link(fixed_nodenet):
     assert len(node2.get_gate("gen").get_links()) == 1
     for link in node2.get_gate("gen").get_links():
         # basic internal logic
-        assert link.source_node is node2
-        assert link.target_node is node1
+        assert link.source_node.uid == node2.uid
+        assert link.target_node.uid == node1.uid
         assert link.weight == 1
 
         found = False
@@ -469,8 +469,8 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
     assert len(node2.get_gate("gen").get_links()) == 1
     for link in node2.get_gate("gen").get_links():
         # basic internal logic
-        assert link.source_node is node2
-        assert link.target_node is node1
+        assert link.source_node.uid == node2.uid
+        assert link.target_node.uid == node1.uid
         assert link.weight == 0.8
 
         found = False

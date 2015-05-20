@@ -710,8 +710,6 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    if nodespace is None:
-        nodespace = nodenet.get_nodespace(None).uid
     if type == "Nodespace":
         uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
     else:

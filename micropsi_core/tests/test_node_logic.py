@@ -54,7 +54,6 @@ def add_dummyworld(fixed_nodenet):
 
     nodenet.world = micropsi.worlds[worlduid]
     nodenet.worldadapter = "DummyWorldAdapter"
-
     nodenet.world.register_nodenet("DummyWorldAdapter", nodenet)
     return nodenet.world
 
@@ -138,12 +137,12 @@ def test_node_logic_store_and_forward(fixed_nodenet):
     assert reg_result.get_gate("gen").activation == 1
 
 
-def test_node_logic_activators(fixed_nodenet ):
+def test_node_logic_activators(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
-    activator = netapi.create_node('Activator', 'Root')
+    activator = netapi.create_node('Activator', None)
     activator.set_parameter('type', 'gen')
     activator.activation = 1
-    netapi.link(source, 'gen', source, 'gen') # gen loop
+    netapi.link(source, 'gen', source, 'gen')  # gen loop
     net.step()  # activator has set activation
     assert source.activation > 0
     net.step()  # activator without activation, since no inbound links

@@ -493,15 +493,11 @@ def test_node_netapi_link_with_reciprocal(fixed_nodenet):
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     n_c = netapi.create_node("Pipe", None, "C")
-    n_d = netapi.create_node("Concept", None, "D")
-    n_e = netapi.create_node("Concept", None, "E")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
     netapi.link_with_reciprocal(n_a, n_b, "porret", 0.5)
     netapi.link_with_reciprocal(n_b, n_c, "porret", 0.5)
-    netapi.link_with_reciprocal(n_head, n_d, "catexp")
-    netapi.link_with_reciprocal(n_d, n_e, "symref")
 
     assert len(n_head.get_gate("sub").get_links()) == 3
     assert len(n_head.get_slot("sur").get_links()) == 3
@@ -526,6 +522,17 @@ def test_node_netapi_link_with_reciprocal(fixed_nodenet):
     assert len(n_head.get_gate("cat").get_links()) == 1
     assert len(n_head.get_slot("exp").get_links()) == 1
 
+
+@pytest.mark.engine("dict_engine")
+def test_node_netapi_link_with_reciprocal_and_concepts(fixed_nodenet):
+    # test linking pipe and concept nodes with reciprocal links
+    net, netapi, source = prepare(fixed_nodenet)
+    n_head = netapi.create_node("Pipe", None, "Head")
+
+    n_d = netapi.create_node("Concept", None, "D")
+    n_e = netapi.create_node("Concept", None, "E")
+    netapi.link_with_reciprocal(n_head, n_d, "catexp")
+    netapi.link_with_reciprocal(n_d, n_e, "symref")
     assert len(n_d.get_gate("sym").get_links()) == 1
     assert len(n_d.get_slot("gen").get_links()) == 2
 

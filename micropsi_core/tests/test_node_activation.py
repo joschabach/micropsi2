@@ -114,7 +114,7 @@ def test_gatefunction_sigmoid(fixed_nodenet):
     net, netapi, source, register = prepare(fixed_nodenet)
     register.set_gatefunction_name("gen", "sigmoid")
     net.step()
-    assert register.get_gate("gen").activation == sigmoid(1, 0, 0)
+    assert round(register.get_gate("gen").activation,5) == round(sigmoid(1, 0, 0),5)
 
 
 def test_gatefunction_none_is_identity(fixed_nodenet):

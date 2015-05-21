@@ -1369,7 +1369,9 @@ class TheanoNodenet(Nodenet):
 
         parent_id = 0
         if parent_uid is not None:
-             parent_id = tnodespace.from_id(parent_uid)
+            parent_id = tnodespace.from_id(parent_uid)
+        elif id != 1:
+            parent_id = 1
 
         uid = tnodespace.to_id(id)
 

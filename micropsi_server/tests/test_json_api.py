@@ -952,7 +952,7 @@ def test_set_link_weight(app, test_nodenet, node):
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
     for link in data['links'].values():
-        assert link['weight'] == 0.345
+        assert float("%.3f" % link['weight']) == 0.345
 
 
 def test_delete_link(app, test_nodenet, node):

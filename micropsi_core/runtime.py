@@ -849,8 +849,6 @@ def get_available_native_module_types(nodenet_uid):
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
     for key, value in parameters.items():
-        if value == '':
-            value = None
         nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
     return True
 

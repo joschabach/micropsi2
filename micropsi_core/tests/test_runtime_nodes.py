@@ -260,12 +260,12 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
     remove(path.join(resourcepath, 'nodefunctions.py'))
 
 
-def test_node_parameters_none(fixed_nodenet):
+def test_node_parameters_none_resets_to_default(fixed_nodenet):
     nodenet = micropsi.nodenets[fixed_nodenet]
     res, uid = micropsi.add_node(fixed_nodenet, 'Pipe', [30, 30], name='test')
     node = nodenet.netapi.get_node(uid)
     micropsi.set_node_parameters(fixed_nodenet, node.uid, {'expectation': '', 'wait': 0})
-    assert node.get_parameter('expectation') is None
+    assert node.get_parameter('expectation') == 1
     assert node.get_parameter('wait') == 0
 
 

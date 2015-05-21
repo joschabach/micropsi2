@@ -302,8 +302,11 @@ class DictNode(NetEntity, Node):
                 self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
-        if value == '':
-            value = None
+        if (value == '' or value is None):
+            if parameter in self.nodetype.parameter_defaults:
+                parameter = self.nodetype.parameter_defaults[parameter]
+            else:
+                parameter = None
         self.__parameters[parameter] = value
 
     def clone_parameters(self):

@@ -467,7 +467,7 @@ class TheanoNodenet(Nodenet):
         self.initialize_nodenet({})
 
     def initialize_stepoperators(self):
-        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self), TheanoPORRETDecay(self)]
+        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)] #, TheanoPORRETDecay(self)]
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, filename):

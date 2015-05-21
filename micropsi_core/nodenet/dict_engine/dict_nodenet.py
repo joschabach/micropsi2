@@ -162,7 +162,7 @@ STANDARD_NODETYPES = {
         "name": "Activator",
         "slottypes": ["gen"],
         "parameters": ["type"],
-        "parameter_values": {"type": ["gen", "por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
+        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
         "nodefunction_name": "activator"
     }
 }

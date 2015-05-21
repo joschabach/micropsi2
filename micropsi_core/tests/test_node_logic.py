@@ -159,7 +159,7 @@ def test_node_logic_sensor(fixed_nodenet):
     world.step()
     net.step()
     net.step()
-    assert register.get_gate("gen").activation == 0.7
+    assert round(register.get_gate("gen").activation, 1) == 0.7
 
 
 def test_node_logic_actor(fixed_nodenet):
@@ -175,4 +175,4 @@ def test_node_logic_actor(fixed_nodenet):
     world.step()
     assert world.test_target_value == 0.5
     net.step()
-    assert register.get_gate("gen").activation == 0.3
+    assert round(register.get_gate("gen").activation, 1) == 0.3

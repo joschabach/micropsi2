@@ -1,17 +1,17 @@
 
 import os
+import shutil
 import pytest
 import logging
 
 
 try:
-    os.makedirs('/tmp/micropsi_tests/worlds')
+    shutil.rmtree('/tmp/micropsi_tests/')
 except OSError:
     pass
-try:
-    os.makedirs('/tmp/micropsi_tests/nodenets')
-except OSError:
-    pass
+
+os.makedirs('/tmp/micropsi_tests/worlds')
+os.makedirs('/tmp/micropsi_tests/nodenets')
 
 
 # override config
@@ -78,7 +78,6 @@ def pytest_runtest_call(item):
 def pytest_runtest_teardown(item, nextitem):
     if nextitem is None:
         print("DELETING ALL STUFF")
-        import shutil
         shutil.rmtree(configuration.RESOURCE_PATH)
 
 

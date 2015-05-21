@@ -509,7 +509,7 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
         # basic internal logic
         assert link.source_node.uid == node2.uid
         assert link.target_node.uid == node1.uid
-        assert link.weight == 0.8
+        assert round(link.weight, 5) == 0.8
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
@@ -725,7 +725,7 @@ def test_set_gate_function(fixed_nodenet):
 
     net.step()
 
-    assert source.get_gate("gen").activation == sigmoid(0, 0, 1)
+    assert round(source.get_gate("gen").activation, 5) == round(sigmoid(0, 0, 1), 5)
     assert some_other_node_type.get_gate("gen").activation == 0
 
 
@@ -765,5 +765,3 @@ def test_copy_nodes(fixed_nodenet):
     assert mapping[a1].get_gate('por').get_links()[0].target_node == mapping[a2]
     assert a1.clone_parameters() == mapping[a1].clone_parameters()
     assert a1.get_gate_parameters() == mapping[a1].get_gate_parameters()
-
-# TODO: Add locking tests once we're sure we'll keep locking, and like it is implemented now

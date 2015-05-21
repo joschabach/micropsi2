@@ -206,6 +206,8 @@ class TheanoNodenet(Nodenet):
                                     # but for now, we manually track this property
     n_node_retlinked = None         # same for ret
 
+    porretdecay = 0.0001
+
     sparse = True
 
     __has_new_usages = True
@@ -465,7 +467,7 @@ class TheanoNodenet(Nodenet):
         self.initialize_nodenet({})
 
     def initialize_stepoperators(self):
-        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
+        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self), TheanoPORRETDecay(self)]
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, filename):

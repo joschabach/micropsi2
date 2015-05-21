@@ -140,13 +140,14 @@ def test_node_logic_store_and_forward(fixed_nodenet):
 def test_node_logic_activators(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     activator = netapi.create_node('Activator', None)
-    activator.set_parameter('type', 'gen')
+    activator.set_parameter('type', 'sub')
     activator.activation = 1
-    netapi.link(source, 'gen', source, 'gen')  # gen loop
-    net.step()  # activator has set activation
-    assert source.activation > 0
-    net.step()  # activator without activation, since no inbound links
-    assert source.activation == 0
+
+    testpipe = netapi.create_node("Pipe", None)
+    netapi.link(source, "gen", testpipe, "sub", 0)
+    net.step()
+    net.step()
+    assert testpipe.get_gate("sub").activation == 0
 
 
 def test_node_logic_sensor(fixed_nodenet):

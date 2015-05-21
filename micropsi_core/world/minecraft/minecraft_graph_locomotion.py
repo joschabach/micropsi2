@@ -204,7 +204,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     # Note: adapt patch width to be smaller than or equal to resolution x image dimension
     patch_width = 32      # width of a fovea patch  # 128 || 32
     patch_height = 32     # height of a patch  # 64 || 32
-    num_fov = 16          # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
+    num_fov = 6           # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -220,7 +220,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'fov_x': 0,
             'fov_y': 0,
             'eat': 0,
-            'sleep': 0
+            'sleep': 0,
+            'vision_simulator': 0
         }
 
         # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -248,7 +249,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         self.current_loco_node = None
 
-        self.last_slept = None
+        self.last_slept = 0
         self.sleeping = False
 
         self.spockplugin = self.world.spockplugin
@@ -269,8 +270,18 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.simulated_vision = True
             self.simulated_vision_datafile = cfg['minecraft']['simulate_vision']
             self.logger.info("Setting up minecraft_graph_locomotor to simulate vision from data file %s", self.simulated_vision_datafile)
+
+            import os
             import csv
+            self.simulated_vision_data = None
             self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
+            if os.path.getsize(self.simulated_vision_datafile) < (500 * 1024 * 1024):
+                self.simulated_vision_data = [[float(datapoint) for datapoint in sample] for sample in self.simulated_vision_datareader]
+                self.simulated_data_entry_index = 0
+                self.simulated_data_entry_max = len(self.simulated_vision_data) - 1
+
+        if 'record_vision' in cfg['minecraft']:
+            self.record_file = open(cfg['minecraft']['record_vision'], 'a')
 
     def server_chat_message(self, event, data):
         if data.data and 'json_data' in data.data:
@@ -300,27 +311,26 @@ class MinecraftGraphLocomotion(WorldAdapter):
         if self.waiting_for_spock:
             # by substitution: spock init is considered done, when its client has a position unlike
             # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
-            if self.spockplugin.clientinfo.position['y'] != 0. \
-                    and self.spockplugin.clientinfo.position['x'] != 0:
+            if not self.simulated_vision:
+                if self.spockplugin.clientinfo.position['y'] != 0. \
+                        and self.spockplugin.clientinfo.position['x'] != 0:
+                    self.waiting_for_spock = False
+                    x = int(self.spockplugin.clientinfo.position['x'])
+                    y = int(self.spockplugin.clientinfo.position['y'])
+                    z = int(self.spockplugin.clientinfo.position['z'])
+                    for k, v in self.loco_nodes.items():
+                        if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
+                            self.current_loco_node = self.loco_nodes[k]
+
+                    self.last_slept = self.spockplugin.world.age
+                    if self.current_loco_node is None:
+                        # bot is outside our graph, teleport to a random graph location to get started.
+                        target = random.choice(list(self.loco_nodes.keys()))
+                        self.locomote(target)
+                    # self.locomote(self.village_uid)
+            else:
                 self.waiting_for_spock = False
-                x = int(self.spockplugin.clientinfo.position['x'])
-                y = int(self.spockplugin.clientinfo.position['y'])
-                z = int(self.spockplugin.clientinfo.position['z'])
-                for k, v in self.loco_nodes.items():
-                    if abs(x - v['x']) <= self.tp_tolerance and abs(y - v['y']) <= self.tp_tolerance and abs(z - v['z']) <= self.tp_tolerance:
-                        self.current_loco_node = self.loco_nodes[k]
-
-                self.last_slept = self.spockplugin.world.age
-                if self.current_loco_node is None:
-                    # bot is outside our graph, teleport to a random graph location to get started.
-                    target = random.choice(list(self.loco_nodes.keys()))
-                    self.locomote(target)
-                # self.locomote(self.village_uid)
-
         else:
-
-            if not (self.spockplugin.is_connected()):
-                return
 
             # reset self.datatarget_feedback
             for k in self.datatarget_feedback.keys():
@@ -331,114 +341,120 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 else:
                     self.datatarget_feedback[k] = 0.
 
-            # reset self.datasources
-            # for k in self.datasources.keys():
-            #     if k != 'hack_situation' and k != 'temperature':
-            #         self.datasources[k] = 0.
-
-            # change pitch and yaw every x world steps to increase sensory variation
-            # < ensures some stability to enable learning in the autoencoder
-            if self.world.current_step % 5 == 0:
-                # for patches pitch = 10 and yaw = random.randint(-10,10) were used
-                # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
-                self.spockplugin.clientinfo.position['pitch'] = 10
-                self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
-                self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
-                self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
-                self.datatarget_feedback['pitch'] = 1.0
-                self.datatarget_feedback['yaw'] = 1.0
-
-            orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
-            self.datatarget_feedback['orientation'] = 1.0
-            # self.datatargets['orientation'] = 0
-
-            # sample all the time
-            # update fovea sensors, get sensory input, provide action feedback
-            # make sure fovea datasources don't go below 0.
-            self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
-            self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
             if not self.simulated_vision:
+
+                if not self.spockplugin.is_connected():
+                    return
+
+                # reset self.datasources
+                # for k in self.datasources.keys():
+                #     if k != 'hack_situation' and k != 'temperature':
+                #         self.datasources[k] = 0.
+
+                # change pitch and yaw every x world steps to increase sensory variation
+                # < ensures some stability to enable learning in the autoencoder
+                if self.world.current_step % 5 == 0:
+                    # for patches pitch = 10 and yaw = random.randint(-10,10) were used
+                    # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
+                    self.spockplugin.clientinfo.position['pitch'] = 10
+                    self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
+                    self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
+                    self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
+                    self.datatarget_feedback['pitch'] = 1.0
+                    self.datatarget_feedback['yaw'] = 1.0
+
+                #
+                orientation = self.datatargets['orientation']  # x_axis + 360 / orientation  degrees
+                self.datatarget_feedback['orientation'] = 1.0
+                # self.datatargets['orientation'] = 0
+
+                # sample all the time
+                # update fovea sensors, get sensory input, provide action feedback
+                # make sure fovea datasources don't go below 0.
+                self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
+                self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
                 self.get_visual_input(self.datasources['fov_x'], self.datasources['fov_y'], loco_label)
+
+                # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
+                if self.datatargets['fov_x'] > 0.0:
+                    self.datatarget_feedback['fov_x'] = 1.0
+                if self.datatargets['fov_y'] > 0.0:
+                    self.datatarget_feedback['fov_y'] = 1.0
+
+                # health and food are in [0;20]
+                self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
+                self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
+                if self.spockplugin.get_temperature() is not None:
+                    self.datasources['temperature'] = self.spockplugin.get_temperature()
+                self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
+
+                # compute fatigue: 0.2 per half a day:
+                # timeofday = self.spockplugin.world.time_of_day % 24000
+                no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
+                fatigue = no_sleep * 0.2
+                if self.sleeping:
+                    fatigue = 0
+                self.datasources['fatigue'] = fatigue
+
+                self.check_for_action_feedback()
+
+                # read locomotor values, trigger teleportation in the world, and provide action feedback
+                # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
+                if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
+                    # if the current node on the transition graph has the selected exit
+                    if self.current_loco_node['exit_one_uid'] is not None:
+                        self.register_action(
+                            'take_exit_one',
+                            partial(self.locomote, self.current_loco_node['exit_one_uid']),
+                            partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
+                        )
+                    else:
+                        self.datatarget_feedback['take_exit_one'] = -1.
+
+                if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
+                    if self.current_loco_node['exit_two_uid'] is not None:
+                        self.register_action(
+                            'take_exit_two',
+                            partial(self.locomote, self.current_loco_node['exit_two_uid']),
+                            partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
+                        )
+                    else:
+                        self.datatarget_feedback['take_exit_two'] = -1.
+
+                if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >=1:
+                    if self.current_loco_node['exit_three_uid'] is not None:
+                        self.register_action(
+                            'take_exit_three',
+                            partial(self.locomote, self.current_loco_node['exit_three_uid']),
+                            partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
+                        )
+                    else:
+                        self.datatarget_feedback['take_exit_three'] = -1.
+
+                if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
+                    if self.has_bread() and self.datasources['food'] < 1:
+                        self.register_action(
+                            'eat',
+                            self.spockplugin.eat,
+                            partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
+                        )
+                    else:
+                        self.datatarget_feedback['eat'] = -1.
+
+                if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
+                    if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
+                        # we're home and it's night, so we can sleep now:
+                        self.register_action('sleep', self.sleep, self.check_waking_up)
+                    else:
+                        self.datatarget_feedback['sleep'] = -1.
+
+                # update datatarget history
+                for k in self.datatarget_history.keys():
+                    self.datatarget_history[k] = self.datatargets[k]
+
             else:
                 self.simulate_visual_input()
-            # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
-            if self.datatargets['fov_x'] > 0.0:
-                self.datatarget_feedback['fov_x'] = 1.0
-            if self.datatargets['fov_y'] > 0.0:
-                self.datatarget_feedback['fov_y'] = 1.0
-
-            # health and food are in [0;20]
-            self.datasources['health'] = self.spockplugin.clientinfo.health['health'] / 20
-            self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
-            if self.spockplugin.get_temperature() is not None:
-                self.datasources['temperature'] = self.spockplugin.get_temperature()
-            self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
-
-            # compute fatigue: 0.2 per half a day:
-            # timeofday = self.spockplugin.world.time_of_day % 24000
-            no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
-            fatigue = no_sleep * 0.2
-            if self.sleeping:
-                fatigue = 0
-            self.datasources['fatigue'] = fatigue
-
-            self.check_for_action_feedback()
-
-            # read locomotor values, trigger teleportation in the world, and provide action feedback
-            # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-            if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
-                # if the current node on the transition graph has the selected exit
-                if self.current_loco_node['exit_one_uid'] is not None:
-                    self.register_action(
-                        'take_exit_one',
-                        partial(self.locomote, self.current_loco_node['exit_one_uid']),
-                        partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
-                    )
-                else:
-                    self.datatarget_feedback['take_exit_one'] = -1.
-
-            if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
-                if self.current_loco_node['exit_two_uid'] is not None:
-                    self.register_action(
-                        'take_exit_two',
-                        partial(self.locomote, self.current_loco_node['exit_two_uid']),
-                        partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
-                    )
-                else:
-                    self.datatarget_feedback['take_exit_two'] = -1.
-
-            if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
-                if self.current_loco_node['exit_three_uid'] is not None:
-                    self.register_action(
-                        'take_exit_three',
-                        partial(self.locomote, self.current_loco_node['exit_three_uid']),
-                        partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
-                    )
-                else:
-                    self.datatarget_feedback['take_exit_three'] = -1.
-
-            if self.datatargets['eat'] >= 1 and not self.datatarget_history['eat'] >= 1:
-                if self.has_bread() and self.datasources['food'] < 1:
-                    self.register_action(
-                        'eat',
-                        self.spockplugin.eat,
-                        partial(self.check_eat_feedback, self.spockplugin.clientinfo.health['food'])
-                    )
-                else:
-                    self.datatarget_feedback['eat'] = -1.
-
-            if self.datatargets['sleep'] >= 1 and not self.datatarget_history['sleep'] >= 1:
-                if self.check_movement_feedback(self.home_uid) and self.spockplugin.world.time_of_day % 24000 > 12500:
-                    # if self.datasources['fatigue'] > 0:
-                        # urge is only active at night, so we can sleep now:
-                    self.register_action('sleep', self.sleep, self.check_waking_up)
-                else:
-                    self.datatarget_feedback['sleep'] = -1.
-
-            # update datatarget history
-            for k in self.datatarget_history.keys():
-                self.datatarget_history[k] = self.datatargets[k]
 
     def locomote(self, target_loco_node_uid):
         new_loco_node = self.loco_nodes[target_loco_node_uid]
@@ -601,13 +617,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
             patch_ = [0.0 if v <= 0 else 1.0 for v in patch]
 
             # normalize block type values
-            # subtract patch mean
+            # subtract the sample mean from each of its pixels
             mean = float(sum(patch_)) / len(patch_)
             patch_avg = [x - mean for x in patch_]  # TODO: throws error in ipython - why not here !?
 
             # truncate to +/- 3 standard deviations and scale to -1 and +1
+
             var = [x ** 2.0 for x in patch_avg]
-            std = (sum(var) / len(var)) ** 0.5
+            std = (sum(var) / len(var)) ** 0.5  # ASSUMPTION: all values of x are equally likely
             pstd = 3.0 * std
             # if block types are all the same number, eg. -1, std will be 0, therefore
             if pstd == 0.0:
@@ -620,6 +637,15 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
         self.write_visual_input_to_datasources(patch_resc, self.patch_width, self.patch_height)
 
+        if 'record_vision' in cfg['minecraft']:
+            # do *not* record homogeneous and replayed patches
+            if not zero_patch and not self.simulated_vision:
+                if label == self.current_loco_node['name']:
+                    data = "{0}".format(",".join(str(b) for b in patch))
+                    self.record_file.write("%s,%s,%d,%d\n" % (data, label, pitch, yaw))
+                else:
+                    self.logger.warn('potentially corrupt data were ignored')
+
     def simulate_visual_input(self):
         # simulate actor that triggers change in visual input
         if self.world.current_step % 4 == 0:
@@ -627,20 +653,22 @@ class MinecraftGraphLocomotion(WorldAdapter):
             self.datatarget_feedback['vision_simulator'] = 1.0
         # change visual input
         elif self.world.current_step % 4 == 1:
-            line = next(self.simulated_vision_datareader, None)
-            if line is None:
-                self.logger.info("Simulating vision from data file, starting over...")
-                import csv
-                self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
-                line = next(self.simulated_vision_datareader)
-            line = [float(entry) for entry in line]
+            line = None
+            if self.simulated_vision_data is None:
+                line = next(self.simulated_vision_datareader, None)
+                if line is None:
+                    self.logger.info("Simulating vision from data file, starting over...")
+                    import csv
+                    self.simulated_vision_datareader = csv.reader(open(self.simulated_vision_datafile))
+                    line = next(self.simulated_vision_datareader)
+                line = [float(entry) for entry in line]
+            else:
+                self.simulated_data_entry_index += 1
+                if self.simulated_data_entry_index > self.simulated_data_entry_max:
+                    self.logger.info("Simulating vision from memory, starting over, %s entries.", self.simulated_data_entry_max + 1)
+                    self.simulated_data_entry_index = 0
+                line = self.simulated_vision_data[self.simulated_data_entry_index]
             self.write_visual_input_to_datasources(line, self.num_fov, self.num_fov)
-
-        # if self.world.current_step % 4 == 0:
-        #    entry_index = (self.world.current_step / 4) % len(self.simulated_vision_data)
-        #    if entry_index == 0:
-        #        self.logger.info("Simulating vision from data file with %i entries...", len(self.simulated_vision_data))
-        #    self.write_visual_input_to_datasources(self.simulated_vision_data[entry_index], self.num_fov, self.num_fov)
 
     def write_visual_input_to_datasources(self, patch, patch_width, patch_height):
         """

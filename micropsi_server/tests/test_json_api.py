@@ -38,10 +38,11 @@ def test_load_nodenet(app, test_nodenet):
     assert data['uid'] == test_nodenet
 
 
-def test_new_nodenet(app):
+def test_new_nodenet(app, engine):
     app.set_auth()
     response = app.post_json('/rpc/new_nodenet', params={
-        'name': 'FooBarTestNet'
+        'name': 'FooBarTestNet',
+        'engine': engine
     })
     assert_success(response)
     uid = response.json_body['data']
@@ -75,26 +76,26 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['worldadapter'] == 'Braitenberg'
 
 
-def test_set_node_state(app, test_nodenet):
+def test_set_node_state(app, test_nodenet, node):
     response = app.post_json('/rpc/set_node_state', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'state': {'foo': 'bar'}
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
-    assert response.json_body['data']['nodes']['N1']['state'] == {'foo': 'bar'}
+    assert response.json_body['data']['nodes'][node]['state'] == {'foo': 'bar'}
 
 
-def test_set_node_activation(app, test_nodenet):
+def test_set_node_activation(app, test_nodenet, node):
     response = app.post_json('/rpc/set_node_activation', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'activation': '0.734'
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
-    sheaves = response.json_body['data']['nodes']['N1']['sheaves']
+    sheaves = response.json_body['data']['nodes'][node]['sheaves']
     assert sheaves['default']['activation'] == 0.734
 
 
@@ -156,7 +157,7 @@ def test_step_simulation(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 1
 
 
-def test_get_current_state(app, test_nodenet, test_world):
+def test_get_current_state(app, test_nodenet, test_world, node):
     from time import sleep
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -165,7 +166,7 @@ def test_get_current_state(app, test_nodenet, test_world):
 
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate': 'sub',
     })
     monitor_uid = response.json_body['data']
@@ -174,7 +175,7 @@ def test_get_current_state(app, test_nodenet, test_world):
     response = app.post_json('/rpc/get_current_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {
-            'nodespace': 'Root',
+            'nodespace': None,
             'step': -1,
         },
         'monitors': {
@@ -233,15 +234,15 @@ def test_save_nodenet(app, test_nodenet, test_world):
     app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % test_nodenet)
 
 
-def test_export_nodenet(app, test_nodenet):
+def test_export_nodenet(app, test_nodenet, node):
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     data = json.loads(response.json_body['data'])
     assert data['name'] == 'Testnet'
-    assert data['nodes']['N1']['type'] == 'Concept'
+    assert data['nodes'][node]['type'] == 'Pipe'
 
 
-def test_import_nodenet(app, test_nodenet):
+def test_import_nodenet(app, test_nodenet, node):
     app.set_auth()
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
@@ -253,17 +254,18 @@ def test_import_nodenet(app, test_nodenet):
     uid = response.json_body['data']
     assert uid is not None
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % uid)
-    assert list(response.json_body['data']['nodes'].keys()) == ['N1']
+    assert list(response.json_body['data']['nodes'].keys()) == [node]
     assert response.json_body['data']['name'] == 'Testnet'
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
 
 
-def test_merge_nodenet(app, test_nodenet):
+def test_merge_nodenet(app, test_nodenet, engine, node):
     app.set_auth()
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
     response = app.post_json('/rpc/new_nodenet', params={
         'name': 'ImporterNet',
+        'engine': engine,
         'worldadapter': 'Braitenberg',
         'owner': 'Pytest User'
     })
@@ -531,10 +533,10 @@ def test_export_monitor_data_all(app, test_nodenet):
     assert response.json_body['data'] == {}
 
 
-def test_add_gate_monitor(app, test_nodenet):
+def test_add_gate_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate': 'sub',
         'sheaf': 'default'
     })
@@ -544,17 +546,17 @@ def test_add_gate_monitor(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'monitor_uid': uid
     })
-    assert response.json_body['data']['node_uid'] == 'N1'
+    assert response.json_body['data']['node_uid'] == node
     assert response.json_body['data']['target'] == 'sub'
     assert response.json_body['data']['type'] == 'gate'
     assert response.json_body['data']['sheaf'] == 'default'
     assert response.json_body['data']['values'] == {}
 
 
-def test_add_slot_monitor(app, test_nodenet):
+def test_add_slot_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'slot': 'gen',
         'name': 'Foobar'
     })
@@ -565,19 +567,19 @@ def test_add_slot_monitor(app, test_nodenet):
         'monitor_uid': uid
     })
     assert response.json_body['data']['name'] == 'Foobar'
-    assert response.json_body['data']['node_uid'] == 'N1'
+    assert response.json_body['data']['node_uid'] == node
     assert response.json_body['data']['target'] == 'gen'
     assert response.json_body['data']['type'] == 'slot'
     assert response.json_body['data']['sheaf'] == 'default'
     assert response.json_body['data']['values'] == {}
 
 
-def test_add_link_monitor(app, test_nodenet):
+def test_add_link_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_link_monitor', params={
         'nodenet_uid': test_nodenet,
-        'source_node_uid': 'N1',
+        'source_node_uid': node,
         'gate_type': 'gen',
-        'target_node_uid': 'N1',
+        'target_node_uid': node,
         'slot_type': 'gen',
         'property': 'weight',
         'name': 'LinkWeight'
@@ -589,9 +591,9 @@ def test_add_link_monitor(app, test_nodenet):
         'monitor_uid': uid
     })
     assert response.json_body['data']['name'] == 'LinkWeight'
-    assert response.json_body['data']['source_node_uid'] == 'N1'
+    assert response.json_body['data']['source_node_uid'] == node
     assert response.json_body['data']['gate_type'] == 'gen'
-    assert response.json_body['data']['target_node_uid'] == 'N1'
+    assert response.json_body['data']['target_node_uid'] == node
     assert response.json_body['data']['slot_type'] == 'gen'
     assert response.json_body['data']['property'] == 'weight'
 
@@ -611,10 +613,10 @@ def test_add_custom_monitor(app, test_nodenet):
     assert response.json_body['data']['name'] == 'nodecount'
 
 
-def test_remove_monitor(app, test_nodenet):
+def test_remove_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'slot': 'gen'
     })
     uid = response.json_body['data']
@@ -629,10 +631,10 @@ def test_remove_monitor(app, test_nodenet):
     assert uid not in response.json_body['data']
 
 
-def test_clear_monitor(app, test_nodenet):
+def test_clear_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'slot': 'gen'
     })
     uid = response.json_body['data']
@@ -643,10 +645,10 @@ def test_clear_monitor(app, test_nodenet):
     assert_success(response)
 
 
-def test_get_monitor_data(app, test_nodenet):
+def test_get_monitor_data(app, test_nodenet, node):
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate': 'sub'
     })
     uid = response.json_body['data']
@@ -666,29 +668,30 @@ def test_get_monitor_data(app, test_nodenet):
 ##
 ###################################################
 
-def test_get_nodespace_list(app, test_nodenet):
+def test_get_nodespace_list(app, test_nodenet, node):
     response = app.get_json('/rpc/get_nodespace_list(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert response.json_body['data']['Root']['name'] == 'Root'
-    assert response.json_body['data']['Root']['parent'] is None
-    assert 'N1' in response.json_body['data']['Root']['nodes']
+    rootid = list(response.json_body['data'].keys())[0]
+    assert response.json_body['data'][rootid]['name'] == 'Root'
+    assert response.json_body['data'][rootid]['parent'] is None
+    assert node in response.json_body['data'][rootid]['nodes']
 
 
-def test_get_nodespace(app, test_nodenet):
+def test_get_nodespace(app, test_nodenet, node):
     response = app.post_json('/rpc/get_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root',
+        'nodespace': None,
         'include_links': True,
         'step': -1,
     })
     assert_success(response)
-    assert 'N1' in response.json_body['data']['nodes']
+    assert node in response.json_body['data']['nodes']
 
 
-def test_get_node(app, test_nodenet):
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
+def test_get_node(app, test_nodenet, node):
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
     assert_success(response)
-    assert response.json_body['data']['type'] == 'Concept'
+    assert response.json_body['data']['type'] == 'Pipe'
 
 
 def test_add_node(app, test_nodenet):
@@ -697,21 +700,22 @@ def test_add_node(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Register',
         'position': [23, 42],
-        'nodespace': "Root",
-        'uid': "N2",
+        'nodespace': None,
         'name': 'N2'
     })
     assert_success(response)
-    assert response.json_body['data'] == 'N2'
+    uid = response.json_body['data']
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
+    assert response.json_body['data']['name'] == 'N2'
 
 
-def test_clone_nodes(app, test_nodenet):
+def test_clone_nodes(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/clone_nodes', params={
         'nodenet_uid': test_nodenet,
-        'node_uids': ['N1'],
+        'node_uids': [node],
         'clone_mode': 'all',
-        'nodespace': 'Root',
+        'nodespace': None,
         'offset': [23, 23]
     })
     assert_success(response)
@@ -723,35 +727,35 @@ def test_clone_nodes(app, test_nodenet):
     assert link['target_node_uid'] == node['uid']
 
 
-def test_set_node_position(app, test_nodenet):
+def test_set_node_position(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_node_position', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'position': [42, 23]
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
     assert response.json_body['data']['position'] == [42, 23]
 
 
-def test_set_node_name(app, test_nodenet):
+def test_set_node_name(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_node_name', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'name': 'changed'
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
     assert response.json_body['data']['name'] == 'changed'
 
 
-def test_delete_node(app, test_nodenet):
+def test_delete_node(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/delete_node', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1'
+        'node_uid': node
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -764,23 +768,23 @@ def test_align_nodes(app, test_nodenet):
         'nodenet_uid': test_nodenet,
         'type': 'Register',
         'position': [5, 5],
-        'nodespace': "Root",
-        'uid': "N2",
+        'nodespace': None,
         'name': 'N2'
     })
+    uid = response.json_body['data']
     response = app.post_json('/rpc/align_nodes', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': 'Root'
+        'nodespace': None
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N2")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['position'] != [5, 5]
 
 
 def test_get_available_node_types(app, test_nodenet):
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert 'Concept' in response.json_body['data']
+    assert 'Pipe' in response.json_body['data']
     assert 'Register' in response.json_body['data']
     assert 'Sensor' in response.json_body['data']
 
@@ -797,42 +801,42 @@ def test_set_node_parameters(app, test_nodenet):
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Activator',
-        'nodespace': 'Root',
+        'nodespace': None,
         'position': [23, 42],
-        'uid': "A"
     })
+    uid = response.json_body['data']
     response = app.post_json('/rpc/set_node_parameters', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'A',
+        'node_uid': uid,
         'parameters': {'type': 'sub'}
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="A")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['parameters']['type'] == 'sub'
 
 
-def test_get_gatefunction(app, test_nodenet):
+def test_get_gatefunction(app, test_nodenet, node):
     response = app.post_json('/rpc/get_gatefunction', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate_type': 'gen'
     })
     assert_success(response)
     assert response.json_body['data'] == 'identity'
 
 
-def test_set_gatefunction(app, test_nodenet):
+def test_set_gatefunction(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_gatefunction', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate_type': 'gen',
         'gatefunction': 'sigmoid'
     })
     assert_success(response)
     response = app.post_json('/rpc/get_gatefunction', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate_type': 'gen',
     })
     assert response.json_body['data'] == 'sigmoid'
@@ -846,16 +850,16 @@ def test_get_available_gatefunctions(app, test_nodenet):
     assert 'absolute' in funcs
 
 
-def test_set_gate_parameters(app, test_nodenet):
+def test_set_gate_parameters(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_gate_parameters', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate_type': 'gen',
         'parameters': {'minimum': -2}
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="N1")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
     assert response.json_body['data']['gate_parameters']['gen']['minimum'] == -2
 
 
@@ -880,49 +884,49 @@ def test_get_available_datatargets(app, test_nodenet, test_world):
 
 def test_bind_datasource_to_sensor(app, test_nodenet):
     app.set_auth()
-    app.post_json('/rpc/add_node', params={
+    response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Sensor',
         'position': [23, 42],
-        'nodespace': 'Root',
-        'uid': 'S'
+        'nodespace': None,
     })
+    uid = response.json_body['data']
     response = app.post_json('/rpc/bind_datasource_to_sensor', params={
         'nodenet_uid': test_nodenet,
-        'sensor_uid': 'S',
+        'sensor_uid': uid,
         'datasource': 'brightness_l'
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="S")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['parameters']['datasource'] == 'brightness_l'
 
 
 def test_bind_datatarget_to_actor(app, test_nodenet):
     app.set_auth()
-    app.post_json('/rpc/add_node', params={
+    response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Actor',
         'position': [23, 42],
-        'nodespace': 'Root',
-        'uid': 'A'
+        'nodespace': None,
     })
+    uid = response.json_body['data']
     response = app.post_json('/rpc/bind_datatarget_to_actor', params={
         'nodenet_uid': test_nodenet,
-        'actor_uid': 'A',
+        'actor_uid': uid,
         'datatarget': 'engine_l'
     })
     assert_success(response)
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="A")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, uid))
     assert response.json_body['data']['parameters']['datatarget'] == 'engine_l'
 
 
-def test_add_link(app, test_nodenet):
+def test_add_link(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/add_link', params={
         'nodenet_uid': test_nodenet,
-        'source_node_uid': 'N1',
+        'source_node_uid': node,
         'gate_type': 'sub',
-        'target_node_uid': 'N1',
+        'target_node_uid': node,
         'slot_type': 'gen',
         'weight': 0.7
     })
@@ -934,29 +938,30 @@ def test_add_link(app, test_nodenet):
     assert uid in data['links']
 
 
-def test_set_link_weight(app, test_nodenet):
+def test_set_link_weight(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/set_link_weight', params={
         'nodenet_uid': test_nodenet,
-        'source_node_uid': "N1",
+        'source_node_uid': node,
         'gate_type': "gen",
-        'target_node_uid': "N1",
+        'target_node_uid': node,
         'slot_type': "gen",
         'weight': 0.345
     })
     assert_success(response)
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
-    assert data['links']['N1:gen:gen:N1']['weight'] == 0.345
+    for link in data['links'].values():
+        assert link['weight'] == 0.345
 
 
-def test_delete_link(app, test_nodenet):
+def test_delete_link(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/delete_link', params={
         'nodenet_uid': test_nodenet,
-        'source_node_uid': "N1",
+        'source_node_uid': node,
         'gate_type': "gen",
-        'target_node_uid': "N1",
+        'target_node_uid': node,
         'slot_type': "gen"
     })
     assert_success(response)
@@ -987,17 +992,17 @@ def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['name'] == 'Testnode'
 
 
-def test_user_prompt_response(app, test_nodenet):
+def test_user_prompt_response(app, test_nodenet, node):
     response = app.post_json('/rpc/user_prompt_response', {
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'values': {'foo': 'bar'},
         'resume_nodenet': True
     })
     assert_success(response)
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
-    assert data['nodes']['N1']['parameters']['foo'] == 'bar'
+    assert data['nodes'][node]['parameters']['foo'] == 'bar'
     assert data['is_active']
 
 
@@ -1099,9 +1104,8 @@ def foobar(netapi, quatsch=23):
     assert data == 23
 
 
-def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
+def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, node):
     app.set_auth()
-    from micropsi_core.nodenet.node import Nodetype
     with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
@@ -1112,24 +1116,25 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
-    app.post_json('/rpc/add_node', params={
+    response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Nodespace',
         'position': [23, 23],
-        'nodespace': 'Root',
-        'uid': 'NS1',
+        'nodespace': None,
         'name': 'Test-Node-Space'
     })
-    app.post_json('/rpc/add_node', params={
+    nodespace_uid = response.json_body['data']
+    response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Concept',
+        'type': 'Pipe',
         'position': [42, 42],
-        'nodespace': 'NS1',
-        'uid': 'N2'
+        'nodespace': nodespace_uid,
+        'name': 'N2'
     })
+    n2_uid = response.json_body['data']
     response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': 'N1',
+        'node_uid': node,
         'gate': 'gen',
         'name': 'Testmonitor'
     })
@@ -1149,7 +1154,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     monitor_data = response.json_body['data']
 
     assert data['monitors'][monitor_uid]['name'] == 'Testmonitor'
-    assert data['monitors'][monitor_uid]['node_uid'] == 'N1'
+    assert data['monitors'][monitor_uid]['node_uid'] == node
     assert data['monitors'][monitor_uid]['target'] == 'gen'
     assert data['monitors'][monitor_uid]['type'] == 'gate'
     assert data['monitors'][monitor_uid]['uid'] == monitor_uid
@@ -1157,40 +1162,40 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['monitors'][monitor_uid] == monitor_data
 
     # Nodes
-    response = app.get_json('/rpc/get_node(nodenet_uid="%s", node_uid="N1")' % test_nodenet)
+    response = app.get_json('/rpc/get_node(nodenet_uid="%s", node_uid="%s")' % (test_nodenet, node))
     node_data = response.json_body['data']
 
-    assert 'N1' in data['nodes']
-    assert 'N2' not in data['nodes']
-    assert 'NS1' not in data['nodes']
+    assert node in data['nodes']
+    assert n2_uid not in data['nodes']
+    assert nodespace_uid not in data['nodes']
 
     # gates
-    for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp', 'sym', 'ref']:
-        assert data['nodes']['N1']['gate_activations'][key]['default']['activation'] == 0
-        assert data['nodes']['N1']['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
-        assert data['nodes']['N1']['gate_functions'][key] == 'identity'
+    for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp']:
+        assert data['nodes'][node]['gate_activations'][key]['default']['activation'] == 0
+        assert key in data['nodes'][node]['gate_parameters']
+        assert data['nodes'][node]['gate_functions'][key] == 'identity'
 
-    assert data['nodes']['N1']['name'] == 'N1'
-    assert data['nodes']['N1']['parameters'] == {}
-    assert data['nodes']['N1']['parent_nodespace'] == 'Root'
-    assert data['nodes']['N1']['position'] == [10, 10]
-    assert data['nodes']['N1']['type'] == "Concept"
-    assert data['nodes']['N1'] == node_data
+    assert data['nodes'][node]['parameters']['expectation'] == 1
+    assert data['nodes'][node]['parameters']['wait'] == 10
+    assert data['nodes'][node]['parent_nodespace'] == 'Root'
+    assert data['nodes'][node]['position'] == [10, 10]
+    assert data['nodes'][node]['type'] == "Pipe"
+    assert data['nodes'][node] == node_data
 
     # Links
-    assert data['links']['N1:gen:gen:N1']['weight'] == 1
-    assert data['links']['N1:gen:gen:N1']['certainty'] == 1
-    assert data['links']['N1:gen:gen:N1']['source_node_uid'] == 'N1'
-    assert data['links']['N1:gen:gen:N1']['target_node_uid'] == 'N1'
-    assert data['links']['N1:gen:gen:N1']['source_gate_name'] == 'gen'
-    assert data['links']['N1:gen:gen:N1']['target_slot_name'] == 'gen'
-    #assert data['links']['N1:gen:gen:N1'] == link_data
+    for link in data['links'].values():
+        assert link['weight'] == 1
+        assert link['certainty'] == 1
+        assert link['source_node_uid'] == node
+        assert link['target_node_uid'] == node
+        assert link['source_gate_name'] == 'gen'
+        assert link['target_slot_name'] == 'gen'
 
     # Nodespaces
-    #assert data['nodespaces']['NS1']['index'] == 3
-    assert data['nodespaces']['NS1']['name'] == 'Test-Node-Space'
-    assert data['nodespaces']['NS1']['parent_nodespace'] == 'Root'
-    assert data['nodespaces']['NS1']['position'] == [23, 23]
+    # assert data['nodespaces'][nodespace_uid]['index'] == 3
+    assert data['nodespaces'][nodespace_uid]['name'] == 'Test-Node-Space'
+    # assert data['nodespaces'][nodespace_uid]['parent_nodespace'] == 'Root'
+    assert data['nodespaces'][nodespace_uid]['position'] == [23, 23]
 
     # Nodetypes
     response = app.get_json('/rpc/get_available_node_types(nodenet_uid="%s")' % test_nodenet)
@@ -1200,7 +1205,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
         assert 'gatetypes' not in data['nodetypes'][key]
         assert 'slottypes' not in data['nodetypes'][key]
 
-    for key in ['Concept', 'Pipe', 'Register', 'Script', 'Actor']:
+    for key in ['Pipe', 'Register', 'Script', 'Actor']:
         assert 'gatetypes' in data['nodetypes'][key]
         assert 'slottypes' in data['nodetypes'][key]
 
@@ -1230,4 +1235,3 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['version'] == 1
     assert data['world'] == 'WorldOfPain'
     assert data['worldadapter'] == 'Default'
-

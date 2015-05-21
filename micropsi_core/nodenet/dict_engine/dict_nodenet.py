@@ -506,6 +506,7 @@ class DictNodenet(Nodenet):
             self.__step += 1
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
+        nodespace_uid = self.get_nodespace(nodespace_uid).uid
         node = DictNode(
             self,
             nodespace_uid,
@@ -517,6 +518,7 @@ class DictNodenet(Nodenet):
         return node.uid
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
+        parent_uid = self.get_nodespace(parent_uid).uid
         nodespace = DictNodespace(self, parent_uid, position=position, name=name, uid=uid)
         return nodespace.uid
 

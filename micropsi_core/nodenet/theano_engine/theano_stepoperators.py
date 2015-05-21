@@ -57,13 +57,11 @@ class TheanoCalculate(Calculate):
 
     """
 
-    worldadapter = None
-    nodenet = None
     calculate = None
 
     def __init__(self, nodenet):
         self.nodenet = nodenet
-        self.worldadapter = nodenet.world
+        self.world = None
 
     def compile_theano_functions(self, nodenet):
         slots = nodenet.a_shifted
@@ -220,26 +218,26 @@ class TheanoCalculate(Calculate):
         self.calculate = theano.function([], None, updates=[(nodenet.a, gatefunctions), (nodenet.g_countdown, countdown)])
 
     def read_sensors_and_actuator_feedback(self):
-        if self.worldadapter is None:
+        if self.world is None:
             return
 
         datasource_to_value_map = {}
-        for datasource in self.worldadapter.get_available_datasources(self.nodenet.uid):
-            datasource_to_value_map[datasource] = self.worldadapter.get_datasource(self.nodenet.uid, datasource)
+        for datasource in self.world.get_available_datasources(self.nodenet.uid):
+            datasource_to_value_map[datasource] = self.world.get_datasource(self.nodenet.uid, datasource)
 
         datatarget_to_value_map = {}
-        for datatarget in self.worldadapter.get_available_datatargets(self.nodenet.uid):
-            datatarget_to_value_map[datatarget] = self.worldadapter.get_datatarget_feedback(self.nodenet.uid, datatarget)
+        for datatarget in self.world.get_available_datatargets(self.nodenet.uid):
+            datatarget_to_value_map[datatarget] = self.world.get_datatarget_feedback(self.nodenet.uid, datatarget)
 
         self.nodenet.set_sensors_and_actuator_feedback_to_values(datasource_to_value_map, datatarget_to_value_map)
 
     def write_actuators(self):
-        if self.worldadapter is None:
+        if self.world is None:
             return
 
         values_to_write = self.nodenet.read_actuators()
         for datatarget in values_to_write:
-            self.worldadapter.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
+            self.world.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
 
     def take_native_module_slot_snapshots(self):
         for uid, instance in self.nodenet.native_module_instances.items():
@@ -256,7 +254,7 @@ class TheanoCalculate(Calculate):
         self.nodenet.g_factor.set_value(g_factor, borrow=True)
 
     def execute(self, nodenet, nodes, netapi):
-
+        self.world = nodenet.world
         if nodenet.has_new_usages:
             self.compile_theano_functions(nodenet)
             nodenet.has_new_usages = False

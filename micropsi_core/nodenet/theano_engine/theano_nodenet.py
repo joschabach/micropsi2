@@ -930,7 +930,7 @@ class TheanoNodenet(Nodenet):
             parent_id = self.allocated_node_parents[id]
             return TheanoNode(self, tnodespace.to_id(parent_id), uid, self.allocated_nodes[id])
         else:
-            return None
+            raise KeyError("No node with id %s exists", uid)
 
     def get_node_uids(self):
         return [tnode.to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]

@@ -38,6 +38,13 @@ import logging
 
 from .micropsi_logger import MicropsiLogger
 
+from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
+
+try:
+    from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
+except ImportError:
+    pass
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 
@@ -262,13 +269,11 @@ def load_nodenet(nodenet_uid):
             engine = data.get('engine', 'dict_engine')
 
             if engine == 'dict_engine':
-                from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,
                     native_modules=filter_native_modules(engine))
             elif engine == 'theano_engine':
-                from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                 nodenets[nodenet_uid] = TheanoNodenet(
                     name=data.name, worldadapter=worldadapter,
                     world=world, owner=data.owner, uid=data.uid,

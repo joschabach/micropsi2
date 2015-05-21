@@ -313,6 +313,25 @@ class Node(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    @abstractmethod
+    def unlink_completely(self):
+        """
+        Deletes all links originating or ending at this node
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
+        """
+        Remove links originating from this node.
+        All parameters are optional and can be used to limit the links to be removed.
+        Parameters:
+            gate_name: Only delete links originating at the given gate at this node
+            target_node_uid: Only delete links ending at the node with the given uid
+            slot_name: Only delete links ending in the given slot atthe target node
+        """
+        pass  # pragma: no cover
+
     def get_gate_types(self):
         """
         Returns the types of gates existing in this node

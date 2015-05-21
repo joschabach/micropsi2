@@ -160,7 +160,7 @@ def get_string_node_type(type, nativemodules=None):
 
 
 def get_numerical_gatefunction_type(type):
-    if type == "identity":
+    if type == "identity" or type is None:
         return GATE_FUNCTION_IDENTITY
     elif type == "absolute":
         return GATE_FUNCTION_ABSOLUTE
@@ -434,6 +434,14 @@ class TheanoNode(Node):
             links.extend(self.get_slot(slottype).get_links())
         for link in links:
             self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
+
+    def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
+        for gate_name_candidate in self.nodetype.gatetypes:
+            if gate_name is None or gate_name == gate_name_candidate:
+                for link_candidate in self.get_gate(gate_name_candidate).get_links():
+                    if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
+                        if slot_name is None or slot_name == link_candidate.target_slot.type:
+                            self._nodenet.delete_link(self.uid, gate_name_candidate, link_candidate.target_node.uid, link_candidate.target_slot.type)
 
     def get_parameter(self, parameter):
         if self.type == "Sensor" and parameter == "datasource":

@@ -800,12 +800,12 @@ class TheanoNodenet(Nodenet):
                     data['position'],
                     name=data['name'],
                     uid=olduid,
-                    parameters=data['parameters'],
-                    gate_parameters=data['gate_parameters'],
-                    gate_functions=data['gate_functions'])
+                    parameters=data.get('parameters'),
+                    gate_parameters=data.get('gate_parameters'),
+                    gate_functions=data.get('gate_functions'))
                 uidmap[uid] = new_uid
                 node_proxy = self.get_node(new_uid)
-                for gatetype in data['gate_activations']:   # todo: implement sheaves
+                for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
                     node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
             else:
@@ -905,6 +905,8 @@ class TheanoNodenet(Nodenet):
         return uid in self.get_node_uids()
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
+
+        nodespace_uid = self.get_nodespace(nodespace_uid).uid
 
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
@@ -1167,6 +1169,8 @@ class TheanoNodenet(Nodenet):
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 
+        parent_uid = self.get_nodespace(parent_uid).uid
+
         # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
         if uid is None:
             id = 0
@@ -1188,9 +1192,7 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_nodespace = id
 
-        parent_id = 0
-        if parent_uid is not None:
-            parent_id = tnodespace.from_id(parent_uid)
+        parent_id = tnodespace.from_id(parent_uid)
         uid = tnodespace.to_id(id)
 
         self.allocated_nodespaces[id] = parent_id

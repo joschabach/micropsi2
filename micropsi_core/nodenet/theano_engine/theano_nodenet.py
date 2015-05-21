@@ -1343,8 +1343,6 @@ class TheanoNodenet(Nodenet):
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 
-        parent_uid = self.get_nodespace(parent_uid).uid
-
         # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
         if uid is None:
             id = 0
@@ -1369,7 +1367,10 @@ class TheanoNodenet(Nodenet):
 
         self.last_allocated_nodespace = id
 
-        parent_id = tnodespace.from_id(parent_uid)
+        parent_id = 0
+        if parent_uid is not None:
+             parent_id = tnodespace.from_id(parent_uid)
+
         uid = tnodespace.to_id(id)
 
         self.allocated_nodespaces[id] = parent_id

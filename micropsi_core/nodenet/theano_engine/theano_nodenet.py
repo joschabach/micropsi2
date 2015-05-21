@@ -778,7 +778,10 @@ class TheanoNodenet(Nodenet):
 
     def remove(self, filename):
         datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
-        os.remove(datafilename)
+        try:
+            os.remove(datafilename)
+        except IOError:
+            pass
         os.remove(filename)
 
     def initialize_nodenet(self, initfrom):

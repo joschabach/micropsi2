@@ -64,7 +64,7 @@ def test_node_pipe_logic_classifier_two_off(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
     assert n_head.get_gate("gen").activation == 0
 
@@ -76,17 +76,19 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
+    netapi.link(n_a, "sur", n_head, "sur", 0.5)
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
+    netapi.link(n_b, "sur", n_head, "sur", 0.5)
 
     netapi.link(source, "gen", n_a, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == 1 / 2
+    assert round(n_head.get_gate("gen").activation, 5) == 1 / 2
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
     assert n_head.get_gate("gen").activation == 1
 
@@ -98,17 +100,19 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
     n_a = netapi.create_node("Pipe", None, "A")
     n_b = netapi.create_node("Pipe", None, "B")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
+    netapi.link(n_a, "sur", n_head, "sur", 0.5)
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
+    netapi.link(n_b, "sur", n_head, "sur", 0.5)
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == - 1 / 2
+    assert round(n_head.get_gate("gen").activation, 5) == - 1 / 2
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
     assert n_head.get_gate("gen").activation == 0
 
@@ -124,7 +128,7 @@ def test_node_pipe_logic_classifier_three_off(fixed_nodenet):
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
     assert n_head.get_gate("gen").activation == 0
 
@@ -140,26 +144,29 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
     n_c = netapi.create_node("Pipe", None, "C")
     n_c.set_parameter("wait", 100)
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
+    netapi.link(n_a, "sur", n_head, "sur", 1/3)
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
+    netapi.link(n_b, "sur", n_head, "sur", 1/3)
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
+    netapi.link(n_c, "sur", n_head, "sur", 1/3)
 
     netapi.link(source, "gen", n_a, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == 1 / 3
+    assert round(n_head.get_gate("gen").activation, 5) == round(1 / 3, 5)
 
     netapi.link(source, "gen", n_c, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == 2 / 3
+    assert round(n_head.get_gate("gen").activation, 5) == round(2 / 3, 5)
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == 1
+    assert round(n_head.get_gate("gen").activation, 5) == 1
 
 
 def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
@@ -170,26 +177,29 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
     n_b = netapi.create_node("Pipe", None, "B")
     n_c = netapi.create_node("Pipe", None, "C")
     netapi.link_with_reciprocal(n_head, n_a, "subsur")
+    netapi.link(n_a, "sur", n_head, "sur", 1/3)
     netapi.link_with_reciprocal(n_head, n_b, "subsur")
+    netapi.link(n_b, "sur", n_head, "sur", 1/3)
     netapi.link_with_reciprocal(n_head, n_c, "subsur")
+    netapi.link(n_c, "sur", n_head, "sur", 1/3)
 
     netapi.link(source, "gen", n_a, "sur", -1)
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == - 1 / 3
+    assert round(n_head.get_gate("gen").activation, 5) == round(- 1 / 3, 5)
 
     netapi.link(source, "gen", n_c, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == 0
+    assert round(n_head.get_gate("gen").activation, 5) == 0
 
     netapi.link(source, "gen", n_b, "sur")
 
-    for i in range(1, 3):
+    for i in range(3):
         net.step()
-    assert n_head.get_gate("gen").activation == 1 / 3
+    assert round(n_head.get_gate("gen").activation, 5) == round(1 / 3, 5)
 
 
 def test_node_pipe_logic_two_script(fixed_nodenet):

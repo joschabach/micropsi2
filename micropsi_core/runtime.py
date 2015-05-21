@@ -874,11 +874,13 @@ def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
     nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
     return True
 
+
 def get_available_gatefunctions(nodenet_uid):
     """
     Returns a list of names of the available gatefunctions
     """
     return nodenets[nodenet_uid].get_available_gatefunctions()
+
 
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
@@ -889,12 +891,14 @@ def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
 
 def get_available_datasources(nodenet_uid):
     """Returns a list of available datasource types for the given nodenet."""
-    return worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datasources(nodenet_uid)
+    world_uid = nodenets[nodenet_uid].world.uid
+    return worlds[world_uid].get_available_datasources(nodenet_uid)
 
 
 def get_available_datatargets(nodenet_uid):
     """Returns a list of available datatarget types for the given nodenet."""
-    return worlds[_get_world_uid_for_nodenet_uid(nodenet_uid)].get_available_datatargets(nodenet_uid)
+    world_uid = nodenets[nodenet_uid].world.uid
+    return worlds[world_uid].get_available_datatargets(nodenet_uid)
 
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):

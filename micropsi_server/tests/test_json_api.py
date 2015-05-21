@@ -214,7 +214,7 @@ def test_revert_nodenet(app, test_nodenet, test_world):
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'Testnet'
-    assert data['worldadapter'] == 'Default'
+    assert data['worldadapter'] is None
 
 
 def test_save_nodenet(app, test_nodenet, test_world):
@@ -1233,5 +1233,5 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['current_step'] == 0  # TODO:
     assert 'step' not in data  # current_step && step?
     assert data['version'] == 1
-    assert data['world'] == 'WorldOfPain'
-    assert data['worldadapter'] == 'Default'
+    assert data['world'] is None
+    assert data['worldadapter'] is None

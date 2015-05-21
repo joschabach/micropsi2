@@ -1914,11 +1914,11 @@ function onMouseDown(event) {
                     clickIndex = i;
                     var gate = node.gates[node.gateIndexes[i]];
                     deselectAll();
+                    node.renderCompact = false;
                     selectNode(node.uid);
                     selectGate(node, gate);
                     showGateForm(node, gate);
                     if (isRightClick(event)) {
-                        deselectOtherNodes(node.uid);
                         var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
                         $('#gate_menu [data-add-monitor]').toggle(monitor == false);
                         $('#gate_menu [data-remove-monitor]').toggle(monitor != false);

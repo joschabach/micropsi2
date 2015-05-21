@@ -12,7 +12,6 @@ def prepare(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     netapi = nodenet.netapi
     netapi.delete_node(netapi.get_node("n6"))
-    netapi.delete_node(netapi.get_node("n7"))
     source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
     source.activation = 1

@@ -47,7 +47,6 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert node.parent_nodespace == root_ns.uid
     assert node.type == "Register"
     assert node.uid is not None
-    assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').activations) == 1
 
@@ -75,7 +74,6 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
     assert node.parent_nodespace == netapi.get_nodespace(None).uid
     assert node.type == "Pipe"
     assert node.uid is not None
-    assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
@@ -116,7 +114,6 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node.parent_nodespace == netapi.get_nodespace(None).uid
     assert node.type == "Concept"
     assert node.uid is not None
-    assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0

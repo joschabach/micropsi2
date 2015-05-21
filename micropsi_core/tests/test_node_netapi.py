@@ -762,6 +762,6 @@ def test_copy_nodes(fixed_nodenet):
     assert mapping[a2].parent_nodespace == nodespace.uid
     assert set(nodespace.get_known_ids()) == set([mapping[a1].uid, mapping[a2].uid])
     assert len(mapping[a1].get_slot('gen').get_links()) == 0  # incoming link from outside not copied
-    assert mapping[a1].get_gate('por').get_links()[0].target_node == mapping[a2]
+    assert mapping[a1].get_gate('por').get_links()[0].target_node.uid == mapping[a2].uid
     assert a1.clone_parameters() == mapping[a1].clone_parameters()
     assert a1.get_gate_parameters() == mapping[a1].get_gate_parameters()

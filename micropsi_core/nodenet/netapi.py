@@ -399,15 +399,24 @@ class NetAPI(object):
         Copys the given nodes into the target nodespace. Also copies the internal linkage
         between these nodes
         """
-        mapping = {}
+        uids = [node.uid for node in nodes]
+        uidmap = {}
         for node in nodes:
             new_uid = self.__nodenet.create_node(node.type, nodespace_uid, node.position, name=node.name, parameters=node.clone_parameters(), gate_parameters=node.get_gate_parameters())
-            mapping[node] = self.get_node(new_uid)
+            uidmap[node.uid] = new_uid
         for node in nodes:
             for g in node.get_gate_types():
                 for l in node.get_gate(g).get_links():
-                    if l.target_node in nodes:
-                        self.link(mapping[l.source_node], l.source_gate.type, mapping[l.target_node], l.target_slot.type, weight=l.weight, certainty=l.certainty)
+                    if l.target_node.uid in uids:
+                        self.link(self.get_node(uidmap[l.source_node.uid]),
+                                  l.source_gate.type,
+                                  self.get_node(uidmap[l.target_node.uid]),
+                                  l.target_slot.type,
+                                  weight=l.weight,
+                                  certainty=l.certainty)
+        mapping = {}
+        for node in nodes:
+            mapping[node] = self.get_node(uidmap[node.uid])
         return mapping
 
     def _step(self):

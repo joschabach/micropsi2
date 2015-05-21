@@ -817,7 +817,7 @@ function redrawNodeNet() {
 
 // like activation change, only put the node elsewhere and redraw the links
 function redrawNode(node, forceRedraw) {
-    if(nodeRedrawNeeded(node) || forceRedraw){
+    if(forceRedraw || nodeRedrawNeeded(node)){
         if(node.uid in nodeLayer.children){
             nodeLayer.children[node.uid].remove();
         }
@@ -1882,6 +1882,7 @@ function onMouseDown(event) {
                     deselectNode(nodeUid); // toggle
                 }
                 else if(clickedSelected && selected_node_count > 1 && isRightClick(event)){
+                    clickType = "node";
                     openMultipleNodesContextMenu(event.event);
                     return;
                 }
@@ -2487,17 +2488,24 @@ function openMultipleNodesContextMenu(event){
     var typecheck = null;
     var sametype = true;
     var node = null;
+    var compact = false;
     for(var uid in selection){
+        if(isCompact(nodes[uid])) {
+            compact = true;
+        }
         if(typecheck == null || typecheck == nodes[uid].type){
             typecheck = nodes[uid].type;
             node = nodes[uid];
         } else {
             sametype = false;
-            break;
         }
     }
     var menu = $('#multi_node_menu .nodenet_menu');
-    var html = '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
+    var html = '';
+    if(compact){
+        html += '<li><a href="">Expand</a></li><li class="divider"></li>';
+    }
+    html += '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
     if(sametype){
@@ -2535,16 +2543,21 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.html(getNodeLinkageContextMenuHTML(node));
+    var html = '';
+    if(isCompact(node)){
+        html += '<li><a href="">Expand</a></li><li class="divider"></li>';
+    }
+    html += getNodeLinkageContextMenuHTML(node);
     if(node.type == "Sensor"){
-        menu.append('<li><a href="#">Select datasource</li>');
+        html += '<li><a href="#">Select datasource</li>';
     }
     if(node.type == "Actor"){
-        menu.append('<li><a href="#">Select datatarget</li>');
+        html += '<li><a href="#">Select datatarget</li>';
     }
-    menu.append('<li><a href="#">Rename node</a></li>');
-    menu.append('<li><a href="#">Delete node</a></li>');
-    menu.append('<li data-copy-nodes><a href="#">Copy node</a></li>');
+    html  += '<li><a href="#">Rename node</a></li>' +
+             '<li><a href="#">Delete node</a></li>' +
+             '<li data-copy-nodes><a href="#">Copy node</a></li>';
+    menu.html(html);
     openContextMenu(menu_id, event);
 }
 
@@ -2569,30 +2582,6 @@ function handleContextMenu(event) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
             var autoalign = $el.attr("data-auto-align");
-            if(!type && !autoalign){
-                if(menuText == "Delete nodes"){
-                    deleteNodeHandler(clickOriginUid);
-                    return;
-                } else if($(event.target).attr('data-link-type') != undefined) {
-                    // multi node menu
-                    var linktype = $(event.target).attr('data-link-type');
-                    if (linktype) {
-                        var forwardlinktype = linktype;
-                        if(forwardlinktype.indexOf('/')){
-                            forwardlinktype = forwardlinktype.split('/')[0];
-                        }
-                        for(var uid in selection){
-                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
-                            createLinkHandler(uid, clickIndex, linktype);
-                        }
-                    } else {
-                        openLinkCreationDialog(path.name)
-                    }
-                    $el.parentsUntil('.dropdown-menu').dropdown('toggle');
-                } else {
-                    return false;
-                }
-            }
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2647,6 +2636,9 @@ function handleContextMenu(event) {
             break;
         case "node":
             switch (menuText) {
+                case "Delete nodes":
+                    deleteNodeHandler(clickOriginUid);
+                    break;
                 case "Rename node":
                     var nodeUid = clickOriginUid;
                     if (nodeUid in nodes) {
@@ -2674,18 +2666,25 @@ function handleContextMenu(event) {
                     target_select.html(html);
                     target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     break;
+                case "Expand":
+                    for(uid in selection){
+                        nodes[uid].renderCompact = false;
+                        redrawNode(nodes[uid], true);
+                    }
+                    break;
                 default:
-                    // link creation
                     var linktype = $(event.target).attr('data-link-type');
                     if (linktype) {
                         var forwardlinktype = linktype;
                         if(forwardlinktype.indexOf('/')){
                             forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = nodes[clickOriginUid].gateIndexes.indexOf(forwardlinktype);
-                        createLinkHandler(clickOriginUid, clickIndex, linktype);
+                        for(var uid in selection){
+                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                            createLinkHandler(uid, clickIndex, linktype);
+                        }
                     } else {
-                        openLinkCreationDialog(path.name);
+                        openLinkCreationDialog(path.name)
                     }
             }
             break;

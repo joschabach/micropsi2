@@ -371,10 +371,12 @@ class TheanoNode(Node):
             self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_gate_parameters(self):
-        gate_parameters = self.nodetype.gate_defaults
-        gate_types = gate_parameters.keys()
+        gate_parameters = {}
+        gate_types = self.nodetype.gate_defaults.keys()
         for gate_type in gate_types:
-            gate_parameters[gate_type].update(self.clone_non_default_gate_parameters(gate_type))
+            non_default_parameters = self.clone_non_default_gate_parameters(gate_type)
+            if non_default_parameters is not None and len(non_default_parameters) > 0:
+                gate_parameters[gate_type] = non_default_parameters
         return gate_parameters
 
     def clone_non_default_gate_parameters(self, gate_type):

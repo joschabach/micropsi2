@@ -619,7 +619,9 @@ class TheanoGate(Gate):
         return links
 
     def get_parameter(self, parameter_name):
-        return self.__node.get_gate_parameters(self.__type)[parameter_name]
+        gate_parameters = self.__node.nodetype.gate_defaults[self.type]
+        gate_parameters.update(self.__node.clone_non_default_gate_parameters(self.type))
+        return gate_parameters[parameter_name]
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves

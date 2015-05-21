@@ -72,10 +72,12 @@ def signal_handler(signal, frame):
     sys.exit(0)
 
 
-stats = []
-
-
 class MicropsiRunner(threading.Thread):
+
+    sum_of_durations = 0
+    number_of_samples = 0
+    total_steps = 0
+    granularity = 100
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -98,29 +100,41 @@ class MicropsiRunner(threading.Thread):
             start = datetime.now()
             log = False
             for uid in nodenets:
-                if nodenets[uid].is_active:
+                nodenet = nodenets[uid]
+                if nodenet.is_active:
                     log = True
                     try:
-                        nodenets[uid].step()
-                        nodenets[uid].update_monitors()
+                        nodenet.step()
+                        nodenet.update_monitors()
                     except:
-                        nodenets[uid].is_active = False
+                        nodenet.is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
                         MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                    if nodenets[uid].world and nodenets[uid].current_step % runner['factor'] == 0:
+                    if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                         try:
-                            nodenets[uid].world.step()
+                            nodenet.world.step()
                         except:
-                            nodenets[uid].is_active = False
+                            nodenet.is_active = False
                             logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
                             MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:
                 ms = elapsed.seconds + ((elapsed.microseconds // 1000) / 1000)
-                stats.append(ms)
-                if len(stats) % 100 == 0 and len(stats) > 0:
-                    logging.getLogger("nodenet").debug("AFTER %d RUNS: AVG. %s sec" % (len(stats), str(sum(stats) / len(stats))))
+                self.sum_of_durations += ms
+                self.number_of_samples += 1
+                self.total_steps +=1
+                average_duration = self.sum_of_durations / self.number_of_samples
+                if self.total_steps % self.granularity == 0:
+                    logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    self.sum_of_durations = 0
+                    self.number_of_samples = 0
+                    if average_duration < 0.0001:
+                        self.granularity = 10000
+                    elif average_duration < 0.001:
+                        self.granularity = 1000
+                    else:
+                        self.granularity = 100
             left = step - elapsed
             if left.total_seconds() > 0:
                 time.sleep(left.total_seconds())
@@ -696,8 +710,6 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    if nodespace is None:
-        nodespace = nodenet.get_nodespace(None).uid
     if type == "Nodespace":
         uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
     else:
@@ -1104,12 +1116,17 @@ def parse_recipe_file():
     for name, func in all_functions:
         argspec = inspect.getargspec(func)
         arguments = argspec.args[1:]
-        defaults = argspec.defaults
+        defaults = argspec.defaults or []
         params = []
+        diff = len(arguments) - len(defaults)
         for i, arg in enumerate(arguments):
+            if i >= diff:
+                default = defaults[i - diff]
+            else:
+                default = None
             params.append({
                 'name': arg,
-                'default': defaults[i]
+                'default': default
             })
         custom_recipes[name] = {
             'name': name,

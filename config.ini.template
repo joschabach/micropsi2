@@ -30,6 +30,8 @@ password =
 authenticated = False
 server = localhost
 port = 25565
+# simulate_vision = <some_file>
+# record_vision = <some_other_file>
 
 [logging]
 

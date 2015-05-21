@@ -26,8 +26,7 @@ def align(nodenet, nodespace):
         Returns:
             True on success, False otherwise
     """
-    if not nodenet.is_nodespace(nodespace):
-        return False
+    nodespace = nodenet.get_nodespace(nodespace).uid
 
     unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
         key=lambda i:nodenet.get_nodespace(i).index)

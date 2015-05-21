@@ -800,12 +800,12 @@ class TheanoNodenet(Nodenet):
                     data['position'],
                     name=data['name'],
                     uid=olduid,
-                    parameters=data['parameters'],
-                    gate_parameters=data['gate_parameters'],
-                    gate_functions=data['gate_functions'])
+                    parameters=data.get('parameters'),
+                    gate_parameters=data.get('gate_parameters'),
+                    gate_functions=data.get('gate_functions'))
                 uidmap[uid] = new_uid
                 node_proxy = self.get_node(new_uid)
-                for gatetype in data['gate_activations']:   # todo: implement sheaves
+                for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
                     node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
 
             else:
@@ -906,6 +906,8 @@ class TheanoNodenet(Nodenet):
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
+        nodespace_uid = self.get_nodespace(nodespace_uid).uid
+
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             id = 0
@@ -987,7 +989,7 @@ class TheanoNodenet(Nodenet):
                     self.inverted_actuator_map[uid] = datatarget
         elif nodetype == "Pipe":
             self.has_pipes = True
-            n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
             n_function_selector_array[offset + POR] = NFPG_PIPE_POR
             n_function_selector_array[offset + RET] = NFPG_PIPE_RET
@@ -1060,13 +1062,13 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodes[tnode.from_id(uid)] = 0
         self.allocated_node_offsets[tnode.from_id(uid)] = 0
         self.allocated_node_parents[tnode.from_id(uid)] = 0
-        g_function_selector_array = self.g_function_selector.get_value(borrow=True, return_internal_type=True)
+        g_function_selector_array = self.g_function_selector.get_value(borrow=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
 
-        n_function_selector_array = self.n_function_selector.get_value(borrow=True, return_internal_type=True)
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
         n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
         n_function_selector_array[offset + POR] = NFPG_PIPE_NON
         n_function_selector_array[offset + RET] = NFPG_PIPE_NON
@@ -1190,7 +1192,8 @@ class TheanoNodenet(Nodenet):
 
         parent_id = 0
         if parent_uid is not None:
-            parent_id = tnodespace.from_id(parent_uid)
+             parent_id = tnodespace.from_id(parent_uid)
+
         uid = tnodespace.to_id(id)
 
         self.allocated_nodespaces[id] = parent_id
@@ -1273,7 +1276,7 @@ class TheanoNodenet(Nodenet):
         self.w.set_value(w_matrix, borrow=True)
 
         if slot_type == "por" and self.allocated_nodes[tnode.from_id(target_node_uid)] == PIPE:
-            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True, return_internal_type=True)
+            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True)
             if weight == 0:
                 for g in range(7):
                     n_node_porlinked_array[self.allocated_node_offsets[tnode.from_id(target_node_uid)] + g] = 0
@@ -1283,7 +1286,7 @@ class TheanoNodenet(Nodenet):
             self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
 
         if slot_type == "ret" and self.allocated_nodes[tnode.from_id(target_node_uid)] == PIPE:
-            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True, return_internal_type=True)
+            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True)
             if weight == 0:
                 for g in range(7):
                     n_node_retlinked_array[self.allocated_node_offsets[tnode.from_id(target_node_uid)] + g] = 0
@@ -1441,7 +1444,7 @@ class TheanoNodenet(Nodenet):
         Sets the sensors for the given data sources to the given values
         """
 
-        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        a_array = self.a.get_value(borrow=True)
 
         for datasource in datasource_to_value_map:
             value = datasource_to_value_map.get(datasource)
@@ -1466,7 +1469,7 @@ class TheanoNodenet(Nodenet):
 
         actuator_values_to_write = {}
 
-        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        a_array = self.a.get_value(borrow=True)
 
         for datatarget in self.actuatormap:
             actuator_node_activations = 0
@@ -1479,17 +1482,20 @@ class TheanoNodenet(Nodenet):
 
         return actuator_values_to_write
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None):
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, sortby='id'):
         ids = []
         for uid, name in self.names.items():
             if name.startswith(node_name_prefix) and \
                     (nodespace is None or self.allocated_node_parents[tnode.from_id(uid)] == tnodespace.from_id(nodespace)):
                 ids.append(uid)
-        self.group_nodes_by_ids(ids, node_name_prefix)
+        self.group_nodes_by_ids(ids, node_name_prefix, sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name):
+    def group_nodes_by_ids(self, node_ids, group_name, sortby='id'):
         ids = [tnode.from_id(uid) for uid in node_ids]
-        ids = sorted(ids)
+        if sortby == 'id':
+            ids = sorted(ids)
+        elif sortby == 'name':
+            ids = sorted(ids, key=lambda id: self.names[tnode.to_id(id)])
         self.nodegroups[group_name] = self.allocated_node_offsets[ids]
 
     def ungroup_nodes(self, group):
@@ -1497,15 +1503,15 @@ class TheanoNodenet(Nodenet):
             del self.nodegroups[group]
 
     def get_activations(self, group):
-        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        a_array = self.a.get_value(borrow=True)
         return a_array[self.nodegroups[group]]
 
     def get_thetas(self, group):
-        g_theta_array = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_theta_array = self.g_theta.get_value(borrow=True)
         return g_theta_array[self.nodegroups[group]]
 
     def set_thetas(self, group, thetas):
-        g_theta_array = self.g_theta.get_value(borrow=True, return_internal_type=True)
+        g_theta_array = self.g_theta.get_value(borrow=True)
         g_theta_array[self.nodegroups[group]] = thetas
         self.g_theta.set_value(g_theta_array, borrow=True)
 
@@ -1518,7 +1524,7 @@ class TheanoNodenet(Nodenet):
             return w_matrix[rows,cols]
 
     def set_link_weights(self, group_from, group_to, new_w):
-        w_matrix = self.w.get_value(borrow=True, return_internal_type=True)
+        w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[group_from]
         grp_to = self.nodegroups[group_to]
         cols, rows = np.meshgrid(grp_from, grp_to)
@@ -1529,7 +1535,7 @@ class TheanoNodenet(Nodenet):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 
     def rebuild_shifted(self):
-        a_array = self.a.get_value(borrow=True, return_internal_type=True)
+        a_array = self.a.get_value(borrow=True)
         a_rolled_array = np.roll(a_array, 7)
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)

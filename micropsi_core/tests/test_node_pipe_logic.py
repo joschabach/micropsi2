@@ -84,7 +84,7 @@ def test_node_pipe_logic_classifier_two_partial(fixed_nodenet):
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == 1 / 2
+    assert round(n_head.get_gate("gen").activation, 2) == 1 / 2
 
     netapi.link(source, "gen", n_b, "sur")
 
@@ -108,7 +108,7 @@ def test_node_pipe_logic_classifier_two_partially_failing(fixed_nodenet):
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == - 1 / 2
+    assert round(n_head.get_gate("gen").activation, 2) == - 1 / 2
 
     netapi.link(source, "gen", n_b, "sur")
 
@@ -154,19 +154,19 @@ def test_node_pipe_logic_classifier_three_partial(fixed_nodenet):
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == round(1 / 3, 5)
+    assert round(n_head.get_gate("gen").activation, 2) == round(1 / 3, 2)
 
     netapi.link(source, "gen", n_c, "sur")
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == round(2 / 3, 5)
+    assert round(n_head.get_gate("gen").activation, 2) == round(2 / 3, 2)
 
     netapi.link(source, "gen", n_b, "sur")
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == 1
+    assert round(n_head.get_gate("gen").activation, 2) == 1
 
 
 def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
@@ -187,19 +187,19 @@ def test_node_pipe_logic_classifier_three_partially_failing(fixed_nodenet):
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == round(- 1 / 3, 5)
+    assert round(n_head.get_gate("gen").activation, 2) == round(- 1 / 3, 2)
 
     netapi.link(source, "gen", n_c, "sur")
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == 0
+    assert round(n_head.get_gate("gen").activation, 2) == 0
 
     netapi.link(source, "gen", n_b, "sur")
 
     for i in range(3):
         net.step()
-    assert round(n_head.get_gate("gen").activation, 5) == round(1 / 3, 5)
+    assert round(n_head.get_gate("gen").activation, 2) == round(1 / 3, 2)
 
 
 def test_node_pipe_logic_two_script(fixed_nodenet):
@@ -218,39 +218,39 @@ def test_node_pipe_logic_two_script(fixed_nodenet):
     net.step()
 
     # quiet, first node requesting
-    assert n_head.get_gate("gen").activation == 0
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_head.get_gate("gen").activation, 2) == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # reply: good!
     netapi.link(source, "gen", n_a, "sur")
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # second node now requesting
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # second node good, third requesting
     netapi.link(source, "gen", n_b, "sur")
     net.step()
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 1
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 1
 
     # overall script good
     net.step()
-    assert n_head.get_gate("gen").activation == 1
+    assert round(n_head.get_gate("gen").activation, 2) == 1
 
 
 def test_node_pipe_logic_three_script(fixed_nodenet):
@@ -273,54 +273,54 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
     net.step()
 
     # quiet, first node requesting
-    assert n_head.get_gate("gen").activation == 0
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_head.get_gate("gen").activation, 2) == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     # reply: good!
     netapi.link(source, "gen", n_a, "sur")
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     # second node now requesting
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     # second node good, third requesting
     netapi.link(source, "gen", n_b, "sur")
     net.step()
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 1
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 1
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     # third node good
     netapi.link(source, "gen", n_c, "sur")
     net.step()
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 1
-    assert n_c.get_gate("sur").activation == 1
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 1
+    assert round(n_c.get_gate("sur").activation, 2) == 1
 
     # overall script good
     net.step()
@@ -333,12 +333,12 @@ def test_node_pipe_logic_three_script(fixed_nodenet):
     net.step()
     net.step()     # extra steps because we're coming from a stable "all good state"
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == -1
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == -1
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     net.step()
     assert n_head.get_gate("gen").activation == -1
@@ -372,67 +372,67 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     net.step()
 
     # quiet, first node requesting
-    assert n_head.get_gate("gen").activation == 0
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_head.get_gate("gen").activation, 2) == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     # reply: good!
     netapi.link(source, "gen", n_a, "sur")
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     # first alternative requesting
     net.step()
     net.step()
-    assert n_b_a1.get_gate("sub").activation == 1
-    assert n_b_a1.get_gate("sur").activation == 0
-    assert n_b_a2.get_gate("sub").activation == 0
-    assert n_b_a2.get_gate("sur").activation == 0
+    assert round(n_b_a1.get_gate("sub").activation, 2) == 1
+    assert round(n_b_a1.get_gate("sur").activation, 2) == 0
+    assert round(n_b_a2.get_gate("sub").activation, 2) == 0
+    assert round(n_b_a2.get_gate("sur").activation, 2) == 0
 
     # reply: fail!
     netapi.link(source, "gen", n_b_a1, "sur", -1)
     net.step()
     net.step()
-    assert n_b_a1.get_gate("sur").activation == 0
-    assert n_b_a1.get_gate("por").activation == -1
+    assert round(n_b_a1.get_gate("sur").activation, 2) == 0
+    assert round(n_b_a1.get_gate("por").activation, 2) == -1
 
     # second alternative requesting
-    assert n_b_a2.get_gate("sub").activation == 1
-    assert n_b_a2.get_gate("sur").activation == 0
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_b_a2.get_gate("sub").activation, 2) == 1
+    assert round(n_b_a2.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # reply: succeed!
     netapi.link(source, "gen", n_b_a2, "sur", 1)
     net.step()
     net.step()
-    assert n_b_a1.get_gate("sur").activation == 0
-    assert n_b_a1.get_gate("por").activation == -1
-    assert n_b_a2.get_gate("sub").activation == 1
-    assert n_b_a2.get_gate("sur").activation == 1
+    assert round(n_b_a1.get_gate("sur").activation, 2) == 0
+    assert round(n_b_a1.get_gate("por").activation, 2) == -1
+    assert round(n_b_a2.get_gate("sub").activation, 2) == 1
+    assert round(n_b_a2.get_gate("sur").activation, 2) == 1
 
     # third node good
     netapi.link(source, "gen", n_c, "sur")
     net.step()
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
-    assert n_c.get_gate("sub").activation == 1
-    assert n_c.get_gate("sur").activation == 1
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_c.get_gate("sub").activation, 2) == 1
+    assert round(n_c.get_gate("sur").activation, 2) == 1
 
     # overall script good
     net.step()
-    assert n_head.get_gate("gen").activation == 1
+    assert round(n_head.get_gate("gen").activation, 2) == 1
 
     # now let the second alternative also fail
     # whole script fails, third one muted
@@ -441,15 +441,15 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     net.step()
     net.step()     # extra steps because we're coming from a stable "all good state"
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == -1
-    assert n_c.get_gate("sub").activation == 0
-    assert n_c.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == -1
+    assert round(n_c.get_gate("sub").activation, 2) == 0
+    assert round(n_c.get_gate("sur").activation, 2) == 0
 
     net.step()
-    assert n_head.get_gate("gen").activation == -1
+    assert round(n_head.get_gate("gen").activation, 2) == -1
 
 
 def test_node_pipe_logic_timeout_fail(fixed_nodenet):
@@ -470,47 +470,47 @@ def test_node_pipe_logic_timeout_fail(fixed_nodenet):
     net.step()
 
     # quiet, first node requesting
-    assert n_head.get_gate("gen").activation == 0
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_head.get_gate("gen").activation, 2) == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # reply: good!
     netapi.link(source, "gen", n_a, "sur")
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 0
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # second node now requesting
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
 
     # second node good, third requesting
     netapi.link(source, "gen", n_b, "sur", 0.7)
     net.step()
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == 0
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == 0
     net.step()
     net.step()
     net.step()
     net.step()
-    assert n_a.get_gate("sub").activation == 1
-    assert n_a.get_gate("sur").activation == 0
-    assert n_b.get_gate("sub").activation == 1
-    assert n_b.get_gate("sur").activation == -1
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_a.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sur").activation, 2) == -1
 
     # overall script failed
     net.step()
-    assert n_head.get_gate("gen").activation == -1
+    assert round(n_head.get_gate("gen").activation, 2) == -1
 
 
 #def test_node_pipe_logic_feature_binding(fixed_nodenet):
@@ -564,8 +564,8 @@ def test_node_pipe_logic_search_sub(fixed_nodenet):
     net.step()
     net.step()
 
-    assert n_a.get_gate("sub").activation == 1
-    assert n_b.get_gate("sub").activation == 1
+    assert round(n_a.get_gate("sub").activation, 2) == 1
+    assert round(n_b.get_gate("sub").activation, 2) == 1
 
 
 def test_node_pipe_logic_search_sur(fixed_nodenet):
@@ -604,8 +604,8 @@ def test_node_pipe_logic_search_por(fixed_nodenet):
     net.step()
     net.step()
 
-    assert n_a.get_gate("por").activation == 1
-    assert n_b.get_gate("por").activation == 1
+    assert round(n_a.get_gate("por").activation, 2) == 1
+    assert round(n_b.get_gate("por").activation, 2) == 1
 
 
 def test_node_pipe_logic_search_ret(fixed_nodenet):
@@ -624,8 +624,8 @@ def test_node_pipe_logic_search_ret(fixed_nodenet):
     net.step()
     net.step()
 
-    assert n_b.get_gate("ret").activation == 1
-    assert n_a.get_gate("ret").activation == 1
+    assert round(n_b.get_gate("ret").activation, 2) == 1
+    assert round(n_a.get_gate("ret").activation, 2) == 1
 
 
 def test_node_pipe_logic_search_cat(fixed_nodenet):
@@ -644,8 +644,8 @@ def test_node_pipe_logic_search_cat(fixed_nodenet):
     net.step()
     net.step()
 
-    assert n_a.get_gate("cat").activation == 1
-    assert n_b.get_gate("cat").activation == 1
+    assert round(n_a.get_gate("cat").activation, 2) == 1
+    assert round(n_b.get_gate("cat").activation, 2) == 1
 
 
 def test_node_pipe_logic_search_exp(fixed_nodenet):

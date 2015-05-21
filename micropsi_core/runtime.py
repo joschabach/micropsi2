@@ -864,7 +864,7 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
     """
     Returns the name of the gate function configured for that given node and gate
     """
-    return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction(gate_type)
+    return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction_name(gate_type)
 
 
 def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):

@@ -336,7 +336,7 @@ class TheanoNode(Node):
 
     def get_gatefunction_name(self, gate_type):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        return get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type,self.nodetype)]),
+        return get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)])
 
     def get_gatefunction_names(self):
         result = {}

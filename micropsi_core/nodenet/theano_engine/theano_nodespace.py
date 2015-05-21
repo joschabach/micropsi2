@@ -87,8 +87,14 @@ class TheanoNodespace(Nodespace):
         if entitytype == 'nodes':
             from micropsi_core.nodenet.theano_engine.theano_node import to_id as node_to_id
             return [node_to_id(id) for id in np.where(self._nodenet.allocated_node_parents == self._id)[0]]
-        else:
+        elif entitytype == 'nodespaces':
             return [to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
+        elif entitytype == None:
+            ids = self.get_known_ids('nodes')
+            ids.extend(self.get_known_ids('nodespaces'))
+            return ids
+        else:
+            return []
 
     def has_activator(self, type):
         return type in self.__activators

@@ -642,7 +642,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             if not zero_patch and not self.simulated_vision:
                 if label == self.current_loco_node['name']:
                     data = "{0}".format(",".join(str(b) for b in patch))
-                    self.record_file.write("%s,%s,%d,%d\n" % (data, label, pitch, yaw))
+                    self.record_file.write("%s,%s,%d,%d,%d,%d\n" % (data, label, pitch, yaw, fov_x, fov_y))
                 else:
                     self.logger.warn('potentially corrupt data were ignored')
 

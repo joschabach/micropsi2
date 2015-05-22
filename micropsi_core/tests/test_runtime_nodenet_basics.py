@@ -246,11 +246,11 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
 
 def test_clone_nodes_copies_gate_params(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    micropsi.set_gate_parameters(fixed_nodenet, 'n1', 'gen', {'decay': 0.1})
+    micropsi.set_gate_parameters(fixed_nodenet, 'n1', 'gen', {'maximum': 0.1})
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n1'], 'internal')
     assert success
     copy = nodenet.get_node(result['nodes'][0]['uid'])
-    assert copy.get_gate_parameters()['gen']['decay'] == 0.1
+    assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
 
 def test_modulators(fixed_nodenet):

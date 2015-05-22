@@ -181,14 +181,17 @@ def group_horizontal_links(all_nodes):
 def _add_nodes_horizontally(display_node, h_group, excluded_nodes):
     """recursive helper function for adding horizontally linked nodes to a group"""
 
-    successor_nodes = [ node for node in display_node.directions.get("e", []) if node not in excluded_nodes ]
+    while True:
+        successor_nodes = [ node for node in display_node.directions.get("e", []) if node not in excluded_nodes ]
 
-    if len(successor_nodes) == 1:
-        node = successor_nodes[0]
-        excluded_nodes.add(node)
-        h_group.append(node)
-        if node.directions.get("e"):
-            _add_nodes_horizontally(node, h_group, excluded_nodes)
+        if len(successor_nodes) == 1:
+            display_node = successor_nodes[0]
+            excluded_nodes.add(display_node)
+            h_group.append(display_node)
+            if not display_node.directions.get("e"):
+                break
+        else:
+            break
 
 def group_other_links(all_groups):
     """group other horizontal links (native modules)"""

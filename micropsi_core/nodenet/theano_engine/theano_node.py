@@ -371,45 +371,51 @@ class TheanoNode(Node):
             self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_gate_parameters(self):
-        gate_parameters = {}
-        gate_types = self.nodetype.gate_defaults.keys()
-        for gate_type in gate_types:
-            non_default_parameters = self.clone_non_default_gate_parameters(gate_type)
-            if non_default_parameters is not None and len(non_default_parameters) > 0:
-                gate_parameters[gate_type] = non_default_parameters
-        return gate_parameters
+        return self.clone_non_default_gate_parameters()
 
-    def clone_non_default_gate_parameters(self, gate_type):
+    def clone_non_default_gate_parameters(self, gate_type=None):
         g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
         g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
         g_min_array = self._nodenet.g_min.get_value(borrow=True)
         g_max_array = self._nodenet.g_max.get_value(borrow=True)
         g_theta = self._nodenet.g_theta.get_value(borrow=True)
 
-        numericalgate = get_numerical_gate_type(gate_type, self.nodetype)
-        gate_parameters = {}
+        gatemap = {}
+        gate_types = self.nodetype.gate_defaults.keys()
+        if gate_type is not None:
+            if gate_type in gate_types:
+                gate_types = [gate_type]
+            else:
+                return None
 
-        threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
-        if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
-            gate_parameters['threshold'] = threshold
+        for gate_type in gate_types:
+            numericalgate = get_numerical_gate_type(gate_type, self.nodetype)
+            gate_parameters = {}
 
-        amplification = g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
-        if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
-            gate_parameters['amplification'] = amplification
+            threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
+                gate_parameters['threshold'] = threshold
 
-        minimum = g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
-        if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
-            gate_parameters['minimum'] = minimum
+            amplification = g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
+                gate_parameters['amplification'] = amplification
 
-        maximum = g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
-        if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
-            gate_parameters['maximum'] = maximum
+            minimum = g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
+                gate_parameters['minimum'] = minimum
 
-        theta = g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
-        if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
-            gate_parameters['theta'] = theta
+            maximum = g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
+                gate_parameters['maximum'] = maximum
 
-        return gate_parameters
+            theta = g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
+                gate_parameters['theta'] = theta
+
+            if not len(gate_parameters) == 0:
+                gatemap[gate_type] = gate_parameters
+
+        return gatemap
 
     def take_slot_activation_snapshot(self):
         a_array = self._nodenet.a.get_value(borrow=True)

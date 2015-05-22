@@ -49,7 +49,13 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     if 'engine' in metafunc.fixturenames:
-        metafunc.parametrize("engine", metafunc.config.option.engine.split(','), scope="session")
+        engines = []
+        for e in metafunc.config.option.engine.split(','):
+            if e in ['theano_engine', 'dict_engine']:
+                engines.append(e)
+        if not engines:
+            pytest.exit("Unknown engine.")
+        metafunc.parametrize("engine", engines, scope="session")
 
 
 def pytest_configure(config):

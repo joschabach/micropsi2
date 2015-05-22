@@ -614,14 +614,6 @@ class Nodetype(object):
             warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
 
-    def reload_nodefunction(self):
-        from micropsi_core.nodenet import nodefunctions
-        if self.nodefunction_name and not self.nodefunction_definition and not hasattr(nodefunctions, self.nodefunction_name):
-            import nodefunctions as custom_nodefunctions
-            from imp import reload
-            reload(custom_nodefunctions)
-            self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
-
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
                  symbol=None, shape=None, engine=None, parameter_defaults=None):

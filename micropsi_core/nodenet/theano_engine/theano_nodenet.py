@@ -1516,7 +1516,6 @@ class TheanoNodenet(Nodenet):
         self.native_modules = {}
         for type, data in native_modules.items():
             self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
-            self.native_modules[type].reload_nodefunction()
 
         # update the living instances that have the same slot/gate numbers
         new_instances = {}

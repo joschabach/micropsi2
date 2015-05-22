@@ -283,7 +283,6 @@ class DictNodenet(Nodenet):
         self.__native_modules = {}
         for key in native_modules:
             self.__native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-            self.__native_modules[key].reload_nodefunction()
         saved = self.data
         self.clear()
         self.merge_data(saved, keep_uids=True)

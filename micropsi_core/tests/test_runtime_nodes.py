@@ -180,9 +180,7 @@ def test_non_standard_gate_defaults(fixed_nodenet):
     nodenet = micropsi.nodenets[fixed_nodenet]
     res, uid = micropsi.add_node(fixed_nodenet, 'Register', [30, 30], name='test')
     node = nodenet.netapi.get_node(uid)
-    params = node.get_gate_parameters()
-    genparams = params['gen']
-    genparams['maximum'] = 0.5
+    genparams = {'maximum': 0.5}
     micropsi.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
     assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
     assert node.data['gate_parameters'] == {'gen': {'maximum': 0.5}}

@@ -76,15 +76,43 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['worldadapter'] == 'Braitenberg'
 
 
-def test_set_node_state(app, test_nodenet, node):
+def test_set_node_state(app, test_nodenet, nodetype_def, nodefunc_def):
+
+    app.set_auth()
+    # create a native module:
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t"}}')
+
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    response = app.get_json('/rpc/reload_native_modules()')
+    assert_success(response)
+
+    response = app.post_json('/rpc/add_node', params={
+        'nodenet_uid': test_nodenet,
+        'type': 'Testnode',
+        'position': [23, 23],
+        'nodespace': None,
+        'name': 'Testnode'
+    })
+    assert_success(response)
+
+    uid = response.json_body['data']
+
     response = app.post_json('/rpc/set_node_state', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': node,
+        'node_uid': uid,
         'state': {'foo': 'bar'}
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
-    assert response.json_body['data']['nodes'][node]['state'] == {'foo': 'bar'}
+    assert response.json_body['data']['nodes'][uid]['state'] == {'foo': 'bar'}
 
 
 def test_set_node_activation(app, test_nodenet, node):
@@ -171,7 +199,7 @@ def test_get_current_state(app, test_nodenet, test_world, node):
     })
     monitor_uid = response.json_body['data']
     response = app.get_json('/rpc/start_simulation(nodenet_uid="%s")' % test_nodenet)
-    sleep(0.4)
+    sleep(20)
     response = app.post_json('/rpc/get_current_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {

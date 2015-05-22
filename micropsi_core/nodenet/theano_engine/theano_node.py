@@ -506,6 +506,10 @@ class TheanoNode(Node):
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
 
+    def clear_parameter(self, parameter):
+        if self.type in self._nodenet.native_modules and parameter in self.parameters:
+            del self.parameters[parameter]
+
     def clone_parameters(self):
         parameters = {}
         if self.type == "Sensor":

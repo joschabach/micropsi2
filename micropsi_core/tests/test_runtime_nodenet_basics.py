@@ -48,21 +48,40 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     assert data == {'gen': {'threshold': 1}}
 
 
-def test_user_prompt(fixed_nodenet):
+def test_user_prompt(fixed_nodenet, resourcepath):
+    from os import path, remove
+    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "parameters": ["testparam"],\
+            "parameter_defaults": {\
+                "testparam": 13\
+              }\
+            }}')
+    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    micropsi.reload_native_modules(fixed_nodenet)
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
+    nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
+
     options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values': [23, 42]}]
     micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(
-        micropsi.nodenets[fixed_nodenet].get_node('n1'),
+        nativemodule,
         "foobar",
         options
     )
     data = micropsi.get_nodenet_data(fixed_nodenet, 'Root')
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
-    assert data['user_prompt']['node']['uid'] == 'n1'
+    assert data['user_prompt']['node']['uid'] == uid
     assert data['user_prompt']['options'] == options
     # response
-    micropsi.user_prompt_response(fixed_nodenet, 'n1', {'foo_parameter': 42}, True)
-    assert micropsi.nodenets[fixed_nodenet].get_node('n1').get_parameter('foo_parameter') == 42
+    micropsi.user_prompt_response(fixed_nodenet, uid, {'foo_parameter': 42}, True)
+    assert micropsi.nodenets[fixed_nodenet].get_node(uid).get_parameter('foo_parameter') == 42
     assert micropsi.nodenets[fixed_nodenet].is_active
     from micropsi_core.nodenet import nodefunctions
     nodefunc = mock.Mock()

@@ -251,6 +251,13 @@ class Node(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def clear_parameter(self, parameter):
+        """
+        Unsets/clears the given parameter.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def clone_parameters(self):
         """
         Returns a copy of this node's parameter set.

@@ -1275,8 +1275,8 @@ class TheanoNodenet(Nodenet):
             del self.inverted_sensor_map[uid]
             if sensor in self.sensormap:
                 self.sensormap[sensor].remove(tnode.from_id(uid))
-            if len(self.sensormap[sensor]) == 0:
-                del self.sensormap[sensor]
+                if len(self.sensormap[sensor]) == 0:
+                    del self.sensormap[sensor]
 
         # remove actuator association if there should be one
         if uid in self.inverted_actuator_map:
@@ -1284,8 +1284,8 @@ class TheanoNodenet(Nodenet):
             del self.inverted_actuator_map[uid]
             if actuator in self.actuatormap:
                 self.actuatormap[actuator].remove(tnode.from_id(uid))
-            if len(self.actuatormap[actuator]) == 0:
-                del self.actuatormap[actuator]
+                if len(self.actuatormap[actuator]) == 0:
+                    del self.actuatormap[actuator]
 
         # clear activator usage if there should be one
         used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)

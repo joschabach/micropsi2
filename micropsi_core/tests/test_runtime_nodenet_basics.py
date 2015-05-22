@@ -65,7 +65,7 @@ def test_user_prompt(fixed_nodenet, resourcepath):
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
     nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
 

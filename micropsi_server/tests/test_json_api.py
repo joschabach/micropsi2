@@ -1101,7 +1101,7 @@ def test_get_recipes(app, test_nodenet, recipes_def):
 def foobar(netapi, quatsch=23):
     return quatsch
 """)
-    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/reload_native_modules()')
     response = app.get_json('/rpc/get_available_recipes()')
     data = response.json_body['data']
     assert 'foobar' in data
@@ -1117,7 +1117,7 @@ def test_run_recipes(app, test_nodenet, recipes_def):
 def foobar(netapi, quatsch=23):
     return quatsch
 """)
-    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/run_recipe', {
         'nodenet_uid': test_nodenet,
         'name': 'foobar',
@@ -1140,7 +1140,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
             "symbol": "t"}}')
     with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Nodespace',

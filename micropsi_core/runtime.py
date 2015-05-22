@@ -1007,14 +1007,14 @@ def parse_recipe_file():
         }
 
 
-def reload_native_modules(nodenet_uid=None):
+def reload_native_modules():
     load_user_files(True)
     import importlib
     custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodefunctions_file):
         loader = importlib.machinery.SourceFileLoader("nodefunctions", custom_nodefunctions_file)
         loader.load_module()
-    if nodenet_uid:
+    for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     return True
 

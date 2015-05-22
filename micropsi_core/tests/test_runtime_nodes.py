@@ -130,7 +130,7 @@ def test_save_nodenet(test_nodenet):
 
 def test_reload_native_modules(fixed_nodenet):
     data_before = micropsi.nodenets[fixed_nodenet].data
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     data_after = micropsi.nodenets[fixed_nodenet].data
     assert data_before == data_after
 
@@ -157,7 +157,7 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
             }}}')
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
     with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
         fp.write('{"Testnode": {\
@@ -171,7 +171,7 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
                 "amplification": 5\
               }\
             }}}')
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     params = micropsi.nodenets[fixed_nodenet].get_node(uid).get_gate_parameters()
     assert params["foo"]["amplification"] == 5
 
@@ -206,11 +206,11 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
     remove(path.join(resourcepath, 'nodetypes.json'))
     remove(path.join(resourcepath, 'nodefunctions.py'))
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
 
 
@@ -233,7 +233,7 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
     assert "Testnode" not in data['native_modules']
     remove(path.join(resourcepath, 'nodetypes.json'))
@@ -259,7 +259,7 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
     assert "Testnode" not in data['native_modules']
     remove(path.join(resourcepath, 'nodetypes.json'))
@@ -282,7 +282,7 @@ def test_get_recipes(fixed_nodenet, resourcepath):
 def testfoo(netapi, count=23):
     return count
 """)
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     recipes = micropsi.get_available_recipes()
     assert 'testfoo' in recipes
     assert len(recipes['testfoo']['parameters']) == 1
@@ -298,7 +298,7 @@ def test_run_recipe(fixed_nodenet, resourcepath):
 def testfoo(netapi, count=23):
     return count
 """)
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     state, result = micropsi.run_recipe(fixed_nodenet, 'testfoo', {'count': 42})
     assert state
     assert result == 42
@@ -321,7 +321,7 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath):
     with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
-    micropsi.reload_native_modules(fixed_nodenet)
+    micropsi.reload_native_modules()
     data = micropsi.get_nodenet_data(fixed_nodenet, None)
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
     node = micropsi.nodenets[fixed_nodenet].get_node(uid)

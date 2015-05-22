@@ -43,7 +43,7 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     micropsi.set_gate_parameters(fixed_nodenet, 'n5', 'gen', {'threshold': 1})
     data = micropsi.nodenets[fixed_nodenet].data
     assert data['nodes']['n5']['gate_parameters'] == {'gen': {'threshold': 1}}
-    defaults = Nodetype.GATE_DEFAULTS
+    defaults = Nodetype.GATE_DEFAULTS.copy()
     defaults.update({'threshold': 1})
     data = micropsi.nodenets[fixed_nodenet].get_node('n5').data['gate_parameters']
     assert data == {'gen': {'threshold': 1}}
@@ -84,6 +84,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
     assert micropsi.nodenets[fixed_nodenet].get_node(uid).get_parameter('foo_parameter') == 42
     assert micropsi.nodenets[fixed_nodenet].is_active
     from micropsi_core.nodenet import nodefunctions
+    tmp = nodefunctions.concept
     nodefunc = mock.Mock()
     nodefunctions.concept = nodefunc
     micropsi.nodenets[fixed_nodenet].step()
@@ -92,6 +93,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
     assert nodefunc.called_with(micropsi.nodenets[fixed_nodenet].netapi, micropsi.nodenets[fixed_nodenet].get_node('n1'), foo)
     micropsi.nodenets[fixed_nodenet].get_node('n1').clear_parameter('foo_parameter')
     assert micropsi.nodenets[fixed_nodenet].get_node('n1').get_parameter('foo_parameter') is None
+    nodefunctions.concept = tmp
 
 
 def test_nodespace_removal(fixed_nodenet):

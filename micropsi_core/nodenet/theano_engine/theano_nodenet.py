@@ -480,6 +480,7 @@ class TheanoNodenet(Nodenet):
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
             metadata['nodes'] = self.construct_native_modules_and_comments_dict()
+            metadata['monitors'] = self.construct_monitors_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write bulk data to our own numpy-based file format

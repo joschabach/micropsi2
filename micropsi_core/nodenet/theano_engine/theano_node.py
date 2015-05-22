@@ -448,23 +448,10 @@ class TheanoNode(Node):
                             self._nodenet.delete_link(self.uid, gate_name_candidate, link_candidate.target_node.uid, link_candidate.target_slot.type)
 
     def get_parameter(self, parameter):
-        if self.type == "Sensor" and parameter == "datasource":
-            return self._nodenet.inverted_sensor_map[self.uid]
-        elif self.type == "Actor" and parameter == "datatarget":
-            return self._nodenet.inverted_actuator_map[self.uid]
-        elif self.type == "Pipe" and parameter == "expectation":
-            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
-            return g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
-        elif self.type == "Pipe" and parameter == "wait":
-            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
-            return g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
-        elif self.type == "Comment" and parameter == "comment":
-            return self.parameters.get(parameter, None)
-        elif self.type in self._nodenet.native_modules:
-            return self.parameters.get(parameter, None)
+        return self.clone_parameters().get(parameter, None)
 
     def set_parameter(self, parameter, value):
-        if (value == '' or value is None):
+        if value == '' or value is None:
             if parameter in self.nodetype.parameter_defaults:
                 parameter = self.nodetype.parameter_defaults[parameter]
             else:
@@ -537,14 +524,21 @@ class TheanoNode(Node):
             parameters['expectation'] = value
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
             parameters['wait'] = g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
-        elif self.type in self._nodenet.native_modules or self.type == "Comment":
-            parameters = self.parameters.copy()
+        elif self.type == "Comment":
+            parameters['comment'] = self.parameters['comment']
+        elif self.type in self._nodenet.native_modules:
+            # handle the defined ones, the ones with defaults and value ranges
             for parameter in self.nodetype.parameters:
+                value = None
+                if parameter in self.parameters:
+                    value = self.parameters[parameter]
+                elif parameter in self.nodetype.parameter_defaults:
+                    value = self.nodetype.parameter_defaults[parameter]
+                parameters[parameter] = value
+            # see if something else has been set and return, if so
+            for parameter in self.parameters:
                 if parameter not in parameters:
-                    if parameter in self.nodetype.parameter_values:
-                        parameters[parameter] = self.nodetype.parameter_values[parameter]
-                    else:
-                        parameters[parameter] = None
+                    parameters[parameter] = self.parameters[parameter]
 
         return parameters
 

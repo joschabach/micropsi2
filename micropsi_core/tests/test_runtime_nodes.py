@@ -181,6 +181,10 @@ def test_non_standard_gate_defaults(fixed_nodenet):
     genparams['maximum'] = 0.5
     micropsi.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
     assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
+    assert node.data['gate_parameters'] == {'gen': {'maximum': 0.5}}
+    assert nodenet.data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
+    data = micropsi.get_nodenet_data(fixed_nodenet, None, step=-1, include_links=False)
+    assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
 
 
 def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):

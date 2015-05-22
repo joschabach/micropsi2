@@ -193,8 +193,6 @@ class DictNodenet(Nodenet):
         data = super(DictNodenet, self).data
         data['links'] = self.construct_links_dict()
         data['nodes'] = self.construct_nodes_dict()
-        for uid in data['nodes']:
-            data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
         data['version'] = self.__version
         data['modulators'] = self.construct_modulators_dict()

@@ -45,7 +45,7 @@ class Node(metaclass=ABCMeta):
             "type": self.type,
             "parameters": self.clone_parameters(),
             "state": self.clone_state(),
-            "gate_parameters": self.get_gate_parameters(),
+            "gate_parameters": self.clone_non_default_gate_parameters(),
             "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict(),

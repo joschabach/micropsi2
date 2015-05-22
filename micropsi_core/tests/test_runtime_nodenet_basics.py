@@ -45,11 +45,11 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     defaults = Nodetype.GATE_DEFAULTS
     defaults.update({'threshold': 1})
     data = micropsi.nodenets[fixed_nodenet].get_node('n5').data['gate_parameters']
-    assert data == {'gen': defaults}
+    assert data == {'gen': {'threshold': 1}}
 
 
 def test_user_prompt(fixed_nodenet):
-    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values':  [23, 42]}]
+    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values': [23, 42]}]
     micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(
         micropsi.nodenets[fixed_nodenet].get_node('n1'),
         "foobar",

@@ -1172,7 +1172,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     # gates
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp']:
         assert data['nodes'][node]['gate_activations'][key]['default']['activation'] == 0
-        assert key in data['nodes'][node]['gate_parameters']
+        assert key not in data['nodes'][node]['gate_parameters']
         assert data['nodes'][node]['gate_functions'][key] == 'identity'
 
     assert data['nodes'][node]['parameters']['expectation'] == 1

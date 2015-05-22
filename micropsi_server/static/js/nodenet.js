@@ -67,9 +67,11 @@ GATE_DEFAULTS = {
     "amplification": 1,
     "threshold": -1,
     "decay": 0,
+    "theta": 0,
     "rho": 0,
-    "theta": 0
+    "spreadsheaves": 0
 }
+
 
 gatefunction_icons = {
     'sigmoid': 'Σ',
@@ -539,7 +541,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.bounds = null; // current bounding box (after scaling)
     this.slotIndexes = [];
     this.gateIndexes = [];
-    this.gate_parameters = gate_parameters || {};
+    this.gate_parameters = gate_parameters;
     this.gate_activations = gate_activations || {};
     this.gatefunctions = gatefunctions || {};
 	if(type == "Nodespace") {
@@ -557,14 +559,11 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
             if(!sheaves) {
                 sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
             }
-
+            parameters = jQuery.extend(GATE_DEFAULTS, this.gate_parameters[gatetype]);
             if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
-                parameters = nodetypes[type].gate_defaults[gatetype];
-            } else {
-                parameters = jQuery.extend({}, GATE_DEFAULTS);
-            }
-            for(var key in this.gate_parameters[gatetype]){
-                parameters[key] = this.gate_parameters[gatetype][key];
+                for(var key in nodetypes[type].gate_defaults[gatetype]){
+                    parameters[key] = nodetypes[type].gate_defaults[gatetype][key];
+                }
             }
             this.gates[gatetype] = new Gate(gatetype, i, sheaves, parameters, this.gatefunctions[gatetype]);
         }
@@ -582,12 +581,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.sheaves = item.sheaves;
         this.state = item.state;
         this.parameters = item.parameters;
-        this.gate_parameters = item.gate_parameters;
+        this.gate_parameters = jQuery.extend(GATE_DEFAULTS, item.gate_parameters || {});;
         this.gate_activations = item.gate_activations;
         this.gatefunctions = item.gatefunctions;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
-            this.gates[gatetype].parameters = this.gate_parameters[gatetype];
+            this.gates[gatetype].parameters = jQuery.extend(GATE_DEFAULTS, this.gate_parameters[gatetype]);
             this.gates[gatetype].sheaves = this.gate_activations[gatetype];
             this.gates[gatetype].gatefunction = this.gatefunctions[gatetype];
 

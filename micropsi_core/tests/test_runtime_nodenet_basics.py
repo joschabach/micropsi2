@@ -49,9 +49,8 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     assert data == {'gen': {'threshold': 1}}
 
 
-def test_user_prompt(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -62,7 +61,7 @@ def test_user_prompt(fixed_nodenet, resourcepath):
                 "testparam": 13\
               }\
             }}')
-    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+    with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -252,6 +251,7 @@ def test_clone_nodes_copies_gate_params(fixed_nodenet):
     assert success
     copy = nodenet.get_node(result['nodes'][0]['uid'])
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
+
 
 @pytest.mark.engine("dict_engine")
 def test_modulators(fixed_nodenet):

@@ -77,7 +77,6 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
 
 
 def test_set_node_state(app, test_nodenet, nodetype_def, nodefunc_def):
-
     app.set_auth()
     # create a native module:
     with open(nodetype_def, 'w') as fp:

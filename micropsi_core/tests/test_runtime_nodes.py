@@ -89,7 +89,7 @@ def test_add_link(test_nodenet):
             link2 = data
 
     assert link1["weight"] == 1
-    #assert link1["certainty"] == 0.1
+    # assert link1["certainty"] == 0.1
     assert link1["source_node_uid"] == nodes['a']
     assert link1["target_node_uid"] == nodes['b']
     assert link1["source_gate_name"] == "por"
@@ -134,16 +134,16 @@ def test_reload_native_modules(fixed_nodenet):
     data_after = micropsi.nodenets[fixed_nodenet].data
     assert data_before == data_after
 
+
 @pytest.mark.engine("dict_engine")
 # This behavior is not available in theano_engine: Default inheritance at runtime is not implemented for
 # performance reasons, changed defaults will only affect newly created nodes.
 # This test will have to be replaced when the generic solution proposed in TOL-90 has been
 # implemented.
-def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
+def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
     # gate_parameters are a property of the nodetype, and should change with
     # the nodetype definition if not explicitly overwritten for a given node
-    from os import path
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -155,11 +155,11 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
                 "amplification": 13\
               }\
             }}}')
-    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+    with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -189,9 +189,9 @@ def test_non_standard_gate_defaults(fixed_nodenet):
     assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
 
 
-def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+def test_remove_and_reload_native_module(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
+    from os import remove
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -203,21 +203,20 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
                 "amplification": 13\
               }\
             }}}')
-    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+    with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
-    remove(path.join(resourcepath, 'nodetypes.json'))
-    remove(path.join(resourcepath, 'nodefunctions.py'))
+    remove(nodetype_def)
+    remove(nodefunc_def)
     micropsi.reload_native_modules()
     assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
 
 
 @pytest.mark.engine("dict_engine")
-def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "engine": "theano_engine",\
             "name": "Testnode",\
@@ -230,20 +229,17 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
                 "amplification": 13\
               }\
             }}}')
-    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+    with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
     data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
     assert "Testnode" not in data['native_modules']
-    remove(path.join(resourcepath, 'nodetypes.json'))
-    remove(path.join(resourcepath, 'nodefunctions.py'))
 
 
 @pytest.mark.engine("theano_engine")
-def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "engine": "dict_engine",\
             "name": "Testnode",\
@@ -256,14 +252,12 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
                 "amplification": 13\
               }\
             }}}')
-    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+    with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
     data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
     assert "Testnode" not in data['native_modules']
-    remove(path.join(resourcepath, 'nodetypes.json'))
-    remove(path.join(resourcepath, 'nodefunctions.py'))
 
 
 def test_node_parameters_none_resets_to_default(fixed_nodenet):
@@ -275,9 +269,8 @@ def test_node_parameters_none_resets_to_default(fixed_nodenet):
     assert node.get_parameter('wait') == 0
 
 
-def test_get_recipes(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'recipes.py'), 'w') as fp:
+def test_get_recipes(fixed_nodenet, resourcepath, recipes_def):
+    with open(recipes_def, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
     return count
@@ -288,12 +281,10 @@ def testfoo(netapi, count=23):
     assert len(recipes['testfoo']['parameters']) == 1
     assert recipes['testfoo']['parameters'][0]['name'] == 'count'
     assert recipes['testfoo']['parameters'][0]['default'] == 23
-    remove(path.join(resourcepath, 'recipes.py'))
 
 
-def test_run_recipe(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'recipes.py'), 'w') as fp:
+def test_run_recipe(fixed_nodenet, resourcepath, recipes_def):
+    with open(recipes_def, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
     return count
@@ -302,12 +293,10 @@ def testfoo(netapi, count=23):
     state, result = micropsi.run_recipe(fixed_nodenet, 'testfoo', {'count': 42})
     assert state
     assert result == 42
-    remove(path.join(resourcepath, 'recipes.py'))
 
 
-def test_node_parameter_defaults(fixed_nodenet, resourcepath):
-    from os import path, remove
-    with open(path.join(resourcepath, 'nodetypes.json'), 'w') as fp:
+def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -318,7 +307,7 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath):
                 "testparam": 13\
               }\
             }}')
-    with open(path.join(resourcepath, 'nodefunctions.py'), 'w') as fp:
+    with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -326,5 +315,3 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath):
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
     node = micropsi.nodenets[fixed_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 13
-    remove(path.join(resourcepath, 'nodetypes.json'))
-    remove(path.join(resourcepath, 'nodefunctions.py'))

@@ -35,6 +35,10 @@ logging.getLogger('nodenet').setLevel(logging.WARNING)
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
 
+nodetype_file = os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json')
+nodefunc_file = os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
+recipes_file = os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
+
 
 def set_logging_levels():
     logging.getLogger('system').setLevel(logging.WARNING)
@@ -75,6 +79,12 @@ def pytest_runtest_setup(item):
 def pytest_runtest_call(item):
     if 'fixed_test_nodenet' in micropsi.nodenets:
         micropsi.revert_nodenet("fixed_test_nodenet")
+    if os.path.isfile(nodetype_file):
+        os.remove(nodetype_file)
+    if os.path.isfile(nodefunc_file):
+        os.remove(nodefunc_file)
+    if os.path.isfile(recipes_file):
+        os.remove(recipes_file)
     micropsi.reload_native_modules()
     micropsi.logger.clear_logs()
     set_logging_levels()
@@ -93,17 +103,17 @@ def resourcepath():
 
 @pytest.fixture()
 def nodetype_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json')
+    return nodetype_file
 
 
 @pytest.fixture
 def nodefunc_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
+    return nodefunc_file
 
 
 @pytest.fixture
 def recipes_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
+    return recipes_file
 
 
 @pytest.fixture(scope="function")

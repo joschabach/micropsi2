@@ -1202,7 +1202,6 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
 
     assert data['nodes'][node]['parameters']['expectation'] == 1
     assert data['nodes'][node]['parameters']['wait'] == 10
-    assert data['nodes'][node]['parent_nodespace'] == 'Root'
     assert data['nodes'][node]['position'] == [10, 10]
     assert data['nodes'][node]['type'] == "Pipe"
     assert data['nodes'][node] == node_data
@@ -1230,7 +1229,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
         assert 'gatetypes' not in data['nodetypes'][key]
         assert 'slottypes' not in data['nodetypes'][key]
 
-    for key in ['Pipe', 'Register', 'Script', 'Actor']:
+    for key in ['Pipe', 'Register', 'Actor']:
         assert 'gatetypes' in data['nodetypes'][key]
         assert 'slottypes' in data['nodetypes'][key]
 

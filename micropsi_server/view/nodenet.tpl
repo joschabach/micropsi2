@@ -79,7 +79,7 @@
                         <td><label for="nodenet_renderlinks">render links</label></td>
                         <td><select name="nodenet_renderlinks" type="checkbox" name="nodenet_renderlinks" id="nodenet_renderlinks">
                             <option value="always">always</option>
-                            <option value="hover">on node hover</option>
+                            <option value="selection">on selected nodes</option>
                             <option value="no">never</opeion>
                         </select></td>
                     </tr>
@@ -346,7 +346,6 @@
 <div class="dropdown" id="link_menu">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#link_menu"></a>
     <ul class="nodenet_menu dropdown-menu">
-        <li><a href="#">Edit link</a></li>
         <li><a href="#">Delete link</a></li>
         <li><a data-add-monitor href="#">Add link-weight monitor</a></li>
         <li><a data-remove-monitor href="#">Remove link monitor</a></li>

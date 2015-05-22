@@ -134,7 +134,11 @@ def test_reload_native_modules(fixed_nodenet):
     data_after = micropsi.nodenets[fixed_nodenet].data
     assert data_before == data_after
 
-
+@pytest.mark.engine("dict_engine")
+# This behavior is not available in theano_engine: Default inheritance at runtime is not implemented for
+# performance reasons, changed defaults will only affect newly created nodes.
+# This test will have to be replaced when the generic solution proposed in TOL-90 has been
+# implemented.
 def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath):
     # gate_parameters are a property of the nodetype, and should change with
     # the nodetype definition if not explicitly overwritten for a given node

@@ -168,8 +168,8 @@ def test_clone_nodes_all_links(fixed_nodenet):
     links = a1_copy.get_associated_links()
     link = None
     for candidate in links:
-        if candidate.source_node == a1_copy and \
-                candidate.target_node == a2_copy and \
+        if candidate.source_node.uid == a1_copy.uid and \
+                candidate.target_node.uid == a2_copy.uid and \
                 candidate.source_gate.type == 'por' and \
                 candidate.target_slot.type == 'gen':
             link = candidate
@@ -180,8 +180,8 @@ def test_clone_nodes_all_links(fixed_nodenet):
     links = sensor.get_associated_links()
     link = None
     for candidate in links:
-        if candidate.source_node == sensor and \
-                candidate.target_node == a1_copy and \
+        if candidate.source_node.uid == sensor.uid and \
+                candidate.target_node.uid == a1_copy.uid and \
                 candidate.source_gate.type == 'gen' and \
                 candidate.target_slot.type == 'gen':
             link = candidate
@@ -211,8 +211,8 @@ def test_clone_nodes_internal_links(fixed_nodenet):
     links = a1_copy.get_associated_links()
     link = None
     for candidate in links:
-        if candidate.source_node == a1_copy and \
-                candidate.target_node == a2_copy and \
+        if candidate.source_node.uid == a1_copy.uid and \
+                candidate.target_node.uid == a2_copy.uid and \
                 candidate.source_gate.type == 'por' and \
                 candidate.target_slot.type == 'gen':
             link = candidate

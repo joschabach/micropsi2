@@ -8,6 +8,7 @@ import os
 from micropsi_core import runtime
 from micropsi_core import runtime as micropsi
 import mock
+import pytest
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -252,7 +253,7 @@ def test_clone_nodes_copies_gate_params(fixed_nodenet):
     copy = nodenet.get_node(result['nodes'][0]['uid'])
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
-
+@pytest.mark.engine("dict_engine")
 def test_modulators(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
 

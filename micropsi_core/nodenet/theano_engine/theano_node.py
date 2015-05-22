@@ -513,9 +513,9 @@ class TheanoNode(Node):
     def clone_parameters(self):
         parameters = {}
         if self.type == "Sensor":
-            parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
+            parameters['datasource'] = self._nodenet.inverted_sensor_map.get(self.uid, None)
         elif self.type == "Actor":
-            parameters['datatarget'] = self._nodenet.inverted_actuator_map[self.uid]
+            parameters['datatarget'] = self._nodenet.inverted_actuator_map.get(self.uid, None)
         elif self.type == "Activator":
             activator_type = None
             if self._id in self._nodenet.allocated_nodespaces_por_activators:

@@ -1490,7 +1490,14 @@ class TheanoNodenet(Nodenet):
 
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
+        instances_to_delete = {}
         for uid, instance in self.native_module_instances.items():
+            if instance.type not in native_modules:
+                self.logger.warn("No more definition available for node type %s, deleting instance %s" %
+                                (instance.type, uid))
+                instances_to_delete[uid] = instance
+                continue
+
             numeric_id = tnode.from_id(uid)
             number_of_elements = len(np.where(self.allocated_elements_to_nodes == numeric_id)[0])
             new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
@@ -1500,6 +1507,8 @@ class TheanoNodenet(Nodenet):
                 instances_to_recreate[uid] = instance.data
 
         # actually remove the instances
+        for uid in instances_to_delete.keys():
+            self.delete_node(uid)
         for uid in instances_to_recreate.keys():
             self.delete_node(uid)
 

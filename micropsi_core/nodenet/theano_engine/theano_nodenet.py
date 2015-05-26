@@ -1581,7 +1581,7 @@ class TheanoNodenet(Nodenet):
         return data
 
     def get_modulator(self, modulator):
-        return self.__modulators.get(modulator, 0)
+        return self.__modulators.get(modulator, 1)
 
     def change_modulator(self, modulator, diff):
         self.__modulators[modulator] = self.__modulators.get(modulator, 0) + diff

@@ -21,6 +21,7 @@ def test_add_gate_monitor(fixed_nodenet):
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert len(monitor.values) == 1
 
+
 @pytest.mark.engine("dict_engine")
 def test_add_slot_monitor(fixed_nodenet):
     uid = micropsi.add_slot_monitor(fixed_nodenet, 'n1', 'gen', name="FooBarMonitor")
@@ -53,6 +54,7 @@ def test_add_link_monitor(fixed_nodenet):
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert len(monitor.values) == 2
     assert round(monitor.values[2], 2) == 0.7
+
 
 def test_add_modulator_monitor(fixed_nodenet):
     uid = micropsi.add_modulator_monitor(fixed_nodenet, 'base_test', 'Testmonitor')

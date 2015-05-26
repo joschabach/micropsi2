@@ -255,7 +255,6 @@ def test_clone_nodes_copies_gate_params(fixed_nodenet):
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
 
-@pytest.mark.engine("dict_engine")
 def test_modulators(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
 

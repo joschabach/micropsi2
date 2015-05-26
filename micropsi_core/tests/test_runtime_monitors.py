@@ -54,7 +54,6 @@ def test_add_link_monitor(fixed_nodenet):
     assert len(monitor.values) == 2
     assert round(monitor.values[2], 2) == 0.7
 
-@pytest.mark.engine("dict_engine")
 def test_add_modulator_monitor(fixed_nodenet):
     uid = micropsi.add_modulator_monitor(fixed_nodenet, 'base_test', 'Testmonitor')
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)

@@ -541,7 +541,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
     this.bounds = null; // current bounding box (after scaling)
     this.slotIndexes = [];
     this.gateIndexes = [];
-    this.gate_parameters = gate_parameters;
+    this.gate_parameters = gate_parameters || {};
     this.gate_activations = gate_activations || {};
     this.gatefunctions = gatefunctions || {};
 	if(type == "Nodespace") {
@@ -559,7 +559,7 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
             if(!sheaves) {
                 sheaves = {"default":{"uid":"default", "name":"default", "activation": 0}};
             }
-            parameters = jQuery.extend(GATE_DEFAULTS, this.gate_parameters[gatetype]);
+            parameters = jQuery.extend(GATE_DEFAULTS, this.gate_parameters[gatetype] || {});
             if(nodetypes[type].gate_defaults && nodetypes[type].gate_defaults[gatetype]) {
                 for(var key in nodetypes[type].gate_defaults[gatetype]){
                     parameters[key] = nodetypes[type].gate_defaults[gatetype][key];

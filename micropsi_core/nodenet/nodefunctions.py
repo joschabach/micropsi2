@@ -12,8 +12,7 @@
 
 def register(netapi, node=None, **params):
     activation = node.get_slot('gen').activation
-    node.activation = activation
-    node.get_gate('gen').gate_function(activation)
+    node.activation = node.get_gate('gen').gate_function(activation)
 
 
 def sensor(netapi, node=None, datasource=None, **params):

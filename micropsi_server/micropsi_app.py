@@ -718,7 +718,7 @@ def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, uid=None):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None):
     if owner is None:
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
@@ -727,8 +727,7 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         worldadapter=worldadapter,
         template=template,
         owner=owner,
-        world_uid=world_uid,
-        uid=uid)
+        world_uid=world_uid)
 
 
 @rpc("get_current_state")
@@ -1019,8 +1018,8 @@ def get_node(nodenet_uid, node_uid):
 
 
 @rpc("add_node", permission_required="manage nodenets")
-def add_node(nodenet_uid, type, position, nodespace, state=None, uid=None, name="", parameters={}):
-    return runtime.add_node(nodenet_uid, type, position, nodespace, state=state, uid=uid, name=name, parameters=parameters)
+def add_node(nodenet_uid, type, position, nodespace, state=None, name="", parameters={}):
+    return runtime.add_node(nodenet_uid, type, position, nodespace, state=state, name=name, parameters=parameters)
 
 
 @rpc("clone_nodes", permission_required="manage nodenets")
@@ -1104,7 +1103,7 @@ def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
 
 
 @rpc("add_link", permission_required="manage nodenets")
-def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, uid=None):
+def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1):
     return runtime.add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=weight)
 
 
@@ -1113,9 +1112,9 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
     return runtime.set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
-@rpc("get_link")
-def get_link(nodenet_uid, link_uid):
-    return True, runtime.get_link(nodenet_uid, link_uid)
+@rpc("get_links_for_nodes")
+def get_links_for_nodes(nodenet_uid, node_uids = []):
+    return True, runtime.get_links_for_nodes(nodenet_uid, node_uids)
 
 
 @rpc("delete_link", permission_required="manage nodenets")

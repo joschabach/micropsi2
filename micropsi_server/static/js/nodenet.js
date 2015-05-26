@@ -249,7 +249,7 @@ function setCurrentNodenet(uid, nodespace, changed){
     api.call('load_nodenet',
         {nodenet_uid: uid,
             nodespace: nodespace,
-            include_links: $.cookie('renderlinks') != 'no',
+            include_links: $.cookie('renderlinks') == 'always',
         },
         function(data){
             $('#loading').hide();
@@ -382,40 +382,14 @@ function setNodespaceData(data, changed){
                 addNode(item);
             }
         }
-        var link, sourceId, targetId;
-        var outsideLinks = [];
 
         for(var uid in links) {
             if(!(uid in data.links)) {
                 removeLink(links[uid]);
             }
         }
-        for(uid in data.links){
-            sourceId = data.links[uid]['source_node_uid'];
-            targetId = data.links[uid]['target_node_uid'];
-            if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
-                link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                if(uid in links){
-                    redrawLink(link);
-                } else {
-                    addLink(link);
-                }
-            } else if(sourceId in nodes || targetId in nodes){
-                link = new Link(uid, sourceId, data.links[uid].source_gate_name, targetId, data.links[uid].target_slot_name, data.links[uid].weight, data.links[uid].certainty);
-                if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
-                    nodes[targetId].linksFromOutside.push(link.uid);
-                if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
-                    nodes[sourceId].linksToOutside.push(link.uid);
-                outsideLinks.push(link);
-            }
-        }
-        for(var index in outsideLinks){
-            if(outsideLinks[index].uid in links){
-                redrawLink(outsideLinks[index]);
-            } else {
-                addLink(outsideLinks[index]);
-            }
-        }
+        addLinks(data.links);
+
         updateModulators(data.modulators);
 
         if(data.monitors){
@@ -432,11 +406,43 @@ function setNodespaceData(data, changed){
     drawGridLines(view.element);
 }
 
+function addLinks(link_data){
+    var link, sourceId, targetId;
+    var outsideLinks = [];
+
+    for(uid in link_data){
+        sourceId = link_data[uid]['source_node_uid'];
+        targetId = link_data[uid]['target_node_uid'];
+        if (sourceId in nodes && targetId in nodes && nodes[sourceId].parent == nodes[targetId].parent){
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            if(uid in links){
+                redrawLink(link);
+            } else {
+                addLink(link);
+            }
+        } else if(sourceId in nodes || targetId in nodes){
+            link = new Link(uid, sourceId, link_data[uid].source_gate_name, targetId, link_data[uid].target_slot_name, link_data[uid].weight, link_data[uid].certainty);
+            if(targetId in nodes && nodes[targetId].linksFromOutside.indexOf(link.uid) < 0)
+                nodes[targetId].linksFromOutside.push(link.uid);
+            if(sourceId in nodes && nodes[sourceId].linksToOutside.indexOf(link.uid) < 0)
+                nodes[sourceId].linksToOutside.push(link.uid);
+            outsideLinks.push(link);
+        }
+    }
+    for(var index in outsideLinks){
+        if(outsideLinks[index].uid in links){
+            redrawLink(outsideLinks[index]);
+        } else {
+            addLink(outsideLinks[index]);
+        }
+    }
+}
+
 function get_nodenet_data(){
     return {
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
-        'include_links': $.cookie('renderlinks') != 'no',
+        'include_links': $.cookie('renderlinks') == 'always',
     }
 }
 
@@ -456,7 +462,7 @@ function refreshNodespace(nodespace, step, callback){
     if(step){
         params.step = step;
     }
-    params.include_links = nodenet_data['renderlinks'] != 'no';
+    params.include_links = nodenet_data['renderlinks'] == 'always';
     api.call('get_nodespace', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
@@ -810,7 +816,7 @@ function redrawNodeNet() {
 
 // like activation change, only put the node elsewhere and redraw the links
 function redrawNode(node, forceRedraw) {
-    if(nodeRedrawNeeded(node) || forceRedraw){
+    if(forceRedraw || nodeRedrawNeeded(node)){
         if(node.uid in nodeLayer.children){
             nodeLayer.children[node.uid].remove();
         }
@@ -1053,8 +1059,10 @@ function renderLink(link, force) {
     if(nodenet_data.renderlinks == 'no' && !force){
         return;
     }
-    if(nodenet_data.renderlinks == 'hover' && !force){
-        if(!hoverNode || (link.sourceNodeUid != hoverNode.uid && link.targetNodeUid != hoverNode.uid)){
+    if(nodenet_data.renderlinks == 'selection' && !force){
+        var is_hovered = hoverNode && (link.sourceNodeUid == hoverNode.uid || link.targetNodeUid == hoverNode.uid);
+        var is_selected = selection && (link.sourceNodeUid in selection || link.targetNodeUid in selection);
+        if(!is_hovered && !is_selected){
             return;
         }
     }
@@ -1171,7 +1179,7 @@ function renderNode(node) {
     }
     setActivation(node);
     if(node.uid in selection){
-        selectNode(node.uid);
+        selectNode(node.uid, false);
     }
     node.zoomFactor = viewProperties.zoomFactor;
 }
@@ -1653,7 +1661,7 @@ function setActivation(node) {
 }
 
 // mark node as selected, and add it to the selected nodes
-function selectNode(nodeUid) {
+function selectNode(nodeUid, redraw) {
     if(!(nodeUid in nodes)) return;
     selection[nodeUid] = nodes[nodeUid];
     var outline;
@@ -1664,12 +1672,15 @@ function selectNode(nodeUid) {
     }
     outline.strokeColor = viewProperties.selectionColor;
     outline.strokeWidth = viewProperties.outlineWidthSelected*viewProperties.zoomFactor;
+    if (redraw !== false)
+        redrawNode(nodes[nodeUid], true);
 }
 
 // remove selection marking of node, and remove if from the set of selected nodes
 function deselectNode(nodeUid) {
     if (nodeUid in selection) {
         delete selection[nodeUid];
+        nodes[nodeUid].renderCompact = null;
         if(nodeUid in nodeLayer.children){
             var outline;
             if(nodes[nodeUid].type == 'Comment'){
@@ -1679,6 +1690,7 @@ function deselectNode(nodeUid) {
             }
             outline.strokeColor = null;
             outline.strokeWidth = viewProperties.outlineWidth;
+            redrawNode(nodes[nodeUid], true);
         }
     }
 }
@@ -1713,7 +1725,7 @@ function deselectLink(linkUid) {
         delete selection[linkUid];
         if(linkUid in linkLayer.children){
             var linkShape = linkLayer.children[linkUid].children["link"];
-            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'hover'){
+            if(nodenet_data.renderlinks == 'no' || nodenet_data.renderlinks == 'selection'){
                 linkLayer.children[linkUid].remove();
             }
             linkShape.children["line"].strokeColor = links[linkUid].strokeColor;
@@ -1743,8 +1755,9 @@ function deselectGate(){
 }
 
 // deselect all nodes and links
-function deselectAll() {
+function deselectAll(except) {
     for (var uid in selection){
+        if (except && except.indexOf(uid) > -1) continue;
         if (uid in nodes) deselectNode(uid);
         if (uid in links) deselectLink(uid);
         if (uid == 'gate') deselectGate();
@@ -1862,12 +1875,13 @@ function onMouseDown(event) {
                 clickedSelected = nodeUid in selection;
                 if ( !clickedSelected && !event.modifiers.shift &&
                      !event.modifiers.command && !isRightClick(event)) {
-                         deselectAll();
+                        deselectAll();
                 }
                 if (event.modifiers.command && nodeUid in selection){
                     deselectNode(nodeUid); // toggle
                 }
                 else if(clickedSelected && selected_node_count > 1 && isRightClick(event)){
+                    clickType = "node";
                     openMultipleNodesContextMenu(event.event);
                     return;
                 }
@@ -1899,11 +1913,11 @@ function onMouseDown(event) {
                     clickIndex = i;
                     var gate = node.gates[node.gateIndexes[i]];
                     deselectAll();
+                    node.renderCompact = false;
                     selectNode(node.uid);
                     selectGate(node, gate);
                     showGateForm(node, gate);
                     if (isRightClick(event)) {
-                        deselectOtherNodes(node.uid);
                         var monitor = getMonitor(node, node.gateIndexes[clickIndex], 'gate');
                         $('#gate_menu [data-add-monitor]').toggle(monitor == false);
                         $('#gate_menu [data-remove-monitor]').toggle(monitor != false);
@@ -1920,6 +1934,9 @@ function onMouseDown(event) {
                 }
                 else if (linkCreationStart) {
                     finalizeLinkHandler(nodeUid);
+                    path = null;
+                    movePath = false;
+                    return;
                 }
                 else {
                     movePath = true;
@@ -1959,13 +1976,27 @@ function onMouseDown(event) {
 
             if (path.name == "link") {
                 path = path.parent;
-                if (!event.modifiers.shift && !event.modifiers.command) deselectAll();
+                if (!event.modifiers.shift && !event.modifiers.command) {
+                    var except = [];
+                    if(isRightClick(event)){
+                        // if rightclicking a link, nodes need not be deselected
+                        for(uid in selection){
+                            if(uid in nodes){
+                                except.push(uid);
+                            }
+                        }
+                    }
+                    deselectAll(except);
+                }
                 if (event.modifiers.command && path.name in selection) deselectLink(path.name); // toggle
                 else selectLink(path.name);
                 clickType = "link";
                 clickOriginUid = path.name;
-                if (isRightClick(event)) openContextMenu("#link_menu", event.event);
-                showLinkForm(path.name);
+                if (isRightClick(event)) {
+                    openContextMenu("#link_menu", event.event);
+                } else {
+                    showLinkForm(path.name);
+                }
             }
         }
     }
@@ -2001,8 +2032,10 @@ function onMouseMove(event) {
                 if(hoverNode && nodeUid != hoverNode.uid){
                     var oldHover = hoverNode.uid;
                     hoverNode = null;
-                    nodes[oldHover].renderCompact = null;
-                    redrawNode(nodes[oldHover], true);
+                    if(linkCreationStart){
+                        nodes[oldHover].renderCompact = null;
+                        redrawNode(nodes[oldHover], true);
+                    }
                 }
                 if(node.type == 'Comment'){
                     hover = nodeLayer.children[nodeUid].children['body'];
@@ -2019,8 +2052,10 @@ function onMouseMove(event) {
                 hover.fillColor = viewProperties.hoverColor;
                 if(isCompact(nodes[nodeUid])){
                     hoverNode = nodes[nodeUid];
-                    nodes[nodeUid].renderCompact = false;
-                    redrawNode(nodes[nodeUid], true);
+                    if(linkCreationStart){
+                        nodes[nodeUid].renderCompact = false;
+                        redrawNode(nodes[nodeUid], true);
+                    }
                 }
                 return;
             }
@@ -2029,8 +2064,10 @@ function onMouseMove(event) {
     if(hoverNode && hoverNode.uid in nodes){
         var oldHover = hoverNode.uid;
         hoverNode = null;
-        nodes[oldHover].renderCompact = null;
-        redrawNode(nodes[oldHover], true);
+        if(linkCreationStart){
+            nodes[oldHover].renderCompact = null;
+            redrawNode(nodes[oldHover], true);
+        }
     }
     hoverNode = null;
 
@@ -2180,7 +2217,8 @@ function onMouseUp(event) {
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
             if(path.name in nodes){
-                deselectAll();
+                var except = [path.name];
+                deselectAll(except);
                 selectNode(path.name);
             }
         }
@@ -2191,7 +2229,9 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-
+    if(nodenet_data['renderlinks'] == 'selection'){
+        loadLinksForSelection();
+    }
 }
 
 function onKeyDown(event) {
@@ -2260,6 +2300,25 @@ function updateSelection(event){
                 }
             }
         }
+    }
+}
+
+function loadLinksForSelection(){
+    var uids = [];
+    for(var uid in selection){
+        if(uid in nodes){
+            uids.push(uid)
+        }
+    }
+    if(uids.length){
+        api.call('get_links_for_nodes',
+            {'nodenet_uid': currentNodenet,
+             'node_uids': uids },
+            function(data){
+                addLinks(data);
+                view.draw();
+            }
+        );
     }
 }
 
@@ -2428,17 +2487,24 @@ function openMultipleNodesContextMenu(event){
     var typecheck = null;
     var sametype = true;
     var node = null;
+    var compact = false;
     for(var uid in selection){
+        if(isCompact(nodes[uid])) {
+            compact = true;
+        }
         if(typecheck == null || typecheck == nodes[uid].type){
             typecheck = nodes[uid].type;
             node = nodes[uid];
         } else {
             sametype = false;
-            break;
         }
     }
     var menu = $('#multi_node_menu .nodenet_menu');
-    var html = '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
+    var html = '';
+    if(compact){
+        html += '<li><a href="">Expand</a></li><li class="divider"></li>';
+    }
+    html += '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
     if(sametype){
@@ -2476,16 +2542,21 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     menu.off('click', 'li');
     menu.empty();
     var node = nodes[nodeUid];
-    menu.html(getNodeLinkageContextMenuHTML(node));
+    var html = '';
+    if(isCompact(node)){
+        html += '<li><a href="">Expand</a></li><li class="divider"></li>';
+    }
+    html += getNodeLinkageContextMenuHTML(node);
     if(node.type == "Sensor"){
-        menu.append('<li><a href="#">Select datasource</li>');
+        html += '<li><a href="#">Select datasource</li>';
     }
     if(node.type == "Actor"){
-        menu.append('<li><a href="#">Select datatarget</li>');
+        html += '<li><a href="#">Select datatarget</li>';
     }
-    menu.append('<li><a href="#">Rename node</a></li>');
-    menu.append('<li><a href="#">Delete node</a></li>');
-    menu.append('<li data-copy-nodes><a href="#">Copy node</a></li>');
+    html  += '<li><a href="#">Rename node</a></li>' +
+             '<li><a href="#">Delete node</a></li>' +
+             '<li data-copy-nodes><a href="#">Copy node</a></li>';
+    menu.html(html);
     openContextMenu(menu_id, event);
 }
 
@@ -2510,30 +2581,6 @@ function handleContextMenu(event) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
             var autoalign = $el.attr("data-auto-align");
-            if(!type && !autoalign){
-                if(menuText == "Delete nodes"){
-                    deleteNodeHandler(clickOriginUid);
-                    return;
-                } else if($(event.target).attr('data-link-type') != undefined) {
-                    // multi node menu
-                    var linktype = $(event.target).attr('data-link-type');
-                    if (linktype) {
-                        var forwardlinktype = linktype;
-                        if(forwardlinktype.indexOf('/')){
-                            forwardlinktype = forwardlinktype.split('/')[0];
-                        }
-                        for(var uid in selection){
-                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
-                            createLinkHandler(uid, clickIndex, linktype);
-                        }
-                    } else {
-                        openLinkCreationDialog(path.name)
-                    }
-                    $el.parentsUntil('.dropdown-menu').dropdown('toggle');
-                } else {
-                    return false;
-                }
-            }
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2588,6 +2635,9 @@ function handleContextMenu(event) {
             break;
         case "node":
             switch (menuText) {
+                case "Delete nodes":
+                    deleteNodeHandler(clickOriginUid);
+                    break;
                 case "Rename node":
                     var nodeUid = clickOriginUid;
                     if (nodeUid in nodes) {
@@ -2615,18 +2665,25 @@ function handleContextMenu(event) {
                     target_select.html(html);
                     target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     break;
+                case "Expand":
+                    for(uid in selection){
+                        nodes[uid].renderCompact = false;
+                        redrawNode(nodes[uid], true);
+                    }
+                    break;
                 default:
-                    // link creation
                     var linktype = $(event.target).attr('data-link-type');
                     if (linktype) {
                         var forwardlinktype = linktype;
                         if(forwardlinktype.indexOf('/')){
                             forwardlinktype = forwardlinktype.split('/')[0];
                         }
-                        clickIndex = nodes[clickOriginUid].gateIndexes.indexOf(forwardlinktype);
-                        createLinkHandler(clickOriginUid, clickIndex, linktype);
+                        for(var uid in selection){
+                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                            createLinkHandler(uid, clickIndex, linktype);
+                        }
                     } else {
-                        openLinkCreationDialog(path.name);
+                        openLinkCreationDialog(path.name)
                     }
             }
             break;
@@ -3013,9 +3070,15 @@ function createLinkFromDialog(sourceUid, sourceGate, targetUid, targetSlot){
 function finalizeLinkHandler(nodeUid, slotIndex) {
     var targetNode = nodes[nodeUid];
     var targetUid = nodeUid;
+
+    targetNode.renderCompact = null;
+    redrawNode(targetNode, true);
+    deselectAll();
+
     for(var i=0; i < linkCreationStart.length; i++){
         var sourceNode = linkCreationStart[i].sourceNode;
         var sourceUid = linkCreationStart[i].sourceNode.uid;
+        selectNode(sourceUid);
         var gateIndex = linkCreationStart[i].gateIndex;
 
         if (!slotIndex || slotIndex < 0) slotIndex = 0;
@@ -3101,7 +3164,9 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
                                 nodes[link.sourceNodeUid].linksToOutside.push(link.uid);
                             }
                         }
-                        addLink(link);
+                        if(nodenet_data.renderlinks == 'always'){
+                            addLink(link);
+                        }
                     });
                 }
             });

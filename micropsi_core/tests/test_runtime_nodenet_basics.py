@@ -289,3 +289,39 @@ def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test", parameters={"linktype": "catexp", "threshold": "", "protocol_mode": "all_active"})
     # nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
     assert micropsi.save_nodenet(fixed_nodenet)
+
+
+def test_multiple_nodenet_interference(engine):
+
+    result, n1_uid = micropsi.new_nodenet('Net1', engine=engine, owner='Pytest User')
+    result, n2_uid = micropsi.new_nodenet('Net2', engine=engine, owner='Pytest User')
+
+    n1 = micropsi.nodenets[n1_uid]
+    n2 = micropsi.nodenets[n2_uid]
+
+    source1 = n1.netapi.create_node("Register", None, "Source1")
+    register1 = n1.netapi.create_node("Register", None, "Register1")
+    n1.netapi.link(source1, 'gen', source1, 'gen')
+    n1.netapi.link(source1, 'gen', register1, 'gen')
+
+    source2 = n2.netapi.create_node("Register", None, "Source2")
+    register2 = n2.netapi.create_node("Register", None, "Register2")
+    n2.netapi.link(source2, 'gen', source2, 'gen')
+    n2.netapi.link(source2, 'gen', register2, 'gen')
+    source2.activation = 0.7
+
+    micropsi.step_nodenet(n2.uid)
+
+    assert source1.activation == 0
+    assert register1.activation == 0
+    assert source1.name == "Source1"
+    assert register1.name == "Register1"
+
+    assert round(source2.activation, 2) == 0.7
+    assert round(register2.activation, 2) == 0.7
+    assert source2.name == "Source2"
+    assert register2.name == "Register2"
+
+    assert register2.get_slot('gen').get_links()[0].source_node.uid == source2.uid
+    assert register2.get_slot('gen').get_links()[0].source_node.name == "Source2"
+    assert register1.get_slot('gen').get_links()[0].source_node.name == "Source1"

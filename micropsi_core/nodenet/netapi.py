@@ -5,8 +5,6 @@ class NetAPI(object):
     Node Net API facade class for use from within the node net (in node functions)
     """
 
-    __locks_to_delete = []
-
     @property
     def uid(self):
         return self.__nodenet.uid
@@ -21,6 +19,7 @@ class NetAPI(object):
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet
+        self.__locks_to_delete = []
 
     @property
     def logger(self):

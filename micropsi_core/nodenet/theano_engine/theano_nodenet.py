@@ -130,94 +130,6 @@ class TheanoNodenet(Nodenet):
         theano runtime engine implementation
     """
 
-    # array, index is node id, value is numeric node type
-    allocated_nodes = None
-
-    # array, index is node id, value is offset in a and w
-    allocated_node_offsets = None
-
-    # array, index is node id, value is nodespace id
-    allocated_node_parents = None
-
-    # array, index is element index, value is node id
-    allocated_elements_to_nodes = None
-
-    # array, index is nodespace id, value is parent nodespace id
-    allocated_nodespaces = None
-
-    # directional activator assignment, key is nodespace ID, value is activator ID
-    allocated_nodespaces_por_activators = None
-    allocated_nodespaces_ret_activators = None
-    allocated_nodespaces_sub_activators = None
-    allocated_nodespaces_sur_activators = None
-    allocated_nodespaces_cat_activators = None
-    allocated_nodespaces_exp_activators = None
-
-    # directional activators map, index is element id, value is the directional activator's element id
-    allocated_elements_to_activators = None
-
-    last_allocated_node = 0
-    last_allocated_offset = 0
-    last_allocated_nodespace = 0
-
-    native_module_instances = {}
-    comment_instances = {}
-
-    # map of string uids to positions. Not all nodes necessarily have an entry.
-    positions = {}
-
-    # map of string uids to names. Not all nodes neccessarily have an entry.
-    names = {}
-
-    # map of data sources to numerical node IDs
-    sensormap = {}
-
-    # map of numerical node IDs to data sources
-    inverted_sensor_map = {}
-
-    # map of data targets to numerical node IDs
-    actuatormap = {}
-
-    # map of numerical node IDs to data targets
-    inverted_actuator_map = {}
-
-    # theano tensors for performing operations
-    w = None            # matrix of weights
-    a = None            # vector of activations
-    a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
-                        # this is a view on the activation values instrumental in calculating concept node functions
-
-    g_factor = None     # vector of gate factors, controlled by directional activators
-    g_threshold = None  # vector of thresholds (gate parameters)
-    g_amplification = None  # vector of amplification factors
-    g_min = None        # vector of lower bounds
-    g_max = None        # vector of upper bounds
-
-    g_function_selector = None # vector of gate function selectors
-
-    g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
-
-    g_expect = None     # vector of expectations
-    g_countdown = None  # vector of number of steps until expectation needs to be met
-    g_wait = None       # vector of initial values for g_countdown
-
-    n_function_selector = None      # vector of per-gate node function selectors
-    n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
-                                    # node. This could in theory be inferred with T.max() on upshifted versions of w,
-                                    # but for now, we manually track this property
-    n_node_retlinked = None         # same for ret
-
-    sparse = True
-
-    __has_new_usages = True
-    __has_pipes = False
-    __has_directional_activators = False
-    __has_gatefunction_absolute = False
-    __has_gatefunction_sigmoid = False
-    __has_gatefunction_tanh = False
-    __has_gatefunction_rect = False
-    __has_gatefunction_one_over_x = False
-
     @property
     def engine(self):
         return "theano_engine"
@@ -318,7 +230,96 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
+        # array, index is node id, value is numeric node type
+        self.allocated_nodes = None
+
+        # array, index is node id, value is offset in a and w
+        self.allocated_node_offsets = None
+
+        # array, index is node id, value is nodespace id
+        self.allocated_node_parents = None
+
+        # array, index is element index, value is node id
+        self.allocated_elements_to_nodes = None
+
+        # array, index is nodespace id, value is parent nodespace id
+        self.allocated_nodespaces = None
+
+        # directional activator assignment, key is nodespace ID, value is activator ID
+        self.allocated_nodespaces_por_activators = None
+        self.allocated_nodespaces_ret_activators = None
+        self.allocated_nodespaces_sub_activators = None
+        self.allocated_nodespaces_sur_activators = None
+        self.allocated_nodespaces_cat_activators = None
+        self.allocated_nodespaces_exp_activators = None
+
+        # directional activators map, index is element id, value is the directional activator's element id
+        self.allocated_elements_to_activators = None
+
+        self.last_allocated_node = 0
+        self.last_allocated_offset = 0
+        self.last_allocated_nodespace = 0
+
+        self.native_module_instances = {}
+        self.comment_instances = {}
+
+        # map of string uids to positions. Not all nodes necessarily have an entry.
+        self.positions = {}
+
+        # map of string uids to names. Not all nodes neccessarily have an entry.
+        self.names = {}
+
+        # map of data sources to numerical node IDs
+        self.sensormap = {}
+
+        # map of numerical node IDs to data sources
+        self.inverted_sensor_map = {}
+
+        # map of data targets to numerical node IDs
+        self.actuatormap = {}
+
+        # map of numerical node IDs to data targets
+        self.inverted_actuator_map = {}
+
+        # theano tensors for performing operations
+        self.w = None            # matrix of weights
+        self.a = None            # vector of activations
+        self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
+                            # this is a view on the activation values instrumental in calculating concept node functions
+
+        self.g_factor = None     # vector of gate factors, controlled by directional activators
+        self.g_threshold = None  # vector of thresholds (gate parameters)
+        self.g_amplification = None  # vector of amplification factors
+        self.g_min = None        # vector of lower bounds
+        self.g_max = None        # vector of upper bounds
+
+        self.g_function_selector = None # vector of gate function selectors
+
+        self.g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
+
+        self.g_expect = None     # vector of expectations
+        self.g_countdown = None  # vector of number of steps until expectation needs to be met
+        self.g_wait = None       # vector of initial values for g_countdown
+
+        self.n_function_selector = None      # vector of per-gate node function selectors
+        self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
+                                        # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                        # but for now, we manually track this property
+        self.n_node_retlinked = None         # same for ret
+
+        self.sparse = True
+
+        self.__has_new_usages = True
+        self.__has_pipes = False
+        self.__has_directional_activators = False
+        self.__has_gatefunction_absolute = False
+        self.__has_gatefunction_sigmoid = False
+        self.__has_gatefunction_tanh = False
+        self.__has_gatefunction_rect = False
+        self.__has_gatefunction_one_over_x = False
+
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
 
         INITIAL_NUMBER_OF_NODESPACES = 10
 

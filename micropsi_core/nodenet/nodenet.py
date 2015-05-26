@@ -25,6 +25,7 @@ class NodenetLockException(Exception):
 
 
 class Nodenet(metaclass=ABCMeta):
+
     """
     Nodenet is the abstract base class for all node net implementations and defines the interface towards
     runtime.py, which is where JSON API and tests access node nets.
@@ -32,12 +33,6 @@ class Nodenet(metaclass=ABCMeta):
     This abstract Nodenet class defines handling of node net uid, name, world and worldadapter connections,
     but makes no assumptions on persistency (filesystem, database, memory-only) or implementation.
     """
-
-    __uid = ""
-    __name = ""
-    __world_uid = None
-    __worldadapter_uid = None
-    is_active = False
 
     @property
     @abstractmethod
@@ -159,14 +154,17 @@ class Nodenet(metaclass=ABCMeta):
         """
         Constructor for the abstract base class, must be called by implementations
         """
-        uid = uid or micropsi_core.tools.generate_uid()
+        self.__uid = uid or micropsi_core.tools.generate_uid()
+        self.__name = name
+        self.__world_uid = None
+        self.__worldadapter_uid = None
+        self.is_active = False
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__uid = uid
 
         self.world = world
         self.owner = owner
-        self.name = name
         if world and worldadapter:
             self.worldadapter = worldadapter
 

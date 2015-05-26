@@ -30,9 +30,6 @@ class Node(metaclass=ABCMeta):
     Abstract base class for node implementations.
     """
 
-    __nodetype_name = None
-    __nodetype = None
-
     @property
     def data(self):
 

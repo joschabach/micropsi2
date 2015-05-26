@@ -217,6 +217,30 @@ def get_elements_per_type(type, nativemodules=None):
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
+def get_gates_per_type(type, nativemodules=None):
+    if type == REGISTER:
+        return 1
+    elif type == SENSOR:
+        return 1
+    elif type == ACTUATOR:
+        return 1
+    elif type == ACTIVATOR:
+        return 0
+    elif type == CONCEPT:
+        return 7
+    elif type == SCRIPT:
+        return 7
+    elif type == PIPE:
+        return 7
+    elif type == COMMENT:
+        return 0
+    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
+        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
+        return len(native_module_definition.gatetypes)
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
+
+
 def to_id(numericid):
     return "n" + str(int(numericid))
 
@@ -341,7 +365,7 @@ class TheanoNode(Node):
     def get_gatefunction_names(self):
         result = {}
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
+        for numericalgate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
             result[get_string_gate_type(numericalgate, self.nodetype)] = \
                 get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
         return result

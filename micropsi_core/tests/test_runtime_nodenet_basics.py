@@ -327,7 +327,7 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
     assert register1.activation == 0
     assert register1.name == "Register1"
     assert nativemodule.name == "Testnode"
-    assert register1.get_slot('gen').get_links()[0].weight == 1.2
+    assert round(register1.get_slot('gen').get_links()[0].weight, 2) == 1.2
     assert register1.get_slot('gen').get_links()[0].source_node.name == 'Testnode'
     assert n1.get_node(register1.uid).name == "Register1"
 
@@ -336,6 +336,6 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
     assert round(register2.activation, 2) == 0.63
     assert register2.name == "Register2"
     assert source2.name == "Source2"
-    assert register2.get_slot('gen').get_links()[0].weight == 0.9
+    assert round(register2.get_slot('gen').get_links()[0].weight, 2) == 0.9
     assert register2.get_slot('gen').get_links()[0].source_node.name == 'Source2'
     assert n2.get_node(register2.uid).name == "Register2"

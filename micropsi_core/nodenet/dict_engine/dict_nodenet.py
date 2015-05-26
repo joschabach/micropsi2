@@ -127,37 +127,6 @@ STANDARD_NODETYPES = {
             "wait": 10
         }
     },
-    "Trigger": {
-        "name": "Trigger",
-        "slottypes": ["gen", "sub", "sur"],
-        "nodefunction_name": "trigger",
-        "gatetypes": ["gen", "sub", "sur"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "sub": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "sur": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            }
-        },
-        "symbol": "⃠",
-        "parameters": ["timeout", "condition", "response"],
-        "parameter_values": {
-            "condition": ["=", ">"]
-        }
-    },
     "Activator": {
         "name": "Activator",
         "slottypes": ["gen"],

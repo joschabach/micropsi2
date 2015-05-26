@@ -477,9 +477,9 @@ class TheanoNode(Node):
     def set_parameter(self, parameter, value):
         if value == '' or value is None:
             if parameter in self.nodetype.parameter_defaults:
-                parameter = self.nodetype.parameter_defaults[parameter]
+                value = self.nodetype.parameter_defaults[parameter]
             else:
-                parameter = None
+                value = None
         if self.type == "Sensor" and parameter == "datasource":
             if self.uid in self._nodenet.inverted_sensor_map:
                 olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association

@@ -291,7 +291,19 @@ def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
     assert micropsi.save_nodenet(fixed_nodenet)
 
 
-def test_multiple_nodenet_interference(engine):
+def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
+
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc"\
+        }}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
+
+    micropsi.reload_native_modules()
 
     result, n1_uid = micropsi.new_nodenet('Net1', engine=engine, owner='Pytest User')
     result, n2_uid = micropsi.new_nodenet('Net2', engine=engine, owner='Pytest User')
@@ -299,29 +311,31 @@ def test_multiple_nodenet_interference(engine):
     n1 = micropsi.nodenets[n1_uid]
     n2 = micropsi.nodenets[n2_uid]
 
-    source1 = n1.netapi.create_node("Register", None, "Source1")
+    nativemodule = n1.netapi.create_node("Testnode", None, "Testnode")
     register1 = n1.netapi.create_node("Register", None, "Register1")
-    n1.netapi.link(source1, 'gen', source1, 'gen')
-    n1.netapi.link(source1, 'gen', register1, 'gen')
+    n1.netapi.link(nativemodule, 'gen', register1, 'gen', weight=1.2)
 
     source2 = n2.netapi.create_node("Register", None, "Source2")
     register2 = n2.netapi.create_node("Register", None, "Register2")
     n2.netapi.link(source2, 'gen', source2, 'gen')
-    n2.netapi.link(source2, 'gen', register2, 'gen')
+    n2.netapi.link(source2, 'gen', register2, 'gen', weight=0.9)
     source2.activation = 0.7
 
     micropsi.step_nodenet(n2.uid)
 
-    assert source1.activation == 0
+    assert n1.current_step == 0
     assert register1.activation == 0
-    assert source1.name == "Source1"
     assert register1.name == "Register1"
+    assert nativemodule.name == "Testnode"
+    assert register1.get_slot('gen').get_links()[0].weight == 1.2
+    assert register1.get_slot('gen').get_links()[0].source_node.name == 'Testnode'
+    assert n1.get_node(register1.uid).name == "Register1"
 
+    assert n2.current_step == 1
     assert round(source2.activation, 2) == 0.7
-    assert round(register2.activation, 2) == 0.7
-    assert source2.name == "Source2"
+    assert round(register2.activation, 2) == 0.63
     assert register2.name == "Register2"
-
-    assert register2.get_slot('gen').get_links()[0].source_node.uid == source2.uid
-    assert register2.get_slot('gen').get_links()[0].source_node.name == "Source2"
-    assert register1.get_slot('gen').get_links()[0].source_node.name == "Source1"
+    assert source2.name == "Source2"
+    assert register2.get_slot('gen').get_links()[0].weight == 0.9
+    assert register2.get_slot('gen').get_links()[0].source_node.name == 'Source2'
+    assert n2.get_node(register2.uid).name == "Register2"

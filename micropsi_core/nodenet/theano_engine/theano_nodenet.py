@@ -17,6 +17,7 @@ import scipy
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.node import Nodetype
+from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 
 from micropsi_core.nodenet.theano_engine import theano_node as tnode
 from micropsi_core.nodenet.theano_engine import theano_nodespace as tnodespace
@@ -449,6 +450,7 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
+        self.stepoperators = []
         self.initialize_stepoperators()
 
         self.__nodetypes = {}
@@ -467,7 +469,11 @@ class TheanoNodenet(Nodenet):
         self.initialize_nodenet({})
 
     def initialize_stepoperators(self):
-        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self), TheanoPORRETDecay(self)]
+        self.stepoperators = [
+            TheanoPropagate(self),
+            TheanoCalculate(self),
+            TheanoPORRETDecay(self),
+            DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, filename):
@@ -1556,7 +1562,8 @@ class TheanoNodenet(Nodenet):
             'links': {},
             'nodes': self.construct_nodes_dict(nodespace_uid, self.NoN),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict()
+            'monitors': self.construct_monitors_dict(),
+            'modulators': self.construct_modulators_dict()
         }
         if include_links:
             data['links'] = self.construct_links_dict(nodespace_uid)
@@ -1575,13 +1582,13 @@ class TheanoNodenet(Nodenet):
         return data
 
     def get_modulator(self, modulator):
-        pass
+        return self.__modulators.get(modulator, 0)
 
     def change_modulator(self, modulator, diff):
-        pass
+        self.__modulators[modulator] = self.__modulators.get(modulator, 0) + diff
 
     def set_modulator(self, modulator, value):
-        pass
+        self.__modulators[modulator] = value
 
     def get_nodetype(self, type):
         if type in self.__nodetypes:
@@ -1676,7 +1683,7 @@ class TheanoNodenet(Nodenet):
         return data
 
     def construct_modulators_dict(self):
-        return {}
+        return self.__modulators.copy()
 
     def get_standard_nodetype_definitions(self):
         """

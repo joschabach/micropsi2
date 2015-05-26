@@ -293,14 +293,15 @@ class TheanoPORRETDecay(StepOperator):
     #    self.decay = theano.function([por_cols, por_rows], None, updates={nodenet.w: new_w}, accept_inplace=True)
 
     def execute(self, nodenet, nodes, netapi):
-        if nodenet.has_pipes and nodenet.porretdecay != 0:
+        porretdecay = nodenet.get_modulator('por_ret_decay')
+        if nodenet.has_pipes and porretdecay != 0:
             n_function_selector = nodenet.n_function_selector.get_value(borrow=True)
             w = nodenet.w.get_value(borrow=True)
             por_cols = np.where((n_function_selector == NFPG_PIPE_POR) | (n_function_selector == NFPG_PIPE_RET))[0]
             por_rows = w[:, por_cols].nonzero()[0]
             cols, rows = np.meshgrid(por_cols, por_rows)
             w_update = w[rows, cols]
-            w_update *= (1 - nodenet.porretdecay)
+            w_update *= (1 - porretdecay)
             if nodenet.current_step % 1000 == 0:
                 if nodenet.sparse:                         # todo: there must be a more efficient way to deal with this
                     w_update = w_update.todense()

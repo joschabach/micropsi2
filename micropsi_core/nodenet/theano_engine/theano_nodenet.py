@@ -207,8 +207,6 @@ class TheanoNodenet(Nodenet):
                                     # but for now, we manually track this property
     n_node_retlinked = None         # same for ret
 
-    porretdecay = 0.0001
-
     sparse = True
 
     __has_new_usages = True
@@ -384,6 +382,7 @@ class TheanoNodenet(Nodenet):
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
+        self.__modulators['por_ret_decay'] = 0.
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
@@ -794,7 +793,7 @@ class TheanoNodenet(Nodenet):
 
     def initialize_nodenet(self, initfrom):
 
-        self.__modulators = initfrom.get("modulators", {})
+        self.__modulators.update(initfrom.get("modulators", {}))
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)

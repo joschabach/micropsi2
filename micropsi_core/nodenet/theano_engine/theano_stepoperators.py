@@ -253,6 +253,12 @@ class TheanoCalculate(Calculate):
         g_factor = a[self.nodenet.allocated_elements_to_activators]
         self.nodenet.g_factor.set_value(g_factor, borrow=True)
 
+    def count_success_and_failure(self, nodenet):
+        nays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.a.get_value(borrow=True) <= -1))[0])
+        yays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.a.get_value(borrow=True) >= 1))[0])
+        nodenet.set_modulator('base_number_of_expected_events', yays)
+        nodenet.set_modulator('base_number_of_unexpected_events', nays)
+
     def execute(self, nodenet, nodes, netapi):
         self.world = nodenet.world
         if nodenet.has_new_usages:
@@ -267,6 +273,8 @@ class TheanoCalculate(Calculate):
         if nodenet.has_directional_activators:
             self.calculate_g_factors()
         self.calculate()
+        if nodenet.has_pipes:
+            self.count_success_and_failure(nodenet)
         self.calculate_native_modules()
 
 

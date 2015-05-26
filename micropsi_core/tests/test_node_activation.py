@@ -126,7 +126,7 @@ def test_gatefunction_sigmoid(fixed_nodenet):
     net, netapi, source, register = prepare(fixed_nodenet)
     register.set_gatefunction_name("gen", "sigmoid")
     net.step()
-    assert round(register.get_gate("gen").activation,5) == round(sigmoid(1, 0, 0),5)
+    assert round(register.get_gate("gen").activation, 5) == round(sigmoid(1, 0, 0), 5)
 
 
 def test_gatefunction_none_is_identity(fixed_nodenet):
@@ -144,3 +144,13 @@ def test_gatefunctions(fixed_nodenet):
     assert funcs.one_over_x(2., 0, 0) == 0.5
     assert funcs.identity(1, 0, 0) == 1
     assert funcs.sigmoid(0, 0, 0) == 0.5
+
+
+def test_node_activation_is_gen_gate_activation(fixed_nodenet):
+    from micropsi_core.nodenet.gatefunctions import sigmoid
+    net, netapi, source, register = prepare(fixed_nodenet)
+    register.set_gatefunction_name('gen', 'sigmoid')
+    sig = round(sigmoid(1, 0, 0), 4)
+    net.step()
+    assert round(register.activation, 4) == sig
+    assert round(register.get_gate('gen').activation, 4) == sig

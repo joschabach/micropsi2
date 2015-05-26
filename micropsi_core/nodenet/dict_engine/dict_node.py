@@ -466,9 +466,10 @@ class DictGate(Gate):
             gate_factor = 1.0
         if gate_factor == 0.0:
             self.sheaves[sheaf]['activation'] = 0
-            return  # if the gate is closed, we don't need to execute the gate function
-            # simple linear threshold function; you might want to use a sigmoid for neural learning
+            return 0  # if the gate is closed, we don't need to execute the gate function
+
         gatefunction = self.__node.get_gatefunction(self.__type)
+
         if gatefunction:
             activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
         else:
@@ -479,13 +480,11 @@ class DictGate(Gate):
         else:
             activation = activation * self.parameters["amplification"] * gate_factor
 
-        # if self.parameters["decay"]:  # let activation decay gradually
-        #     if activation < 0:
-        #         activation = min(activation, self.activation * (1 - self.parameters["decay"]))
-        #     else:
-        #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
+        activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
 
-        self.sheaves[sheaf]['activation'] = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.sheaves[sheaf]['activation'] = activation
+
+        return activation
 
     def open_sheaf(self, input_activation, sheaf="default"):
         """This function opens a new sheaf and calls the gate function for the newly opened sheaf

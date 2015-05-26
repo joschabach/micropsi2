@@ -263,3 +263,29 @@ def test_modulators(fixed_nodenet):
 
     nodenet.set_modulator("test_modulator", -1)
     assert nodenet.netapi.get_modulator("test_modulator") == -1
+
+
+def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "parameters": ["linktype", "threshold", "protocol_mode"],\
+            "parameter_values": {\
+                "linktype": ["catexp", "subsur"],\
+                "protocol_mode": ["all_active", "most_active_one"]\
+            },\
+            "parameter_defaults": {\
+                "linktype": "catexp",\
+                "protocol_mode": "all_active"\
+            }}\
+        }')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    assert micropsi.reload_native_modules()
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test", parameters={"linktype": "catexp", "threshold": "", "protocol_mode": "all_active"})
+    # nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
+    assert micropsi.save_nodenet(fixed_nodenet)

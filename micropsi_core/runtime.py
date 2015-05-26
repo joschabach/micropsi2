@@ -821,6 +821,19 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
     return nodenet.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
+def get_links_for_nodes(nodenet_uid, node_uids):
+    """ Returns a dict of links connected to the given nodes """
+    nodenet = nodenets[nodenet_uid]
+    nodes = [nodenet.get_node(uid) for uid in node_uids]
+    links = {}
+    for node in nodes:
+        for g in node.get_gate_types():
+            links.update(dict((l.uid, l.data) for l in node.get_gate(g).get_links()))
+        for s in node.get_slot_types():
+            links.update(dict((l.uid, l.data) for l in node.get_slot(s).get_links()))
+    return links
+
+
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]

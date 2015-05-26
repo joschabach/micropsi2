@@ -487,6 +487,7 @@ class TheanoNodenet(Nodenet):
             metadata['sensormap'] = self.sensormap
             metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
+            metadata['modulators'] = self.construct_modulators_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write bulk data to our own numpy-based file format
@@ -793,8 +794,7 @@ class TheanoNodenet(Nodenet):
 
     def initialize_nodenet(self, initfrom):
 
-        # todo: implement modulators
-        # self.__modulators = initfrom.get("modulators", {})
+        self.__modulators = initfrom.get("modulators", {})
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)

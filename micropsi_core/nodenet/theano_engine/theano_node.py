@@ -29,6 +29,7 @@ EXP = 6
 
 MAX_STD_GATE = EXP
 
+
 def get_numerical_gate_type(type, nodetype=None):
     if nodetype is not None and len(nodetype.gatetypes) > 0:
         return nodetype.gatetypes.index(type)
@@ -254,16 +255,15 @@ class TheanoNode(Node):
         theano node proxy class
     """
 
-    _nodenet = None
-    _numerictype = 0
-    _id = -1
-    _parent_id = -1
-
-    parameters = None
-
     def __init__(self, nodenet, parent_uid, uid, type, parameters={}, **_):
 
         self._numerictype = type
+        self._id = from_id(uid)
+        self._parent_id = nodespace.from_id(parent_uid)
+        self._nodenet = nodenet
+
+        self.parameters = None
+
         strtype = get_string_node_type(type, nodenet.native_modules)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
@@ -276,11 +276,6 @@ class TheanoNode(Node):
                 self.parameters = parameters.copy()
             else:
                 self.parameters = {}
-
-
-        self._nodenet = nodenet
-        self._id = from_id(uid)
-        self._parent_id = nodespace.from_id(parent_uid)
 
     @property
     def uid(self):
@@ -586,7 +581,7 @@ class TheanoNode(Node):
             self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default")
         except Exception:
             self._nodenet.is_active = False
-            #self.activation = -1
+            # self.activation = -1
             raise
 
 
@@ -594,11 +589,6 @@ class TheanoGate(Gate):
     """
         theano gate proxy clas
     """
-
-    __numerictype = GEN
-    __type = None
-    __node = None
-    __nodenet = None
 
     @property
     def type(self):
@@ -674,11 +664,6 @@ class TheanoSlot(Slot):
     """
         theano slot proxy class
     """
-
-    __numerictype = GEN
-    __type = None
-    __node = None
-    __nodenet = None
 
     @property
     def type(self):

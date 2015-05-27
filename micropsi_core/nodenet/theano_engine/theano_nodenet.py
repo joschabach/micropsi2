@@ -320,7 +320,6 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
-
         INITIAL_NUMBER_OF_NODESPACES = 10
 
         AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4

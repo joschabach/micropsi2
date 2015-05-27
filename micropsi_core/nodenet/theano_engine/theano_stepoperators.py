@@ -37,8 +37,6 @@ class TheanoPropagate(Propagate):
 
     """
 
-    propagate = None
-
     def __init__(self, nodenet):
         if nodenet.sparse:
             self.propagate = theano.function([], None, updates={nodenet.a: ST.dot(nodenet.w, nodenet.a)})
@@ -57,11 +55,10 @@ class TheanoCalculate(Calculate):
 
     """
 
-    calculate = None
-
     def __init__(self, nodenet):
-        self.nodenet = nodenet
+        self.calculate = None
         self.world = None
+        self.nodenet = nodenet
 
     def compile_theano_functions(self, nodenet):
         slots = nodenet.a_shifted

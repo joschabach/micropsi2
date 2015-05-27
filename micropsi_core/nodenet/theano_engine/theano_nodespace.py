@@ -17,9 +17,6 @@ class TheanoNodespace(Nodespace):
         theano nodespace implementation
     """
 
-    _nodenet = None
-    _id = -1
-
     @property
     def data(self):
         data = {

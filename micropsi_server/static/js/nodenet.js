@@ -383,12 +383,23 @@ function setNodespaceData(data, changed){
             }
         }
 
-        for(var uid in links) {
-            if(!(uid in data.links)) {
-                removeLink(links[uid]);
+        if(nodenet_data.renderlinks == 'selection'){
+            loadLinksForSelection(function(data){
+                for(var uid in links) {
+                    if(!(uid in data)) {
+                        removeLink(links[uid]);
+                    }
+                }
+                addLinks(data);
+            });
+        } else {
+            for(var uid in links) {
+                if(!(uid in data.links)) {
+                    removeLink(links[uid]);
+                }
             }
+            addLinks(data.links);
         }
-        addLinks(data.links);
 
         updateModulators(data.modulators);
 
@@ -2303,7 +2314,7 @@ function updateSelection(event){
     }
 }
 
-function loadLinksForSelection(){
+function loadLinksForSelection(callback){
     var uids = [];
     for(var uid in selection){
         if(uid in nodes){
@@ -2314,7 +2325,7 @@ function loadLinksForSelection(){
         api.call('get_links_for_nodes',
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
-            function(data){
+            callback || function(data){
                 addLinks(data);
                 view.draw();
             }

@@ -76,15 +76,42 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['worldadapter'] == 'Braitenberg'
 
 
-def test_set_node_state(app, test_nodenet, node):
+def test_set_node_state(app, test_nodenet, nodetype_def, nodefunc_def):
+    app.set_auth()
+    # create a native module:
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t"}}')
+
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    response = app.get_json('/rpc/reload_native_modules()')
+    assert_success(response)
+
+    response = app.post_json('/rpc/add_node', params={
+        'nodenet_uid': test_nodenet,
+        'type': 'Testnode',
+        'position': [23, 23],
+        'nodespace': None,
+        'name': 'Testnode'
+    })
+    assert_success(response)
+
+    uid = response.json_body['data']
+
     response = app.post_json('/rpc/set_node_state', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': node,
+        'node_uid': uid,
         'state': {'foo': 'bar'}
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
-    assert response.json_body['data']['nodes'][node]['state'] == {'foo': 'bar'}
+    assert response.json_body['data']['nodes'][uid]['state'] == {'foo': 'bar'}
 
 
 def test_set_node_activation(app, test_nodenet, node):
@@ -96,7 +123,7 @@ def test_set_node_activation(app, test_nodenet, node):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     sheaves = response.json_body['data']['nodes'][node]['sheaves']
-    assert sheaves['default']['activation'] == 0.734
+    assert float("%.3f" % sheaves['default']['activation']) == 0.734
 
 
 def test_start_simulation(app, test_nodenet):
@@ -170,8 +197,14 @@ def test_get_current_state(app, test_nodenet, test_world, node):
         'gate': 'sub',
     })
     monitor_uid = response.json_body['data']
+
+    response = app.get_json('/rpc/step_simulation(nodenet_uid="%s")' % test_nodenet)
+    assert_success(response)
+
     response = app.get_json('/rpc/start_simulation(nodenet_uid="%s")' % test_nodenet)
-    sleep(0.4)
+    assert_success(response)
+
+    sleep(1)
     response = app.post_json('/rpc/get_current_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {
@@ -214,7 +247,7 @@ def test_revert_nodenet(app, test_nodenet, test_world):
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['name'] == 'Testnet'
-    assert data['worldadapter'] == 'Default'
+    assert data['worldadapter'] is None
 
 
 def test_save_nodenet(app, test_nodenet, test_world):
@@ -427,18 +460,10 @@ def test_get_available_world_types(app):
 
 
 def test_delete_world(app, test_world):
-    # delete the world created in the test above
-    response = app.get_json('/rpc/get_available_worlds(user_id="Pytest User")')
-    world_uid = None
-    for uid, data in response.json_body['data'].items():
-        if data['name'] == "FooBarTestWorld" and uid != test_world:
-            world_uid = uid
-            break
-    assert world_uid is not None
-    response = app.get_json('/rpc/delete_world(world_uid="%s")' % world_uid)
+    response = app.get_json('/rpc/delete_world(world_uid="%s")' % test_world)
     assert_success(response)
     response = app.get_json('/rpc/get_available_worlds(user_id="Pytest User")')
-    assert world_uid not in response.json_body['data']
+    assert test_world not in response.json_body['data']
 
 
 def test_set_world_properties(app, test_world):
@@ -763,6 +788,7 @@ def test_delete_node(app, test_nodenet, node):
 
 
 def test_align_nodes(app, test_nodenet):
+    app.set_auth()
     # TODO: Why does autoalign only move a node if it has no links?
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
@@ -952,7 +978,7 @@ def test_set_link_weight(app, test_nodenet, node):
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
     for link in data['links'].values():
-        assert link['weight'] == 0.345
+        assert float("%.3f" % link['weight']) == 0.345
 
 
 def test_get_links_for_nodes(app, test_nodenet, node):
@@ -1002,17 +1028,42 @@ def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['name'] == 'Testnode'
 
 
-def test_user_prompt_response(app, test_nodenet, node):
+def test_user_prompt_response(app, test_nodenet, nodetype_def, nodefunc_def):
+    app.set_auth()
+    # create a native module:
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "symbol": "t"}}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    response = app.get_json('/rpc/reload_native_modules()')
+    assert_success(response)
+
+    response = app.post_json('/rpc/add_node', params={
+        'nodenet_uid': test_nodenet,
+        'type': 'Testnode',
+        'position': [23, 23],
+        'nodespace': None,
+        'name': 'Testnode'
+    })
+    assert_success(response)
+
+    uid = response.json_body['data']
+
     response = app.post_json('/rpc/user_prompt_response', {
         'nodenet_uid': test_nodenet,
-        'node_uid': node,
+        'node_uid': uid,
         'values': {'foo': 'bar'},
         'resume_nodenet': True
     })
     assert_success(response)
     response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = json.loads(response.json_body['data'])
-    assert data['nodes'][node]['parameters']['foo'] == 'bar'
+    assert data['nodes'][uid]['parameters']['foo'] == 'bar'
     assert data['is_active']
 
 
@@ -1086,7 +1137,7 @@ def test_get_recipes(app, test_nodenet, recipes_def):
 def foobar(netapi, quatsch=23):
     return quatsch
 """)
-    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/reload_native_modules()')
     response = app.get_json('/rpc/get_available_recipes()')
     data = response.json_body['data']
     assert 'foobar' in data
@@ -1102,7 +1153,7 @@ def test_run_recipes(app, test_nodenet, recipes_def):
 def foobar(netapi, quatsch=23):
     return quatsch
 """)
-    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/run_recipe', {
         'nodenet_uid': test_nodenet,
         'name': 'foobar',
@@ -1125,7 +1176,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
             "symbol": "t"}}')
     with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
-    response = app.get_json('/rpc/reload_native_modules(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Nodespace',
@@ -1182,12 +1233,11 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     # gates
     for key in ['gen', 'por', 'ret', 'sub', 'sur', 'cat', 'exp']:
         assert data['nodes'][node]['gate_activations'][key]['default']['activation'] == 0
-        assert key in data['nodes'][node]['gate_parameters']
+        assert key not in data['nodes'][node]['gate_parameters']
         assert data['nodes'][node]['gate_functions'][key] == 'identity'
 
     assert data['nodes'][node]['parameters']['expectation'] == 1
     assert data['nodes'][node]['parameters']['wait'] == 10
-    assert data['nodes'][node]['parent_nodespace'] == 'Root'
     assert data['nodes'][node]['position'] == [10, 10]
     assert data['nodes'][node]['type'] == "Pipe"
     assert data['nodes'][node] == node_data
@@ -1215,7 +1265,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
         assert 'gatetypes' not in data['nodetypes'][key]
         assert 'slottypes' not in data['nodetypes'][key]
 
-    for key in ['Pipe', 'Register', 'Script', 'Actor']:
+    for key in ['Pipe', 'Register', 'Actor']:
         assert 'gatetypes' in data['nodetypes'][key]
         assert 'slottypes' in data['nodetypes'][key]
 
@@ -1243,5 +1293,5 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['current_step'] == 0  # TODO:
     assert 'step' not in data  # current_step && step?
     assert data['version'] == 1
-    assert data['world'] == 'WorldOfPain'
-    assert data['worldadapter'] == 'Default'
+    assert data['world'] is None
+    assert data['worldadapter'] is None

@@ -1,17 +1,17 @@
 
 import os
+import shutil
 import pytest
 import logging
 
 
 try:
-    os.makedirs('/tmp/micropsi_tests/worlds')
+    shutil.rmtree('/tmp/micropsi_tests/')
 except OSError:
     pass
-try:
-    os.makedirs('/tmp/micropsi_tests/nodenets')
-except OSError:
-    pass
+
+os.makedirs('/tmp/micropsi_tests/worlds')
+os.makedirs('/tmp/micropsi_tests/nodenets')
 
 
 # override config
@@ -24,6 +24,7 @@ from micropsi_core import runtime as micropsi
 
 # create testuser
 from micropsi_server.micropsi_app import usermanager
+
 usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
 user_token = usermanager.start_session('Pytest User', 'test', True)
 
@@ -34,6 +35,10 @@ logging.getLogger('nodenet').setLevel(logging.WARNING)
 
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
+
+nodetype_file = os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json')
+nodefunc_file = os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
+recipes_file = os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
 
 
 def set_logging_levels():
@@ -49,7 +54,13 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     if 'engine' in metafunc.fixturenames:
-        metafunc.parametrize("engine", metafunc.config.option.engine.split(','), scope="session")
+        engines = []
+        for e in metafunc.config.option.engine.split(','):
+            if e in ['theano_engine', 'dict_engine']:
+                engines.append(e)
+        if not engines:
+            pytest.exit("Unknown engine.")
+        metafunc.parametrize("engine", engines, scope="session")
 
 
 def pytest_configure(config):
@@ -66,20 +77,23 @@ def pytest_runtest_setup(item):
             pytest.skip("test requires engine %s" % engine_marker)
 
 
-def pytest_runtest_call(item):
-    if 'fixed_test_nodenet' in micropsi.nodenets:
-        micropsi.revert_nodenet("fixed_test_nodenet")
-    for uid in micropsi.nodenets:
-        micropsi.reload_native_modules(uid)
-    micropsi.logger.clear_logs()
-    set_logging_levels()
-
-
 def pytest_runtest_teardown(item, nextitem):
     if nextitem is None:
         print("DELETING ALL STUFF")
-        import shutil
         shutil.rmtree(configuration.RESOURCE_PATH)
+    else:
+        uids = list(micropsi.nodenets.keys())
+        for uid in uids:
+            micropsi.delete_nodenet(uid)
+        if os.path.isfile(nodetype_file):
+            os.remove(nodetype_file)
+        if os.path.isfile(nodefunc_file):
+            os.remove(nodefunc_file)
+        if os.path.isfile(recipes_file):
+            os.remove(recipes_file)
+        micropsi.reload_native_modules()
+        micropsi.logger.clear_logs()
+        set_logging_levels()
 
 
 @pytest.fixture(scope="session")
@@ -89,17 +103,17 @@ def resourcepath():
 
 @pytest.fixture()
 def nodetype_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json')
+    return nodetype_file
 
 
 @pytest.fixture
 def nodefunc_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
+    return nodefunc_file
 
 
 @pytest.fixture
 def recipes_def():
-    return os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
+    return recipes_file
 
 
 @pytest.fixture(scope="function")
@@ -123,15 +137,8 @@ def test_nodenet(request, test_world, engine):
     global nn_uid
     nodenets = micropsi.get_available_nodenets("Pytest User") or {}
     if nn_uid not in nodenets:
-        success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, worldadapter="Default", world_uid=test_world, owner="Pytest User", uid='Testnet')
+        success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
         micropsi.save_nodenet(nn_uid)
-
-    def fin():
-        try:
-            micropsi.delete_nodenet(nn_uid)
-        except:
-            pass
-    request.addfinalizer(fin)
     return nn_uid
 
 

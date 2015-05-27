@@ -15,9 +15,9 @@ ACTIVATOR = 4
 CONCEPT = 5
 SCRIPT = 6
 PIPE = 7
-TRIGGER = 8
+COMMENT = 8
 
-MAX_STD_NODETYPE = TRIGGER
+MAX_STD_NODETYPE = COMMENT
 
 GEN = 0
 POR = 1
@@ -28,6 +28,7 @@ CAT = 5
 EXP = 6
 
 MAX_STD_GATE = EXP
+
 
 def get_numerical_gate_type(type, nodetype=None):
     if nodetype is not None and len(nodetype.gatetypes) > 0:
@@ -128,8 +129,8 @@ def get_numerical_node_type(type, nativemodules=None):
         return SCRIPT
     elif type == "Pipe":
         return PIPE
-    elif type == "Trigger":
-        return TRIGGER
+    elif type == "Comment":
+        return COMMENT
     elif nativemodules is not None and type in nativemodules:
         return MAX_STD_NODETYPE + 1 + sorted(nativemodules).index(type)
     else:
@@ -151,8 +152,8 @@ def get_string_node_type(type, nativemodules=None):
         return "Script"
     elif type == PIPE:
         return "Pipe"
-    elif type == TRIGGER:
-        return "Trigger"
+    elif type == COMMENT:
+        return "Comment"
     elif nativemodules is not None and len(nativemodules) >= (type - MAX_STD_NODETYPE):
         return sorted(nativemodules)[(type-1) - MAX_STD_NODETYPE]
     else:
@@ -208,11 +209,35 @@ def get_elements_per_type(type, nativemodules=None):
         return 7
     elif type == PIPE:
         return 7
-    elif type == TRIGGER:
-        return 3
+    elif type == COMMENT:
+        return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
         native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
         return max(len(native_module_definition.gatetypes), len(native_module_definition.slottypes))
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
+
+
+def get_gates_per_type(type, nativemodules=None):
+    if type == REGISTER:
+        return 1
+    elif type == SENSOR:
+        return 1
+    elif type == ACTUATOR:
+        return 1
+    elif type == ACTIVATOR:
+        return 0
+    elif type == CONCEPT:
+        return 7
+    elif type == SCRIPT:
+        return 7
+    elif type == PIPE:
+        return 7
+    elif type == COMMENT:
+        return 0
+    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
+        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
+        return len(native_module_definition.gatetypes)
     else:
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
@@ -230,31 +255,27 @@ class TheanoNode(Node):
         theano node proxy class
     """
 
-    _nodenet = None
-    _numerictype = 0
-    _id = -1
-    _parent_id = -1
-
-    parameters = None
-
     def __init__(self, nodenet, parent_uid, uid, type, parameters={}, **_):
 
         self._numerictype = type
+        self._id = from_id(uid)
+        self._parent_id = nodespace.from_id(parent_uid)
+        self._nodenet = nodenet
+
+        self.parameters = None
+
         strtype = get_string_node_type(type, nodenet.native_modules)
 
         Node.__init__(self, strtype, nodenet.get_nodetype(strtype))
 
-        if strtype in nodenet.native_modules:
+        if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
+            self.state = {}
 
             if parameters is not None:
                 self.parameters = parameters.copy()
             else:
                 self.parameters = {}
-
-        self._nodenet = nodenet
-        self._id = from_id(uid)
-        self._parent_id = nodespace.from_id(parent_uid)
 
     @property
     def uid(self):
@@ -262,22 +283,22 @@ class TheanoNode(Node):
 
     @property
     def index(self):
-        return 0                # todo: implement index
+        return self._id
 
     @index.setter
     def index(self, index):
-        pass                    # todo: implement index
+        raise NotImplementedError("index can not be set in theano_engine")
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))       # todo: get rid of positions
+        return self._nodenet.positions.get(self.uid, (10,10))
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
-            self._nodenet.positions[self.uid] = position         # todo: get rid of positions
+            self._nodenet.positions[self.uid] = position
 
     @property
     def name(self):
@@ -334,19 +355,18 @@ class TheanoNode(Node):
 
     def get_gatefunction_name(self, gate_type):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        return get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type,self.nodetype)]),
+        return get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)])
 
     def get_gatefunction_names(self):
         result = {}
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        for numericalgate in range(0, get_elements_per_type(self._numerictype, self._nodenet.native_modules)):
+        for numericalgate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
             result[get_string_gate_type(numericalgate, self.nodetype)] = \
                 get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
         return result
 
     def set_gate_parameter(self, gate_type, parameter, value):
 
-        # todo: implement the other gate parameters
         elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
         if parameter == 'threshold':
             g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
@@ -370,18 +390,25 @@ class TheanoNode(Node):
             self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_gate_parameters(self):
+        return self.clone_non_default_gate_parameters()
+
+    def clone_non_default_gate_parameters(self, gate_type=None):
         g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
         g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
         g_min_array = self._nodenet.g_min.get_value(borrow=True)
         g_max_array = self._nodenet.g_max.get_value(borrow=True)
         g_theta = self._nodenet.g_theta.get_value(borrow=True)
 
-        result = {}
-        number_of_gates = get_elements_per_type(self._numerictype, self._nodenet.native_modules)
-        if self._numerictype == ACTIVATOR:
-            number_of_gates = 0
-        for numericalgate in range(0, number_of_gates):
-            gate_type = get_string_gate_type(numericalgate, self.nodetype)
+        gatemap = {}
+        gate_types = self.nodetype.gate_defaults.keys()
+        if gate_type is not None:
+            if gate_type in gate_types:
+                gate_types = [gate_type]
+            else:
+                return None
+
+        for gate_type in gate_types:
+            numericalgate = get_numerical_gate_type(gate_type, self.nodetype)
             gate_parameters = {}
 
             threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
@@ -404,14 +431,10 @@ class TheanoNode(Node):
             if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
                 gate_parameters['theta'] = theta
 
-            result[get_string_gate_type(numericalgate, self.nodetype)] = gate_parameters
-        if len(result) > 0:
-            return result
-        else:
-            return None
+            if not len(gate_parameters) == 0:
+                gatemap[gate_type] = gate_parameters
 
-    def clone_non_default_gate_parameters(self, gate_type):
-        return self.get_gate_parameters()
+        return gatemap
 
     def take_slot_activation_snapshot(self):
         a_array = self._nodenet.a.get_value(borrow=True)
@@ -444,20 +467,14 @@ class TheanoNode(Node):
                             self._nodenet.delete_link(self.uid, gate_name_candidate, link_candidate.target_node.uid, link_candidate.target_slot.type)
 
     def get_parameter(self, parameter):
-        if self.type == "Sensor" and parameter == "datasource":
-            return self._nodenet.inverted_sensor_map[self.uid]
-        elif self.type == "Actor" and parameter == "datatarget":
-            return self._nodenet.inverted_actuator_map[self.uid]
-        elif self.type == "Pipe" and parameter == "expectation":
-            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
-            return g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
-        elif self.type == "Pipe" and parameter == "wait":
-            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
-            return g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
-        elif self.type in self._nodenet.native_modules:
-            return self.parameters.get(parameter, None)
+        return self.clone_parameters().get(parameter, None)
 
     def set_parameter(self, parameter, value):
+        if value == '' or value is None:
+            if parameter in self.nodetype.parameter_defaults:
+                value = self.nodetype.parameter_defaults[parameter]
+            else:
+                value = None
         if self.type == "Sensor" and parameter == "datasource":
             if self.uid in self._nodenet.inverted_sensor_map:
                 olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
@@ -490,15 +507,21 @@ class TheanoNode(Node):
             g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = int(min(value, 128))
             g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = int(min(value, 128))
             self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
+        elif self.type == "Comment" and parameter == "comment":
+            self.parameters[parameter] = value
         elif self.type in self._nodenet.native_modules:
             self.parameters[parameter] = value
+
+    def clear_parameter(self, parameter):
+        if self.type in self._nodenet.native_modules and parameter in self.parameters:
+            del self.parameters[parameter]
 
     def clone_parameters(self):
         parameters = {}
         if self.type == "Sensor":
-            parameters['datasource'] = self._nodenet.inverted_sensor_map[self.uid]
+            parameters['datasource'] = self._nodenet.inverted_sensor_map.get(self.uid, None)
         elif self.type == "Actor":
-            parameters['datatarget'] = self._nodenet.inverted_actuator_map[self.uid]
+            parameters['datatarget'] = self._nodenet.inverted_actuator_map.get(self.uid, None)
         elif self.type == "Activator":
             activator_type = None
             if self._id in self._nodenet.allocated_nodespaces_por_activators:
@@ -520,25 +543,35 @@ class TheanoNode(Node):
             parameters['expectation'] = value
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
             parameters['wait'] = g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
+        elif self.type == "Comment":
+            parameters['comment'] = self.parameters['comment']
         elif self.type in self._nodenet.native_modules:
-            parameters = self.parameters.copy()
+            # handle the defined ones, the ones with defaults and value ranges
             for parameter in self.nodetype.parameters:
+                value = None
+                if parameter in self.parameters:
+                    value = self.parameters[parameter]
+                elif parameter in self.nodetype.parameter_defaults:
+                    value = self.nodetype.parameter_defaults[parameter]
+                parameters[parameter] = value
+            # see if something else has been set and return, if so
+            for parameter in self.parameters:
                 if parameter not in parameters:
-                    if parameter in self.nodetype.parameter_values:
-                        parameters[parameter] = self.nodetype.parameter_values[parameter]
-                    else:
-                        parameters[parameter] = None
+                    parameters[parameter] = self.parameters[parameter]
 
         return parameters
 
     def get_state(self, state):
-        return None             # todo: implement node state
+        return self.state[state]
 
     def set_state(self, state, value):
-        pass                    # todo: implement node state
+        self.state[state] = value
 
     def clone_state(self):
-        return {}               # todo: implement node state
+        if self._numerictype > MAX_STD_NODETYPE:
+            return self.state.copy()
+        else:
+            return None
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
@@ -548,7 +581,7 @@ class TheanoNode(Node):
             self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default")
         except Exception:
             self._nodenet.is_active = False
-            #self.activation = -1
+            # self.activation = -1
             raise
 
 
@@ -556,11 +589,6 @@ class TheanoGate(Gate):
     """
         theano gate proxy clas
     """
-
-    __numerictype = GEN
-    __type = None
-    __node = None
-    __nodenet = None
 
     @property
     def type(self):
@@ -616,7 +644,9 @@ class TheanoGate(Gate):
         return links
 
     def get_parameter(self, parameter_name):
-        return self.__node.get_gate_parameters(self.__type)[parameter_name]
+        gate_parameters = self.__node.nodetype.gate_defaults[self.type]
+        gate_parameters.update(self.__node.clone_non_default_gate_parameters(self.type))
+        return gate_parameters[parameter_name]
 
     def clone_sheaves(self):
         return {"default": dict(uid="default", name="default", activation=self.activation)}  # todo: implement sheaves
@@ -634,11 +664,6 @@ class TheanoSlot(Slot):
     """
         theano slot proxy class
     """
-
-    __numerictype = GEN
-    __type = None
-    __node = None
-    __nodenet = None
 
     @property
     def type(self):

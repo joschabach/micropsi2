@@ -1,14 +1,15 @@
 
+import os
 import pytest
 from webtest import TestApp
 
-# create testuser:
-from micropsi_server.micropsi_app import usermanager
-usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
-user_token = usermanager.start_session('Pytest User', 'test', True)
-
-
 nn_uid = 'Testnet'
+
+import configuration
+from conftest import user_token
+from micropsi_server import usermanagement
+
+test_path = os.path.join(configuration.RESOURCE_PATH, 'user-test-db.json')
 
 
 class MicropsiTestApp(TestApp):
@@ -42,6 +43,30 @@ from micropsi_server.micropsi_app import micropsi_app
 testapp = MicropsiTestApp(micropsi_app)
 
 
+def pytest_runtest_teardown(item, nextitem):
+    if nextitem is not None:
+        if os.path.isfile(test_path):
+            os.remove(test_path)
+
+
 @pytest.fixture()
 def app(test_world):
     return testapp
+
+
+@pytest.fixture(scope="function")
+def user_def():
+    return test_path
+
+
+@pytest.fixture(scope="function")
+def user_mgr(user_def):
+    return usermanagement.UserManager(user_def)
+
+
+@pytest.fixture(scope="function")
+def eliza(user_mgr):
+    user_mgr.create_user("eliza", "qwerty", "Full")
+    user_mgr.start_session("eliza")
+    return "eliza"
+

@@ -75,37 +75,49 @@ def test_gate_arithmetics_amplification_and_threshold(fixed_nodenet):
 def test_gate_arithmetics_directional_activator_amplification(fixed_nodenet):
     # set maximum and threshold with a directional activator in place
     net, netapi, source, register = prepare(fixed_nodenet)
-    genactivator = netapi.create_node("Activator", None)
-    genactivator.set_parameter('type', 'gen')
-    netapi.link(source, "gen", genactivator, "gen", 5)
-    register.set_gate_parameter("gen", "maximum", 10)
-    register.set_gate_parameter("gen", "threshold", 0)
+    activator = netapi.create_node("Activator", None)
+    activator.set_parameter('type', 'sub')
+
+    netapi.link(source, "gen", activator, "gen", 5)
+
+    testpipe = netapi.create_node("Pipe", None)
+    netapi.link(source, "gen", testpipe, "sub", 1)
+    testpipe.set_gate_parameter("sub", "maximum", 10)
+    testpipe.set_gate_parameter("sub", "threshold", 0)
     net.step()
-    assert register.get_gate("gen").activation == 5
+    assert testpipe.get_gate("sub").activation == 5
 
 
 def test_gate_arithmetics_directional_activator_muting(fixed_nodenet):
     # have the directional activator mute the node
     net, netapi, source, register = prepare(fixed_nodenet)
-    genactivator = netapi.create_node("Activator", None)
-    genactivator.set_parameter('type', 'gen')
-    netapi.link(source, "gen", genactivator, "gen", 0)
-    register.set_gate_parameter("gen", "maximum", 10)
-    register.set_gate_parameter("gen", "threshold", 0)
+    activator = netapi.create_node("Activator", None)
+    activator.set_parameter('type', 'sub')
+
+    netapi.link(source, "gen", activator, "gen", 0)
+
+    testpipe = netapi.create_node("Pipe", None)
+    netapi.link(source, "gen", testpipe, "sub", 1)
+    testpipe.set_gate_parameter("sub", "maximum", 10)
+    testpipe.set_gate_parameter("sub", "threshold", 0)
     net.step()
-    assert register.get_gate("gen").activation == 0
+    assert testpipe.get_gate("sub").activation == 0
 
 
 def test_gate_arithmetics_directional_activator_threshold(fixed_nodenet):
     # have the directional activator amplify alpha above threshold
     net, netapi, source, register = prepare(fixed_nodenet)
-    genactivator = netapi.create_node("Activator", None)
-    genactivator.set_parameter('type', 'gen')
-    netapi.link(source, "gen", genactivator, "gen", 2)
-    register.set_gate_parameter("gen", "maximum", 10)
-    register.set_gate_parameter("gen", "threshold", 1)
+    activator = netapi.create_node("Activator", None)
+    activator.set_parameter('type', 'sub')
+
+    netapi.link(source, "gen", activator, "gen", 2)
+
+    testpipe = netapi.create_node("Pipe", None)
+    netapi.link(source, "gen", testpipe, "sub", 1)
+    testpipe.set_gate_parameter("sub", "maximum", 10)
+    testpipe.set_gate_parameter("sub", "threshold", 1)
     net.step()
-    assert register.get_gate("gen").activation == 2
+    assert testpipe.get_gate("sub").activation == 2
 
 
 def test_gatefunction_sigmoid(fixed_nodenet):
@@ -114,7 +126,7 @@ def test_gatefunction_sigmoid(fixed_nodenet):
     net, netapi, source, register = prepare(fixed_nodenet)
     register.set_gatefunction_name("gen", "sigmoid")
     net.step()
-    assert register.get_gate("gen").activation == sigmoid(1, 0, 0)
+    assert round(register.get_gate("gen").activation, 5) == round(sigmoid(1, 0, 0), 5)
 
 
 def test_gatefunction_none_is_identity(fixed_nodenet):
@@ -132,3 +144,13 @@ def test_gatefunctions(fixed_nodenet):
     assert funcs.one_over_x(2., 0, 0) == 0.5
     assert funcs.identity(1, 0, 0) == 1
     assert funcs.sigmoid(0, 0, 0) == 0.5
+
+
+def test_node_activation_is_gen_gate_activation(fixed_nodenet):
+    from micropsi_core.nodenet.gatefunctions import sigmoid
+    net, netapi, source, register = prepare(fixed_nodenet)
+    register.set_gatefunction_name('gen', 'sigmoid')
+    sig = round(sigmoid(1, 0, 0), 4)
+    net.step()
+    assert round(register.activation, 4) == sig
+    assert round(register.get_gate('gen').activation, 4) == sig

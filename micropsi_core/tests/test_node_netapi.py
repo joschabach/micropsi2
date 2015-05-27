@@ -47,15 +47,11 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert node.parent_nodespace == root_ns.uid
     assert node.type == "Register"
     assert node.uid is not None
-    assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    for key in node.get_gate_types():
-        assert node.data['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('gen').parameters != {}
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
 
@@ -66,7 +62,6 @@ def test_node_netapi_create_register_node(fixed_nodenet):
 
 def test_node_netapi_create_pipe_node(fixed_nodenet):
     # test concept node generation
-    from micropsi_core.nodenet.node import Nodetype
     net, netapi, source = prepare(fixed_nodenet)
     node = netapi.create_node("Pipe", None, "TestName")
 
@@ -75,7 +70,6 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
     assert node.parent_nodespace == netapi.get_nodespace(None).uid
     assert node.type == "Pipe"
     assert node.uid is not None
-    assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
@@ -94,8 +88,9 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
     for key in node.get_gate_types():
-        assert node.data['gate_parameters'][key] == node.nodetype.gate_defaults[key]
-        assert node.get_gate(key).parameters == node.nodetype.gate_defaults[key]
+        assert key not in node.data['gate_parameters']
+        for parameter, value in node.nodetype.gate_defaults[key].items():
+            assert node.get_gate(key).get_parameter(parameter) == value
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
 
@@ -107,7 +102,6 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
 @pytest.mark.engine("dict_engine")
 def test_node_netapi_create_concept_node(fixed_nodenet):
     # test concept node generation
-    from micropsi_core.nodenet.node import Nodetype
     net, netapi, source = prepare(fixed_nodenet)
     node = netapi.create_node("Concept", None, "TestName")
 
@@ -116,7 +110,6 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert node.parent_nodespace == netapi.get_nodespace(None).uid
     assert node.type == "Concept"
     assert node.uid is not None
-    assert node.nodenet is net
     assert len(node.get_gate('gen').get_links()) == 0
     assert len(node.get_gate('gen').activations) == 1
     assert len(node.get_gate('sub').get_links()) == 0
@@ -138,17 +131,6 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
 
     # frontend/persistency-oriented data dictionary test
     assert node.data['uid'] == node.uid
-    for key in node.get_gate_types():
-        assert node.data['gate_parameters'][key] == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('gen').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('sub').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('sur').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('por').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('ret').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('cat').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('exp').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('sym').parameters == Nodetype.GATE_DEFAULTS
-    assert node.get_gate('ref').parameters == Nodetype.GATE_DEFAULTS
     assert node.data['name'] == node.name
     assert node.data['type'] == node.type
 
@@ -512,7 +494,7 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
         # basic internal logic
         assert link.source_node.uid == node2.uid
         assert link.target_node.uid == node1.uid
-        assert link.weight == 0.8
+        assert round(link.weight, 5) == 0.8
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
@@ -728,7 +710,7 @@ def test_set_gate_function(fixed_nodenet):
 
     net.step()
 
-    assert source.get_gate("gen").activation == sigmoid(0, 0, 1)
+    assert round(source.get_gate("gen").activation, 5) == round(sigmoid(0, 0, 1), 5)
     assert some_other_node_type.get_gate("gen").activation == 0
 
 
@@ -765,8 +747,6 @@ def test_copy_nodes(fixed_nodenet):
     assert mapping[a2].parent_nodespace == nodespace.uid
     assert set(nodespace.get_known_ids()) == set([mapping[a1].uid, mapping[a2].uid])
     assert len(mapping[a1].get_slot('gen').get_links()) == 0  # incoming link from outside not copied
-    assert mapping[a1].get_gate('por').get_links()[0].target_node == mapping[a2]
+    assert mapping[a1].get_gate('por').get_links()[0].target_node.uid == mapping[a2].uid
     assert a1.clone_parameters() == mapping[a1].clone_parameters()
     assert a1.get_gate_parameters() == mapping[a1].get_gate_parameters()
-
-# TODO: Add locking tests once we're sure we'll keep locking, and like it is implemented now

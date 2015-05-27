@@ -4,6 +4,7 @@
 """
 Basic tests for monitor api
 """
+import pytest
 from micropsi_core import runtime as micropsi
 
 
@@ -21,6 +22,7 @@ def test_add_gate_monitor(fixed_nodenet):
     assert len(monitor.values) == 1
 
 
+@pytest.mark.engine("dict_engine")
 def test_add_slot_monitor(fixed_nodenet):
     uid = micropsi.add_slot_monitor(fixed_nodenet, 'n1', 'gen', name="FooBarMonitor")
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
@@ -46,12 +48,12 @@ def test_add_link_monitor(fixed_nodenet):
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    assert monitor.values[1] == 1
+    assert round(monitor.values[1], 2) == 1
     micropsi.nodenets[fixed_nodenet].set_link_weight('n5', 'gen', 'n3', 'gen', weight=0.7)
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert len(monitor.values) == 2
-    assert monitor.values[2] == 0.7
+    assert round(monitor.values[2], 2) == 0.7
 
 
 def test_add_modulator_monitor(fixed_nodenet):

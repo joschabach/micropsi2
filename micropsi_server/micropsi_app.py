@@ -1064,7 +1064,7 @@ def set_node_parameters(nodenet_uid, node_uid, parameters):
 
 @rpc("get_gatefunction")
 def get_gatefunction(nodenet_uid, node_uid, gate_type):
-    return True, runtime.get_gatefunction(nodenet_uid, node_uid, gate_type).__name__
+    return True, runtime.get_gatefunction(nodenet_uid, node_uid, gate_type)
 
 
 @rpc("set_gatefunction", permission_required="manage nodenets")
@@ -1123,8 +1123,8 @@ def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_t
 
 
 @rpc("reload_native_modules", permission_required="manage nodenets")
-def reload_native_modules(nodenet_uid=None):
-    return runtime.reload_native_modules(nodenet_uid)
+def reload_native_modules():
+    return runtime.reload_native_modules()
 
 
 @rpc("user_prompt_response")

@@ -12,6 +12,10 @@ class TheanoNetAPI(NetAPI):
         super(TheanoNetAPI, self).__init__(nodenet)
         self.__nodenet = nodenet
 
+    @property
+    def floatX(self):
+        return self.__nodenet.numpyfloatX
+
     def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, sortby='id'):
         """
         Will group the given set of nodes.

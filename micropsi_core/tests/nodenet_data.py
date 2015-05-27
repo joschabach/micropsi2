@@ -124,21 +124,6 @@ fixed_nodenet_data = """{
             ],
             "type": "Pipe",
             "uid": "n4"
-        },
-        "n7": {
-            "activation": 0,
-            "index": 7,
-            "name": "ACTB",
-            "parameters": {
-                "type": "sub"
-            },
-            "parent_nodespace": "Root",
-            "position": [
-                743,
-                336
-            ],
-            "type": "Activator",
-            "uid": "n7"
         }
     }
 }"""

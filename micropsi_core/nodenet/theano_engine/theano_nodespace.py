@@ -17,9 +17,6 @@ class TheanoNodespace(Nodespace):
         theano nodespace implementation
     """
 
-    _nodenet = None
-    _id = -1
-
     @property
     def data(self):
         data = {
@@ -37,22 +34,22 @@ class TheanoNodespace(Nodespace):
 
     @property
     def index(self):
-        return 0
+        return self._id
 
     @index.setter
     def index(self, index):
-        pass
+        raise NotImplementedError("index can not be set in theano_engine")
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))       # todo: get rid of positions
+        return self._nodenet.positions.get(self.uid, (10,10))
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
-            self._nodenet.positions[self.uid] = position         # todo: get rid of positions
+            self._nodenet.positions[self.uid] = position
 
     @property
     def name(self):
@@ -87,8 +84,14 @@ class TheanoNodespace(Nodespace):
         if entitytype == 'nodes':
             from micropsi_core.nodenet.theano_engine.theano_node import to_id as node_to_id
             return [node_to_id(id) for id in np.where(self._nodenet.allocated_node_parents == self._id)[0]]
-        else:
+        elif entitytype == 'nodespaces':
             return [to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
+        elif entitytype == None:
+            ids = self.get_known_ids('nodes')
+            ids.extend(self.get_known_ids('nodespaces'))
+            return ids
+        else:
+            return []
 
     def has_activator(self, type):
         return type in self.__activators

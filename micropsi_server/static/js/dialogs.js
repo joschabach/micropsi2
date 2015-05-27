@@ -264,7 +264,7 @@ $(function() {
             return dialogs.notification("there is no current nodenet selected");
         }
         $('#loading').show();
-        api.call('reload_native_modules', {nodenet_uid: currentNodenet}, function(){
+        api.call('reload_native_modules', {}, function(){
             dialogs.notification("reload successful");
             window.location.reload();
         });

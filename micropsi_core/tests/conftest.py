@@ -19,11 +19,4 @@ def fixed_nodenet(request, test_world, engine):
     micropsi.get_nodenet(uid)
     micropsi.merge_nodenet(uid, fixed_nodenet_data, keep_uids=True)
     micropsi.save_nodenet(uid)
-
-    def fin():
-        try:
-            micropsi.delete_nodenet(uid)
-        except:
-            pass
-    request.addfinalizer(fin)
     return uid

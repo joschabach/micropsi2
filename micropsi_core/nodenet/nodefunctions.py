@@ -12,8 +12,7 @@
 
 def register(netapi, node=None, **params):
     activation = node.get_slot('gen').activation
-    node.activation = activation
-    node.get_gate('gen').gate_function(activation)
+    node.activation = node.get_gate('gen').gate_function(activation)
 
 
 def sensor(netapi, node=None, datasource=None, **params):
@@ -171,14 +170,6 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if not node.get_slot("por").empty and node.get_slot("por").get_activation(sheaf) <= 0:
         sur = 0
 
-    if node.get_slot('por').empty and node.get_slot('ret').empty:           # both empty
-        classifierelements = 0
-        if len(node.get_gate("sur").get_links()) == 1:
-            surnode = node.get_gate("sur").get_links()[0].target_node
-            if surnode.type == "Pipe":
-                classifierelements = len(surnode.get_slot("sur").get_links())
-        sur /= classifierelements if classifierelements > 1 else 1          # classifier case
-
     if sur > 1:
         sur = 1
     if sur < -1:
@@ -235,77 +226,6 @@ def pipe(netapi, node=None, sheaf="default", **params):
     #    node.get_gate("cat").gate_function(0, sheaf)
     #else:
     #    node.get_gate("cat").gate_function(cat, sheaf)
-
-
-def trigger(netapi, node=None, sheaf="default", **params):
-    """
-    Trigger nodes, when activated on their sub slot, create a single burst of activation and wait for
-    activation on their sur slot that equals or exceeds a configured value.
-    If the value does not show up after a configured number of timeout steps, trigger nodes fail,
-    else, they succeed.
-    """
-
-    gen = 0
-    sub = 0
-    sur = 0
-
-    if abs(node.get_slot('gen').activation) != 0:
-        sur = node.get_slot('gen').activation
-    else:
-        waitfrom = node.get_state("waitfrom") or -1
-
-        condition = node.get_parameter("condition") or "="
-        try:
-            timeout = int(node.get_parameter("timeout"))         # todo: use emo_resolution
-        except TypeError or ValueError:
-            timeout = 10
-        try:
-            response = float(node.get_parameter("response"))
-        except TypeError or ValueError:
-            response = 1
-
-        if node.get_slot('sub').activation > 0:
-            currentstep = netapi.step
-
-            success = (condition == "=" and node.get_slot('sur').activation == response) or \
-                      (condition == ">" and node.get_slot('sur').activation > response)
-
-            if waitfrom > 0:                       # waiting for results
-                if success:
-                    sur = 1
-                    node.set_state("waitfrom", currentstep)
-                elif currentstep > waitfrom + timeout or node.get_slot('sur').activation < 0:
-                    sur = -1
-            else:                                   # perform burst
-                sub = 1
-                node.set_state("waitfrom", currentstep)
-                if success:
-                    sur = 1
-
-        else:
-
-            if waitfrom > 0:
-                node.set_state("waitfrom", -1)
-
-            if node.get_slot('sur').activation:
-                success = (condition == "=" and node.get_slot('sur').activation == response) or \
-                          (condition == ">" and node.get_slot('sur').activation > response)
-                if success:
-                    sur = 1
-
-    if sur < 0:
-        # if trigger is failing, gen should also propagate failing
-        gen = sur
-    else:
-        # otherwise, gen should be allowed to pass on the original sur-activation
-        # and not be confined to {0;1}
-        gen = node.get_slot('sur').activation + node.get_slot('gen').activation
-
-    node.activation = gen
-
-    node.get_gate("gen").gate_function(gen, sheaf)
-    node.get_gate("sub").gate_function(sub, sheaf)
-    node.get_gate("sur").gate_function(sur, sheaf)
 
 
 def activator(netapi, node, **params):

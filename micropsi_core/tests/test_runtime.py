@@ -33,11 +33,11 @@ def test_get_logger_messages():
     micropsi.set_logging_levels(system='INFO')
     logging.getLogger('system').info(msg)
     res = micropsi.get_logger_messages('system')
-    assert len(res['logs']) == 1
-    assert res['logs'][0]['msg']
-    assert res['logs'][0]['logger'] == 'system'
-    assert res['logs'][0]['level'] == 'INFO'
-    assert 'time' in res['logs'][0]
+    item = res['logs'][-1]
+    assert item['msg']
+    assert item['logger'] == 'system'
+    assert item['level'] == 'INFO'
+    assert 'time' in item
 
 
 def test_get_multiple_logger_messages_are_sorted():

@@ -8,6 +8,7 @@ import os
 from micropsi_core import runtime
 from micropsi_core import runtime as micropsi
 import mock
+import pytest
 
 __author__ = 'joscha'
 __date__ = '29.10.12'
@@ -42,29 +43,48 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     micropsi.set_gate_parameters(fixed_nodenet, 'n5', 'gen', {'threshold': 1})
     data = micropsi.nodenets[fixed_nodenet].data
     assert data['nodes']['n5']['gate_parameters'] == {'gen': {'threshold': 1}}
-    defaults = Nodetype.GATE_DEFAULTS
+    defaults = Nodetype.GATE_DEFAULTS.copy()
     defaults.update({'threshold': 1})
     data = micropsi.nodenets[fixed_nodenet].get_node('n5').data['gate_parameters']
-    assert data == {'gen': defaults}
+    assert data == {'gen': {'threshold': 1}}
 
 
-def test_user_prompt(fixed_nodenet):
-    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values':  [23, 42]}]
+def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "parameters": ["testparam"],\
+            "parameter_defaults": {\
+                "testparam": 13\
+              }\
+            }}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    micropsi.reload_native_modules()
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
+    nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
+
+    options = [{'key': 'foo_parameter', 'label': 'Please give value for "foo"', 'values': [23, 42]}]
     micropsi.nodenets[fixed_nodenet].netapi.ask_user_for_parameter(
-        micropsi.nodenets[fixed_nodenet].get_node('n1'),
+        nativemodule,
         "foobar",
         options
     )
     data = micropsi.get_nodenet_data(fixed_nodenet, 'Root')
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
-    assert data['user_prompt']['node']['uid'] == 'n1'
+    assert data['user_prompt']['node']['uid'] == uid
     assert data['user_prompt']['options'] == options
     # response
-    micropsi.user_prompt_response(fixed_nodenet, 'n1', {'foo_parameter': 42}, True)
-    assert micropsi.nodenets[fixed_nodenet].get_node('n1').get_parameter('foo_parameter') == 42
+    micropsi.user_prompt_response(fixed_nodenet, uid, {'foo_parameter': 42}, True)
+    assert micropsi.nodenets[fixed_nodenet].get_node(uid).get_parameter('foo_parameter') == 42
     assert micropsi.nodenets[fixed_nodenet].is_active
     from micropsi_core.nodenet import nodefunctions
+    tmp = nodefunctions.concept
     nodefunc = mock.Mock()
     nodefunctions.concept = nodefunc
     micropsi.nodenets[fixed_nodenet].step()
@@ -73,6 +93,7 @@ def test_user_prompt(fixed_nodenet):
     assert nodefunc.called_with(micropsi.nodenets[fixed_nodenet].netapi, micropsi.nodenets[fixed_nodenet].get_node('n1'), foo)
     micropsi.nodenets[fixed_nodenet].get_node('n1').clear_parameter('foo_parameter')
     assert micropsi.nodenets[fixed_nodenet].get_node('n1').get_parameter('foo_parameter') is None
+    nodefunctions.concept = tmp
 
 
 def test_nodespace_removal(fixed_nodenet):
@@ -149,8 +170,8 @@ def test_clone_nodes_all_links(fixed_nodenet):
     links = a1_copy.get_associated_links()
     link = None
     for candidate in links:
-        if candidate.source_node == a1_copy and \
-                candidate.target_node == a2_copy and \
+        if candidate.source_node.uid == a1_copy.uid and \
+                candidate.target_node.uid == a2_copy.uid and \
                 candidate.source_gate.type == 'por' and \
                 candidate.target_slot.type == 'gen':
             link = candidate
@@ -161,8 +182,8 @@ def test_clone_nodes_all_links(fixed_nodenet):
     links = sensor.get_associated_links()
     link = None
     for candidate in links:
-        if candidate.source_node == sensor and \
-                candidate.target_node == a1_copy and \
+        if candidate.source_node.uid == sensor.uid and \
+                candidate.target_node.uid == a1_copy.uid and \
                 candidate.source_gate.type == 'gen' and \
                 candidate.target_slot.type == 'gen':
             link = candidate
@@ -192,8 +213,8 @@ def test_clone_nodes_internal_links(fixed_nodenet):
     links = a1_copy.get_associated_links()
     link = None
     for candidate in links:
-        if candidate.source_node == a1_copy and \
-                candidate.target_node == a2_copy and \
+        if candidate.source_node.uid == a1_copy.uid and \
+                candidate.target_node.uid == a2_copy.uid and \
                 candidate.source_gate.type == 'por' and \
                 candidate.target_slot.type == 'gen':
             link = candidate
@@ -227,11 +248,11 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
 
 def test_clone_nodes_copies_gate_params(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    micropsi.set_gate_parameters(fixed_nodenet, 'n1', 'gen', {'decay': 0.1})
+    micropsi.set_gate_parameters(fixed_nodenet, 'n1', 'gen', {'maximum': 0.1})
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n1'], 'internal')
     assert success
     copy = nodenet.get_node(result['nodes'][0]['uid'])
-    assert copy.get_gate_parameters()['gen']['decay'] == 0.1
+    assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
 
 def test_modulators(fixed_nodenet):
@@ -242,3 +263,79 @@ def test_modulators(fixed_nodenet):
 
     nodenet.set_modulator("test_modulator", -1)
     assert nodenet.netapi.get_modulator("test_modulator") == -1
+
+
+def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "parameters": ["linktype", "threshold", "protocol_mode"],\
+            "parameter_values": {\
+                "linktype": ["catexp", "subsur"],\
+                "protocol_mode": ["all_active", "most_active_one"]\
+            },\
+            "parameter_defaults": {\
+                "linktype": "catexp",\
+                "protocol_mode": "all_active"\
+            }}\
+        }')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+
+    assert micropsi.reload_native_modules()
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test", parameters={"linktype": "catexp", "threshold": "", "protocol_mode": "all_active"})
+    # nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
+    assert micropsi.save_nodenet(fixed_nodenet)
+
+
+def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
+
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc"\
+        }}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
+
+    micropsi.reload_native_modules()
+
+    result, n1_uid = micropsi.new_nodenet('Net1', engine=engine, owner='Pytest User')
+    result, n2_uid = micropsi.new_nodenet('Net2', engine=engine, owner='Pytest User')
+
+    n1 = micropsi.nodenets[n1_uid]
+    n2 = micropsi.nodenets[n2_uid]
+
+    nativemodule = n1.netapi.create_node("Testnode", None, "Testnode")
+    register1 = n1.netapi.create_node("Register", None, "Register1")
+    n1.netapi.link(nativemodule, 'gen', register1, 'gen', weight=1.2)
+
+    source2 = n2.netapi.create_node("Register", None, "Source2")
+    register2 = n2.netapi.create_node("Register", None, "Register2")
+    n2.netapi.link(source2, 'gen', source2, 'gen')
+    n2.netapi.link(source2, 'gen', register2, 'gen', weight=0.9)
+    source2.activation = 0.7
+
+    micropsi.step_nodenet(n2.uid)
+
+    assert n1.current_step == 0
+    assert register1.activation == 0
+    assert register1.name == "Register1"
+    assert nativemodule.name == "Testnode"
+    assert round(register1.get_slot('gen').get_links()[0].weight, 2) == 1.2
+    assert register1.get_slot('gen').get_links()[0].source_node.name == 'Testnode'
+    assert n1.get_node(register1.uid).name == "Register1"
+
+    assert n2.current_step == 1
+    assert round(source2.activation, 2) == 0.7
+    assert round(register2.activation, 2) == 0.63
+    assert register2.name == "Register2"
+    assert source2.name == "Source2"
+    assert round(register2.get_slot('gen').get_links()[0].weight, 2) == 0.9
+    assert register2.get_slot('gen').get_links()[0].source_node.name == 'Source2'
+    assert n2.get_node(register2.uid).name == "Register2"

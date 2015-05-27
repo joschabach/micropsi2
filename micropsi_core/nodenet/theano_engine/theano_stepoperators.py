@@ -1,11 +1,12 @@
 
-from micropsi_core.nodenet.stepoperators import Propagate, Calculate
+from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
 import theano
 from theano import tensor as T
 from theano import shared
 from theano import function
 from theano.tensor import nnet as N
 import theano.sparse as ST
+import numpy as np
 from micropsi_core.nodenet.theano_engine.theano_node import *
 
 GATE_FUNCTION_IDENTITY = 0
@@ -36,8 +37,6 @@ class TheanoPropagate(Propagate):
 
     """
 
-    propagate = None
-
     def __init__(self, nodenet):
         if nodenet.sparse:
             self.propagate = theano.function([], None, updates={nodenet.a: ST.dot(nodenet.w, nodenet.a)})
@@ -56,11 +55,10 @@ class TheanoCalculate(Calculate):
 
     """
 
-    calculate = None
-
     def __init__(self, nodenet):
-        self.nodenet = nodenet
+        self.calculate = None
         self.world = None
+        self.nodenet = nodenet
 
     def compile_theano_functions(self, nodenet):
         slots = nodenet.a_shifted
@@ -247,10 +245,16 @@ class TheanoCalculate(Calculate):
             instance.node_function()
 
     def calculate_g_factors(self):
-        a = self.nodenet.a.get_value(borrow=True, return_internal_type=True)
+        a = self.nodenet.a.get_value(borrow=True)
         a[0] = 1.
         g_factor = a[self.nodenet.allocated_elements_to_activators]
         self.nodenet.g_factor.set_value(g_factor, borrow=True)
+
+    def count_success_and_failure(self, nodenet):
+        nays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.a.get_value(borrow=True) <= -1))[0])
+        yays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.a.get_value(borrow=True) >= 1))[0])
+        nodenet.set_modulator('base_number_of_expected_events', yays)
+        nodenet.set_modulator('base_number_of_unexpected_events', nays)
 
     def execute(self, nodenet, nodes, netapi):
         self.world = nodenet.world
@@ -266,4 +270,44 @@ class TheanoCalculate(Calculate):
         if nodenet.has_directional_activators:
             self.calculate_g_factors()
         self.calculate()
+        if nodenet.has_pipes:
+            self.count_success_and_failure(nodenet)
         self.calculate_native_modules()
+
+
+class TheanoPORRETDecay(StepOperator):
+    """
+    Implementation of POR/RET link decaying.
+    This is a pure numpy implementation right now, as theano doesn't like setting subtensors with fancy indexing
+    on sparse matrices.
+    """
+
+    @property
+    def priority(self):
+        return 100
+
+    def __init__(self, nodenet):
+        self.nodenet = nodenet
+
+    #def compile_theano_functions(self, nodenet):
+    #    por_cols = T.lvector("por_cols")
+    #    por_rows = T.lvector("por_rows")
+    #    new_w = T.set_subtensor(nodenet.w[por_rows, por_cols], nodenet.w[por_rows, por_cols] - 0.0001)
+    #    self.decay = theano.function([por_cols, por_rows], None, updates={nodenet.w: new_w}, accept_inplace=True)
+
+    def execute(self, nodenet, nodes, netapi):
+        porretdecay = nodenet.get_modulator('por_ret_decay')
+        if nodenet.has_pipes and porretdecay != 0:
+            n_function_selector = nodenet.n_function_selector.get_value(borrow=True)
+            w = nodenet.w.get_value(borrow=True)
+            por_cols = np.where((n_function_selector == NFPG_PIPE_POR) | (n_function_selector == NFPG_PIPE_RET))[0]
+            por_rows = w[:, por_cols].nonzero()[0]
+            cols, rows = np.meshgrid(por_cols, por_rows)
+            w_update = w[rows, cols]
+            w_update *= (1 - porretdecay)
+            if nodenet.current_step % 1000 == 0:
+                if nodenet.sparse:                         # todo: there must be a more efficient way to deal with this
+                    w_update = w_update.todense()
+                np.putmask(w_update, ((0 < w_update) & (w_update < 0.01)), 0.)
+            w[rows, cols] = w_update
+            nodenet.w.set_value(w, borrow=True)

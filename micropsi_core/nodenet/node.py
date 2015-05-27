@@ -30,9 +30,6 @@ class Node(metaclass=ABCMeta):
     Abstract base class for node implementations.
     """
 
-    __nodetype_name = None
-    __nodetype = None
-
     @property
     def data(self):
 
@@ -45,7 +42,7 @@ class Node(metaclass=ABCMeta):
             "type": self.type,
             "parameters": self.clone_parameters(),
             "state": self.clone_state(),
-            "gate_parameters": self.get_gate_parameters(),
+            "gate_parameters": self.clone_non_default_gate_parameters(),
             "sheaves": self.clone_sheaves(),
             "activation": self.activation,
             "gate_activations": self.construct_gates_dict(),
@@ -247,6 +244,13 @@ class Node(metaclass=ABCMeta):
         Parameters are used to change what a node does and do typically not change between net steps.
         An example is the "type" parameter of directional activators that configures the activator to control
         the gates of type "type"
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def clear_parameter(self, parameter):
+        """
+        Unsets/clears the given parameter.
         """
         pass  # pragma: no cover
 
@@ -550,10 +554,6 @@ class Nodetype(object):
         "spreadsheaves": 0
     }
 
-    _parameters = []
-    _nodefunction_definition = None
-    _nodefunction_name = None
-
     @property
     def data(self):
         data = {
@@ -607,14 +607,6 @@ class Nodetype(object):
             warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
 
-    def reload_nodefunction(self):
-        from micropsi_core.nodenet import nodefunctions
-        if self.nodefunction_name and not self.nodefunction_definition and not hasattr(nodefunctions, self.nodefunction_name):
-            import nodefunctions as custom_nodefunctions
-            from imp import reload
-            reload(custom_nodefunctions)
-            self.nodefunction = getattr(custom_nodefunctions, self.nodefunction_name)
-
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
                  symbol=None, shape=None, engine=None, parameter_defaults=None):
@@ -628,6 +620,10 @@ class Nodetype(object):
         are not given here will be taken from the original definition. Thus, you may use this initializer to
         set up the nodetypes after loading new nodenet state (by using it without parameters).
         """
+        self._parameters = []
+        self._nodefunction_definition = None
+        self._nodefunction_name = None
+
         self.name = name
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}

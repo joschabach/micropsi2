@@ -302,8 +302,11 @@ class DictNode(NetEntity, Node):
                 self.__parameters[parameter] = None
 
     def set_parameter(self, parameter, value):
-        if value == '':
-            value = None
+        if (value == '' or value is None):
+            if parameter in self.nodetype.parameter_defaults:
+                value = self.nodetype.parameter_defaults[parameter]
+            else:
+                value = None
         self.__parameters[parameter] = value
 
     def clone_parameters(self):
@@ -387,9 +390,6 @@ class DictGate(Gate):
         parameters: a dictionary of values used by the gate function
     """
 
-    __type = None
-    __node = None
-
     @property
     def type(self):
         return self.__type
@@ -463,9 +463,10 @@ class DictGate(Gate):
             gate_factor = 1.0
         if gate_factor == 0.0:
             self.sheaves[sheaf]['activation'] = 0
-            return  # if the gate is closed, we don't need to execute the gate function
-            # simple linear threshold function; you might want to use a sigmoid for neural learning
+            return 0  # if the gate is closed, we don't need to execute the gate function
+
         gatefunction = self.__node.get_gatefunction(self.__type)
+
         if gatefunction:
             activation = gatefunction(input_activation, self.parameters.get('rho', 0), self.parameters.get('theta', 0))
         else:
@@ -476,13 +477,11 @@ class DictGate(Gate):
         else:
             activation = activation * self.parameters["amplification"] * gate_factor
 
-        # if self.parameters["decay"]:  # let activation decay gradually
-        #     if activation < 0:
-        #         activation = min(activation, self.activation * (1 - self.parameters["decay"]))
-        #     else:
-        #         activation = max(activation, self.activation * (1 - self.parameters["decay"]))
+        activation = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
 
-        self.sheaves[sheaf]['activation'] = min(self.parameters["maximum"], max(self.parameters["minimum"], activation))
+        self.sheaves[sheaf]['activation'] = activation
+
+        return activation
 
     def open_sheaf(self, input_activation, sheaf="default"):
         """This function opens a new sheaf and calls the gate function for the newly opened sheaf
@@ -510,9 +509,6 @@ class DictSlot(Slot):
         current_step: the simulation step when the slot last received activation
         incoming: a dictionary of incoming links together with the respective activation received by them
     """
-
-    __type = None
-    __node = None
 
     @property
     def type(self):

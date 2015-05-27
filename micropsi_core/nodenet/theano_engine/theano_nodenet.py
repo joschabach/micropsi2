@@ -17,6 +17,7 @@ import scipy
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.nodenet import Nodenet
 from micropsi_core.nodenet.node import Nodetype
+from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 
 from micropsi_core.nodenet.theano_engine import theano_node as tnode
 from micropsi_core.nodenet.theano_engine import theano_nodespace as tnodespace
@@ -31,6 +32,12 @@ from configuration import config as settings
 STANDARD_NODETYPES = {
     "Nodespace": {
         "name": "Nodespace"
+    },
+    "Comment": {
+        "name": "Comment",
+        "symbol": "#",
+        'parameters': ['comment'],
+        "shape": "Rectangle"
     },
     "Register": {
         "name": "Register",
@@ -118,104 +125,10 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
-AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 3
-
-DEFAULT_NUMBER_OF_NODES = 2000
-DEFAULT_NUMBER_OF_ELEMENTS = DEFAULT_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-DEFAULT_NUMBER_OF_NODESPACES = 10
-
 class TheanoNodenet(Nodenet):
     """
         theano runtime engine implementation
     """
-
-    # array, index is node id, value is numeric node type
-    allocated_nodes = None
-
-    # array, index is node id, value is offset in a and w
-    allocated_node_offsets = None
-
-    # array, index is node id, value is nodespace id
-    allocated_node_parents = None
-
-    # array, index is element index, value is node id
-    allocated_elements_to_nodes = None
-
-    # array, index is nodespace id, value is parent nodespace id
-    allocated_nodespaces = None
-
-    # directional activator assignment, key is nodespace ID, value is activator ID
-    allocated_nodespaces_por_activators = None
-    allocated_nodespaces_ret_activators = None
-    allocated_nodespaces_sub_activators = None
-    allocated_nodespaces_sur_activators = None
-    allocated_nodespaces_cat_activators = None
-    allocated_nodespaces_exp_activators = None
-
-    # directional activators map, index is element id, value is the directional activator's element id
-    allocated_elements_to_activators = None
-
-    last_allocated_node = 0
-    last_allocated_offset = 0
-    last_allocated_nodespace = 0
-
-    native_module_instances = {}
-
-    # todo: get rid of positions
-    # map of string uids to positions. Not all nodes necessarily have an entry.
-    positions = {}
-
-    # map of string uids to names. Not all nodes neccessarily have an entry.
-    names = {}
-
-    # map of data sources to numerical node IDs
-    sensormap = {}
-
-    # map of numerical node IDs to data sources
-    inverted_sensor_map = {}
-
-    # map of data targets to numerical node IDs
-    actuatormap = {}
-
-    # map of numerical node IDs to data targets
-    inverted_actuator_map = {}
-
-    # theano tensors for performing operations
-    w = None            # matrix of weights
-    a = None            # vector of activations
-    a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
-                        # this is a view on the activation values instrumental in calculating concept node functions
-
-    g_factor = None     # vector of gate factors, controlled by directional activators
-    g_threshold = None  # vector of thresholds (gate parameters)
-    g_amplification = None  # vector of amplification factors
-    g_min = None        # vector of lower bounds
-    g_max = None        # vector of upper bounds
-
-    g_function_selector = None # vector of gate function selectors
-
-    g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
-
-    g_expect = None     # vector of expectations
-    g_countdown = None  # vector of number of steps until expectation needs to be met
-    g_wait = None       # vector of initial values for g_countdown
-
-    n_function_selector = None      # vector of per-gate node function selectors
-    n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
-                                    # node. This could in theory be inferred with T.max() on upshifted versions of w,
-                                    # but for now, we manually track this property
-    n_node_retlinked = None         # same for ret
-
-    sparse = True
-
-    __has_new_usages = True
-    __has_pipes = False
-    __has_directional_activators = False
-    __has_gatefunction_absolute = False
-    __has_gatefunction_sigmoid = False
-    __has_gatefunction_tanh = False
-    __has_gatefunction_rect = False
-    __has_gatefunction_one_over_x = False
 
     @property
     def engine(self):
@@ -317,7 +230,113 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
+        # array, index is node id, value is numeric node type
+        self.allocated_nodes = None
+
+        # array, index is node id, value is offset in a and w
+        self.allocated_node_offsets = None
+
+        # array, index is node id, value is nodespace id
+        self.allocated_node_parents = None
+
+        # array, index is element index, value is node id
+        self.allocated_elements_to_nodes = None
+
+        # array, index is nodespace id, value is parent nodespace id
+        self.allocated_nodespaces = None
+
+        # directional activator assignment, key is nodespace ID, value is activator ID
+        self.allocated_nodespaces_por_activators = None
+        self.allocated_nodespaces_ret_activators = None
+        self.allocated_nodespaces_sub_activators = None
+        self.allocated_nodespaces_sur_activators = None
+        self.allocated_nodespaces_cat_activators = None
+        self.allocated_nodespaces_exp_activators = None
+
+        # directional activators map, index is element id, value is the directional activator's element id
+        self.allocated_elements_to_activators = None
+
+        self.last_allocated_node = 0
+        self.last_allocated_offset = 0
+        self.last_allocated_nodespace = 0
+
+        self.native_module_instances = {}
+        self.comment_instances = {}
+
+        # map of string uids to positions. Not all nodes necessarily have an entry.
+        self.positions = {}
+
+        # map of string uids to names. Not all nodes neccessarily have an entry.
+        self.names = {}
+
+        # map of data sources to numerical node IDs
+        self.sensormap = {}
+
+        # map of numerical node IDs to data sources
+        self.inverted_sensor_map = {}
+
+        # map of data targets to numerical node IDs
+        self.actuatormap = {}
+
+        # map of numerical node IDs to data targets
+        self.inverted_actuator_map = {}
+
+        # theano tensors for performing operations
+        self.w = None            # matrix of weights
+        self.a = None            # vector of activations
+        self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
+                            # this is a view on the activation values instrumental in calculating concept node functions
+
+        self.g_factor = None     # vector of gate factors, controlled by directional activators
+        self.g_threshold = None  # vector of thresholds (gate parameters)
+        self.g_amplification = None  # vector of amplification factors
+        self.g_min = None        # vector of lower bounds
+        self.g_max = None        # vector of upper bounds
+
+        self.g_function_selector = None # vector of gate function selectors
+
+        self.g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
+
+        self.g_expect = None     # vector of expectations
+        self.g_countdown = None  # vector of number of steps until expectation needs to be met
+        self.g_wait = None       # vector of initial values for g_countdown
+
+        self.n_function_selector = None      # vector of per-gate node function selectors
+        self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
+                                        # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                        # but for now, we manually track this property
+        self.n_node_retlinked = None         # same for ret
+
+        self.sparse = True
+
+        self.__has_new_usages = True
+        self.__has_pipes = False
+        self.__has_directional_activators = False
+        self.__has_gatefunction_absolute = False
+        self.__has_gatefunction_sigmoid = False
+        self.__has_gatefunction_tanh = False
+        self.__has_gatefunction_rect = False
+        self.__has_gatefunction_one_over_x = False
+
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+
+        INITIAL_NUMBER_OF_NODESPACES = 10
+
+        AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4
+        configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
+        try:
+            AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = int(configured_elements_per_node_assumption)
+        except:
+            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+
+        INITIAL_NUMBER_OF_NODES = 2000
+        configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
+        try:
+            INITIAL_NUMBER_OF_NODES = int(configured_initial_number_of_nodes)
+        except:
+            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+
+        INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
         self.sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']
@@ -332,19 +351,19 @@ class TheanoNodenet(Nodenet):
         precision = settings['theano']['precision']
         if precision == "32":
             T.config.floatX = "float32"
-            scipyfloatX = scipy.float32
-            numpyfloatX = np.float32
+            self.scipyfloatX = scipy.float32
+            self.numpyfloatX = np.float32
             self.byte_per_float = 4
         elif precision == "64":
             T.config.floatX = "float64"
-            scipyfloatX = scipy.float64
-            numpyfloatX = np.float64
+            self.scipyfloatX = scipy.float64
+            self.numpyfloatX = np.float64
             self.byte_per_float = 8
         else:
             self.logger.warn("Unsupported precision value from configuration: %s, falling back to float64", precision)
             T.config.floatX = "float64"
-            scipyfloatX = scipy.float64
-            numpyfloatX = np.float64
+            self.scipyfloatX = scipy.float64
+            self.numpyfloatX = np.float64
             self.byte_per_float = 8
 
         device = T.config.device
@@ -356,13 +375,14 @@ class TheanoNodenet(Nodenet):
 
         self.netapi = TheanoNetAPI(self)
 
-        self.NoN = DEFAULT_NUMBER_OF_NODES
-        self.NoE = DEFAULT_NUMBER_OF_ELEMENTS
-        self.NoNS = DEFAULT_NUMBER_OF_NODESPACES
+        self.NoN = INITIAL_NUMBER_OF_NODES
+        self.NoE = INITIAL_NUMBER_OF_ELEMENTS
+        self.NoNS = INITIAL_NUMBER_OF_NODESPACES
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
+        self.__modulators['por_ret_decay'] = 0.
 
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
@@ -379,39 +399,39 @@ class TheanoNodenet(Nodenet):
         self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
 
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=scipyfloatX), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=self.scipyfloatX), name="w")
         else:
-            w_matrix = np.zeros((self.NoE, self.NoE), dtype=scipyfloatX)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=self.scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(self.NoE, dtype=numpyfloatX)
+        a_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(self.NoE, dtype=numpyfloatX)
+        g_theta_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(self.NoE, dtype=numpyfloatX)
+        g_factor_array = np.ones(self.NoE, dtype=self.numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(self.NoE, dtype=numpyfloatX)
+        g_threshold_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(self.NoE, dtype=numpyfloatX)
+        g_amplification_array = np.ones(self.NoE, dtype=self.numpyfloatX)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(self.NoE, dtype=numpyfloatX)
+        g_min_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(self.NoE, dtype=numpyfloatX)
+        g_max_array = np.ones(self.NoE, dtype=self.numpyfloatX)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
         g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
 
-        g_expect_array = np.ones(self.NoE, dtype=numpyfloatX)
+        g_expect_array = np.ones(self.NoE, dtype=self.numpyfloatX)
         self.g_expect = theano.shared(value=g_expect_array, name="expectation", borrow=True)
 
         g_countdown_array = np.zeros(self.NoE, dtype=np.int8)
@@ -429,14 +449,16 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
+        self.stepoperators = []
         self.initialize_stepoperators()
 
         self.__nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
             self.__nodetypes[type] = Nodetype(nodenet=self, **data)
 
+        self.native_module_definitions = native_modules
         self.native_modules = {}
-        for type, data in native_modules.items():
+        for type, data in self.native_module_definitions.items():
             self.native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.nodegroups = {}
@@ -446,7 +468,11 @@ class TheanoNodenet(Nodenet):
         self.initialize_nodenet({})
 
     def initialize_stepoperators(self):
-        self.stepoperators = [TheanoPropagate(self), TheanoCalculate(self)]
+        self.stepoperators = [
+            TheanoPropagate(self),
+            TheanoCalculate(self),
+            TheanoPORRETDecay(self),
+            DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, filename):
@@ -458,6 +484,9 @@ class TheanoNodenet(Nodenet):
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
             metadata['sensormap'] = self.sensormap
+            metadata['nodes'] = self.construct_native_modules_and_comments_dict()
+            metadata['monitors'] = self.construct_monitors_dict()
+            metadata['modulators'] = self.construct_modulators_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         # write bulk data to our own numpy-based file format
@@ -476,7 +505,6 @@ class TheanoNodenet(Nodenet):
         allocated_nodespaces_sur_activators = self.allocated_nodespaces_sur_activators
         allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
         allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
-
 
         w = self.w.get_value(borrow=True)
 
@@ -573,6 +601,7 @@ class TheanoNodenet(Nodenet):
                 if 'sizeinformation' in datafile:
                     self.NoN = datafile['sizeinformation'][0]
                     self.NoE = datafile['sizeinformation'][1]
+                    self.NoNS = datafile['sizeinformation'][2]
                 else:
                     self.logger.warn("no sizeinformation in file, falling back to defaults")
 
@@ -733,6 +762,14 @@ class TheanoNodenet(Nodenet):
                     if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                         uid = tnode.to_id(id)
                         self.native_module_instances[uid] = self.get_node(uid)
+                    elif self.allocated_nodes[id] == COMMENT:
+                        uid = tnode.to_id(id)
+                        self.comment_instances[uid] = self.get_node(uid)
+
+                # reloading native modules ensures the types in allocated_nodes are up to date
+                # (numerical native module types are runtime dependent and may differ from when allocated_nodes
+                # was saved).
+                self.reload_native_modules(self.native_module_definitions)
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
@@ -748,13 +785,15 @@ class TheanoNodenet(Nodenet):
 
     def remove(self, filename):
         datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
-        os.remove(datafilename)
+        try:
+            os.remove(datafilename)
+        except IOError:
+            pass
         os.remove(filename)
 
     def initialize_nodenet(self, initfrom):
 
-        # todo: implement modulators
-        # self.__modulators = initfrom.get("modulators", {})
+        self.__modulators.update(initfrom.get("modulators", {}))
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
@@ -767,7 +806,6 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
                 self.sensormap = initfrom['sensormap']
-
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -806,7 +844,12 @@ class TheanoNodenet(Nodenet):
                 uidmap[uid] = new_uid
                 node_proxy = self.get_node(new_uid)
                 for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
-                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                    if gatetype in node_proxy.nodetype.gatetypes:
+                        node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+                state = data.get('state', {})
+                if state is not None:
+                    for key, value in state.items():
+                        node_proxy.set_state(key, value)
 
             else:
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
@@ -879,8 +922,6 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
 
-            # self.timeout_locks()
-
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
@@ -891,18 +932,140 @@ class TheanoNodenet(Nodenet):
     def get_node(self, uid):
         if uid in self.native_module_instances:
             return self.native_module_instances[uid]
+        elif uid in self.comment_instances:
+            return self.comment_instances[uid]
         elif uid in self.get_node_uids():
             id = tnode.from_id(uid)
             parent_id = self.allocated_node_parents[id]
             return TheanoNode(self, tnodespace.to_id(parent_id), uid, self.allocated_nodes[id])
         else:
-            return None
+            raise KeyError("No node with id %s exists", uid)
 
     def get_node_uids(self):
         return [tnode.to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
 
     def is_node(self, uid):
         return uid in self.get_node_uids()
+
+    def grow_number_of_nodes(self, growby):
+
+        new_NoN = int(self.NoN + growby)
+
+        new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
+        new_allocated_node_parents = np.zeros(new_NoN, dtype=np.int32)
+        new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
+
+        new_allocated_nodes[0:self.NoN] = self.allocated_nodes
+        new_allocated_node_parents[0:self.NoN] = self.allocated_node_parents
+        new_allocated_node_offsets[0:self.NoN] = self.allocated_node_offsets
+
+        with self.netlock:
+            self.NoN = new_NoN
+            self.allocated_nodes = new_allocated_nodes
+            self.allocated_node_parents = new_allocated_node_parents
+            self.allocated_node_offsets = new_allocated_node_offsets
+            self.has_new_usages = True
+
+    def grow_number_of_nodespaces(self, growby):
+
+        new_NoNS = int(self.NoNS + growby)
+
+        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
+
+        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
+        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
+        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
+
+        with self.netlock:
+            self.NoNS = new_NoNS
+            self.allocated_nodespaces = new_allocated_nodespaces
+            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
+            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
+            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
+            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
+            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
+            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
+            self.has_new_usages = True
+
+    def grow_number_of_elements(self, growby):
+
+        new_NoE = int(self.NoE + growby)
+
+        new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
+        new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
+
+        if self.sparse:
+            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.scipyfloatX)
+        else:
+            new_w = np.zeros((new_NoE, new_NoE), dtype=self.scipyfloatX)
+
+        new_a = np.zeros(new_NoE, dtype=self.numpyfloatX)
+        new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
+        new_g_theta = np.zeros(new_NoE, dtype=self.numpyfloatX)
+        new_g_factor = np.ones(new_NoE, dtype=self.numpyfloatX)
+        new_g_threshold = np.zeros(new_NoE, dtype=self.numpyfloatX)
+        new_g_amplification = np.ones(new_NoE, dtype=self.numpyfloatX)
+        new_g_min = np.zeros(new_NoE, dtype=self.numpyfloatX)
+        new_g_max = np.ones(new_NoE, dtype=self.numpyfloatX)
+        new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_g_expect = np.ones(new_NoE, dtype=self.numpyfloatX)
+        new_g_countdown = np.zeros(new_NoE, dtype=np.int8)
+        new_g_wait = np.ones(new_NoE, dtype=np.int8)
+        new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
+        new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
+
+        new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
+        new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
+
+        new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
+
+        new_a[0:self.NoE] = self.a.get_value(borrow=True)
+        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
+        new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
+        new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
+        new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
+        new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
+        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
+        new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
+        new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
+        new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
+        new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
+        new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
+        new_n_node_porlinked[0:self.NoE] = self.n_node_porlinked.get_value(borrow=True)
+        new_n_node_retlinked[0:self.NoE] = self.n_node_retlinked.get_value(borrow=True)
+
+        with self.netlock:
+            self.NoE = new_NoE
+            self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
+            self.allocated_elements_to_activators = new_allocated_elements_to_activators
+            self.w.set_value(new_w, borrow=True)
+            self.a.set_value(new_a, borrow=True)
+            self.a_shifted.set_value(new_a_shifted, borrow=True)
+            self.g_theta.set_value(new_g_theta, borrow=True)
+            self.g_factor.set_value(new_g_factor, borrow=True)
+            self.g_threshold.set_value(new_g_threshold, borrow=True)
+            self.g_amplification.set_value(new_g_amplification, borrow=True)
+            self.g_min.set_value(new_g_min, borrow=True)
+            self.g_max.set_value(new_g_max, borrow=True)
+            self.g_function_selector.set_value(new_g_function_selector, borrow=True)
+            self.g_expect.set_value(new_g_expect, borrow=True)
+            self.g_countdown.set_value(new_g_countdown, borrow=True)
+            self.g_wait.set_value(new_g_wait, borrow=True)
+            self.n_function_selector.set_value(new_n_function_selector, borrow=True)
+            self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
+            self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
+            self.has_new_usages = True
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
@@ -923,7 +1086,11 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                raise MemoryError("Cannot find free id, all " + str(self.NoN) + " node entries already in use.")
+                growby = self.NoN // 2
+                self.logger.info("All %d node IDs in use, growing id vectors by %d elements" % (self.NoN, growby))
+                id = self.NoN
+                self.grow_number_of_nodes(growby)
+
         else:
             id = tnode.from_id(uid)
 
@@ -952,7 +1119,10 @@ class TheanoNodenet(Nodenet):
                     i = 0
                     has_restarted_from_zero = True
                 else:
-                    raise MemoryError("Cannot find "+str(number_of_elements)+" consecutive free elements for new node " + uid)
+                    growby = max(number_of_elements +1, self.NoE // 2)
+                    self.logger.info("All %d elements in use, growing elements vectors by %d elements" % (self.NoE, growby))
+                    offset = self.NoE
+                    self.grow_number_of_elements(growby)
 
         self.last_allocated_node = id
         self.last_allocated_offset = offset
@@ -1024,7 +1194,6 @@ class TheanoNodenet(Nodenet):
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))
                 self.g_wait.set_value(g_wait_array, borrow=True)
-
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")
@@ -1032,20 +1201,30 @@ class TheanoNodenet(Nodenet):
                 self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
 
         node_proxy = self.get_node(uid)
-        for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
-            for gate_parameter in parameters:
-                node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
-        if gate_parameters is not None:
-            for gate, parameters in gate_parameters.items():
-                for gate_parameter in parameters:
-                    node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
-
-        if gate_functions is not None:
-            for gate, gate_function in gate_functions.items():
-                node_proxy.set_gatefunction_name(gate, gate_function)
 
         if nodetype not in STANDARD_NODETYPES:
             self.native_module_instances[uid] = node_proxy
+            for key, value in parameters.items():
+                node_proxy.set_parameter(key, value)
+        elif nodetype == "Comment":
+            self.comment_instances[uid] = node_proxy
+            for key, value in parameters.items():
+                node_proxy.set_parameter(key, value)
+
+        for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
+            if gate in node_proxy.nodetype.gatetypes:
+                for gate_parameter in parameters:
+                    node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+        if gate_parameters is not None:
+            for gate, parameters in gate_parameters.items():
+                if gate in node_proxy.nodetype.gatetypes:
+                    for gate_parameter in parameters:
+                        node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+
+        if gate_functions is not None:
+            for gate, gate_function in gate_functions.items():
+                if gate in node_proxy.nodetype.gatetypes:
+                    node_proxy.set_gatefunction_name(gate, gate_function)
 
         return uid
 
@@ -1067,16 +1246,18 @@ class TheanoNodenet(Nodenet):
             self.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
+        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == tnode.from_id(uid))[0]] = 0
 
-        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-        n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
-        n_function_selector_array[offset + POR] = NFPG_PIPE_NON
-        n_function_selector_array[offset + RET] = NFPG_PIPE_NON
-        n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
-        n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
-        n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
-        n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
-        self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+        if type == PIPE:
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + RET] = NFPG_PIPE_NON
+            n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
+            n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
+            n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # clear from name and positions dicts
         if uid in self.names:
@@ -1087,9 +1268,11 @@ class TheanoNodenet(Nodenet):
         # hint at the free ID
         self.last_allocated_node = tnode.from_id(uid) - 1
 
-        # remove the native module instance if there should be one
+        # remove the native module or comment instance if there should be one
         if uid in self.native_module_instances:
             del self.native_module_instances[uid]
+        if uid in self.comment_instances:
+            del self.comment_instances[uid]
 
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
@@ -1097,8 +1280,8 @@ class TheanoNodenet(Nodenet):
             del self.inverted_sensor_map[uid]
             if sensor in self.sensormap:
                 self.sensormap[sensor].remove(tnode.from_id(uid))
-            if len(self.sensormap[sensor]) == 0:
-                del self.sensormap[sensor]
+                if len(self.sensormap[sensor]) == 0:
+                    del self.sensormap[sensor]
 
         # remove actuator association if there should be one
         if uid in self.inverted_actuator_map:
@@ -1106,8 +1289,8 @@ class TheanoNodenet(Nodenet):
             del self.inverted_actuator_map[uid]
             if actuator in self.actuatormap:
                 self.actuatormap[actuator].remove(tnode.from_id(uid))
-            if len(self.actuatormap[actuator]) == 0:
-                del self.actuatormap[actuator]
+                if len(self.actuatormap[actuator]) == 0:
+                    del self.actuatormap[actuator]
 
         # clear activator usage if there should be one
         used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)
@@ -1184,7 +1367,10 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                raise MemoryError("Cannot find free id, all " + str(self.NoNS) + " nodespace entries already in use.")
+                growby = self.NoNS // 2
+                self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.NoNS, growby))
+                id = self.NoNS
+                self.grow_number_of_nodespaces(growby)
         else:
             id = tnodespace.from_id(uid)
 
@@ -1192,7 +1378,9 @@ class TheanoNodenet(Nodenet):
 
         parent_id = 0
         if parent_uid is not None:
-             parent_id = tnodespace.from_id(parent_uid)
+            parent_id = tnodespace.from_id(parent_uid)
+        elif id != 1:
+            parent_id = 1
 
         uid = tnodespace.to_id(id)
 
@@ -1302,14 +1490,79 @@ class TheanoNodenet(Nodenet):
         return True
 
     def reload_native_modules(self, native_modules):
-        pass
+
+        self.native_module_definitions = native_modules
+
+        # check which instances need to be recreated because of gate/slot changes and keep their .data
+        instances_to_recreate = {}
+        instances_to_delete = {}
+        for uid, instance in self.native_module_instances.items():
+            if instance.type not in native_modules:
+                self.logger.warn("No more definition available for node type %s, deleting instance %s" %
+                                (instance.type, uid))
+                instances_to_delete[uid] = instance
+                continue
+
+            numeric_id = tnode.from_id(uid)
+            number_of_elements = len(np.where(self.allocated_elements_to_nodes == numeric_id)[0])
+            new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
+            if number_of_elements != new_numer_of_elements:
+                self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                                (instance.type, number_of_elements, new_numer_of_elements, uid))
+                instances_to_recreate[uid] = instance.data
+
+        # actually remove the instances
+        for uid in instances_to_delete.keys():
+            self.delete_node(uid)
+        for uid in instances_to_recreate.keys():
+            self.delete_node(uid)
+
+        # update the node functions of all Nodetypes
+        self.native_modules = {}
+        for type, data in native_modules.items():
+            self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+
+        # update the living instances that have the same slot/gate numbers
+        new_instances = {}
+        for id, instance in self.native_module_instances.items():
+            parameters = instance.clone_parameters()
+            state = instance.clone_state()
+            position = instance.position
+            name = instance.name
+            new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.allocated_nodes[tnode.from_id(id)])
+            new_native_module_instance.position = position
+            new_native_module_instance.name = name
+            for key, value in parameters.items():
+                new_native_module_instance.set_parameter(key, value)
+            for key, value in state.items():
+                new_native_module_instance.set_state(key, value)
+            new_instances[id] = new_native_module_instance
+        self.native_module_instances = new_instances
+
+        # recreate the deleted ones. Gate configurations and links will not be transferred.
+        for uid, data in instances_to_recreate.items():
+            new_uid = self.create_node(
+                data['type'],
+                data['parent_nodespace'],
+                data['position'],
+                name=data['name'],
+                uid=uid,
+                parameters=data['parameters'])
+
+        # update native modules numeric types, as these may have been set with a different native module
+        # node types list
+        native_module_ids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)[0]
+        for id in native_module_ids:
+            instance = self.get_node(tnode.to_id(id))
+            self.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
             'links': {},
             'nodes': self.construct_nodes_dict(nodespace_uid, self.NoN),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
-            'monitors': self.construct_monitors_dict()
+            'monitors': self.construct_monitors_dict(),
+            'modulators': self.construct_modulators_dict()
         }
         if include_links:
             data['links'] = self.construct_links_dict(nodespace_uid)
@@ -1327,26 +1580,14 @@ class TheanoNodenet(Nodenet):
             self.user_prompt = None
         return data
 
-    def is_locked(self, lock):
-        pass
-
-    def is_locked_by(self, lock, key):
-        pass
-
-    def lock(self, lock, key, timeout=100):
-        pass
-
-    def unlock(self, lock):
-        pass
-
     def get_modulator(self, modulator):
-        pass
+        return self.__modulators.get(modulator, 1)
 
     def change_modulator(self, modulator, diff):
-        pass
+        self.__modulators[modulator] = self.__modulators.get(modulator, 0) + diff
 
     def set_modulator(self, modulator, value):
-        pass
+        self.__modulators[modulator] = value
 
     def get_nodetype(self, type):
         if type in self.__nodetypes:
@@ -1391,6 +1632,16 @@ class TheanoNodenet(Nodenet):
                     data[linkuid] = linkdata
         return data
 
+    def construct_native_modules_and_comments_dict(self):
+        data = {}
+        i = 0
+        nodeids = np.where((self.allocated_nodes > MAX_STD_NODETYPE) | (self.allocated_nodes == COMMENT))[0]
+        for node_id in nodeids:
+            i += 1
+            node_uid = tnode.to_id(node_id)
+            data[node_uid] = self.get_node(node_uid).data
+        return data
+
     def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1):
         data = {}
         i = 0
@@ -1431,7 +1682,7 @@ class TheanoNodenet(Nodenet):
         return data
 
     def construct_modulators_dict(self):
-        return {}
+        return self.__modulators.copy()
 
     def get_standard_nodetype_definitions(self):
         """

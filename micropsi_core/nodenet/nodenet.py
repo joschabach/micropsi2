@@ -25,6 +25,7 @@ class NodenetLockException(Exception):
 
 
 class Nodenet(metaclass=ABCMeta):
+
     """
     Nodenet is the abstract base class for all node net implementations and defines the interface towards
     runtime.py, which is where JSON API and tests access node nets.
@@ -32,12 +33,6 @@ class Nodenet(metaclass=ABCMeta):
     This abstract Nodenet class defines handling of node net uid, name, world and worldadapter connections,
     but makes no assumptions on persistency (filesystem, database, memory-only) or implementation.
     """
-
-    __uid = ""
-    __name = ""
-    __world_uid = None
-    __worldadapter_uid = None
-    is_active = False
 
     @property
     @abstractmethod
@@ -159,14 +154,17 @@ class Nodenet(metaclass=ABCMeta):
         """
         Constructor for the abstract base class, must be called by implementations
         """
-        uid = uid or micropsi_core.tools.generate_uid()
+        self.__uid = uid or micropsi_core.tools.generate_uid()
+        self.__name = name
+        self.__world_uid = None
+        self.__worldadapter_uid = None
+        self.is_active = False
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__uid = uid
 
         self.world = world
         self.owner = owner
-        self.name = name
         if world and worldadapter:
             self.worldadapter = worldadapter
 
@@ -365,34 +363,6 @@ class Nodenet(metaclass=ABCMeta):
         Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
         If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,
         so only tests should use keep_uids=True
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def is_locked(self, lock):
-        """
-        Returns true if a lock of the given name exists
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def is_locked_by(self, lock, key):
-        """
-        Returns true if a lock of the given name exists and the key used is the given one
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def lock(self, lock, key, timeout=100):
-        """
-        Creates a lock with the given name that will time out after the given number of steps
-        """
-        pass  # pragma: no cover
-
-    @abstractmethod
-    def unlock(self, lock):
-        """
-        Removes the given lock
         """
         pass  # pragma: no cover
 

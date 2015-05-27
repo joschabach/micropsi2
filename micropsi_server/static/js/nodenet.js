@@ -2317,7 +2317,7 @@ function updateSelection(event){
 function loadLinksForSelection(callback){
     var uids = [];
     for(var uid in selection){
-        if(uid in nodes){
+        if(uid in nodes && nodes[uid].type != 'Nodespace'){
             uids.push(uid)
         }
     }

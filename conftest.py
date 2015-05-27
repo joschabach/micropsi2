@@ -41,6 +41,13 @@ nodefunc_file = os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
 recipes_file = os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
 
 
+try:
+    import theano
+    engine_defaults = "dict_engine,theano_engine"
+except:
+    engine_defaults = "dict_engine"
+
+
 def set_logging_levels():
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
@@ -48,7 +55,7 @@ def set_logging_levels():
 
 
 def pytest_addoption(parser):
-    parser.addoption("--engine", action="store", default="dict_engine,theano_engine",
+    parser.addoption("--engine", action="store", default=engine_defaults,
         help="The engine that should be used for this testrun.")
 
 

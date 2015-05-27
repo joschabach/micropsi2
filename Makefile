@@ -17,7 +17,7 @@ clean:
 	rm -rf include lib .Python bin
 
 tests:
-	bin/py.test --engine=dict_engine
+	bin/py.test
 
 test-coverage:
 	bin/py.test --cov micropsi_core --cov micropsi_server --cov-report html

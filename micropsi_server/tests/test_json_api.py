@@ -460,18 +460,10 @@ def test_get_available_world_types(app):
 
 
 def test_delete_world(app, test_world):
-    # delete the world created in the test above
-    response = app.get_json('/rpc/get_available_worlds(user_id="Pytest User")')
-    world_uid = None
-    for uid, data in response.json_body['data'].items():
-        if data['name'] == "FooBarTestWorld" and uid != test_world:
-            world_uid = uid
-            break
-    assert world_uid is not None
-    response = app.get_json('/rpc/delete_world(world_uid="%s")' % world_uid)
+    response = app.get_json('/rpc/delete_world(world_uid="%s")' % test_world)
     assert_success(response)
     response = app.get_json('/rpc/get_available_worlds(user_id="Pytest User")')
-    assert world_uid not in response.json_body['data']
+    assert test_world not in response.json_body['data']
 
 
 def test_set_world_properties(app, test_world):
@@ -796,6 +788,7 @@ def test_delete_node(app, test_nodenet, node):
 
 
 def test_align_nodes(app, test_nodenet):
+    app.set_auth()
     # TODO: Why does autoalign only move a node if it has no links?
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,

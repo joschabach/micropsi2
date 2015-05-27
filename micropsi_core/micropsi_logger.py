@@ -11,9 +11,8 @@ from operator import itemgetter
 
 MAX_RECORDS_PER_STORAGE = 1000
 
-class RecordWebStorageHandler(logging.Handler):
 
-    record_storage = None
+class RecordWebStorageHandler(logging.Handler):
 
     def __init__(self, record_storage):
         """
@@ -63,7 +62,6 @@ class MicropsiLogger():
     records = {}
 
     handlers = {}
-
 
     def __init__(self, default_logging_levels={}):
 

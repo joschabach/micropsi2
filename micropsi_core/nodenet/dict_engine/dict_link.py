@@ -20,13 +20,6 @@ class DictLink(Link):
     You may retrieve links either from the global dictionary (by uid), or from the gates of nodes themselves.
     """
 
-    __weight = None
-    __certainty = None
-    __source_node = None
-    __target_node = None
-    __source_gate = None
-    __target_slot = None
-
     @property
     def data(self):
         data = {

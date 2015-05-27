@@ -282,8 +282,6 @@ class TheanoPORRETDecay(StepOperator):
     on sparse matrices.
     """
 
-    nodenet = None
-
     @property
     def priority(self):
         return 100
@@ -313,4 +311,3 @@ class TheanoPORRETDecay(StepOperator):
                 np.putmask(w_update, ((0 < w_update) & (w_update < 0.01)), 0.)
             w[rows, cols] = w_update
             nodenet.w.set_value(w, borrow=True)
-

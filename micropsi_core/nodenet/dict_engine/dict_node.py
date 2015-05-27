@@ -390,9 +390,6 @@ class DictGate(Gate):
         parameters: a dictionary of values used by the gate function
     """
 
-    __type = None
-    __node = None
-
     @property
     def type(self):
         return self.__type
@@ -512,9 +509,6 @@ class DictSlot(Slot):
         current_step: the simulation step when the slot last received activation
         incoming: a dictionary of incoming links together with the respective activation received by them
     """
-
-    __type = None
-    __node = None
 
     @property
     def type(self):

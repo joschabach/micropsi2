@@ -22,12 +22,6 @@ class NetEntity(object):
         parent_nodespace: the node space this entity is contained in
     """
 
-    __uid = None
-    __index = 0
-    __name = None
-    __parent_nodespace = None
-    __position = None
-
     @property
     def uid(self):
         return self.__uid
@@ -80,6 +74,11 @@ class NetEntity(object):
     def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities",
                  uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
+        self.__uid = None
+        self.__index = 0
+        self.__name = None
+        self.__parent_nodespace = None
+        self.__position = None
 
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet

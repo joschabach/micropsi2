@@ -554,10 +554,6 @@ class Nodetype(object):
         "spreadsheaves": 0
     }
 
-    _parameters = []
-    _nodefunction_definition = None
-    _nodefunction_name = None
-
     @property
     def data(self):
         data = {
@@ -624,6 +620,10 @@ class Nodetype(object):
         are not given here will be taken from the original definition. Thus, you may use this initializer to
         set up the nodetypes after loading new nodenet state (by using it without parameters).
         """
+        self._parameters = []
+        self._nodefunction_definition = None
+        self._nodefunction_name = None
+
         self.name = name
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}

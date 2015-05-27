@@ -75,9 +75,6 @@ class UserManager(object):
         user_file: the handle for the user data file
     """
 
-    users = None
-    sessions = {}
-
     def __init__(self, userfile_path = USERMANAGER_PATH):
         """initialize user management.
 
@@ -86,6 +83,8 @@ class UserManager(object):
         Parameters:
             resource_path (optional): a path to store user data permanently.
         """
+        self.users = None
+        self.sessions = {}
 
         # set up persistence
         micropsi_core.tools.mkdir(os.path.dirname(userfile_path))

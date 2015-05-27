@@ -24,6 +24,7 @@ from micropsi_core import runtime as micropsi
 
 # create testuser
 from micropsi_server.micropsi_app import usermanager
+
 usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
 user_token = usermanager.start_session('Pytest User', 'test', True)
 

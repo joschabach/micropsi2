@@ -356,7 +356,7 @@ $(function() {
 
     $('a.login').on('click', function(event){
         event.preventDefault();
-        dialogs.remote_form_dialog($(event.target).attr('href'), function(){window.location.reload();});
+        dialogs.remote_form_dialog($('a.login').attr('href'), function(){window.location.reload();});
     });
 
     $('.nodenet_export').on('click', function(event){

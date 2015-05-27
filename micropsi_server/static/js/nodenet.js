@@ -769,26 +769,12 @@ function removeNode(node) {
 updateViewSize = function() {
     var maxX = 0;
     var maxY = 0;
-    var frameWidth = viewProperties.frameWidth*viewProperties.zoomFactor;
     var el = canvas_container;
-    if(max_coordinates.x){
-        prerenderLayer.removeChildren();
-        maxX = (max_coordinates.x + 50) * viewProperties.zoomFactor;
-        maxY = (max_coordinates.y + 200) * viewProperties.zoomFactor;
-    } else {
-        prerenderLayer.removeChildren();
-        for (var nodeUid in nodeLayer.children) {
-            if (nodeUid in nodes) {
-                var node = nodes[nodeUid];
-                // make sure no node gets lost to the top or left
-                if (node.x < frameWidth || node.y < frameWidth) {
-                    node.x = Math.max(node.x, viewProperties.frameWidth);
-                    node.y = Math.max(node.y, viewProperties.frameWidth);
-                    redrawNode(node);
-                }
-                maxX = Math.max(maxX, node.x);
-                maxY = Math.max(maxY, node.y);
-            }
+    for (var nodeUid in nodeLayer.children) {
+        if (nodeUid in nodes) {
+            var node = nodes[nodeUid];
+            maxX = Math.max(maxX, node.x * viewProperties.zoomFactor + node.bounds.width + viewProperties.frameWidth);
+            maxY = Math.max(maxY, node.y * viewProperties.zoomFactor + node.bounds.height + viewProperties.frameWidth);
         }
     }
     var newSize = new Size(

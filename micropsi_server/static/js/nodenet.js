@@ -111,6 +111,7 @@ native_modules = {};
 available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
+sorted_native_modules = [];
 
 initializeMenus();
 initializeDialogs();
@@ -289,6 +290,12 @@ function setCurrentNodenet(uid, nodespace, changed){
                     return 0;
                 });
                 native_modules = data.native_modules;
+                sorted_native_modules = Object.keys(native_modules);
+                sorted_native_modules.sort(function(a, b){
+                    if(a < b) return -1;
+                    if(a > b) return 1;
+                    return 0;
+                });
                 for(var key in native_modules){
                     nodetypes[key] = native_modules[key];
                 }
@@ -2463,8 +2470,8 @@ function openContextMenu(menu_id, event) {
             } else {
                 html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
                 html += '<ul class="sub-menu dropdown-menu">';
-                for(var key in native_modules){
-                    html += '<li><a data-create-node="' + key + '">Create '+ key +' Node</a></li>';
+                for(var idx in sorted_native_modules){
+                    html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
                 }
                 html += '</ul></li>';
             }

@@ -2182,6 +2182,7 @@ function onMouseDrag(event) {
         };
     }
     if (movePath) {
+        path.nodeMoved = true;
         if(dragMultiples){
             var offset = null;
             if(nodenet_data.snap_to_grid){

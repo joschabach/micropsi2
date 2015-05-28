@@ -1218,8 +1218,13 @@ function renderComment(node){
     commentText.paragraphStyle.justification = 'left';
     bounds.width = Math.max(commentText.bounds.width, bounds.width);
     bounds.height = Math.max(commentText.bounds.height, bounds.height);
-    var commentBox = new Path.Rectangle(bounds.x, bounds.y, bounds.width+20, bounds.height+20);
-    commentBox.fillColor = new Color('yellow');
+    commentText.position.x = bounds.x + 10;
+    commentText.position.y = bounds.y + 10;
+    bounds.x = bounds.x - bounds.width/2;
+    bounds.y = bounds.y - bounds.height/2;
+    var commentBox = new Path.Rectangle(bounds.x, bounds.y, bounds.width+20, bounds.height +20);
+    commentBox.fillColor = new Color('white');
+    commentBox.strokeColor = viewProperties.selectionColor;
     node.bounds = commentBox.bounds;
     var boxgroup = new Group([commentBox]);
     boxgroup.name = 'body';

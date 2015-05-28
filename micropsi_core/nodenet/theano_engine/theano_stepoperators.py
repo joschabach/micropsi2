@@ -300,7 +300,7 @@ class TheanoPORRETDecay(StepOperator):
         if nodenet.has_pipes and porretdecay != 0:
             n_function_selector = nodenet.n_function_selector.get_value(borrow=True)
             w = nodenet.w.get_value(borrow=True)
-            por_cols = np.where((n_function_selector == NFPG_PIPE_POR) | (n_function_selector == NFPG_PIPE_RET))[0]
+            por_cols = np.where(n_function_selector == NFPG_PIPE_POR)[0]
             por_rows = np.nonzero(w[:, por_cols] > 0.)[0]
             cols, rows = np.meshgrid(por_cols, por_rows)
             w_update = w[rows, cols]

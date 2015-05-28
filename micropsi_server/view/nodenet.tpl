@@ -171,10 +171,6 @@
                         <td><input type="text" class="" name="threshold" id="gate_threshold"></td>
                     </tr>
                     <tr>
-                        <td><label for="gate_decay">Decay</label></td>
-                        <td><input type="text" class="" name="decay" id="gate_decay"></td>
-                    </tr>
-                    <tr>
                         <td colspan="2"><a href="#" class="gate_additional_trigger">Show additional parameters</a> (for gatefunction)</td>
                     </tr>
                     <tr class="gate_additional hide">

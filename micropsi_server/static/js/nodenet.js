@@ -66,7 +66,6 @@ GATE_DEFAULTS = {
     "certainty": 1,
     "amplification": 1,
     "threshold": -1,
-    "decay": 0,
     "theta": 0,
     "rho": 0,
     "spreadsheaves": 0
@@ -645,14 +644,7 @@ function Gate(name, index, sheaves, parameters, gatefunction) {
     if(parameters){
         this.parameters = parameters;
     } else {
-        this.parameters = {
-            "minimum": -1,
-            "maximum": 1,
-            "certainty": 1,
-            "amplification": 1,
-            "threshold": 0,
-            "decay": 0
-        };
+        this.parameters = jQuery.extend({}, GATE_DEFAULTS);
     }
 }
 

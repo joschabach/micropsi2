@@ -193,7 +193,9 @@ class DictNodenet(Nodenet):
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
-        self.__modulators = {}
+        self.__modulators = {
+            'por_ret_decay': 0.
+        }
 
         if world and worldadapter:
             self.worldadapter = worldadapter

@@ -301,13 +301,13 @@ class TheanoPORRETDecay(StepOperator):
             n_function_selector = nodenet.n_function_selector.get_value(borrow=True)
             w = nodenet.w.get_value(borrow=True)
             por_cols = np.where((n_function_selector == NFPG_PIPE_POR) | (n_function_selector == NFPG_PIPE_RET))[0]
-            por_rows = w[:, por_cols].nonzero()[0]
+            por_rows = np.nonzero(w[:, por_cols] > 0.)[0]
             cols, rows = np.meshgrid(por_cols, por_rows)
             w_update = w[rows, cols]
             w_update *= (1 - porretdecay)
             if nodenet.current_step % 1000 == 0:
                 if nodenet.sparse:                         # todo: there must be a more efficient way to deal with this
                     w_update = w_update.todense()
-                np.putmask(w_update, ((0 < w_update) & (w_update < 0.01)), 0.)
+                np.putmask(w_update, (w_update < porretdecay**2), 0.)
             w[rows, cols] = w_update
             nodenet.w.set_value(w, borrow=True)

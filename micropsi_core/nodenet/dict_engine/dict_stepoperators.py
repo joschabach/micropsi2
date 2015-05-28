@@ -90,13 +90,11 @@ class DictPORRETDecay(StepOperator):
                 confirmation = node.get_gate('gen').activation
 
                 porgate = node.get_gate('por')
-                pordecay = porgate.get_parameter('decay') * decay_factor
-                if pordecay is not None and pordecay > 0:
+                pordecay = (1 - nodenet.get_modulator('por_ret_decay'))
+                if decay_factor and pordecay is not None and pordecay > 0:
                     for link in porgate.get_links():
-                        linkdelta = - pordecay
-
                         if link.weight > 0:
-                            link.set_weight(max(link.weight + linkdelta, 0))
+                            link.set_weight(max(link.weight * pordecay, 0))
                         if link.weight == 0:
                             obsoletelinks.append(link)
         left_boundaries = []

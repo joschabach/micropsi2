@@ -548,7 +548,6 @@ class Nodetype(object):
         "certainty": 1,
         "amplification": 1,
         "threshold": -1,
-        "decay": 0,
         "theta": 0,
         "rho": 0,
         "spreadsheaves": 0

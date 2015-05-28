@@ -306,8 +306,7 @@ class TheanoPORRETDecay(StepOperator):
             w_update = w[rows, cols]
             w_update *= (1 - porretdecay)
             if nodenet.current_step % 1000 == 0:
-                if nodenet.sparse:                         # todo: there must be a more efficient way to deal with this
-                    w_update = w_update.todense()
-                np.putmask(w_update, (w_update < porretdecay**2), 0.)
+                nullify_grid = np.nonzero(w_update < porretdecay**2)
+                w_update[nullify_grid] = 0
             w[rows, cols] = w_update
             nodenet.w.set_value(w, borrow=True)

@@ -16,21 +16,21 @@ class TheanoNetAPI(NetAPI):
     def floatX(self):
         return self.__nodenet.numpyfloatX
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, sortby='id'):
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gate="gen", sortby='id'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix, sortby)
+        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix, gatetype=gate, sortby=sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name, sortby='id'):
+    def group_nodes_by_ids(self, node_ids, group_name, gate="gen", sortby='id'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_ids(node_ids, group_name, sortby)
+        self.__nodenet.group_nodes_by_ids(node_ids, group_name, gateytpe=gate, sortby=sortby)
 
     def ungroup_nodes(self, group):
         """
@@ -44,6 +44,15 @@ class TheanoNetAPI(NetAPI):
         For multi-gate nodes, the activations of the gen gates will be returned.
         """
         return self.__nodenet.get_activations(group)
+
+    def override_activations(self, group, new_activations):
+        """
+        Sets the avtivation of the given elements to the given value.
+        Note that this overrides the calculated activations, including all gate mechanics,
+        including gate function, thresholds, min, max, amplification and directional
+        activators - the values passed will be propagated in the next step.
+        """
+        return self.__nodenet.set_activations(group, new_activations)
 
     def get_thetas(self, group):
         """

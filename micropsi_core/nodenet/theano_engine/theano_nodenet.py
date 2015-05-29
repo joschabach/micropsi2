@@ -1733,21 +1733,22 @@ class TheanoNodenet(Nodenet):
 
         return actuator_values_to_write
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, sortby='id'):
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
         ids = []
         for uid, name in self.names.items():
             if name.startswith(node_name_prefix) and \
                     (nodespace is None or self.allocated_node_parents[tnode.from_id(uid)] == tnodespace.from_id(nodespace)):
                 ids.append(uid)
-        self.group_nodes_by_ids(ids, node_name_prefix, sortby)
+        self.group_nodes_by_ids(ids, node_name_prefix, gatetype, sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name, sortby='id'):
+    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
         ids = [tnode.from_id(uid) for uid in node_ids]
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':
             ids = sorted(ids, key=lambda id: self.names[tnode.to_id(id)])
-        self.nodegroups[group_name] = self.allocated_node_offsets[ids]
+        gate = get_numerical_gate_type(gatetype)
+        self.nodegroups[group_name] = self.allocated_node_offsets[ids] + gate
 
     def ungroup_nodes(self, group):
         if group in self.nodegroups:
@@ -1756,6 +1757,11 @@ class TheanoNodenet(Nodenet):
     def get_activations(self, group):
         a_array = self.a.get_value(borrow=True)
         return a_array[self.nodegroups[group]]
+
+    def set_activations(self, group, new_activations):
+        a_array = self.a.get_value(borrow=True)
+        a_array[self.nodegroups[group]] = new_activations
+        self.a.set_value(a_array, borrow=True)
 
     def get_thetas(self, group):
         g_theta_array = self.g_theta.get_value(borrow=True)

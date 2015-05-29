@@ -261,6 +261,7 @@ class TheanoNode(Node):
         self._id = from_id(uid)
         self._parent_id = nodespace.from_id(parent_uid)
         self._nodenet = nodenet
+        self._state = {}
 
         self.parameters = None
 
@@ -270,7 +271,7 @@ class TheanoNode(Node):
 
         if strtype in nodenet.native_modules or strtype == "Comment":
             self.slot_activation_snapshot = {}
-            self.state = {}
+            self._state = {}
 
             if parameters is not None:
                 self.parameters = parameters.copy()
@@ -562,14 +563,14 @@ class TheanoNode(Node):
         return parameters
 
     def get_state(self, state):
-        return self.state[state]
+        return self._state.get(state)
 
     def set_state(self, state, value):
-        self.state[state] = value
+        self._state[state] = value
 
     def clone_state(self):
         if self._numerictype > MAX_STD_NODETYPE:
-            return self.state.copy()
+            return self._state.copy()
         else:
             return None
 

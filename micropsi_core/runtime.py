@@ -77,7 +77,7 @@ class MicropsiRunner(threading.Thread):
     sum_of_durations = 0
     number_of_samples = 0
     total_steps = 0
-    granularity = 100
+    granularity = 10
 
     def __init__(self):
         threading.Thread.__init__(self)

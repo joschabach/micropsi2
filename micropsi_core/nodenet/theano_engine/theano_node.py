@@ -566,6 +566,8 @@ class TheanoNode(Node):
         return self._state.get(state)
 
     def set_state(self, state, value):
+        if isinstance(value, np.floating):
+            value = float(value)
         self._state[state] = value
 
     def clone_state(self):

@@ -914,7 +914,6 @@ class TheanoNodenet(Nodenet):
                 uidmap[nodespace_uid] = newuid
 
     def step(self):
-        self.proxycache.clear()
         self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
@@ -1349,7 +1348,13 @@ class TheanoNodenet(Nodenet):
     def get_nodespace(self, uid):
         if uid is None:
             uid = nodespace_to_id(1)
-        return TheanoNodespace(self, uid)
+
+        if uid in self.proxycache:
+            return self.proxycache[uid]
+        else:
+            nodespace = TheanoNodespace(self, uid)
+            self.proxycache[uid] = nodespace
+            return nodespace
 
     def get_nodespace_uids(self):
         ids = [nodespace_to_id(id) for id in np.nonzero(self.allocated_nodespaces)[0]]
@@ -1409,6 +1414,10 @@ class TheanoNodenet(Nodenet):
         node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
         for node_id in node_ids:
             self.delete_node(node_to_id(node_id))
+
+        # clear from proxycache
+        if uid in self.proxycache:
+            del self.proxycache[uid]
 
         # clear from name and positions dicts
         if uid in self.names:

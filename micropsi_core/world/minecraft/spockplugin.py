@@ -78,13 +78,16 @@ class MicropsiPlugin(object):
         y, ry = divmod(y, 16)
         z, rz = divmod(z, 16)
 
-        if (x, z) not in self.world.columns or y > 0x0F:
+        if y > 0x0F:
             return -1  # was 0
-        column = self.world.columns[(x, z)]
-        chunk = column.chunks[y]
+        try:
+            column = self.world.columns[(x, z)]
+            chunk = column.chunks[y]
+        except KeyError:
+            return -1
+
         if chunk is None:
             return -1  # was 0
-
         return chunk.block_data.get(rx, ry, rz) >> 4
 
     def get_biome_info(self, pos=None):

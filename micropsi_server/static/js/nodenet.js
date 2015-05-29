@@ -2324,6 +2324,9 @@ function loadLinksForSelection(callback){
             callback || function(data){
                 addLinks(data);
                 view.draw();
+                if(uids.length == 1 && uids[0] in selection){
+                    showNodeForm(uids[0]);
+                }
             }
         );
     }

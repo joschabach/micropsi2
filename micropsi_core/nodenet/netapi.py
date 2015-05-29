@@ -50,10 +50,15 @@ class NetAPI(object):
         the given prefix (all if None)
         """
         nodes = []
-        for node_uid in self.__nodenet.get_node_uids():
+        all_ids = None
+        if nodespace is not None:
+            all_ids = self.__nodenet.get_nodespace(nodespace).get_known_ids('nodes')
+        else:
+            all_ids = self.__nodenet.get_node_uids()
+
+        for node_uid in all_ids:
             node = self.__nodenet.get_node(node_uid)
-            if ((node_name_prefix is None or node.name.startswith(node_name_prefix)) and
-                    (nodespace is None or node.parent_nodespace == nodespace)):
+            if node_name_prefix is None or node.name.startswith(node_name_prefix):
                 nodes.append(node)
         return nodes
 

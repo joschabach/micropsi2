@@ -75,12 +75,15 @@ class NetAPI(object):
         for gate in gates:
             for link in self.__nodenet.get_node(node.uid).get_gate(gate).get_links():
                 candidate = link.target_node
-                linked_gates = []
-                for candidate_gate_name in candidate.get_gate_types():
-                    if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
-                        linked_gates.append(candidate_gate_name)
-                if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
-                    (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                if no_links_to is not None or nodespace is not None:
+                    linked_gates = []
+                    for candidate_gate_name in candidate.get_gate_types():
+                        if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
+                            linked_gates.append(candidate_gate_name)
+                    if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
+                        (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                        nodes.append(candidate)
+                else:
                     nodes.append(candidate)
         return nodes
 
@@ -97,12 +100,15 @@ class NetAPI(object):
         for slot in slots:
             for link in self.__nodenet.get_node(node.uid).get_slot(slot).get_links():
                 candidate = link.source_node
-                linked_gates = []
-                for candidate_gate_name in candidate.get_gate_types():
-                    if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
-                        linked_gates.append(candidate_gate_name)
-                if ((nodespace is None or nodespace == link.source_node.parent_nodespace) and
-                    (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                if no_links_to is not None or nodespace is not None:
+                    linked_gates = []
+                    for candidate_gate_name in candidate.get_gate_types():
+                        if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
+                            linked_gates.append(candidate_gate_name)
+                    if ((nodespace is None or nodespace == link.source_node.parent_nodespace) and
+                        (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
+                        nodes.append(candidate)
+                else:
                     nodes.append(candidate)
         return nodes
 

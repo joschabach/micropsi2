@@ -581,7 +581,7 @@ class TheanoNode(Node):
 
     def node_function(self):
         try:
-            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default")
+            self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default", **self.clone_parameters())
         except Exception:
             self._nodenet.is_active = False
             # self.activation = -1

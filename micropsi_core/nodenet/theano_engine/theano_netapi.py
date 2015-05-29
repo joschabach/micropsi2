@@ -45,9 +45,9 @@ class TheanoNetAPI(NetAPI):
         """
         return self.__nodenet.get_activations(group)
 
-    def override_activations(self, group, new_activations):
+    def substitute_activations(self, group, new_activations):
         """
-        Sets the avtivation of the given elements to the given value.
+        Sets the activation of the given elements to the given value.
         Note that this overrides the calculated activations, including all gate mechanics,
         including gate function, thresholds, min, max, amplification and directional
         activators - the values passed will be propagated in the next step.

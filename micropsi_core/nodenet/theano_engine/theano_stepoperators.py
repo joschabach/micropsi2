@@ -8,22 +8,7 @@ from theano.tensor import nnet as N
 import theano.sparse as ST
 import numpy as np
 from micropsi_core.nodenet.theano_engine.theano_node import *
-
-GATE_FUNCTION_IDENTITY = 0
-GATE_FUNCTION_ABSOLUTE = 1
-GATE_FUNCTION_SIGMOID = 2
-GATE_FUNCTION_TANH = 3
-GATE_FUNCTION_RECT = 4
-GATE_FUNCTION_DIST = 5
-
-NFPG_PIPE_NON = 0
-NFPG_PIPE_GEN = 1
-NFPG_PIPE_POR = 2
-NFPG_PIPE_RET = 3
-NFPG_PIPE_SUB = 4
-NFPG_PIPE_SUR = 5
-NFPG_PIPE_CAT = 6
-NFPG_PIPE_EXP = 7
+from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 
 class TheanoPropagate(Propagate):

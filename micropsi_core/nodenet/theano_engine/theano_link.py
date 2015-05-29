@@ -2,7 +2,7 @@
 
 
 from micropsi_core.nodenet.link import Link
-
+from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 class TheanoLink(Link):
     """
@@ -28,7 +28,19 @@ class TheanoLink(Link):
 
     @property
     def weight(self):
-        return float(self.__weight)
+        source_nodetype = self.__nodenet.get_node(self.__source_node_uid).nodetype
+        target_nodetype = self.__nodenet.get_node(self.__target_node_uid).nodetype
+        w_matrix = self.__nodenet.w.get_value(borrow=True)
+        ngt = get_numerical_gate_type(self.__source_gate_type, source_nodetype)
+        nst = get_numerical_slot_type(self.__target_slot_type, target_nodetype)
+        x = self.__nodenet.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
+        y = self.__nodenet.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
+        if self.__nodenet.sparse:
+            weight = w_matrix[x, y]
+        else:
+            weight = w_matrix[x][y]
+
+        return float(weight)
 
     @property
     def certainty(self):
@@ -50,10 +62,9 @@ class TheanoLink(Link):
     def target_slot(self):
         return self.target_node.get_slot(self.__target_slot_type)
 
-    def __init__(self, nodenet, source_node_uid, source_gate_type, target_node_uid, target_slot_type, weight=1):
+    def __init__(self, nodenet, source_node_uid, source_gate_type, target_node_uid, target_slot_type):
         self.__nodenet = nodenet
         self.__source_node_uid = source_node_uid
         self.__source_gate_type = source_gate_type
         self.__target_node_uid = target_node_uid
         self.__target_slot_type = target_slot_type
-        self.__weight = weight

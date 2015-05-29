@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from micropsi_core.nodenet.nodespace import Nodespace
+from micropsi_core.nodenet.theano_engine.theano_definitions import *
 import numpy as np
-
-
-def to_id(numericid):
-    return "s" + str(int(numericid))
-
-
-def from_id(stringid):
-    return int(stringid[1:])
 
 
 class TheanoNodespace(Nodespace):
@@ -30,7 +23,7 @@ class TheanoNodespace(Nodespace):
 
     @property
     def uid(self):
-        return to_id(self._id)
+        return nodespace_to_id(self._id)
 
     @property
     def index(self):
@@ -69,23 +62,22 @@ class TheanoNodespace(Nodespace):
         if parent_nodespace_id == 0:
             return None
         else:
-            return to_id(parent_nodespace_id)
+            return nodespace_to_id(parent_nodespace_id)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        self._nodenet.allocated_nodespaces[self._id] = from_id(uid)
+        self._nodenet.allocated_nodespaces[self._id] = nodespace_from_id(uid)
 
     def __init__(self, nodenet, uid):
         self.__activators = {}
         self._nodenet = nodenet
-        self._id = from_id(uid)
+        self._id = nodespace_from_id(uid)
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            from micropsi_core.nodenet.theano_engine.theano_node import to_id as node_to_id
             return [node_to_id(id) for id in np.where(self._nodenet.allocated_node_parents == self._id)[0]]
         elif entitytype == 'nodespaces':
-            return [to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
+            return [nodespace_to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
         elif entitytype == None:
             ids = self.get_known_ids('nodes')
             ids.extend(self.get_known_ids('nodespaces'))

@@ -17,6 +17,7 @@ class TheanoNode(Node):
 
         self._numerictype = type
         self._id = node_from_id(uid)
+        self._uid = uid
         self._parent_id = nodespace_from_id(parent_uid)
         self._nodenet = nodenet
         self._state = {}
@@ -38,7 +39,7 @@ class TheanoNode(Node):
 
     @property
     def uid(self):
-        return node_to_id(self._id)
+        return self._uid
 
     @property
     def index(self):

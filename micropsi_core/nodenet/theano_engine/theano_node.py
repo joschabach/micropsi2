@@ -3,251 +3,9 @@
 from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
+from micropsi_core.nodenet.theano_engine.theano_definitions import *
 from micropsi_core.nodenet.theano_engine import theano_nodespace as nodespace
-
 import numpy as np
-
-
-REGISTER = 1
-SENSOR = 2
-ACTUATOR = 3
-ACTIVATOR = 4
-CONCEPT = 5
-SCRIPT = 6
-PIPE = 7
-COMMENT = 8
-
-MAX_STD_NODETYPE = COMMENT
-
-GEN = 0
-POR = 1
-RET = 2
-SUB = 3
-SUR = 4
-CAT = 5
-EXP = 6
-
-MAX_STD_GATE = EXP
-
-
-def get_numerical_gate_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.gatetypes) > 0:
-        return nodetype.gatetypes.index(type)
-    elif type == "gen":
-        return GEN
-    elif type == "por":
-        return POR
-    elif type == "ret":
-        return RET
-    elif type == "sub":
-        return SUB
-    elif type == "sur":
-        return SUR
-    elif type == "cat":
-        return CAT
-    elif type == "exp":
-        return EXP
-    else:
-        raise ValueError("Supplied type is not a valid gate type: "+str(type))
-
-
-def get_string_gate_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.gatetypes) > 0:
-        return nodetype.gatetypes[type]
-    elif type == GEN:
-        return "gen"
-    elif type == POR:
-        return "por"
-    elif type == RET:
-        return "ret"
-    elif type == SUB:
-        return "sub"
-    elif type == SUR:
-        return "sur"
-    elif type == CAT:
-        return "cat"
-    elif type == EXP:
-        return "exp"
-    else:
-        raise ValueError("Supplied type is not a valid gate type: "+str(type))
-
-
-def get_numerical_slot_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.slottypes) > 0:
-        return nodetype.slottypes.index(type)
-    elif type == "gen":
-        return GEN
-    elif type == "por":
-        return POR
-    elif type == "ret":
-        return RET
-    elif type == "sub":
-        return SUB
-    elif type == "sur":
-        return SUR
-    elif type == "cat":
-        return CAT
-    elif type == "exp":
-        return EXP
-    else:
-        raise ValueError("Supplied type is not a valid slot type: "+str(type))
-
-
-def get_string_slot_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.slottypes) > 0:
-        return nodetype.slottypes[type]
-    elif type == GEN:
-        return "gen"
-    elif type == POR:
-        return "por"
-    elif type == RET:
-        return "ret"
-    elif type == SUB:
-        return "sub"
-    elif type == SUR:
-        return "sur"
-    elif type == CAT:
-        return "cat"
-    elif type == EXP:
-        return "exp"
-    else:
-        raise ValueError("Supplied type is not a valid slot type: "+str(type))
-
-
-def get_numerical_node_type(type, nativemodules=None):
-    if type == "Register":
-        return REGISTER
-    elif type == "Actor":
-        return ACTUATOR
-    elif type == "Sensor":
-        return SENSOR
-    elif type == "Activator":
-        return ACTIVATOR
-    elif type == "Concept":
-        return CONCEPT
-    elif type == "Script":
-        return SCRIPT
-    elif type == "Pipe":
-        return PIPE
-    elif type == "Comment":
-        return COMMENT
-    elif nativemodules is not None and type in nativemodules:
-        return MAX_STD_NODETYPE + 1 + sorted(nativemodules).index(type)
-    else:
-        raise ValueError("Supplied type is not a valid node type: "+str(type))
-
-
-def get_string_node_type(type, nativemodules=None):
-    if type == REGISTER:
-        return "Register"
-    elif type == ACTUATOR:
-        return "Actor"
-    elif type == SENSOR:
-        return "Sensor"
-    elif type == ACTIVATOR:
-        return "Activator"
-    elif type == CONCEPT:
-        return "Concept"
-    elif type == SCRIPT:
-        return "Script"
-    elif type == PIPE:
-        return "Pipe"
-    elif type == COMMENT:
-        return "Comment"
-    elif nativemodules is not None and len(nativemodules) >= (type - MAX_STD_NODETYPE):
-        return sorted(nativemodules)[(type-1) - MAX_STD_NODETYPE]
-    else:
-        raise ValueError("Supplied type is not a valid node type: "+str(type))
-
-
-def get_numerical_gatefunction_type(type):
-    if type == "identity" or type is None:
-        return GATE_FUNCTION_IDENTITY
-    elif type == "absolute":
-        return GATE_FUNCTION_ABSOLUTE
-    elif type == "sigmoid":
-        return GATE_FUNCTION_SIGMOID
-    elif type == "tanh":
-        return GATE_FUNCTION_TANH
-    elif type == "rect":
-        return GATE_FUNCTION_RECT
-    elif type == "one_over_x":
-        return GATE_FUNCTION_DIST
-    else:
-        raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
-
-
-def get_string_gatefunction_type(type):
-    if type == GATE_FUNCTION_IDENTITY:
-        return "identity"
-    elif type == GATE_FUNCTION_ABSOLUTE:
-        return "absolute"
-    elif type == GATE_FUNCTION_SIGMOID:
-        return "sigmoid"
-    elif type == GATE_FUNCTION_TANH:
-        return "tanh"
-    elif type == GATE_FUNCTION_RECT:
-        return "rect"
-    elif type == GATE_FUNCTION_DIST:
-        return "one_over_x"
-    else:
-        raise ValueError("Supplied gatefunction type is not a valid type: "+str(type))
-
-
-def get_elements_per_type(type, nativemodules=None):
-    if type == REGISTER:
-        return 1
-    elif type == SENSOR:
-        return 1
-    elif type == ACTUATOR:
-        return 1
-    elif type == ACTIVATOR:
-        return 1
-    elif type == CONCEPT:
-        return 7
-    elif type == SCRIPT:
-        return 7
-    elif type == PIPE:
-        return 7
-    elif type == COMMENT:
-        return 0
-    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
-        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
-        return max(len(native_module_definition.gatetypes), len(native_module_definition.slottypes))
-    else:
-        raise ValueError("Supplied type is not a valid node type: "+str(type))
-
-
-def get_gates_per_type(type, nativemodules=None):
-    if type == REGISTER:
-        return 1
-    elif type == SENSOR:
-        return 1
-    elif type == ACTUATOR:
-        return 1
-    elif type == ACTIVATOR:
-        return 0
-    elif type == CONCEPT:
-        return 7
-    elif type == SCRIPT:
-        return 7
-    elif type == PIPE:
-        return 7
-    elif type == COMMENT:
-        return 0
-    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
-        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
-        return len(native_module_definition.gatetypes)
-    else:
-        raise ValueError("Supplied type is not a valid node type: "+str(type))
-
-
-def to_id(numericid):
-    return "n" + str(int(numericid))
-
-
-def from_id(stringid):
-    return int(stringid[1:])
 
 
 class TheanoNode(Node):
@@ -258,8 +16,8 @@ class TheanoNode(Node):
     def __init__(self, nodenet, parent_uid, uid, type, parameters={}, **_):
 
         self._numerictype = type
-        self._id = from_id(uid)
-        self._parent_id = nodespace.from_id(parent_uid)
+        self._id = node_from_id(uid)
+        self._parent_id = nodespace_from_id(parent_uid)
         self._nodenet = nodenet
         self._state = {}
 
@@ -280,7 +38,7 @@ class TheanoNode(Node):
 
     @property
     def uid(self):
-        return to_id(self._id)
+        return node_to_id(self._id)
 
     @property
     def index(self):
@@ -315,11 +73,11 @@ class TheanoNode(Node):
 
     @property
     def parent_nodespace(self):
-        return nodespace.to_id(self._parent_id)
+        return nodespace_to_id(self._parent_id)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        self._nodenet.allocated_node_parents[self._id] = nodespace.from_id(uid)
+        self._nodenet.allocated_node_parents[self._id] = nodespace_from_id(uid)
 
     @property
     def activation(self):
@@ -602,17 +360,17 @@ class TheanoGate(Gate):
     @property
     def empty(self):
         w_matrix = self.__nodenet.w.get_value(borrow=True)
-        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
+        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         return len(np.nonzero(gatecolumn)[0]) == 0
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True)[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True)[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
         a_array = self.__nodenet.a.get_value(borrow=True)
-        a_array[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype] = value
+        a_array[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype] = value
         self.__nodenet.a.set_value(a_array, borrow=True)
 
     @property
@@ -628,7 +386,7 @@ class TheanoGate(Gate):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True)
-        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
+        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         links_indices = np.nonzero(gatecolumn)[0]
         for index in links_indices:
             target_id = self.__nodenet.allocated_elements_to_nodes[index]
@@ -636,12 +394,12 @@ class TheanoGate(Gate):
             target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
             target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
             target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-            if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                weight = float(gatecolumn[index].data)
+            link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, node_to_id(target_id), target_slot_type)
+            if link.uid in self.__nodenet.proxycache:
+                links.append(self.__nodenet.proxycache[link.uid])
             else:
-                weight = gatecolumn[index].item()
-            link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, to_id(target_id), target_slot_type, weight)
-            links.append(link)
+                self.__nodenet.proxycache[link.uid] = link
+                links.append(link)
         return links
 
     def get_parameter(self, parameter_name):
@@ -677,7 +435,7 @@ class TheanoSlot(Slot):
     @property
     def empty(self):
         w_matrix = self.__nodenet.w.get_value(borrow=True)
-        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
+        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         return len(np.nonzero(slotrow)[1]) == 0
 
     @property
@@ -702,7 +460,7 @@ class TheanoSlot(Slot):
     def get_links(self):
         links = []
         w_matrix = self.__nodenet.w.get_value(borrow=True)
-        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[from_id(self.__node.uid)] + self.__numerictype]
+        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         if self.__nodenet.sparse:
             links_indices = np.nonzero(slotrow)[1]
         else:
@@ -713,10 +471,10 @@ class TheanoSlot(Slot):
             source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
             source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
             source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-            if self.__nodenet.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                weight = float(slotrow[: , index].data)
+            link = TheanoLink(self.__nodenet, node_to_id(source_id), source_gate_type, self.__node.uid, self.__type)
+            if link.uid in self.__nodenet.proxycache:
+                links.append(self.__nodenet.proxycache[link.uid])
             else:
-                weight = slotrow[index].item()
-            link = TheanoLink(self.__nodenet, to_id(source_id), source_gate_type, self.__node.uid, self.__type, weight)
-            links.append(link)
+                self.__nodenet.proxycache[link.uid] = link
+                links.append(link)
         return links

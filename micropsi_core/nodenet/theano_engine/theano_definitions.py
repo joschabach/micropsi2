@@ -249,7 +249,7 @@ def get_gates_per_type(type, nativemodules=None):
 
 
 def node_to_id(numericid):
-    return "n" + str(int(numericid))
+    return "n%i" % numericid
 
 
 def node_from_id(stringid):
@@ -257,7 +257,7 @@ def node_from_id(stringid):
 
 
 def nodespace_to_id(numericid):
-    return "s" + str(int(numericid))
+    return "s%i" % numericid
 
 
 def nodespace_from_id(stringid):

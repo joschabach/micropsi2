@@ -963,12 +963,11 @@ class TheanoNodenet(Nodenet):
         new_allocated_node_parents[0:self.NoN] = self.allocated_node_parents
         new_allocated_node_offsets[0:self.NoN] = self.allocated_node_offsets
 
-        with self.netlock:
-            self.NoN = new_NoN
-            self.allocated_nodes = new_allocated_nodes
-            self.allocated_node_parents = new_allocated_node_parents
-            self.allocated_node_offsets = new_allocated_node_offsets
-            self.has_new_usages = True
+        self.NoN = new_NoN
+        self.allocated_nodes = new_allocated_nodes
+        self.allocated_node_parents = new_allocated_node_parents
+        self.allocated_node_offsets = new_allocated_node_offsets
+        self.has_new_usages = True
 
     def grow_number_of_nodespaces(self, growby):
 

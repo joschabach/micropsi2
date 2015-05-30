@@ -24,7 +24,7 @@ class TheanoLink(Link):
 
     @property
     def uid(self):
-        return self.__source_node_uid + ":" + self.__source_gate_type + ":" + self.__target_slot_type + ":" + self.__target_node_uid
+        return "%s:%s:%s:%s" % (self.__source_node_uid, self.__source_gate_type, self.__target_slot_type, self.__target_node_uid)
 
     @property
     def weight(self):

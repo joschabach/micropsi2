@@ -397,10 +397,11 @@ class TheanoGate(Gate):
             target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
             target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
             target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-            link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, node_to_id(target_id), target_slot_type)
-            if link.uid in self.__nodenet.proxycache:
-                links.append(self.__nodenet.proxycache[link.uid])
+            linkid = "%s:%s:%s:n%i" % (self.node.uid, self.__type, target_slot_type, target_id)
+            if linkid in self.__nodenet.proxycache:
+                links.append(self.__nodenet.proxycache[linkid])
             else:
+                link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, node_to_id(target_id), target_slot_type)
                 self.__nodenet.proxycache[link.uid] = link
                 links.append(link)
         return links
@@ -474,10 +475,11 @@ class TheanoSlot(Slot):
             source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
             source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
             source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-            link = TheanoLink(self.__nodenet, node_to_id(source_id), source_gate_type, self.__node.uid, self.__type)
-            if link.uid in self.__nodenet.proxycache:
-                links.append(self.__nodenet.proxycache[link.uid])
+            linkid = "n%i:%s:%s:%s" % (source_id, source_gate_type, self.__type, self.node.uid)
+            if linkid in self.__nodenet.proxycache:
+                links.append(self.__nodenet.proxycache[linkid])
             else:
+                link = TheanoLink(self.__nodenet, node_to_id(source_id), source_gate_type, self.__node.uid, self.__type)
                 self.__nodenet.proxycache[link.uid] = link
                 links.append(link)
         return links

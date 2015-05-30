@@ -1500,6 +1500,11 @@ class TheanoNodenet(Nodenet):
                     n_node_retlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
             self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
+        if weight == 0:
+            linkid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
+            if linkid in self.proxycache:
+                del self.proxycache[linkid]
+
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):

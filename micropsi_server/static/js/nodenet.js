@@ -609,12 +609,12 @@ function Node(uid, x, y, nodeSpaceUid, name, type, sheaves, state, parameters, g
         this.sheaves = item.sheaves;
         this.state = item.state;
         this.parameters = item.parameters;
-        this.gate_parameters = jQuery.extend(GATE_DEFAULTS, item.gate_parameters || {});;
+        this.gate_parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), item.gate_parameters || {});;
         this.gate_activations = item.gate_activations;
         this.gatefunctions = item.gatefunctions;
         for(var i in nodetypes[type].gatetypes){
             var gatetype = nodetypes[type].gatetypes[i];
-            this.gates[gatetype].parameters = jQuery.extend(GATE_DEFAULTS, this.gate_parameters[gatetype]);
+            this.gates[gatetype].parameters = jQuery.extend(jQuery.extend({}, GATE_DEFAULTS), this.gate_parameters[gatetype]);
             this.gates[gatetype].sheaves = this.gate_activations[gatetype];
             this.gates[gatetype].gatefunction = this.gatefunctions[gatetype];
 

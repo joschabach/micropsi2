@@ -74,17 +74,16 @@ class NetAPI(object):
             gates = self.__nodenet.get_node(node.uid).get_gate_types()
         for gate in gates:
             for link in self.__nodenet.get_node(node.uid).get_gate(gate).get_links():
-                candidate = link.target_node
-                if no_links_to is not None or nodespace is not None:
-                    linked_gates = []
-                    for candidate_gate_name in candidate.get_gate_types():
-                        if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
-                            linked_gates.append(candidate_gate_name)
-                    if ((nodespace is None or nodespace == link.target_node.parent_nodespace) and
-                        (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
-                        nodes.append(candidate)
-                else:
-                    nodes.append(candidate)
+                skip = False
+                if no_links_to is not None:
+                    for g in no_links_to:
+                        g = link.target_node.get_gate(g)
+                        if g and g.get_links():
+                            skip = True
+                            break
+                if skip or (nodespace is not None and nodespace != link.target_node.parent_nodespace):
+                    continue
+                nodes.append(link.target_node)
         return nodes
 
     def get_nodes_in_slot_field(self, node, slot=None, no_links_to=None, nodespace=None):
@@ -99,17 +98,16 @@ class NetAPI(object):
             slots = self.__nodenet.get_node(node.uid).get_slot_types()
         for slot in slots:
             for link in self.__nodenet.get_node(node.uid).get_slot(slot).get_links():
-                candidate = link.source_node
-                if no_links_to is not None or nodespace is not None:
-                    linked_gates = []
-                    for candidate_gate_name in candidate.get_gate_types():
-                        if len(candidate.get_gate(candidate_gate_name).get_links()) > 0:
-                            linked_gates.append(candidate_gate_name)
-                    if ((nodespace is None or nodespace == link.source_node.parent_nodespace) and
-                        (no_links_to is None or not len(set(no_links_to).intersection(set(linked_gates))))):
-                        nodes.append(candidate)
-                else:
-                    nodes.append(candidate)
+                skip = False
+                if no_links_to is not None:
+                    for g in no_links_to:
+                        g = link.target_node.get_gate(g)
+                        if g and g.get_links():
+                            skip = True
+                            break
+                if skip or (nodespace is not None and nodespace != link.source_node.parent_nodespace):
+                    continue
+                nodes.append(link.source_node)
         return nodes
 
     def get_nodes_active(self, nodespace, type=None, min_activation=1, gate=None, sheaf='default'):

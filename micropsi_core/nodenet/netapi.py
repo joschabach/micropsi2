@@ -306,34 +306,6 @@ class NetAPI(object):
             if node.type == nodetype:
                 node.set_gatefunction_name(gatetype, gatefunction)
 
-    def is_locked(self, lock):
-        """Returns true if the given lock is locked in the current net step
-        """
-        return self.__nodenet.is_locked(lock)
-
-    def is_locked_by(self, lock, key):
-        """Returns true if the given lock is locked in the current net step, with the given key
-        """
-        return self.__nodenet.is_locked_by(lock, key)
-
-    def lock(self, lock, key, timeout=100):
-        """
-        Creates a lock with immediate effect.
-        If two nodes try to create the same lock in the same net step, the second call will fail.
-        As nodes need to check is_locked before acquiring locks anyway, this effectively means that if two
-        nodes attempt to acquire the same lock at the same time (in the same net step), the node to get the
-        lock will be chosen randomly.
-        """
-        self.__nodenet.lock(lock, key, timeout)
-
-    def unlock(self, lock):
-        """
-        Removes a lock by the end of the net step, after all node functions have been called.
-        Thus, locks can only be acquired in the next net step (no indeterminism based on node function execution
-        order as with creating locks).
-        """
-        self.__locks_to_delete.append(lock)
-
     def notify_user(self, node, msg):
         """
         Stops the nodenetrunner for this nodenet, and displays an information to the user,

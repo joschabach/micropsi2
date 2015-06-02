@@ -395,6 +395,83 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
+        """
+        Groups the given set of nodes.
+        Groups can be used in bulk operations.
+        Grouped nodes will have stable sorting accross all bulk operations.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
+        """
+        Groups the given set of nodes.
+        Groups can be used in bulk operations.
+        Grouped nodes will have stable sorting accross all bulk operations.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def ungroup_nodes(self, group):
+        """
+        Deletes the given group (not the nodes, just the group assignment)
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_activations(self, group):
+        """
+        Returns an array of activations for the given group.
+        For multi-gate nodes, the activations of the gate specified when creating the group will be returned.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def set_activations(self, group, new_activations):
+        """
+        Sets the activation of the given elements to the given value.
+        Note that this overrides the calculated activations, including all gate mechanics,
+        including gate function, thresholds, min, max, amplification and directional
+        activators - the values passed will be propagated in the next step.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_thetas(self, group):
+        """
+        Returns a list of theta values for the given group.
+        For multi-gate nodes, the thetas of the gen gates will be returned
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def set_thetas(self, group, thetas):
+        """
+        Bulk-sets thetas for the given group.
+        new_thetas dimensionality has to match the group length
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_link_weights(self, group_from, group_to):
+        """
+        Returns the weights of links between two groups as a matrix.
+        Rows are group_to slots, columns are group_from gates.
+        Non-existing links will be returned as 0-entries in the matrix.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def set_link_weights(self, group_from, group_to, new_w):
+        """
+        Sets the weights of links between two groups from the given matrix new_w.
+        Rows are group_to slots, columns are group_from gates.
+        Note that setting matrix entries to non-0 values will implicitly create links.
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def get_available_gatefunctions(self):
         """
         Returns a list of available gate functions

@@ -925,8 +925,6 @@ class TheanoNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
-            self.netapi._step()
-
             self.__step += 1
 
     def get_node(self, uid):

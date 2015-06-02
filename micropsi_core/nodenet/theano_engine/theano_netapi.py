@@ -41,7 +41,7 @@ class TheanoNetAPI(NetAPI):
     def get_activations(self, group):
         """
         Returns an array of activations for the given group.
-        For multi-gate nodes, the activations of the gen gates will be returned.
+        For multi-gate nodes, the activations of the gate specified when creating the group will be returned.
         """
         return self.__nodenet.get_activations(group)
 
@@ -64,7 +64,6 @@ class TheanoNetAPI(NetAPI):
     def set_thetas(self, group, new_thetas):
         """
         Bulk-sets thetas for the given group.
-        For multi-gate nodes, the thetas of the gen gates will be set
         new_thetas dimensionality has to match the group length
         """
         self.__nodenet.set_thetas(group, new_thetas)

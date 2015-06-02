@@ -19,7 +19,6 @@ class NetAPI(object):
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet
-        self.__locks_to_delete = []
 
     @property
     def logger(self):
@@ -427,7 +426,69 @@ class NetAPI(object):
             mapping[node] = self.get_node(uidmap[node.uid])
         return mapping
 
-    def _step(self):
-        for lock in self.__locks_to_delete:
-            self.__nodenet.unlock(lock)
-        self.__locks_to_delete = []
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gate="gen", sortby='id'):
+        """
+        Will group the given set of nodes.
+        Groups can be used in bulk operations.
+        Grouped nodes will have stable sorting accross all bulk operations.
+        """
+        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix, gatetype=gate, sortby=sortby)
+
+    def group_nodes_by_ids(self, node_ids, group_name, gate="gen", sortby='id'):
+        """
+        Will group the given set of nodes.
+        Groups can be used in bulk operations.
+        Grouped nodes will have stable sorting accross all bulk operations.
+        """
+        self.__nodenet.group_nodes_by_ids(node_ids, group_name, gateytpe=gate, sortby=sortby)
+
+    def ungroup_nodes(self, group):
+        """
+        Deletes the given group (not the nodes, just the group assignment)
+        """
+        self.__nodenet.ungroup_nodes(group)
+
+    def get_activations(self, group):
+        """
+        Returns an array of activations for the given group.
+        """
+        return self.__nodenet.get_activations(group)
+
+    def substitute_activations(self, group, new_activations):
+        """
+        Sets the activation of the given elements to the given value.
+        Note that this overrides the calculated activations, including all gate mechanics,
+        including gate function, thresholds, min, max, amplification and directional
+        activators - the values passed will be propagated in the next step.
+        """
+        return self.__nodenet.set_activations(group, new_activations)
+
+    def get_thetas(self, group):
+        """
+        Returns an array of theta values for the given group.
+        For multi-gate nodes, the thetas of the gen gates will be returned
+        """
+        return self.__nodenet.get_thetas(group)
+
+    def set_thetas(self, group, new_thetas):
+        """
+        Bulk-sets thetas for the given group.
+        new_thetas dimensionality has to match the group length
+        """
+        self.__nodenet.set_thetas(group, new_thetas)
+
+    def get_link_weights(self, group_from, group_to):
+        """
+        Returns the weights of links between two groups as a matrix.
+        Rows are group_to slots, columns are group_from gates.
+        Non-existing links will be returned as 0-entries in the matrix.
+        """
+        return self.__nodenet.get_link_weights(group_from, group_to)
+
+    def set_link_weights(self, group_from, group_to, new_w):
+        """
+        Sets the weights of links between two groups from the given matrix new_w.
+        Rows are group_to slots, columns are group_from gates.
+        Note that setting matrix entries to non-0 values will implicitly create links.
+        """
+        self.__nodenet.set_link_weights(group_from, group_to, new_w)

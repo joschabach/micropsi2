@@ -470,8 +470,6 @@ class DictNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, self.__nodes.copy(), self.netapi)
 
-            self.netapi._step()
-
             self.__step += 1
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
@@ -624,6 +622,33 @@ class DictNodenet(Nodenet):
         Returns the standard node types supported by this nodenet
         """
         return copy.deepcopy(STANDARD_NODETYPES)
+
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
+        pass
+
+    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
+        pass
+
+    def ungroup_nodes(self, group):
+        pass
+
+    def get_activations(self, group):
+        pass
+
+    def set_activations(self, group, new_activations):
+        pass
+
+    def get_thetas(self, group):
+        pass
+
+    def set_thetas(self, group, thetas):
+        pass
+
+    def get_link_weights(self, group_from, group_to):
+        pass
+
+    def set_link_weights(self, group_from, group_to, new_w):
+        pass
 
     def get_available_gatefunctions(self):
         """

@@ -204,6 +204,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     patch_width = 32      # width of a fovea patch  # 128 || 32
     patch_height = 32     # height of a patch  # 64 || 32
     num_fov = 6           # the root number of fov__ sensors, ie. there are num_fov x num_fov fov__ sensors
+    num_steps_to_keep_vision_stable = 3
 
     # Note: actors fov_x, fov_y and the saccader's gates fov_x, fov_y ought to be parametrized [0.,2.] w/ threshold 1.
     # -- 0. means inactivity, values between 1. and 2. are the scaled down movement in x/y direction on the image plane
@@ -351,13 +352,14 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder
-                if self.world.current_step % 5 == 0:
+                if self.world.current_step % self.num_steps_to_keep_vision_stable == 0:
                     # for patches pitch = 10 and yaw = random.randint(-10,10) were used
                     # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
                     self.spockplugin.clientinfo.position['pitch'] = 10
                     self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
                     self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
                     self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
+                    # Note: datatargets carry spikes not continuous signals, ie. pitch & yaw will be 0 in the next step
                     self.datatarget_feedback['pitch'] = 1.0
                     self.datatarget_feedback['yaw'] = 1.0
 
@@ -645,8 +647,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.logger.warn('potentially corrupt data were ignored')
 
     def simulate_visual_input(self):
-        # change visual input
-        if self.world.current_step % 4 == 0:
+        """
+        Every <self.num_steps_to_keep_vision_stable> steps read the next line
+        from the vision file and fill its values into fov__*_* datasources.
+        """
+        if self.world.current_step % self.num_steps_to_keep_vision_stable == 0:
             line = None
             if self.simulated_vision_data is None:
                 line = next(self.simulated_vision_datareader, None)

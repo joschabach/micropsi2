@@ -1229,6 +1229,12 @@ class TheanoNodenet(Nodenet):
                 if gate in node_proxy.nodetype.gatetypes:
                     node_proxy.set_gatefunction_name(gate, gate_function)
 
+        # initialize activation to zero
+        a_array = self.a.get_value(borrow=True)
+        for element in range (0, get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)):
+            a_array[offset + element] = 0
+        self.a.set_value(a_array)
+
         return uid
 
     def delete_node(self, uid):

@@ -14,12 +14,6 @@ __date__ = '10.05.12'
 
 from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING
 
-from micropsi_core.nodenet.node import Node, Nodetype
-from micropsi_core.nodenet.nodenet import Nodenet
-from micropsi_core.nodenet.nodespace import Nodespace
-
-from copy import deepcopy
-
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
 from micropsi_core.tools import Bunch

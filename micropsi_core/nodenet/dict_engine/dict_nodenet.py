@@ -212,6 +212,8 @@ class DictNodenet(Nodenet):
         for type, data in native_modules.items():
             self.__native_modules[type] = Nodetype(nodenet=self, **data)
 
+        self.nodegroups = {}
+
         self.initialize_nodenet({})
 
     def save(self, filename):
@@ -624,25 +626,54 @@ class DictNodenet(Nodenet):
         return copy.deepcopy(STANDARD_NODETYPES)
 
     def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
-        pass
+        nodes = self.netapi.get_nodes(nodespace, node_name_prefix)
+        if sortby == 'id':
+            nodes = sorted(nodes, key=lambda node: node.uid)
+        elif sortby == 'name':
+            nodes = sorted(nodes, key=lambda node: node.name)
+        self.nodegroups[node_name_prefix] = (nodes, gatetype)
 
     def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
-        pass
+        nodes = []
+        for node_id in node_ids:
+            nodes.append(self.get_node(node_id))
+        if sortby == 'id':
+            nodes = sorted(nodes, key=lambda node: node.uid)
+        elif sortby == 'name':
+            nodes = sorted(nodes, key=lambda node: node.name)
+        self.nodegroups[group_name] = (nodes, gatetype)
 
     def ungroup_nodes(self, group):
-        pass
+        if group in self.nodegroups:
+            del self.nodegroups[group]
 
     def get_activations(self, group):
-        pass
+        activations = []
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for node in nodes:
+            activations.append(node.get_gate(gate).activation)
+        return activations
 
     def set_activations(self, group, new_activations):
-        pass
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for i in range(len(nodes)):
+            nodes[i].set_gate_activation(gate, new_activations[i])
 
     def get_thetas(self, group):
-        pass
+        thetas = []
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for node in nodes:
+            thetas.append(node.get_gate(gate).get_parameter('theta'))
+        return thetas
 
     def set_thetas(self, group, thetas):
-        pass
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for i in range(len(nodes)):
+            nodes[i].set_gate_parameter(gate, 'theta', thetas[i])
 
     def get_link_weights(self, group_from, group_to):
         pass

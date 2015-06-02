@@ -41,6 +41,8 @@ level_system = WARNING
 level_world = WARNING
 level_nodenet = WARNING
 
+logfile = /tmp/micropsi.log
+
 [theano]
 
 # floating point precision for theano_engine. 32 or 64.

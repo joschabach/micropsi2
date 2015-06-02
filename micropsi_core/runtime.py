@@ -56,7 +56,7 @@ logger = MicropsiLogger({
     'system': LOGGING['level_system'],
     'world': LOGGING['level_world'],
     'nodenet': LOGGING['level_nodenet']
-})
+}, LOGGING.get("logfile"))
 
 nodenet_lock = threading.Lock()
 

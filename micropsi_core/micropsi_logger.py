@@ -5,6 +5,7 @@
 
 __author__ = 'rvuine'
 
+import os
 import logging
 import time
 from operator import itemgetter
@@ -63,9 +64,13 @@ class MicropsiLogger():
 
     handlers = {}
 
-    def __init__(self, default_logging_levels={}):
+    def __init__(self, default_logging_levels={}, log_to_file=False):
 
-        logging.basicConfig(level=self.logging_levels.get('logging_level', logging.INFO))
+        logging.basicConfig(
+            level=self.logging_levels.get('logging_level', logging.INFO),
+            format='%(asctime)s %(name)s %(levelname)s %(message)s',
+            datefmt='%d.%m. %H:%M:%S'
+        )
 
         self.system_logger = logging.getLogger("system")
         self.world_logger = logging.getLogger("world")
@@ -82,12 +87,22 @@ class MicropsiLogger():
             'world': RecordWebStorageHandler(self.world_record_storage),
             'nodenet': RecordWebStorageHandler(self.nodenet_record_storage)
         }
+        self.filehandlers = {}
+        if log_to_file:
+            if os.path.isfile(log_to_file):
+                os.remove(log_to_file)
+            for key in self.handlers:
+                self.filehandlers[key] = logging.FileHandler(log_to_file, mode='a')
 
         logging.getLogger("py.warnings").addHandler(self.handlers['system'])
 
-        logging.getLogger("system").addHandler(self.handlers['system'])
-        logging.getLogger("world").addHandler(self.handlers['world'])
-        logging.getLogger("nodenet").addHandler(self.handlers['nodenet'])
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        for key in self.handlers:
+            self.handlers[key].setFormatter(formatter)
+            logging.getLogger(key).addHandler(self.handlers[key])
+            if key in self.filehandlers:
+                self.filehandlers[key].setFormatter(formatter)
+                logging.getLogger(key).addHandler(self.filehandlers[key])
 
         logging.getLogger("system").debug("System logger ready.")
         logging.getLogger("world").debug("World logger ready.")

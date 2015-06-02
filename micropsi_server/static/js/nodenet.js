@@ -2283,6 +2283,7 @@ function zoomIn(event){
     event.preventDefault();
     viewProperties.zoomFactor += 0.1;
     $.cookie('zoom_factor', viewProperties.zoomFactor, { expires: 7, path: '/' });
+    prerenderLayer.removeChildren();
     redrawNodeNet(currentNodeSpace);
 }
 
@@ -2290,6 +2291,7 @@ function zoomOut(event){
     event.preventDefault();
     if (viewProperties.zoomFactor > 0.2) viewProperties.zoomFactor -= 0.1;
     $.cookie('zoom_factor', viewProperties.zoomFactor, { expires: 7, path: '/' });
+    prerenderLayer.removeChildren();
     redrawNodeNet(currentNodeSpace);
 }
 

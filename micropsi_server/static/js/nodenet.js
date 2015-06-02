@@ -2096,8 +2096,16 @@ function onDoubleClick(event) {
     for (var nodeUid in nodeLayer.children) {
         if (nodeUid in nodes) {
             var node = nodes[nodeUid];
-            if ((node.type == "Nodespace") && node.bounds.contains(p)) {
-                handleEnterNodespace(node.uid);
+            if(node.bounds.contains(p)){
+                if(node.type == "Nodespace"){
+                    handleEnterNodespace(node.uid);
+                } else {
+                    if(isCompact(nodeUid)){
+                        nodes[nodeUid].renderCompact = false;
+                        redrawNode(nodes[nodeUid], true);
+                        view.draw();
+                    }
+                }
                 return;
             }
         }

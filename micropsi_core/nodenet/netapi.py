@@ -412,7 +412,7 @@ class NetAPI(object):
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_ids(node_ids, group_name, gateytpe=gate, sortby=sortby)
+        self.__nodenet.group_nodes_by_ids(node_ids, group_name, gatetype=gate, sortby=sortby)
 
     def ungroup_nodes(self, group):
         """

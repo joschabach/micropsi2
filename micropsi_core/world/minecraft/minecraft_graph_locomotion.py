@@ -48,8 +48,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'pitch',
         'yaw',
         'eat',
-        'sleep',
-        'vision_simulator'
+        'sleep'
     ]
 
     loco_node_template = {
@@ -220,8 +219,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             'fov_x': 0,
             'fov_y': 0,
             'eat': 0,
-            'sleep': 0,
-            'vision_simulator': 0
+            'sleep': 0
         }
 
         # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -647,12 +645,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.logger.warn('potentially corrupt data were ignored')
 
     def simulate_visual_input(self):
-        # simulate actor that triggers change in visual input
-        if self.world.current_step % 4 == 0:
-            self.datatargets['vision_simulator'] = 1.0
-            self.datatarget_feedback['vision_simulator'] = 1.0
         # change visual input
-        elif self.world.current_step % 4 == 1:
+        if self.world.current_step % 4 == 0:
             line = None
             if self.simulated_vision_data is None:
                 line = next(self.simulated_vision_datareader, None)

@@ -681,7 +681,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         varname = "node%i" % i
 
         if name is not None:
-            if name != "" and len(name) > 3 and name not in idmap.values():
+            if name != "" and name not in idmap.values():
                 varname = __pythonify(name)
             lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
         else:
@@ -720,49 +720,49 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
                 target_id = idmap[link.target_node.uid]
 
                 reciprocal = False
-                if link.source_gate.type == 'sub' and 'sur' in link.target_node.get_gate_types():
+                if link.source_gate.type == 'sub' and 'sur' in link.target_node.get_gate_types() and link.weight == 1:
                     surgate = link.target_node.get_gate('sur')
-                    for link in surgate.get_links():
-                        if link.target_node.uid == node.uid and link.target_slot.type == 'sur' and link.weight == 1:
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'sur' and rec_link.weight == 1:
                             reciprocal = True
                             lines.append("netapi.link_with_reciprocal(%s, %s, 'subsur')" % (source_id, target_id))
 
-                if link.source_gate.type == 'sur' and 'sub' in link.target_node.get_gate_types():
+                if link.source_gate.type == 'sur' and 'sub' in link.target_node.get_gate_types() and link.weight == 1:
                     subgate = link.target_node.get_gate('sub')
-                    for link in subgate.get_links():
-                        if link.target_node.uid == node.uid and link.target_slot.type == 'sub' and link.weight == 1:
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'sub' and rec_link.weight == 1:
                             reciprocal = True
 
-                if link.source_gate.type == 'por' and 'ret' in link.target_node.get_gate_types():
+                if link.source_gate.type == 'por' and 'ret' in link.target_node.get_gate_types() and link.weight == 1:
                     surgate = link.target_node.get_gate('ret')
-                    for link in surgate.get_links():
-                        if link.target_node.uid == node.uid and link.target_slot.type == 'ret' and link.weight == 1:
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'ret' and rec_link.weight == 1:
                             reciprocal = True
                             lines.append("netapi.link_with_reciprocal(%s, %s, 'porret')" % (source_id, target_id))
 
-                if link.source_gate.type == 'ret' and 'por' in link.target_node.get_gate_types():
+                if link.source_gate.type == 'ret' and 'por' in link.target_node.get_gate_types() and link.weight == 1:
                     subgate = link.target_node.get_gate('por')
-                    for link in subgate.get_links():
-                        if link.target_node.uid == node.uid and link.target_slot.type == 'por' and link.weight == 1:
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'por' and rec_link.weight == 1:
                             reciprocal = True
 
-                if link.source_gate.type == 'cat' and 'exp' in link.target_node.get_gate_types():
+                if link.source_gate.type == 'cat' and 'exp' in link.target_node.get_gate_types() and link.weight == 1:
                     surgate = link.target_node.get_gate('exp')
-                    for link in surgate.get_links():
-                        if link.target_node.uid == node.uid and link.target_slot.type == 'exp' and link.weight == 1:
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'exp' and rec_link.weight == 1:
                             reciprocal = True
                             lines.append("netapi.link_with_reciprocal(%s, %s, 'catexp')" % (source_id, target_id))
 
-                if link.source_gate.type == 'exp' and 'cat' in link.target_node.get_gate_types():
+                if link.source_gate.type == 'exp' and 'cat' in link.target_node.get_gate_types() and link.weight == 1:
                     subgate = link.target_node.get_gate('cat')
-                    for link in subgate.get_links():
-                        if link.target_node.uid == node.uid and link.target_slot.type == 'cat' and link.weight == 1:
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'cat' and rec_link.weight == 1:
                             reciprocal = True
 
                 if not reciprocal:
                     weight = link.weight if link.weight != 1 else None
                     if weight is not None:
-                        lines.append("netapi.link(%s, '%s', %s, '%s', %i)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
+                        lines.append("netapi.link(%s, '%s', %s, '%s', %.8f)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
                     else:
                         lines.append("netapi.link(%s, '%s', %s, '%s')" % (source_id, gatetype, target_id, link.target_slot.type))
 

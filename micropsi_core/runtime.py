@@ -669,18 +669,30 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
     nodes = sorted(nodes, key=lambda node: node.position[1]*1000 + node.position[0])
 
+    # nodes and gates
     i = 0
     for node in nodes:
-        name = node.name if node.name != node.uid else None
+        name = node.name.strip() if node.name != node.uid else None
+        varname = "node%i" % i
+
         if name is not None:
+            if name != "" and len(name) > 3 and name not in idmap.values():
+                varname = name
             lines.append("node%i = netapi.create_node('%s', None, \"%s\")" % (i, node.type, name))
         else:
             lines.append("node%i = netapi.create_node('%s', None)" % (i, node.type))
-        idmap[node.uid] = "node%i" % i
+
+        ndgps = node.clone_non_default_gate_parameters()
+        for gatetype in ndgps.keys():
+            for parameter, value in ndgps[gatetype].items():
+                lines.append("%s.set_gate_parameter(%s, %s, %s)" % (varname, gatetype, parameter, value))
+
+        idmap[node.uid] = varname
         i += 1
 
     lines.append("")
 
+    # links
     for node in nodes:
         for gatetype in node.get_gate_types():
             gate = node.get_gate(gatetype)
@@ -737,6 +749,23 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
                         lines.append("netapi.link(%s, %s, %s, %s, %i)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
                     else:
                         lines.append("netapi.link(%s, %s, %s, %s)" % (source_id, gatetype, target_id, link.target_slot.type))
+
+    lines.append("")
+
+    # positions
+
+    origin = None
+    originname = None
+    for node in nodes:
+        if origin is None:
+            originname = "%s_pos" % idmap[node.uid]
+            origin = node.position
+            lines.append("%s = (10, 10)" % originname)
+        else:
+            x = node.position[0] - origin[0]
+            y = node.position[1] - origin[1]
+            lines.append("%s.position = (%s[0]+%i, %s[1]+%i)" % (idmap[node.uid], originname, x, originname, y))
+
 
     return "\n".join(lines)
 

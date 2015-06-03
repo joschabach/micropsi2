@@ -264,8 +264,8 @@ class TheanoNode(Node):
             self._nodenet.g_expect.set_value(g_expect_array, borrow=True)
         elif self.type == "Pipe" and parameter == "wait":
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
-            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = int(min(value, 128))
-            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = int(min(value, 128))
+            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = min(int(value), 128)
+            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = min(int(value), 128)
             self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
         elif self.type == "Comment" and parameter == "comment":
             self.parameters[parameter] = value

@@ -212,6 +212,8 @@ class DictNodenet(Nodenet):
         for type, data in native_modules.items():
             self.__native_modules[type] = Nodetype(nodenet=self, **data)
 
+        self.nodegroups = {}
+
         self.initialize_nodenet({})
 
     def save(self, filename):
@@ -470,8 +472,6 @@ class DictNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, self.__nodes.copy(), self.netapi)
 
-            self.netapi._step()
-
             self.__step += 1
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
@@ -624,6 +624,109 @@ class DictNodenet(Nodenet):
         Returns the standard node types supported by this nodenet
         """
         return copy.deepcopy(STANDARD_NODETYPES)
+
+    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
+        nodes = self.netapi.get_nodes(nodespace, node_name_prefix)
+        if sortby == 'id':
+            nodes = sorted(nodes, key=lambda node: node.uid)
+        elif sortby == 'name':
+            nodes = sorted(nodes, key=lambda node: node.name)
+        self.nodegroups[node_name_prefix] = (nodes, gatetype)
+
+    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
+        nodes = []
+        for node_id in node_ids:
+            nodes.append(self.get_node(node_id))
+        if sortby == 'id':
+            nodes = sorted(nodes, key=lambda node: node.uid)
+        elif sortby == 'name':
+            nodes = sorted(nodes, key=lambda node: node.name)
+        self.nodegroups[group_name] = (nodes, gatetype)
+
+    def ungroup_nodes(self, group):
+        if group in self.nodegroups:
+            del self.nodegroups[group]
+
+    def get_activations(self, group):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
+        activations = []
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for node in nodes:
+            activations.append(node.get_gate(gate).activation)
+        return activations
+
+    def set_activations(self, group, new_activations):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for i in range(len(nodes)):
+            nodes[i].set_gate_activation(gate, new_activations[i])
+
+    def get_thetas(self, group):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
+        thetas = []
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for node in nodes:
+            thetas.append(node.get_gate(gate).get_parameter('theta'))
+        return thetas
+
+    def set_thetas(self, group, thetas):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
+        nodes = self.nodegroups[group][0]
+        gate = self.nodegroups[group][1]
+        for i in range(len(nodes)):
+            nodes[i].set_gate_parameter(gate, 'theta', thetas[i])
+
+    def get_link_weights(self, group_from, group_to):
+        if group_from not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_from)
+        if group_to not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_to)
+        rows = []
+        to_nodes = self.nodegroups[group_to][0]
+        to_slot = self.nodegroups[group_to][1]
+        from_nodes = self.nodegroups[group_from][0]
+        from_gate = self.nodegroups[group_from][1]
+        for to_node in to_nodes:
+            row = []
+            for from_node in from_nodes:
+                links = from_node.get_gate(from_gate).get_links()
+                hit = None
+                for link in links:
+                    if link.target_node == to_node and link.target_slot.type == to_slot:
+                        hit = link
+                        break
+                if hit is not None:
+                    row.append(link.weight)
+                else:
+                    row.append(0)
+            rows.append(row)
+        return rows
+
+    def set_link_weights(self, group_from, group_to, new_w):
+        if group_from not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_from)
+        if group_to not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_to)
+        to_nodes = self.nodegroups[group_to][0]
+        to_slot = self.nodegroups[group_to][1]
+        from_nodes = self.nodegroups[group_from][0]
+        from_gate = self.nodegroups[group_from][1]
+        for row in range(len(to_nodes)):
+            to_node = to_nodes[row]
+            for column in range(len(from_nodes)):
+                from_node = from_nodes[column]
+                weight = new_w[row][column]
+                if weight != 0:
+                    self.set_link_weight(from_node.uid, from_gate, to_node.uid, to_slot, weight)
+                else:
+                    self.delete_link(from_node.uid, from_gate, to_node.uid, to_slot)
 
     def get_available_gatefunctions(self):
         """

@@ -925,8 +925,6 @@ class TheanoNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
-            self.netapi._step()
-
             self.__step += 1
 
     def get_node(self, uid):
@@ -1783,24 +1781,36 @@ class TheanoNodenet(Nodenet):
             del self.nodegroups[group]
 
     def get_activations(self, group):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
         a_array = self.a.get_value(borrow=True)
         return a_array[self.nodegroups[group]]
 
     def set_activations(self, group, new_activations):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
         a_array = self.a.get_value(borrow=True)
         a_array[self.nodegroups[group]] = new_activations
         self.a.set_value(a_array, borrow=True)
 
     def get_thetas(self, group):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
         g_theta_array = self.g_theta.get_value(borrow=True)
         return g_theta_array[self.nodegroups[group]]
 
     def set_thetas(self, group, thetas):
+        if group not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group)
         g_theta_array = self.g_theta.get_value(borrow=True)
         g_theta_array[self.nodegroups[group]] = thetas
         self.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_link_weights(self, group_from, group_to):
+        if group_from not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_from)
+        if group_to not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_to)
         w_matrix = self.w.get_value(borrow=True)
         cols, rows = np.meshgrid(self.nodegroups[group_from], self.nodegroups[group_to])
         if self.sparse:
@@ -1809,6 +1819,10 @@ class TheanoNodenet(Nodenet):
             return w_matrix[rows,cols]
 
     def set_link_weights(self, group_from, group_to, new_w):
+        if group_from not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_from)
+        if group_to not in self.nodegroups:
+            raise ValueError("Group %s does not exist." % group_to)
         w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[group_from]
         grp_to = self.nodegroups[group_to]

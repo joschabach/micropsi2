@@ -685,7 +685,15 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         ndgps = node.clone_non_default_gate_parameters()
         for gatetype in ndgps.keys():
             for parameter, value in ndgps[gatetype].items():
-                lines.append("%s.set_gate_parameter(%s, %s, %s)" % (varname, gatetype, parameter, value))
+                lines.append("%s.set_gate_parameter('%s', \"%s\", %s)" % (varname, gatetype, parameter, value))
+
+        nps = node.clone_parameters()
+        for parameter, value in nps.items():
+            if parameter not in node.nodetype.parameter_defaults or node.nodetype.parameter_defaults[parameter] != value:
+                if isinstance(value, str):
+                    lines.append("%s.set_parameter(\"%s\”, \"%s\")" % (varname, parameter, value))
+                else:
+                    lines.append("%s.set_parameter(\"%s”, %s)" % (varname, parameter, value))
 
         idmap[node.uid] = varname
         i += 1

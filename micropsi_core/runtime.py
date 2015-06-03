@@ -673,7 +673,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     for node in nodes:
         name = node.name if node.name != node.uid else None
         if name is not None:
-            lines.append("node%i = netapi.create_node('%s', None, \"$s\")" % (i, node.type, name))
+            lines.append("node%i = netapi.create_node('%s', None, \"%s\")" % (i, node.type, name))
         else:
             lines.append("node%i = netapi.create_node('%s', None)" % (i, node.type))
         idmap[node.uid] = "node%i" % i

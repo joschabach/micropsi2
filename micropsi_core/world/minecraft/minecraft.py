@@ -12,6 +12,7 @@ from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.spockplugin import MicropsiPlugin
 from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
+from micropsi_core.world.minecraft.minecraft_vision import MinecraftVision
 
 
 class Minecraft(World):
@@ -21,7 +22,8 @@ class Minecraft(World):
     supported_worldadapters = [
         'MinecraftWorldAdapter',
         'MinecraftBraitenberg',
-        'MinecraftGraphLocomotion'
+        'MinecraftGraphLocomotion',
+        "MinecraftVision"
     ]
 
     assets = {

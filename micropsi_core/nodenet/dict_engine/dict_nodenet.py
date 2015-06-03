@@ -676,10 +676,41 @@ class DictNodenet(Nodenet):
             nodes[i].set_gate_parameter(gate, 'theta', thetas[i])
 
     def get_link_weights(self, group_from, group_to):
-        pass
+        rows = []
+        to_nodes = self.nodegroups[group_to][0]
+        to_slot = self.nodegroups[group_to][1]
+        from_nodes = self.nodegroups[group_from][0]
+        from_gate = self.nodegroups[group_from][1]
+        for to_node in to_nodes:
+            row = []
+            for from_node in from_nodes:
+                links = from_node.get_gate(from_gate).get_links()
+                hit = None
+                for link in links:
+                    if link.target_node == to_node and link.target_slot.type == to_slot:
+                        hit = link
+                        break
+                if hit is not None:
+                    row.append(link.weight)
+                else:
+                    row.append(0)
+            rows.append(row)
+        return rows
 
     def set_link_weights(self, group_from, group_to, new_w):
-        pass
+        to_nodes = self.nodegroups[group_to][0]
+        to_slot = self.nodegroups[group_to][1]
+        from_nodes = self.nodegroups[group_from][0]
+        from_gate = self.nodegroups[group_from][1]
+        for row in range(len(to_nodes)):
+            to_node = to_nodes[row]
+            for column in range(len(from_nodes)):
+                from_node = from_nodes[column]
+                weight = new_w[row][column]
+                if weight != 0:
+                    self.set_link_weight(from_node.uid, from_gate, to_node.uid, to_slot, weight)
+                else:
+                    self.delete_link(from_node.uid, from_gate, to_node.uid, to_slot)
 
     def get_available_gatefunctions(self):
         """

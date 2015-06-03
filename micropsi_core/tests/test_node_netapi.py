@@ -853,3 +853,98 @@ def test_set_thetas(fixed_nodenet):
     assert round(seppen_theta[0], 2) == 1
     assert round(seppen_theta[1], 2) == 2
     assert round(seppen_theta[2], 2) == 3
+
+
+def test_get_link_weights(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+
+    sepp1 = netapi.create_node("Register", None, "sepp1")
+    sepp2 = netapi.create_node("Register", None, "sepp2")
+    sepp3 = netapi.create_node("Register", None, "sepp3")
+    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+
+    hugo1 = netapi.create_node("Register", None, "hugo1")
+    hugo2 = netapi.create_node("Register", None, "hugo2")
+    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="hugo")
+
+    netapi.link(sepp2, "gen", hugo1, "gen", 0.4)
+
+    w = netapi.get_link_weights("sepp", "hugo")
+    value = None
+
+    # list style indexing
+    try:
+        value = round(float(w[0][1]), 2)
+    except:
+        pass
+
+    # numpy style indexing
+    try:
+        value = round(float(w[0, 1]), 2)
+    except:
+        pass
+
+    assert value == 0.4
+
+
+def test_set_link_weights(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+
+    sepp1 = netapi.create_node("Register", None, "sepp1")
+    sepp2 = netapi.create_node("Register", None, "sepp2")
+    sepp3 = netapi.create_node("Register", None, "sepp3")
+    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+
+    hugo1 = netapi.create_node("Register", None, "hugo1")
+    hugo2 = netapi.create_node("Register", None, "hugo2")
+    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="hugo")
+
+    netapi.link(sepp2, "gen", hugo1, "gen", 0.4)
+
+    w = netapi.get_link_weights("sepp", "hugo")
+
+    # change value
+    # list style indexing
+    try:
+        w[0][1] = 0.6
+    except:
+        pass
+
+    # numpy style indexing
+    try:
+        w[0, 1] = 0.6
+    except:
+        pass
+
+    netapi.set_link_weights("sepp", "hugo", w)
+    assert round(float(netapi.get_node(sepp2.uid).get_gate('gen').get_links()[0].weight), 2) == 0.6
+
+    # remove link
+    # list style indexing
+    try:
+        w[0][1] = 0
+    except:
+        pass
+
+    # numpy style indexing
+    try:
+        w[0, 1] = 0
+    except:
+        pass
+    netapi.set_link_weights("sepp", "hugo", w)
+    assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 0
+
+    # create link
+        # list style indexing
+    try:
+        w[1][1] = 0.5
+    except:
+        pass
+
+    # numpy style indexing
+    try:
+        w[1, 1] = 0.5
+    except:
+        pass
+    netapi.set_link_weights("sepp", "hugo", w)
+    assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 1

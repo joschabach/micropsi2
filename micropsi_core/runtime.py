@@ -8,6 +8,7 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
+import re
 
 __author__ = 'joscha'
 __date__ = '10.05.12'
@@ -659,6 +660,10 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     else:
         return False, "Could not clone nodes. See log for details."
 
+def __pythonify(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
 def generate_netapi_fragment(nodenet_uid, node_uids):
     lines = []
     idmap = {}
@@ -677,10 +682,10 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
         if name is not None:
             if name != "" and len(name) > 3 and name not in idmap.values():
-                varname = name
-            lines.append("node%i = netapi.create_node('%s', None, \"%s\")" % (i, node.type, name))
+                varname = __pythonify(name)
+            lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
         else:
-            lines.append("node%i = netapi.create_node('%s', None)" % (i, node.type))
+            lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
 
         ndgps = node.clone_non_default_gate_parameters()
         for gatetype in ndgps.keys():
@@ -689,6 +694,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
         nps = node.clone_parameters()
         for parameter, value in nps.items():
+            if value == None:
+                continue
+
             if parameter not in node.nodetype.parameter_defaults or node.nodetype.parameter_defaults[parameter] != value:
                 if isinstance(value, str):
                     lines.append("%s.set_parameter(\"%s\”, \"%s\")" % (varname, parameter, value))

@@ -1,4 +1,4 @@
-from micropsi_core.world.worldadapter import WorldAdapter
+from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 from micropsi_core import tools
 from configuration import config as cfg
 import random
@@ -8,7 +8,7 @@ from functools import partial
 from math import sqrt, radians, cos, sin, tan
 
 
-class MinecraftVision(WorldAdapter):
+class MinecraftVision(MinecraftGraphLocomotion):
 
     supported_datasources = []
 
@@ -26,137 +26,6 @@ class MinecraftVision(WorldAdapter):
         'len_y'
     ]
 
-    loco_node_template = {
-        'uid': "",
-        'name': "",
-        'x': 0,
-        'y': 0,
-        'z': 0,
-        'exit_one_uid': None,
-        'exit_two_uid': None,
-        'exit_three_uid': None,
-    }
-
-    loco_nodes = {}
-
-    home_uid = tools.generate_uid()
-    underground_garden_uid = tools.generate_uid()
-    village_uid = tools.generate_uid()
-    cathedral_uid = tools.generate_uid()
-    summit_uid = tools.generate_uid()
-    cloud_uid = tools.generate_uid()
-    bungalow_uid = tools.generate_uid()
-    farm_uid = tools.generate_uid()
-    forest_uid = tools.generate_uid()
-    desert_outpost_uid = tools.generate_uid()
-    swamp_uid = tools.generate_uid()
-
-    loco_nodes_indexes = [None, 'home', 'underground garden', 'village', 'cathedral', 'summit',
-                          'cloud', 'bungalow', 'farm', 'forest', 'desert outpost', 'swamp']
-
-    loco_nodes[home_uid] = loco_node_template.copy()
-    loco_nodes[home_uid]['name'] = "home"
-    loco_nodes[home_uid]['uid'] = home_uid
-    loco_nodes[home_uid]['x'] = -105
-    loco_nodes[home_uid]['y'] = 63
-    loco_nodes[home_uid]['z'] = 59
-    loco_nodes[home_uid]['exit_one_uid'] = cloud_uid
-    loco_nodes[home_uid]['exit_two_uid'] = cathedral_uid
-    loco_nodes[home_uid]['exit_three_uid'] = village_uid
-
-    loco_nodes[underground_garden_uid] = loco_node_template.copy()
-    loco_nodes[underground_garden_uid]['name'] = "underground garden"
-    loco_nodes[underground_garden_uid]['uid'] = underground_garden_uid
-    loco_nodes[underground_garden_uid]['x'] = -264
-    loco_nodes[underground_garden_uid]['y'] = 62
-    loco_nodes[underground_garden_uid]['z'] = 65
-    loco_nodes[underground_garden_uid]['exit_one_uid'] = home_uid
-    loco_nodes[underground_garden_uid]['exit_two_uid'] = village_uid
-
-    loco_nodes[village_uid] = loco_node_template.copy()
-    loco_nodes[village_uid]['name'] = "village"
-    loco_nodes[village_uid]['uid'] = village_uid
-    loco_nodes[village_uid]['x'] = -293
-    loco_nodes[village_uid]['y'] = 64
-    loco_nodes[village_uid]['z'] = -220
-    loco_nodes[village_uid]['exit_one_uid'] = underground_garden_uid
-    loco_nodes[village_uid]['exit_two_uid'] = home_uid
-
-    loco_nodes[cathedral_uid] = loco_node_template.copy()
-    loco_nodes[cathedral_uid]['name'] = "cathedral"
-    loco_nodes[cathedral_uid]['uid'] = cathedral_uid
-    loco_nodes[cathedral_uid]['x'] = -100
-    loco_nodes[cathedral_uid]['y'] = 63
-    loco_nodes[cathedral_uid]['z'] = 282
-    loco_nodes[cathedral_uid]['exit_one_uid'] = home_uid
-    loco_nodes[cathedral_uid]['exit_two_uid'] = cloud_uid
-    loco_nodes[cathedral_uid]['exit_three_uid'] = bungalow_uid
-
-    loco_nodes[summit_uid] = loco_node_template.copy()
-    loco_nodes[summit_uid]['name'] = "summit"
-    loco_nodes[summit_uid]['uid'] = summit_uid
-    loco_nodes[summit_uid]['x'] = -233
-    loco_nodes[summit_uid]['y'] = 102
-    loco_nodes[summit_uid]['z'] = 307
-    loco_nodes[summit_uid]['exit_one_uid'] = swamp_uid
-
-    loco_nodes[cloud_uid] = loco_node_template.copy()
-    loco_nodes[cloud_uid]['name'] = "cloud"
-    loco_nodes[cloud_uid]['uid'] = cloud_uid
-    loco_nodes[cloud_uid]['x'] = -98
-    loco_nodes[cloud_uid]['y'] = 63
-    loco_nodes[cloud_uid]['z'] = 198
-    loco_nodes[cloud_uid]['exit_one_uid'] = home_uid
-    loco_nodes[cloud_uid]['exit_two_uid'] = cathedral_uid
-
-    loco_nodes[bungalow_uid] = loco_node_template.copy()
-    loco_nodes[bungalow_uid]['name'] = "bungalow"
-    loco_nodes[bungalow_uid]['uid'] = bungalow_uid
-    loco_nodes[bungalow_uid]['x'] = 28
-    loco_nodes[bungalow_uid]['y'] = 63
-    loco_nodes[bungalow_uid]['z'] = 292
-    loco_nodes[bungalow_uid]['exit_one_uid'] = cathedral_uid
-    loco_nodes[bungalow_uid]['exit_two_uid'] = farm_uid
-
-    loco_nodes[farm_uid] = loco_node_template.copy()
-    loco_nodes[farm_uid]['name'] = "farm"
-    loco_nodes[farm_uid]['uid'] = farm_uid
-    loco_nodes[farm_uid]['x'] = -50
-    loco_nodes[farm_uid]['y'] = 64
-    loco_nodes[farm_uid]['z'] = 410
-    loco_nodes[farm_uid]['exit_one_uid'] = bungalow_uid
-    loco_nodes[farm_uid]['exit_two_uid'] = cathedral_uid
-    loco_nodes[farm_uid]['exit_three_uid'] = forest_uid
-
-    loco_nodes[forest_uid] = loco_node_template.copy()
-    loco_nodes[forest_uid]['name'] = "forest"
-    loco_nodes[forest_uid]['uid'] = forest_uid
-    loco_nodes[forest_uid]['x'] = -273
-    loco_nodes[forest_uid]['y'] = 65
-    loco_nodes[forest_uid]['z'] = 782
-    loco_nodes[forest_uid]['exit_one_uid'] = farm_uid
-    loco_nodes[forest_uid]['exit_two_uid'] = desert_outpost_uid
-    loco_nodes[forest_uid]['exit_three_uid'] = swamp_uid
-
-    loco_nodes[desert_outpost_uid] = loco_node_template.copy()
-    loco_nodes[desert_outpost_uid]['name'] = "desert outpost"
-    loco_nodes[desert_outpost_uid]['uid'] = desert_outpost_uid
-    loco_nodes[desert_outpost_uid]['x'] = -243
-    loco_nodes[desert_outpost_uid]['y'] = 64
-    loco_nodes[desert_outpost_uid]['z'] = 958
-    loco_nodes[desert_outpost_uid]['exit_one_uid'] = forest_uid
-
-    loco_nodes[swamp_uid] = loco_node_template.copy()
-    loco_nodes[swamp_uid]['name'] = "swamp"
-    loco_nodes[swamp_uid]['uid'] = swamp_uid
-    loco_nodes[swamp_uid]['x'] = -529
-    loco_nodes[swamp_uid]['y'] = 63
-    loco_nodes[swamp_uid]['z'] = 504
-    loco_nodes[swamp_uid]['exit_one_uid'] = forest_uid
-    loco_nodes[swamp_uid]['exit_two_uid'] = summit_uid
-
-    tp_tolerance = 5
-    action_timeout = 10
     actions = ['take_exit_one', 'take_exit_two', 'take_exit_three']
 
     logger = None
@@ -364,45 +233,6 @@ class MinecraftVision(WorldAdapter):
             else:
                 self.simulate_visual_input(self.num_pix_x, self.num_pix_y)
 
-    def locomote(self, target_loco_node_uid):
-        new_loco_node = self.loco_nodes[target_loco_node_uid]
-
-        self.logger.debug('locomoting to  %s' % new_loco_node['name'])
-
-        self.spockplugin.chat("/tppos {0} {1} {2}".format(
-            new_loco_node['x'],
-            new_loco_node['y'],
-            new_loco_node['z']))
-
-        self.target_loco_node_uid = target_loco_node_uid
-
-        self.current_loco_node = new_loco_node
-
-    def check_for_action_feedback(self):
-        """ """
-        # check if any pending datatarget_feedback can be confirmed with data from the world
-        if self.waiting_list:
-            new_waiting_list = []
-            for index, item in enumerate(self.waiting_list):
-                if item['validation']():
-                    if self.datatargets[item['datatarget']] != 0:
-                        self.datatarget_feedback[item['datatarget']] = 1.
-                else:
-                    new_waiting_list.append(item)
-
-            self.waiting_list = new_waiting_list
-
-    def register_action(self, datatarget, action_function, validation_function):
-        """ Registers an action to be performed by the agent. Will wait, and eventually re-trigger the action
-            until the validation function returns true, signalling success of the action"""
-        self.waiting_list.append({
-            'datatarget': datatarget,
-            'action': action_function,
-            'validation': validation_function,
-            'time': time.clock()
-        })
-        action_function()
-
     def check_movement_feedback(self, target_loco_node):
         if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
            and abs(self.loco_nodes[target_loco_node]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= self.tp_tolerance \
@@ -541,96 +371,3 @@ class MinecraftVision(WorldAdapter):
         # scale from [-1,+1] to [0.1,0.9] and write values to sensors
         patch_resc = [(1.0 + x) * 0.4 + 0.1 for x in patch_std]
         return patch_resc
-
-    def project(self, xi, yi, zi, x0, y0, z0, yaw, pitch):
-        """
-        Given a point on the projection plane and the agent's position, cast a
-        ray to find the nearest block type that isn't air and its distance from
-        the projective plane.
-        """
-        distance = 0    # just a counter
-        block_type = -1  # consider mapping nothingness to air, ie. -1 to 0
-
-        # compute difference vector between projective point and image point
-        diff = (xi - x0, yi - y0, zi - z0)
-
-        # normalize difference vector
-        magnitude = sqrt(diff[0] ** 2 + diff[1] ** 2 + diff[2] ** 2)
-        if magnitude == 0.:
-            magnitude = 1.
-        norm = (diff[0] / magnitude, diff[1] / magnitude, diff[2] / magnitude)
-
-        # rotate norm vector
-        norm = self.rotate_around_x_axis(norm, pitch)
-        norm = self.rotate_around_y_axis(norm, yaw)
-
-        # rotate diff vector
-        diff = self.rotate_around_x_axis(diff, pitch)
-        diff = self.rotate_around_y_axis(diff, yaw)
-
-        # add diff to projection point aka agent's position
-        xb, yb, zb = x0 + diff[0], y0 + diff[1], z0 + diff[2]
-
-        while block_type <= 0:  # which is air and nothingness
-
-            # check block type of next distance point along ray
-            # aka add normalized difference vector to image point
-            # TODO: consider a more efficient way to move on the ray, eg. a log scale
-            xb += norm[0]
-            yb += norm[1]
-            zb += norm[2]
-
-            block_type = self.spockplugin.get_block_type(xb, yb, zb)
-
-            distance += 1
-            if distance >= self.max_dist:
-                break
-
-        return block_type, distance
-
-    def rotate_around_x_axis(self, pos, angle):
-        """ Rotate a 3D point around the x-axis given a specific angle. """
-
-        # convert angle in degrees to radians
-        theta = radians(angle)
-
-        # rotate vector
-        xx, y, z = pos
-        yy = y * cos(theta) - z * sin(theta)
-        zz = y * sin(theta) + z * cos(theta)
-
-        return (xx, yy, zz)
-
-    def rotate_around_y_axis(self, pos, angle):
-        """ Rotate a 3D point around the y-axis given a specific angle. """
-
-        # convert angle in degrees to radians
-        theta = radians(angle)
-
-        # rotate vector
-        x, yy, z = pos
-        xx = x * cos(theta) + z * sin(theta)
-        zz = - x * sin(theta) + z * cos(theta)
-
-        return (xx, yy, zz)
-
-    def rotate_around_z_axis(self, pos, angle):
-        """ Rotate a 3D point around the z-axis given a specific angle. """
-
-        # convert angle in degrees to radians
-        theta = radians(angle)
-
-        # rotate vector
-        x, y, zz = pos
-        xx = x * cos(theta) - y * sin(theta)
-        yy = x * sin(theta) + y * cos(theta)
-
-        return (xx, yy, zz)
-
-    def frange(self, start, end, step):
-        """
-        Range for floats.
-        """
-        while start < end:
-            yield start
-            start += step

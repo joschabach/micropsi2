@@ -762,9 +762,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
                 if not reciprocal:
                     weight = link.weight if link.weight != 1 else None
                     if weight is not None:
-                        lines.append("netapi.link(%s, %s, %s, %s, %i)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
+                        lines.append("netapi.link(%s, '%s', %s, '%s', %i)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
                     else:
-                        lines.append("netapi.link(%s, %s, %s, %s)" % (source_id, gatetype, target_id, link.target_slot.type))
+                        lines.append("netapi.link(%s, '%s', %s, '%s')" % (source_id, gatetype, target_id, link.target_slot.type))
 
     lines.append("")
 

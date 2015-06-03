@@ -2530,6 +2530,7 @@ function openMultipleNodesContextMenu(event){
     if(sametype){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
+    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
     menu.html(html);
     if(Object.keys(clipboard).length === 0){
         $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
@@ -2591,6 +2592,9 @@ function handleContextMenu(event) {
     if($el.parent().attr('data-copy-nodes') === ""){
         copyNodes();
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
+    } else if($el.parent().attr('data-generate-fragment') === ""){
+        generateFragment();
         return;
     } else if($el.parent().attr('data-paste-nodes') === ""){
         pasteNodes(clickPosition);
@@ -2871,6 +2875,15 @@ function createNativeModuleHandler(event){
         $('#native_module_name').val('');
         modal.modal("show");
     }
+}
+
+function generateFragment(){
+    api.call("generate_netapi_fragment",
+        {nodenet_uid:currentNodenet, node_uids: selection},
+        success=function(data){
+            window.prompt("Ready for clipboard: ", data);
+        }
+    );
 }
 
 copyPosition = null;

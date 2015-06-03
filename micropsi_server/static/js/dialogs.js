@@ -453,8 +453,11 @@ $(function() {
         api.call('get_available_recipes', {}, function(data){
             recipes = data;
             var options = '';
-            for(var key in data){
-                options += '<option>' + data[key].name + '</option>';
+            var items = Object.values(data);
+            var sorted = items.sort(sortByName);
+            console.log(sorted)
+            for(var idx in sorted){
+                options += '<option>' + items[idx].name + '</option>';
             }
             recipe_name_input.html(options);
             update_parameters_for_recipe();

@@ -100,7 +100,7 @@ class NetAPI(object):
                 skip = False
                 if no_links_to is not None:
                     for g in no_links_to:
-                        g = link.target_node.get_gate(g)
+                        g = link.source_node.get_gate(g)
                         if g and g.get_links():
                             skip = True
                             break

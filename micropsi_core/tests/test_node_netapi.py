@@ -363,6 +363,23 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
     assert node3.uid in [n.uid for n in nodes]
 
 
+def test_node_netapi_get_nodes_in_slot_field_with_limitations_and_nodespace(fixed_nodenet):
+    # test get_nodes_in_gate_field with limitations: no por links
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    node1 = netapi.create_node("Pipe", None, "TestName1")
+    node2 = netapi.create_node("Pipe", None, "TestName2")
+    node3 = netapi.create_node("Pipe", None, "TestName3")
+    node4 = netapi.create_node("Pipe", nodespace.uid, "TestName4")
+    netapi.link_with_reciprocal(node1, node2, "subsur")
+    netapi.link_with_reciprocal(node1, node3, "subsur")
+    netapi.link_with_reciprocal(node1, node4, "subsur")
+    netapi.link_with_reciprocal(node2, node3, "porret")
+    nodes = netapi.get_nodes_in_slot_field(node1, "sur", ["por"], netapi.get_nodespace(None).uid)
+    assert len(nodes) == 1
+    assert node3.uid in [n.uid for n in nodes]
+
+
 def test_node_netapi_get_nodes_active(fixed_nodenet):
     # test get_nodes_active
     net, netapi, source = prepare(fixed_nodenet)

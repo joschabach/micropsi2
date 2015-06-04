@@ -9,10 +9,7 @@ __author__ = 'joscha'
 __date__ = '29.10.12'
 
 import os
-import tempfile
-import pytest
 import datetime
-from micropsi_server import usermanagement
 
 
 def test_create_user(user_mgr, eliza):
@@ -25,7 +22,8 @@ def test_create_user(user_mgr, eliza):
 def test_save_users(user_mgr, user_def):
     try:
         os.remove(user_def)
-    except: pass
+    except:
+        pass
     assert not os.path.exists(user_def)
     user_mgr.save_users()
     assert os.path.exists(user_def)
@@ -34,7 +32,7 @@ def test_save_users(user_mgr, user_def):
 def test_list_users(user_mgr, eliza):
     l = user_mgr.list_users()
     assert "eliza" in l
-    assert l["eliza"]["is_active"] == True
+    assert l["eliza"]["is_active"] is True
     assert l["eliza"]["role"] == "Full"
     assert len(l) == len(user_mgr.users)
 
@@ -157,6 +155,3 @@ def test_refresh_session(user_mgr, eliza):
     user_mgr.refresh_session(token)
     user_mgr.check_for_expired_user_sessions()
     assert user_mgr.users["eliza"]["session_token"] is token
-
-
-

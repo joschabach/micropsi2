@@ -20,7 +20,7 @@ from micropsi_core import emoexpression
 import micropsi_core.tools
 from micropsi_server import usermanagement
 from micropsi_server import bottle
-from micropsi_server.bottle import Bottle, route, post, run, request, response, template, static_file, redirect, error
+from micropsi_server.bottle import Bottle, run, request, response, template, static_file, redirect
 import argparse
 import os
 import json
@@ -96,7 +96,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 response.status = 401
                 return {'status': 'error', 'data': "Insufficient permissions for remote procedure call"}
             else:
-                #kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
+                # kwargs.update({"argument": argument, "permissions": permissions, "user_id": user_id, "token": token})
                 if kwargs is not None:
                     arguments = dict((name, kwargs[name]) for name in inspect.getargspec(func).args if name in kwargs)
                     arguments.update(kwargs)
@@ -962,6 +962,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
 def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name):
     return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name)
 
+
 @rpc("add_modulator_monitor")
 def add_modulator_monitor(nodenet_uid, modulator, name):
     return True, runtime.add_modulator_monitor(nodenet_uid, modulator, name)
@@ -1113,7 +1114,7 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
 
 
 @rpc("get_links_for_nodes")
-def get_links_for_nodes(nodenet_uid, node_uids = []):
+def get_links_for_nodes(nodenet_uid, node_uids=[]):
     return True, runtime.get_links_for_nodes(nodenet_uid, node_uids)
 
 

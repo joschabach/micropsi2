@@ -117,7 +117,7 @@ class MicropsiRunner(threading.Thread):
                 ms = elapsed.seconds + ((elapsed.microseconds // 1000) / 1000)
                 self.sum_of_durations += ms
                 self.number_of_samples += 1
-                self.total_steps +=1
+                self.total_steps += 1
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
                     logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
@@ -859,7 +859,6 @@ def get_available_recipes():
 
 def run_recipe(nodenet_uid, name, parameters):
     """ Calls the given recipe with the provided parameters, and returns the output, if any """
-    from functools import partial
     netapi = nodenets[nodenet_uid].netapi
     params = {}
     for key in parameters:
@@ -961,11 +960,8 @@ def load_user_files(do_reload=False):
     # see if we have additional nodetypes defined by the user.
     import sys
     global native_modules
-    old_native_modules = native_modules.copy()
     native_modules = {}
     custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
-    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
-    custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodetype_file):
         try:
             with open(custom_nodetype_file) as fp:

@@ -104,7 +104,8 @@ class UserManager(object):
         # set up sessions
         for i in self.users:
             active_session = self.users[i]["session_token"]
-            if active_session: self.sessions[active_session] = i
+            if active_session:
+                self.sessions[active_session] = i
 
         # set up session cleanup
         def _session_expiration():

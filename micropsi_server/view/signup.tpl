@@ -9,7 +9,9 @@
     </div>
 
     <div class="modal-body">
-
+            %if first_user:
+            <p class="help">To use MicroPsi2, please create the administrator user account. You can afterwards configure addional users, or use MicroPsi2 as the administrator user only</p>
+            %end
 
             %if defined('cookie_warning') and cookie_warning:
             <div class="alert alert-info">

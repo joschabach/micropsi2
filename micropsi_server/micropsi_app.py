@@ -162,8 +162,9 @@ def server_static(filepath):
 
 @micropsi_app.route("/")
 def index():
+    first_user = usermanager.users == {}
     user_id, permissions, token = get_request_data()
-    return _add_world_list("viewer", mode="all", logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
+    return _add_world_list("viewer", mode="all", first_user=first_user, logging_levels=runtime.get_logging_levels(), version=VERSION, user_id=user_id, permissions=permissions)
 
 
 @micropsi_app.route("/nodenet")

@@ -22,7 +22,8 @@ __date__ = '04.07.12'
 import json
 import os
 import micropsi_core.tools
-import warnings
+import logging
+
 
 class ConfigurationManager(object):
     """The configuration manager creates, deletes and persists configuration data.
@@ -76,9 +77,9 @@ class ConfigurationManager(object):
                 self.data = json.load(file)
             return True
         except ValueError:
-            warnings.warn("Could not read config data at %s" % self.config_file_name)
+            logging.getLogger("system").warn("Could not read config data at %s" % self.config_file_name)
         except IOError:
-            warnings.warn("Could not open config data at %s" % self.config_file_name)
+            logging.getLogger("system").info("No readable config data file, attempting to create one")
         return False
 
     def save_configs(self):

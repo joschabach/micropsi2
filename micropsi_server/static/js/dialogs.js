@@ -484,6 +484,7 @@ var runner_properties = {};
 $(function(){
     setButtonStates(false);
     currentNodenet = $.cookie('selected_nodenet') || '';
+    currentWorld = $.cookie('selected_world') || '';
     if(currentNodenet){
         fetch_stepping_info();
     }

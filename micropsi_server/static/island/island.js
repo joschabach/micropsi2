@@ -63,8 +63,10 @@ var world_data = null;
 
 var worldscope = paper;
 
-if (currentWorld){
+if(typeof currentWorld != 'undefined'){
     setCurrentWorld(currentWorld);
+} else {
+    currentWorld = $.cookie('selected_world') || null;
 }
 
 scenes = {};

@@ -677,9 +677,7 @@ function showObjectForm(worldobject){
 
 function createWorldObject(type, pos){
     api.call('add_worldobject', {world_uid: currentWorld, type: type, position: [pos.x, pos.y]}, function(result){
-        if(result.status =='success'){
-            addObject(new WorldObject(result.uid, pos.x, pos.y, 0, '', type, {}));
-        }
+        addObject(new WorldObject(result, pos.x, pos.y, 0, '', type, {}));
         updateViewSize();
     });
 }
@@ -710,9 +708,7 @@ function setObjectProperties(worldobject, x, y, name, orientation, parameters){
         parameters: worldobject.parameters || {}
     };
     api.call('set_worldobject_properties', data, function(result){
-        if(result.status =='success'){
-            redrawObject(worldobject);
-        }
+        redrawObject(worldobject);
     }, api.defaultErrorCallback);
 }
 
@@ -731,8 +727,6 @@ function setAgentProperties(worldobject, x, y, name, orientation, parameters){
         parameters: worldobject.parameters || {}
     };
     api.call('set_worldagent_properties', data, function(result){
-        if(result.status =='success'){
-            redrawObject(worldobject);
-        }
+        redrawObject(worldobject);
     }, api.defaultErrorCallback);
 }

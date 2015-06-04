@@ -19,9 +19,7 @@ require a working virtualenv on your machine. To install virtualenv on OS X, you
 
 Run with Minecraft
 -----
-* To run micropsi with minecraft connectivity, you need to call `make` after checkout, and then follow the steps described above
-(Minecraft connectivtiy has an additional dependency on pycrypto)
-* Also see [micropsi_core/world/minecraft/README.md](/micropsi_core/world/minecraft/README.md) for setup instructions.
+* To run micropsi with minecraft connectivity, you need to call `make` after checkout and virtualenv setup
 
 
 Run with Theano

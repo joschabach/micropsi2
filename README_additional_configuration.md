@@ -3,15 +3,11 @@ Additional Features
 For some of the more advanced features of the Micropsi2 runtime, additional manual configuration is necessary.
 
 
-Configuration
------
-* See `config.ini.template` for configuration options available in `config.ini`
-
-
-virtualenv setup
+Set up virtualenv
 -----
 Additional dependencies necessary for running the Toolkit with Minecraft connectivity or theano_engine node nets
-require a working virtualenv on your machine. To install virtualenv on OS X, you can:
+require a working virtualenv on your machine.
+To install virtualenv on OS X, you could:
 * Install [homebrew](http://brew.sh/)
 * Use homebrew to install python3 with pip3: `brew install python3`
 * Use pip3 to install virtualenv: `pip3 install virtualenv`
@@ -29,6 +25,11 @@ Set up Theano-based theano_engine
 * Call 'source bin/activate'
 * Follow Theano's "bleeding edge install instructions" directions [here](http://deeplearning.net/software/theano/install.html)
 * When creating a new node net, you should now be able to chose theano_engine
+
+
+Configuration
+-----
+* See `config.ini.template` for configuration options available in `config.ini`
 
 
 Tests

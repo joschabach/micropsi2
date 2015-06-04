@@ -193,11 +193,21 @@ def get_world_class_from_name(world_type):
     """Returns the class from a world type, if it is known"""
     from micropsi_core.world.world import World
 
-    worldclasses = {cls.__name__: cls for cls in tools.itersubclasses(vars()['World'])}
+    worldclasses = {cls.__name__: cls for cls in tools.itersubclasses(World)}
     return worldclasses.get(world_type, World)
 
 
 def get_available_world_types():
     """Returns the names of the available world types"""
+    import importlib
     from micropsi_core.world.world import World
     return [cls.__name__ for cls in tools.itersubclasses(vars()['World'])]
+    for cls in tools.itersubclasses(World):
+        if 'minecraft' in cls.__name__.toLower():
+            try:
+                import spock
+            except:
+                # requirement not satisfied, ignore
+                continue
+        available_worlds.append(cls.__name__)
+    return available_worlds

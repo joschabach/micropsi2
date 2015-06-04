@@ -19,6 +19,12 @@ port = 6543
 # 0.0.0.0 serves for everybody
 host = localhost
 
+# which server to use.
+# a single threaded devel server named "wsgiref" is bundled and runs out of the box
+# if you installed requirements.txt, use "cherrypy", a multi-threaded stable server.
+# check here for a list of other supported servers: http://bottlepy.org/docs/0.12/deployment.html#switching-the-server-backend
+server = wsgiref
+
 [minecraft]
 
 # use your minecraft.net username with password, respective

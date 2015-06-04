@@ -26,7 +26,7 @@ import os
 import json
 import inspect
 from micropsi_server import minidoc
-from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE
+from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE, SERVER
 
 APP_PATH = os.path.dirname(__file__)
 
@@ -1176,7 +1176,7 @@ def get_available_recipes():
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
     print("Starting App on Port " + str(DEFAULT_PORT))
-    run(micropsi_app, host=host, port=port, quiet=True, server='cherrypy')  # devV
+    run(micropsi_app, host=host, port=port, quiet=True, server=SERVER)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)

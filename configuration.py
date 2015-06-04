@@ -38,3 +38,5 @@ LOGGING = config['logging']
 DEFAULT_PORT = config['micropsi2']['port']
 
 DEFAULT_HOST = config['micropsi2']['host']
+
+SERVER = config['micropsi2']['server']

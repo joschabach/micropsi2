@@ -1,0 +1,254 @@
+{
+    "current_step": 0,
+    "engine": "dict_engine",
+    "is_active": false,
+    "links": {
+        "9ce2b617-37c2-4ed5-95b1-ed2fd17601c0:gen:gen:3f1d7b8a-789b-40e9-a5f5-665c4ed7db16": {
+            "certainty": 1,
+            "source_gate_name": "gen",
+            "source_node_uid": "9ce2b617-37c2-4ed5-95b1-ed2fd17601c0",
+            "target_node_uid": "3f1d7b8a-789b-40e9-a5f5-665c4ed7db16",
+            "target_slot_name": "gen",
+            "uid": "9ce2b617-37c2-4ed5-95b1-ed2fd17601c0:gen:gen:3f1d7b8a-789b-40e9-a5f5-665c4ed7db16",
+            "weight": 1
+        },
+        "f9f75add-93da-4a59-a620-5988f34fba3c:gen:gen:029ba031-24af-4d77-bd6a-6d0210d50d0d": {
+            "certainty": 1,
+            "source_gate_name": "gen",
+            "source_node_uid": "f9f75add-93da-4a59-a620-5988f34fba3c",
+            "target_node_uid": "029ba031-24af-4d77-bd6a-6d0210d50d0d",
+            "target_slot_name": "gen",
+            "uid": "f9f75add-93da-4a59-a620-5988f34fba3c:gen:gen:029ba031-24af-4d77-bd6a-6d0210d50d0d",
+            "weight": 1
+        }
+    },
+    "max_coords": {
+        "x": 0,
+        "y": 0
+    },
+    "modulators": {},
+    "monitors": {
+        "b2516fb6a2a211e4832820c9d087b4b7": {
+            "classname": "NodeMonitor",
+            "name": "right eye",
+            "node_uid": "f9f75add-93da-4a59-a620-5988f34fba3c",
+            "sheaf": "default",
+            "target": "gen",
+            "type": "gate",
+            "uid": "b2516fb6a2a211e4832820c9d087b4b7",
+            "values": {}
+        }
+    },
+    "name": "Braitenberg",
+    "nodes": {
+        "029ba031-24af-4d77-bd6a-6d0210d50d0d": {
+            "activation": 0.0,
+            "gate_activations": {
+                "gen": {
+                    "default": {
+                        "activation": 0.0,
+                        "name": "default",
+                        "uid": "default"
+                    }
+                }
+            },
+            "gate_functions": {
+                "gen": "identity"
+            },
+            "gate_parameters": {
+                "gen": {
+                    "amplification": 1.0,
+                    "certainty": 1.0,
+                    "decay": 0.0,
+                    "maximum": 1.0,
+                    "minimum": -1.0,
+                    "rho": 0.0,
+                    "spreadsheaves": 0.0,
+                    "theta": 0.0,
+                    "threshold": 0.0
+                }
+            },
+            "index": 4,
+            "name": "left wheel",
+            "parameters": {
+                "datatarget": "engine_l"
+            },
+            "parent_nodespace": "Root",
+            "position": [
+                250,
+                340
+            ],
+            "sheaves": {
+                "default": {
+                    "activation": 0.0,
+                    "name": "default",
+                    "uid": "default"
+                }
+            },
+            "state": {},
+            "type": "Actor",
+            "uid": "029ba031-24af-4d77-bd6a-6d0210d50d0d"
+        },
+        "3f1d7b8a-789b-40e9-a5f5-665c4ed7db16": {
+            "activation": 0.0,
+            "gate_activations": {
+                "gen": {
+                    "default": {
+                        "activation": 0.0,
+                        "name": "default",
+                        "uid": "default"
+                    }
+                }
+            },
+            "gate_functions": {
+                "gen": "identity"
+            },
+            "gate_parameters": {
+                "gen": {
+                    "amplification": 1.0,
+                    "certainty": 1.0,
+                    "decay": 0.0,
+                    "maximum": 1.0,
+                    "minimum": -1.0,
+                    "rho": 0.0,
+                    "spreadsheaves": 0.0,
+                    "theta": 0.0,
+                    "threshold": 0.0
+                }
+            },
+            "index": 5,
+            "name": "right wheel",
+            "parameters": {
+                "datatarget": "engine_r"
+            },
+            "parent_nodespace": "Root",
+            "position": [
+                512.5,
+                335
+            ],
+            "sheaves": {
+                "default": {
+                    "activation": 0.0,
+                    "name": "default",
+                    "uid": "default"
+                }
+            },
+            "state": {},
+            "type": "Actor",
+            "uid": "3f1d7b8a-789b-40e9-a5f5-665c4ed7db16"
+        },
+        "9ce2b617-37c2-4ed5-95b1-ed2fd17601c0": {
+            "activation": 0.0,
+            "gate_activations": {
+                "gen": {
+                    "default": {
+                        "activation": 0.0,
+                        "name": "default",
+                        "uid": "default"
+                    }
+                }
+            },
+            "gate_functions": {
+                "gen": "identity"
+            },
+            "gate_parameters": {
+                "gen": {
+                    "amplification": 1.0,
+                    "certainty": 1.0,
+                    "decay": 0.0,
+                    "maximum": 1.0,
+                    "minimum": -1.0,
+                    "rho": 0.0,
+                    "spreadsheaves": 0.0,
+                    "theta": 0.0,
+                    "threshold": 0.0
+                }
+            },
+            "index": 2,
+            "name": "left eye",
+            "parameters": {
+                "datasource": "brightness_l"
+            },
+            "parent_nodespace": "Root",
+            "position": [
+                257.5,
+                118.75
+            ],
+            "sheaves": {
+                "default": {
+                    "activation": 0.0,
+                    "name": "default",
+                    "uid": "default"
+                }
+            },
+            "state": {},
+            "type": "Sensor",
+            "uid": "9ce2b617-37c2-4ed5-95b1-ed2fd17601c0"
+        },
+        "f9f75add-93da-4a59-a620-5988f34fba3c": {
+            "activation": 0.0,
+            "gate_activations": {
+                "gen": {
+                    "default": {
+                        "activation": 0.0,
+                        "name": "default",
+                        "uid": "default"
+                    }
+                }
+            },
+            "gate_functions": {
+                "gen": "identity"
+            },
+            "gate_parameters": {
+                "gen": {
+                    "amplification": 1.0,
+                    "certainty": 1.0,
+                    "decay": 0.0,
+                    "maximum": 1.0,
+                    "minimum": -1.0,
+                    "rho": 0.0,
+                    "spreadsheaves": 0.0,
+                    "theta": 0.0,
+                    "threshold": 0.0
+                }
+            },
+            "index": 3,
+            "name": "right eye",
+            "parameters": {
+                "datasource": "brightness_r"
+            },
+            "parent_nodespace": "Root",
+            "position": [
+                510,
+                112.5
+            ],
+            "sheaves": {
+                "default": {
+                    "activation": 0.0,
+                    "name": "default",
+                    "uid": "default"
+                }
+            },
+            "state": {},
+            "type": "Sensor",
+            "uid": "f9f75add-93da-4a59-a620-5988f34fba3c"
+        }
+    },
+    "nodespaces": {
+        "Root": {
+            "index": 0,
+            "name": "Root",
+            "parent_nodespace": null,
+            "position": [
+                0,
+                0
+            ],
+            "uid": "Root"
+        }
+    },
+    "owner": "admin",
+    "uid": "b6f40e6417ee11e4bbe920c9d087b4b7",
+    "version": 1,
+    "world": "d4b3f5740adc11e5b9fe20c9d087b4b7",
+    "worldadapter": "Braitenberg"
+}

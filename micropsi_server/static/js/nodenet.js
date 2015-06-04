@@ -93,6 +93,9 @@ viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewPropertie
 
 currentNodenet = $.cookie('selected_nodenet') || '';
 currentNodeSpace = $.cookie('selected_nodespace') || '';
+if(!$.cookie('renderlinks')){
+    $.cookie('renderlinks', 'always');
+}
 
 currentWorldadapter = null;
 

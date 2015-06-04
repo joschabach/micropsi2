@@ -17,12 +17,12 @@ require a working virtualenv on your machine. To install virtualenv on OS X, you
 * Use pip3 to install virtualenv: `pip3 install virtualenv`
 
 
-Configure Minecraft connectivity
+Set up Minecraft connectivity
 -----
 * To run micropsi with minecraft connectivity, you need to call `make` after checkout and virtualenv setup
 
 
-Configure Theano-based theano_engine
+Set up Theano-based theano_engine
 -----
 * To run micropsi with an optional and experimental node net implementation based on Theano, you need to install Theano
 * Call 'make' after checkout

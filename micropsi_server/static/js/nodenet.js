@@ -200,8 +200,12 @@ function get_available_worldadapters(world_uid, callback){
             success=function(data){
                 worldadapters = data;
                 currentWorld = world_uid;
-                str = '';
-                for (var name in worldadapters){
+                var str = '';
+                var name;
+                var keys = Object.keys(worldadapters);
+                keys.sort();
+                for (var idx in keys){
+                    name = keys[idx];
                     worldadapters[name].datasources = worldadapters[name].datasources.sort();
                     worldadapters[name].datatargets = worldadapters[name].datatargets.sort();
                     str += '<option>'+name+'</option>';

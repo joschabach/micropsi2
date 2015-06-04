@@ -46,7 +46,7 @@ import datetime
 import threading
 import time
 import uuid
-import warnings
+import logging
 import micropsi_core.tools
 from configuration import USERMANAGER_PATH
 
@@ -89,14 +89,14 @@ class UserManager(object):
         # set up persistence
         micropsi_core.tools.mkdir(os.path.dirname(userfile_path))
 
-        self.user_file_name = userfile_path # todo: make this work without a file system
+        self.user_file_name = userfile_path  # todo: make this work without a file system
         try:
             with open(self.user_file_name) as file:
                 self.users = json.load(file)
         except ValueError:
-            warnings.warn("Invalid user data")
+            logging.getLogger('system').warn("Invalid user data")
         except IOError:
-            warnings.warn("Could not open user data file")
+            logging.getLogger('system').info("No readable userdata file, attempting to create one.")
 
         if not self.users:
             self.users = {}

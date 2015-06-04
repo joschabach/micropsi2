@@ -1174,6 +1174,7 @@ def get_available_recipes():
 # -----------------------------------------------------------------------------------------------
 
 def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
+    print("Starting App on Port " + str(DEFAULT_PORT))
     run(micropsi_app, host=host, port=port, quiet=True, server='cherrypy')  # devV
 
 if __name__ == "__main__":

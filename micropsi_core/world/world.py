@@ -347,4 +347,8 @@ except ImportError as e:
 try:
     from micropsi_core.world.minecraft import minecraft
 except ImportError as e:
-    sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)
+    if e.msg == "No module named 'spock'":
+        # ignore silently
+        pass
+    else:
+        sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)

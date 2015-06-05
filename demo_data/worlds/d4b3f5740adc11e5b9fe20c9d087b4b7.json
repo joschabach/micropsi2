@@ -1,0 +1,137 @@
+{
+    "agents": {
+        "b6f40e6417ee11e4bbe920c9d087b4b7": {
+            "name": "Braitenberg",
+            "position": [
+                700,
+                400
+            ],
+            "type": "Braitenberg",
+            "uid": "b6f40e6417ee11e4bbe920c9d087b4b7"
+        }
+    },
+    "assets": {
+        "background": "island/psi_1.png",
+        "icons": {
+            "Boulder": "island/boulder.png",
+            "Braintree": "island/braintree.png",
+            "Braitenberg": "island/braitenberg.png",
+            "Champignon": "island/boletus-edulis.png",
+            "FlyAgaric": "island/fly-agaris.png",
+            "Juniper": "island/juniper-berries.png",
+            "Lightsource": "island/lamp.png",
+            "Maple": "island/maple.png",
+            "Menhir": "island/menhir.png",
+            "PalmTree": "island/palm-tree.png",
+            "Stone": "island/rock.png",
+            "Survivor": "island/Micropsi.png",
+            "Thornbush": "island/unknownbox.png",
+            "Waterhole": "island/well.png",
+            "Wirselkraut": "island/wirselkraut.png"
+        },
+        "js": "island/island.js",
+        "template": "island/island.tpl",
+        "x": 2048,
+        "y": 2048
+    },
+    "available_worldadapters": [
+        "Braitenberg",
+        "Survivor",
+        "StructuredObjects"
+    ],
+    "available_worldobjects": [
+        "Wirselkraut",
+        "Lightsource",
+        "Default",
+        "Maple",
+        "Stone",
+        "PalmTree",
+        "Thornbush",
+        "Juniper",
+        "Boulder",
+        "Waterhole",
+        "Champignon",
+        "Braintree",
+        "Menhir",
+        "FlyAgaric"
+    ],
+    "current_step": 0,
+    "filename": "/Users/dwelland/workspace/tmp/micropsi_alpha2/./resources/worlds/d4b3f5740adc11e5b9fe20c9d087b4b7.json",
+    "name": "Doerner-Island",
+    "objects": {
+        "4be1f5260ade11e5a03620c9d087b4b7": {
+            "name": "",
+            "orientation": 0.0,
+            "parameters": null,
+            "position": [
+                505,
+                547
+            ],
+            "type": "Lightsource",
+            "uid": "4be1f5260ade11e5a03620c9d087b4b7"
+        }
+    },
+    "owner": "admin",
+    "uid": "d4b3f5740adc11e5b9fe20c9d087b4b7",
+    "version": 1,
+    "world_type": "Island",
+    "worldadapters": {
+        "Braitenberg": {
+            "datasources": [
+                "brightness_l",
+                "brightness_r"
+            ],
+            "datatargets": [
+                "engine_l",
+                "engine_r"
+            ]
+        },
+        "StructuredObjects": {
+            "datasources": [
+                "fov-x",
+                "fov-y",
+                "major-newscene",
+                "fovea-com",
+                "presence-com",
+                "fovea-cir",
+                "presence-cir",
+                "fovea-ver",
+                "presence-ver",
+                "fovea-green",
+                "presence-green",
+                "fovea-white",
+                "presence-white",
+                "fovea-brown",
+                "presence-brown",
+                "fovea-charcoal",
+                "presence-charcoal",
+                "fovea-purple",
+                "presence-purple",
+                "fovea-navy",
+                "presence-navy",
+                "fovea-red",
+                "presence-red"
+            ],
+            "datatargets": [
+                "fov_x",
+                "fov_y",
+                "fov_reset"
+            ]
+        },
+        "Survivor": {
+            "datasources": [
+                "body-energy",
+                "body-water",
+                "body-integrity"
+            ],
+            "datatargets": [
+                "action_eat",
+                "action_drink",
+                "loco_north",
+                "loco_south",
+                "loco_east",
+                "loco_west"
+            ]
+        }
+    }
+}

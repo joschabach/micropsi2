@@ -18,12 +18,9 @@ class MinecraftVision(MinecraftGraphLocomotion):
         'take_exit_three',
         'pitch',
         'yaw',
-        'fov_x',
-        'fov_y',
-        'res_x',
-        'res_y',
-        'len_x',
-        'len_y'
+        'x_sec',  # (0,0,0) means select the top left section at zoom level 0 ( which is the complete visual field )
+        'y_sec',
+        'z_oom'
     ]
 
     actions = ['take_exit_one', 'take_exit_two', 'take_exit_three']
@@ -45,16 +42,11 @@ class MinecraftVision(MinecraftGraphLocomotion):
     # the maximal distance for raytracing -- the value was determined by manually trying several values
     max_dist = 64
 
-    # # the patch size required to cover the complete visual field of 128 x 64 blocks
-    # zoom_levels = {
-    #     1: (0.125, 0.25),  # 16 x 16 - fairly coarse
-    #     2: (0.25, 0.5),    # 32 x 32 -
-    #     3: (0.5, 1.0)      # 64 x 64 - how fine ?
-    # }
-
-    # the max number of fovea sensors to instantiate; should be smaller or equal to resolution x image dimension
-    num_pix_x = 16
-    num_pix_y = 16
+    # Six parameters determine the agent's visual input: fov_x and fov_y, res_x and res_y, len_x and len_y.
+    # They describe the fovea position, the zoom level aka resolution level, and the number of receptors respectively.
+    # The first four variables are local, the other two are fields. Note: a rectangular receptor field is assumed.
+    len_x = 16
+    len_y = 16
 
     # cf. autoencoders require similar activation ( up to noise ) for three consecutive steps
     num_steps_to_keep_vision_stable = 3
@@ -66,12 +58,9 @@ class MinecraftVision(MinecraftGraphLocomotion):
             'take_exit_one': 0,
             'take_exit_two': 0,
             'take_exit_three': 0,
-            'fov_x': 0,
-            'fov_y': 0,
-            'res_x': 0,
-            'res_y': 0,
-            'len_x': 0,
-            'len_y': 0
+            'x_sec': 0,
+            'y_sec': 0,
+            'z_oom': 0
         }
 
         # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
@@ -79,12 +68,9 @@ class MinecraftVision(MinecraftGraphLocomotion):
             'take_exit_one': 0,
             'take_exit_two': 0,
             'take_exit_three': 0,
-            'fov_x': 0,
-            'fov_y': 0,
-            'res_x': 0,
-            'res_y': 0,
-            'len_x': 0,
-            'len_y': 0
+            'x_sec': 0,
+            'y_sec': 0,
+            'z_oom': 0
         }
 
         # a collection of conditions to check on every update(..), eg., for action feedback
@@ -98,8 +84,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
         self.logger = logging.getLogger("world")
 
         # add datasources for fovea sensors aka fov__*_*
-        for i in range(self.num_pix_x):
-            for j in range(self.num_pix_y):
+        for i in range(self.len_x):
+            for j in range(self.len_y):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
 
@@ -178,18 +164,18 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     self.datatarget_feedback['yaw'] = 1.0
 
                 # sample all the time
-                self.datasources['fov_x'] = self.datatargets['fov_x'] - 1. if self.datatargets['fov_x'] > 0. else 0.
-                self.datasources['fov_y'] = self.datatargets['fov_y'] - 1. if self.datatargets['fov_y'] > 0. else 0.
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
-                self.get_visual_input(self.datatargets['fov_x'], self.datatargets['fov_y'],
-                                      self.datatargets['res_x'], self.datatargets['res_y'],
-                                      int(self.datatargets['len_x']), int(self.datatargets['len_y']), loco_label)
+                # translate x_sec, y_sec, and z_oom to fov_x, fov_y, res_x, res_y
+                fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(self.datatargets['x_sec'],
+                                                                                 self.datatargets['y_sec'],
+                                                                                 self.datatargets['z_oom'])
+                self.get_visual_input(fov_x, fov_y, res_x, res_y, self.len_x, self.len_y, loco_label)
 
-                # Note: saccading can't fail because fov_x, fov_y are internal actors, hence we return immediate feedback
-                if self.datatargets['fov_x'] > 0.0:
-                    self.datatarget_feedback['fov_x'] = 1.0
-                if self.datatargets['fov_y'] > 0.0:
-                    self.datatarget_feedback['fov_y'] = 1.0
+                # TODO: decide whether we want 0 values as activation on x_sec, y_sec, z_oom
+                # if not, we have to rescale these parameters to value + 1 and only provide feedback if res. value > 0
+                self.datatarget_feedback['x_sec'] = 1.0
+                self.datatarget_feedback['y_sec'] = 1.0
+                self.datatarget_feedback['z_oom'] = 1.0
 
                 self.check_for_action_feedback()
 
@@ -231,7 +217,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     self.datatarget_history[k] = self.datatargets[k]
 
             else:
-                self.simulate_visual_input(self.num_pix_x, self.num_pix_y)
+                self.simulate_visual_input(self.len_x, self.len_y)
 
     def check_movement_feedback(self, target_loco_node):
         if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
@@ -239,6 +225,25 @@ class MinecraftVision(MinecraftGraphLocomotion):
            and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance:
             return True
         return False
+
+    def translate_xyz_to_vision_params(self, x_sec, y_sec, z_oom):
+        """
+        Visual input can be retrieved given a fovea position in terms of (fov_x, fov_y),
+        a resolution for each dimension (res_x, res_y), and a excerpt or patch of the
+        complete visual field (len_x, len_y). This world adapter offers three actors:
+        x_sec, y_sec, and z_oom. These need to be translated to the parameters which
+        determine where to compute the visual input. This translation happens here.
+        """
+        fov_x = ((1. / (4 * 2)) * x_sec) / 4
+        fov_y = ((1. / (2 * 2)) * y_sec) / 2
+
+        res_x = (self.len_x * (4 ** z_oom)) / self.im_width
+        res_y = (self.len_y * (2 ** z_oom)) / self.im_height
+
+        # Note: for now, len_x and len_y are stable and don't change dynamically.
+        # Hence there's no translation regarding their values here.
+
+        return fov_x, fov_y, res_x, res_y
 
     def get_visual_input(self, fov_x, fov_y, res_x, res_y, len_x, len_y, label):
         """
@@ -272,8 +277,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
         v_line = [i for i in self.frange(pos_y - 0.05 * self.cam_height, pos_y + 0.95 * self.cam_height, tick_h)]
 
         # scale up fov_x, fov_y - which is originally in the domain [0,1]
-        fov_x = int(round(fov_x * (self.im_width * res_x - len_x)))
-        fov_y = int(round(fov_y * (self.im_height * res_y - len_y)))
+        # fov_x = int(round(fov_x * (self.im_width * res_x - len_x)))
+        # fov_y = int(round(fov_y * (self.im_height * res_y - len_y)))
+        fov_x = int(round(fov_x * len(h_line)))
+        fov_y = int(round(fov_y * len(v_line)))
 
         x0, y0, z0 = pos_x, pos_y, pos_z  # agent's position aka projective point
         zi = z0 + self.focal_length

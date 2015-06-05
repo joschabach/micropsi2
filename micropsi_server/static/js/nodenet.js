@@ -2881,7 +2881,11 @@ function generateFragment(){
     api.call("generate_netapi_fragment",
         {nodenet_uid:currentNodenet, node_uids: selection},
         success=function(data){
-            window.prompt("Ready for clipboard: ", data);
+            var modal = $('#copy_paste_modal');
+            $('#copy_paste_modal .title').html("Netapi code fragment");
+            $('#copy_paste_text').val(data);
+            modal.modal("show");
+            $('#copy_paste_text').select();
         }
     );
 }

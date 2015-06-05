@@ -2454,7 +2454,11 @@ function initializeDialogs(){
             resume_nodenet: startnet
         }, function(data){
             currentSimulationStep -= 1;
-            refreshNodespace();
+            if(startnet){
+                $(document).trigger("runner_started");
+            } else {
+                refreshNodespace();
+            }
         });
         $('#nodenet_user_prompt').modal('hide');
     });

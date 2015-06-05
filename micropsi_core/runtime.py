@@ -670,7 +670,8 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
     for node_uid in node_uids:
-        nodes.append(nodenet.get_node(node_uid))
+        if not nodenet.is_nodespace(node_uid):
+            nodes.append(nodenet.get_node(node_uid))
 
     nodes = sorted(nodes, key=lambda node: node.position[1]*1000 + node.position[0])
 

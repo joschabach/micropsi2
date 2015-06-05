@@ -1,5 +1,5 @@
 
-0.4-alpha2 - unreleased
+0.4-alpha2 (2015-06-05)
 ==========
 
 * Introduced Comment nodes

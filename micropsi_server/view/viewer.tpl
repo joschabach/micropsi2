@@ -29,7 +29,7 @@
     %include world  mine=mine,others=others,current=current,world_assets=world_assets
 % end
 
-%if first_user:
+%if defined('first_user') and first_user:
 <script type="text/javascript">
     $(function(){
         dialogs.remote_form_dialog($('a.login').attr('href'), function(){window.location.reload();});

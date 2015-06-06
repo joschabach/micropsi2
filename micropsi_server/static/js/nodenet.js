@@ -28,7 +28,7 @@ var viewProperties = {
     slotWidth: 34,
     lineHeight: 15,
     compactNodes: false,
-    outsideDummyDistance: 70,
+    outsideDummyDistance: 30,
     outsideDummySize: 15,
     outsideDummyColor: new Color("#cccccc"),
     groupOutsideLinksThreshold: 0,

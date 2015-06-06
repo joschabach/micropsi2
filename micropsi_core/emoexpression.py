@@ -22,7 +22,8 @@ def calc_emoexpression_parameters(nodenet):
 
     integrity = 1
     if nodenet.world is not None and "health" in nodenet.world.get_available_datasources(nodenet.uid):
-        integrity = nodenet.world.get_datasource(nodenet.uid, "health")
+        if nodenet.world.get_datasource(nodenet.uid, "health"):
+            integrity = nodenet.world.get_datasource(nodenet.uid, "health")
 
     exp_pain = 1 - integrity
     exp_activation = emo_activation

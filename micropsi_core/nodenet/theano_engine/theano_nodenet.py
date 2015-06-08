@@ -761,6 +761,8 @@ class TheanoNodenet(Nodenet):
                 for id in range(len(self.allocated_nodes)):
                     if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                         uid = node_to_id(id)
+                        if 'nodes' in initfrom and uid in initfrom['nodes']:
+                            self.allocated_nodes[id] = get_numerical_node_type(initfrom['nodes'][uid]['type'], self.native_modules)
                         self.native_module_instances[uid] = self.get_node(uid)
                     elif self.allocated_nodes[id] == COMMENT:
                         uid = node_to_id(id)

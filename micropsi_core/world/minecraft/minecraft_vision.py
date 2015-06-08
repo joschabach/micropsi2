@@ -10,17 +10,16 @@ from math import sqrt, radians, cos, sin, tan
 
 class MinecraftVision(MinecraftGraphLocomotion):
 
+    # see init() for further supported datasources
     supported_datasources = []
 
+    # see init() for further supported datatargets
     supported_datatargets = [
         'take_exit_one',
         'take_exit_two',
         'take_exit_three',
         'pitch',
-        'yaw',
-        'x_sec',  # (0,0,0) means select the top left section at zoom level 0 ( which is the complete visual field )
-        'y_sec',
-        'z_oom'
+        'yaw'
     ]
 
     actions = ['take_exit_one', 'take_exit_two', 'take_exit_three']
@@ -48,6 +47,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
     len_x = 16
     len_y = 16
 
+    # tiling used for splitting visual field into sections
+    tiling_x = 7
+    tiling_y = 3
+
     # cf. autoencoders require similar activation ( up to noise ) for three consecutive steps
     num_steps_to_keep_vision_stable = 3
 
@@ -57,20 +60,14 @@ class MinecraftVision(MinecraftGraphLocomotion):
         self.datatarget_feedback = {
             'take_exit_one': 0,
             'take_exit_two': 0,
-            'take_exit_three': 0,
-            'x_sec': 0,
-            'y_sec': 0,
-            'z_oom': 0
+            'take_exit_three': 0
         }
 
         # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
         self.datatarget_history = {
             'take_exit_one': 0,
             'take_exit_two': 0,
-            'take_exit_three': 0,
-            'x_sec': 0,
-            'y_sec': 0,
-            'z_oom': 0
+            'take_exit_three': 0
         }
 
         # a collection of conditions to check on every update(..), eg., for action feedback
@@ -88,6 +85,24 @@ class MinecraftVision(MinecraftGraphLocomotion):
             for j in range(self.len_y):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
+                self.supported_datasources.append(name)
+
+        # add datasources for fovea position sensors aka fov_pos__*_*
+        for x in range(self.tiling_x):
+            for y in range(self.tiling_y):
+                name = "fov_pos__%02d_%02d" % (x, y)
+                self.datasources[name] = 0.
+                self.supported_datasources.append(name)
+
+        # add fovea actors to datatargets, datatarget_feedback, datatarget_history, and actions
+        for x in range(self.tiling_x):
+            for y in range(self.tiling_y):
+                name = "fov_act__%02d_%02d" % (x, y)
+                self.datatargets[name] = 0.
+                self.datatarget_feedback[name] = 0.
+                self.datatarget_history[name] = 0.
+                self.supported_datatargets.append(name)
+                self.actions.append(name)
 
         self.simulated_vision = False
         if 'simulate_vision' in cfg['minecraft']:
@@ -150,6 +165,16 @@ class MinecraftVision(MinecraftGraphLocomotion):
                 if not self.spockplugin.is_connected():
                     return
 
+                # route activation of fovea actors /datatargets to  fovea position sensors
+                for x in range(self.tiling_x):
+                    for y in range(self.tiling_y):
+                        actor_name = "fov_act__%02d_%02d" % (x, y)
+                        sensor_name = "fov_pos__%02d_%02d" % (x, y)
+                        self.datasources[sensor_name] = self.datatargets[actor_name]
+                        if self.datatargets[actor_name] > 0.:
+                            self.datatarget_feedback[actor_name] = 1.
+                            self.active_fovea_actor = actor_name
+
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder
                 if self.world.current_step % self.num_steps_to_keep_vision_stable == 0:
@@ -165,17 +190,11 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
                 # sample all the time
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
+                # get indices of section currently viewed, i.e. the respective active fovea actor
+                x_sec, y_sec = [int(val) for val in self.active_fovea_actor.split('_')[-2:]]
                 # translate x_sec, y_sec, and z_oom to fov_x, fov_y, res_x, res_y
-                fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(self.datatargets['x_sec'],
-                                                                                 self.datatargets['y_sec'],
-                                                                                 self.datatargets['z_oom'])
+                fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(x_sec, y_sec, 1)  # z_oom = 1
                 self.get_visual_input(fov_x, fov_y, res_x, res_y, self.len_x, self.len_y, loco_label)
-
-                # TODO: decide whether we want 0 values as activation on x_sec, y_sec, z_oom
-                # if not, we have to rescale these parameters to value + 1 and only provide feedback if res. value > 0
-                self.datatarget_feedback['x_sec'] = 1.0
-                self.datatarget_feedback['y_sec'] = 1.0
-                self.datatarget_feedback['z_oom'] = 1.0
 
                 self.check_for_action_feedback()
 
@@ -234,8 +253,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
         x_sec, y_sec, and z_oom. These need to be translated to the parameters which
         determine where to compute the visual input. This translation happens here.
         """
-        fov_x = ((1. / (4 * 2)) * x_sec) / 4
-        fov_y = ((1. / (2 * 2)) * y_sec) / 2
+        fov_x = ((1. / (4 * 2)) * x_sec)  # / 4
+        fov_y = ((1. / (2 * 2)) * y_sec)  # / 2
 
         res_x = (self.len_x * (4 ** z_oom)) / self.im_width
         res_y = (self.len_y * (2 ** z_oom)) / self.im_height

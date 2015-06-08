@@ -98,20 +98,7 @@ class TheanoNode(Node):
         return TheanoGate(type, self, self._nodenet)
 
     def set_gatefunction_name(self, gate_type, gatefunction_name):
-        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
-        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
-        self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
-        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
-            self._nodenet.has_gatefunction_absolute = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
-            self._nodenet.has_gatefunction_sigmoid = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
-            self._nodenet.has_gatefunction_tanh = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
-            self._nodenet.has_gatefunction_rect = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
-            self._nodenet.has_gatefunction_one_over_x = True
+        self._nodenet.set_node_gatefunction_name(self.uid, gate_type, gatefunction_name)
 
     def get_gatefunction_name(self, gate_type):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)

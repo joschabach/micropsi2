@@ -55,6 +55,11 @@ logger = MicropsiLogger({
 
 nodenet_lock = threading.Lock()
 
+if cfg['micropsi2'].get('profile_runner'):
+    import cProfile
+    import pstats
+    import io
+
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
@@ -76,6 +81,10 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        if cfg['micropsi2'].get('profile_runner'):
+            self.profiler = cProfile.Profile()
+        else:
+            self.profiler = None
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
@@ -99,9 +108,15 @@ class MicropsiRunner(threading.Thread):
                 if nodenet.is_active:
                     log = True
                     try:
+                        if self.profiler:
+                            self.profiler.enable()
                         nodenet.step()
+                        if self.profiler:
+                            self.profiler.disable()
                         nodenet.update_monitors()
                     except:
+                        if self.profiler:
+                            self.profiler.disable()
                         nodenet.is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
                         MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
@@ -121,6 +136,13 @@ class MicropsiRunner(threading.Thread):
                 self.total_steps += 1
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
+                    if self.profiler:
+                        s = io.StringIO()
+                        sortby = 'cumtime'
+                        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats('micropsi_core')
+                        print(s.getvalue())
+
                     logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0

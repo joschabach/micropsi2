@@ -5,11 +5,11 @@ from webtest import TestApp
 
 nn_uid = 'Testnet'
 
-import configuration
+from configuration import config
 from conftest import user_token
 from micropsi_server import usermanagement
 
-test_path = os.path.join(configuration.RESOURCE_PATH, 'user-test-db.json')
+test_path = os.path.join(config['paths']['resource_path'], 'user-test-db.json')
 
 
 class MicropsiTestApp(TestApp):
@@ -69,4 +69,3 @@ def eliza(user_mgr):
     user_mgr.create_user("eliza", "qwerty", "Full")
     user_mgr.start_session("eliza")
     return "eliza"
-

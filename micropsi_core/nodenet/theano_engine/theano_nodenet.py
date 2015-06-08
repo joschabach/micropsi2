@@ -1096,6 +1096,9 @@ class TheanoNodenet(Nodenet):
 
         else:
             id = node_from_id(uid)
+            if id > self.NoN:
+                growby = id - (self.NoN - 2)
+                self.grow_number_of_nodes(growby)
 
         uid = node_to_id(id)
 

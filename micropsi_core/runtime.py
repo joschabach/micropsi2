@@ -12,7 +12,7 @@ from micropsi_core._runtime_api_monitors import *
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING
+from configuration import config as cfg
 
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
@@ -34,8 +34,9 @@ from .micropsi_logger import MicropsiLogger
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
+RESOURCE_PATH = cfg['paths']['resource_path']
 
-configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
+configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
 worlds = {}
 nodenets = {}
@@ -47,12 +48,17 @@ runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 signal_handler_registry = []
 
 logger = MicropsiLogger({
-    'system': LOGGING['level_system'],
-    'world': LOGGING['level_world'],
-    'nodenet': LOGGING['level_nodenet']
-}, LOGGING.get("logfile"))
+    'system': cfg['logging']['level_system'],
+    'world': cfg['logging']['level_world'],
+    'nodenet': cfg['logging']['level_nodenet']
+}, cfg['logging'].get('logfile'))
 
 nodenet_lock = threading.Lock()
+
+if cfg['micropsi2'].get('profile_runner'):
+    import cProfile
+    import pstats
+    import io
 
 
 def add_signal_handler(handler):
@@ -75,6 +81,10 @@ class MicropsiRunner(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
+        if cfg['micropsi2'].get('profile_runner'):
+            self.profiler = cProfile.Profile()
+        else:
+            self.profiler = None
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
@@ -98,9 +108,15 @@ class MicropsiRunner(threading.Thread):
                 if nodenet.is_active:
                     log = True
                     try:
+                        if self.profiler:
+                            self.profiler.enable()
                         nodenet.step()
+                        if self.profiler:
+                            self.profiler.disable()
                         nodenet.update_monitors()
                     except:
+                        if self.profiler:
+                            self.profiler.disable()
                         nodenet.is_active = False
                         logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
                         MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
@@ -120,6 +136,13 @@ class MicropsiRunner(threading.Thread):
                 self.total_steps += 1
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
+                    if self.profiler:
+                        s = io.StringIO()
+                        sortby = 'cumtime'
+                        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats('micropsi_core')
+                        print(s.getvalue())
+
                     logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0

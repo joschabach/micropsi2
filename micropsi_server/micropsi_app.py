@@ -26,7 +26,11 @@ import os
 import json
 import inspect
 from micropsi_server import minidoc
-from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE, SERVER
+
+from configuration import config as cfg
+
+VERSION = cfg['micropsi2']['version']
+APPTITLE = cfg['micropsi2']['apptitle']
 
 APP_PATH = os.path.dirname(__file__)
 
@@ -1175,13 +1179,16 @@ def get_available_recipes():
 
 # -----------------------------------------------------------------------------------------------
 
-def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
-    print("Starting App on Port " + str(DEFAULT_PORT))
-    run(micropsi_app, host=host, port=port, quiet=True, server=SERVER)
+def main(host=None, port=None):
+    host = host or cfg['micropsi2']['host']
+    port = port or cfg['micropsi2']['port']
+    server = cfg['micropsi2']['server']
+    print("Starting App on Port " + str(port))
+    run(micropsi_app, host=host, port=port, quiet=True, server=server)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)
-    parser.add_argument('-d', '--host', type=str, default=DEFAULT_HOST)
-    parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT)
+    parser.add_argument('-d', '--host', type=str, default=cfg['micropsi2']['host'])
+    parser.add_argument('-p', '--port', type=int, default=cfg['micropsi2']['port'])
     args = parser.parse_args()
     main(host=args.host, port=args.port)

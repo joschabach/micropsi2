@@ -140,8 +140,8 @@ class MicropsiRunner(threading.Thread):
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
-                        ps.print_stats('micropsi_core')
-                        print(s.getvalue())
+                        ps.print_stats('nodenet')
+                        logging.getLogger("nodenet").debug(s.getvalue())
 
                     logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0

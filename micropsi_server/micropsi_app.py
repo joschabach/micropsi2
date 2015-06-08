@@ -1052,6 +1052,9 @@ def delete_node(nodenet_uid, node_uid):
 def align_nodes(nodenet_uid, nodespace):
     return runtime.align_nodes(nodenet_uid, nodespace)
 
+@rpc("generate_netapi_fragment", permission_required="manage nodenets")
+def generate_netapi_fragment(nodenet_uid, node_uids):
+    return True, runtime.generate_netapi_fragment(nodenet_uid, node_uids)
 
 @rpc("get_available_node_types")
 def get_available_node_types(nodenet_uid):

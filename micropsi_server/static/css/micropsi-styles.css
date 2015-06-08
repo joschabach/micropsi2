@@ -451,3 +451,8 @@ table.emoexpression td {
 .modal {
   top: 100px !important;
 }
+
+#copy_paste_text {
+  width: 100%;
+  min-height: 250px;
+}

@@ -1206,31 +1206,31 @@ class TheanoNodenet(Nodenet):
             if activator_type is not None and len(activator_type) > 0:
                 self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
 
-        node_proxy = self.get_node(uid)
-
         if nodetype not in STANDARD_NODETYPES:
+            node_proxy = self.get_node(uid)
             self.native_module_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
         elif nodetype == "Comment":
+            node_proxy = self.get_node(uid)
             self.comment_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
 
         for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
-            if gate in node_proxy.nodetype.gatetypes:
+            if gate in self.get_nodetype(nodetype).gatetypes:
                 for gate_parameter in parameters:
-                    node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+                    self.set_node_gate_parameter(uid, gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:
             for gate, parameters in gate_parameters.items():
-                if gate in node_proxy.nodetype.gatetypes:
+                if gate in self.get_nodetype(nodetype).gatetypes:
                     for gate_parameter in parameters:
-                        node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+                        self.set_node_gate_parameter(uid, gate, gate_parameter, parameters[gate_parameter])
 
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():
-                if gate in node_proxy.nodetype.gatetypes:
-                    node_proxy.set_gatefunction_name(gate, gate_function)
+                if gate in self.get_nodetype(nodetype).gatetypes:
+                    self.set_node_gatefunction_name(uid, gate, gate_function)
 
         # initialize activation to zero
         a_array = self.a.get_value(borrow=True)

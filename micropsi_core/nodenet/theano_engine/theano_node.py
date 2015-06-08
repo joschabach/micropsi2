@@ -126,28 +126,7 @@ class TheanoNode(Node):
         return result
 
     def set_gate_parameter(self, gate_type, parameter, value):
-
-        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
-        if parameter == 'threshold':
-            g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
-            g_threshold_array[elementindex] = value
-            self._nodenet.g_threshold.set_value(g_threshold_array, borrow=True)
-        elif parameter == 'amplification':
-            g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
-            g_amplification_array[elementindex] = value
-            self._nodenet.g_amplification.set_value(g_amplification_array, borrow=True)
-        elif parameter == 'minimum':
-            g_min_array = self._nodenet.g_min.get_value(borrow=True)
-            g_min_array[elementindex] = value
-            self._nodenet.g_min.set_value(g_min_array, borrow=True)
-        elif parameter == 'maximum':
-            g_max_array = self._nodenet.g_max.get_value(borrow=True)
-            g_max_array[elementindex] = value
-            self._nodenet.g_max.set_value(g_max_array, borrow=True)
-        elif parameter == 'theta':
-            g_theta_array = self._nodenet.g_theta.get_value(borrow=True)
-            g_theta_array[elementindex] = value
-            self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
+        self._nodenet.set_node_gate_parameter(self.uid, gate_type, parameter, value)
 
     def get_gate_parameters(self):
         return self.clone_non_default_gate_parameters()

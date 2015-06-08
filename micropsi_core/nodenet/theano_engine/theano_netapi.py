@@ -16,16 +16,6 @@ class TheanoNetAPI(NetAPI):
     def floatX(self):
         return self.__nodenet.numpyfloatX
 
-    def prepare_link_creation(self):
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
-        w_matrix = w_matrix.tolil()
-        self.__nodenet.w.set_value(w_matrix, borrow=True)
-
-    def commit_link_creation(self):
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
-        w_matrix = w_matrix.tocsr()
-        self.__nodenet.w.set_value(w_matrix, borrow=True)
-
     def get_selectors(self, group):
         """
         Returns The indices for the elements for the given group, as an ndarray of ints.

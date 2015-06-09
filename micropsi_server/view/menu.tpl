@@ -97,15 +97,30 @@
                     %end
                 </div>
             %end
-                <div id="simulation_controls" class="btn-group pull-right">
-                    <span class="btn step_counters">
+                <div id="simulation_controls" class="dropdown btn-group pull-right">
+                    <span class="btn running_indicator disabled">
+                        <span class="running_icon runner_paused"><img src="/static/img/resting.gif" /></span>
+                        <span class="running_icon runner_running" style="display:none"><img src="/static/img/working.gif" /></span>
+                        <span class="running_text running_conditional" style="display:none">
+                            <span>Condition:</span>
+                            <span class="runner_condition">Monitor</span>
+                        </span>
+                    </span>
+                    <span class="btn step_counters  disabled">
                         World:<span class="world_step">0</span><br/>
-                        Net:<span class="nodenet_step">0</span></span>
+                        Net:<span class="nodenet_step">0</span>
+                    </span>
                   <a href="#" id="nodenet_reset" class="btn" data-nodenet-control><i class="icon-fast-backward"></i></a>
-                  <a href="#" id="nodenet_start" class="btn" data-nodenet-control><i class="icon-play"></i></a>
+                  <a href="#" id="nodenet_start" class="btn" data-toggle="dropdown" data-nodenet-control><i class="icon-play"></i></a>
+                    <ul id="run_nodenet_choices" class="run_nodenet_choices dropdown-menu">
+                        <li><a href="#run" id="run_nodenet" data-run="indef">Run indefinitely</a></li>
+                        <li><a href="#condition" id="run_nodenet_condition" data-run="condition">Run until condition is met</a></li>
+                    </ul>
+
                   <a href="#" id="nodenet_step_forward" class="btn" data-nodenet-control><i class="icon-step-forward"></i></a>
                   <a href="#" id="nodenet_stop" class="btn" data-nodenet-control><i class="icon-pause"></i></a>
                 </div>
+
         </div>
     </div>
 </div>

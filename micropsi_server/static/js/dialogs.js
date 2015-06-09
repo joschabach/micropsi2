@@ -400,6 +400,46 @@ $(function() {
         });
     });
 
+    $('#run_nodenet_condition').on('click', function(event){
+        api.call('get_monitoring_info', {nodenet_uid: currentNodenet}, function(data){
+            var html = '';
+            for(var key in data.monitors){
+                html += '<option value="'+key+'">'+data.monitors[key].name+'</option>';
+            }
+            $('#run_condition_monitor_selector').html(html);
+            $('#run_nodenet_dialog').modal('show');
+        });
+    });
+
+    function handleRunConditionally(evt){
+        evt.preventDefault();
+        var text = '';
+        var params = {nodenet_uid: currentNodenet};
+        params.steps = $('#run_condition_steps').val() || null;
+        if(params.steps && params.steps > 0){
+            text = "run " + params.steps + " steps";
+        }
+        var monitor_val = $('#run_condition_monitor_value').val();
+        if (monitor_val){
+            params.monitor = {
+                'uid': $('#run_condition_monitor_selector').val(),
+                'value': monitor_val
+            }
+            text += "monitor = " + monitor_val;
+        }
+        api.call('start_simulation_with_condition', params, function(){
+            $(document).trigger('runner_started');
+        });
+
+        if(text){
+            $('#simulation_controls .runner_condition').html(text);
+            $('#simulation_controls .running_text').show();
+        }
+        $('#run_nodenet_dialog').modal('hide');
+    }
+
+    $('#run_nodenet_dialog button.btn-primary').on('click', handleRunConditionally);
+    $('#run_nodenet_dialog form').on('submit', handleRunConditionally);
 
     var recipes = {};
     var recipe_name_input = $('#recipe_name_input');
@@ -455,7 +495,6 @@ $(function() {
             var options = '';
             var items = Object.values(data);
             var sorted = items.sort(sortByName);
-            console.log(sorted)
             for(var idx in sorted){
                 options += '<option>' + items[idx].name + '</option>';
             }
@@ -556,9 +595,14 @@ function setButtonStates(running){
     if(running){
         $('#nodenet_start').addClass('active');
         $('#nodenet_stop').removeClass('active');
+        $('#simulation_controls .runner_running').show();
+        $('#simulation_controls .runner_paused').hide();
     } else {
         $('#nodenet_start').removeClass('active');
         $('#nodenet_stop').addClass('active');
+        $('#simulation_controls .runner_running').hide();
+        $('#simulation_controls .runner_paused').show();
+        $('#simulation_controls .running_text').hide();
     }
 }
 
@@ -615,7 +659,10 @@ function resetNodenet(event){
     }
 }
 $(function() {
-    $('#nodenet_start').on('click', startNodenetrunner);
+    // $('#nodenet_start').on('click', function(evt){
+        // startNodenetrunner(evt);
+        // clearTimeout(timeoutId);
+    // });
     $('#nodenet_stop').on('click', stopNodenetrunner);
     $('#nodenet_reset').on('click', resetNodenet);
     $('#nodenet_step_forward').on('click', stepNodenet);

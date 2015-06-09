@@ -479,16 +479,8 @@ var listeners = {}
 var simulationRunning = false;
 var currentNodenet;
 var runner_properties = {};
+var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 
-
-$(function(){
-    setButtonStates(false);
-    currentNodenet = $.cookie('selected_nodenet') || '';
-    currentWorld = $.cookie('selected_world') || '';
-    if(currentNodenet){
-        fetch_stepping_info();
-    }
-});
 
 register_stepping_function = function(type, input, callback){
     listeners[type] = {'input': input, 'callback': callback};
@@ -526,6 +518,8 @@ $(document).on('runner_started', fetch_stepping_info);
 $(document).on('runner_stepped', fetch_stepping_info);
 $(document).on('nodenet_changed', function(event, new_uid){
     currentNodenet = new_uid;
+    $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+    refreshNodenetList();
 })
 $(document).on('form_submit', function(event, data){
     if(data.url == '/config/runner'){
@@ -541,6 +535,22 @@ $(document).on('form_submit', function(event, data){
 api.call('get_runner_properties', {}, function(data){
     runner_properties = data;
 });
+
+function refreshNodenetList(){
+    $.get("/nodenet_list/"+(currentNodenet || ''), function(html){
+        $.each($('.nodenet_list'), function(idx, item){
+            $(item).html(html);
+            $('.nodenet_select', item).on('click', function(event){
+                event.preventDefault();
+                var el = $(event.target);
+                var uid = el.attr('data');
+                $(document).trigger('nodenet_changed', uid);
+            });
+        });
+    });
+}
+
+$(document).on('refreshNodenetList', refreshNodenetList);
 
 function setButtonStates(running){
     if(running){
@@ -618,12 +628,24 @@ $.extend( $.fn.dataTableExt.oStdClasses, {
 } );
 
 $(document).ready(function() {
+    currentNodenet = $.cookie('selected_nodenet') || '';
+    currentWorld = $.cookie('selected_world') || '';
     $('#nodenet_mgr').dataTable( {
         "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
         "sPaginationType": "bootstrap"
     } );
     $('textarea.loc').autogrow();
-} );
+    if($('.frontend_section').length == 1){
+        $('.frontend_section').addClass('in');
+    } else {
+        $.each(sections, cookiebindings);
+    }
+    refreshNodenetList();
+    setButtonStates(false);
+    if(currentNodenet){
+        fetch_stepping_info();
+    }
+});
 
 
 // section collapse bindings
@@ -645,12 +667,4 @@ function cookiebindings(index, name){
     }
 }
 
-var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 
-$(document).ready(function() {
-    if($('.frontend_section').length == 1){
-        $('.frontend_section').addClass('in');
-    } else {
-        $.each(sections, cookiebindings);
-    }
-});

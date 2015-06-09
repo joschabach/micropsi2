@@ -145,7 +145,6 @@ currentSimulationStep = 0;
 nodenetRunning = false;
 
 get_available_worlds();
-refreshNodenetList();
 
 registerResizeHandler();
 
@@ -160,28 +159,16 @@ $(document).on('load_nodenet', function(event, uid){
     setCurrentNodenet(uid, ns);
 });
 
+$(document).on('nodenet_changed', function(event, new_nodenet){
+    setCurrentNodenet(new_nodenet);
+});
+
 function toggleButtons(on){
     if(on)
         $('[data-nodenet-control]').removeAttr('disabled');
     else
         $('[data-nodenet-control]').attr('disabled', 'disabled');
 }
-
-function refreshNodenetList(){
-    $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
-        $('#nodenet_list .nodenet_select').on('click', function(event){
-            event.preventDefault();
-            var el = $(event.target);
-            var uid = el.attr('data');
-            $(document).trigger('nodenet_changed', uid);
-            setCurrentNodenet(uid, 'Root', true);
-        });
-    });
-}
-// make function available in global javascript scope
-window.refreshNodenetList = function(){
-    refreshNodenetList();
-};
 
 function get_available_worlds(){
     api.call('get_available_worlds', {}, success=function(data){
@@ -320,7 +307,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             } else {
                 setNodespaceData(data, (nodespaceChanged));
             }
-            refreshNodenetList();
+            $(document).trigger('refreshNodenetList');
             nodenet_loaded = true;
         },
         function(data) {

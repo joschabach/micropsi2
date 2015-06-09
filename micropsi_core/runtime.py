@@ -78,6 +78,7 @@ class MicropsiRunner(threading.Thread):
     number_of_samples = 0
     total_steps = 0
     granularity = 10
+    conditions = {}
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -89,6 +90,18 @@ class MicropsiRunner(threading.Thread):
         self.paused = True
         self.state = threading.Condition()
         self.start()
+
+    def check_conditions(self, nodenet_uid):
+        if nodenet_uid in MicropsiRunner.conditions:
+            conditions = MicropsiRunner.conditions[nodenet_uid]
+            net = nodenets[nodenet_uid]
+            if 'step' in conditions and net.current_step >= conditions['step']:
+                return False
+            if 'monitor' in conditions and net.current_step > 0:
+                monitor = net.get_monitor(conditions['monitor']['uid'])
+                if round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
+                    return False
+        return True
 
     def run(self):
         while runner['running']:
@@ -106,6 +119,10 @@ class MicropsiRunner(threading.Thread):
             for uid in nodenets:
                 nodenet = nodenets[uid]
                 if nodenet.is_active:
+                    if not self.check_conditions(uid):
+                        nodenet.is_active = False
+                        MicropsiRunner.conditions[uid] = {}
+                        continue
                     log = True
                     try:
                         if self.profiler:
@@ -430,6 +447,19 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
+def start_nodenetrunner_with_condition(nodenet_uid, steps=-1, monitor=None):
+    """ Starts the runner for the given nodenet, but registers a halt-condition
+    The runner will either stop after the nodenet was advanced for the given numbers of steps,
+    or, if the given monitor shows the given value"""
+    MicropsiRunner.conditions[nodenet_uid] = {}
+    if steps and steps > 0:
+        MicropsiRunner.conditions[nodenet_uid]['step'] = nodenets[nodenet_uid].current_step + steps
+    if monitor:
+        MicropsiRunner.conditions[nodenet_uid]['monitor'] = monitor
+    start_nodenetrunner(nodenet_uid)
+    return True
+
+
 def set_runner_properties(timestep, factor):
     """Sets the speed of the nodenet simulation in ms.
 
@@ -458,6 +488,7 @@ def get_is_nodenet_running(nodenet_uid):
 
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
+    MicropsiRunner.conditions[nodenet_uid] = {}
     nodenets[nodenet_uid].is_active = False
     test = {nodenets[uid].is_active for uid in nodenets}
     if True not in test:

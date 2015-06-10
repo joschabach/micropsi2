@@ -1836,6 +1836,14 @@ class TheanoNodenet(Nodenet):
         if group in self.nodegroups:
             del self.nodegroups[group]
 
+    def dump_group(self, group):
+        ids = self.nodegroups[group]
+        for element in ids:
+            nid = self.allocated_elements_to_nodes[element]
+            uid = node_to_id(nid)
+            node = self.get_node(uid)
+            print("%s %s" % (node.uid, node.name))
+
     def get_activations(self, group):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)

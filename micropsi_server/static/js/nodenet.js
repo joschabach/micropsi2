@@ -2388,7 +2388,7 @@ function initializeControls(){
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
         event.preventDefault();
         var nodespace = $(event.target).attr('data-nodespace');
-        if(nodespace != currentNodeSpace){
+        if(nodespace && nodespace != currentNodeSpace){
             refreshNodespace(nodespace, -1);
         }
     });

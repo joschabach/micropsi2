@@ -263,6 +263,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             for j in range(self.num_fov):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
+                self.supported_datasources.append(name)
 
         self.simulated_vision = False
         if 'simulate_vision' in cfg['minecraft']:

@@ -2339,7 +2339,10 @@ function loadLinksForSelection(callback){
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
             callback || function(data){
-                addLinks(data);
+                addLinks(data.links);
+                for(var uid in data.nodes){
+                    addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
+                }
                 view.draw();
                 if(uids.length == 1 && uids[0] in selection){
                     showNodeForm(uids[0]);

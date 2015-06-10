@@ -987,7 +987,7 @@ def test_get_links_for_nodes(app, test_nodenet, node):
         'node_uids': [node]
     })
     assert_success(response)
-    link = list(response.json_body['data'].values())[0]
+    link = list(response.json_body['data']['links'].values())[0]
     assert link['source_node_uid'] == node
 
 

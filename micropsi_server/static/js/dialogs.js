@@ -455,7 +455,6 @@ $(function() {
             var options = '';
             var items = Object.values(data);
             var sorted = items.sort(sortByName);
-            console.log(sorted)
             for(var idx in sorted){
                 options += '<option>' + items[idx].name + '</option>';
             }

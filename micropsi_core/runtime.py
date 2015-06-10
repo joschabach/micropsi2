@@ -1017,7 +1017,18 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        return True, func(netapi, **params)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler = cProfile.Profile()
+            profiler.enable()
+        result = func(netapi, **params)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler.disable()
+            s = io.StringIO()
+            sortby = 'cumtime'
+            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps.print_stats('nodenet')
+            logging.getLogger("nodenet").debug(s.getvalue())
+        return True, result
     else:
         return False, "Script not found"
 

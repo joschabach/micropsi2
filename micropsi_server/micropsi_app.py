@@ -36,7 +36,7 @@ APP_PATH = os.path.dirname(__file__)
 
 micropsi_app = Bottle()
 
-bottle.debug(False)  # devV
+bottle.debug(cfg['micropsi2'].get('debug', False))  # devV
 
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))

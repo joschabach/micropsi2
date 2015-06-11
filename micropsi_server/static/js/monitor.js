@@ -47,7 +47,8 @@ $(function(){
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
             api.call('load_nodenet', {
-                nodenet_uid: currentNodenet
+                nodenet_uid: currentNodenet,
+                include_links: false
             }, function(data) {
                 refreshMonitors();
             },

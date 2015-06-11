@@ -1686,8 +1686,11 @@ class TheanoNodenet(Nodenet):
         data = {}
         if nodespace_uid is not None:
             parent = nodespace_from_id(nodespace_uid)
+            node_ids = np.where(self.allocated_node_parents == parent)[0]
+        else:
+            node_ids = np.nonzero(self.allocated_nodes)[0]
         w_matrix = self.w.get_value(borrow=True)
-        for source_id in np.nonzero(self.allocated_nodes)[0]:
+        for source_id in node_ids:
             source_type = self.allocated_nodes[source_id]
             for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
                 gatecolumn = w_matrix[:, self.allocated_node_offsets[source_id] + gate_type]

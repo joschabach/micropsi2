@@ -936,7 +936,7 @@ class TheanoNodenet(Nodenet):
             return self.comment_instances[uid]
         elif uid in self.proxycache:
             return self.proxycache[uid]
-        elif uid in self.get_node_uids():
+        elif self.is_node(uid):
             id = node_from_id(uid)
             parent_id = self.allocated_node_parents[id]
             node = TheanoNode(self, nodespace_to_id(parent_id), uid, self.allocated_nodes[id])
@@ -949,7 +949,12 @@ class TheanoNodenet(Nodenet):
         return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
 
     def is_node(self, uid):
-        return uid in self.get_node_uids()
+        numid = node_from_id(uid)
+        return numid < self.NoN and self.allocated_nodes[numid] != 0
+
+    def announce_nodes(self, number_of_nodes, average_elements_per_node):
+        self.grow_number_of_nodes(number_of_nodes)
+        self.grow_number_of_elements(number_of_nodes*average_elements_per_node)
 
     def grow_number_of_nodes(self, growby):
 

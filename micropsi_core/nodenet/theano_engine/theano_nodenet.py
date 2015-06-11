@@ -1654,13 +1654,13 @@ class TheanoNodenet(Nodenet):
         if include_links:
             data['links'] = self.construct_links_dict(nodespace_uid)
 
-        followupnodes = []
-        for uid in data['nodes']:
-            followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+            followupnodes = []
+            for uid in data['nodes']:
+                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
 
-        for uid in followupnodes:
-            if self.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
-                data['nodes'][uid] = self.get_node(uid).data
+            for uid in followupnodes:
+                if self.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
+                    data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:
             data['user_prompt'] = self.user_prompt.copy()

@@ -400,7 +400,11 @@ $(function() {
         });
     });
 
+    $('#run_nodenet').on('click', function(event){
+        startNodenetrunner(event);
+    });
     $('#run_nodenet_condition').on('click', function(event){
+        event.preventDefault();
         api.call('get_monitoring_info', {nodenet_uid: currentNodenet}, function(data){
             var html = '';
             for(var key in data.monitors){

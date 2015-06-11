@@ -1,3 +1,4 @@
+from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 from micropsi_core import tools
 from configuration import config as cfg
@@ -55,7 +56,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
     num_steps_to_keep_vision_stable = 3
 
     def __init__(self, world, uid=None, **data):
-        super(MinecraftVision, self).__init__(world, uid, **data)
+
+        WorldAdapter.__init__(self, world, uid, **data)
 
         self.datatarget_feedback = {
             'take_exit_one': 0,

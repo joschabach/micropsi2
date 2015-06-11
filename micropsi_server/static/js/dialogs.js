@@ -524,6 +524,10 @@ var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 register_stepping_function = function(type, input, callback){
     listeners[type] = {'input': input, 'callback': callback};
 }
+unregister_stepping_function = function(type){
+    delete listeners[type];
+}
+
 
 fetch_stepping_info = function(){
     params = {

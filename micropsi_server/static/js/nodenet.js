@@ -457,7 +457,17 @@ function get_nodenet_data(){
     }
 }
 
-register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+
+if($('#nodenet_editor').height() > 0){
+    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+}
+
+$('#nodenet_editor').on('shown', function(){
+    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+});
+$('#nodenet_editor').on('hidden', function(){
+    unregister_stepping_function('nodenet');
+});
 
 function refreshNodespace(nodespace, step, callback){
     if(!nodespace) nodespace = currentNodeSpace;

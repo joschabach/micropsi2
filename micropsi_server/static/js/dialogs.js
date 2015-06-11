@@ -422,7 +422,8 @@ $(function() {
         }
     };
 
-    var run_recipe = function(){
+    var run_recipe = function(event){
+        event.preventDefault();
         var form = $('#recipe_modal form');
         data = form.serializeArray();
         parameters = {};

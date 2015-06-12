@@ -301,9 +301,11 @@ class TheanoNodenet(Nodenet):
 
         self.n_function_selector = None      # vector of per-gate node function selectors
         self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
-                                        # node. This could in theory be inferred with T.max() on upshifted versions of w,
-                                        # but for now, we manually track this property
+                                             # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                             # but for now, we manually track this property
         self.n_node_retlinked = None         # same for ret
+
+        self.__por_ret_dirty = True
 
         self.sparse = True
 
@@ -524,8 +526,6 @@ class TheanoNodenet(Nodenet):
         g_countdown = self.g_countdown.get_value(borrow=True)
         g_wait = self.g_wait.get_value(borrow=True)
         n_function_selector = self.n_function_selector.get_value(borrow=True)
-        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True)
-        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True)
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
@@ -550,8 +550,6 @@ class TheanoNodenet(Nodenet):
                  g_countdown=g_countdown,
                  g_wait=g_wait,
                  n_function_selector=n_function_selector,
-                 n_node_porlinked=n_node_porlinked,
-                 n_node_retlinked=n_node_retlinked,
                  sizeinformation=sizeinformation,
                  allocated_elements_to_activators=allocated_elements_to_activators,
                  allocated_nodespaces_por_activators=allocated_nodespaces_por_activators,
@@ -727,24 +725,15 @@ class TheanoNodenet(Nodenet):
                 else:
                     self.logger.warn("no g_wait in file, falling back to defaults")
 
-
                 if 'n_function_selector' in datafile:
                     self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
                 else:
                     self.logger.warn("no n_function_selector in file, falling back to defaults")
 
-
-                if 'n_node_porlinked' in datafile:
-                    self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
-                else:
-                    self.logger.warn("no n_node_porlinked in file, falling back to defaults")
-
-                if 'n_node_retlinked' in datafile:
-                    self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
-                else:
-                    self.logger.warn("no n_node_retlinked in file, falling back to defaults")
-
                 # reconstruct other states
+
+                self.__por_ret_dirty = True
+
                 if 'g_function_selector' in datafile:
                     g_function_selector = datafile['g_function_selector']
                     self.has_new_usages = True
@@ -923,6 +912,11 @@ class TheanoNodenet(Nodenet):
                                                         # but instead the world object itself
 
         with self.netlock:
+
+            if self.__por_ret_dirty:
+                self.rebuild_por_linked()
+                self.rebuild_ret_linked()
+                self.__por_ret_dirty = False
 
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
@@ -1709,7 +1703,7 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = gatecolumn[index].item()
 
-                    linkuid = node_to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+node_to_id(target_id)
+                    linkuid = "n%i:%s:%s:n%i" % (source_id, source_gate_type, target_slot_type, target_id)
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
@@ -1902,6 +1896,9 @@ class TheanoNodenet(Nodenet):
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
+        if self.has_pipes:
+            self.__por_ret_dirty = True
+
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 
@@ -1910,3 +1907,59 @@ class TheanoNodenet(Nodenet):
         a_rolled_array = np.roll(a_array, 7)
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)
+
+    def rebuild_por_linked(self):
+
+        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        w_matrix = self.w.get_value(borrow=True)
+
+        por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
+
+        slotrows = w_matrix[por_indices, :]
+        if not self.sparse:
+            linkedflags = np.any(slotrows, axis=1)
+        else:
+            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
+            max_values = slotrows.max(axis=1).todense()
+            linkedflags = max_values.astype(np.int8, copy=False)
+            linkedflags = np.minimum(linkedflags, 1)
+
+        n_node_porlinked_array[por_indices - 1] = linkedflags       # gen
+        n_node_porlinked_array[por_indices] = linkedflags           # por
+        n_node_porlinked_array[por_indices + 1] = linkedflags       # ret
+        n_node_porlinked_array[por_indices + 2] = linkedflags       # sub
+        n_node_porlinked_array[por_indices + 3] = linkedflags       # sur
+        n_node_porlinked_array[por_indices + 4] = linkedflags       # sub
+        n_node_porlinked_array[por_indices + 5] = linkedflags       # sur
+
+        self.n_node_porlinked.set_value(n_node_porlinked_array)
+
+    def rebuild_ret_linked(self):
+
+        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        w_matrix = self.w.get_value(borrow=True)
+
+        ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
+
+        slotrows = w_matrix[ret_indices, :]
+        if not self.sparse:
+            linkedflags = np.any(slotrows, axis=1)
+        else:
+            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
+            max_values = slotrows.max(axis=1).todense()
+            linkedflags = max_values.astype(np.int8, copy=False)
+            linkedflags = np.minimum(linkedflags, 1)
+
+        n_node_retlinked_array[ret_indices - 2] = linkedflags       # gen
+        n_node_retlinked_array[ret_indices - 1] = linkedflags       # por
+        n_node_retlinked_array[ret_indices] = linkedflags           # ret
+        n_node_retlinked_array[ret_indices + 1] = linkedflags       # sub
+        n_node_retlinked_array[ret_indices + 2] = linkedflags       # sur
+        n_node_retlinked_array[ret_indices + 3] = linkedflags       # cat
+        n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
+
+        self.n_node_retlinked.set_value(n_node_retlinked_array)

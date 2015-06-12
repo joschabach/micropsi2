@@ -254,13 +254,15 @@ $(function(){
             height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
         var xmax = Math.max(viewProperties.xvalues, currentSimulationStep);
+
+        var xvalues = viewProperties.xvalues;
         if(viewProperties.xvalues < 0){
-            viewProperties.xvalues = xmax;
+            xvalues = xmax;
         }
         var x = d3.scale.linear()
-            .domain([xmax - viewProperties.xvalues, xmax])
+            .domain([xmax - xvalues, xmax])
             .range([0, width]);
-        var xstart = xmax - viewProperties.xvalues;
+        var xstart = xmax - xvalues;
 
         var y1values = [];
         var y2values = [];
@@ -387,7 +389,7 @@ $(function(){
 
 
             var len = data.length;
-            data.splice(0, len - viewProperties.xvalues - 1);
+            data.splice(0, len - xvalues - 1);
             var color = '#' + uid.substr(2, 6);
             svg.append("path")
                 .datum(data)

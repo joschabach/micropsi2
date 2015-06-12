@@ -1044,8 +1044,6 @@ class TheanoNodenet(Nodenet):
         new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
         new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
         new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
-        new_n_node_porlinked[0:self.NoE] = self.n_node_porlinked.get_value(borrow=True)
-        new_n_node_retlinked[0:self.NoE] = self.n_node_retlinked.get_value(borrow=True)
 
         with self.netlock:
             self.NoE = new_NoE
@@ -1068,6 +1066,9 @@ class TheanoNodenet(Nodenet):
             self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
             self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
             self.has_new_usages = True
+
+        if self.has_pipes:
+            self.__por_ret_dirty = True
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 

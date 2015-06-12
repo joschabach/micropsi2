@@ -301,9 +301,11 @@ class TheanoNodenet(Nodenet):
 
         self.n_function_selector = None      # vector of per-gate node function selectors
         self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
-                                        # node. This could in theory be inferred with T.max() on upshifted versions of w,
-                                        # but for now, we manually track this property
+                                             # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                             # but for now, we manually track this property
         self.n_node_retlinked = None         # same for ret
+
+        self.__por_ret_dirty = True
 
         self.sparse = True
 
@@ -524,8 +526,6 @@ class TheanoNodenet(Nodenet):
         g_countdown = self.g_countdown.get_value(borrow=True)
         g_wait = self.g_wait.get_value(borrow=True)
         n_function_selector = self.n_function_selector.get_value(borrow=True)
-        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True)
-        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True)
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
@@ -550,8 +550,6 @@ class TheanoNodenet(Nodenet):
                  g_countdown=g_countdown,
                  g_wait=g_wait,
                  n_function_selector=n_function_selector,
-                 n_node_porlinked=n_node_porlinked,
-                 n_node_retlinked=n_node_retlinked,
                  sizeinformation=sizeinformation,
                  allocated_elements_to_activators=allocated_elements_to_activators,
                  allocated_nodespaces_por_activators=allocated_nodespaces_por_activators,
@@ -727,24 +725,15 @@ class TheanoNodenet(Nodenet):
                 else:
                     self.logger.warn("no g_wait in file, falling back to defaults")
 
-
                 if 'n_function_selector' in datafile:
                     self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
                 else:
                     self.logger.warn("no n_function_selector in file, falling back to defaults")
 
-
-                if 'n_node_porlinked' in datafile:
-                    self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
-                else:
-                    self.logger.warn("no n_node_porlinked in file, falling back to defaults")
-
-                if 'n_node_retlinked' in datafile:
-                    self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
-                else:
-                    self.logger.warn("no n_node_retlinked in file, falling back to defaults")
-
                 # reconstruct other states
+
+                self.__por_ret_dirty = True
+
                 if 'g_function_selector' in datafile:
                     g_function_selector = datafile['g_function_selector']
                     self.has_new_usages = True
@@ -924,6 +913,11 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
 
+            if self.__por_ret_dirty:
+                self.rebuild_por_linked()
+                self.rebuild_ret_linked()
+                self.__por_ret_dirty = False
+
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
@@ -936,7 +930,7 @@ class TheanoNodenet(Nodenet):
             return self.comment_instances[uid]
         elif uid in self.proxycache:
             return self.proxycache[uid]
-        elif uid in self.get_node_uids():
+        elif self.is_node(uid):
             id = node_from_id(uid)
             parent_id = self.allocated_node_parents[id]
             node = TheanoNode(self, nodespace_to_id(parent_id), uid, self.allocated_nodes[id])
@@ -949,7 +943,12 @@ class TheanoNodenet(Nodenet):
         return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
 
     def is_node(self, uid):
-        return uid in self.get_node_uids()
+        numid = node_from_id(uid)
+        return numid < self.NoN and self.allocated_nodes[numid] != 0
+
+    def announce_nodes(self, number_of_nodes, average_elements_per_node):
+        self.grow_number_of_nodes(number_of_nodes)
+        self.grow_number_of_elements(number_of_nodes*average_elements_per_node)
 
     def grow_number_of_nodes(self, growby):
 
@@ -1045,8 +1044,6 @@ class TheanoNodenet(Nodenet):
         new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
         new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
         new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
-        new_n_node_porlinked[0:self.NoE] = self.n_node_porlinked.get_value(borrow=True)
-        new_n_node_retlinked[0:self.NoE] = self.n_node_retlinked.get_value(borrow=True)
 
         with self.netlock:
             self.NoE = new_NoE
@@ -1069,6 +1066,9 @@ class TheanoNodenet(Nodenet):
             self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
             self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
             self.has_new_usages = True
+
+        if self.has_pipes:
+            self.__por_ret_dirty = True
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
@@ -1206,31 +1206,31 @@ class TheanoNodenet(Nodenet):
             if activator_type is not None and len(activator_type) > 0:
                 self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
 
-        node_proxy = self.get_node(uid)
-
         if nodetype not in STANDARD_NODETYPES:
+            node_proxy = self.get_node(uid)
             self.native_module_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
         elif nodetype == "Comment":
+            node_proxy = self.get_node(uid)
             self.comment_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
 
         for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
-            if gate in node_proxy.nodetype.gatetypes:
+            if gate in self.get_nodetype(nodetype).gatetypes:
                 for gate_parameter in parameters:
-                    node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+                    self.set_node_gate_parameter(uid, gate, gate_parameter, parameters[gate_parameter])
         if gate_parameters is not None:
             for gate, parameters in gate_parameters.items():
-                if gate in node_proxy.nodetype.gatetypes:
+                if gate in self.get_nodetype(nodetype).gatetypes:
                     for gate_parameter in parameters:
-                        node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
+                        self.set_node_gate_parameter(uid, gate, gate_parameter, parameters[gate_parameter])
 
         if gate_functions is not None:
             for gate, gate_function in gate_functions.items():
-                if gate in node_proxy.nodetype.gatetypes:
-                    node_proxy.set_gatefunction_name(gate, gate_function)
+                if gate in self.get_nodetype(nodetype).gatetypes:
+                    self.set_node_gatefunction_name(uid, gate, gate_function)
 
         # initialize activation to zero
         a_array = self.a.get_value(borrow=True)
@@ -1325,6 +1325,57 @@ class TheanoNodenet(Nodenet):
             self.allocated_nodespaces_cat_activators[parent] = 0
         elif self.allocated_nodespaces_exp_activators[parent] == node_from_id(uid):
             self.allocated_nodespaces_exp_activators[parent] = 0
+
+    def set_node_gate_parameter(self, uid, gate_type, parameter, value):
+        id = node_from_id(uid)
+        numerical_node_type = self.allocated_nodes[id]
+        nodetype = None
+        if numerical_node_type > MAX_STD_NODETYPE:
+            nodetype = self.get_nodetype(get_string_node_type(numerical_node_type, self.native_modules))
+
+        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
+        if parameter == 'threshold':
+            g_threshold_array = self.g_threshold.get_value(borrow=True)
+            g_threshold_array[elementindex] = value
+            self.g_threshold.set_value(g_threshold_array, borrow=True)
+        elif parameter == 'amplification':
+            g_amplification_array = self.g_amplification.get_value(borrow=True)
+            g_amplification_array[elementindex] = value
+            self.g_amplification.set_value(g_amplification_array, borrow=True)
+        elif parameter == 'minimum':
+            g_min_array = self.g_min.get_value(borrow=True)
+            g_min_array[elementindex] = value
+            self.g_min.set_value(g_min_array, borrow=True)
+        elif parameter == 'maximum':
+            g_max_array = self.g_max.get_value(borrow=True)
+            g_max_array[elementindex] = value
+            self.g_max.set_value(g_max_array, borrow=True)
+        elif parameter == 'theta':
+            g_theta_array = self.g_theta.get_value(borrow=True)
+            g_theta_array[elementindex] = value
+            self.g_theta.set_value(g_theta_array, borrow=True)
+
+    def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
+        id = node_from_id(uid)
+        numerical_node_type = self.allocated_nodes[id]
+        nodetype = None
+        if numerical_node_type > MAX_STD_NODETYPE:
+            nodetype = self.get_nodetype(get_string_node_type(numerical_node_type, self.native_modules))
+
+        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
+        self.g_function_selector.set_value(g_function_selector, borrow=True)
+        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
+            self.has_gatefunction_absolute = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
+            self.has_gatefunction_sigmoid = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
+            self.has_gatefunction_tanh = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
+            self.has_gatefunction_rect = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
+            self.has_gatefunction_one_over_x = True
 
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
 
@@ -1630,8 +1681,11 @@ class TheanoNodenet(Nodenet):
         data = {}
         if nodespace_uid is not None:
             parent = nodespace_from_id(nodespace_uid)
+            node_ids = np.where(self.allocated_node_parents == parent)[0]
+        else:
+            node_ids = np.nonzero(self.allocated_nodes)[0]
         w_matrix = self.w.get_value(borrow=True)
-        for source_id in np.nonzero(self.allocated_nodes)[0]:
+        for source_id in node_ids:
             source_type = self.allocated_nodes[source_id]
             for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
                 gatecolumn = w_matrix[:, self.allocated_node_offsets[source_id] + gate_type]
@@ -1650,7 +1704,7 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = gatecolumn[index].item()
 
-                    linkuid = node_to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+node_to_id(target_id)
+                    linkuid = "n%i:%s:%s:n%i" % (source_id, source_gate_type, target_slot_type, target_id)
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
@@ -1785,6 +1839,14 @@ class TheanoNodenet(Nodenet):
         if group in self.nodegroups:
             del self.nodegroups[group]
 
+    def dump_group(self, group):
+        ids = self.nodegroups[group]
+        for element in ids:
+            nid = self.allocated_elements_to_nodes[element]
+            uid = node_to_id(nid)
+            node = self.get_node(uid)
+            print("%s %s" % (node.uid, node.name))
+
     def get_activations(self, group):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
@@ -1835,6 +1897,9 @@ class TheanoNodenet(Nodenet):
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
+        if self.has_pipes:
+            self.__por_ret_dirty = True
+
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 
@@ -1843,3 +1908,59 @@ class TheanoNodenet(Nodenet):
         a_rolled_array = np.roll(a_array, 7)
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)
+
+    def rebuild_por_linked(self):
+
+        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        w_matrix = self.w.get_value(borrow=True)
+
+        por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
+
+        slotrows = w_matrix[por_indices, :]
+        if not self.sparse:
+            linkedflags = np.any(slotrows, axis=1)
+        else:
+            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
+            max_values = slotrows.max(axis=1).todense()
+            linkedflags = max_values.astype(np.int8, copy=False)
+            linkedflags = np.minimum(linkedflags, 1)
+
+        n_node_porlinked_array[por_indices - 1] = linkedflags       # gen
+        n_node_porlinked_array[por_indices] = linkedflags           # por
+        n_node_porlinked_array[por_indices + 1] = linkedflags       # ret
+        n_node_porlinked_array[por_indices + 2] = linkedflags       # sub
+        n_node_porlinked_array[por_indices + 3] = linkedflags       # sur
+        n_node_porlinked_array[por_indices + 4] = linkedflags       # sub
+        n_node_porlinked_array[por_indices + 5] = linkedflags       # sur
+
+        self.n_node_porlinked.set_value(n_node_porlinked_array)
+
+    def rebuild_ret_linked(self):
+
+        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        w_matrix = self.w.get_value(borrow=True)
+
+        ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
+
+        slotrows = w_matrix[ret_indices, :]
+        if not self.sparse:
+            linkedflags = np.any(slotrows, axis=1)
+        else:
+            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
+            max_values = slotrows.max(axis=1).todense()
+            linkedflags = max_values.astype(np.int8, copy=False)
+            linkedflags = np.minimum(linkedflags, 1)
+
+        n_node_retlinked_array[ret_indices - 2] = linkedflags       # gen
+        n_node_retlinked_array[ret_indices - 1] = linkedflags       # por
+        n_node_retlinked_array[ret_indices] = linkedflags           # ret
+        n_node_retlinked_array[ret_indices + 1] = linkedflags       # sub
+        n_node_retlinked_array[ret_indices + 2] = linkedflags       # sur
+        n_node_retlinked_array[ret_indices + 3] = linkedflags       # cat
+        n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
+
+        self.n_node_retlinked.set_value(n_node_retlinked_array)

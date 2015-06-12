@@ -16,6 +16,9 @@ class TheanoNetAPI(NetAPI):
     def floatX(self):
         return self.__nodenet.numpyfloatX
 
+    def announce_nodes(self, numer_of_nodes, average_element_per_node):
+        self.__nodenet.announce_nodes(numer_of_nodes, average_element_per_node)
+
     def get_selectors(self, group):
         """
         Returns The indices for the elements for the given group, as an ndarray of ints.

@@ -35,6 +35,27 @@ $(function(){
 
     init();
 
+    $('.layoutbtn').on('click', function(event){
+        event.preventDefault();
+        var target = $(event.target);
+        if(!target.hasClass('active')){
+            var layout = target.attr('data');
+            if(layout == 'vertical'){
+                $('.layout_field').addClass('span6');
+            } else if(layout == 'horizontal'){
+                $('.layout_field').removeClass('span6');
+            }
+            refreshMonitors();
+            $('.layoutbtn').removeClass('active');
+            target.addClass('active');
+        }
+    })
+
+    $('#monitor_x_axis').on('change', function(){
+        viewProperties.xvalues = parseInt($('#monitor_x_axis').val());
+        refreshMonitors();
+    })
+
     $(document).on('monitorsChanged', function(evt, new_monitor){
         currentMonitors.push(new_monitor)
         refreshMonitors();
@@ -187,6 +208,9 @@ $(function(){
             height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
         var xmax = Math.max(viewProperties.xvalues, currentSimulationStep);
+        if(viewProperties.xvalues < 0){
+            viewProperties.xvalues = xmax;
+        }
         var x = d3.scale.linear()
             .domain([xmax - viewProperties.xvalues, xmax])
             .range([0, width]);

@@ -35,6 +35,8 @@ class RecordWebStorageHandler(logging.Handler):
             "logger": record.name,
             "time": record.created * 1000,
             "level": record.levelname,
+            "function": record.funcName,
+            "module": record.module,
             "msg": record.message
         }
         self.record_storage.append(dictrecord)
@@ -64,11 +66,13 @@ class MicropsiLogger():
 
     handlers = {}
 
+    default_format = '[%(name)8s] %(asctime)s - %(module)s:%(funcName)s() - %(levelname)s - %(message)s'
+
     def __init__(self, default_logging_levels={}, log_to_file=False):
 
         logging.basicConfig(
             level=self.logging_levels.get('logging_level', logging.INFO),
-            format='%(asctime)s %(name)s %(levelname)s %(message)s',
+            format=self.default_format,
             datefmt='%d.%m. %H:%M:%S'
         )
 
@@ -96,7 +100,7 @@ class MicropsiLogger():
 
         logging.getLogger("py.warnings").addHandler(self.handlers['system'])
 
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(self.default_format)
         for key in self.handlers:
             self.handlers[key].setFormatter(formatter)
             logging.getLogger(key).addHandler(self.handlers[key])

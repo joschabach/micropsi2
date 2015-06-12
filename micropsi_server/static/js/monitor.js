@@ -22,6 +22,8 @@ $(function(){
         'nodenet': false
     };
 
+    var logs = [];
+
     if($.cookie('capturedLoggers')){
         capturedLoggers = JSON.parse($.cookie('capturedLoggers'));
     }
@@ -54,6 +56,15 @@ $(function(){
     $('#monitor_x_axis').on('change', function(){
         viewProperties.xvalues = parseInt($('#monitor_x_axis').val());
         refreshMonitors();
+    });
+
+    var filter_timeout=null;
+    $('#monitor_filter_logs').on('keydown', function(event){
+        if(event.keyCode == 13){
+            event.preventDefault();
+        }
+        clearTimeout(filter_timeout);
+        filter_timeout = setTimeout(refreshLoggerView, 400);
     })
 
     $(document).on('monitorsChanged', function(evt, new_monitor){
@@ -127,14 +138,48 @@ $(function(){
     }
 
     function setLoggingData(data){
+        last_logger_call = data.logs.servertime;
+        for(var idx in data.logs.logs){
+            var item = data.logs.logs[idx];
+            logs.push(item);
+            var filter = $('#monitor_filter_logs').val();
+            if(filter){
+                var check = item.logger + item.msg + item.module + item.function + item.level
+                if(check.indexOf(filter) > -1){
+                    log_container.append('<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>');
+                }
+            } else {
+                log_container.append($('<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>'));
+            }
+        }
         var height = log_container.height();
         var scrollHeight = log_container[0].scrollHeight;
         var st = log_container.scrollTop();
         var doscroll = (st >= (scrollHeight - height));
-        last_logger_call = data.logs.servertime;
-        for(var idx in data.logs.logs){
-            log_container.append($('<span class="logentry log_'+data.logs.logs[idx].level+'">'+data.logs.logs[idx].logger+' | ' + data.logs.logs[idx].msg +'</span>'));
+        if(doscroll){
+            log_container.scrollTop(log_container[0].scrollHeight);
         }
+    }
+
+    function refreshLoggerView(){
+        var html = '';
+        var filter = $('#monitor_filter_logs').val();
+        for(var idx in logs){
+            item = logs[idx];
+            if(filter){
+                var check = item.logger + item.msg + item.module+ item.function + item.level
+                if(check.indexOf(filter) > -1){
+                    html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+                }
+            } else {
+                html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+            }
+        }
+        log_container.html(html);
+        var height = log_container.height();
+        var scrollHeight = log_container[0].scrollHeight;
+        var st = log_container.scrollTop();
+        var doscroll = (st >= (scrollHeight - height));
         if(doscroll){
             log_container.scrollTop(log_container[0].scrollHeight);
         }

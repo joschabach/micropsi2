@@ -38,7 +38,12 @@ h3 {
 .delete_monitor i { opacity: 0.5; }
 .delete_monitor:hover i { opacity: 1; }
 
-.logentry{ display:block; white-space: nowrap;}
+.logentry{
+  display:block;
+  white-space: pre;
+  font-size: 11px;
+  line-height: 13px;
+}
 
 .contentbox {
   height: 100%;

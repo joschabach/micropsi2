@@ -55,7 +55,7 @@
                 <h4>Logs</h4>
                 <div class="contentbox section">
                     <div id="logs"></div>
-                    <form class="form-horizontal monitor_seperator">
+                    <form class="form-horizontal span4 monitor_seperator">
                         <ul id="log_selector" class="monitor_list">
                             <li>
                                 <label for="log_system" class="system_log">
@@ -94,6 +94,10 @@
                                 </select>
                             </li>
                         </ul>
+                    </form>
+                    <form class="form-horizontal span4 monitor_list">
+                        <label for="monitor_filter_logs">Filter:</label>
+                        <input type="text" value="" id="monitor_filter_logs" class="input-small"/>
                     </form>
                 </div>
             </div>

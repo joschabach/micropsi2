@@ -138,6 +138,10 @@ $(function(){
     }
 
     function setLoggingData(data){
+        var height = log_container.height();
+        var scrollHeight = log_container[0].scrollHeight;
+        var st = log_container.scrollTop();
+        var doscroll = (st >= (scrollHeight - height));
         last_logger_call = data.logs.servertime;
         for(var idx in data.logs.logs){
             var item = data.logs.logs[idx];
@@ -152,10 +156,6 @@ $(function(){
                 log_container.append($('<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>'));
             }
         }
-        var height = log_container.height();
-        var scrollHeight = log_container[0].scrollHeight;
-        var st = log_container.scrollTop();
-        var doscroll = (st >= (scrollHeight - height));
         if(doscroll){
             log_container.scrollTop(log_container[0].scrollHeight);
         }

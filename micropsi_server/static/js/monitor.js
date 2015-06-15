@@ -4,7 +4,8 @@ $(function(){
     var viewProperties = {
         height: 420,
         padding: 20,
-        xvalues: 100
+        xvalues: 100,
+        max_log_entries: 2000
     };
 
     var container = $('#graph');
@@ -138,30 +139,22 @@ $(function(){
     }
 
     function setLoggingData(data){
+        last_logger_call = data.logs.servertime;
+        for(var idx in data.logs.logs){
+            logs.push(data.logs.logs[idx]);
+        }
+        if(logs.length > viewProperties.max_log_entries){
+            logs.splice(0, logs.length - viewProperties.max_log_entries);
+            console.log('splicing ' + logs.length - viewProperties.max_log_entries + ' entries');
+        }
+        refreshLoggerView();
+    }
+
+    function refreshLoggerView(){
         var height = log_container.height();
         var scrollHeight = log_container[0].scrollHeight;
         var st = log_container.scrollTop();
         var doscroll = (st >= (scrollHeight - height));
-        last_logger_call = data.logs.servertime;
-        for(var idx in data.logs.logs){
-            var item = data.logs.logs[idx];
-            logs.push(item);
-            var filter = $('#monitor_filter_logs').val().toLowerCase();
-            if(filter){
-                var check = (item.logger + item.msg + item.module+ item.function + item.level).toLowerCase();
-                if(check.indexOf(filter) > -1){
-                    log_container.append('<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>');
-                }
-            } else {
-                log_container.append($('<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>'));
-            }
-        }
-        if(doscroll){
-            log_container.scrollTop(log_container[0].scrollHeight);
-        }
-    }
-
-    function refreshLoggerView(){
         var html = '';
         var filter = $('#monitor_filter_logs').val().toLowerCase();
         for(var idx in logs){
@@ -176,10 +169,6 @@ $(function(){
             }
         }
         log_container.html(html);
-        var height = log_container.height();
-        var scrollHeight = log_container[0].scrollHeight;
-        var st = log_container.scrollTop();
-        var doscroll = (st >= (scrollHeight - height));
         if(doscroll){
             log_container.scrollTop(log_container[0].scrollHeight);
         }

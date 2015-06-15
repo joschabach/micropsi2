@@ -146,9 +146,9 @@ $(function(){
         for(var idx in data.logs.logs){
             var item = data.logs.logs[idx];
             logs.push(item);
-            var filter = $('#monitor_filter_logs').val();
+            var filter = $('#monitor_filter_logs').val().toLowerCase();
             if(filter){
-                var check = item.logger + item.msg + item.module + item.function + item.level
+                var check = (item.logger + item.msg + item.module+ item.function + item.level).toLowerCase();
                 if(check.indexOf(filter) > -1){
                     log_container.append('<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>');
                 }
@@ -163,11 +163,11 @@ $(function(){
 
     function refreshLoggerView(){
         var html = '';
-        var filter = $('#monitor_filter_logs').val();
+        var filter = $('#monitor_filter_logs').val().toLowerCase();
         for(var idx in logs){
             item = logs[idx];
             if(filter){
-                var check = item.logger + item.msg + item.module+ item.function + item.level
+                var check = (item.logger + item.msg + item.module+ item.function + item.level).toLowerCase();
                 if(check.indexOf(filter) > -1){
                     html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
                 }

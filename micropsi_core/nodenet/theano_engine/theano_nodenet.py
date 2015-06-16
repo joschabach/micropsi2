@@ -1685,16 +1685,14 @@ class TheanoNodenet(Nodenet):
         else:
             node_ids = np.nonzero(self.allocated_nodes)[0]
         w_matrix = self.w.get_value(borrow=True)
-        for source_id in node_ids:
-            source_type = self.allocated_nodes[source_id]
-            for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
-                gatecolumn = w_matrix[:, self.allocated_node_offsets[source_id] + gate_type]
+        for node_id in node_ids:
+
+            source_type = self.allocated_nodes[node_id]
+            for gate_type in range(get_gates_per_type(source_type, self.native_modules)):
+                gatecolumn = w_matrix[:, self.allocated_node_offsets[node_id] + gate_type]
                 links_indices = np.nonzero(gatecolumn)[0]
                 for index in links_indices:
                     target_id = self.allocated_elements_to_nodes[index]
-                    if nodespace_uid is not None:
-                        if self.allocated_node_parents[source_id] != parent and self.allocated_node_parents[target_id] != parent:
-                            continue
                     target_type = self.allocated_nodes[target_id]
                     target_slot_numerical = index - self.allocated_node_offsets[target_id]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
@@ -1704,7 +1702,37 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = gatecolumn[index].item()
 
-                    linkuid = "n%i:%s:%s:n%i" % (source_id, source_gate_type, target_slot_type, target_id)
+                    linkuid = "n%i:%s:%s:n%i" % (node_id, source_gate_type, target_slot_type, target_id)
+                    linkdata = {
+                        "uid": linkuid,
+                        "weight": weight,
+                        "certainty": 1,
+                        "source_gate_name": source_gate_type,
+                        "source_node_uid": node_to_id(node_id),
+                        "target_slot_name": target_slot_type,
+                        "target_node_uid": node_to_id(target_id)
+                    }
+                    data[linkuid] = linkdata
+
+            target_type = self.allocated_nodes[node_id]
+            for slot_type in range(get_slots_per_type(target_type, self.native_modules)):
+                slotrow = w_matrix[self.allocated_node_offsets[node_id] + slot_type]
+                if self.sparse:
+                    links_indices = np.nonzero(slotrow)[1]
+                else:
+                    links_indices = np.nonzero(slotrow)[0]
+                for index in links_indices:
+                    source_id = self.allocated_elements_to_nodes[index]
+                    source_type = self.allocated_nodes[source_id]
+                    source_gate_numerical = index - self.allocated_node_offsets[source_id]
+                    source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                    target_slot_type = get_string_slot_type(slot_type, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                    if self.sparse:
+                        weight = float(slotrow[0, index])
+                    else:
+                        weight = slotrow[index].item()
+
+                    linkuid = "n%i:%s:%s:n%i" % (source_id, source_gate_type, target_slot_type, node_id)
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
@@ -1712,9 +1740,10 @@ class TheanoNodenet(Nodenet):
                         "source_gate_name": source_gate_type,
                         "source_node_uid": node_to_id(source_id),
                         "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(target_id)
+                        "target_node_uid": node_to_id(node_id)
                     }
                     data[linkuid] = linkdata
+
         return data
 
     def construct_native_modules_and_comments_dict(self):

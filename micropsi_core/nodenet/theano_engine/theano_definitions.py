@@ -248,6 +248,30 @@ def get_gates_per_type(type, nativemodules=None):
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
+def get_slots_per_type(type, nativemodules=None):
+    if type == REGISTER:
+        return 1
+    elif type == SENSOR:
+        return 1
+    elif type == ACTUATOR:
+        return 1
+    elif type == ACTIVATOR:
+        return 0
+    elif type == CONCEPT:
+        return 7
+    elif type == SCRIPT:
+        return 7
+    elif type == PIPE:
+        return 7
+    elif type == COMMENT:
+        return 0
+    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
+        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
+        return len(native_module_definition.slottypes)
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
+
+
 def node_to_id(numericid):
     return "n%i" % numericid
 

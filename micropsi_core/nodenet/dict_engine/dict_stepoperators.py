@@ -62,8 +62,8 @@ class DictCalculate(Calculate):
             del everythingelse[key]
 
         self.calculate_node_functions(activators)       # activators go first
-        self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
         self.calculate_node_functions(everythingelse)   # then all the peasant nodes get calculated
+        self.calculate_node_functions(nativemodules)    # then native modules, so API sees a deterministic state
 
         for uid, node in activators.items():
             node.activation = nodenet.get_nodespace(node.parent_nodespace).get_activator_value(node.get_parameter('type'))
@@ -91,4 +91,4 @@ class DictPORRETDecay(StepOperator):
                 if decay_factor and pordecay is not None and pordecay > 0:
                     for link in porgate.get_links():
                         if link.weight > 0:
-                            link.set_weight(max(link.weight * pordecay, 0))
+                            link._set_weight(max(link.weight * pordecay, 0))

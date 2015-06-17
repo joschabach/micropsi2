@@ -92,6 +92,6 @@ class DictLink(Link):
         self.__source_gate._unregister_outgoing(self)
         self.__target_slot._unregister_incoming(self)
 
-    def set_weight(self, weight, certainty=1):
+    def _set_weight(self, weight, certainty=1):
         self.__weight = weight
         self.__certainty = certainty

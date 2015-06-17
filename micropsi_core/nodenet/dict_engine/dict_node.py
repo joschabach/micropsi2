@@ -61,8 +61,8 @@ class DictNode(NetEntity, Node):
             activation = 0
 
         self.sheaves[sheaf]['activation'] = float(activation)
-        if len(self.nodetype.gatetypes):
-            self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
+        if 'gen' in self.nodetype.gatetypes:
+            self.set_gate_activation('gen', activation, sheaf)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, gate_functions=None, **_):
@@ -353,7 +353,7 @@ class DictNode(NetEntity, Node):
         if link is None:
             link = DictLink(self, gate_name, target, slot_name)
 
-        link.set_weight(weight, certainty)
+        link._set_weight(weight, certainty)
         return link
 
     def unlink_completely(self):

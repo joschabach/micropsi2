@@ -1916,9 +1916,14 @@ class TheanoNodenet(Nodenet):
 
     def set_link_weights(self, group_from, group_to, new_w):
         if group_from not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_from)
+            raise ValueError("group_from %s does not exist." % group_from)
         if group_to not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_to)
+            raise ValueError("group_to %s does not exist." % group_to)
+        if len(self.nodegroups[group_from]) != new_w.shape[1]:
+            raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[group_from]), new_w.shape[1]))
+        if len(self.nodegroups[group_to]) != new_w.shape[0]:
+            raise ValueError("froup_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[group_to]), new_w.shape[0]))
+
         w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[group_from]
         grp_to = self.nodegroups[group_to]

@@ -353,7 +353,7 @@ class DictNode(NetEntity, Node):
         if link is None:
             link = DictLink(self, gate_name, target, slot_name)
 
-        link.set_weight(weight, certainty)
+        link._set_weight(weight, certainty)
         return link
 
     def unlink_completely(self):

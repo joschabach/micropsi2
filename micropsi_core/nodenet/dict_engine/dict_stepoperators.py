@@ -91,4 +91,4 @@ class DictPORRETDecay(StepOperator):
                 if decay_factor and pordecay is not None and pordecay > 0:
                     for link in porgate.get_links():
                         if link.weight > 0:
-                            link.set_weight(max(link.weight * pordecay, 0))
+                            link._set_weight(max(link.weight * pordecay, 0))

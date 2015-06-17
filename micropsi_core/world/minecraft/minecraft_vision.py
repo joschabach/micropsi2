@@ -169,7 +169,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     return
 
                 # route activation of fovea actors /datatargets to fovea position sensors
-                self.active_fovea_actor = "fov_act_00_00"  # snap back to (0,0)
+                self.active_fovea_actor = "fov_act__00_00"  # snap back to (0,0)
+                has_non_zero = False
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
                         actor_name = "fov_act__%02d_%02d" % (x, y)
@@ -179,6 +180,9 @@ class MinecraftVision(MinecraftGraphLocomotion):
                             # provide action feedback for fovea actor
                             self.datatarget_feedback[actor_name] = 1.
                             self.active_fovea_actor = actor_name
+                            has_non_zero = True
+                if not has_non_zero:
+                    self.datasources["fov_pos__00_00"] = 1.
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder

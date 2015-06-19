@@ -92,7 +92,7 @@ class DictNode(NetEntity, Node):
 
         for gate_name in gate_parameters:
             for key in gate_parameters[gate_name]:
-                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults.get(key, None):
+                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults[gate_name].get(key, None):
                     if gate_name not in self.__non_default_gate_parameters:
                         self.__non_default_gate_parameters[gate_name] = {}
                     self.__non_default_gate_parameters[gate_name][key] = gate_parameters[gate_name][key]

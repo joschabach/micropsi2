@@ -683,6 +683,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     else:
         return False, "Could not clone nodes. See log for details."
 
+
 def __pythonify(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
     return re.sub('(\s+)', r'_', s1)
@@ -692,11 +693,28 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     idmap = {}
     nodenet = get_nodenet(nodenet_uid)
     nodes = []
+    nodespaces = []
     for node_uid in node_uids:
         if not nodenet.is_nodespace(node_uid):
             nodes.append(nodenet.get_node(node_uid))
+        else:
+            nodespaces.append(nodenet.get_nodespace(node_uid))
 
-    nodes = sorted(nodes, key=lambda node: node.position[1]*1000 + node.position[0])
+    nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
+    nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
+
+    # nodespaces
+    for i, nodespace in enumerate(nodespaces):
+        name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
+        varname = "nodespace%i" % i
+        if name:
+            pythonname = __pythonify(name)
+            if pythonname not in idmap.values():
+                varname = pythonname
+            lines.append("%s = netapi.create_node('Nodespace', None, \"%s\")" % (varname, name))
+        else:
+            lines.append("%s = netapi.create_node('Nodespace', None)" % (varname))
+        idmap[nodespace.uid] = varname
 
     # nodes and gates
     i = 0
@@ -796,7 +814,8 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
     origin = None
     originname = None
-    for node in nodes:
+    for node in nodes + nodespaces:
+
         if origin is None:
             originname = "%s_pos" % idmap[node.uid]
             origin = node.position

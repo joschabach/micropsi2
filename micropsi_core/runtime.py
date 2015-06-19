@@ -686,7 +686,8 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
 def __pythonify(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
-    return re.sub('(\s+)', r'_', s1)
+    return re.sub('([\s+\W])', '_', s1)
+
 
 def generate_netapi_fragment(nodenet_uid, node_uids):
     lines = []

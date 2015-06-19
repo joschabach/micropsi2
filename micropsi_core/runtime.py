@@ -718,14 +718,13 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         idmap[nodespace.uid] = varname
 
     # nodes and gates
-    i = 0
-    for node in nodes:
+    for i, node in enumerate(nodes):
         name = node.name.strip() if node.name != node.uid else None
         varname = "node%i" % i
-
-        if name is not None:
-            if name != "" and name not in idmap.values():
-                varname = __pythonify(name)
+        if name:
+            pythonname = __pythonify(name)
+            if pythonname not in idmap.values():
+                varname = pythonname
             lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
         else:
             lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
@@ -737,7 +736,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
         nps = node.clone_parameters()
         for parameter, value in nps.items():
-            if value == None:
+            if value is None:
                 continue
 
             if parameter not in node.nodetype.parameter_defaults or node.nodetype.parameter_defaults[parameter] != value:
@@ -747,7 +746,6 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
                     lines.append("%s.set_parameter(\"%s\", %.2f)" % (varname, parameter, value))
 
         idmap[node.uid] = varname
-        i += 1
 
     lines.append("")
 
@@ -822,14 +820,14 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
             origin = node.position
             lines.append("%s = (10, 10)" % originname)
         else:
-            x = node.position[0] - origin[0]
-            y = node.position[1] - origin[1]
+            x = int(node.position[0] - origin[0])
+            y = int(node.position[1] - origin[1])
             signx = "+" if x >= 0 else ""
             signy = "+" if y >= 0 else ""
             lines.append("%s.position = (%s[0]%s%i, %s[1]%s%i)" % (idmap[node.uid], originname, signx, x, originname, signy, y))
 
-
     return "\n".join(lines)
+
 
 def set_node_position(nodenet_uid, node_uid, pos):
     """Positions the specified node at the given coordinates."""

@@ -420,25 +420,16 @@ $(function() {
         var text = '';
         var params = {nodenet_uid: currentNodenet};
         params.steps = $('#run_condition_steps').val() || null;
-        if(params.steps && params.steps > 0){
-            text = "run " + params.steps + " steps";
-        }
         var monitor_val = $('#run_condition_monitor_value').val();
         if (monitor_val){
             params.monitor = {
                 'uid': $('#run_condition_monitor_selector').val(),
                 'value': monitor_val
             }
-            text += "monitor = " + monitor_val;
         }
         api.call('start_simulation_with_condition', params, function(){
             $(document).trigger('runner_started');
         });
-
-        if(text){
-            $('#simulation_controls .runner_condition').html(text);
-            $('#simulation_controls .running_text').show();
-        }
         $('#run_nodenet_dialog').modal('hide');
     }
 
@@ -550,6 +541,22 @@ fetch_stepping_info = function(){
         }
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);
+        var text = [];
+        if(data.simulation_condition && data.simulation_condition){
+            if(data.simulation_condition.step){
+                text.push("step < " + data.simulation_condition.step);
+            }
+            if(data.simulation_condition.monitor){
+                text.push("monitor = " + data.simulation_condition.monitor.value);
+            }
+        }
+        if(text.length){
+            $('#simulation_controls .runner_condition').html(text.join(" or "));
+            $('#simulation_controls .running_conditional').show();
+        } else {
+            $('#simulation_controls .running_conditional').hide();
+        }
+
         var end = new Date().getTime();
         if(data.simulation_running){
             if(runner_properties.timestep - (end - start) > 0){

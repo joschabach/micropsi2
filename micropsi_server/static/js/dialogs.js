@@ -607,13 +607,16 @@ function refreshNodenetList(){
 
 $(document).on('refreshNodenetList', refreshNodenetList);
 
+var default_title = $(document).prop('title');
 function setButtonStates(running){
     if(running){
+        $(document).prop('title', "▶ " + default_title);
         $('#nodenet_start').addClass('active');
         $('#nodenet_stop').removeClass('active');
         $('#simulation_controls .runner_running').show();
         $('#simulation_controls .runner_paused').hide();
     } else {
+        $(document).prop('title', default_title);
         $('#nodenet_start').removeClass('active');
         $('#nodenet_stop').addClass('active');
         $('#simulation_controls .runner_running').hide();

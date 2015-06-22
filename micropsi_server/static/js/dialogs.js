@@ -566,6 +566,9 @@ fetch_stepping_info = function(){
             }
         }
         setButtonStates(data.simulation_running);
+    }, error=function(data, outcome, type){
+        $(document).trigger('runner_stopped');
+        api.defaultErrorCallback(data, outcome, type);
     });
 }
 

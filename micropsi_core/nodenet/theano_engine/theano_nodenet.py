@@ -797,6 +797,8 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
                 self.sensormap = initfrom['sensormap']
+            if 'current_step' in initfrom:
+                self.__step = initfrom['current_step']
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""

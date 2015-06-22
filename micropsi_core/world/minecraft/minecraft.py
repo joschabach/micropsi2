@@ -352,7 +352,7 @@ class MinecraftWorldAdapter(WorldAdapter):
         movement = self.translate_datatargets_to_xz()
 
         # note: movement info is sent regardless of change
-        self.world.spockplugin.dispatchMovement(self.position, movement[0], movement[1])
+        self.world.spockplugin.dispatchMovement(movement[0], movement[1])
 
         position = self.world.spockplugin.clientinfo.position
         amp = random.choice([-4, -3, 2, 3, 4])

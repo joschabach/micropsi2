@@ -1,3 +1,4 @@
+from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 from micropsi_core import tools
 from configuration import config as cfg
@@ -55,7 +56,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
     num_steps_to_keep_vision_stable = 3
 
     def __init__(self, world, uid=None, **data):
-        super(MinecraftVision, self).__init__(world, uid, **data)
+
+        WorldAdapter.__init__(self, world, uid, **data)
 
         self.datatarget_feedback = {
             'take_exit_one': 0,
@@ -75,6 +77,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
         self.target_loco_node_uid = None
         self.current_loco_node = None
+        self.active_fovea_actor = None
 
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
@@ -165,15 +168,21 @@ class MinecraftVision(MinecraftGraphLocomotion):
                 if not self.spockplugin.is_connected():
                     return
 
-                # route activation of fovea actors /datatargets to  fovea position sensors
+                # route activation of fovea actors /datatargets to fovea position sensors
+                self.active_fovea_actor = "fov_act__00_00"  # snap back to (0,0)
+                has_non_zero = False
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
                         actor_name = "fov_act__%02d_%02d" % (x, y)
                         sensor_name = "fov_pos__%02d_%02d" % (x, y)
                         self.datasources[sensor_name] = self.datatargets[actor_name]
                         if self.datatargets[actor_name] > 0.:
+                            # provide action feedback for fovea actor
                             self.datatarget_feedback[actor_name] = 1.
                             self.active_fovea_actor = actor_name
+                            has_non_zero = True
+                if not has_non_zero:
+                    self.datasources["fov_pos__00_00"] = 1.
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder
@@ -181,7 +190,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     # for patches pitch = 10 and yaw = random.randint(-10,10) were used
                     # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
                     self.spockplugin.clientinfo.position['pitch'] = 10
-                    self.spockplugin.clientinfo.position['yaw'] = random.randint(-10, 10)
+                    self.spockplugin.clientinfo.position['yaw'] = random.randint(1, 360)
                     self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
                     self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
                     # Note: datatargets carry spikes not continuous signals, ie. pitch & yaw will be 0 in the next step

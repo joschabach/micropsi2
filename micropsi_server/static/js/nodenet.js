@@ -2336,7 +2336,10 @@ function loadLinksForSelection(callback){
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
             callback || function(data){
-                addLinks(data);
+                addLinks(data.links);
+                for(var uid in data.nodes){
+                    addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
+                }
                 view.draw();
                 if(uids.length == 1 && uids[0] in selection){
                     showNodeForm(uids[0]);
@@ -2382,7 +2385,7 @@ function initializeControls(){
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
         event.preventDefault();
         var nodespace = $(event.target).attr('data-nodespace');
-        if(nodespace != currentNodeSpace){
+        if(nodespace && nodespace != currentNodeSpace){
             refreshNodespace(nodespace, -1);
         }
     });
@@ -2538,6 +2541,7 @@ function openMultipleNodesContextMenu(event){
     if(sametype){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
+    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
     menu.html(html);
     if(Object.keys(clipboard).length === 0){
         $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
@@ -2599,6 +2603,9 @@ function handleContextMenu(event) {
     if($el.parent().attr('data-copy-nodes') === ""){
         copyNodes();
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
+    } else if($el.parent().attr('data-generate-fragment') === ""){
+        generateFragment();
         return;
     } else if($el.parent().attr('data-paste-nodes') === ""){
         pasteNodes(clickPosition);
@@ -2879,6 +2886,19 @@ function createNativeModuleHandler(event){
         $('#native_module_name').val('');
         modal.modal("show");
     }
+}
+
+function generateFragment(){
+    api.call("generate_netapi_fragment",
+        {nodenet_uid:currentNodenet, node_uids: selection},
+        success=function(data){
+            var modal = $('#copy_paste_modal');
+            $('#copy_paste_modal .title').html("Netapi code fragment");
+            $('#copy_paste_text').val(data);
+            modal.modal("show");
+            $('#copy_paste_text').select();
+        }
+    );
 }
 
 copyPosition = null;

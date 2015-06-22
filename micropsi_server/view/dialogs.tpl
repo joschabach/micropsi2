@@ -80,6 +80,7 @@
             </fieldset>
             <fieldset class="recipe_param_container">
             </fieldset>
+            <input type="submit" style="display:none"/>
         </form>
     </div>
     <div class="modal-footer">

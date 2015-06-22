@@ -80,3 +80,21 @@ def test_register_runner_condition_monitor(test_nodenet):
     assert not micropsi.nodenets[test_nodenet].is_active
     assert micropsi.nodenets[test_nodenet].current_step == 3
     assert micropsi.MicropsiRunner.conditions[test_nodenet] == {}
+
+
+def test_get_links_for_nodes(test_nodenet, node):
+    api = micropsi.nodenets[test_nodenet].netapi
+    ns = api.create_node('Nodespace', None)
+    node = api.get_node(node)
+    pipe1 = api.create_node("Pipe", ns.uid, "pipe1")
+    pipe2 = api.create_node("Pipe", ns.uid, "pipe2")
+    pipe3 = api.create_node("Pipe", ns.uid, "pipe3")
+    api.link(node, 'gen', pipe1, 'gen')
+    api.link(pipe2, 'sub', node, 'sub')
+    data = micropsi.get_links_for_nodes(test_nodenet, [node.uid])
+    assert len(data['links'].values()) == 3  # node has a genloop
+    assert len(data['nodes'].values()) == 2
+    assert pipe1.uid in data['nodes']
+    assert pipe2.uid in data['nodes']
+    assert pipe3.uid not in data['nodes']
+>>>>>>> master

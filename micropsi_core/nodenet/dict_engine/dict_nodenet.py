@@ -364,13 +364,13 @@ class DictNodenet(Nodenet):
                     data['max_coords']['y'] = node.position[1]
                 if include_links:
                     links.extend(self.get_node(uid).get_associated_links())
-                followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+                    followupnodes.extend(self.get_node(uid).get_associated_node_uids())
         if include_links:
             for link in links:
                 data['links'][link.uid] = link.data
-        for uid in followupnodes:
-            if uid not in data['nodes']:
-                data['nodes'][uid] = self.get_node(uid).data
+            for uid in followupnodes:
+                if uid not in data['nodes']:
+                    data['nodes'][uid] = self.get_node(uid).data
         return data
 
     def delete_node(self, node_uid):

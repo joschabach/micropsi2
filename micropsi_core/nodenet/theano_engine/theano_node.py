@@ -98,20 +98,7 @@ class TheanoNode(Node):
         return TheanoGate(type, self, self._nodenet)
 
     def set_gatefunction_name(self, gate_type, gatefunction_name):
-        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
-        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
-        self._nodenet.g_function_selector.set_value(g_function_selector, borrow=True)
-        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
-            self._nodenet.has_gatefunction_absolute = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
-            self._nodenet.has_gatefunction_sigmoid = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
-            self._nodenet.has_gatefunction_tanh = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
-            self._nodenet.has_gatefunction_rect = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
-            self._nodenet.has_gatefunction_one_over_x = True
+        self._nodenet.set_node_gatefunction_name(self.uid, gate_type, gatefunction_name)
 
     def get_gatefunction_name(self, gate_type):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
@@ -126,28 +113,7 @@ class TheanoNode(Node):
         return result
 
     def set_gate_parameter(self, gate_type, parameter, value):
-
-        elementindex = self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)
-        if parameter == 'threshold':
-            g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
-            g_threshold_array[elementindex] = value
-            self._nodenet.g_threshold.set_value(g_threshold_array, borrow=True)
-        elif parameter == 'amplification':
-            g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
-            g_amplification_array[elementindex] = value
-            self._nodenet.g_amplification.set_value(g_amplification_array, borrow=True)
-        elif parameter == 'minimum':
-            g_min_array = self._nodenet.g_min.get_value(borrow=True)
-            g_min_array[elementindex] = value
-            self._nodenet.g_min.set_value(g_min_array, borrow=True)
-        elif parameter == 'maximum':
-            g_max_array = self._nodenet.g_max.get_value(borrow=True)
-            g_max_array[elementindex] = value
-            self._nodenet.g_max.set_value(g_max_array, borrow=True)
-        elif parameter == 'theta':
-            g_theta_array = self._nodenet.g_theta.get_value(borrow=True)
-            g_theta_array[elementindex] = value
-            self._nodenet.g_theta.set_value(g_theta_array, borrow=True)
+        self._nodenet.set_node_gate_parameter(self.uid, gate_type, parameter, value)
 
     def get_gate_parameters(self):
         return self.clone_non_default_gate_parameters()
@@ -264,8 +230,8 @@ class TheanoNode(Node):
             self._nodenet.g_expect.set_value(g_expect_array, borrow=True)
         elif self.type == "Pipe" and parameter == "wait":
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
-            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = int(min(value, 128))
-            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = int(min(value, 128))
+            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = min(int(value), 128)
+            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = min(int(value), 128)
             self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
         elif self.type == "Comment" and parameter == "comment":
             self.parameters[parameter] = value

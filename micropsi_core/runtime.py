@@ -8,6 +8,7 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
+import re
 
 __author__ = 'joscha'
 __date__ = '10.05.12'
@@ -714,6 +715,151 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
+def __pythonify(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
+    return re.sub('([\s+\W])', '_', s1)
+
+
+def generate_netapi_fragment(nodenet_uid, node_uids):
+    lines = []
+    idmap = {}
+    nodenet = get_nodenet(nodenet_uid)
+    nodes = []
+    nodespaces = []
+    for node_uid in node_uids:
+        if not nodenet.is_nodespace(node_uid):
+            nodes.append(nodenet.get_node(node_uid))
+        else:
+            nodespaces.append(nodenet.get_nodespace(node_uid))
+
+    nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
+    nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
+
+    # nodespaces
+    for i, nodespace in enumerate(nodespaces):
+        name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
+        varname = "nodespace%i" % i
+        if name:
+            pythonname = __pythonify(name)
+            if pythonname not in idmap.values():
+                varname = pythonname
+            lines.append("%s = netapi.create_node('Nodespace', None, \"%s\")" % (varname, name))
+        else:
+            lines.append("%s = netapi.create_node('Nodespace', None)" % (varname))
+        idmap[nodespace.uid] = varname
+
+    # nodes and gates
+    for i, node in enumerate(nodes):
+        name = node.name.strip() if node.name != node.uid else None
+        varname = "node%i" % i
+        if name:
+            pythonname = __pythonify(name)
+            if pythonname not in idmap.values():
+                varname = pythonname
+            lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
+        else:
+            lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
+
+        ndgps = node.clone_non_default_gate_parameters()
+        for gatetype in ndgps.keys():
+            for parameter, value in ndgps[gatetype].items():
+                lines.append("%s.set_gate_parameter('%s', \"%s\", %.2f)" % (varname, gatetype, parameter, value))
+
+        nps = node.clone_parameters()
+        for parameter, value in nps.items():
+            if value is None:
+                continue
+
+            if parameter not in node.nodetype.parameter_defaults or node.nodetype.parameter_defaults[parameter] != value:
+                if isinstance(value, str):
+                    lines.append("%s.set_parameter(\"%s\", \"%s\")" % (varname, parameter, value))
+                else:
+                    lines.append("%s.set_parameter(\"%s\", %.2f)" % (varname, parameter, value))
+
+        idmap[node.uid] = varname
+
+    lines.append("")
+
+    # links
+    for node in nodes:
+        for gatetype in node.get_gate_types():
+            gate = node.get_gate(gatetype)
+            for link in gate.get_links():
+                if link.source_node.uid not in idmap or link.target_node.uid not in idmap:
+                    continue
+
+                source_id = idmap[link.source_node.uid]
+                target_id = idmap[link.target_node.uid]
+
+                reciprocal = False
+                if link.source_gate.type == 'sub' and 'sur' in link.target_node.get_gate_types() and link.weight == 1:
+                    surgate = link.target_node.get_gate('sur')
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'sur' and rec_link.weight == 1:
+                            reciprocal = True
+                            lines.append("netapi.link_with_reciprocal(%s, %s, 'subsur')" % (source_id, target_id))
+
+                if link.source_gate.type == 'sur' and 'sub' in link.target_node.get_gate_types() and link.weight == 1:
+                    subgate = link.target_node.get_gate('sub')
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'sub' and rec_link.weight == 1:
+                            reciprocal = True
+
+                if link.source_gate.type == 'por' and 'ret' in link.target_node.get_gate_types() and link.weight == 1:
+                    surgate = link.target_node.get_gate('ret')
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'ret' and rec_link.weight == 1:
+                            reciprocal = True
+                            lines.append("netapi.link_with_reciprocal(%s, %s, 'porret')" % (source_id, target_id))
+
+                if link.source_gate.type == 'ret' and 'por' in link.target_node.get_gate_types() and link.weight == 1:
+                    subgate = link.target_node.get_gate('por')
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'por' and rec_link.weight == 1:
+                            reciprocal = True
+
+                if link.source_gate.type == 'cat' and 'exp' in link.target_node.get_gate_types() and link.weight == 1:
+                    surgate = link.target_node.get_gate('exp')
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'exp' and rec_link.weight == 1:
+                            reciprocal = True
+                            lines.append("netapi.link_with_reciprocal(%s, %s, 'catexp')" % (source_id, target_id))
+
+                if link.source_gate.type == 'exp' and 'cat' in link.target_node.get_gate_types() and link.weight == 1:
+                    subgate = link.target_node.get_gate('cat')
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'cat' and rec_link.weight == 1:
+                            reciprocal = True
+
+                if not reciprocal:
+                    weight = link.weight if link.weight != 1 else None
+                    if weight is not None:
+                        lines.append("netapi.link(%s, '%s', %s, '%s', %.8f)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
+                    else:
+                        lines.append("netapi.link(%s, '%s', %s, '%s')" % (source_id, gatetype, target_id, link.target_slot.type))
+
+    lines.append("")
+
+    # positions
+
+    origin = None
+    originname = None
+    for node in nodes + nodespaces:
+
+        if origin is None:
+            originname = "%s_pos" % idmap[node.uid]
+            origin = node.position
+            lines.append("%s = (10, 10)" % originname)
+        else:
+            x = int(node.position[0] - origin[0])
+            y = int(node.position[1] - origin[1])
+            signx = "+" if x >= 0 else ""
+            signy = "+" if y >= 0 else ""
+            lines.append("%s.position = (%s[0]%s%i, %s[1]%s%i)" % (idmap[node.uid], originname, signx, x, originname, signy, y))
+
+    return "\n".join(lines)
+
+
 def set_node_position(nodenet_uid, node_uid, pos):
     """Positions the specified node at the given coordinates."""
     nodenet = nodenets[nodenet_uid]
@@ -872,14 +1018,19 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
 def get_links_for_nodes(nodenet_uid, node_uids):
     """ Returns a dict of links connected to the given nodes """
     nodenet = nodenets[nodenet_uid]
-    nodes = [nodenet.get_node(uid) for uid in node_uids]
+    source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
-    for node in nodes:
-        for g in node.get_gate_types():
-            links.update(dict((l.uid, l.data) for l in node.get_gate(g).get_links()))
-        for s in node.get_slot_types():
-            links.update(dict((l.uid, l.data) for l in node.get_slot(s).get_links()))
-    return links
+    nodes = {}
+    for node in source_nodes:
+        nodelinks = node.get_associated_links()
+        for l in nodelinks:
+            links[l.uid] = l.data
+            if l.source_node.parent_nodespace != node.parent_nodespace:
+                nodes[l.source_node.uid] = l.source_node.data
+            if l.target_node.parent_nodespace != node.parent_nodespace:
+                nodes[l.target_node.uid] = l.target_node.data
+    return {'links': links, 'nodes': nodes}
+
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
@@ -920,7 +1071,18 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        return True, func(netapi, **params)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler = cProfile.Profile()
+            profiler.enable()
+        result = func(netapi, **params)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler.disable()
+            s = io.StringIO()
+            sortby = 'cumtime'
+            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps.print_stats('nodenet')
+            logging.getLogger("nodenet").debug(s.getvalue())
+        return True, result
     else:
         return False, "Script not found"
 

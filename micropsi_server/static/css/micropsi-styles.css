@@ -38,7 +38,12 @@ h3 {
 .delete_monitor i { opacity: 0.5; }
 .delete_monitor:hover i { opacity: 1; }
 
-.logentry{ display:block; white-space: nowrap;}
+.logentry{
+  display:block;
+  white-space: pre;
+  font-size: 11px;
+  line-height: 13px;
+}
 
 .contentbox {
   height: 100%;
@@ -476,4 +481,17 @@ table.emoexpression td {
 .navbar .btn.disabled {
   background-color: #e0e0e0;
   opacity: 1;
+}
+
+#copy_paste_text {
+  width: 100%;
+  min-height: 250px;
+}
+
+.layoutbtn {
+  width: 30px;
+  height: 30px;
+  font-size: 27px;
+  text-align: left;
+  padding-left: 6px;
 }

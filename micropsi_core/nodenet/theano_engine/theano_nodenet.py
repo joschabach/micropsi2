@@ -1940,8 +1940,8 @@ class TheanoNodenet(Nodenet):
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
-        uids_to_invalidate = [node_to_id(nid) for nid in self.nodegroups[group_from]]
-        uids_to_invalidate.extend([node_to_id(nid) for nid in self.nodegroups[group_to]])
+        uids_to_invalidate = [node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
 
         for uid in uids_to_invalidate:
             if uid in self.proxycache:

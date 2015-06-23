@@ -499,8 +499,13 @@ class DictNodenet(Nodenet):
             uid = "Root"
         return self.__nodespaces[uid]
 
-    def get_node_uids(self):
-        return list(self.__nodes.keys())
+    def get_node_uids(self, group=None):
+        if group is None:
+            return list(self.__nodes.keys())
+        elif group in self.nodegroups:
+            return self.nodegroups[group][0]
+        else:
+            return []
 
     def get_nodespace_uids(self):
         return list(self.__nodespaces.keys())

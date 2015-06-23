@@ -464,3 +464,9 @@ class NetAPI(object):
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
         self.__nodenet.set_link_weights(group_from, group_to, new_w)
+
+    def get_node_ids(self, group):
+        """
+        Returns the uids of the nodes in the given group
+        """
+        return self.__nodenet.get_node_uids(group)

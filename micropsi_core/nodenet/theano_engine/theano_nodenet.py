@@ -1240,6 +1240,8 @@ class TheanoNodenet(Nodenet):
             a_array[offset + element] = 0
         self.a.set_value(a_array)
 
+        self.integrity_check()
+
         return uid
 
     def delete_node(self, uid):
@@ -2000,3 +2002,44 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
 
         self.n_node_retlinked.set_value(n_node_retlinked_array)
+
+    def integrity_check(self):
+
+        for nid in range(self.NoN):
+            nodetype = self.allocated_nodes[nid]
+
+            if nodetype == 0:
+                continue
+
+            number_of_elements = get_elements_per_type(nodetype, self.native_modules)
+
+            elements = np.where(self.allocated_elements_to_nodes == nid)[0]
+            if len(elements) != number_of_elements:
+                self.logger.error("Integrity check error: Number of elements for node n%i should be %i, but is %i" % (nid, number_of_elements, len(elements)))
+
+            if number_of_elements > 0:
+                offset = self.allocated_node_offsets[nid]
+                if elements[0] != offset:
+                    self.logger.error("Integrity check error: First element for node n%i should be at %i, but is at %i" % (nid, offset, elements[0]))
+
+                for eid in range(number_of_elements):
+                    if self.allocated_elements_to_nodes[offset+eid] != nid:
+                        self.logger.error("Integrity check error: Element %i of node n%i is allocated to node n%i" % (eid, nid, self.allocated_elements_to_nodes[offset+eid]))
+
+                for snid in range(self.NoN):
+
+                    if snid == nid:
+                        continue
+
+                    snodetype = self.allocated_nodes[snid]
+
+                    if snodetype == 0:
+                        continue
+
+                    soffset = self.allocated_node_offsets[snid]
+                    snumber_of_elements = get_elements_per_type(snodetype, self.native_modules)
+
+                    for selement in range(soffset, snumber_of_elements):
+                        for element in range(offset, number_of_elements):
+                            if element == selement:
+                                self.logger.error("Integrity check error: Overlap at element %i, claimed by nodes n%i and n%i" % (element, nid, snid))

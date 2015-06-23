@@ -1569,10 +1569,10 @@ class TheanoNodenet(Nodenet):
                     n_node_retlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
             self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
-        if weight == 0:
-            linkid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
-            if linkid in self.proxycache:
-                del self.proxycache[linkid]
+        if source_node_uid in self.proxycache:
+            self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
+        if target_node_uid in self.proxycache:
+            self.proxycache[target_node_uid].get_slot(slot_type).invalidate_caches()
 
         return True
 
@@ -1939,6 +1939,13 @@ class TheanoNodenet(Nodenet):
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
+
+        uids_to_invalidate = [node_to_id(nid) for nid in self.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(nid) for nid in self.nodegroups[group_to]])
+
+        for uid in uids_to_invalidate:
+            if uid in self.proxycache:
+                del self.proxycache[uid]
 
         if self.has_pipes:
             self.__por_ret_dirty = True

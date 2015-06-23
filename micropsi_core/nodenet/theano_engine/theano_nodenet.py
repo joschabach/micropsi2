@@ -1240,8 +1240,6 @@ class TheanoNodenet(Nodenet):
             a_array[offset + element] = 0
         self.a.set_value(a_array)
 
-        self.integrity_check()
-
         return uid
 
     def delete_node(self, uid):

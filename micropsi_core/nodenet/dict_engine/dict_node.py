@@ -340,11 +340,11 @@ class DictNode(NetEntity, Node):
         target = self.nodenet.get_node(target_node_uid)
 
         if slot_name not in target.get_slot_types():
-            return None
+            raise ValueError("Node %s has no slot %s" % (target_node_uid, slot_name))
 
         gate = self.get_gate(gate_name)
         if gate is None:
-            return None
+            raise ValueError("Node %s has no slot %s" % (self.uid, gate_name))
         link = None
         for candidate in gate.get_links():
             if candidate.target_node.uid == target.uid and candidate.target_slot == slot_name:

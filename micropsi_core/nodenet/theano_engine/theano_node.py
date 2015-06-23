@@ -22,6 +22,9 @@ class TheanoNode(Node):
         self._nodenet = nodenet
         self._state = {}
 
+        self.__gatecache = {}
+        self.__slotcache = {}
+
         self.parameters = None
 
         strtype = get_string_node_type(type, nodenet.native_modules)
@@ -95,7 +98,9 @@ class TheanoNode(Node):
         self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
-        return TheanoGate(type, self, self._nodenet)
+        if type not in self.__gatecache:
+            self.__gatecache[type] = TheanoGate(type, self, self._nodenet)
+        return self.__gatecache[type]
 
     def set_gatefunction_name(self, gate_type, gatefunction_name):
         self._nodenet.set_node_gatefunction_name(self.uid, gate_type, gatefunction_name)
@@ -170,7 +175,9 @@ class TheanoNode(Node):
                 a_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
 
     def get_slot(self, type):
-        return TheanoSlot(type, self, self._nodenet)
+        if type not in self.__slotcache:
+            self.__slotcache[type] = TheanoSlot(type, self, self._nodenet)
+        return self.__slotcache[type]
 
     def unlink_completely(self):
 

@@ -37,7 +37,7 @@ NFPG_PIPE_CAT = 6
 NFPG_PIPE_EXP = 7
 
 def get_numerical_gate_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.gatetypes) > 0:
+    if nodetype is not None and type in nodetype.gatetypes:
         return nodetype.gatetypes.index(type)
     elif type == "gen":
         return GEN
@@ -79,7 +79,7 @@ def get_string_gate_type(type, nodetype=None):
 
 
 def get_numerical_slot_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.slottypes) > 0:
+    if nodetype is not None and type in nodetype.slottypes:
         return nodetype.slottypes.index(type)
     elif type == "gen":
         return GEN

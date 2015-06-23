@@ -1535,6 +1535,13 @@ class TheanoNodenet(Nodenet):
 
         ngt = get_numerical_gate_type(gate_type, source_nodetype)
         nst = get_numerical_slot_type(slot_type, target_nodetype)
+
+        if ngt >= get_gates_per_type(self.allocated_nodes[node_from_id(source_node_uid)], self.native_modules):
+            raise ValueError("Node %s does not have a gate of type %s" % (source_node_uid, gate_type))
+
+        if nst >= get_slots_per_type(self.allocated_nodes[node_from_id(target_node_uid)], self.native_modules):
+            raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
+
         w_matrix = self.w.get_value(borrow=True)
         x = self.allocated_node_offsets[node_from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[node_from_id(source_node_uid)] + ngt

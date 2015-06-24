@@ -22,6 +22,9 @@ class TheanoNode(Node):
         self._nodenet = nodenet
         self._state = {}
 
+        self.__gatecache = {}
+        self.__slotcache = {}
+
         self.parameters = None
 
         strtype = get_string_node_type(type, nodenet.native_modules)
@@ -95,7 +98,9 @@ class TheanoNode(Node):
         self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
-        return TheanoGate(type, self, self._nodenet)
+        if type not in self.__gatecache:
+            self.__gatecache[type] = TheanoGate(type, self, self._nodenet)
+        return self.__gatecache[type]
 
     def set_gatefunction_name(self, gate_type, gatefunction_name):
         self._nodenet.set_node_gatefunction_name(self.uid, gate_type, gatefunction_name)
@@ -170,7 +175,9 @@ class TheanoNode(Node):
                 a_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
 
     def get_slot(self, type):
-        return TheanoSlot(type, self, self._nodenet)
+        if type not in self.__slotcache:
+            self.__slotcache[type] = TheanoSlot(type, self, self._nodenet)
+        return self.__slotcache[type]
 
     def unlink_completely(self):
 
@@ -351,26 +358,26 @@ class TheanoGate(Gate):
         self.__node = node
         self.__nodenet = nodenet
         self.__numerictype = get_numerical_gate_type(type, node.nodetype)
+        self.__linkcache = None
 
     def get_links(self):
-        links = []
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
-        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
-        links_indices = np.nonzero(gatecolumn)[0]
-        for index in links_indices:
-            target_id = self.__nodenet.allocated_elements_to_nodes[index]
-            target_type = self.__nodenet.allocated_nodes[target_id]
-            target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
-            target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
-            target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-            linkid = "%s:%s:%s:n%i" % (self.node.uid, self.__type, target_slot_type, target_id)
-            if linkid in self.__nodenet.proxycache:
-                links.append(self.__nodenet.proxycache[linkid])
-            else:
+        if self.__linkcache is None:
+            self.__linkcache = []
+            w_matrix = self.__nodenet.w.get_value(borrow=True)
+            gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
+            links_indices = np.nonzero(gatecolumn)[0]
+            for index in links_indices:
+                target_id = self.__nodenet.allocated_elements_to_nodes[index]
+                target_type = self.__nodenet.allocated_nodes[target_id]
+                target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
+                target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
+                target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                 link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, node_to_id(target_id), target_slot_type)
-                self.__nodenet.proxycache[link.uid] = link
-                links.append(link)
-        return links
+                self.__linkcache.append(link)
+        return self.__linkcache
+
+    def invalidate_caches(self):
+        self.__linkcache = None
 
     def get_parameter(self, parameter_name):
         gate_parameters = self.__node.nodetype.gate_defaults[self.type]
@@ -423,29 +430,29 @@ class TheanoSlot(Slot):
         self.__node = node
         self.__nodenet = nodenet
         self.__numerictype = get_numerical_slot_type(type, node.nodetype)
+        self.__linkcache = None
 
     def get_activation(self, sheaf="default"):
         return self.activation
 
     def get_links(self):
-        links = []
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
-        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
-        if self.__nodenet.sparse:
-            links_indices = np.nonzero(slotrow)[1]
-        else:
-            links_indices = np.nonzero(slotrow)[0]
-        for index in links_indices:
-            source_id = self.__nodenet.allocated_elements_to_nodes[index]
-            source_type = self.__nodenet.allocated_nodes[source_id]
-            source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
-            source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
-            source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-            linkid = "n%i:%s:%s:%s" % (source_id, source_gate_type, self.__type, self.node.uid)
-            if linkid in self.__nodenet.proxycache:
-                links.append(self.__nodenet.proxycache[linkid])
+        if self.__linkcache is None:
+            self.__linkcache = []
+            w_matrix = self.__nodenet.w.get_value(borrow=True)
+            slotrow = w_matrix[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
+            if self.__nodenet.sparse:
+                links_indices = np.nonzero(slotrow)[1]
             else:
+                links_indices = np.nonzero(slotrow)[0]
+            for index in links_indices:
+                source_id = self.__nodenet.allocated_elements_to_nodes[index]
+                source_type = self.__nodenet.allocated_nodes[source_id]
+                source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
+                source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
+                source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                 link = TheanoLink(self.__nodenet, node_to_id(source_id), source_gate_type, self.__node.uid, self.__type)
-                self.__nodenet.proxycache[link.uid] = link
-                links.append(link)
-        return links
+                self.__linkcache.append(link)
+        return self.__linkcache
+
+    def invalidate_caches(self):
+        self.__linkcache = None

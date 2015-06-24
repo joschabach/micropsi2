@@ -941,8 +941,13 @@ class TheanoNodenet(Nodenet):
         else:
             raise KeyError("No node with id %s exists", uid)
 
-    def get_node_uids(self):
-        return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
+    def get_node_uids(self, group=None):
+        if group is None:
+            return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
+        elif group in self.nodegroups:
+            return [node_to_id(nid) for nid in self.allocated_elements_to_nodes[self.nodegroups[group]]]
+        else:
+            return []
 
     def is_node(self, uid):
         numid = node_from_id(uid)
@@ -1549,6 +1554,9 @@ class TheanoNodenet(Nodenet):
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
 
+        #if (slot_type == "por" or slot_type == "ret") and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
+        #    self.__por_ret_dirty = False
+
         if slot_type == "por" and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
             n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True)
             if weight == 0:
@@ -1558,7 +1566,6 @@ class TheanoNodenet(Nodenet):
                 for g in range(7):
                     n_node_porlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
             self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
-
         if slot_type == "ret" and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
             n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True)
             if weight == 0:
@@ -1569,10 +1576,10 @@ class TheanoNodenet(Nodenet):
                     n_node_retlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
             self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
-        if weight == 0:
-            linkid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
-            if linkid in self.proxycache:
-                del self.proxycache[linkid]
+        if source_node_uid in self.proxycache:
+            self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
+        if target_node_uid in self.proxycache:
+            self.proxycache[target_node_uid].get_slot(slot_type).invalidate_caches()
 
         return True
 
@@ -1939,6 +1946,13 @@ class TheanoNodenet(Nodenet):
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
+
+        uids_to_invalidate = [node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
+
+        for uid in uids_to_invalidate:
+            if uid in self.proxycache:
+                del self.proxycache[uid]
 
         if self.has_pipes:
             self.__por_ret_dirty = True

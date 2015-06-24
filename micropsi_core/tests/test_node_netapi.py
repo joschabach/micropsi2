@@ -965,3 +965,16 @@ def test_set_link_weights(fixed_nodenet):
         pass
     netapi.set_link_weights("sepp", "hugo", w)
     assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 1
+
+
+def test_get_node_ids(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    sepp1 = netapi.create_node("Register", None, "sepp1")
+    sepp2 = netapi.create_node("Register", None, "sepp2")
+    sepp3 = netapi.create_node("Register", None, "sepp3")
+    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    seppen_ids = netapi.get_node_ids("sepp")
+    assert len(seppen_ids) == 3
+    assert seppen_ids[0] == sepp1.uid
+    assert seppen_ids[1] == sepp2.uid
+    assert seppen_ids[2] == sepp3.uid

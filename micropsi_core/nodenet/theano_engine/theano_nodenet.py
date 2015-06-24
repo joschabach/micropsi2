@@ -745,128 +745,8 @@ class TheanoNodenet(Nodenet):
         return numid < self.rootsection.NoN and self.rootsection.allocated_nodes[numid] != 0
 
     def announce_nodes(self, number_of_nodes, average_elements_per_node):
-        self.grow_number_of_nodes(number_of_nodes)
-        self.grow_number_of_elements(number_of_nodes*average_elements_per_node)
-
-    def grow_number_of_nodes(self, growby):
-
-        new_NoN = int(self.rootsection.NoN + growby)
-
-        new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
-        new_allocated_node_parents = np.zeros(new_NoN, dtype=np.int32)
-        new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
-
-        new_allocated_nodes[0:self.rootsection.NoN] = self.rootsection.allocated_nodes
-        new_allocated_node_parents[0:self.rootsection.NoN] = self.rootsection.allocated_node_parents
-        new_allocated_node_offsets[0:self.rootsection.NoN] = self.rootsection.allocated_node_offsets
-
-        self.rootsection.NoN = new_NoN
-        self.rootsection.allocated_nodes = new_allocated_nodes
-        self.rootsection.allocated_node_parents = new_allocated_node_parents
-        self.rootsection.allocated_node_offsets = new_allocated_node_offsets
-        self.rootsection.has_new_usages = True
-
-    def grow_number_of_nodespaces(self, growby):
-
-        new_NoNS = int(self.rootsection.NoNS + growby)
-
-        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
-
-        new_allocated_nodespaces[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces
-        new_allocated_nodespaces_por_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_por_activators
-        new_allocated_nodespaces_ret_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_ret_activators
-        new_allocated_nodespaces_sub_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_sub_activators
-        new_allocated_nodespaces_sur_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_sur_activators
-        new_allocated_nodespaces_cat_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_cat_activators
-        new_allocated_nodespaces_exp_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_exp_activators
-
-        with self.netlock:
-            self.rootsection.NoNS = new_NoNS
-            self.rootsection.allocated_nodespaces = new_allocated_nodespaces
-            self.rootsection.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
-            self.rootsection.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
-            self.rootsection.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
-            self.rootsection.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
-            self.rootsection.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
-            self.rootsection.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
-            self.rootsection.has_new_usages = True
-
-    def grow_number_of_elements(self, growby):
-
-        new_NoE = int(self.rootsection.NoE + growby)
-
-        new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
-        new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
-
-        if self.rootsection.sparse:
-            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.scipyfloatX)
-        else:
-            new_w = np.zeros((new_NoE, new_NoE), dtype=self.scipyfloatX)
-
-        new_a = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
-        new_g_theta = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_g_factor = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_threshold = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_g_amplification = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_min = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_g_max = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
-        new_g_expect = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_countdown = np.zeros(new_NoE, dtype=np.int8)
-        new_g_wait = np.ones(new_NoE, dtype=np.int8)
-        new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
-        new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
-        new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
-
-        new_allocated_elements_to_nodes[0:self.rootsection.NoE] = self.rootsection.allocated_elements_to_nodes
-        new_allocated_elements_to_activators[0:self.rootsection.NoE] = self.rootsection.allocated_elements_to_activators
-
-        new_w[0:self.rootsection.NoE, 0:self.rootsection.NoE] = self.rootsection.w.get_value(borrow=True)
-
-        new_a[0:self.rootsection.NoE] = self.rootsection.a.get_value(borrow=True)
-        new_g_theta[0:self.rootsection.NoE] = self.rootsection.g_theta.get_value(borrow=True)
-        new_g_factor[0:self.rootsection.NoE] = self.rootsection.g_factor.get_value(borrow=True)
-        new_g_threshold[0:self.rootsection.NoE] = self.rootsection.g_threshold.get_value(borrow=True)
-        new_g_amplification[0:self.rootsection.NoE] = self.rootsection.g_amplification.get_value(borrow=True)
-        new_g_min[0:self.rootsection.NoE] = self.rootsection.g_min.get_value(borrow=True)
-        new_g_max[0:self.rootsection.NoE] =  self.rootsection.g_max.get_value(borrow=True)
-        new_g_function_selector[0:self.rootsection.NoE] = self.rootsection.g_function_selector.get_value(borrow=True)
-        new_g_expect[0:self.rootsection.NoE] = self.rootsection.g_expect.get_value(borrow=True)
-        new_g_countdown[0:self.rootsection.NoE] = self.rootsection.g_countdown.get_value(borrow=True)
-        new_g_wait[0:self.rootsection.NoE] = self.rootsection.g_wait.get_value(borrow=True)
-        new_n_function_selector[0:self.rootsection.NoE] = self.rootsection.n_function_selector.get_value(borrow=True)
-
-        with self.netlock:
-            self.rootsection.NoE = new_NoE
-            self.rootsection.allocated_elements_to_nodes = new_allocated_elements_to_nodes
-            self.rootsection.allocated_elements_to_activators = new_allocated_elements_to_activators
-            self.rootsection.w.set_value(new_w, borrow=True)
-            self.rootsection.a.set_value(new_a, borrow=True)
-            self.rootsection.a_shifted.set_value(new_a_shifted, borrow=True)
-            self.rootsection.g_theta.set_value(new_g_theta, borrow=True)
-            self.rootsection.g_factor.set_value(new_g_factor, borrow=True)
-            self.rootsection.g_threshold.set_value(new_g_threshold, borrow=True)
-            self.rootsection.g_amplification.set_value(new_g_amplification, borrow=True)
-            self.rootsection.g_min.set_value(new_g_min, borrow=True)
-            self.rootsection.g_max.set_value(new_g_max, borrow=True)
-            self.rootsection.g_function_selector.set_value(new_g_function_selector, borrow=True)
-            self.rootsection.g_expect.set_value(new_g_expect, borrow=True)
-            self.rootsection.g_countdown.set_value(new_g_countdown, borrow=True)
-            self.rootsection.g_wait.set_value(new_g_wait, borrow=True)
-            self.rootsection.n_function_selector.set_value(new_n_function_selector, borrow=True)
-            self.rootsection.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
-            self.rootsection.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
-            self.rootsection.has_new_usages = True
-
-        if self.rootsection.has_pipes:
-            self.rootsection.por_ret_dirty = True
+        self.rootsection.grow_number_of_nodes(number_of_nodes)
+        self.rootsection.grow_number_of_elements(number_of_nodes*average_elements_per_node)
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
@@ -890,13 +770,13 @@ class TheanoNodenet(Nodenet):
                 growby = self.rootsection.NoN // 2
                 self.logger.info("All %d node IDs in use, growing id vectors by %d elements" % (self.rootsection.NoN, growby))
                 id = self.rootsection.NoN
-                self.grow_number_of_nodes(growby)
+                self.rootsection.grow_number_of_nodes(growby)
 
         else:
             id = node_from_id(uid)
             if id > self.rootsection.NoN:
                 growby = id - (self.rootsection.NoN - 2)
-                self.grow_number_of_nodes(growby)
+                self.rootsection.grow_number_of_nodes(growby)
 
         uid = node_to_id(id)
 
@@ -926,7 +806,7 @@ class TheanoNodenet(Nodenet):
                     growby = max(number_of_elements +1, self.rootsection.NoE // 2)
                     self.logger.info("All %d elements in use, growing elements vectors by %d elements" % (self.rootsection.NoE, growby))
                     offset = self.rootsection.NoE
-                    self.grow_number_of_elements(growby)
+                    self.rootsection.grow_number_of_elements(growby)
 
         self.last_allocated_node = id
         self.last_allocated_offset = offset
@@ -1241,7 +1121,7 @@ class TheanoNodenet(Nodenet):
                 growby = self.rootsection.NoNS // 2
                 self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.rootsection.NoNS, growby))
                 id = self.rootsection.NoNS
-                self.grow_number_of_nodespaces(growby)
+                self.rootsection.grow_number_of_nodespaces(growby)
         else:
             id = nodespace_from_id(uid)
 

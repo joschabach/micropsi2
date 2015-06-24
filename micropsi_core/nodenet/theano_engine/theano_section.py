@@ -517,3 +517,122 @@ class TheanoSection():
 
         self.n_node_retlinked.set_value(n_node_retlinked_array)
 
+    def grow_number_of_nodes(self, growby):
+
+        new_NoN = int(self.NoN + growby)
+
+        new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
+        new_allocated_node_parents = np.zeros(new_NoN, dtype=np.int32)
+        new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
+
+        new_allocated_nodes[0:self.NoN] = self.allocated_nodes
+        new_allocated_node_parents[0:self.NoN] = self.allocated_node_parents
+        new_allocated_node_offsets[0:self.NoN] = self.allocated_node_offsets
+
+        self.NoN = new_NoN
+        self.allocated_nodes = new_allocated_nodes
+        self.allocated_node_parents = new_allocated_node_parents
+        self.allocated_node_offsets = new_allocated_node_offsets
+        self.has_new_usages = True
+
+    def grow_number_of_nodespaces(self, growby):
+
+        new_NoNS = int(self.NoNS + growby)
+
+        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
+
+        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
+        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
+        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
+
+        with self.nodenet.netlock:
+            self.NoNS = new_NoNS
+            self.allocated_nodespaces = new_allocated_nodespaces
+            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
+            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
+            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
+            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
+            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
+            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
+            self.has_new_usages = True
+
+    def grow_number_of_elements(self, growby):
+
+        new_NoE = int(self.NoE + growby)
+
+        new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
+        new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
+
+        if self.sparse:
+            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+        else:
+            new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+
+        new_a = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_threshold = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_amplification = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_min = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_g_expect = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_countdown = np.zeros(new_NoE, dtype=np.int8)
+        new_g_wait = np.ones(new_NoE, dtype=np.int8)
+        new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
+        new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
+
+        new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
+        new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
+
+        new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
+
+        new_a[0:self.NoE] = self.a.get_value(borrow=True)
+        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
+        new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
+        new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
+        new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
+        new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
+        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
+        new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
+        new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
+        new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
+        new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
+        new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
+
+        with self.nodenet.netlock:
+            self.NoE = new_NoE
+            self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
+            self.allocated_elements_to_activators = new_allocated_elements_to_activators
+            self.w.set_value(new_w, borrow=True)
+            self.a.set_value(new_a, borrow=True)
+            self.a_shifted.set_value(new_a_shifted, borrow=True)
+            self.g_theta.set_value(new_g_theta, borrow=True)
+            self.g_factor.set_value(new_g_factor, borrow=True)
+            self.g_threshold.set_value(new_g_threshold, borrow=True)
+            self.g_amplification.set_value(new_g_amplification, borrow=True)
+            self.g_min.set_value(new_g_min, borrow=True)
+            self.g_max.set_value(new_g_max, borrow=True)
+            self.g_function_selector.set_value(new_g_function_selector, borrow=True)
+            self.g_expect.set_value(new_g_expect, borrow=True)
+            self.g_countdown.set_value(new_g_countdown, borrow=True)
+            self.g_wait.set_value(new_g_wait, borrow=True)
+            self.n_function_selector.set_value(new_n_function_selector, borrow=True)
+            self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
+            self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
+            self.has_new_usages = True
+
+        if self.has_pipes:
+            self.por_ret_dirty = True

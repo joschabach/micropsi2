@@ -155,9 +155,6 @@ class TheanoNodenet(Nodenet):
         self.last_allocated_offset = 0
         self.last_allocated_nodespace = 0
 
-        self.native_module_instances = {}
-        self.comment_instances = {}
-
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
 
@@ -550,10 +547,10 @@ class TheanoNodenet(Nodenet):
                         uid = node_to_id(id)
                         if 'nodes' in initfrom and uid in initfrom['nodes']:
                             self.rootsection.allocated_nodes[id] = get_numerical_node_type(initfrom['nodes'][uid]['type'], self.native_modules)
-                        self.native_module_instances[uid] = self.get_node(uid)
+                        self.rootsection.native_module_instances[uid] = self.get_node(uid)
                     elif self.rootsection.allocated_nodes[id] == COMMENT:
                         uid = node_to_id(id)
-                        self.comment_instances[uid] = self.get_node(uid)
+                        self.rootsection.comment_instances[uid] = self.get_node(uid)
 
                 # reloading native modules ensures the types in allocated_nodes are up to date
                 # (numerical native module types are runtime dependent and may differ from when allocated_nodes
@@ -724,10 +721,10 @@ class TheanoNodenet(Nodenet):
             self.__step += 1
 
     def get_node(self, uid):
-        if uid in self.native_module_instances:
-            return self.native_module_instances[uid]
-        elif uid in self.comment_instances:
-            return self.comment_instances[uid]
+        if uid in self.rootsection.native_module_instances:
+            return self.rootsection.native_module_instances[uid]
+        elif uid in self.rootsection.comment_instances:
+            return self.rootsection.comment_instances[uid]
         elif uid in self.proxycache:
             return self.proxycache[uid]
         elif self.is_node(uid):
@@ -1013,12 +1010,12 @@ class TheanoNodenet(Nodenet):
 
         if nodetype not in STANDARD_NODETYPES:
             node_proxy = self.get_node(uid)
-            self.native_module_instances[uid] = node_proxy
+            self.rootsection.native_module_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
         elif nodetype == "Comment":
             node_proxy = self.get_node(uid)
-            self.comment_instances[uid] = node_proxy
+            self.rootsection.comment_instances[uid] = node_proxy
             for key, value in parameters.items():
                 node_proxy.set_parameter(key, value)
 
@@ -1090,10 +1087,10 @@ class TheanoNodenet(Nodenet):
         self.last_allocated_node = node_from_id(uid) - 1
 
         # remove the native module or comment instance if there should be one
-        if uid in self.native_module_instances:
-            del self.native_module_instances[uid]
-        if uid in self.comment_instances:
-            del self.comment_instances[uid]
+        if uid in self.rootsection.native_module_instances:
+            del self.rootsection.native_module_instances[uid]
+        if uid in self.rootsection.comment_instances:
+            del self.rootsection.comment_instances[uid]
 
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
@@ -1392,7 +1389,7 @@ class TheanoNodenet(Nodenet):
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
-        for uid, instance in self.native_module_instances.items():
+        for uid, instance in self.rootsection.native_module_instances.items():
             if instance.type not in native_modules:
                 self.logger.warn("No more definition available for node type %s, deleting instance %s" %
                                 (instance.type, uid))
@@ -1420,7 +1417,7 @@ class TheanoNodenet(Nodenet):
 
         # update the living instances that have the same slot/gate numbers
         new_instances = {}
-        for id, instance in self.native_module_instances.items():
+        for id, instance in self.rootsection.native_module_instances.items():
             parameters = instance.clone_parameters()
             state = instance.clone_state()
             position = instance.position
@@ -1433,7 +1430,7 @@ class TheanoNodenet(Nodenet):
             for key, value in state.items():
                 new_native_module_instance.set_state(key, value)
             new_instances[id] = new_native_module_instance
-        self.native_module_instances = new_instances
+        self.rootsection.native_module_instances = new_instances
 
         # recreate the deleted ones. Gate configurations and links will not be transferred.
         for uid, data in instances_to_recreate.items():

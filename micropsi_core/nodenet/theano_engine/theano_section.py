@@ -96,6 +96,9 @@ class TheanoSection():
 
     def __init__(self, nodenet, sparse, initial_NoN, initial_NoE, initial_NoNS):
 
+        self.native_module_instances = {}
+        self.comment_instances = {}
+
         self.NoN = initial_NoN
         self.NoE = initial_NoE
         self.NoNS = initial_NoNS

@@ -336,7 +336,7 @@ class TheanoGate(Gate):
 
     @property
     def empty(self):
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
+        w_matrix = self.__section.w.get_value(borrow=True)
         gatecolumn = w_matrix[:, self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         return len(np.nonzero(gatecolumn)[0]) == 0
 
@@ -365,7 +365,7 @@ class TheanoGate(Gate):
     def get_links(self):
         if self.__linkcache is None:
             self.__linkcache = []
-            w_matrix = self.__nodenet.w.get_value(borrow=True)
+            w_matrix = self.__section.w.get_value(borrow=True)
             gatecolumn = w_matrix[:, self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
             links_indices = np.nonzero(gatecolumn)[0]
             for index in links_indices:
@@ -413,7 +413,7 @@ class TheanoSlot(Slot):
 
     @property
     def empty(self):
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
+        w_matrix = self.__section.w.get_value(borrow=True)
         slotrow = w_matrix[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         return len(np.nonzero(slotrow)[1]) == 0
 
@@ -441,7 +441,7 @@ class TheanoSlot(Slot):
     def get_links(self):
         if self.__linkcache is None:
             self.__linkcache = []
-            w_matrix = self.__nodenet.w.get_value(borrow=True)
+            w_matrix = self.__section.w.get_value(borrow=True)
             slotrow = w_matrix[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
             if self.__nodenet.sparse:
                 links_indices = np.nonzero(slotrow)[1]

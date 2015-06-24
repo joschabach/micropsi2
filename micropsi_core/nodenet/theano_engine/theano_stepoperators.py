@@ -24,9 +24,9 @@ class TheanoPropagate(Propagate):
 
     def __init__(self, nodenet):
         if nodenet.sparse:
-            self.propagate = theano.function([], None, updates={nodenet.a: ST.dot(nodenet.w, nodenet.a)})
+            self.propagate = theano.function([], None, updates={nodenet.a: ST.dot(nodenet.rootsection.w, nodenet.a)})
         else:
-            self.propagate = theano.function([], None, updates={nodenet.a: T.dot(nodenet.w, nodenet.a)})
+            self.propagate = theano.function([], None, updates={nodenet.a: T.dot(nodenet.rootsection.w, nodenet.a)})
 
     def execute(self, nodenet, nodes, netapi):
         self.propagate()
@@ -284,7 +284,7 @@ class TheanoPORRETDecay(StepOperator):
         porretdecay = nodenet.get_modulator('por_ret_decay')
         if nodenet.has_pipes and porretdecay != 0:
             n_function_selector = nodenet.n_function_selector.get_value(borrow=True)
-            w = nodenet.w.get_value(borrow=True)
+            w = nodenet.rootsection.w.get_value(borrow=True)
             por_cols = np.where(n_function_selector == NFPG_PIPE_POR)[0]
             por_rows = np.nonzero(w[:, por_cols] > 0.)[0]
             cols, rows = np.meshgrid(por_cols, por_rows)
@@ -294,4 +294,4 @@ class TheanoPORRETDecay(StepOperator):
                 nullify_grid = np.nonzero(w_update < porretdecay**2)
                 w_update[nullify_grid] = 0
             w[rows, cols] = w_update
-            nodenet.w.set_value(w, borrow=True)
+            nodenet.rootsection.w.set_value(w, borrow=True)

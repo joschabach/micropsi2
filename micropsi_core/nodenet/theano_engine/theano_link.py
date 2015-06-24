@@ -30,7 +30,7 @@ class TheanoLink(Link):
     def weight(self):
         source_nodetype = self.__nodenet.get_node(self.__source_node_uid).nodetype
         target_nodetype = self.__nodenet.get_node(self.__target_node_uid).nodetype
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
+        w_matrix = self.__section.w.get_value(borrow=True)
         ngt = get_numerical_gate_type(self.__source_gate_type, source_nodetype)
         nst = get_numerical_slot_type(self.__target_slot_type, target_nodetype)
         x = self.__section.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst

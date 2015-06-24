@@ -15,9 +15,10 @@ from configuration import config as settings
 
 class TheanoSection():
 
-    def __init__(self, nodenet):
+    def __init__(self, nodenet, sparse):
 
         self.nodenet = nodenet
+        self.sparse = sparse
         self.logger = nodenet.logger
 
         # array, index is node id, value is numeric node type
@@ -46,6 +47,8 @@ class TheanoSection():
         # directional activators map, index is element id, value is the directional activator's element id
         self.allocated_elements_to_activators = None
 
+        # theano tensors for performing operations
+        self.w = None            # matrix of weights
 
         self.allocated_nodes = np.zeros(self.nodenet.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.nodenet.NoN, dtype=np.int32)
@@ -62,3 +65,10 @@ class TheanoSection():
         self.allocated_nodespaces_exp_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
 
         self.allocated_elements_to_activators = np.zeros(self.nodenet.NoE, dtype=np.int32)
+
+        # instantiate theano data structures
+        if self.sparse:
+            self.w = theano.shared(sp.csr_matrix((self.nodenet.NoE, self.nodenet.NoE), dtype=nodenet.scipyfloatX), name="w")
+        else:
+            w_matrix = np.zeros((self.nodenet.NoE, self.nodenet.NoE), dtype=nodenet.scipyfloatX)
+            self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)

@@ -254,8 +254,6 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        # theano tensors for performing operations
-        self.w = None            # matrix of weights
         self.a = None            # vector of activations
         self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
                             # this is a view on the activation values instrumental in calculating concept node functions
@@ -353,7 +351,7 @@ class TheanoNodenet(Nodenet):
         self.NoNS = INITIAL_NUMBER_OF_NODESPACES
 
         self.netapi = TheanoNetAPI(self)
-        self.rootsection = TheanoSection(self)
+        self.rootsection = TheanoSection(self, self.sparse)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
@@ -361,12 +359,6 @@ class TheanoNodenet(Nodenet):
         self.__modulators['por_ret_decay'] = 0.
 
         self.proxycache = {}
-
-        if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=self.scipyfloatX), name="w")
-        else:
-            w_matrix = np.zeros((self.NoE, self.NoE), dtype=self.scipyfloatX)
-            self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
         a_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
@@ -470,7 +462,7 @@ class TheanoNodenet(Nodenet):
         allocated_nodespaces_cat_activators = self.rootsection.allocated_nodespaces_cat_activators
         allocated_nodespaces_exp_activators = self.rootsection.allocated_nodespaces_exp_activators
 
-        w = self.w.get_value(borrow=True)
+        w = self.rootsection.w.get_value(borrow=True)
 
         # if we're sparse, convert to sparse matrix for persistency
         if not self.sparse:
@@ -632,7 +624,7 @@ class TheanoNodenet(Nodenet):
                     # if we're configured to be dense, convert from csr
                     if not self.sparse:
                         w = w.todense()
-                    self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
+                    self.rootsection.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
                     self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
                 else:
                     self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
@@ -999,7 +991,7 @@ class TheanoNodenet(Nodenet):
         new_allocated_elements_to_nodes[0:self.NoE] = self.rootsection.allocated_elements_to_nodes
         new_allocated_elements_to_activators[0:self.NoE] = self.rootsection.allocated_elements_to_activators
 
-        new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
+        new_w[0:self.NoE, 0:self.NoE] = self.rootsection.w.get_value(borrow=True)
 
         new_a[0:self.NoE] = self.a.get_value(borrow=True)
         new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
@@ -1018,7 +1010,7 @@ class TheanoNodenet(Nodenet):
             self.NoE = new_NoE
             self.rootsection.allocated_elements_to_nodes = new_allocated_elements_to_nodes
             self.rootsection.allocated_elements_to_activators = new_allocated_elements_to_activators
-            self.w.set_value(new_w, borrow=True)
+            self.rootsection.w.set_value(new_w, borrow=True)
             self.a.set_value(new_a, borrow=True)
             self.a_shifted.set_value(new_a_shifted, borrow=True)
             self.g_theta.set_value(new_g_theta, borrow=True)
@@ -1507,14 +1499,14 @@ class TheanoNodenet(Nodenet):
         if nst > get_slots_per_type(self.rootsection.allocated_nodes[node_from_id(target_node_uid)], self.native_modules):
             raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
 
-        w_matrix = self.w.get_value(borrow=True)
+        w_matrix = self.rootsection.w.get_value(borrow=True)
         x = self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + nst
         y = self.rootsection.allocated_node_offsets[node_from_id(source_node_uid)] + ngt
         if self.sparse:
             w_matrix[x, y] = weight
         else:
             w_matrix[x][y] = weight
-        self.w.set_value(w_matrix, borrow=True)
+        self.rootsection.w.set_value(w_matrix, borrow=True)
 
         #if (slot_type == "por" or slot_type == "ret") and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
         #    self.__por_ret_dirty = False
@@ -1662,7 +1654,7 @@ class TheanoNodenet(Nodenet):
             node_ids = np.where(self.rootsection.allocated_node_parents == parent)[0]
         else:
             node_ids = np.nonzero(self.rootsection.allocated_nodes)[0]
-        w_matrix = self.w.get_value(borrow=True)
+        w_matrix = self.rootsection.w.get_value(borrow=True)
         for node_id in node_ids:
 
             source_type = self.rootsection.allocated_nodes[node_id]
@@ -1885,7 +1877,7 @@ class TheanoNodenet(Nodenet):
             raise ValueError("Group %s does not exist." % group_from)
         if group_to not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group_to)
-        w_matrix = self.w.get_value(borrow=True)
+        w_matrix = self.rootsection.w.get_value(borrow=True)
         cols, rows = np.meshgrid(self.nodegroups[group_from], self.nodegroups[group_to])
         if self.sparse:
             return w_matrix[rows,cols].todense()
@@ -1902,12 +1894,12 @@ class TheanoNodenet(Nodenet):
         if len(self.nodegroups[group_to]) != new_w.shape[0]:
             raise ValueError("froup_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[group_to]), new_w.shape[0]))
 
-        w_matrix = self.w.get_value(borrow=True)
+        w_matrix = self.rootsection.w.get_value(borrow=True)
         grp_from = self.nodegroups[group_from]
         grp_to = self.nodegroups[group_to]
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
-        self.w.set_value(w_matrix, borrow=True)
+        self.rootsection.w.set_value(w_matrix, borrow=True)
 
         uids_to_invalidate = [node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
         uids_to_invalidate.extend([node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
@@ -1933,7 +1925,7 @@ class TheanoNodenet(Nodenet):
         n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
 
         n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-        w_matrix = self.w.get_value(borrow=True)
+        w_matrix = self.rootsection.w.get_value(borrow=True)
 
         por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
 
@@ -1961,7 +1953,7 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
 
         n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-        w_matrix = self.w.get_value(borrow=True)
+        w_matrix = self.rootsection.w.get_value(borrow=True)
 
         ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
 

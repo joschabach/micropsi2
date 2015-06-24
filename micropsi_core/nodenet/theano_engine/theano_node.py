@@ -13,13 +13,14 @@ class TheanoNode(Node):
         theano node proxy class
     """
 
-    def __init__(self, nodenet, parent_uid, uid, type, parameters={}, **_):
+    def __init__(self, nodenet, section, parent_uid, uid, type, parameters={}, **_):
 
         self._numerictype = type
         self._id = node_from_id(uid)
         self._uid = uid
         self._parent_id = nodespace_from_id(parent_uid)
         self._nodenet = nodenet
+        self._section = section
         self._state = {}
 
         self.__gatecache = {}
@@ -99,7 +100,7 @@ class TheanoNode(Node):
 
     def get_gate(self, type):
         if type not in self.__gatecache:
-            self.__gatecache[type] = TheanoGate(type, self, self._nodenet)
+            self.__gatecache[type] = TheanoGate(type, self, self._nodenet, self._section)
         return self.__gatecache[type]
 
     def set_gatefunction_name(self, gate_type, gatefunction_name):
@@ -176,7 +177,7 @@ class TheanoNode(Node):
 
     def get_slot(self, type):
         if type not in self.__slotcache:
-            self.__slotcache[type] = TheanoSlot(type, self, self._nodenet)
+            self.__slotcache[type] = TheanoSlot(type, self, self._nodenet, self._section)
         return self.__slotcache[type]
 
     def unlink_completely(self):
@@ -353,10 +354,11 @@ class TheanoGate(Gate):
     def activations(self):
         return {'default': self.activation}  # todo: implement sheaves
 
-    def __init__(self, type, node, nodenet):
+    def __init__(self, type, node, nodenet, section):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
+        self.__section = section
         self.__numerictype = get_numerical_gate_type(type, node.nodetype)
         self.__linkcache = None
 
@@ -368,7 +370,7 @@ class TheanoGate(Gate):
             links_indices = np.nonzero(gatecolumn)[0]
             for index in links_indices:
                 target_id = self.__nodenet.allocated_elements_to_nodes[index]
-                target_type = self.__nodenet.allocated_nodes[target_id]
+                target_type = self.__section.allocated_nodes[target_id]
                 target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
                 target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
@@ -425,10 +427,11 @@ class TheanoSlot(Slot):
             "default": self.activation
         }
 
-    def __init__(self, type, node, nodenet):
+    def __init__(self, type, node, nodenet, section):
         self.__type = type
         self.__node = node
         self.__nodenet = nodenet
+        self.__section = section
         self.__numerictype = get_numerical_slot_type(type, node.nodetype)
         self.__linkcache = None
 
@@ -446,7 +449,7 @@ class TheanoSlot(Slot):
                 links_indices = np.nonzero(slotrow)[0]
             for index in links_indices:
                 source_id = self.__nodenet.allocated_elements_to_nodes[index]
-                source_type = self.__nodenet.allocated_nodes[source_id]
+                source_type = self.__section.allocated_nodes[source_id]
                 source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
                 source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)

@@ -258,8 +258,6 @@ class TheanoNodenet(Nodenet):
         for type, data in self.native_module_definitions.items():
             self.native_modules[type] = Nodetype(nodenet=self, **data)
 
-        self.nodegroups = {}
-
         self.create_nodespace(None, None, "Root", nodespace_to_id(1))
 
         self.initialize_nodenet({})
@@ -739,8 +737,8 @@ class TheanoNodenet(Nodenet):
     def get_node_uids(self, group=None):
         if group is None:
             return [node_to_id(id) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
-        elif group in self.nodegroups:
-            return [node_to_id(nid) for nid in self.rootsection.allocated_elements_to_nodes[self.nodegroups[group]]]
+        elif group in self.rootsection.nodegroups:
+            return [node_to_id(nid) for nid in self.rootsection.allocated_elements_to_nodes[self.rootsection.nodegroups[group]]]
         else:
             return []
 
@@ -1673,14 +1671,14 @@ class TheanoNodenet(Nodenet):
         elif sortby == 'name':
             ids = sorted(ids, key=lambda id: self.names[node_to_id(id)])
         gate = get_numerical_gate_type(gatetype)
-        self.nodegroups[group_name] = self.rootsection.allocated_node_offsets[ids] + gate
+        self.rootsection.nodegroups[group_name] = self.rootsection.allocated_node_offsets[ids] + gate
 
     def ungroup_nodes(self, group):
-        if group in self.nodegroups:
-            del self.nodegroups[group]
+        if group in self.rootsection.nodegroups:
+            del self.rootsection.nodegroups[group]
 
     def dump_group(self, group):
-        ids = self.nodegroups[group]
+        ids = self.rootsection.nodegroups[group]
         for element in ids:
             nid = self.rootsection.allocated_elements_to_nodes[element]
             uid = node_to_id(nid)
@@ -1688,62 +1686,62 @@ class TheanoNodenet(Nodenet):
             print("%s %s" % (node.uid, node.name))
 
     def get_activations(self, group):
-        if group not in self.nodegroups:
+        if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         a_array = self.rootsection.a.get_value(borrow=True)
-        return a_array[self.nodegroups[group]]
+        return a_array[self.rootsection.nodegroups[group]]
 
     def set_activations(self, group, new_activations):
-        if group not in self.nodegroups:
+        if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         a_array = self.rootsection.a.get_value(borrow=True)
-        a_array[self.nodegroups[group]] = new_activations
+        a_array[self.rootsection.nodegroups[group]] = new_activations
         self.rootsection.a.set_value(a_array, borrow=True)
 
     def get_thetas(self, group):
-        if group not in self.nodegroups:
+        if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
-        return g_theta_array[self.nodegroups[group]]
+        return g_theta_array[self.rootsection.nodegroups[group]]
 
     def set_thetas(self, group, thetas):
-        if group not in self.nodegroups:
+        if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
-        g_theta_array[self.nodegroups[group]] = thetas
+        g_theta_array[self.rootsection.nodegroups[group]] = thetas
         self.rootsection.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_link_weights(self, group_from, group_to):
-        if group_from not in self.nodegroups:
+        if group_from not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group_from)
-        if group_to not in self.nodegroups:
+        if group_to not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group_to)
         w_matrix = self.rootsection.w.get_value(borrow=True)
-        cols, rows = np.meshgrid(self.nodegroups[group_from], self.nodegroups[group_to])
+        cols, rows = np.meshgrid(self.rootsection.nodegroups[group_from], self.rootsection.nodegroups[group_to])
         if self.rootsection.sparse:
             return w_matrix[rows,cols].todense()
         else:
             return w_matrix[rows,cols]
 
     def set_link_weights(self, group_from, group_to, new_w):
-        if group_from not in self.nodegroups:
+        if group_from not in self.rootsection.nodegroups:
             raise ValueError("group_from %s does not exist." % group_from)
-        if group_to not in self.nodegroups:
+        if group_to not in self.rootsection.nodegroups:
             raise ValueError("group_to %s does not exist." % group_to)
-        if len(self.nodegroups[group_from]) != new_w.shape[1]:
-            raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[group_from]), new_w.shape[1]))
-        if len(self.nodegroups[group_to]) != new_w.shape[0]:
-            raise ValueError("froup_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[group_to]), new_w.shape[0]))
+        if len(self.rootsection.nodegroups[group_from]) != new_w.shape[1]:
+            raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.rootsection.nodegroups[group_from]), new_w.shape[1]))
+        if len(self.rootsection.nodegroups[group_to]) != new_w.shape[0]:
+            raise ValueError("froup_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.rootsection.nodegroups[group_to]), new_w.shape[0]))
 
         w_matrix = self.rootsection.w.get_value(borrow=True)
-        grp_from = self.nodegroups[group_from]
-        grp_to = self.nodegroups[group_to]
+        grp_from = self.rootsection.nodegroups[group_from]
+        grp_to = self.rootsection.nodegroups[group_to]
         cols, rows = np.meshgrid(grp_from, grp_to)
         w_matrix[rows, cols] = new_w
         self.rootsection.w.set_value(w_matrix, borrow=True)
 
-        uids_to_invalidate = [node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
-        uids_to_invalidate.extend([node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
+        uids_to_invalidate = [node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.rootsection.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.rootsection.nodegroups[group_to]])
 
         for uid in uids_to_invalidate:
             if uid in self.proxycache:

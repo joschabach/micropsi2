@@ -93,11 +93,11 @@ class TheanoSection():
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
 
-
     def __init__(self, nodenet, sparse, initial_NoN, initial_NoE, initial_NoNS):
 
         self.native_module_instances = {}
         self.comment_instances = {}
+        self.nodegroups = {}
 
         self.NoN = initial_NoN
         self.NoE = initial_NoE

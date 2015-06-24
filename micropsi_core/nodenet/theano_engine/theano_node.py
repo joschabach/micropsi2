@@ -443,7 +443,7 @@ class TheanoSlot(Slot):
             self.__linkcache = []
             w_matrix = self.__section.w.get_value(borrow=True)
             slotrow = w_matrix[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
-            if self.__nodenet.sparse:
+            if self.__section.sparse:
                 links_indices = np.nonzero(slotrow)[1]
             else:
                 links_indices = np.nonzero(slotrow)[0]

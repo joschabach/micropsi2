@@ -306,7 +306,7 @@ class TheanoNodenet(Nodenet):
         w = self.rootsection.w.get_value(borrow=True)
 
         # if we're sparse, convert to sparse matrix for persistency
-        if not self.sparse:
+        if not self.rootsection.sparse:
             w = sp.csr_matrix(w)
 
         a = self.rootsection.a.get_value(borrow=True)
@@ -463,7 +463,7 @@ class TheanoNodenet(Nodenet):
                 if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
                     w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.rootsection.NoE, self.rootsection.NoE))
                     # if we're configured to be dense, convert from csr
-                    if not self.sparse:
+                    if not self.rootsection.sparse:
                         w = w.todense()
                     self.rootsection.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
                     self.rootsection.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
@@ -808,7 +808,7 @@ class TheanoNodenet(Nodenet):
         new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
         new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
 
-        if self.sparse:
+        if self.rootsection.sparse:
             new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.scipyfloatX)
         else:
             new_w = np.zeros((new_NoE, new_NoE), dtype=self.scipyfloatX)
@@ -1343,7 +1343,7 @@ class TheanoNodenet(Nodenet):
         w_matrix = self.rootsection.w.get_value(borrow=True)
         x = self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + nst
         y = self.rootsection.allocated_node_offsets[node_from_id(source_node_uid)] + ngt
-        if self.sparse:
+        if self.rootsection.sparse:
             w_matrix[x, y] = weight
         else:
             w_matrix[x][y] = weight
@@ -1508,7 +1508,7 @@ class TheanoNodenet(Nodenet):
                     target_slot_numerical = index - self.rootsection.allocated_node_offsets[target_id]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
                     source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                    if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                    if self.rootsection.sparse:               # sparse matrices return matrices of dimension (1,1) as values
                         weight = float(gatecolumn[index].data)
                     else:
                         weight = gatecolumn[index].item()
@@ -1528,7 +1528,7 @@ class TheanoNodenet(Nodenet):
             target_type = self.rootsection.allocated_nodes[node_id]
             for slot_type in range(get_slots_per_type(target_type, self.native_modules)):
                 slotrow = w_matrix[self.rootsection.allocated_node_offsets[node_id] + slot_type]
-                if self.sparse:
+                if self.rootsection.sparse:
                     links_indices = np.nonzero(slotrow)[1]
                 else:
                     links_indices = np.nonzero(slotrow)[0]
@@ -1538,7 +1538,7 @@ class TheanoNodenet(Nodenet):
                     source_gate_numerical = index - self.rootsection.allocated_node_offsets[source_id]
                     source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
                     target_slot_type = get_string_slot_type(slot_type, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
-                    if self.sparse:
+                    if self.rootsection.sparse:
                         weight = float(slotrow[0, index])
                     else:
                         weight = slotrow[index].item()
@@ -1720,7 +1720,7 @@ class TheanoNodenet(Nodenet):
             raise ValueError("Group %s does not exist." % group_to)
         w_matrix = self.rootsection.w.get_value(borrow=True)
         cols, rows = np.meshgrid(self.nodegroups[group_from], self.nodegroups[group_to])
-        if self.sparse:
+        if self.rootsection.sparse:
             return w_matrix[rows,cols].todense()
         else:
             return w_matrix[rows,cols]
@@ -1771,7 +1771,7 @@ class TheanoNodenet(Nodenet):
         por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
 
         slotrows = w_matrix[por_indices, :]
-        if not self.sparse:
+        if not self.rootsection.sparse:
             linkedflags = np.any(slotrows, axis=1)
         else:
             # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
@@ -1799,7 +1799,7 @@ class TheanoNodenet(Nodenet):
         ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
 
         slotrows = w_matrix[ret_indices, :]
-        if not self.sparse:
+        if not self.rootsection.sparse:
             linkedflags = np.any(slotrows, axis=1)
         else:
             # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...

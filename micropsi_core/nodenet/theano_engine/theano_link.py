@@ -35,7 +35,7 @@ class TheanoLink(Link):
         nst = get_numerical_slot_type(self.__target_slot_type, target_nodetype)
         x = self.__section.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
         y = self.__section.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
-        if self.__nodenet.sparse:
+        if self.__section.sparse:
             weight = w_matrix[x, y]
         else:
             weight = w_matrix[x][y]

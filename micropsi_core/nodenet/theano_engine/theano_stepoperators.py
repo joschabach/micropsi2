@@ -23,7 +23,7 @@ class TheanoPropagate(Propagate):
     """
 
     def __init__(self, nodenet):
-        if nodenet.sparse:
+        if nodenet.rootsection.sparse:
             self.propagate = theano.function([], None, updates={nodenet.rootsection.a: ST.dot(nodenet.rootsection.w, nodenet.rootsection.a)})
         else:
             self.propagate = theano.function([], None, updates={nodenet.rootsection.a: T.dot(nodenet.rootsection.w, nodenet.rootsection.a)})

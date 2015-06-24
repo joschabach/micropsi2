@@ -643,6 +643,34 @@ class TheanoSection():
         if self.has_pipes:
             self.por_ret_dirty = True
 
+    def set_node_gate_parameter(self, id, gate_type, parameter, value):
+        numerical_node_type = self.allocated_nodes[id]
+        nodetype = None
+        if numerical_node_type > MAX_STD_NODETYPE:
+            nodetype = self.nodenet.get_nodetype(get_string_node_type(numerical_node_type, self.nodenet.native_modules))
+
+        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
+        if parameter == 'threshold':
+            g_threshold_array = self.g_threshold.get_value(borrow=True)
+            g_threshold_array[elementindex] = value
+            self.g_threshold.set_value(g_threshold_array, borrow=True)
+        elif parameter == 'amplification':
+            g_amplification_array = self.g_amplification.get_value(borrow=True)
+            g_amplification_array[elementindex] = value
+            self.g_amplification.set_value(g_amplification_array, borrow=True)
+        elif parameter == 'minimum':
+            g_min_array = self.g_min.get_value(borrow=True)
+            g_min_array[elementindex] = value
+            self.g_min.set_value(g_min_array, borrow=True)
+        elif parameter == 'maximum':
+            g_max_array = self.g_max.get_value(borrow=True)
+            g_max_array[elementindex] = value
+            self.g_max.set_value(g_max_array, borrow=True)
+        elif parameter == 'theta':
+            g_theta_array = self.g_theta.get_value(borrow=True)
+            g_theta_array[elementindex] = value
+            self.g_theta.set_value(g_theta_array, borrow=True)
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

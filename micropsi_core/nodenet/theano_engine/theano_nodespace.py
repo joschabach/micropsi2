@@ -58,7 +58,7 @@ class TheanoNodespace(Nodespace):
 
     @property
     def parent_nodespace(self):
-        parent_nodespace_id = self._nodenet.allocated_nodespaces[self._id]
+        parent_nodespace_id = self._section.allocated_nodespaces[self._id]
         if parent_nodespace_id == 0:
             return None
         else:
@@ -66,18 +66,19 @@ class TheanoNodespace(Nodespace):
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        self._nodenet.allocated_nodespaces[self._id] = nodespace_from_id(uid)
+        self._section.allocated_nodespaces[self._id] = nodespace_from_id(uid)
 
-    def __init__(self, nodenet, uid):
+    def __init__(self, nodenet, section, uid):
         self.__activators = {}
         self._nodenet = nodenet
+        self._section = section
         self._id = nodespace_from_id(uid)
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return [node_to_id(id) for id in np.where(self._nodenet.allocated_node_parents == self._id)[0]]
+            return [node_to_id(id) for id in np.where(self._section.allocated_node_parents == self._id)[0]]
         elif entitytype == 'nodespaces':
-            return [nodespace_to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
+            return [nodespace_to_id(id) for id in np.where(self._section.allocated_nodespaces == self._id)[0]]
         elif entitytype == None:
             ids = self.get_known_ids('nodes')
             ids.extend(self.get_known_ids('nodespaces'))

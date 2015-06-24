@@ -229,14 +229,8 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        # array, index is node id, value is nodespace id
-        self.allocated_node_parents = None
-
         # array, index is element index, value is node id
         self.allocated_elements_to_nodes = None
-
-        # array, index is nodespace id, value is parent nodespace id
-        self.allocated_nodespaces = None
 
         # directional activator assignment, key is nodespace ID, value is activator ID
         self.allocated_nodespaces_por_activators = None
@@ -382,10 +376,8 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache = {}
 
-        self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
-        self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
 
         self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
         self.allocated_nodespaces_ret_activators = np.zeros(self.NoNS, dtype=np.int32)
@@ -491,8 +483,8 @@ class TheanoNodenet(Nodenet):
         allocated_nodes = self.rootsection.allocated_nodes
         allocated_node_offsets = self.rootsection.allocated_node_offsets
         allocated_elements_to_nodes = self.allocated_elements_to_nodes
-        allocated_node_parents = self.allocated_node_parents
-        allocated_nodespaces = self.allocated_nodespaces
+        allocated_node_parents = self.rootsection.allocated_node_parents
+        allocated_nodespaces = self.rootsection.allocated_nodespaces
         allocated_elements_to_activators = self.allocated_elements_to_activators
 
         allocated_nodespaces_por_activators = self.allocated_nodespaces_por_activators
@@ -614,12 +606,12 @@ class TheanoNodenet(Nodenet):
                     self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")
 
                 if 'allocated_nodespaces' in datafile:
-                    self.allocated_nodespaces = datafile['allocated_nodespaces']
+                    self.rootsection.allocated_nodespaces = datafile['allocated_nodespaces']
                 else:
                     self.logger.warn("no allocated_nodespaces in file, falling back to defaults")
 
                 if 'allocated_node_parents' in datafile:
-                    self.allocated_node_parents = datafile['allocated_node_parents']
+                    self.rootsection.allocated_node_parents = datafile['allocated_node_parents']
                 else:
                     self.logger.warn("no allocated_node_parents in file, falling back to defaults")
 
@@ -875,11 +867,11 @@ class TheanoNodenet(Nodenet):
         """
         if keep_uids:
             id = nodespace_from_id(nodespace_uid)
-            if self.allocated_nodespaces[id] == 0:
+            if self.rootsection.allocated_nodespaces[id] == 0:
                 # move up the nodespace tree until we find an existing parent or hit root
                 if id != 1:
                     parent_id = nodespace_from_id(data[nodespace_uid].get('parent_nodespace'))
-                    if self.allocated_nodespaces[parent_id] == 0:
+                    if self.rootsection.allocated_nodespaces[parent_id] == 0:
                         self.merge_nodespace_data(nodespace_to_id(parent_id), data, uidmap, keep_uids)
                 self.create_nodespace(
                     data[nodespace_uid].get('parent_nodespace'),
@@ -928,7 +920,7 @@ class TheanoNodenet(Nodenet):
             return self.proxycache[uid]
         elif self.is_node(uid):
             id = node_from_id(uid)
-            parent_id = self.allocated_node_parents[id]
+            parent_id = self.rootsection.allocated_node_parents[id]
             node = TheanoNode(self, self.rootsection, nodespace_to_id(parent_id), uid, self.rootsection.allocated_nodes[id])
             self.proxycache[node.uid] = node
             return node
@@ -960,12 +952,12 @@ class TheanoNodenet(Nodenet):
         new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
 
         new_allocated_nodes[0:self.NoN] = self.rootsection.allocated_nodes
-        new_allocated_node_parents[0:self.NoN] = self.allocated_node_parents
+        new_allocated_node_parents[0:self.NoN] = self.rootsection.allocated_node_parents
         new_allocated_node_offsets[0:self.NoN] = self.rootsection.allocated_node_offsets
 
         self.NoN = new_NoN
         self.rootsection.allocated_nodes = new_allocated_nodes
-        self.allocated_node_parents = new_allocated_node_parents
+        self.rootsection.allocated_node_parents = new_allocated_node_parents
         self.rootsection.allocated_node_offsets = new_allocated_node_offsets
         self.has_new_usages = True
 
@@ -981,7 +973,7 @@ class TheanoNodenet(Nodenet):
         new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
         new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
 
-        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
+        new_allocated_nodespaces[0:self.NoNS] = self.rootsection.allocated_nodespaces
         new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
         new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
         new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
@@ -991,7 +983,7 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
             self.NoNS = new_NoNS
-            self.allocated_nodespaces = new_allocated_nodespaces
+            self.rootsection.allocated_nodespaces = new_allocated_nodespaces
             self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
             self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
             self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
@@ -1134,7 +1126,7 @@ class TheanoNodenet(Nodenet):
         self.last_allocated_node = id
         self.last_allocated_offset = offset
         self.rootsection.allocated_nodes[id] = get_numerical_node_type(nodetype, self.native_modules)
-        self.allocated_node_parents[id] = nodespace_from_id(nodespace_uid)
+        self.rootsection.allocated_node_parents[id] = nodespace_from_id(nodespace_uid)
         self.rootsection.allocated_node_offsets[id] = offset
 
         for element in range (0, get_elements_per_type(self.rootsection.allocated_nodes[id], self.native_modules)):
@@ -1245,7 +1237,7 @@ class TheanoNodenet(Nodenet):
 
         type = self.rootsection.allocated_nodes[node_from_id(uid)]
         offset = self.rootsection.allocated_node_offsets[node_from_id(uid)]
-        parent = self.allocated_node_parents[node_from_id(uid)]
+        parent = self.rootsection.allocated_node_parents[node_from_id(uid)]
 
         # unlink
         self.get_node(uid).unlink_completely()
@@ -1253,7 +1245,7 @@ class TheanoNodenet(Nodenet):
         # forget
         self.rootsection.allocated_nodes[node_from_id(uid)] = 0
         self.rootsection.allocated_node_offsets[node_from_id(uid)] = 0
-        self.allocated_node_parents[node_from_id(uid)] = 0
+        self.rootsection.allocated_node_parents[node_from_id(uid)] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = 0
@@ -1399,7 +1391,7 @@ class TheanoNodenet(Nodenet):
         elif gate_type == "exp":
             self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
 
-        nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
+        nodes_in_nodespace = np.where(self.rootsection.allocated_node_parents == nodespace_id)[0]
         for nid in nodes_in_nodespace:
             if self.rootsection.allocated_nodes[nid] == PIPE:
                 self.allocated_elements_to_activators[self.rootsection.allocated_node_offsets[nid] +
@@ -1412,12 +1404,12 @@ class TheanoNodenet(Nodenet):
         if uid in self.proxycache:
             return self.proxycache[uid]
         else:
-            nodespace = TheanoNodespace(self, uid)
+            nodespace = TheanoNodespace(self, self.rootsection, uid)
             self.proxycache[uid] = nodespace
             return nodespace
 
     def get_nodespace_uids(self):
-        ids = [nodespace_to_id(id) for id in np.nonzero(self.allocated_nodespaces)[0]]
+        ids = [nodespace_to_id(id) for id in np.nonzero(self.rootsection.allocated_nodespaces)[0]]
         ids.append(nodespace_to_id(1))
         return ids
 
@@ -1430,13 +1422,13 @@ class TheanoNodenet(Nodenet):
         if uid is None:
             id = 0
             for i in range((self.last_allocated_nodespace + 1), self.NoNS):
-                if self.allocated_nodespaces[i] == 0:
+                if self.rootsection.allocated_nodespaces[i] == 0:
                     id = i
                     break
 
             if id < 1:
                 for i in range(self.last_allocated_nodespace - 1):
-                    if self.allocated_nodespaces[i] == 0:
+                    if self.rootsection.allocated_nodespaces[i] == 0:
                         id = i
                         break
 
@@ -1458,7 +1450,7 @@ class TheanoNodenet(Nodenet):
 
         uid = nodespace_to_id(id)
 
-        self.allocated_nodespaces[id] = parent_id
+        self.rootsection.allocated_nodespaces[id] = parent_id
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:
@@ -1468,10 +1460,10 @@ class TheanoNodenet(Nodenet):
 
     def delete_nodespace(self, uid):
         nodespace_id = nodespace_from_id(uid)
-        children_ids = np.where(self.allocated_nodespaces == nodespace_id)[0]
+        children_ids = np.where(self.rootsection.allocated_nodespaces == nodespace_id)[0]
         for child_id in children_ids:
             self.delete_nodespace(nodespace_to_id(child_id))
-        node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
+        node_ids = np.where(self.rootsection.allocated_node_parents == nodespace_id)[0]
         for node_id in node_ids:
             self.delete_node(node_to_id(node_id))
 
@@ -1485,7 +1477,7 @@ class TheanoNodenet(Nodenet):
         if uid in self.positions:
             del self.positions[uid]
 
-        self.allocated_nodespaces[nodespace_id] = 0
+        self.rootsection.allocated_nodespaces[nodespace_id] = 0
 
         self.last_allocated_nodespace = nodespace_id
 
@@ -1498,7 +1490,7 @@ class TheanoNodenet(Nodenet):
         elif datasource in self.sensormap:
             sensorlist = self.sensormap[datasource]
         for id in sensorlist:
-            if nodespace is None or self.allocated_node_parents[id] == nodespace_from_id(nodespace):
+            if nodespace is None or self.rootsection.allocated_node_parents[id] == nodespace_from_id(nodespace):
                 uid = node_to_id(id)
                 sensors[uid] = self.get_node(uid)
         return sensors
@@ -1512,7 +1504,7 @@ class TheanoNodenet(Nodenet):
         elif datatarget in self.actuatormap:
             actuatorlist = self.actuatormap[datatarget]
         for id in actuatorlist:
-            if nodespace is None or self.allocated_node_parents[id] == nodespace_from_id(nodespace):
+            if nodespace is None or self.rootsection.allocated_node_parents[id] == nodespace_from_id(nodespace):
                 uid = node_to_id(id)
                 actuators[uid] = self.get_node(uid)
         return actuators
@@ -1664,7 +1656,7 @@ class TheanoNodenet(Nodenet):
                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
 
             for uid in followupnodes:
-                if self.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
+                if self.rootsection.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
                     data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:
@@ -1691,7 +1683,7 @@ class TheanoNodenet(Nodenet):
         data = {}
         if nodespace_uid is not None:
             parent = nodespace_from_id(nodespace_uid)
-            node_ids = np.where(self.allocated_node_parents == parent)[0]
+            node_ids = np.where(self.rootsection.allocated_node_parents == parent)[0]
         else:
             node_ids = np.nonzero(self.rootsection.allocated_nodes)[0]
         w_matrix = self.w.get_value(borrow=True)
@@ -1772,7 +1764,7 @@ class TheanoNodenet(Nodenet):
         nodeids = np.nonzero(self.rootsection.allocated_nodes)[0]
         if nodespace_uid is not None:
             parent_id = nodespace_from_id(nodespace_uid)
-            nodeids = np.where(self.allocated_node_parents == parent_id)[0]
+            nodeids = np.where(self.rootsection.allocated_node_parents == parent_id)[0]
         for node_id in nodeids:
             i += 1
             node_uid = node_to_id(node_id)
@@ -1787,16 +1779,16 @@ class TheanoNodenet(Nodenet):
             nodespace_uid = self.get_nodespace(None).uid
 
         nodespace_id = nodespace_from_id(nodespace_uid)
-        nodespace_ids = np.nonzero(self.allocated_nodespaces)[0]
+        nodespace_ids = np.nonzero(self.rootsection.allocated_nodespaces)[0]
         nodespace_ids = np.append(nodespace_ids, 1)
         for candidate_id in nodespace_ids:
             is_in_hierarchy = False
             if candidate_id == nodespace_id:
                 is_in_hierarchy = True
             else:
-                parent_id = self.allocated_nodespaces[candidate_id]
+                parent_id = self.rootsection.allocated_nodespaces[candidate_id]
                 while parent_id > 0 and parent_id != nodespace_id:
-                    parent_id = self.allocated_nodespaces[parent_id]
+                    parent_id = self.rootsection.allocated_nodespaces[parent_id]
                 if parent_id == nodespace_id:
                     is_in_hierarchy = True
 
@@ -1861,7 +1853,7 @@ class TheanoNodenet(Nodenet):
         ids = []
         for uid, name in self.names.items():
             if name.startswith(node_name_prefix) and \
-                    (nodespace is None or self.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace)):
+                    (nodespace is None or self.rootsection.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace)):
                 ids.append(uid)
         self.group_nodes_by_ids(ids, node_name_prefix, gatetype, sortby)
 

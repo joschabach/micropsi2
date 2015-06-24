@@ -254,20 +254,6 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        self.g_factor = None     # vector of gate factors, controlled by directional activators
-        self.g_threshold = None  # vector of thresholds (gate parameters)
-        self.g_amplification = None  # vector of amplification factors
-        self.g_min = None        # vector of lower bounds
-        self.g_max = None        # vector of upper bounds
-
-        self.g_function_selector = None # vector of gate function selectors
-
-        self.g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
-
-        self.g_expect = None     # vector of expectations
-        self.g_countdown = None  # vector of number of steps until expectation needs to be met
-        self.g_wait = None       # vector of initial values for g_countdown
-
         self.n_function_selector = None      # vector of per-gate node function selectors
         self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
                                              # node. This could in theory be inferred with T.max() on upshifted versions of w,
@@ -356,36 +342,6 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache = {}
 
-        g_theta_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
-
-        g_factor_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
-
-        g_threshold_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
-
-        g_amplification_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
-
-        g_min_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
-
-        g_max_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
-
-        g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
-        self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
-
-        g_expect_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_expect = theano.shared(value=g_expect_array, name="expectation", borrow=True)
-
-        g_countdown_array = np.zeros(self.NoE, dtype=np.int8)
-        self.g_countdown = theano.shared(value=g_countdown_array, name="countdown", borrow=True)
-
-        g_wait_array = np.ones(self.NoE, dtype=np.int8)
-        self.g_wait = theano.shared(value=g_wait_array, name="wait", borrow=True)
-
         n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
 
@@ -459,16 +415,16 @@ class TheanoNodenet(Nodenet):
             w = sp.csr_matrix(w)
 
         a = self.rootsection.a.get_value(borrow=True)
-        g_theta = self.g_theta.get_value(borrow=True)
-        g_factor = self.g_factor.get_value(borrow=True)
-        g_threshold = self.g_threshold.get_value(borrow=True)
-        g_amplification = self.g_amplification.get_value(borrow=True)
-        g_min = self.g_min.get_value(borrow=True)
-        g_max = self.g_max.get_value(borrow=True)
-        g_function_selector = self.g_function_selector.get_value(borrow=True)
-        g_expect = self.g_expect.get_value(borrow=True)
-        g_countdown = self.g_countdown.get_value(borrow=True)
-        g_wait = self.g_wait.get_value(borrow=True)
+        g_theta = self.rootsection.g_theta.get_value(borrow=True)
+        g_factor = self.rootsection.g_factor.get_value(borrow=True)
+        g_threshold = self.rootsection.g_threshold.get_value(borrow=True)
+        g_amplification = self.rootsection.g_amplification.get_value(borrow=True)
+        g_min = self.rootsection.g_min.get_value(borrow=True)
+        g_max = self.rootsection.g_max.get_value(borrow=True)
+        g_function_selector = self.rootsection.g_function_selector.get_value(borrow=True)
+        g_expect = self.rootsection.g_expect.get_value(borrow=True)
+        g_countdown = self.rootsection.g_countdown.get_value(borrow=True)
+        g_wait = self.rootsection.g_wait.get_value(borrow=True)
         n_function_selector = self.n_function_selector.get_value(borrow=True)
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
@@ -620,52 +576,52 @@ class TheanoNodenet(Nodenet):
                     self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
 
                 if 'g_theta' in datafile:
-                    self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+                    self.rootsection.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
                 else:
                     self.logger.warn("no g_theta in file, falling back to defaults")
 
                 if 'g_factor' in datafile:
-                    self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
+                    self.rootsection.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
                 else:
                     self.logger.warn("no g_factor in file, falling back to defaults")
 
                 if 'g_threshold' in datafile:
-                    self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
+                    self.rootsection.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
                 else:
                     self.logger.warn("no g_threshold in file, falling back to defaults")
 
                 if 'g_amplification' in datafile:
-                    self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
+                    self.rootsection.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
                 else:
                     self.logger.warn("no g_amplification in file, falling back to defaults")
 
                 if 'g_min' in datafile:
-                    self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
+                    self.rootsection.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
                 else:
                     self.logger.warn("no g_min in file, falling back to defaults")
 
                 if 'g_max' in datafile:
-                    self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
+                    self.rootsection.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
                 else:
                     self.logger.warn("no g_max in file, falling back to defaults")
 
                 if 'g_function_selector' in datafile:
-                    self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
+                    self.rootsection.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
                 else:
                     self.logger.warn("no g_function_selector in file, falling back to defaults")
 
                 if 'g_expect' in datafile:
-                    self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
+                    self.rootsection.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
                 else:
                     self.logger.warn("no g_expect in file, falling back to defaults")
 
                 if 'g_countdown' in datafile:
-                    self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
+                    self.rootsection.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
                 else:
                     self.logger.warn("no g_countdown in file, falling back to defaults")
 
                 if 'g_wait' in datafile:
-                    self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
+                    self.rootsection.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
                 else:
                     self.logger.warn("no g_wait in file, falling back to defaults")
 
@@ -984,16 +940,16 @@ class TheanoNodenet(Nodenet):
         new_w[0:self.NoE, 0:self.NoE] = self.rootsection.w.get_value(borrow=True)
 
         new_a[0:self.NoE] = self.rootsection.a.get_value(borrow=True)
-        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
-        new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
-        new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
-        new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
-        new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
-        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
-        new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
-        new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
-        new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
-        new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
+        new_g_theta[0:self.NoE] = self.rootsection.g_theta.get_value(borrow=True)
+        new_g_factor[0:self.NoE] = self.rootsection.g_factor.get_value(borrow=True)
+        new_g_threshold[0:self.NoE] = self.rootsection.g_threshold.get_value(borrow=True)
+        new_g_amplification[0:self.NoE] = self.rootsection.g_amplification.get_value(borrow=True)
+        new_g_min[0:self.NoE] = self.rootsection.g_min.get_value(borrow=True)
+        new_g_max[0:self.NoE] =  self.rootsection.g_max.get_value(borrow=True)
+        new_g_function_selector[0:self.NoE] = self.rootsection.g_function_selector.get_value(borrow=True)
+        new_g_expect[0:self.NoE] = self.rootsection.g_expect.get_value(borrow=True)
+        new_g_countdown[0:self.NoE] = self.rootsection.g_countdown.get_value(borrow=True)
+        new_g_wait[0:self.NoE] = self.rootsection.g_wait.get_value(borrow=True)
         new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
 
         with self.netlock:
@@ -1003,16 +959,16 @@ class TheanoNodenet(Nodenet):
             self.rootsection.w.set_value(new_w, borrow=True)
             self.rootsection.a.set_value(new_a, borrow=True)
             self.rootsection.a_shifted.set_value(new_a_shifted, borrow=True)
-            self.g_theta.set_value(new_g_theta, borrow=True)
-            self.g_factor.set_value(new_g_factor, borrow=True)
-            self.g_threshold.set_value(new_g_threshold, borrow=True)
-            self.g_amplification.set_value(new_g_amplification, borrow=True)
-            self.g_min.set_value(new_g_min, borrow=True)
-            self.g_max.set_value(new_g_max, borrow=True)
-            self.g_function_selector.set_value(new_g_function_selector, borrow=True)
-            self.g_expect.set_value(new_g_expect, borrow=True)
-            self.g_countdown.set_value(new_g_countdown, borrow=True)
-            self.g_wait.set_value(new_g_wait, borrow=True)
+            self.rootsection.g_theta.set_value(new_g_theta, borrow=True)
+            self.rootsection.g_factor.set_value(new_g_factor, borrow=True)
+            self.rootsection.g_threshold.set_value(new_g_threshold, borrow=True)
+            self.rootsection.g_amplification.set_value(new_g_amplification, borrow=True)
+            self.rootsection.g_min.set_value(new_g_min, borrow=True)
+            self.rootsection.g_max.set_value(new_g_max, borrow=True)
+            self.rootsection.g_function_selector.set_value(new_g_function_selector, borrow=True)
+            self.rootsection.g_expect.set_value(new_g_expect, borrow=True)
+            self.rootsection.g_countdown.set_value(new_g_countdown, borrow=True)
+            self.rootsection.g_wait.set_value(new_g_wait, borrow=True)
             self.n_function_selector.set_value(new_n_function_selector, borrow=True)
             self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
             self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
@@ -1140,17 +1096,17 @@ class TheanoNodenet(Nodenet):
 
             if self.__nodetypes[nodetype].parameter_defaults.get('expectation'):
                 value = self.__nodetypes[nodetype].parameter_defaults['expectation']
-                g_expect_array = self.g_expect.get_value(borrow=True)
+                g_expect_array = self.rootsection.g_expect.get_value(borrow=True)
                 g_expect_array[offset + SUR] = float(value)
                 g_expect_array[offset + POR] = float(value)
-                self.g_expect.set_value(g_expect_array, borrow=True)
+                self.rootsection.g_expect.set_value(g_expect_array, borrow=True)
 
             if self.__nodetypes[nodetype].parameter_defaults.get('wait'):
                 value = self.__nodetypes[nodetype].parameter_defaults['wait']
-                g_wait_array = self.g_wait.get_value(borrow=True)
+                g_wait_array = self.rootsection.g_wait.get_value(borrow=True)
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))
-                self.g_wait.set_value(g_wait_array, borrow=True)
+                self.rootsection.g_wait.set_value(g_wait_array, borrow=True)
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")
@@ -1204,11 +1160,11 @@ class TheanoNodenet(Nodenet):
         self.rootsection.allocated_nodes[node_from_id(uid)] = 0
         self.rootsection.allocated_node_offsets[node_from_id(uid)] = 0
         self.rootsection.allocated_node_parents[node_from_id(uid)] = 0
-        g_function_selector_array = self.g_function_selector.get_value(borrow=True)
+        g_function_selector_array = self.rootsection.g_function_selector.get_value(borrow=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
             self.rootsection.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
-        self.g_function_selector.set_value(g_function_selector_array, borrow=True)
+        self.rootsection.g_function_selector.set_value(g_function_selector_array, borrow=True)
         self.rootsection.allocated_elements_to_nodes[np.where(self.rootsection.allocated_elements_to_nodes == node_from_id(uid))[0]] = 0
 
         if type == PIPE:
@@ -1286,25 +1242,25 @@ class TheanoNodenet(Nodenet):
 
         elementindex = self.rootsection.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
         if parameter == 'threshold':
-            g_threshold_array = self.g_threshold.get_value(borrow=True)
+            g_threshold_array = self.rootsection.g_threshold.get_value(borrow=True)
             g_threshold_array[elementindex] = value
-            self.g_threshold.set_value(g_threshold_array, borrow=True)
+            self.rootsection.g_threshold.set_value(g_threshold_array, borrow=True)
         elif parameter == 'amplification':
-            g_amplification_array = self.g_amplification.get_value(borrow=True)
+            g_amplification_array = self.rootsection.g_amplification.get_value(borrow=True)
             g_amplification_array[elementindex] = value
-            self.g_amplification.set_value(g_amplification_array, borrow=True)
+            self.rootsection.g_amplification.set_value(g_amplification_array, borrow=True)
         elif parameter == 'minimum':
-            g_min_array = self.g_min.get_value(borrow=True)
+            g_min_array = self.rootsection.g_min.get_value(borrow=True)
             g_min_array[elementindex] = value
-            self.g_min.set_value(g_min_array, borrow=True)
+            self.rootsection.g_min.set_value(g_min_array, borrow=True)
         elif parameter == 'maximum':
-            g_max_array = self.g_max.get_value(borrow=True)
+            g_max_array = self.rootsection.g_max.get_value(borrow=True)
             g_max_array[elementindex] = value
-            self.g_max.set_value(g_max_array, borrow=True)
+            self.rootsection.g_max.set_value(g_max_array, borrow=True)
         elif parameter == 'theta':
-            g_theta_array = self.g_theta.get_value(borrow=True)
+            g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
             g_theta_array[elementindex] = value
-            self.g_theta.set_value(g_theta_array, borrow=True)
+            self.rootsection.g_theta.set_value(g_theta_array, borrow=True)
 
     def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
         id = node_from_id(uid)
@@ -1314,9 +1270,9 @@ class TheanoNodenet(Nodenet):
             nodetype = self.get_nodetype(get_string_node_type(numerical_node_type, self.native_modules))
 
         elementindex = self.rootsection.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
-        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_function_selector = self.rootsection.g_function_selector.get_value(borrow=True)
         g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
-        self.g_function_selector.set_value(g_function_selector, borrow=True)
+        self.rootsection.g_function_selector.set_value(g_function_selector, borrow=True)
         if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
             self.has_gatefunction_absolute = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
@@ -1852,15 +1808,15 @@ class TheanoNodenet(Nodenet):
     def get_thetas(self, group):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
-        g_theta_array = self.g_theta.get_value(borrow=True)
+        g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
         return g_theta_array[self.nodegroups[group]]
 
     def set_thetas(self, group, thetas):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
-        g_theta_array = self.g_theta.get_value(borrow=True)
+        g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
         g_theta_array[self.nodegroups[group]] = thetas
-        self.g_theta.set_value(g_theta_array, borrow=True)
+        self.rootsection.g_theta.set_value(g_theta_array, borrow=True)
 
     def get_link_weights(self, group_from, group_to):
         if group_from not in self.nodegroups:

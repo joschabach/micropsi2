@@ -107,12 +107,12 @@ class TheanoNode(Node):
         self._nodenet.set_node_gatefunction_name(self.uid, gate_type, gatefunction_name)
 
     def get_gatefunction_name(self, gate_type):
-        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
+        g_function_selector = self._section.g_function_selector.get_value(borrow=True)
         return get_string_gatefunction_type(g_function_selector[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)])
 
     def get_gatefunction_names(self):
         result = {}
-        g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
+        g_function_selector = self._section.g_function_selector.get_value(borrow=True)
         for numericalgate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
             result[get_string_gate_type(numericalgate, self.nodetype)] = \
                 get_string_gatefunction_type(g_function_selector[self._section.allocated_node_offsets[self._id] + numericalgate])
@@ -125,11 +125,11 @@ class TheanoNode(Node):
         return self.clone_non_default_gate_parameters()
 
     def clone_non_default_gate_parameters(self, gate_type=None):
-        g_threshold_array = self._nodenet.g_threshold.get_value(borrow=True)
-        g_amplification_array = self._nodenet.g_amplification.get_value(borrow=True)
-        g_min_array = self._nodenet.g_min.get_value(borrow=True)
-        g_max_array = self._nodenet.g_max.get_value(borrow=True)
-        g_theta = self._nodenet.g_theta.get_value(borrow=True)
+        g_threshold_array = self._section.g_threshold.get_value(borrow=True)
+        g_amplification_array = self._section.g_amplification.get_value(borrow=True)
+        g_min_array = self._section.g_min.get_value(borrow=True)
+        g_max_array = self._section.g_max.get_value(borrow=True)
+        g_theta = self._section.g_theta.get_value(borrow=True)
 
         gatemap = {}
         gate_types = self.nodetype.gate_defaults.keys()
@@ -232,15 +232,15 @@ class TheanoNode(Node):
         elif self.type == "Activator" and parameter == "type":
             self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
         elif self.type == "Pipe" and parameter == "expectation":
-            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
+            g_expect_array = self._section.g_expect.get_value(borrow=True)
             g_expect_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
             g_expect_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = float(value)
-            self._nodenet.g_expect.set_value(g_expect_array, borrow=True)
+            self._section.g_expect.set_value(g_expect_array, borrow=True)
         elif self.type == "Pipe" and parameter == "wait":
-            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
+            g_wait_array = self._section.g_wait.get_value(borrow=True)
             g_wait_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = min(int(value), 128)
             g_wait_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = min(int(value), 128)
-            self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
+            self._section.g_wait.set_value(g_wait_array, borrow=True)
         elif self.type == "Comment" and parameter == "comment":
             self.parameters[parameter] = value
         elif self.type in self._nodenet.native_modules:
@@ -272,10 +272,10 @@ class TheanoNode(Node):
                 activator_type = "exp"
             parameters['type'] = activator_type
         elif self.type == "Pipe":
-            g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
+            g_expect_array = self._section.g_expect.get_value(borrow=True)
             value = g_expect_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
             parameters['expectation'] = value
-            g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
+            g_wait_array = self._section.g_wait.get_value(borrow=True)
             parameters['wait'] = g_wait_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
         elif self.type == "Comment":
             parameters['comment'] = self.parameters['comment']

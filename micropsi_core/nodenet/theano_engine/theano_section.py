@@ -240,6 +240,7 @@ class TheanoSection():
         self.__has_gatefunction_tanh = False
         self.__has_gatefunction_rect = False
         self.__has_gatefunction_one_over_x = False
+        self.por_ret_dirty = True
 
         # compile theano functions
         self.compile_propagate()
@@ -412,7 +413,7 @@ class TheanoSection():
 
         self.__take_native_module_slot_snapshots()
         if self.has_pipes:
-            self.nodenet.rebuild_shifted()
+            self.__rebuild_shifted()
         if self.has_directional_activators:
             self.__calculate_g_factors()
         self.calculate_nodes()
@@ -453,3 +454,66 @@ class TheanoSection():
         a[0] = 1.
         g_factor = a[self.allocated_elements_to_activators]
         self.g_factor.set_value(g_factor, borrow=True)
+
+    def __rebuild_shifted(self):
+        a_array = self.a.get_value(borrow=True)
+        a_rolled_array = np.roll(a_array, 7)
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.a_shifted.set_value(a_shifted_matrix, borrow=True)
+
+    def rebuild_por_linked(self):
+
+        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        w_matrix = self.w.get_value(borrow=True)
+
+        por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
+
+        slotrows = w_matrix[por_indices, :]
+        if not self.sparse:
+            linkedflags = np.any(slotrows, axis=1)
+        else:
+            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
+            max_values = slotrows.max(axis=1).todense()
+            linkedflags = max_values.astype(np.int8, copy=False)
+            linkedflags = np.minimum(linkedflags, 1)
+
+        n_node_porlinked_array[por_indices - 1] = linkedflags       # gen
+        n_node_porlinked_array[por_indices] = linkedflags           # por
+        n_node_porlinked_array[por_indices + 1] = linkedflags       # ret
+        n_node_porlinked_array[por_indices + 2] = linkedflags       # sub
+        n_node_porlinked_array[por_indices + 3] = linkedflags       # sur
+        n_node_porlinked_array[por_indices + 4] = linkedflags       # sub
+        n_node_porlinked_array[por_indices + 5] = linkedflags       # sur
+
+        self.n_node_porlinked.set_value(n_node_porlinked_array)
+
+    def rebuild_ret_linked(self):
+
+        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
+
+        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        w_matrix = self.w.get_value(borrow=True)
+
+        ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
+
+        slotrows = w_matrix[ret_indices, :]
+        if not self.sparse:
+            linkedflags = np.any(slotrows, axis=1)
+        else:
+            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
+            max_values = slotrows.max(axis=1).todense()
+            linkedflags = max_values.astype(np.int8, copy=False)
+            linkedflags = np.minimum(linkedflags, 1)
+
+        n_node_retlinked_array[ret_indices - 2] = linkedflags       # gen
+        n_node_retlinked_array[ret_indices - 1] = linkedflags       # por
+        n_node_retlinked_array[ret_indices] = linkedflags           # ret
+        n_node_retlinked_array[ret_indices + 1] = linkedflags       # sub
+        n_node_retlinked_array[ret_indices + 2] = linkedflags       # sur
+        n_node_retlinked_array[ret_indices + 3] = linkedflags       # cat
+        n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
+
+        self.n_node_retlinked.set_value(n_node_retlinked_array)
+

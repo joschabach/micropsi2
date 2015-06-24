@@ -173,8 +173,6 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        self.__por_ret_dirty = True
-
         self.sparse = True
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
@@ -525,7 +523,7 @@ class TheanoNodenet(Nodenet):
 
                 # reconstruct other states
 
-                self.__por_ret_dirty = True
+                self.rootsection.por_ret_dirty = True
 
                 if 'g_function_selector' in datafile:
                     g_function_selector = datafile['g_function_selector']
@@ -708,10 +706,10 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
 
-            if self.__por_ret_dirty:
-                self.rebuild_por_linked()
-                self.rebuild_ret_linked()
-                self.__por_ret_dirty = False
+            if self.rootsection.por_ret_dirty:
+                self.rootsection.rebuild_por_linked()
+                self.rootsection.rebuild_ret_linked()
+                self.rootsection.por_ret_dirty = False
 
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
@@ -868,7 +866,7 @@ class TheanoNodenet(Nodenet):
             self.rootsection.has_new_usages = True
 
         if self.rootsection.has_pipes:
-            self.__por_ret_dirty = True
+            self.rootsection.por_ret_dirty = True
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
 
@@ -1748,72 +1746,10 @@ class TheanoNodenet(Nodenet):
                 del self.proxycache[uid]
 
         if self.rootsection.has_pipes:
-            self.__por_ret_dirty = True
+            self.rootsection.por_ret_dirty = True
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
-
-    def rebuild_shifted(self):
-        a_array = self.rootsection.a.get_value(borrow=True)
-        a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.rootsection.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
-        self.rootsection.a_shifted.set_value(a_shifted_matrix, borrow=True)
-
-    def rebuild_por_linked(self):
-
-        n_node_porlinked_array = np.zeros(self.rootsection.NoE, dtype=np.int8)
-
-        n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
-        w_matrix = self.rootsection.w.get_value(borrow=True)
-
-        por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
-
-        slotrows = w_matrix[por_indices, :]
-        if not self.rootsection.sparse:
-            linkedflags = np.any(slotrows, axis=1)
-        else:
-            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
-            max_values = slotrows.max(axis=1).todense()
-            linkedflags = max_values.astype(np.int8, copy=False)
-            linkedflags = np.minimum(linkedflags, 1)
-
-        n_node_porlinked_array[por_indices - 1] = linkedflags       # gen
-        n_node_porlinked_array[por_indices] = linkedflags           # por
-        n_node_porlinked_array[por_indices + 1] = linkedflags       # ret
-        n_node_porlinked_array[por_indices + 2] = linkedflags       # sub
-        n_node_porlinked_array[por_indices + 3] = linkedflags       # sur
-        n_node_porlinked_array[por_indices + 4] = linkedflags       # sub
-        n_node_porlinked_array[por_indices + 5] = linkedflags       # sur
-
-        self.rootsection.n_node_porlinked.set_value(n_node_porlinked_array)
-
-    def rebuild_ret_linked(self):
-
-        n_node_retlinked_array = np.zeros(self.rootsection.NoE, dtype=np.int8)
-
-        n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
-        w_matrix = self.rootsection.w.get_value(borrow=True)
-
-        ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
-
-        slotrows = w_matrix[ret_indices, :]
-        if not self.rootsection.sparse:
-            linkedflags = np.any(slotrows, axis=1)
-        else:
-            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
-            max_values = slotrows.max(axis=1).todense()
-            linkedflags = max_values.astype(np.int8, copy=False)
-            linkedflags = np.minimum(linkedflags, 1)
-
-        n_node_retlinked_array[ret_indices - 2] = linkedflags       # gen
-        n_node_retlinked_array[ret_indices - 1] = linkedflags       # por
-        n_node_retlinked_array[ret_indices] = linkedflags           # ret
-        n_node_retlinked_array[ret_indices + 1] = linkedflags       # sub
-        n_node_retlinked_array[ret_indices + 2] = linkedflags       # sur
-        n_node_retlinked_array[ret_indices + 3] = linkedflags       # cat
-        n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
-
-        self.rootsection.n_node_retlinked.set_value(n_node_retlinked_array)
 
     def integrity_check(self):
 

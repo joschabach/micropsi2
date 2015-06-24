@@ -23,4 +23,8 @@ class TheanoSection():
         # array, index is node id, value is numeric node type
         self.allocated_nodes = None
 
+        # array, index is node id, value is offset in a and w
+        self.allocated_node_offsets = None
+
         self.allocated_nodes = np.zeros(self.nodenet.NoN, dtype=np.int32)
+        self.allocated_node_offsets = np.zeros(self.nodenet.NoN, dtype=np.int32)

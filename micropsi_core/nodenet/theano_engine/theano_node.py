@@ -86,7 +86,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return float(self._nodenet.a.get_value(borrow=True)[self._nodenet.allocated_node_offsets[self._id] + GEN])
+        return float(self._nodenet.a.get_value(borrow=True)[self._section.allocated_node_offsets[self._id] + GEN])
 
     @property
     def activations(self):
@@ -95,7 +95,7 @@ class TheanoNode(Node):
     @activation.setter
     def activation(self, activation):
         a_array = self._nodenet.a.get_value(borrow=True)
-        a_array[self._nodenet.allocated_node_offsets[self._id] + GEN] = activation
+        a_array[self._section.allocated_node_offsets[self._id] + GEN] = activation
         self._nodenet.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
@@ -108,14 +108,14 @@ class TheanoNode(Node):
 
     def get_gatefunction_name(self, gate_type):
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
-        return get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)])
+        return get_string_gatefunction_type(g_function_selector[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type(gate_type, self.nodetype)])
 
     def get_gatefunction_names(self):
         result = {}
         g_function_selector = self._nodenet.g_function_selector.get_value(borrow=True)
         for numericalgate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
             result[get_string_gate_type(numericalgate, self.nodetype)] = \
-                get_string_gatefunction_type(g_function_selector[self._nodenet.allocated_node_offsets[self._id] + numericalgate])
+                get_string_gatefunction_type(g_function_selector[self._section.allocated_node_offsets[self._id] + numericalgate])
         return result
 
     def set_gate_parameter(self, gate_type, parameter, value):
@@ -143,23 +143,23 @@ class TheanoNode(Node):
             numericalgate = get_numerical_gate_type(gate_type, self.nodetype)
             gate_parameters = {}
 
-            threshold = g_threshold_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            threshold = g_threshold_array[self._section.allocated_node_offsets[self._id] + numericalgate].item()
             if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
                 gate_parameters['threshold'] = threshold
 
-            amplification = g_amplification_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            amplification = g_amplification_array[self._section.allocated_node_offsets[self._id] + numericalgate].item()
             if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
                 gate_parameters['amplification'] = amplification
 
-            minimum = g_min_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            minimum = g_min_array[self._section.allocated_node_offsets[self._id] + numericalgate].item()
             if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
                 gate_parameters['minimum'] = minimum
 
-            maximum = g_max_array[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            maximum = g_max_array[self._section.allocated_node_offsets[self._id] + numericalgate].item()
             if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
                 gate_parameters['maximum'] = maximum
 
-            theta = g_theta[self._nodenet.allocated_node_offsets[self._id] + numericalgate].item()
+            theta = g_theta[self._section.allocated_node_offsets[self._id] + numericalgate].item()
             if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
                 gate_parameters['theta'] = theta
 
@@ -173,7 +173,7 @@ class TheanoNode(Node):
         self.slot_activation_snapshot.clear()
         for slottype in self.nodetype.slottypes:
             self.slot_activation_snapshot[slottype] =  \
-                a_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
+                a_array[self._section.allocated_node_offsets[self._id] + get_numerical_slot_type(slottype, self.nodetype)]
 
     def get_slot(self, type):
         if type not in self.__slotcache:
@@ -233,13 +233,13 @@ class TheanoNode(Node):
             self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
         elif self.type == "Pipe" and parameter == "expectation":
             g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
-            g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
-            g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = float(value)
+            g_expect_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
+            g_expect_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = float(value)
             self._nodenet.g_expect.set_value(g_expect_array, borrow=True)
         elif self.type == "Pipe" and parameter == "wait":
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
-            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = min(int(value), 128)
-            g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = min(int(value), 128)
+            g_wait_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = min(int(value), 128)
+            g_wait_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = min(int(value), 128)
             self._nodenet.g_wait.set_value(g_wait_array, borrow=True)
         elif self.type == "Comment" and parameter == "comment":
             self.parameters[parameter] = value
@@ -273,10 +273,10 @@ class TheanoNode(Node):
             parameters['type'] = activator_type
         elif self.type == "Pipe":
             g_expect_array = self._nodenet.g_expect.get_value(borrow=True)
-            value = g_expect_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
+            value = g_expect_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
             parameters['expectation'] = value
             g_wait_array = self._nodenet.g_wait.get_value(borrow=True)
-            parameters['wait'] = g_wait_array[self._nodenet.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
+            parameters['wait'] = g_wait_array[self._section.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")].item()
         elif self.type == "Comment":
             parameters['comment'] = self.parameters['comment']
         elif self.type in self._nodenet.native_modules:
@@ -337,17 +337,17 @@ class TheanoGate(Gate):
     @property
     def empty(self):
         w_matrix = self.__nodenet.w.get_value(borrow=True)
-        gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
+        gatecolumn = w_matrix[:, self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         return len(np.nonzero(gatecolumn)[0]) == 0
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True)[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype])
+        return float(self.__nodenet.a.get_value(borrow=True)[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
         a_array = self.__nodenet.a.get_value(borrow=True)
-        a_array[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype] = value
+        a_array[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype] = value
         self.__nodenet.a.set_value(a_array, borrow=True)
 
     @property
@@ -366,15 +366,15 @@ class TheanoGate(Gate):
         if self.__linkcache is None:
             self.__linkcache = []
             w_matrix = self.__nodenet.w.get_value(borrow=True)
-            gatecolumn = w_matrix[:, self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
+            gatecolumn = w_matrix[:, self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
             links_indices = np.nonzero(gatecolumn)[0]
             for index in links_indices:
                 target_id = self.__nodenet.allocated_elements_to_nodes[index]
                 target_type = self.__section.allocated_nodes[target_id]
                 target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
-                target_slot_numerical = index - self.__nodenet.allocated_node_offsets[target_id]
+                target_slot_numerical = index - self.__section.allocated_node_offsets[target_id]
                 target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-                link = TheanoLink(self.__nodenet, self.__node.uid, self.__type, node_to_id(target_id), target_slot_type)
+                link = TheanoLink(self.__nodenet, self.__section, self.__node.uid, self.__type, node_to_id(target_id), target_slot_type)
                 self.__linkcache.append(link)
         return self.__linkcache
 
@@ -414,7 +414,7 @@ class TheanoSlot(Slot):
     @property
     def empty(self):
         w_matrix = self.__nodenet.w.get_value(borrow=True)
-        slotrow = w_matrix[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
+        slotrow = w_matrix[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
         return len(np.nonzero(slotrow)[1]) == 0
 
     @property
@@ -442,7 +442,7 @@ class TheanoSlot(Slot):
         if self.__linkcache is None:
             self.__linkcache = []
             w_matrix = self.__nodenet.w.get_value(borrow=True)
-            slotrow = w_matrix[self.__nodenet.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
+            slotrow = w_matrix[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
             if self.__nodenet.sparse:
                 links_indices = np.nonzero(slotrow)[1]
             else:
@@ -450,10 +450,10 @@ class TheanoSlot(Slot):
             for index in links_indices:
                 source_id = self.__nodenet.allocated_elements_to_nodes[index]
                 source_type = self.__section.allocated_nodes[source_id]
-                source_gate_numerical = index - self.__nodenet.allocated_node_offsets[source_id]
+                source_gate_numerical = index - self.__section.allocated_node_offsets[source_id]
                 source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
                 source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
-                link = TheanoLink(self.__nodenet, node_to_id(source_id), source_gate_type, self.__node.uid, self.__type)
+                link = TheanoLink(self.__nodenet, self.__section, node_to_id(source_id), source_gate_type, self.__node.uid, self.__type)
                 self.__linkcache.append(link)
         return self.__linkcache
 

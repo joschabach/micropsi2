@@ -232,6 +232,7 @@ class TheanoNodenet(Nodenet):
 
         self.netapi = TheanoNetAPI(self)
         self.rootsection = TheanoSection(self,
+                                         0,
                                          self.sparse,
                                          INITIAL_NUMBER_OF_NODES,
                                          INITIAL_NUMBER_OF_ELEMENTS,
@@ -540,12 +541,12 @@ class TheanoNodenet(Nodenet):
 
                 for id in range(len(self.rootsection.allocated_nodes)):
                     if self.rootsection.allocated_nodes[id] > MAX_STD_NODETYPE:
-                        uid = node_to_id(id)
+                        uid = node_to_id(id, self.rootsection.sid)
                         if 'nodes' in initfrom and uid in initfrom['nodes']:
                             self.rootsection.allocated_nodes[id] = get_numerical_node_type(initfrom['nodes'][uid]['type'], self.native_modules)
                         self.rootsection.native_module_instances[uid] = self.get_node(uid)
                     elif self.rootsection.allocated_nodes[id] == COMMENT:
-                        uid = node_to_id(id)
+                        uid = node_to_id(id, self.rootsection.sid)
                         self.rootsection.comment_instances[uid] = self.get_node(uid)
 
                 # reloading native modules ensures the types in allocated_nodes are up to date
@@ -555,10 +556,10 @@ class TheanoNodenet(Nodenet):
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
-                    self.inverted_sensor_map[node_to_id(id)] = sensor
+                    self.inverted_sensor_map[node_to_id(id, self.rootsection.sid)] = sensor
             for actuator, id_list in self.actuatormap.items():
                 for id in id_list:
-                    self.inverted_actuator_map[node_to_id(id)] = actuator
+                    self.inverted_actuator_map[node_to_id(id, self.rootsection.sid)] = actuator
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -734,9 +735,9 @@ class TheanoNodenet(Nodenet):
 
     def get_node_uids(self, group=None):
         if group is None:
-            return [node_to_id(id) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
+            return [node_to_id(id, self.rootsection.sid) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
         elif group in self.rootsection.nodegroups:
-            return [node_to_id(nid) for nid in self.rootsection.allocated_elements_to_nodes[self.rootsection.nodegroups[group]]]
+            return [node_to_id(nid, self.rootsection.sid) for nid in self.rootsection.allocated_elements_to_nodes[self.rootsection.nodegroups[group]]]
         else:
             return []
 
@@ -778,7 +779,7 @@ class TheanoNodenet(Nodenet):
                 growby = id - (self.rootsection.NoN - 2)
                 self.rootsection.grow_number_of_nodes(growby)
 
-        uid = node_to_id(id)
+        uid = node_to_id(id, self.rootsection.sid)
 
         # now find a range of free elements to be used by this node
         number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)
@@ -1150,7 +1151,7 @@ class TheanoNodenet(Nodenet):
             self.delete_nodespace(nodespace_to_id(child_id))
         node_ids = np.where(self.rootsection.allocated_node_parents == nodespace_id)[0]
         for node_id in node_ids:
-            self.delete_node(node_to_id(node_id))
+            self.delete_node(node_to_id(node_id, self.rootsection.sid))
 
         # clear from proxycache
         if uid in self.proxycache:
@@ -1176,7 +1177,7 @@ class TheanoNodenet(Nodenet):
             sensorlist = self.sensormap[datasource]
         for id in sensorlist:
             if nodespace is None or self.rootsection.allocated_node_parents[id] == nodespace_from_id(nodespace):
-                uid = node_to_id(id)
+                uid = node_to_id(id, self.rootsection.sid)
                 sensors[uid] = self.get_node(uid)
         return sensors
 
@@ -1190,7 +1191,7 @@ class TheanoNodenet(Nodenet):
             actuatorlist = self.actuatormap[datatarget]
         for id in actuatorlist:
             if nodespace is None or self.rootsection.allocated_node_parents[id] == nodespace_from_id(nodespace):
-                uid = node_to_id(id)
+                uid = node_to_id(id, self.rootsection.sid)
                 actuators[uid] = self.get_node(uid)
         return actuators
 
@@ -1322,7 +1323,7 @@ class TheanoNodenet(Nodenet):
         # node types list
         native_module_ids = np.where(self.rootsection.allocated_nodes > MAX_STD_NODETYPE)[0]
         for id in native_module_ids:
-            instance = self.get_node(node_to_id(id))
+            instance = self.get_node(node_to_id(id, self.rootsection.sid))
             self.rootsection.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def get_nodespace_data(self, nodespace_uid, include_links):
@@ -1389,15 +1390,15 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = gatecolumn[index].item()
 
-                    linkuid = "%s:%s:%s:%s" % (node_to_id(node_id), source_gate_type, target_slot_type, node_to_id(target_id))
+                    linkuid = "%s:%s:%s:%s" % (node_to_id(node_id, self.rootsection.sid), source_gate_type, target_slot_type, node_to_id(target_id, self.rootsection.sid))
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
                         "certainty": 1,
                         "source_gate_name": source_gate_type,
-                        "source_node_uid": node_to_id(node_id),
+                        "source_node_uid": node_to_id(node_id, self.rootsection.sid),
                         "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(target_id)
+                        "target_node_uid": node_to_id(target_id, self.rootsection.sid)
                     }
                     data[linkuid] = linkdata
 
@@ -1419,15 +1420,15 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = slotrow[index].item()
 
-                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id), source_gate_type, target_slot_type, node_to_id(node_id))
+                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, self.rootsection.sid), source_gate_type, target_slot_type, node_to_id(node_id, self.rootsection.sid))
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
                         "certainty": 1,
                         "source_gate_name": source_gate_type,
-                        "source_node_uid": node_to_id(source_id),
+                        "source_node_uid": node_to_id(source_id, self.rootsection.sid),
                         "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(node_id)
+                        "target_node_uid": node_to_id(node_id, self.rootsection.sid)
                     }
                     data[linkuid] = linkdata
 
@@ -1439,7 +1440,7 @@ class TheanoNodenet(Nodenet):
         nodeids = np.where((self.rootsection.allocated_nodes > MAX_STD_NODETYPE) | (self.rootsection.allocated_nodes == COMMENT))[0]
         for node_id in nodeids:
             i += 1
-            node_uid = node_to_id(node_id)
+            node_uid = node_to_id(node_id, self.rootsection.sid)
             data[node_uid] = self.get_node(node_uid).data
         return data
 
@@ -1452,7 +1453,7 @@ class TheanoNodenet(Nodenet):
             nodeids = np.where(self.rootsection.allocated_node_parents == parent_id)[0]
         for node_id in nodeids:
             i += 1
-            node_uid = node_to_id(node_id)
+            node_uid = node_to_id(node_id, self.rootsection.sid)
             data[node_uid] = self.get_node(node_uid).data
             if max_nodes > 0 and i > max_nodes:
                 break
@@ -1547,7 +1548,7 @@ class TheanoNodenet(Nodenet):
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':
-            ids = sorted(ids, key=lambda id: self.names[node_to_id(id)])
+            ids = sorted(ids, key=lambda id: self.names[node_to_id(id, self.rootsection.sid)])
         gate = get_numerical_gate_type(gatetype)
         self.rootsection.nodegroups[group_name] = self.rootsection.allocated_node_offsets[ids] + gate
 
@@ -1559,7 +1560,7 @@ class TheanoNodenet(Nodenet):
         ids = self.rootsection.nodegroups[group]
         for element in ids:
             nid = self.rootsection.allocated_elements_to_nodes[element]
-            uid = node_to_id(nid)
+            uid = node_to_id(nid, self.rootsection.sid)
             node = self.get_node(uid)
             print("%s %s" % (node.uid, node.name))
 
@@ -1618,8 +1619,8 @@ class TheanoNodenet(Nodenet):
         w_matrix[rows, cols] = new_w
         self.rootsection.w.set_value(w_matrix, borrow=True)
 
-        uids_to_invalidate = [node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.rootsection.nodegroups[group_from]]
-        uids_to_invalidate.extend([node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.rootsection.nodegroups[group_to]])
+        uids_to_invalidate = [node_to_id(self.rootsection.allocated_elements_to_nodes[eid], self.rootsection.sid) for eid in self.rootsection.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(self.rootsection.allocated_elements_to_nodes[eid], self.rootsection.sid) for eid in self.rootsection.nodegroups[group_to]])
 
         for uid in uids_to_invalidate:
             if uid in self.proxycache:

@@ -76,7 +76,7 @@ class TheanoNodespace(Nodespace):
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return [node_to_id(id) for id in np.where(self._section.allocated_node_parents == self._id)[0]]
+            return [node_to_id(id, self._section.sid) for id in np.where(self._section.allocated_node_parents == self._id)[0]]
         elif entitytype == 'nodespaces':
             return [nodespace_to_id(id) for id in np.where(self._section.allocated_nodespaces == self._id)[0]]
         elif entitytype == None:

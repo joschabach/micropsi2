@@ -49,7 +49,11 @@ class TheanoSection():
 
         # theano tensors for performing operations
         self.w = None            # matrix of weights
+        self.a = None            # vector of activations
+        self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
+                            # this is a view on the activation values instrumental in calculating concept node functions
 
+        # instantiate numpy data structures
         self.allocated_nodes = np.zeros(self.nodenet.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.nodenet.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.nodenet.NoE, dtype=np.int32)
@@ -72,3 +76,9 @@ class TheanoSection():
         else:
             w_matrix = np.zeros((self.nodenet.NoE, self.nodenet.NoE), dtype=nodenet.scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
+
+        a_array = np.zeros(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
+
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.nodenet.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
+        self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)

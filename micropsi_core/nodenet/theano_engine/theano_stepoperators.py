@@ -24,9 +24,9 @@ class TheanoPropagate(Propagate):
 
     def __init__(self, nodenet):
         if nodenet.sparse:
-            self.propagate = theano.function([], None, updates={nodenet.a: ST.dot(nodenet.rootsection.w, nodenet.a)})
+            self.propagate = theano.function([], None, updates={nodenet.rootsection.a: ST.dot(nodenet.rootsection.w, nodenet.rootsection.a)})
         else:
-            self.propagate = theano.function([], None, updates={nodenet.a: T.dot(nodenet.rootsection.w, nodenet.a)})
+            self.propagate = theano.function([], None, updates={nodenet.rootsection.a: T.dot(nodenet.rootsection.w, nodenet.rootsection.a)})
 
     def execute(self, nodenet, nodes, netapi):
         self.propagate()
@@ -46,13 +46,13 @@ class TheanoCalculate(Calculate):
         self.nodenet = nodenet
 
     def compile_theano_functions(self, nodenet):
-        slots = nodenet.a_shifted
+        slots = nodenet.rootsection.a_shifted
         countdown = nodenet.g_countdown
         por_linked = nodenet.n_node_porlinked
         ret_linked = nodenet.n_node_retlinked
 
         # node functions implemented with identity by default (native modules are calculated by python)
-        nodefunctions = nodenet.a
+        nodefunctions = nodenet.rootsection.a
 
         # pipe logic
 
@@ -197,7 +197,7 @@ class TheanoCalculate(Calculate):
         gatefunctions = limited_gate_function_output
 
         # put the theano graph into a callable function to be executed
-        self.calculate = theano.function([], None, updates=[(nodenet.a, gatefunctions), (nodenet.g_countdown, countdown)])
+        self.calculate = theano.function([], None, updates=[(nodenet.rootsection.a, gatefunctions), (nodenet.g_countdown, countdown)])
 
     def read_sensors_and_actuator_feedback(self):
         if self.world is None:
@@ -230,14 +230,14 @@ class TheanoCalculate(Calculate):
             instance.node_function()
 
     def calculate_g_factors(self):
-        a = self.nodenet.a.get_value(borrow=True)
+        a = self.nodenet.rootsection.a.get_value(borrow=True)
         a[0] = 1.
         g_factor = a[self.nodenet.rootsection.allocated_elements_to_activators]
         self.nodenet.g_factor.set_value(g_factor, borrow=True)
 
     def count_success_and_failure(self, nodenet):
-        nays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.a.get_value(borrow=True) <= -1))[0])
-        yays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.a.get_value(borrow=True) >= 1))[0])
+        nays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) <= -1))[0])
+        yays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) >= 1))[0])
         nodenet.set_modulator('base_number_of_expected_events', yays)
         nodenet.set_modulator('base_number_of_unexpected_events', nays)
 

@@ -254,10 +254,6 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        self.a = None            # vector of activations
-        self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
-                            # this is a view on the activation values instrumental in calculating concept node functions
-
         self.g_factor = None     # vector of gate factors, controlled by directional activators
         self.g_threshold = None  # vector of thresholds (gate parameters)
         self.g_amplification = None  # vector of amplification factors
@@ -359,12 +355,6 @@ class TheanoNodenet(Nodenet):
         self.__modulators['por_ret_decay'] = 0.
 
         self.proxycache = {}
-
-        a_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
-
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
-        self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
         g_theta_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
@@ -468,7 +458,7 @@ class TheanoNodenet(Nodenet):
         if not self.sparse:
             w = sp.csr_matrix(w)
 
-        a = self.a.get_value(borrow=True)
+        a = self.rootsection.a.get_value(borrow=True)
         g_theta = self.g_theta.get_value(borrow=True)
         g_factor = self.g_factor.get_value(borrow=True)
         g_threshold = self.g_threshold.get_value(borrow=True)
@@ -625,7 +615,7 @@ class TheanoNodenet(Nodenet):
                     if not self.sparse:
                         w = w.todense()
                     self.rootsection.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
-                    self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
+                    self.rootsection.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
                 else:
                     self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
 
@@ -993,7 +983,7 @@ class TheanoNodenet(Nodenet):
 
         new_w[0:self.NoE, 0:self.NoE] = self.rootsection.w.get_value(borrow=True)
 
-        new_a[0:self.NoE] = self.a.get_value(borrow=True)
+        new_a[0:self.NoE] = self.rootsection.a.get_value(borrow=True)
         new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
         new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
         new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
@@ -1011,8 +1001,8 @@ class TheanoNodenet(Nodenet):
             self.rootsection.allocated_elements_to_nodes = new_allocated_elements_to_nodes
             self.rootsection.allocated_elements_to_activators = new_allocated_elements_to_activators
             self.rootsection.w.set_value(new_w, borrow=True)
-            self.a.set_value(new_a, borrow=True)
-            self.a_shifted.set_value(new_a_shifted, borrow=True)
+            self.rootsection.a.set_value(new_a, borrow=True)
+            self.rootsection.a_shifted.set_value(new_a_shifted, borrow=True)
             self.g_theta.set_value(new_g_theta, borrow=True)
             self.g_factor.set_value(new_g_factor, borrow=True)
             self.g_threshold.set_value(new_g_threshold, borrow=True)
@@ -1194,10 +1184,10 @@ class TheanoNodenet(Nodenet):
                     self.set_node_gatefunction_name(uid, gate, gate_function)
 
         # initialize activation to zero
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootsection.a.get_value(borrow=True)
         for element in range (0, get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)):
             a_array[offset + element] = 0
-        self.a.set_value(a_array)
+        self.rootsection.a.set_value(a_array)
 
         return uid
 
@@ -1779,7 +1769,7 @@ class TheanoNodenet(Nodenet):
         Sets the sensors for the given data sources to the given values
         """
 
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootsection.a.get_value(borrow=True)
 
         for datasource in datasource_to_value_map:
             value = datasource_to_value_map.get(datasource)
@@ -1795,7 +1785,7 @@ class TheanoNodenet(Nodenet):
             for actuator_uid in actuator_uids:
                 a_array[self.rootsection.allocated_node_offsets[actuator_uid] + GEN] = value
 
-        self.a.set_value(a_array, borrow=True)
+        self.rootsection.a.set_value(a_array, borrow=True)
 
     def read_actuators(self):
         """
@@ -1804,7 +1794,7 @@ class TheanoNodenet(Nodenet):
 
         actuator_values_to_write = {}
 
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootsection.a.get_value(borrow=True)
 
         for datatarget in self.actuatormap:
             actuator_node_activations = 0
@@ -1813,7 +1803,7 @@ class TheanoNodenet(Nodenet):
 
             actuator_values_to_write[datatarget] = actuator_node_activations
 
-        self.a.set_value(a_array, borrow=True)
+        self.rootsection.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
 
@@ -1849,15 +1839,15 @@ class TheanoNodenet(Nodenet):
     def get_activations(self, group):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootsection.a.get_value(borrow=True)
         return a_array[self.nodegroups[group]]
 
     def set_activations(self, group, new_activations):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootsection.a.get_value(borrow=True)
         a_array[self.nodegroups[group]] = new_activations
-        self.a.set_value(a_array, borrow=True)
+        self.rootsection.a.set_value(a_array, borrow=True)
 
     def get_thetas(self, group):
         if group not in self.nodegroups:
@@ -1915,10 +1905,10 @@ class TheanoNodenet(Nodenet):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
 
     def rebuild_shifted(self):
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootsection.a.get_value(borrow=True)
         a_rolled_array = np.roll(a_array, 7)
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
-        self.a_shifted.set_value(a_shifted_matrix, borrow=True)
+        self.rootsection.a_shifted.set_value(a_shifted_matrix, borrow=True)
 
     def rebuild_por_linked(self):
 

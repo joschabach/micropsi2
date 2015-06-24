@@ -86,7 +86,7 @@ class TheanoNode(Node):
 
     @property
     def activation(self):
-        return float(self._nodenet.a.get_value(borrow=True)[self._section.allocated_node_offsets[self._id] + GEN])
+        return float(self._section.a.get_value(borrow=True)[self._section.allocated_node_offsets[self._id] + GEN])
 
     @property
     def activations(self):
@@ -94,9 +94,9 @@ class TheanoNode(Node):
 
     @activation.setter
     def activation(self, activation):
-        a_array = self._nodenet.a.get_value(borrow=True)
+        a_array = self._section.a.get_value(borrow=True)
         a_array[self._section.allocated_node_offsets[self._id] + GEN] = activation
-        self._nodenet.a.set_value(a_array, borrow=True)
+        self._section.a.set_value(a_array, borrow=True)
 
     def get_gate(self, type):
         if type not in self.__gatecache:
@@ -169,7 +169,7 @@ class TheanoNode(Node):
         return gatemap
 
     def take_slot_activation_snapshot(self):
-        a_array = self._nodenet.a.get_value(borrow=True)
+        a_array = self._section.a.get_value(borrow=True)
         self.slot_activation_snapshot.clear()
         for slottype in self.nodetype.slottypes:
             self.slot_activation_snapshot[slottype] =  \
@@ -342,13 +342,13 @@ class TheanoGate(Gate):
 
     @property
     def activation(self):
-        return float(self.__nodenet.a.get_value(borrow=True)[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype])
+        return float(self.__section.a.get_value(borrow=True)[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype])
 
     @activation.setter
     def activation(self, value):
-        a_array = self.__nodenet.a.get_value(borrow=True)
+        a_array = self.__section.a.get_value(borrow=True)
         a_array[self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype] = value
-        self.__nodenet.a.set_value(a_array, borrow=True)
+        self.__section.a.set_value(a_array, borrow=True)
 
     @property
     def activations(self):

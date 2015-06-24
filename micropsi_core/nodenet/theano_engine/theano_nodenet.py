@@ -1006,33 +1006,13 @@ class TheanoNodenet(Nodenet):
     def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
         id = node_from_id(uid)
         self.rootsection.set_node_gatefunction_name(id, gate_type, gatefunction_name)
-        
-    def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
 
+    def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
         activator_id = 0
         if activator_uid is not None and len(activator_uid) > 0:
             activator_id = node_from_id(activator_uid)
-
         nodespace_id = nodespace_from_id(nodespace_uid)
-
-        if gate_type == "por":
-            self.rootsection.allocated_nodespaces_por_activators[nodespace_id] = activator_id
-        elif gate_type == "ret":
-            self.rootsection.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
-        elif gate_type == "sub":
-            self.rootsection.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
-        elif gate_type == "sur":
-            self.rootsection.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
-        elif gate_type == "cat":
-            self.rootsection.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
-        elif gate_type == "exp":
-            self.rootsection.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
-
-        nodes_in_nodespace = np.where(self.rootsection.allocated_node_parents == nodespace_id)[0]
-        for nid in nodes_in_nodespace:
-            if self.rootsection.allocated_nodes[nid] == PIPE:
-                self.rootsection.allocated_elements_to_activators[self.rootsection.allocated_node_offsets[nid] +
-                                                      get_numerical_gate_type(gate_type)] = self.rootsection.allocated_node_offsets[activator_id]
+        self.rootsection.set_nodespace_gatetype_activator(nodespace_id, gate_type, activator_id)
 
     def get_nodespace(self, uid):
         if uid is None:

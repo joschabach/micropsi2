@@ -2,46 +2,46 @@
 fixed_nodenet_data = """{
     "uid": "fixed_test_nodenet",
     "links": {
-        "n3:sub:gen:n4": {
+        "n0003:sub:gen:n0004": {
             "certainty": 1,
             "source_gate_name": "sub",
-            "source_node_uid": "n3",
-            "target_node_uid": "n4",
+            "source_node_uid": "n0003",
+            "target_node_uid": "n0004",
             "target_slot_name": "gen",
-            "uid": "n3:sub:gen:n4",
+            "uid": "n0003:sub:gen:n0004",
             "weight": 1
         },
-        "n1:por:gen:n2": {
+        "n0001:por:gen:n0002": {
             "certainty": 1,
             "source_gate_name": "por",
-            "source_node_uid": "n1",
-            "target_node_uid": "n2",
+            "source_node_uid": "n0001",
+            "target_node_uid": "n0002",
             "target_slot_name": "gen",
-            "uid": "n1:por:gen:n2",
+            "uid": "n0001:por:gen:n0002",
             "weight": 1
         },
-        "n5:gen:gen:n3": {
+        "n0005:gen:gen:n0003": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node_uid": "n5",
-            "target_node_uid": "n3",
+            "source_node_uid": "n0005",
+            "target_node_uid": "n0003",
             "target_slot_name": "gen",
-            "uid": "n5:gen:gen:n3",
+            "uid": "n0005:gen:gen:n0003",
             "weight": 1
         },
-        "n5:gen:gen:n1": {
+        "n0005:gen:gen:n0001": {
             "certainty": 1,
             "source_gate_name": "gen",
-            "source_node_uid": "n5",
-            "target_node_uid": "n1",
+            "source_node_uid": "n0005",
+            "target_node_uid": "n0001",
             "target_slot_name": "gen",
-            "uid": "n5:gen:gen:n1",
+            "uid": "n0005:gen:gen:n0001",
             "weight": 1
         }
     },
     "name": "fixed",
     "nodes": {
-        "n1": {
+        "n0001": {
             "activation": 0,
             "index": 2,
             "name": "A1",
@@ -52,9 +52,9 @@ fixed_nodenet_data = """{
                 115
             ],
             "type": "Pipe",
-            "uid": "n1"
+            "uid": "n0001"
         },
-        "n5": {
+        "n0005": {
             "activation": 0,
             "index": 1,
             "name": "S",
@@ -67,9 +67,9 @@ fixed_nodenet_data = """{
                 138
             ],
             "type": "Sensor",
-            "uid": "n5"
+            "uid": "n0005"
         },
-        "n2": {
+        "n0002": {
             "activation": 0,
             "index": 4,
             "name": "A2",
@@ -82,9 +82,9 @@ fixed_nodenet_data = """{
                 118
             ],
             "type": "Pipe",
-            "uid": "n2"
+            "uid": "n0002"
         },
-        "n3": {
+        "n0003": {
             "activation": 0,
             "index": 3,
             "name": "B1",
@@ -95,9 +95,9 @@ fixed_nodenet_data = """{
                 296
             ],
             "type": "Pipe",
-            "uid": "n3"
+            "uid": "n0003"
         },
-        "n6": {
+        "n0006": {
             "activation": 0,
             "index": 6,
             "name": "ACTA",
@@ -110,9 +110,9 @@ fixed_nodenet_data = """{
                 103
             ],
             "type": "Activator",
-            "uid": "n6"
+            "uid": "n0006"
         },
-        "n4": {
+        "n0004": {
             "activation": 0,
             "index": 5,
             "name": "B2",
@@ -123,7 +123,7 @@ fixed_nodenet_data = """{
                 298
             ],
             "type": "Pipe",
-            "uid": "n4"
+            "uid": "n0004"
         }
     }
 }"""

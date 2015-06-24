@@ -1389,7 +1389,7 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = gatecolumn[index].item()
 
-                    linkuid = "n%i:%s:%s:n%i" % (node_id, source_gate_type, target_slot_type, target_id)
+                    linkuid = "%s:%s:%s:%s" % (node_to_id(node_id), source_gate_type, target_slot_type, node_to_id(target_id))
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,
@@ -1419,7 +1419,7 @@ class TheanoNodenet(Nodenet):
                     else:
                         weight = slotrow[index].item()
 
-                    linkuid = "n%i:%s:%s:n%i" % (source_id, source_gate_type, target_slot_type, node_id)
+                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id), source_gate_type, target_slot_type, node_to_id(node_id))
                     linkdata = {
                         "uid": linkuid,
                         "weight": weight,

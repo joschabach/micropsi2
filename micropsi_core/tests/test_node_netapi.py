@@ -754,8 +754,8 @@ def test_autoalign(fixed_nodenet):
 def test_copy_nodes(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_node('Nodespace', None, name='copy')
-    a1 = netapi.get_node('n1')
-    a2 = netapi.get_node('n2')
+    a1 = netapi.get_node('n0001')
+    a2 = netapi.get_node('n0002')
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
     assert a2 in mapping
@@ -781,7 +781,7 @@ def test_group_nodes_by_names(fixed_nodenet):
 
 def test_group_nodes_by_ids(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
-    ids = ["n1", "n2"]
+    ids = ["n0001", "n0002"]
     netapi.group_nodes_by_ids(ids, "some")
     some_act = netapi.get_activations("some")
     assert len(some_act) == 2
@@ -789,7 +789,7 @@ def test_group_nodes_by_ids(fixed_nodenet):
 
 def test_ungroup_nodes(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
-    ids = ["n1", "n2"]
+    ids = ["n0001", "n0002"]
     netapi.group_nodes_by_ids(ids, "some")
     netapi.ungroup_nodes("some")
 

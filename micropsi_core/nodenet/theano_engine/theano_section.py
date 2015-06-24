@@ -94,7 +94,11 @@ class TheanoSection():
             self.__has_gatefunction_one_over_x = value
 
 
-    def __init__(self, nodenet, sparse):
+    def __init__(self, nodenet, sparse, initial_NoN, initial_NoE, initial_NoNS):
+
+        self.NoN = initial_NoN
+        self.NoE = initial_NoE
+        self.NoNS = initial_NoNS
 
         self.nodenet = nodenet
         self.sparse = sparse
@@ -153,72 +157,72 @@ class TheanoSection():
         self.n_node_retlinked = None         # same for ret
 
         # instantiate numpy data structures
-        self.allocated_nodes = np.zeros(self.nodenet.NoN, dtype=np.int32)
-        self.allocated_node_offsets = np.zeros(self.nodenet.NoN, dtype=np.int32)
-        self.allocated_elements_to_nodes = np.zeros(self.nodenet.NoE, dtype=np.int32)
+        self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
 
-        self.allocated_node_parents = np.zeros(self.nodenet.NoN, dtype=np.int32)
-        self.allocated_nodespaces = np.zeros(self.nodenet.NoNS, dtype=np.int32)
+        self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
+        self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
 
-        self.allocated_nodespaces_por_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_ret_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sub_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sur_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_cat_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_exp_activators = np.zeros(self.nodenet.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_ret_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_sub_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_sur_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_cat_activators = np.zeros(self.NoNS, dtype=np.int32)
+        self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
 
-        self.allocated_elements_to_activators = np.zeros(self.nodenet.NoE, dtype=np.int32)
+        self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
         # instantiate theano data structures
         if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.nodenet.NoE, self.nodenet.NoE), dtype=nodenet.scipyfloatX), name="w")
+            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=nodenet.scipyfloatX), name="w")
         else:
-            w_matrix = np.zeros((self.nodenet.NoE, self.nodenet.NoE), dtype=nodenet.scipyfloatX)
+            w_matrix = np.zeros((self.NoE, self.NoE), dtype=nodenet.scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        a_array = np.zeros(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        a_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.nodenet.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
 
-        g_theta_array = np.zeros(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
-        g_factor_array = np.ones(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_factor_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
-        g_threshold_array = np.zeros(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_threshold_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
 
-        g_amplification_array = np.ones(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_amplification_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
 
-        g_min_array = np.zeros(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_min_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
 
-        g_max_array = np.ones(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_max_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
 
-        g_function_selector_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
 
-        g_expect_array = np.ones(self.nodenet.NoE, dtype=nodenet.numpyfloatX)
+        g_expect_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_expect = theano.shared(value=g_expect_array, name="expectation", borrow=True)
 
-        g_countdown_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        g_countdown_array = np.zeros(self.NoE, dtype=np.int8)
         self.g_countdown = theano.shared(value=g_countdown_array, name="countdown", borrow=True)
 
-        g_wait_array = np.ones(self.nodenet.NoE, dtype=np.int8)
+        g_wait_array = np.ones(self.NoE, dtype=np.int8)
         self.g_wait = theano.shared(value=g_wait_array, name="wait", borrow=True)
 
-        n_function_selector_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
 
-        n_node_porlinked_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
 
-        n_node_retlinked_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
         self.__has_new_usages = True

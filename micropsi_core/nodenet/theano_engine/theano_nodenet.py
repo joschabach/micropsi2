@@ -235,12 +235,12 @@ class TheanoNodenet(Nodenet):
             if T.config.floatX != "float32":
                 self.logger.warn("Precision set to %s, but attempting to use gpu.", precision)
 
-        self.NoN = INITIAL_NUMBER_OF_NODES
-        self.NoE = INITIAL_NUMBER_OF_ELEMENTS
-        self.NoNS = INITIAL_NUMBER_OF_NODESPACES
-
         self.netapi = TheanoNetAPI(self)
-        self.rootsection = TheanoSection(self, self.sparse)
+        self.rootsection = TheanoSection(self,
+                                         self.sparse,
+                                         INITIAL_NUMBER_OF_NODES,
+                                         INITIAL_NUMBER_OF_ELEMENTS,
+                                         INITIAL_NUMBER_OF_NODESPACES)
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
@@ -325,7 +325,7 @@ class TheanoNodenet(Nodenet):
         g_wait = self.rootsection.g_wait.get_value(borrow=True)
         n_function_selector = self.rootsection.n_function_selector.get_value(borrow=True)
 
-        sizeinformation = [self.NoN, self.NoE, self.NoNS]
+        sizeinformation = [self.rootsection.NoN, self.rootsection.NoE, self.rootsection.NoNS]
 
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
@@ -395,9 +395,9 @@ class TheanoNodenet(Nodenet):
             if datafile:
 
                 if 'sizeinformation' in datafile:
-                    self.NoN = datafile['sizeinformation'][0]
-                    self.NoE = datafile['sizeinformation'][1]
-                    self.NoNS = datafile['sizeinformation'][2]
+                    self.rootsection.NoN = datafile['sizeinformation'][0]
+                    self.rootsection.NoE = datafile['sizeinformation'][1]
+                    self.rootsection.NoNS = datafile['sizeinformation'][2]
                 else:
                     self.logger.warn("no sizeinformation in file, falling back to defaults")
 
@@ -464,7 +464,7 @@ class TheanoNodenet(Nodenet):
 
 
                 if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
-                    w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
+                    w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.rootsection.NoE, self.rootsection.NoE))
                     # if we're configured to be dense, convert from csr
                     if not self.sparse:
                         w = w.todense()
@@ -749,7 +749,7 @@ class TheanoNodenet(Nodenet):
 
     def is_node(self, uid):
         numid = node_from_id(uid)
-        return numid < self.NoN and self.rootsection.allocated_nodes[numid] != 0
+        return numid < self.rootsection.NoN and self.rootsection.allocated_nodes[numid] != 0
 
     def announce_nodes(self, number_of_nodes, average_elements_per_node):
         self.grow_number_of_nodes(number_of_nodes)
@@ -757,17 +757,17 @@ class TheanoNodenet(Nodenet):
 
     def grow_number_of_nodes(self, growby):
 
-        new_NoN = int(self.NoN + growby)
+        new_NoN = int(self.rootsection.NoN + growby)
 
         new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
         new_allocated_node_parents = np.zeros(new_NoN, dtype=np.int32)
         new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
 
-        new_allocated_nodes[0:self.NoN] = self.rootsection.allocated_nodes
-        new_allocated_node_parents[0:self.NoN] = self.rootsection.allocated_node_parents
-        new_allocated_node_offsets[0:self.NoN] = self.rootsection.allocated_node_offsets
+        new_allocated_nodes[0:self.rootsection.NoN] = self.rootsection.allocated_nodes
+        new_allocated_node_parents[0:self.rootsection.NoN] = self.rootsection.allocated_node_parents
+        new_allocated_node_offsets[0:self.rootsection.NoN] = self.rootsection.allocated_node_offsets
 
-        self.NoN = new_NoN
+        self.rootsection.NoN = new_NoN
         self.rootsection.allocated_nodes = new_allocated_nodes
         self.rootsection.allocated_node_parents = new_allocated_node_parents
         self.rootsection.allocated_node_offsets = new_allocated_node_offsets
@@ -775,7 +775,7 @@ class TheanoNodenet(Nodenet):
 
     def grow_number_of_nodespaces(self, growby):
 
-        new_NoNS = int(self.NoNS + growby)
+        new_NoNS = int(self.rootsection.NoNS + growby)
 
         new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
         new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
@@ -785,16 +785,16 @@ class TheanoNodenet(Nodenet):
         new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
         new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
 
-        new_allocated_nodespaces[0:self.NoNS] = self.rootsection.allocated_nodespaces
-        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_por_activators
-        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_ret_activators
-        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_sub_activators
-        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_sur_activators
-        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_cat_activators
-        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_exp_activators
+        new_allocated_nodespaces[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces
+        new_allocated_nodespaces_por_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_por_activators
+        new_allocated_nodespaces_ret_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_sub_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sur_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_cat_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_exp_activators[0:self.rootsection.NoNS] = self.rootsection.allocated_nodespaces_exp_activators
 
         with self.netlock:
-            self.NoNS = new_NoNS
+            self.rootsection.NoNS = new_NoNS
             self.rootsection.allocated_nodespaces = new_allocated_nodespaces
             self.rootsection.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
             self.rootsection.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
@@ -806,7 +806,7 @@ class TheanoNodenet(Nodenet):
 
     def grow_number_of_elements(self, growby):
 
-        new_NoE = int(self.NoE + growby)
+        new_NoE = int(self.rootsection.NoE + growby)
 
         new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
         new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
@@ -832,26 +832,26 @@ class TheanoNodenet(Nodenet):
         new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
         new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
 
-        new_allocated_elements_to_nodes[0:self.NoE] = self.rootsection.allocated_elements_to_nodes
-        new_allocated_elements_to_activators[0:self.NoE] = self.rootsection.allocated_elements_to_activators
+        new_allocated_elements_to_nodes[0:self.rootsection.NoE] = self.rootsection.allocated_elements_to_nodes
+        new_allocated_elements_to_activators[0:self.rootsection.NoE] = self.rootsection.allocated_elements_to_activators
 
-        new_w[0:self.NoE, 0:self.NoE] = self.rootsection.w.get_value(borrow=True)
+        new_w[0:self.rootsection.NoE, 0:self.rootsection.NoE] = self.rootsection.w.get_value(borrow=True)
 
-        new_a[0:self.NoE] = self.rootsection.a.get_value(borrow=True)
-        new_g_theta[0:self.NoE] = self.rootsection.g_theta.get_value(borrow=True)
-        new_g_factor[0:self.NoE] = self.rootsection.g_factor.get_value(borrow=True)
-        new_g_threshold[0:self.NoE] = self.rootsection.g_threshold.get_value(borrow=True)
-        new_g_amplification[0:self.NoE] = self.rootsection.g_amplification.get_value(borrow=True)
-        new_g_min[0:self.NoE] = self.rootsection.g_min.get_value(borrow=True)
-        new_g_max[0:self.NoE] =  self.rootsection.g_max.get_value(borrow=True)
-        new_g_function_selector[0:self.NoE] = self.rootsection.g_function_selector.get_value(borrow=True)
-        new_g_expect[0:self.NoE] = self.rootsection.g_expect.get_value(borrow=True)
-        new_g_countdown[0:self.NoE] = self.rootsection.g_countdown.get_value(borrow=True)
-        new_g_wait[0:self.NoE] = self.rootsection.g_wait.get_value(borrow=True)
-        new_n_function_selector[0:self.NoE] = self.rootsection.n_function_selector.get_value(borrow=True)
+        new_a[0:self.rootsection.NoE] = self.rootsection.a.get_value(borrow=True)
+        new_g_theta[0:self.rootsection.NoE] = self.rootsection.g_theta.get_value(borrow=True)
+        new_g_factor[0:self.rootsection.NoE] = self.rootsection.g_factor.get_value(borrow=True)
+        new_g_threshold[0:self.rootsection.NoE] = self.rootsection.g_threshold.get_value(borrow=True)
+        new_g_amplification[0:self.rootsection.NoE] = self.rootsection.g_amplification.get_value(borrow=True)
+        new_g_min[0:self.rootsection.NoE] = self.rootsection.g_min.get_value(borrow=True)
+        new_g_max[0:self.rootsection.NoE] =  self.rootsection.g_max.get_value(borrow=True)
+        new_g_function_selector[0:self.rootsection.NoE] = self.rootsection.g_function_selector.get_value(borrow=True)
+        new_g_expect[0:self.rootsection.NoE] = self.rootsection.g_expect.get_value(borrow=True)
+        new_g_countdown[0:self.rootsection.NoE] = self.rootsection.g_countdown.get_value(borrow=True)
+        new_g_wait[0:self.rootsection.NoE] = self.rootsection.g_wait.get_value(borrow=True)
+        new_n_function_selector[0:self.rootsection.NoE] = self.rootsection.n_function_selector.get_value(borrow=True)
 
         with self.netlock:
-            self.NoE = new_NoE
+            self.rootsection.NoE = new_NoE
             self.rootsection.allocated_elements_to_nodes = new_allocated_elements_to_nodes
             self.rootsection.allocated_elements_to_activators = new_allocated_elements_to_activators
             self.rootsection.w.set_value(new_w, borrow=True)
@@ -882,7 +882,7 @@ class TheanoNodenet(Nodenet):
         # find a free ID / index in the allocated_nodes vector to hold the node type
         if uid is None:
             id = 0
-            for i in range((self.last_allocated_node + 1), self.NoN):
+            for i in range((self.last_allocated_node + 1), self.rootsection.NoN):
                 if self.rootsection.allocated_nodes[i] == 0:
                     id = i
                     break
@@ -894,15 +894,15 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                growby = self.NoN // 2
-                self.logger.info("All %d node IDs in use, growing id vectors by %d elements" % (self.NoN, growby))
-                id = self.NoN
+                growby = self.rootsection.NoN // 2
+                self.logger.info("All %d node IDs in use, growing id vectors by %d elements" % (self.rootsection.NoN, growby))
+                id = self.rootsection.NoN
                 self.grow_number_of_nodes(growby)
 
         else:
             id = node_from_id(uid)
-            if id > self.NoN:
-                growby = id - (self.NoN - 2)
+            if id > self.rootsection.NoN:
+                growby = id - (self.rootsection.NoN - 2)
                 self.grow_number_of_nodes(growby)
 
         uid = node_to_id(id)
@@ -925,14 +925,14 @@ class TheanoNodenet(Nodenet):
             else:
                 i += freecount+1
 
-            if i >= self.NoE:
+            if i >= self.rootsection.NoE:
                 if not has_restarted_from_zero:
                     i = 0
                     has_restarted_from_zero = True
                 else:
-                    growby = max(number_of_elements +1, self.NoE // 2)
-                    self.logger.info("All %d elements in use, growing elements vectors by %d elements" % (self.NoE, growby))
-                    offset = self.NoE
+                    growby = max(number_of_elements +1, self.rootsection.NoE // 2)
+                    self.logger.info("All %d elements in use, growing elements vectors by %d elements" % (self.rootsection.NoE, growby))
+                    offset = self.rootsection.NoE
                     self.grow_number_of_elements(growby)
 
         self.last_allocated_node = id
@@ -1233,7 +1233,7 @@ class TheanoNodenet(Nodenet):
         # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
         if uid is None:
             id = 0
-            for i in range((self.last_allocated_nodespace + 1), self.NoNS):
+            for i in range((self.last_allocated_nodespace + 1), self.rootsection.NoNS):
                 if self.rootsection.allocated_nodespaces[i] == 0:
                     id = i
                     break
@@ -1245,9 +1245,9 @@ class TheanoNodenet(Nodenet):
                         break
 
             if id < 1:
-                growby = self.NoNS // 2
-                self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.NoNS, growby))
-                id = self.NoNS
+                growby = self.rootsection.NoNS // 2
+                self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.rootsection.NoNS, growby))
+                id = self.rootsection.NoNS
                 self.grow_number_of_nodespaces(growby)
         else:
             id = nodespace_from_id(uid)
@@ -1455,7 +1455,7 @@ class TheanoNodenet(Nodenet):
     def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
             'links': {},
-            'nodes': self.construct_nodes_dict(nodespace_uid, self.NoN),
+            'nodes': self.construct_nodes_dict(nodespace_uid, self.rootsection.NoN),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict(),
             'modulators': self.construct_modulators_dict()
@@ -1761,12 +1761,12 @@ class TheanoNodenet(Nodenet):
     def rebuild_shifted(self):
         a_array = self.rootsection.a.get_value(borrow=True)
         a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
+        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.rootsection.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
         self.rootsection.a_shifted.set_value(a_shifted_matrix, borrow=True)
 
     def rebuild_por_linked(self):
 
-        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
+        n_node_porlinked_array = np.zeros(self.rootsection.NoE, dtype=np.int8)
 
         n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
         w_matrix = self.rootsection.w.get_value(borrow=True)
@@ -1794,7 +1794,7 @@ class TheanoNodenet(Nodenet):
 
     def rebuild_ret_linked(self):
 
-        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
+        n_node_retlinked_array = np.zeros(self.rootsection.NoE, dtype=np.int8)
 
         n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
         w_matrix = self.rootsection.w.get_value(borrow=True)
@@ -1822,7 +1822,7 @@ class TheanoNodenet(Nodenet):
 
     def integrity_check(self):
 
-        for nid in range(self.NoN):
+        for nid in range(self.rootsection.NoN):
             nodetype = self.rootsection.allocated_nodes[nid]
 
             if nodetype == 0:
@@ -1843,7 +1843,7 @@ class TheanoNodenet(Nodenet):
                     if self.rootsection.allocated_elements_to_nodes[offset+eid] != nid:
                         self.logger.error("Integrity check error: Element %i of node n%i is allocated to node n%i" % (eid, nid, self.rootsection.allocated_elements_to_nodes[offset+eid]))
 
-                for snid in range(self.NoN):
+                for snid in range(self.rootsection.NoN):
 
                     if snid == nid:
                         continue

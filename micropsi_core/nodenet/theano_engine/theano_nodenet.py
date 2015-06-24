@@ -229,17 +229,6 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        # directional activator assignment, key is nodespace ID, value is activator ID
-        self.allocated_nodespaces_por_activators = None
-        self.allocated_nodespaces_ret_activators = None
-        self.allocated_nodespaces_sub_activators = None
-        self.allocated_nodespaces_sur_activators = None
-        self.allocated_nodespaces_cat_activators = None
-        self.allocated_nodespaces_exp_activators = None
-
-        # directional activators map, index is element id, value is the directional activator's element id
-        self.allocated_elements_to_activators = None
-
         self.last_allocated_node = 0
         self.last_allocated_offset = 0
         self.last_allocated_nodespace = 0
@@ -373,15 +362,6 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache = {}
 
-        self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
-
-        self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_ret_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sub_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sur_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_cat_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
-
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=self.scipyfloatX), name="w")
         else:
@@ -481,14 +461,14 @@ class TheanoNodenet(Nodenet):
         allocated_elements_to_nodes = self.rootsection.allocated_elements_to_nodes
         allocated_node_parents = self.rootsection.allocated_node_parents
         allocated_nodespaces = self.rootsection.allocated_nodespaces
-        allocated_elements_to_activators = self.allocated_elements_to_activators
+        allocated_elements_to_activators = self.rootsection.allocated_elements_to_activators
 
-        allocated_nodespaces_por_activators = self.allocated_nodespaces_por_activators
-        allocated_nodespaces_ret_activators = self.allocated_nodespaces_ret_activators
-        allocated_nodespaces_sub_activators = self.allocated_nodespaces_sub_activators
-        allocated_nodespaces_sur_activators = self.allocated_nodespaces_sur_activators
-        allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
-        allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
+        allocated_nodespaces_por_activators = self.rootsection.allocated_nodespaces_por_activators
+        allocated_nodespaces_ret_activators = self.rootsection.allocated_nodespaces_ret_activators
+        allocated_nodespaces_sub_activators = self.rootsection.allocated_nodespaces_sub_activators
+        allocated_nodespaces_sur_activators = self.rootsection.allocated_nodespaces_sur_activators
+        allocated_nodespaces_cat_activators = self.rootsection.allocated_nodespaces_cat_activators
+        allocated_nodespaces_exp_activators = self.rootsection.allocated_nodespaces_exp_activators
 
         w = self.w.get_value(borrow=True)
 
@@ -612,37 +592,37 @@ class TheanoNodenet(Nodenet):
                     self.logger.warn("no allocated_node_parents in file, falling back to defaults")
 
                 if 'allocated_elements_to_activators' in datafile:
-                    self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
+                    self.rootsection.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
                 else:
                     self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")
 
                 if 'allocated_nodespaces_por_activators' in datafile:
-                    self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
+                    self.rootsection.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
                 else:
                     self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
 
                 if 'allocated_nodespaces_ret_activators' in datafile:
-                    self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
+                    self.rootsection.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
                 else:
                     self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")
 
                 if 'allocated_nodespaces_sub_activators' in datafile:
-                    self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
+                    self.rootsection.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
                 else:
                     self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")
 
                 if 'allocated_nodespaces_sur_activators' in datafile:
-                    self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
+                    self.rootsection.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
                 else:
                     self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")
 
                 if 'allocated_nodespaces_cat_activators' in datafile:
-                    self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
+                    self.rootsection.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
                 else:
                     self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")
 
                 if 'allocated_nodespaces_exp_activators' in datafile:
-                    self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
+                    self.rootsection.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
                 else:
                     self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
 
@@ -970,22 +950,22 @@ class TheanoNodenet(Nodenet):
         new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
 
         new_allocated_nodespaces[0:self.NoNS] = self.rootsection.allocated_nodespaces
-        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
-        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
-        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
-        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
-        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
-        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
+        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_por_activators
+        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.rootsection.allocated_nodespaces_exp_activators
 
         with self.netlock:
             self.NoNS = new_NoNS
             self.rootsection.allocated_nodespaces = new_allocated_nodespaces
-            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
-            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
-            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
-            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
-            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
-            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
+            self.rootsection.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
+            self.rootsection.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
+            self.rootsection.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
+            self.rootsection.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
+            self.rootsection.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
+            self.rootsection.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
             self.has_new_usages = True
 
     def grow_number_of_elements(self, growby):
@@ -1017,7 +997,7 @@ class TheanoNodenet(Nodenet):
         new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
 
         new_allocated_elements_to_nodes[0:self.NoE] = self.rootsection.allocated_elements_to_nodes
-        new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
+        new_allocated_elements_to_activators[0:self.NoE] = self.rootsection.allocated_elements_to_activators
 
         new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
 
@@ -1037,7 +1017,7 @@ class TheanoNodenet(Nodenet):
         with self.netlock:
             self.NoE = new_NoE
             self.rootsection.allocated_elements_to_nodes = new_allocated_elements_to_nodes
-            self.allocated_elements_to_activators = new_allocated_elements_to_activators
+            self.rootsection.allocated_elements_to_activators = new_allocated_elements_to_activators
             self.w.set_value(new_w, borrow=True)
             self.a.set_value(new_a, borrow=True)
             self.a_shifted.set_value(new_a_shifted, borrow=True)
@@ -1163,18 +1143,18 @@ class TheanoNodenet(Nodenet):
             n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
             n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
-            self.allocated_elements_to_activators[offset + POR] = \
-                self.rootsection.allocated_node_offsets[self.allocated_nodespaces_por_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + RET] = \
-                self.rootsection.allocated_node_offsets[self.allocated_nodespaces_ret_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + SUB] = \
-                self.rootsection.allocated_node_offsets[self.allocated_nodespaces_sub_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + SUR] = \
-                self.rootsection.allocated_node_offsets[self.allocated_nodespaces_sur_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + CAT] = \
-                self.rootsection.allocated_node_offsets[self.allocated_nodespaces_cat_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + EXP] = \
-                self.rootsection.allocated_node_offsets[self.allocated_nodespaces_exp_activators[nodespace_from_id(nodespace_uid)]]
+            self.rootsection.allocated_elements_to_activators[offset + POR] = \
+                self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_por_activators[nodespace_from_id(nodespace_uid)]]
+            self.rootsection.allocated_elements_to_activators[offset + RET] = \
+                self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_ret_activators[nodespace_from_id(nodespace_uid)]]
+            self.rootsection.allocated_elements_to_activators[offset + SUB] = \
+                self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_sub_activators[nodespace_from_id(nodespace_uid)]]
+            self.rootsection.allocated_elements_to_activators[offset + SUR] = \
+                self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_sur_activators[nodespace_from_id(nodespace_uid)]]
+            self.rootsection.allocated_elements_to_activators[offset + CAT] = \
+                self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_cat_activators[nodespace_from_id(nodespace_uid)]]
+            self.rootsection.allocated_elements_to_activators[offset + EXP] = \
+                self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_exp_activators[nodespace_from_id(nodespace_uid)]]
 
             if self.__nodetypes[nodetype].parameter_defaults.get('expectation'):
                 value = self.__nodetypes[nodetype].parameter_defaults['expectation']
@@ -1298,22 +1278,22 @@ class TheanoNodenet(Nodenet):
                     del self.actuatormap[actuator]
 
         # clear activator usage if there should be one
-        used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)
+        used_as_activator_by = np.where(self.rootsection.allocated_elements_to_activators == offset)
         if len(used_as_activator_by) > 0:
-            self.allocated_elements_to_activators[used_as_activator_by] = 0
+            self.rootsection.allocated_elements_to_activators[used_as_activator_by] = 0
 
-        if self.allocated_nodespaces_por_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_por_activators[parent] = 0
-        elif self.allocated_nodespaces_ret_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_ret_activators[parent] = 0
-        elif self.allocated_nodespaces_sub_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_sub_activators[parent] = 0
-        elif self.allocated_nodespaces_sur_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_sur_activators[parent] = 0
-        elif self.allocated_nodespaces_cat_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_cat_activators[parent] = 0
-        elif self.allocated_nodespaces_exp_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_exp_activators[parent] = 0
+        if self.rootsection.allocated_nodespaces_por_activators[parent] == node_from_id(uid):
+            self.rootsection.allocated_nodespaces_por_activators[parent] = 0
+        elif self.rootsection.allocated_nodespaces_ret_activators[parent] == node_from_id(uid):
+            self.rootsection.allocated_nodespaces_ret_activators[parent] = 0
+        elif self.rootsection.allocated_nodespaces_sub_activators[parent] == node_from_id(uid):
+            self.rootsection.allocated_nodespaces_sub_activators[parent] = 0
+        elif self.rootsection.allocated_nodespaces_sur_activators[parent] == node_from_id(uid):
+            self.rootsection.allocated_nodespaces_sur_activators[parent] = 0
+        elif self.rootsection.allocated_nodespaces_cat_activators[parent] == node_from_id(uid):
+            self.rootsection.allocated_nodespaces_cat_activators[parent] = 0
+        elif self.rootsection.allocated_nodespaces_exp_activators[parent] == node_from_id(uid):
+            self.rootsection.allocated_nodespaces_exp_activators[parent] = 0
 
     def set_node_gate_parameter(self, uid, gate_type, parameter, value):
         id = node_from_id(uid)
@@ -1375,22 +1355,22 @@ class TheanoNodenet(Nodenet):
         nodespace_id = nodespace_from_id(nodespace_uid)
 
         if gate_type == "por":
-            self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
+            self.rootsection.allocated_nodespaces_por_activators[nodespace_id] = activator_id
         elif gate_type == "ret":
-            self.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
+            self.rootsection.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
         elif gate_type == "sub":
-            self.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
+            self.rootsection.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
         elif gate_type == "sur":
-            self.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
+            self.rootsection.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
         elif gate_type == "cat":
-            self.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
+            self.rootsection.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
         elif gate_type == "exp":
-            self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
+            self.rootsection.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
 
         nodes_in_nodespace = np.where(self.rootsection.allocated_node_parents == nodespace_id)[0]
         for nid in nodes_in_nodespace:
             if self.rootsection.allocated_nodes[nid] == PIPE:
-                self.allocated_elements_to_activators[self.rootsection.allocated_node_offsets[nid] +
+                self.rootsection.allocated_elements_to_activators[self.rootsection.allocated_node_offsets[nid] +
                                                       get_numerical_gate_type(gate_type)] = self.rootsection.allocated_node_offsets[activator_id]
 
     def get_nodespace(self, uid):

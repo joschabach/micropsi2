@@ -232,7 +232,7 @@ class TheanoCalculate(Calculate):
     def calculate_g_factors(self):
         a = self.nodenet.a.get_value(borrow=True)
         a[0] = 1.
-        g_factor = a[self.nodenet.allocated_elements_to_activators]
+        g_factor = a[self.nodenet.rootsection.allocated_elements_to_activators]
         self.nodenet.g_factor.set_value(g_factor, borrow=True)
 
     def count_success_and_failure(self, nodenet):

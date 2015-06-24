@@ -82,7 +82,7 @@ class TheanoNode(Node):
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        self._nodenet.allocated_node_parents[self._id] = nodespace_from_id(uid)
+        self._section.allocated_node_parents[self._id] = nodespace_from_id(uid)
 
     @property
     def activation(self):
@@ -258,17 +258,17 @@ class TheanoNode(Node):
             parameters['datatarget'] = self._nodenet.inverted_actuator_map.get(self.uid, None)
         elif self.type == "Activator":
             activator_type = None
-            if self._id in self._nodenet.allocated_nodespaces_por_activators:
+            if self._id in self._section.allocated_nodespaces_por_activators:
                 activator_type = "por"
-            elif self._id in self._nodenet.allocated_nodespaces_ret_activators:
+            elif self._id in self._section.allocated_nodespaces_ret_activators:
                 activator_type = "ret"
-            elif self._id in self._nodenet.allocated_nodespaces_sub_activators:
+            elif self._id in self._section.allocated_nodespaces_sub_activators:
                 activator_type = "sub"
-            elif self._id in self._nodenet.allocated_nodespaces_sur_activators:
+            elif self._id in self._section.allocated_nodespaces_sur_activators:
                 activator_type = "sur"
-            elif self._id in self._nodenet.allocated_nodespaces_cat_activators:
+            elif self._id in self._section.allocated_nodespaces_cat_activators:
                 activator_type = "cat"
-            elif self._id in self._nodenet.allocated_nodespaces_exp_activators:
+            elif self._id in self._section.allocated_nodespaces_exp_activators:
                 activator_type = "exp"
             parameters['type'] = activator_type
         elif self.type == "Pipe":

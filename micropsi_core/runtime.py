@@ -1022,10 +1022,11 @@ def get_available_recipes():
     """ Returns a dict of the available user-recipes """
     recipes = {}
     for name, data in custom_recipes.items():
-        recipes[name] = {
-            'name': name,
-            'parameters': data['parameters']
-        }
+        if not name.startswith('_'):
+            recipes[name] = {
+                'name': name,
+                'parameters': data['parameters']
+            }
     return recipes
 
 

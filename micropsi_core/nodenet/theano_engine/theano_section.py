@@ -15,6 +15,85 @@ from configuration import config as settings
 
 class TheanoSection():
 
+    @property
+    def has_new_usages(self):
+        return self.__has_new_usages
+
+    @has_new_usages.setter
+    def has_new_usages(self, value):
+        self.__has_new_usages = value
+
+    @property
+    def has_pipes(self):
+        return self.__has_pipes
+
+    @has_pipes.setter
+    def has_pipes(self, value):
+        if value != self.__has_pipes:
+            self.__has_new_usages = True
+            self.__has_pipes = value
+
+    @property
+    def has_directional_activators(self):
+        return self.__has_directional_activators
+
+    @has_directional_activators.setter
+    def has_directional_activators(self, value):
+        if value != self.__has_directional_activators:
+            self.__has_new_usages = True
+            self.__has_directional_activators = value
+
+    @property
+    def has_gatefunction_absolute(self):
+        return self.__has_gatefunction_absolute
+
+    @has_gatefunction_absolute.setter
+    def has_gatefunction_absolute(self, value):
+        if value != self.__has_gatefunction_absolute:
+            self.__has_new_usages = True
+            self.__has_gatefunction_absolute = value
+
+    @property
+    def has_gatefunction_sigmoid(self):
+        return self.__has_gatefunction_sigmoid
+
+    @has_gatefunction_sigmoid.setter
+    def has_gatefunction_sigmoid(self, value):
+        if value != self.__has_gatefunction_sigmoid:
+            self.__has_new_usages = True
+            self.__has_gatefunction_sigmoid = value
+
+    @property
+    def has_gatefunction_tanh(self):
+        return self.__has_gatefunction_tanh
+
+    @has_gatefunction_tanh.setter
+    def has_gatefunction_tanh(self, value):
+        if value != self.__has_gatefunction_tanh:
+            self.__has_new_usages = True
+            self.__has_gatefunction_tanh = value
+
+    @property
+    def has_gatefunction_rect(self):
+        return self.__has_gatefunction_rect
+
+    @has_gatefunction_rect.setter
+    def has_gatefunction_rect(self, value):
+        if value != self.__has_gatefunction_rect:
+            self.__has_new_usages = True
+            self.__has_gatefunction_rect = value
+
+    @property
+    def has_gatefunction_one_over_x(self):
+        return self.__has_gatefunction_one_over_x
+
+    @has_gatefunction_one_over_x.setter
+    def has_gatefunction_one_over_x(self, value):
+        if value != self.__has_gatefunction_one_over_x:
+            self.__has_new_usages = True
+            self.__has_gatefunction_one_over_x = value
+
+
     def __init__(self, nodenet, sparse):
 
         self.nodenet = nodenet
@@ -141,3 +220,12 @@ class TheanoSection():
 
         n_node_retlinked_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
         self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
+
+        self.__has_new_usages = True
+        self.__has_pipes = False
+        self.__has_directional_activators = False
+        self.__has_gatefunction_absolute = False
+        self.__has_gatefunction_sigmoid = False
+        self.__has_gatefunction_tanh = False
+        self.__has_gatefunction_rect = False
+        self.__has_gatefunction_one_over_x = False

@@ -148,7 +148,7 @@ class TheanoCalculate(Calculate):
         pipe_exp = slots[:, 5]                                                      # start with sur
         pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
 
-        if nodenet.has_pipes:
+        if nodenet.rootsection.has_pipes:
             nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
             nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
             nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
@@ -162,26 +162,26 @@ class TheanoCalculate(Calculate):
         # gate logic
 
         # multiply with gate factor for the node space
-        if nodenet.has_directional_activators:
+        if nodenet.rootsection.has_directional_activators:
             nodefunctions = nodefunctions * nodenet.rootsection.g_factor
 
         # apply actual gate functions
         gate_function_output = nodefunctions
 
         # apply GATE_FUNCTION_ABS to masked gates
-        if nodenet.has_gatefunction_absolute:
+        if nodenet.rootsection.has_gatefunction_absolute:
             gate_function_output = T.switch(T.eq(nodenet.rootsection.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
         # apply GATE_FUNCTION_SIGMOID to masked gates
-        if nodenet.has_gatefunction_sigmoid:
+        if nodenet.rootsection.has_gatefunction_sigmoid:
             gate_function_output = T.switch(T.eq(nodenet.rootsection.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output + nodenet.rootsection.g_theta), gate_function_output)
         # apply GATE_FUNCTION_TANH to masked gates
-        if nodenet.has_gatefunction_tanh:
+        if nodenet.rootsection.has_gatefunction_tanh:
             gate_function_output = T.switch(T.eq(nodenet.rootsection.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output + nodenet.rootsection.g_theta), gate_function_output)
         # apply GATE_FUNCTION_RECT to masked gates
-        if nodenet.has_gatefunction_rect:
+        if nodenet.rootsection.has_gatefunction_rect:
             gate_function_output = T.switch(T.eq(nodenet.rootsection.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output + nodenet.rootsection.g_theta > 0, gate_function_output - nodenet.rootsection.g_theta, 0), gate_function_output)
         # apply GATE_FUNCTION_DIST to masked gates
-        if nodenet.has_gatefunction_one_over_x:
+        if nodenet.rootsection.has_gatefunction_one_over_x:
             gate_function_output = T.switch(T.eq(nodenet.rootsection.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1 / gate_function_output, 0), gate_function_output)
 
         # apply threshold
@@ -243,19 +243,19 @@ class TheanoCalculate(Calculate):
 
     def execute(self, nodenet, nodes, netapi):
         self.world = nodenet.world
-        if nodenet.has_new_usages:
+        if nodenet.rootsection.has_new_usages:
             self.compile_theano_functions(nodenet)
-            nodenet.has_new_usages = False
+            nodenet.rootsection.has_new_usages = False
 
         self.take_native_module_slot_snapshots()
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
-        if nodenet.has_pipes:
+        if nodenet.rootsection.has_pipes:
             self.nodenet.rebuild_shifted()
-        if nodenet.has_directional_activators:
+        if nodenet.rootsection.has_directional_activators:
             self.calculate_g_factors()
         self.calculate()
-        if nodenet.has_pipes:
+        if nodenet.rootsection.has_pipes:
             self.count_success_and_failure(nodenet)
         self.calculate_native_modules()
 
@@ -282,7 +282,7 @@ class TheanoPORRETDecay(StepOperator):
 
     def execute(self, nodenet, nodes, netapi):
         porretdecay = nodenet.get_modulator('por_ret_decay')
-        if nodenet.has_pipes and porretdecay != 0:
+        if nodenet.rootsection.has_pipes and porretdecay != 0:
             n_function_selector = nodenet.rootsection.n_function_selector.get_value(borrow=True)
             w = nodenet.rootsection.w.get_value(borrow=True)
             por_cols = np.where(n_function_selector == NFPG_PIPE_POR)[0]

@@ -149,84 +149,6 @@ class TheanoNodenet(Nodenet):
         data['modulators'] = self.construct_modulators_dict()
         return data
 
-    @property
-    def has_new_usages(self):
-        return self.__has_new_usages
-
-    @has_new_usages.setter
-    def has_new_usages(self, value):
-        self.__has_new_usages = value
-
-    @property
-    def has_pipes(self):
-        return self.__has_pipes
-
-    @has_pipes.setter
-    def has_pipes(self, value):
-        if value != self.__has_pipes:
-            self.__has_new_usages = True
-            self.__has_pipes = value
-
-    @property
-    def has_directional_activators(self):
-        return self.__has_directional_activators
-
-    @has_directional_activators.setter
-    def has_directional_activators(self, value):
-        if value != self.__has_directional_activators:
-            self.__has_new_usages = True
-            self.__has_directional_activators = value
-
-    @property
-    def has_gatefunction_absolute(self):
-        return self.__has_gatefunction_absolute
-
-    @has_gatefunction_absolute.setter
-    def has_gatefunction_absolute(self, value):
-        if value != self.__has_gatefunction_absolute:
-            self.__has_new_usages = True
-            self.__has_gatefunction_absolute = value
-
-    @property
-    def has_gatefunction_sigmoid(self):
-        return self.__has_gatefunction_sigmoid
-
-    @has_gatefunction_sigmoid.setter
-    def has_gatefunction_sigmoid(self, value):
-        if value != self.__has_gatefunction_sigmoid:
-            self.__has_new_usages = True
-            self.__has_gatefunction_sigmoid = value
-
-    @property
-    def has_gatefunction_tanh(self):
-        return self.__has_gatefunction_tanh
-
-    @has_gatefunction_tanh.setter
-    def has_gatefunction_tanh(self, value):
-        if value != self.__has_gatefunction_tanh:
-            self.__has_new_usages = True
-            self.__has_gatefunction_tanh = value
-
-    @property
-    def has_gatefunction_rect(self):
-        return self.__has_gatefunction_rect
-
-    @has_gatefunction_rect.setter
-    def has_gatefunction_rect(self, value):
-        if value != self.__has_gatefunction_rect:
-            self.__has_new_usages = True
-            self.__has_gatefunction_rect = value
-
-    @property
-    def has_gatefunction_one_over_x(self):
-        return self.__has_gatefunction_one_over_x
-
-    @has_gatefunction_one_over_x.setter
-    def has_gatefunction_one_over_x(self, value):
-        if value != self.__has_gatefunction_one_over_x:
-            self.__has_new_usages = True
-            self.__has_gatefunction_one_over_x = value
-
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
         self.last_allocated_node = 0
@@ -257,15 +179,6 @@ class TheanoNodenet(Nodenet):
         self.__por_ret_dirty = True
 
         self.sparse = True
-
-        self.__has_new_usages = True
-        self.__has_pipes = False
-        self.__has_directional_activators = False
-        self.__has_gatefunction_absolute = False
-        self.__has_gatefunction_sigmoid = False
-        self.__has_gatefunction_tanh = False
-        self.__has_gatefunction_rect = False
-        self.__has_gatefunction_one_over_x = False
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
@@ -621,14 +534,14 @@ class TheanoNodenet(Nodenet):
 
                 if 'g_function_selector' in datafile:
                     g_function_selector = datafile['g_function_selector']
-                    self.has_new_usages = True
-                    self.has_pipes = PIPE in self.rootsection.allocated_nodes
-                    self.has_directional_activators = ACTIVATOR in self.rootsection.allocated_nodes
-                    self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
-                    self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
-                    self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
-                    self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
-                    self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+                    self.rootsection.has_new_usages = True
+                    self.rootsection.has_pipes = PIPE in self.rootsection.allocated_nodes
+                    self.rootsection.has_directional_activators = ACTIVATOR in self.rootsection.allocated_nodes
+                    self.rootsection.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
+                    self.rootsection.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
+                    self.rootsection.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
+                    self.rootsection.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+                    self.rootsection.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
                 else:
                     self.logger.warn("no g_function_selector in file, falling back to defaults")
 
@@ -858,7 +771,7 @@ class TheanoNodenet(Nodenet):
         self.rootsection.allocated_nodes = new_allocated_nodes
         self.rootsection.allocated_node_parents = new_allocated_node_parents
         self.rootsection.allocated_node_offsets = new_allocated_node_offsets
-        self.has_new_usages = True
+        self.rootsection.has_new_usages = True
 
     def grow_number_of_nodespaces(self, growby):
 
@@ -889,7 +802,7 @@ class TheanoNodenet(Nodenet):
             self.rootsection.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
             self.rootsection.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
             self.rootsection.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
-            self.has_new_usages = True
+            self.rootsection.has_new_usages = True
 
     def grow_number_of_elements(self, growby):
 
@@ -957,9 +870,9 @@ class TheanoNodenet(Nodenet):
             self.rootsection.n_function_selector.set_value(new_n_function_selector, borrow=True)
             self.rootsection.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
             self.rootsection.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
-            self.has_new_usages = True
+            self.rootsection.has_new_usages = True
 
-        if self.has_pipes:
+        if self.rootsection.has_pipes:
             self.__por_ret_dirty = True
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
@@ -1056,7 +969,7 @@ class TheanoNodenet(Nodenet):
                     self.actuatormap[datatarget] = connectedactuators
                     self.inverted_actuator_map[uid] = datatarget
         elif nodetype == "Pipe":
-            self.has_pipes = True
+            self.rootsection.has_pipes = True
             n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
             n_function_selector_array[offset + POR] = NFPG_PIPE_POR
@@ -1093,7 +1006,7 @@ class TheanoNodenet(Nodenet):
                 g_wait_array[offset + POR] = int(min(value, 128))
                 self.rootsection.g_wait.set_value(g_wait_array, borrow=True)
         elif nodetype == "Activator":
-            self.has_directional_activators = True
+            self.rootsection.has_directional_activators = True
             activator_type = parameters.get("type")
             if activator_type is not None and len(activator_type) > 0:
                 self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
@@ -1259,15 +1172,15 @@ class TheanoNodenet(Nodenet):
         g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
         self.rootsection.g_function_selector.set_value(g_function_selector, borrow=True)
         if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
-            self.has_gatefunction_absolute = True
+            self.rootsection.has_gatefunction_absolute = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
-            self.has_gatefunction_sigmoid = True
+            self.rootsection.has_gatefunction_sigmoid = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
-            self.has_gatefunction_tanh = True
+            self.rootsection.has_gatefunction_tanh = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
-            self.has_gatefunction_rect = True
+            self.rootsection.has_gatefunction_rect = True
         elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
-            self.has_gatefunction_one_over_x = True
+            self.rootsection.has_gatefunction_one_over_x = True
 
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
 
@@ -1839,7 +1752,7 @@ class TheanoNodenet(Nodenet):
             if uid in self.proxycache:
                 del self.proxycache[uid]
 
-        if self.has_pipes:
+        if self.rootsection.has_pipes:
             self.__por_ret_dirty = True
 
     def get_available_gatefunctions(self):

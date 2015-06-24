@@ -10,6 +10,7 @@ from theano import tensor as T
 import numpy as np
 import scipy.sparse as sp
 import scipy
+import theano.sparse as ST
 
 from configuration import config as settings
 
@@ -236,3 +237,9 @@ class TheanoSection():
         self.__has_gatefunction_tanh = False
         self.__has_gatefunction_rect = False
         self.__has_gatefunction_one_over_x = False
+
+        # compile theano functions
+        if self.sparse:
+            self.propagate = theano.function([], None, updates={self.a: ST.dot(self.w, self.a)})
+        else:
+            self.propagate = theano.function([], None, updates={self.a: T.dot(self.w, self.a)})

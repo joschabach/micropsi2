@@ -264,7 +264,7 @@ class TheanoNodenet(Nodenet):
 
     def initialize_stepoperators(self):
         self.stepoperators = [
-            TheanoPropagate(self),
+            TheanoPropagate(),
             TheanoCalculate(self),
             TheanoPORRETDecay(self),
             DoernerianEmotionalModulators()]

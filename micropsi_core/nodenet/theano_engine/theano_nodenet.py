@@ -941,8 +941,13 @@ class TheanoNodenet(Nodenet):
         else:
             raise KeyError("No node with id %s exists", uid)
 
-    def get_node_uids(self):
-        return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
+    def get_node_uids(self, group=None):
+        if group is None:
+            return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
+        elif group in self.nodegroups:
+            return [node_to_id(nid) for nid in self.allocated_elements_to_nodes[self.nodegroups[group]]]
+        else:
+            return []
 
     def is_node(self, uid):
         numid = node_from_id(uid)
@@ -1533,6 +1538,13 @@ class TheanoNodenet(Nodenet):
 
         ngt = get_numerical_gate_type(gate_type, source_nodetype)
         nst = get_numerical_slot_type(slot_type, target_nodetype)
+
+        if ngt > get_gates_per_type(self.allocated_nodes[node_from_id(source_node_uid)], self.native_modules):
+            raise ValueError("Node %s does not have a gate of type %s" % (source_node_uid, gate_type))
+
+        if nst > get_slots_per_type(self.allocated_nodes[node_from_id(target_node_uid)], self.native_modules):
+            raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
+
         w_matrix = self.w.get_value(borrow=True)
         x = self.allocated_node_offsets[node_from_id(target_node_uid)] + nst
         y = self.allocated_node_offsets[node_from_id(source_node_uid)] + ngt
@@ -1541,6 +1553,9 @@ class TheanoNodenet(Nodenet):
         else:
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
+
+        #if (slot_type == "por" or slot_type == "ret") and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
+        #    self.__por_ret_dirty = False
 
         if slot_type == "por" and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
             n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True)
@@ -1551,7 +1566,6 @@ class TheanoNodenet(Nodenet):
                 for g in range(7):
                     n_node_porlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
             self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
-
         if slot_type == "ret" and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
             n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True)
             if weight == 0:
@@ -1562,10 +1576,10 @@ class TheanoNodenet(Nodenet):
                     n_node_retlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
             self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
-        if weight == 0:
-            linkid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
-            if linkid in self.proxycache:
-                del self.proxycache[linkid]
+        if source_node_uid in self.proxycache:
+            self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
+        if target_node_uid in self.proxycache:
+            self.proxycache[target_node_uid].get_slot(slot_type).invalidate_caches()
 
         return True
 
@@ -1933,6 +1947,13 @@ class TheanoNodenet(Nodenet):
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
+        uids_to_invalidate = [node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
+
+        for uid in uids_to_invalidate:
+            if uid in self.proxycache:
+                del self.proxycache[uid]
+
         if self.has_pipes:
             self.__por_ret_dirty = True
 
@@ -2000,3 +2021,44 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
 
         self.n_node_retlinked.set_value(n_node_retlinked_array)
+
+    def integrity_check(self):
+
+        for nid in range(self.NoN):
+            nodetype = self.allocated_nodes[nid]
+
+            if nodetype == 0:
+                continue
+
+            number_of_elements = get_elements_per_type(nodetype, self.native_modules)
+
+            elements = np.where(self.allocated_elements_to_nodes == nid)[0]
+            if len(elements) != number_of_elements:
+                self.logger.error("Integrity check error: Number of elements for node n%i should be %i, but is %i" % (nid, number_of_elements, len(elements)))
+
+            if number_of_elements > 0:
+                offset = self.allocated_node_offsets[nid]
+                if elements[0] != offset:
+                    self.logger.error("Integrity check error: First element for node n%i should be at %i, but is at %i" % (nid, offset, elements[0]))
+
+                for eid in range(number_of_elements):
+                    if self.allocated_elements_to_nodes[offset+eid] != nid:
+                        self.logger.error("Integrity check error: Element %i of node n%i is allocated to node n%i" % (eid, nid, self.allocated_elements_to_nodes[offset+eid]))
+
+                for snid in range(self.NoN):
+
+                    if snid == nid:
+                        continue
+
+                    snodetype = self.allocated_nodes[snid]
+
+                    if snodetype == 0:
+                        continue
+
+                    soffset = self.allocated_node_offsets[snid]
+                    snumber_of_elements = get_elements_per_type(snodetype, self.native_modules)
+
+                    for selement in range(soffset, snumber_of_elements):
+                        for element in range(offset, number_of_elements):
+                            if element == selement:
+                                self.logger.error("Integrity check error: Overlap at element %i, claimed by nodes n%i and n%i" % (element, nid, snid))

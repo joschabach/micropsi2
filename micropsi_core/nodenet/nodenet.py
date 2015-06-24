@@ -218,9 +218,10 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_node_uids(self):
+    def get_node_uids(self, group=None):
         """
         Returns a list of the UIDs of all Node objects that exist in the node net
+        If a group parameter is given, all uids of nodes in the given group will be returned
         """
         pass  # pragma: no cover
 
@@ -369,6 +370,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_modulator(self, modulator):
         """
+
         Returns the numeric value of the given global modulator
         """
         pass  # pragma: no cover

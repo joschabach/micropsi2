@@ -76,50 +76,6 @@ STANDARD_NODETYPES = {
         "slottypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
         "nodefunction_name": "pipe",
         "gatetypes": ["gen", "por", "ret", "sub", "sur", "cat", "exp"],
-        "gate_defaults": {
-            "gen": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "por": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "ret": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "sub": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": True
-            },
-            "sur": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            },
-            "cat": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 1
-            },
-            "exp": {
-                "minimum": -100,
-                "maximum": 100,
-                "threshold": -100,
-                "spreadsheaves": 0
-            }
-        },
         "parameters": ["expectation", "wait"],
         "symbol": "πp",
         "shape": "Rectangle",
@@ -499,8 +455,13 @@ class DictNodenet(Nodenet):
             uid = "Root"
         return self.__nodespaces[uid]
 
-    def get_node_uids(self):
-        return list(self.__nodes.keys())
+    def get_node_uids(self, group=None):
+        if group is None:
+            return list(self.__nodes.keys())
+        elif group in self.nodegroups:
+            return [n.uid for n in self.nodegroups[group][0]]
+        else:
+            return []
 
     def get_nodespace_uids(self):
         return list(self.__nodespaces.keys())

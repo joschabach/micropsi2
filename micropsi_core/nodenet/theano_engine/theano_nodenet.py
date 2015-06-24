@@ -1005,26 +1005,8 @@ class TheanoNodenet(Nodenet):
 
     def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
         id = node_from_id(uid)
-        numerical_node_type = self.rootsection.allocated_nodes[id]
-        nodetype = None
-        if numerical_node_type > MAX_STD_NODETYPE:
-            nodetype = self.get_nodetype(get_string_node_type(numerical_node_type, self.native_modules))
-
-        elementindex = self.rootsection.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
-        g_function_selector = self.rootsection.g_function_selector.get_value(borrow=True)
-        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
-        self.rootsection.g_function_selector.set_value(g_function_selector, borrow=True)
-        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
-            self.rootsection.has_gatefunction_absolute = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
-            self.rootsection.has_gatefunction_sigmoid = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
-            self.rootsection.has_gatefunction_tanh = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
-            self.rootsection.has_gatefunction_rect = True
-        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
-            self.rootsection.has_gatefunction_one_over_x = True
-
+        self.rootsection.set_node_gatefunction_name(id, gate_type, gatefunction_name)
+        
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
 
         activator_id = 0

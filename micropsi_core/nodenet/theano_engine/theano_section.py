@@ -671,6 +671,27 @@ class TheanoSection():
             g_theta_array[elementindex] = value
             self.g_theta.set_value(g_theta_array, borrow=True)
 
+    def set_node_gatefunction_name(self, id, gate_type, gatefunction_name):
+        numerical_node_type = self.allocated_nodes[id]
+        nodetype = None
+        if numerical_node_type > MAX_STD_NODETYPE:
+            nodetype = self.nodenet.get_nodetype(get_string_node_type(numerical_node_type, self.nodenet.native_modules))
+
+        elementindex = self.allocated_node_offsets[id] + get_numerical_gate_type(gate_type, nodetype)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_function_selector[elementindex] = get_numerical_gatefunction_type(gatefunction_name)
+        self.g_function_selector.set_value(g_function_selector, borrow=True)
+        if g_function_selector[elementindex] == GATE_FUNCTION_ABSOLUTE:
+            self.has_gatefunction_absolute = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_SIGMOID:
+            self.has_gatefunction_sigmoid = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_TANH:
+            self.has_gatefunction_tanh = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_RECT:
+            self.has_gatefunction_rect = True
+        elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
+            self.has_gatefunction_one_over_x = True
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

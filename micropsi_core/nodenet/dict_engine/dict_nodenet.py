@@ -503,7 +503,7 @@ class DictNodenet(Nodenet):
         if group is None:
             return list(self.__nodes.keys())
         elif group in self.nodegroups:
-            return self.nodegroups[group][0]
+            return [n.uid for n in self.nodegroups[group][0]]
         else:
             return []
 

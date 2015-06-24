@@ -48,8 +48,8 @@ class TheanoCalculate(Calculate):
     def compile_theano_functions(self, nodenet):
         slots = nodenet.rootsection.a_shifted
         countdown = nodenet.rootsection.g_countdown
-        por_linked = nodenet.n_node_porlinked
-        ret_linked = nodenet.n_node_retlinked
+        por_linked = nodenet.rootsection.n_node_porlinked
+        ret_linked = nodenet.rootsection.n_node_retlinked
 
         # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = nodenet.rootsection.a
@@ -149,15 +149,15 @@ class TheanoCalculate(Calculate):
         pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
 
         if nodenet.has_pipes:
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
-            nodefunctions = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
-            countdown = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
-            countdown = T.switch(T.eq(nodenet.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+            nodefunctions = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
+            countdown = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
+            countdown = T.switch(T.eq(nodenet.rootsection.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
 
         # gate logic
 
@@ -236,8 +236,8 @@ class TheanoCalculate(Calculate):
         self.nodenet.rootsection.g_factor.set_value(g_factor, borrow=True)
 
     def count_success_and_failure(self, nodenet):
-        nays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) <= -1))[0])
-        yays = len(np.where((nodenet.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) >= 1))[0])
+        nays = len(np.where((nodenet.rootsection.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) <= -1))[0])
+        yays = len(np.where((nodenet.rootsection.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) >= 1))[0])
         nodenet.set_modulator('base_number_of_expected_events', yays)
         nodenet.set_modulator('base_number_of_unexpected_events', nays)
 
@@ -283,7 +283,7 @@ class TheanoPORRETDecay(StepOperator):
     def execute(self, nodenet, nodes, netapi):
         porretdecay = nodenet.get_modulator('por_ret_decay')
         if nodenet.has_pipes and porretdecay != 0:
-            n_function_selector = nodenet.n_function_selector.get_value(borrow=True)
+            n_function_selector = nodenet.rootsection.n_function_selector.get_value(borrow=True)
             w = nodenet.rootsection.w.get_value(borrow=True)
             por_cols = np.where(n_function_selector == NFPG_PIPE_POR)[0]
             por_rows = np.nonzero(w[:, por_cols] > 0.)[0]

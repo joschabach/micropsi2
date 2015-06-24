@@ -67,6 +67,12 @@ class TheanoSection():
         self.g_countdown = None  # vector of number of steps until expectation needs to be met
         self.g_wait = None       # vector of initial values for g_countdown
 
+        self.n_function_selector = None      # vector of per-gate node function selectors
+        self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
+                                             # node. This could in theory be inferred with T.max() on upshifted versions of w,
+                                             # but for now, we manually track this property
+        self.n_node_retlinked = None         # same for ret
+
         # instantiate numpy data structures
         self.allocated_nodes = np.zeros(self.nodenet.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.nodenet.NoN, dtype=np.int32)
@@ -126,3 +132,12 @@ class TheanoSection():
 
         g_wait_array = np.ones(self.nodenet.NoE, dtype=np.int8)
         self.g_wait = theano.shared(value=g_wait_array, name="wait", borrow=True)
+
+        n_function_selector_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
+
+        n_node_porlinked_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
+
+        n_node_retlinked_array = np.zeros(self.nodenet.NoE, dtype=np.int8)
+        self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)

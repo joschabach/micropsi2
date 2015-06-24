@@ -254,12 +254,6 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        self.n_function_selector = None      # vector of per-gate node function selectors
-        self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
-                                             # node. This could in theory be inferred with T.max() on upshifted versions of w,
-                                             # but for now, we manually track this property
-        self.n_node_retlinked = None         # same for ret
-
         self.__por_ret_dirty = True
 
         self.sparse = True
@@ -342,15 +336,6 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache = {}
 
-        n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
-        self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
-
-        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
-        self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
-
-        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
-        self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
-
         self.stepoperators = []
         self.initialize_stepoperators()
 
@@ -425,7 +410,7 @@ class TheanoNodenet(Nodenet):
         g_expect = self.rootsection.g_expect.get_value(borrow=True)
         g_countdown = self.rootsection.g_countdown.get_value(borrow=True)
         g_wait = self.rootsection.g_wait.get_value(borrow=True)
-        n_function_selector = self.n_function_selector.get_value(borrow=True)
+        n_function_selector = self.rootsection.n_function_selector.get_value(borrow=True)
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
@@ -626,7 +611,7 @@ class TheanoNodenet(Nodenet):
                     self.logger.warn("no g_wait in file, falling back to defaults")
 
                 if 'n_function_selector' in datafile:
-                    self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
+                    self.rootsection.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
                 else:
                     self.logger.warn("no n_function_selector in file, falling back to defaults")
 
@@ -950,7 +935,7 @@ class TheanoNodenet(Nodenet):
         new_g_expect[0:self.NoE] = self.rootsection.g_expect.get_value(borrow=True)
         new_g_countdown[0:self.NoE] = self.rootsection.g_countdown.get_value(borrow=True)
         new_g_wait[0:self.NoE] = self.rootsection.g_wait.get_value(borrow=True)
-        new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
+        new_n_function_selector[0:self.NoE] = self.rootsection.n_function_selector.get_value(borrow=True)
 
         with self.netlock:
             self.NoE = new_NoE
@@ -969,9 +954,9 @@ class TheanoNodenet(Nodenet):
             self.rootsection.g_expect.set_value(new_g_expect, borrow=True)
             self.rootsection.g_countdown.set_value(new_g_countdown, borrow=True)
             self.rootsection.g_wait.set_value(new_g_wait, borrow=True)
-            self.n_function_selector.set_value(new_n_function_selector, borrow=True)
-            self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
-            self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
+            self.rootsection.n_function_selector.set_value(new_n_function_selector, borrow=True)
+            self.rootsection.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
+            self.rootsection.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
             self.has_new_usages = True
 
         if self.has_pipes:
@@ -1072,7 +1057,7 @@ class TheanoNodenet(Nodenet):
                     self.inverted_actuator_map[uid] = datatarget
         elif nodetype == "Pipe":
             self.has_pipes = True
-            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
             n_function_selector_array[offset + POR] = NFPG_PIPE_POR
             n_function_selector_array[offset + RET] = NFPG_PIPE_RET
@@ -1080,7 +1065,7 @@ class TheanoNodenet(Nodenet):
             n_function_selector_array[offset + SUR] = NFPG_PIPE_SUR
             n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
             n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
-            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+            self.rootsection.n_function_selector.set_value(n_function_selector_array, borrow=True)
             self.rootsection.allocated_elements_to_activators[offset + POR] = \
                 self.rootsection.allocated_node_offsets[self.rootsection.allocated_nodespaces_por_activators[nodespace_from_id(nodespace_uid)]]
             self.rootsection.allocated_elements_to_activators[offset + RET] = \
@@ -1168,7 +1153,7 @@ class TheanoNodenet(Nodenet):
         self.rootsection.allocated_elements_to_nodes[np.where(self.rootsection.allocated_elements_to_nodes == node_from_id(uid))[0]] = 0
 
         if type == PIPE:
-            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
             n_function_selector_array[offset + POR] = NFPG_PIPE_NON
             n_function_selector_array[offset + RET] = NFPG_PIPE_NON
@@ -1176,7 +1161,7 @@ class TheanoNodenet(Nodenet):
             n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
             n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
             n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
-            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+            self.rootsection.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # clear from proxycache
         if uid in self.proxycache:
@@ -1458,23 +1443,23 @@ class TheanoNodenet(Nodenet):
         #    self.__por_ret_dirty = False
 
         if slot_type == "por" and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True)
+            n_node_porlinked_array = self.rootsection.n_node_porlinked.get_value(borrow=True)
             if weight == 0:
                 for g in range(7):
                     n_node_porlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 0
             else:
                 for g in range(7):
                     n_node_porlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
-            self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
+            self.rootsection.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
         if slot_type == "ret" and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True)
+            n_node_retlinked_array = self.rootsection.n_node_retlinked.get_value(borrow=True)
             if weight == 0:
                 for g in range(7):
                     n_node_retlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 0
             else:
                 for g in range(7):
                     n_node_retlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
-            self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
+            self.rootsection.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
 
         if source_node_uid in self.proxycache:
             self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
@@ -1870,7 +1855,7 @@ class TheanoNodenet(Nodenet):
 
         n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
 
-        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
         w_matrix = self.rootsection.w.get_value(borrow=True)
 
         por_indices = np.where(n_function_selector_array == NFPG_PIPE_POR)[0]
@@ -1892,13 +1877,13 @@ class TheanoNodenet(Nodenet):
         n_node_porlinked_array[por_indices + 4] = linkedflags       # sub
         n_node_porlinked_array[por_indices + 5] = linkedflags       # sur
 
-        self.n_node_porlinked.set_value(n_node_porlinked_array)
+        self.rootsection.n_node_porlinked.set_value(n_node_porlinked_array)
 
     def rebuild_ret_linked(self):
 
         n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
 
-        n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+        n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
         w_matrix = self.rootsection.w.get_value(borrow=True)
 
         ret_indices = np.where(n_function_selector_array == NFPG_PIPE_RET)[0]
@@ -1920,7 +1905,7 @@ class TheanoNodenet(Nodenet):
         n_node_retlinked_array[ret_indices + 3] = linkedflags       # cat
         n_node_retlinked_array[ret_indices + 4] = linkedflags       # exp
 
-        self.n_node_retlinked.set_value(n_node_retlinked_array)
+        self.rootsection.n_node_retlinked.set_value(n_node_retlinked_array)
 
     def integrity_check(self):
 

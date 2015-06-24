@@ -88,27 +88,5 @@ class TheanoPORRETDecay(StepOperator):
     def priority(self):
         return 100
 
-    def __init__(self, nodenet):
-        self.nodenet = nodenet
-
-    #def compile_theano_functions(self, nodenet):
-    #    por_cols = T.lvector("por_cols")
-    #    por_rows = T.lvector("por_rows")
-    #    new_w = T.set_subtensor(nodenet.w[por_rows, por_cols], nodenet.w[por_rows, por_cols] - 0.0001)
-    #    self.decay = theano.function([por_cols, por_rows], None, updates={nodenet.w: new_w}, accept_inplace=True)
-
     def execute(self, nodenet, nodes, netapi):
-        porretdecay = nodenet.get_modulator('por_ret_decay')
-        if nodenet.rootsection.has_pipes and porretdecay != 0:
-            n_function_selector = nodenet.rootsection.n_function_selector.get_value(borrow=True)
-            w = nodenet.rootsection.w.get_value(borrow=True)
-            por_cols = np.where(n_function_selector == NFPG_PIPE_POR)[0]
-            por_rows = np.nonzero(w[:, por_cols] > 0.)[0]
-            cols, rows = np.meshgrid(por_cols, por_rows)
-            w_update = w[rows, cols]
-            w_update *= (1 - porretdecay)
-            if nodenet.current_step % 1000 == 0:
-                nullify_grid = np.nonzero(w_update < porretdecay**2)
-                w_update[nullify_grid] = 0
-            w[rows, cols] = w_update
-            nodenet.rootsection.w.set_value(w, borrow=True)
+        nodenet.rootsection.por_ret_decay()

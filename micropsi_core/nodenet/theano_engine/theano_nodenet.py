@@ -266,7 +266,7 @@ class TheanoNodenet(Nodenet):
         self.stepoperators = [
             TheanoPropagate(),
             TheanoCalculate(self),
-            TheanoPORRETDecay(self),
+            TheanoPORRETDecay(),
             DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 

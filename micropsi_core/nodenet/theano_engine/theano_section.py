@@ -11,6 +11,9 @@ import numpy as np
 import scipy.sparse as sp
 import scipy
 import theano.sparse as ST
+from theano.tensor import nnet as N
+
+from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 from configuration import config as settings
 
@@ -239,7 +242,192 @@ class TheanoSection():
         self.__has_gatefunction_one_over_x = False
 
         # compile theano functions
+        self.compile_propagate()
+        self.compile_calculate_nodes()
+
+    def compile_propagate(self):
         if self.sparse:
             self.propagate = theano.function([], None, updates={self.a: ST.dot(self.w, self.a)})
         else:
             self.propagate = theano.function([], None, updates={self.a: T.dot(self.w, self.a)})
+
+    def compile_calculate_nodes(self):
+        slots = self.a_shifted
+        countdown = self.g_countdown
+        por_linked = self.n_node_porlinked
+        ret_linked = self.n_node_retlinked
+
+        # node functions implemented with identity by default (native modules are calculated by python)
+        nodefunctions = self.a
+
+        # pipe logic
+
+        ###############################################################
+        # lookup table for source activation in a_shifted
+        # when calculating the gate on the y axis...
+        # ... find the slot at the given index on the x axis
+        #
+        #       0   1   2   3   4   5   6   7   8   9   10  11  12  13
+        # gen                               gen por ret sub sur cat exp
+        # por                           gen por ret sub sur cat exp
+        # ret                       gen por ret sub sur cat exp
+        # sub                   gen por ret sub sur cat exp
+        # sur               gen por ret sub sur cat exp
+        # cat           gen por ret sub sur cat exp
+        # exp       gen por ret sub sur cat exp
+        #
+
+        ### gen plumbing
+        pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+        pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
+        pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
+                                                                                    # drop to def. if por == 0 and por slot is linked
+        pipe_gen = T.switch(T.eq(slots[:, 8], 0) * T.eq(por_linked, 1), pipe_gen_sur_exp, pipe_gen)
+
+        ### por plumbing
+                                                                                    # reset if no sub, or por-linked but 0
+        cdrc_por = T.le(slots[:, 9], 0) + (T.eq(por_linked, 1) * T.le(slots[:, 7], 0))
+                                                                                    # count down failure countdown
+        countdown_por = T.switch(cdrc_por, self.g_wait, T.maximum(countdown - 1, -1))
+
+        pipe_por_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 7], 0), 1)      # (if linked, por must be > 0)
+        pipe_por_cond = pipe_por_cond * T.gt(slots[:, 9], 0)                        # and (sub > 0)
+
+        pipe_por = slots[:, 10]                                                     # start with sur
+        pipe_por = pipe_por + T.gt(slots[:, 6], 0.1)                                # add gen-loop 1 if por > 0
+                                                                                    # check if we're in timeout
+        pipe_por = T.switch(T.le(countdown, 0) * T.lt(pipe_por, self.g_expect), -1, pipe_por)
+        pipe_por = pipe_por * pipe_por_cond                                         # apply conditions
+                                                                                    # add por (for search) if sub=sur=0
+        pipe_por = pipe_por + (slots[:, 7] * T.eq(slots[:, 9], 0) * T.eq(slots[:, 10], 0))
+                                                                                    # reset failure countdown on confirm
+        countdown_por = T.switch(T.ge(pipe_por, self.g_expect), self.g_wait, countdown_por)
+
+        ### ret plumbing
+        pipe_ret = -slots[:, 8] * T.ge(slots[:, 6], 0)                              # start with -sub if por >= 0
+                                                                                    # add ret (for search) if sub=sur=0
+        pipe_ret = pipe_ret + (slots[:, 7] * T.eq(slots[:, 8], 0) * T.eq(slots[:, 9], 0))
+
+        ### sub plumbing
+        pipe_sub_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 5], 0), 1)      # (if linked, por must be > 0)
+        pipe_sub_cond = pipe_sub_cond * T.eq(slots[:, 4], 0)                        # and (gen == 0)
+
+        pipe_sub = T.clip(slots[:, 8], 0, 1)                                        # bubble: start with sur if sur > 0
+        pipe_sub = pipe_sub + slots[:, 7]                                           # add sub
+        pipe_sub = pipe_sub + slots[:, 9]                                           # add cat
+        pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
+
+        ### sur plumbing
+                                                                                    # reset if no sub, or por-linked but 0
+        cd_reset_cond = T.le(slots[:, 6],0) + (T.eq(por_linked, 1) * T.le(slots[:, 4], 0))
+                                                                                    # count down failure countdown
+        countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
+
+        pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
+        pipe_sur_cond = pipe_sur_cond + (T.ge(slots[:, 5],0) * T.gt(slots[:, 6], 0))# or (ret is 0, but sub > 0))
+        pipe_sur_cond = pipe_sur_cond * (T.eq(por_linked, 0) + T.gt(slots[:, 4], 0))# and (not por-linked or por > 0)
+        pipe_sur_cond = T.gt(pipe_sur_cond, 0)
+
+        pipe_sur = slots[:, 7]                                                      # start with sur
+        pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
+        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
+                                                                                    # drop to zero if < expectation
+        pipe_sur = T.switch(T.lt(pipe_sur, self.g_expect) * T.gt(pipe_sur, 0), 0, pipe_sur)
+                                                                                    # check if we're in timeout
+        pipe_sur = T.switch(T.le(countdown, 0) * T.lt(pipe_sur, self.g_expect), -1, pipe_sur)
+                                                                                    # reset failure countdown on confirm
+        countdown_sur = T.switch(T.ge(pipe_sur, self.g_expect), self.g_wait, countdown_sur)
+        pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
+
+        ### cat plumbing
+        pipe_cat_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 3], 0), 1)      # (if linked, por must be > 0)
+        pipe_cat_cond = pipe_cat_cond * T.eq(slots[:, 2], 0)                        # and (gen == 0)
+
+        pipe_cat = T.clip(slots[:, 6], 0, 1)                                        # bubble: start with sur if sur > 0
+        pipe_cat = pipe_cat + slots[:, 5]                                           # add sub
+        pipe_cat = pipe_cat + slots[:, 7]                                           # add cat
+        pipe_cat = pipe_cat * pipe_cat_cond                                         # apply conditions
+                                                                                    # add cat (for search) if sub=sur=0
+        pipe_cat = pipe_cat + (slots[:, 7] * T.eq(slots[:, 5], 0) * T.eq(slots[:, 6], 0))
+
+        ### exp plumbing
+        pipe_exp = slots[:, 5]                                                      # start with sur
+        pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
+
+        if self.has_pipes:
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
+            countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
+            countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
+
+        # gate logic
+
+        # multiply with gate factor for the node space
+        if self.has_directional_activators:
+            nodefunctions = nodefunctions * self.g_factor
+
+        # apply actual gate functions
+        gate_function_output = nodefunctions
+
+        # apply GATE_FUNCTION_ABS to masked gates
+        if self.has_gatefunction_absolute:
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_ABSOLUTE), abs(gate_function_output), gate_function_output)
+        # apply GATE_FUNCTION_SIGMOID to masked gates
+        if self.has_gatefunction_sigmoid:
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_SIGMOID), N.sigmoid(gate_function_output + self.g_theta), gate_function_output)
+        # apply GATE_FUNCTION_TANH to masked gates
+        if self.has_gatefunction_tanh:
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_TANH), T.tanh(gate_function_output + self.g_theta), gate_function_output)
+        # apply GATE_FUNCTION_RECT to masked gates
+        if self.has_gatefunction_rect:
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_RECT), T.switch(gate_function_output + self.g_theta > 0, gate_function_output - self.g_theta, 0), gate_function_output)
+        # apply GATE_FUNCTION_DIST to masked gates
+        if self.has_gatefunction_one_over_x:
+            gate_function_output = T.switch(T.eq(self.g_function_selector, GATE_FUNCTION_DIST), T.switch(T.neq(0, gate_function_output), 1 / gate_function_output, 0), gate_function_output)
+
+        # apply threshold
+        thresholded_gate_function_output = \
+            T.switch(T.ge(gate_function_output, self.g_threshold), gate_function_output, 0)
+
+        # apply amplification
+        amplified_gate_function_output = thresholded_gate_function_output * self.g_amplification
+
+        # apply minimum and maximum
+        limited_gate_function_output = T.clip(amplified_gate_function_output, self.g_min, self.g_max)
+
+        gatefunctions = limited_gate_function_output
+
+        # put the theano graph into a callable function to be executed
+        self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+
+    def calculate(self):
+        if self.has_new_usages:
+            self.compile_calculate_nodes()
+            self.has_new_usages = False
+
+        self.__take_native_module_slot_snapshots()
+        if self.has_pipes:
+            self.nodenet.rebuild_shifted()
+        if self.has_directional_activators:
+            self.__calculate_g_factors()
+        self.calculate_nodes()
+        self.__calculate_native_modules()
+
+    def __take_native_module_slot_snapshots(self):
+        for uid, instance in self.native_module_instances.items():
+            instance.take_slot_activation_snapshot()
+
+    def __calculate_native_modules(self):
+        for uid, instance in self.native_module_instances.items():
+            instance.node_function()
+
+    def __calculate_g_factors(self):
+        a = self.a.get_value(borrow=True)
+        a[0] = 1.
+        g_factor = a[self.allocated_elements_to_activators]
+        self.g_factor.set_value(g_factor, borrow=True)

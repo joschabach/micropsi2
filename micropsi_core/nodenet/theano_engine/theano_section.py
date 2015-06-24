@@ -26,6 +26,9 @@ class TheanoSection():
         # array, index is node id, value is offset in a and w
         self.allocated_node_offsets = None
 
+        # array, index is element index, value is node id
+        self.allocated_elements_to_nodes = None
+
         # array, index is node id, value is nodespace id
         self.allocated_node_parents = None
 
@@ -34,6 +37,7 @@ class TheanoSection():
 
         self.allocated_nodes = np.zeros(self.nodenet.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.nodenet.NoN, dtype=np.int32)
+        self.allocated_elements_to_nodes = np.zeros(self.nodenet.NoE, dtype=np.int32)
 
         self.allocated_node_parents = np.zeros(self.nodenet.NoN, dtype=np.int32)
         self.allocated_nodespaces = np.zeros(self.nodenet.NoNS, dtype=np.int32)

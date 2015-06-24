@@ -369,7 +369,7 @@ class TheanoGate(Gate):
             gatecolumn = w_matrix[:, self.__section.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
             links_indices = np.nonzero(gatecolumn)[0]
             for index in links_indices:
-                target_id = self.__nodenet.allocated_elements_to_nodes[index]
+                target_id = self.__section.allocated_elements_to_nodes[index]
                 target_type = self.__section.allocated_nodes[target_id]
                 target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
                 target_slot_numerical = index - self.__section.allocated_node_offsets[target_id]
@@ -448,7 +448,7 @@ class TheanoSlot(Slot):
             else:
                 links_indices = np.nonzero(slotrow)[0]
             for index in links_indices:
-                source_id = self.__nodenet.allocated_elements_to_nodes[index]
+                source_id = self.__section.allocated_elements_to_nodes[index]
                 source_type = self.__section.allocated_nodes[source_id]
                 source_gate_numerical = index - self.__section.allocated_node_offsets[source_id]
                 source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))

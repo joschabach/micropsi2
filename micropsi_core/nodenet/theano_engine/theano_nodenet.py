@@ -229,9 +229,6 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        # array, index is element index, value is node id
-        self.allocated_elements_to_nodes = None
-
         # directional activator assignment, key is nodespace ID, value is activator ID
         self.allocated_nodespaces_por_activators = None
         self.allocated_nodespaces_ret_activators = None
@@ -376,7 +373,6 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache = {}
 
-        self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
         self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
@@ -482,7 +478,7 @@ class TheanoNodenet(Nodenet):
 
         allocated_nodes = self.rootsection.allocated_nodes
         allocated_node_offsets = self.rootsection.allocated_node_offsets
-        allocated_elements_to_nodes = self.allocated_elements_to_nodes
+        allocated_elements_to_nodes = self.rootsection.allocated_elements_to_nodes
         allocated_node_parents = self.rootsection.allocated_node_parents
         allocated_nodespaces = self.rootsection.allocated_nodespaces
         allocated_elements_to_activators = self.allocated_elements_to_activators
@@ -601,7 +597,7 @@ class TheanoNodenet(Nodenet):
                     self.logger.warn("no allocated_node_offsets in file, falling back to defaults")
 
                 if 'allocated_elements_to_nodes' in datafile:
-                    self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
+                    self.rootsection.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
                 else:
                     self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")
 
@@ -931,7 +927,7 @@ class TheanoNodenet(Nodenet):
         if group is None:
             return [node_to_id(id) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
         elif group in self.nodegroups:
-            return [node_to_id(nid) for nid in self.allocated_elements_to_nodes[self.nodegroups[group]]]
+            return [node_to_id(nid) for nid in self.rootsection.allocated_elements_to_nodes[self.nodegroups[group]]]
         else:
             return []
 
@@ -1020,7 +1016,7 @@ class TheanoNodenet(Nodenet):
         new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
         new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
 
-        new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
+        new_allocated_elements_to_nodes[0:self.NoE] = self.rootsection.allocated_elements_to_nodes
         new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
 
         new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
@@ -1040,7 +1036,7 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
             self.NoE = new_NoE
-            self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
+            self.rootsection.allocated_elements_to_nodes = new_allocated_elements_to_nodes
             self.allocated_elements_to_activators = new_allocated_elements_to_activators
             self.w.set_value(new_w, borrow=True)
             self.a.set_value(new_a, borrow=True)
@@ -1103,7 +1099,7 @@ class TheanoNodenet(Nodenet):
         while offset < 1:
             freecount = 0
             for j in range(0, number_of_elements):
-                if i+j < len(self.allocated_elements_to_nodes) and self.allocated_elements_to_nodes[i+j] == 0:
+                if i+j < len(self.rootsection.allocated_elements_to_nodes) and self.rootsection.allocated_elements_to_nodes[i+j] == 0:
                     freecount += 1
                 else:
                     break
@@ -1130,7 +1126,7 @@ class TheanoNodenet(Nodenet):
         self.rootsection.allocated_node_offsets[id] = offset
 
         for element in range (0, get_elements_per_type(self.rootsection.allocated_nodes[id], self.native_modules)):
-            self.allocated_elements_to_nodes[offset + element] = id
+            self.rootsection.allocated_elements_to_nodes[offset + element] = id
 
         if position is not None:
             self.positions[uid] = position
@@ -1248,10 +1244,10 @@ class TheanoNodenet(Nodenet):
         self.rootsection.allocated_node_parents[node_from_id(uid)] = 0
         g_function_selector_array = self.g_function_selector.get_value(borrow=True)
         for element in range (0, get_elements_per_type(type, self.native_modules)):
-            self.allocated_elements_to_nodes[offset + element] = 0
+            self.rootsection.allocated_elements_to_nodes[offset + element] = 0
             g_function_selector_array[offset + element] = 0
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
-        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_from_id(uid))[0]] = 0
+        self.rootsection.allocated_elements_to_nodes[np.where(self.rootsection.allocated_elements_to_nodes == node_from_id(uid))[0]] = 0
 
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
@@ -1588,7 +1584,7 @@ class TheanoNodenet(Nodenet):
                 continue
 
             numeric_id = node_from_id(uid)
-            number_of_elements = len(np.where(self.allocated_elements_to_nodes == numeric_id)[0])
+            number_of_elements = len(np.where(self.rootsection.allocated_elements_to_nodes == numeric_id)[0])
             new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
             if number_of_elements != new_numer_of_elements:
                 self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
@@ -1694,7 +1690,7 @@ class TheanoNodenet(Nodenet):
                 gatecolumn = w_matrix[:, self.rootsection.allocated_node_offsets[node_id] + gate_type]
                 links_indices = np.nonzero(gatecolumn)[0]
                 for index in links_indices:
-                    target_id = self.allocated_elements_to_nodes[index]
+                    target_id = self.rootsection.allocated_elements_to_nodes[index]
                     target_type = self.rootsection.allocated_nodes[target_id]
                     target_slot_numerical = index - self.rootsection.allocated_node_offsets[target_id]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
@@ -1724,7 +1720,7 @@ class TheanoNodenet(Nodenet):
                 else:
                     links_indices = np.nonzero(slotrow)[0]
                 for index in links_indices:
-                    source_id = self.allocated_elements_to_nodes[index]
+                    source_id = self.rootsection.allocated_elements_to_nodes[index]
                     source_type = self.rootsection.allocated_nodes[source_id]
                     source_gate_numerical = index - self.rootsection.allocated_node_offsets[source_id]
                     source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
@@ -1873,7 +1869,7 @@ class TheanoNodenet(Nodenet):
     def dump_group(self, group):
         ids = self.nodegroups[group]
         for element in ids:
-            nid = self.allocated_elements_to_nodes[element]
+            nid = self.rootsection.allocated_elements_to_nodes[element]
             uid = node_to_id(nid)
             node = self.get_node(uid)
             print("%s %s" % (node.uid, node.name))
@@ -1933,8 +1929,8 @@ class TheanoNodenet(Nodenet):
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
-        uids_to_invalidate = [node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
-        uids_to_invalidate.extend([node_to_id(self.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
+        uids_to_invalidate = [node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_from]]
+        uids_to_invalidate.extend([node_to_id(self.rootsection.allocated_elements_to_nodes[eid]) for eid in self.nodegroups[group_to]])
 
         for uid in uids_to_invalidate:
             if uid in self.proxycache:
@@ -2018,7 +2014,7 @@ class TheanoNodenet(Nodenet):
 
             number_of_elements = get_elements_per_type(nodetype, self.native_modules)
 
-            elements = np.where(self.allocated_elements_to_nodes == nid)[0]
+            elements = np.where(self.rootsection.allocated_elements_to_nodes == nid)[0]
             if len(elements) != number_of_elements:
                 self.logger.error("Integrity check error: Number of elements for node n%i should be %i, but is %i" % (nid, number_of_elements, len(elements)))
 
@@ -2028,8 +2024,8 @@ class TheanoNodenet(Nodenet):
                     self.logger.error("Integrity check error: First element for node n%i should be at %i, but is at %i" % (nid, offset, elements[0]))
 
                 for eid in range(number_of_elements):
-                    if self.allocated_elements_to_nodes[offset+eid] != nid:
-                        self.logger.error("Integrity check error: Element %i of node n%i is allocated to node n%i" % (eid, nid, self.allocated_elements_to_nodes[offset+eid]))
+                    if self.rootsection.allocated_elements_to_nodes[offset+eid] != nid:
+                        self.logger.error("Integrity check error: Element %i of node n%i is allocated to node n%i" % (eid, nid, self.rootsection.allocated_elements_to_nodes[offset+eid]))
 
                 for snid in range(self.NoN):
 

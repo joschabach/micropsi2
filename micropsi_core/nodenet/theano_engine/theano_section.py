@@ -412,6 +412,11 @@ class TheanoSection():
             self.compile_calculate_nodes()
             self.has_new_usages = False
 
+        if self.por_ret_dirty:
+            self.rebuild_por_linked()
+            self.rebuild_ret_linked()
+            self.por_ret_dirty = False
+
         self.__take_native_module_slot_snapshots()
         if self.has_pipes:
             self.__rebuild_shifted()

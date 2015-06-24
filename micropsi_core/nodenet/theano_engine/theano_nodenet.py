@@ -706,12 +706,6 @@ class TheanoNodenet(Nodenet):
                                                         # but instead the world object itself
 
         with self.netlock:
-
-            if self.rootsection.por_ret_dirty:
-                self.rootsection.rebuild_por_linked()
-                self.rootsection.rebuild_ret_linked()
-                self.rootsection.por_ret_dirty = False
-
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 

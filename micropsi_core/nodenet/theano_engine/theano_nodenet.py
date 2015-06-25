@@ -1482,21 +1482,12 @@ class TheanoNodenet(Nodenet):
             nodespace_uid = self.get_nodespace(None).uid
 
         ids = [node_from_id(uid) for uid in node_uids]
-        parent_id = nodespace_from_id(nodespace_uid)
-
-        if nodespace_uid not in self.rootsection.nodegroups:
-            self.rootsection.nodegroups[nodespace_uid] = {}
-
-        non_children = np.where(self.rootsection.allocated_node_parents[ids] != parent_id)[0]
-        if len(non_children) > 0:
-            raise ValueError("One ore more given nodes are not in nodespace %s" % nodespace)
-
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':
             ids = sorted(ids, key=lambda id: self.names[node_to_id(id, self.rootsection.sid)])
-        gate = get_numerical_gate_type(gatetype)
-        self.rootsection.nodegroups[nodespace_uid][group_name] = self.rootsection.allocated_node_offsets[ids] + gate
+
+        self.rootsection.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
 
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid is None:

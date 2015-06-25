@@ -729,6 +729,19 @@ class TheanoSection():
                 self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
                                                       get_numerical_gate_type(gate_type)] = self.allocated_node_offsets[activator_id]
 
+    def group_nodes_by_ids(self, nodespace_uid, ids, group_name, gatetype="gen"):
+
+        if nodespace_uid not in self.nodegroups:
+            self.nodegroups[nodespace_uid] = {}
+        parent_id = nodespace_from_id(nodespace_uid)
+
+        non_children = np.where(self.allocated_node_parents[ids] != parent_id)[0]
+        if len(non_children) > 0:
+            raise ValueError("One ore more given nodes are not in nodespace %s" % nodespace_uid)
+
+        gate = get_numerical_gate_type(gatetype)
+        self.nodegroups[nodespace_uid][group_name] = self.allocated_node_offsets[ids] + gate
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

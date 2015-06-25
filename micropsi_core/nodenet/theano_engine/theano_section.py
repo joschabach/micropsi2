@@ -563,6 +563,253 @@ class TheanoSection():
         self.allocated_node_offsets = new_allocated_node_offsets
         self.has_new_usages = True
 
+    def save(self, datafilename):
+
+        allocated_nodes = self.allocated_nodes
+        allocated_node_offsets = self.allocated_node_offsets
+        allocated_elements_to_nodes = self.allocated_elements_to_nodes
+        allocated_node_parents = self.allocated_node_parents
+        allocated_nodespaces = self.allocated_nodespaces
+        allocated_elements_to_activators = self.allocated_elements_to_activators
+
+        allocated_nodespaces_por_activators = self.allocated_nodespaces_por_activators
+        allocated_nodespaces_ret_activators = self.allocated_nodespaces_ret_activators
+        allocated_nodespaces_sub_activators = self.allocated_nodespaces_sub_activators
+        allocated_nodespaces_sur_activators = self.allocated_nodespaces_sur_activators
+        allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
+        allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
+
+        w = self.w.get_value(borrow=True)
+
+        # if we're sparse, convert to sparse matrix for persistency
+        if not self.sparse:
+            w = sp.csr_matrix(w)
+
+        a = self.a.get_value(borrow=True)
+        g_theta = self.g_theta.get_value(borrow=True)
+        g_factor = self.g_factor.get_value(borrow=True)
+        g_threshold = self.g_threshold.get_value(borrow=True)
+        g_amplification = self.g_amplification.get_value(borrow=True)
+        g_min = self.g_min.get_value(borrow=True)
+        g_max = self.g_max.get_value(borrow=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        g_expect = self.g_expect.get_value(borrow=True)
+        g_countdown = self.g_countdown.get_value(borrow=True)
+        g_wait = self.g_wait.get_value(borrow=True)
+        n_function_selector = self.n_function_selector.get_value(borrow=True)
+
+        sizeinformation = [self.NoN, self.NoE, self.NoNS]
+
+        np.savez(datafilename,
+                 allocated_nodes=allocated_nodes,
+                 allocated_node_offsets=allocated_node_offsets,
+                 allocated_elements_to_nodes=allocated_elements_to_nodes,
+                 allocated_node_parents=allocated_node_parents,
+                 allocated_nodespaces=allocated_nodespaces,
+                 w_data=w.data,
+                 w_indices=w.indices,
+                 w_indptr=w.indptr,
+                 a=a,
+                 g_theta=g_theta,
+                 g_factor=g_factor,
+                 g_threshold=g_threshold,
+                 g_amplification=g_amplification,
+                 g_min=g_min,
+                 g_max=g_max,
+                 g_function_selector=g_function_selector,
+                 g_expect=g_expect,
+                 g_countdown=g_countdown,
+                 g_wait=g_wait,
+                 n_function_selector=n_function_selector,
+                 sizeinformation=sizeinformation,
+                 allocated_elements_to_activators=allocated_elements_to_activators,
+                 allocated_nodespaces_por_activators=allocated_nodespaces_por_activators,
+                 allocated_nodespaces_ret_activators=allocated_nodespaces_ret_activators,
+                 allocated_nodespaces_sub_activators=allocated_nodespaces_sub_activators,
+                 allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
+                 allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
+                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators)
+
+    def load(self, datafilename, nodes_data):
+        """Load the node net from a file"""
+        # try to access file
+
+        datafile = None
+        if os.path.isfile(datafilename):
+            try:
+                self.logger.info("Loading nodenet %s section %i bulk data from file %s" % (self.nodenet.name, self.sid, datafilename))
+                datafile = np.load(datafilename)
+            except ValueError:
+                warnings.warn("Could not read nodenet data from file %s" % datafile)
+                return False
+            except IOError:
+                warnings.warn("Could not open nodenet file %s" % datafile)
+                return False
+
+        if not datafile:
+            return
+
+        if 'sizeinformation' in datafile:
+            self.NoN = datafile['sizeinformation'][0]
+            self.NoE = datafile['sizeinformation'][1]
+            self.NoNS = datafile['sizeinformation'][2]
+        else:
+            self.logger.warn("no sizeinformation in file, falling back to defaults")
+
+        # the load bulk data into numpy arrays
+        if 'allocated_nodes' in datafile:
+            self.allocated_nodes = datafile['allocated_nodes']
+        else:
+            self.logger.warn("no allocated_nodes in file, falling back to defaults")
+
+        if 'allocated_node_offsets' in datafile:
+            self.allocated_node_offsets = datafile['allocated_node_offsets']
+        else:
+            self.logger.warn("no allocated_node_offsets in file, falling back to defaults")
+
+        if 'allocated_elements_to_nodes' in datafile:
+            self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
+        else:
+            self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")
+
+        if 'allocated_nodespaces' in datafile:
+            self.allocated_nodespaces = datafile['allocated_nodespaces']
+        else:
+            self.logger.warn("no allocated_nodespaces in file, falling back to defaults")
+
+        if 'allocated_node_parents' in datafile:
+            self.allocated_node_parents = datafile['allocated_node_parents']
+        else:
+            self.logger.warn("no allocated_node_parents in file, falling back to defaults")
+
+        if 'allocated_elements_to_activators' in datafile:
+            self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
+        else:
+            self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_por_activators' in datafile:
+            self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_ret_activators' in datafile:
+            self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_sub_activators' in datafile:
+            self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_sur_activators' in datafile:
+            self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_cat_activators' in datafile:
+            self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_exp_activators' in datafile:
+            self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
+
+        if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
+            w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
+            # if we're configured to be dense, convert from csr
+            if not self.sparse:
+                w = w.todense()
+            self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
+            self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
+        else:
+            self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
+
+        if 'g_theta' in datafile:
+            self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
+        else:
+            self.logger.warn("no g_theta in file, falling back to defaults")
+
+        if 'g_factor' in datafile:
+            self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
+        else:
+            self.logger.warn("no g_factor in file, falling back to defaults")
+
+        if 'g_threshold' in datafile:
+            self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
+        else:
+            self.logger.warn("no g_threshold in file, falling back to defaults")
+
+        if 'g_amplification' in datafile:
+            self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
+        else:
+            self.logger.warn("no g_amplification in file, falling back to defaults")
+
+        if 'g_min' in datafile:
+            self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
+        else:
+            self.logger.warn("no g_min in file, falling back to defaults")
+
+        if 'g_max' in datafile:
+            self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
+        else:
+            self.logger.warn("no g_max in file, falling back to defaults")
+
+        if 'g_function_selector' in datafile:
+            self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
+        else:
+            self.logger.warn("no g_function_selector in file, falling back to defaults")
+
+        if 'g_expect' in datafile:
+            self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
+        else:
+            self.logger.warn("no g_expect in file, falling back to defaults")
+
+        if 'g_countdown' in datafile:
+            self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
+        else:
+            self.logger.warn("no g_countdown in file, falling back to defaults")
+
+        if 'g_wait' in datafile:
+            self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
+        else:
+            self.logger.warn("no g_wait in file, falling back to defaults")
+
+        if 'n_function_selector' in datafile:
+            self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
+        else:
+            self.logger.warn("no n_function_selector in file, falling back to defaults")
+
+        # reconstruct other states
+
+        self.por_ret_dirty = True
+
+        if 'g_function_selector' in datafile:
+            g_function_selector = datafile['g_function_selector']
+            self.has_new_usages = True
+            self.has_pipes = PIPE in self.allocated_nodes
+            self.has_directional_activators = ACTIVATOR in self.allocated_nodes
+            self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
+            self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
+            self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
+            self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
+            self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+        else:
+            self.logger.warn("no g_function_selector in file, falling back to defaults")
+
+        for id in np.nonzero(self.allocated_nodes)[0]:
+            if self.allocated_nodes[id] > MAX_STD_NODETYPE:
+                uid = node_to_id(id, self.sid)
+                if uid in nodes_data:
+                    self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+                self.native_module_instances[uid] = self.nodenet.get_node(uid)
+            elif self.allocated_nodes[id] == COMMENT:
+                uid = node_to_id(id, self.sid)
+                self.comment_instances[uid] = self.nodenet.get_node(uid)
+
+
     def grow_number_of_nodespaces(self, growby):
 
         new_NoNS = int(self.NoNS + growby)

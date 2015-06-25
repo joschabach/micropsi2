@@ -231,7 +231,6 @@ class TheanoNodenet(Nodenet):
                                          INITIAL_NUMBER_OF_NODES,
                                          INITIAL_NUMBER_OF_ELEMENTS,
                                          INITIAL_NUMBER_OF_NODESPACES)
-
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}
@@ -473,17 +472,21 @@ class TheanoNodenet(Nodenet):
 
             self.__step += 1
 
+    def get_section(self, uid):
+        return self.rootsection
+
     def get_node(self, uid):
-        if uid in self.rootsection.native_module_instances:
-            return self.rootsection.native_module_instances[uid]
-        elif uid in self.rootsection.comment_instances:
-            return self.rootsection.comment_instances[uid]
+        section = self.get_section(uid)
+        if uid in section.native_module_instances:
+            return section.native_module_instances[uid]
+        elif uid in section.comment_instances:
+            return section.comment_instances[uid]
         elif uid in self.proxycache:
             return self.proxycache[uid]
         elif self.is_node(uid):
             id = node_from_id(uid)
-            parent_id = self.rootsection.allocated_node_parents[id]
-            node = TheanoNode(self, self.rootsection, nodespace_to_id(parent_id), uid, self.rootsection.allocated_nodes[id])
+            parent_id = section.allocated_node_parents[id]
+            node = TheanoNode(self, section, nodespace_to_id(parent_id), uid, section.allocated_nodes[id])
             self.proxycache[node.uid] = node
             return node
         else:
@@ -493,27 +496,31 @@ class TheanoNodenet(Nodenet):
         if group is not None:
             if group_nodespace_uid is None:
                 group_nodespace_uid = self.get_nodespace(None).uid
-            return [node_to_id(nid, self.rootsection.sid) for nid in self.rootsection.allocated_elements_to_nodes[self.rootsection.nodegroups[group_nodespace_uid][group]]]
+            section = self.get_section(group_nodespace_uid)
+            return [node_to_id(nid, section.sid) for nid in section.allocated_elements_to_nodes[section.nodegroups[group_nodespace_uid][group]]]
         else:
             return [node_to_id(id, self.rootsection.sid) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
 
     def is_node(self, uid):
+        section = self.get_section(uid)
         numid = node_from_id(uid)
-        return numid < self.rootsection.NoN and self.rootsection.allocated_nodes[numid] != 0
+        return numid < section.NoN and section.allocated_nodes[numid] != 0
 
     def announce_nodes(self, nodespace_uid, number_of_nodes, average_elements_per_node):
-        self.rootsection.announce_nodes(number_of_nodes, average_elements_per_node)
+        section = self.get_section(nodespace_uid)
+        section.announce_nodes(number_of_nodes, average_elements_per_node)
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
+        section = self.get_section(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
 
         id_to_pass = None
         if uid is not None:
             id_to_pass = node_from_id(uid)
 
-        id = self.rootsection.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_parameters, gate_functions)
-        uid = node_to_id(id, self.rootsection.sid)
+        id = section.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_parameters, gate_functions)
+        uid = node_to_id(id, section.sid)
 
         if position is not None:
             self.positions[uid] = position
@@ -543,10 +550,10 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_node(self, uid):
-
+        section = self.get_section(uid)
         node_id = node_from_id(uid)
 
-        self.rootsection.delete_node(node_id)
+        section.delete_node(node_id)
 
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
@@ -569,28 +576,33 @@ class TheanoNodenet(Nodenet):
         self.clear_supplements(uid)
 
     def set_node_gate_parameter(self, uid, gate_type, parameter, value):
+        section = self.get_section(uid)
         id = node_from_id(uid)
-        self.rootsection.set_node_gate_parameter(id, gate_type, parameter, value)
+        section.set_node_gate_parameter(id, gate_type, parameter, value)
 
     def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
+        section = self.get_section(uid)
         id = node_from_id(uid)
-        self.rootsection.set_node_gatefunction_name(id, gate_type, gatefunction_name)
+        section.set_node_gatefunction_name(id, gate_type, gatefunction_name)
 
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
+        section = self.get_section(nodespace_uid)
         activator_id = 0
         if activator_uid is not None and len(activator_uid) > 0:
             activator_id = node_from_id(activator_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
-        self.rootsection.set_nodespace_gatetype_activator(nodespace_id, gate_type, activator_id)
+        section.set_nodespace_gatetype_activator(nodespace_id, gate_type, activator_id)
 
     def get_nodespace(self, uid):
         if uid is None:
             uid = nodespace_to_id(1)
 
+        section = self.get_section(uid)
+
         if uid in self.proxycache:
             return self.proxycache[uid]
         else:
-            nodespace = TheanoNodespace(self, self.rootsection, uid)
+            nodespace = TheanoNodespace(self, section, uid)
             self.proxycache[uid] = nodespace
             return nodespace
 
@@ -603,6 +615,7 @@ class TheanoNodenet(Nodenet):
         return uid in self.get_nodespace_uids()
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
+        section = self.get_section(parent_uid)
 
         parent_id = 0
         if parent_uid is not None:
@@ -614,7 +627,7 @@ class TheanoNodenet(Nodenet):
         if uid is not None:
             id_to_pass = nodespace_from_id(uid)
 
-        id = self.rootsection.create_nodespace(parent_id, id_to_pass)
+        id = section.create_nodespace(parent_id, id_to_pass)
         uid = nodespace_to_id(id)
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
@@ -624,10 +637,12 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_nodespace(self, nodespace_uid):
+        section = self.get_section(nodespace_uid)
+
         if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
             raise ValueError("The root nodespace cannot be deleted.")
         nodespace_id = nodespace_from_id(nodespace_uid)
-        self.rootsection.delete_nodespace(nodespace_id)
+        section.delete_nodespace(nodespace_id)
 
     def clear_supplements(self, uid):
         # clear from proxycache
@@ -673,10 +688,16 @@ class TheanoNodenet(Nodenet):
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
 
+        source_section = self.get_section(source_node_uid)
+        target_section = self.get_section(target_node_uid)
+
+        if target_section != source_section:
+            raise ValueError("Links between sections aren't supported yet, but will be")
+
         source_node_id = node_from_id(source_node_uid)
         target_node_id = node_from_id(target_node_uid)
 
-        self.rootsection.set_link_weight(source_node_id, gate_type, target_node_id, slot_type, weight)
+        source_section.set_link_weight(source_node_id, gate_type, target_node_id, slot_type, weight)
 
         if source_node_uid in self.proxycache:
             self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
@@ -756,6 +777,7 @@ class TheanoNodenet(Nodenet):
             self.rootsection.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def get_nodespace_data(self, nodespace_uid, include_links):
+        section = self.get_section(nodespace_uid)
         data = {
             'links': {},
             'nodes': self.construct_nodes_dict(nodespace_uid, self.rootsection.NoN),
@@ -771,7 +793,7 @@ class TheanoNodenet(Nodenet):
                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
 
             for uid in followupnodes:
-                if self.rootsection.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
+                if section.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
                     data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:
@@ -797,8 +819,9 @@ class TheanoNodenet(Nodenet):
     def construct_links_dict(self, nodespace_uid=None):
         data = {}
         if nodespace_uid is not None:
+            section = self.get_section(nodespace_uid)
             parent = nodespace_from_id(nodespace_uid)
-            node_ids = np.where(self.rootsection.allocated_node_parents == parent)[0]
+            node_ids = np.where(section.allocated_node_parents == parent)[0]
         else:
             node_ids = np.nonzero(self.rootsection.allocated_nodes)[0]
         w_matrix = self.rootsection.w.get_value(borrow=True)
@@ -978,58 +1001,70 @@ class TheanoNodenet(Nodenet):
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
+        section = self.get_section(nodespace_uid)
 
         ids = [node_from_id(uid) for uid in node_uids]
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':
-            ids = sorted(ids, key=lambda id: self.names[node_to_id(id, self.rootsection.sid)])
+            ids = sorted(ids, key=lambda id: self.names[node_to_id(id, section.sid)])
 
-        self.rootsection.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
+        section.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
 
     def ungroup_nodes(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-
-        self.rootsection.ungroup_nodes(nodespace_uid, group)
+        section = self.get_section(nodespace_uid)
+        section.ungroup_nodes(nodespace_uid, group)
 
     def dump_group(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
+        section = self.get_section(nodespace_uid)
 
-        ids = self.rootsection.nodegroups[nodespace_uid][group]
+        ids = section.nodegroups[nodespace_uid][group]
         for element in ids:
-            nid = self.rootsection.allocated_elements_to_nodes[element]
-            uid = node_to_id(nid, self.rootsection.sid)
+            nid = section.allocated_elements_to_nodes[element]
+            uid = node_to_id(nid, section.sid)
             node = self.get_node(uid)
             print("%s %s" % (node.uid, node.name))
 
     def get_activations(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-        return self.rootsection.get_activations(nodespace_uid, group)
+        section = self.get_section(nodespace_uid)
+        return section.get_activations(nodespace_uid, group)
 
     def set_activations(self, nodespace_uid, group, new_activations):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-        self.rootsection.set_activations(nodespace_uid, group, new_activations)
+        section = self.get_section(nodespace_uid)
+        section.set_activations(nodespace_uid, group, new_activations)
 
     def get_thetas(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-        return self.rootsection.get_thetas(nodespace_uid, group)
+        section = self.get_section(nodespace_uid)
+        return section.get_thetas(nodespace_uid, group)
 
     def set_thetas(self, nodespace_uid, group, new_thetas):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-        self.rootsection.set_thetas(nodespace_uid, group, new_thetas)
+        section = self.get_section(nodespace_uid)
+        section.set_thetas(nodespace_uid, group, new_thetas)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid is None:
             nodespace_from_uid = self.get_nodespace(None).uid
         if nodespace_to_uid is None:
             nodespace_to_uid = self.get_nodespace(None).uid
-        return self.rootsection.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
+        section_from = self.get_section(nodespace_from_uid)
+        section_to = self.get_section(nodespace_to_uid)
+
+        if section_to != section_from:
+            raise ValueError("Links between sections aren't supported yet, but will be.")
+
+        return section_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 
     def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
         if nodespace_from_uid is None:
@@ -1037,7 +1072,13 @@ class TheanoNodenet(Nodenet):
         if nodespace_to_uid is None:
             nodespace_to_uid = self.get_nodespace(None).uid
 
-        self.rootsection.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
+        section_from = self.get_section(nodespace_from_uid)
+        section_to = self.get_section(nodespace_to_uid)
+
+        if section_to != section_from:
+            raise ValueError("Links between sections aren't supported yet, but will be.")
+
+        section_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
         uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
         uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))

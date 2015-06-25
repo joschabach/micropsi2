@@ -414,59 +414,59 @@ class NetAPI(object):
         """
         self.__nodenet.group_nodes_by_ids(nodespace_uid, node_uids, group_name, gatetype=gate, sortby=sortby)
 
-    def ungroup_nodes(self, group):
+    def ungroup_nodes(self, nodespace_uid, group):
         """
         Deletes the given group (not the nodes, just the group assignment)
         """
-        self.__nodenet.ungroup_nodes(group)
+        self.__nodenet.ungroup_nodes(nodespace_uid, group)
 
-    def get_activations(self, group):
+    def get_activations(self, nodespace_uid, group):
         """
         Returns an array of activations for the given group.
         """
-        return self.__nodenet.get_activations(group)
+        return self.__nodenet.get_activations(nodespace_uid, group)
 
-    def substitute_activations(self, group, new_activations):
+    def substitute_activations(self, nodespace_uid, group, new_activations):
         """
         Sets the activation of the given elements to the given value.
         Note that this overrides the calculated activations, including all gate mechanics,
         including gate function, thresholds, min, max, amplification and directional
         activators - the values passed will be propagated in the next step.
         """
-        return self.__nodenet.set_activations(group, new_activations)
+        return self.__nodenet.set_activations(nodespace_uid, group, new_activations)
 
-    def get_thetas(self, group):
+    def get_thetas(self, nodespace_uid, group):
         """
         Returns an array of theta values for the given group.
         For multi-gate nodes, the thetas of the gen gates will be returned
         """
-        return self.__nodenet.get_thetas(group)
+        return self.__nodenet.get_thetas(nodespace_uid, group)
 
-    def set_thetas(self, group, new_thetas):
+    def set_thetas(self, nodespace_uid, group, new_thetas):
         """
         Bulk-sets thetas for the given group.
         new_thetas dimensionality has to match the group length
         """
-        self.__nodenet.set_thetas(group, new_thetas)
+        self.__nodenet.set_thetas(nodespace_uid, group, new_thetas)
 
-    def get_link_weights(self, group_from, group_to):
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         """
         Returns the weights of links between two groups as a matrix.
         Rows are group_to slots, columns are group_from gates.
         Non-existing links will be returned as 0-entries in the matrix.
         """
-        return self.__nodenet.get_link_weights(group_from, group_to)
+        return self.__nodenet.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 
-    def set_link_weights(self, group_from, group_to, new_w):
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
         """
         Sets the weights of links between two groups from the given matrix new_w.
         Rows are group_to slots, columns are group_from gates.
         Note that setting matrix entries to non-0 values will implicitly create links.
         """
-        self.__nodenet.set_link_weights(group_from, group_to, new_w)
+        self.__nodenet.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
-    def get_node_ids(self, group):
+    def get_node_ids(self, nodespace_uid, group):
         """
         Returns the uids of the nodes in the given group
         """
-        return self.__nodenet.get_node_uids(group)
+        return self.__nodenet.get_node_uids(nodespace_uid, group)

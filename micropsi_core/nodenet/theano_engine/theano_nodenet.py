@@ -727,13 +727,11 @@ class TheanoNodenet(Nodenet):
         else:
             raise KeyError("No node with id %s exists", uid)
 
-    def get_node_uids(self, group=None):
-        if group is None:
-            return [node_to_id(id, self.rootsection.sid) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
-        elif group in self.rootsection.nodegroups:
+    def get_node_uids(self, group_nodespace_uid=None, group=None):
+        if group is not None:
             return [node_to_id(nid, self.rootsection.sid) for nid in self.rootsection.allocated_elements_to_nodes[self.rootsection.nodegroups[group]]]
         else:
-            return []
+            return [node_to_id(id, self.rootsection.sid) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
 
     def is_node(self, uid):
         numid = node_from_id(uid)
@@ -1495,11 +1493,11 @@ class TheanoNodenet(Nodenet):
         gate = get_numerical_gate_type(gatetype)
         self.rootsection.nodegroups[group_name] = self.rootsection.allocated_node_offsets[ids] + gate
 
-    def ungroup_nodes(self, group):
+    def ungroup_nodes(self, nodespace_uid, group):
         if group in self.rootsection.nodegroups:
             del self.rootsection.nodegroups[group]
 
-    def dump_group(self, group):
+    def dump_group(self, nodespace_uid, group):
         ids = self.rootsection.nodegroups[group]
         for element in ids:
             nid = self.rootsection.allocated_elements_to_nodes[element]
@@ -1507,33 +1505,33 @@ class TheanoNodenet(Nodenet):
             node = self.get_node(uid)
             print("%s %s" % (node.uid, node.name))
 
-    def get_activations(self, group):
+    def get_activations(self, nodespace_uid, group):
         if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         a_array = self.rootsection.a.get_value(borrow=True)
         return a_array[self.rootsection.nodegroups[group]]
 
-    def set_activations(self, group, new_activations):
+    def set_activations(self, nodespace_uid, group, new_activations):
         if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         a_array = self.rootsection.a.get_value(borrow=True)
         a_array[self.rootsection.nodegroups[group]] = new_activations
         self.rootsection.a.set_value(a_array, borrow=True)
 
-    def get_thetas(self, group):
+    def get_thetas(self, nodespace_uid, group):
         if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
         return g_theta_array[self.rootsection.nodegroups[group]]
 
-    def set_thetas(self, group, thetas):
+    def set_thetas(self, nodespace_uid, group, thetas):
         if group not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
         g_theta_array[self.rootsection.nodegroups[group]] = thetas
         self.rootsection.g_theta.set_value(g_theta_array, borrow=True)
 
-    def get_link_weights(self, group_from, group_to):
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if group_from not in self.rootsection.nodegroups:
             raise ValueError("Group %s does not exist." % group_from)
         if group_to not in self.rootsection.nodegroups:
@@ -1545,7 +1543,7 @@ class TheanoNodenet(Nodenet):
         else:
             return w_matrix[rows,cols]
 
-    def set_link_weights(self, group_from, group_to, new_w):
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
         if group_from not in self.rootsection.nodegroups:
             raise ValueError("group_from %s does not exist." % group_from)
         if group_to not in self.rootsection.nodegroups:

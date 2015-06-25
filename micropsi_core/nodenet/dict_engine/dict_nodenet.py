@@ -455,7 +455,7 @@ class DictNodenet(Nodenet):
             uid = "Root"
         return self.__nodespaces[uid]
 
-    def get_node_uids(self, group=None):
+    def get_node_uids(self, group_nodespace_uid=None, group=None):
         if group is None:
             return list(self.__nodes.keys())
         elif group in self.nodegroups:
@@ -605,7 +605,7 @@ class DictNodenet(Nodenet):
         for node_uid in node_uids:
             node = self.get_node(node_uid)
             if node.parent_nodespace != nodespace_uid:
-                raise ValueError("Node %s is not in nodespace %s" % (node_uid, nodespace_id))
+                raise ValueError("Node %s is not in nodespace %s" % (node_uid, nodespace_uid))
             nodes.append(node)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
@@ -613,11 +613,11 @@ class DictNodenet(Nodenet):
             nodes = sorted(nodes, key=lambda node: node.name)
         self.nodegroups[group_name] = (nodes, gatetype)
 
-    def ungroup_nodes(self, group):
+    def ungroup_nodes(self, nodespace_uid, group):
         if group in self.nodegroups:
             del self.nodegroups[group]
 
-    def get_activations(self, group):
+    def get_activations(self, nodespace_uid, group):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         activations = []
@@ -627,7 +627,7 @@ class DictNodenet(Nodenet):
             activations.append(node.get_gate(gate).activation)
         return activations
 
-    def set_activations(self, group, new_activations):
+    def set_activations(self, nodespace_uid, group, new_activations):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         nodes = self.nodegroups[group][0]
@@ -635,7 +635,7 @@ class DictNodenet(Nodenet):
         for i in range(len(nodes)):
             nodes[i].set_gate_activation(gate, new_activations[i])
 
-    def get_thetas(self, group):
+    def get_thetas(self, nodespace_uid, group):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         thetas = []
@@ -645,7 +645,7 @@ class DictNodenet(Nodenet):
             thetas.append(node.get_gate(gate).get_parameter('theta'))
         return thetas
 
-    def set_thetas(self, group, thetas):
+    def set_thetas(self, nodespace_uid, group, thetas):
         if group not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group)
         nodes = self.nodegroups[group][0]
@@ -653,7 +653,7 @@ class DictNodenet(Nodenet):
         for i in range(len(nodes)):
             nodes[i].set_gate_parameter(gate, 'theta', thetas[i])
 
-    def get_link_weights(self, group_from, group_to):
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if group_from not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group_from)
         if group_to not in self.nodegroups:
@@ -679,7 +679,7 @@ class DictNodenet(Nodenet):
             rows.append(row)
         return rows
 
-    def set_link_weights(self, group_from, group_to, new_w):
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
         if group_from not in self.nodegroups:
             raise ValueError("Group %s does not exist." % group_from)
         if group_to not in self.nodegroups:

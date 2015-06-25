@@ -185,16 +185,7 @@ class TheanoNode(Node):
         return self.__slotcache[type]
 
     def unlink_completely(self):
-
-        # there's a simpler implementation for this that just clears the
-        # node's row and column in the weight matrix. Probably depends on the matrix implementation
-        # whether that's actually faster.
-
-        links = self.get_associated_links()
-        for slottype in self.nodetype.slottypes:
-            links.extend(self.get_slot(slottype).get_links())
-        for link in links:
-            self._nodenet.delete_link(link.source_node.uid, link.source_gate.type, link.target_node.uid, link.target_slot.type)
+        self._section.unlink_node_completely(self._id)
 
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
         for gate_name_candidate in self.nodetype.gatetypes:

@@ -915,34 +915,9 @@ class TheanoNodenet(Nodenet):
 
     def delete_node(self, uid):
 
-        type = self.rootsection.allocated_nodes[node_from_id(uid)]
-        offset = self.rootsection.allocated_node_offsets[node_from_id(uid)]
-        parent = self.rootsection.allocated_node_parents[node_from_id(uid)]
+        node_id = node_from_id(uid)
 
-        # unlink
-        self.get_node(uid).unlink_completely()
-
-        # forget
-        self.rootsection.allocated_nodes[node_from_id(uid)] = 0
-        self.rootsection.allocated_node_offsets[node_from_id(uid)] = 0
-        self.rootsection.allocated_node_parents[node_from_id(uid)] = 0
-        g_function_selector_array = self.rootsection.g_function_selector.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(type, self.native_modules)):
-            self.rootsection.allocated_elements_to_nodes[offset + element] = 0
-            g_function_selector_array[offset + element] = 0
-        self.rootsection.g_function_selector.set_value(g_function_selector_array, borrow=True)
-        self.rootsection.allocated_elements_to_nodes[np.where(self.rootsection.allocated_elements_to_nodes == node_from_id(uid))[0]] = 0
-
-        if type == PIPE:
-            n_function_selector_array = self.rootsection.n_function_selector.get_value(borrow=True)
-            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
-            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
-            n_function_selector_array[offset + RET] = NFPG_PIPE_NON
-            n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
-            n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
-            n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
-            n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
-            self.rootsection.n_function_selector.set_value(n_function_selector_array, borrow=True)
+        self.rootsection.delete_node(node_id)
 
         # clear from proxycache
         if uid in self.proxycache:
@@ -954,21 +929,12 @@ class TheanoNodenet(Nodenet):
         if uid in self.positions:
             del self.positions[uid]
 
-        # hint at the free ID
-        self.last_allocated_node = node_from_id(uid) - 1
-
-        # remove the native module or comment instance if there should be one
-        if uid in self.rootsection.native_module_instances:
-            del self.rootsection.native_module_instances[uid]
-        if uid in self.rootsection.comment_instances:
-            del self.rootsection.comment_instances[uid]
-
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
             sensor = self.inverted_sensor_map[uid]
             del self.inverted_sensor_map[uid]
             if sensor in self.sensormap:
-                self.sensormap[sensor].remove(node_from_id(uid))
+                self.sensormap[sensor].remove(node_id)
                 if len(self.sensormap[sensor]) == 0:
                     del self.sensormap[sensor]
 
@@ -977,27 +943,9 @@ class TheanoNodenet(Nodenet):
             actuator = self.inverted_actuator_map[uid]
             del self.inverted_actuator_map[uid]
             if actuator in self.actuatormap:
-                self.actuatormap[actuator].remove(node_from_id(uid))
+                self.actuatormap[actuator].remove(node_id)
                 if len(self.actuatormap[actuator]) == 0:
                     del self.actuatormap[actuator]
-
-        # clear activator usage if there should be one
-        used_as_activator_by = np.where(self.rootsection.allocated_elements_to_activators == offset)
-        if len(used_as_activator_by) > 0:
-            self.rootsection.allocated_elements_to_activators[used_as_activator_by] = 0
-
-        if self.rootsection.allocated_nodespaces_por_activators[parent] == node_from_id(uid):
-            self.rootsection.allocated_nodespaces_por_activators[parent] = 0
-        elif self.rootsection.allocated_nodespaces_ret_activators[parent] == node_from_id(uid):
-            self.rootsection.allocated_nodespaces_ret_activators[parent] = 0
-        elif self.rootsection.allocated_nodespaces_sub_activators[parent] == node_from_id(uid):
-            self.rootsection.allocated_nodespaces_sub_activators[parent] = 0
-        elif self.rootsection.allocated_nodespaces_sur_activators[parent] == node_from_id(uid):
-            self.rootsection.allocated_nodespaces_sur_activators[parent] = 0
-        elif self.rootsection.allocated_nodespaces_cat_activators[parent] == node_from_id(uid):
-            self.rootsection.allocated_nodespaces_cat_activators[parent] = 0
-        elif self.rootsection.allocated_nodespaces_exp_activators[parent] == node_from_id(uid):
-            self.rootsection.allocated_nodespaces_exp_activators[parent] = 0
 
     def set_node_gate_parameter(self, uid, gate_type, parameter, value):
         id = node_from_id(uid)

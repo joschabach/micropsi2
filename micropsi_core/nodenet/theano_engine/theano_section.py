@@ -660,6 +660,73 @@ class TheanoSection():
         if self.has_pipes:
             self.por_ret_dirty = True
 
+    def delete_node(self, node_id):
+
+        type = self.allocated_nodes[node_id]
+        offset = self.allocated_node_offsets[node_id]
+        parent = self.allocated_node_parents[node_id]
+
+        self.unlink_node_completely(node_id)
+
+        # forget
+        self.allocated_nodes[node_id] = 0
+        self.allocated_node_offsets[node_id] = 0
+        self.allocated_node_parents[node_id] = 0
+        g_function_selector_array = self.g_function_selector.get_value(borrow=True)
+        for element in range (0, get_elements_per_type(type, self.nodenet.native_modules)):
+            self.allocated_elements_to_nodes[offset + element] = 0
+            g_function_selector_array[offset + element] = 0
+        self.g_function_selector.set_value(g_function_selector_array, borrow=True)
+        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_id)[0]] = 0
+
+        if type == PIPE:
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + RET] = NFPG_PIPE_NON
+            n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
+            n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
+            n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+
+        # hint at the free ID
+        self.nodenet.last_allocated_node = node_id - 1
+
+        # remove the native module or comment instance if there should be one
+        uid = node_to_id(node_id, self.sid)
+        if uid in self.native_module_instances:
+            del self.native_module_instances[uid]
+        if uid in self.comment_instances:
+            del self.comment_instances[uid]
+
+        # clear activator usage if there should be one
+        used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)
+        if len(used_as_activator_by) > 0:
+            self.allocated_elements_to_activators[used_as_activator_by] = 0
+
+        if self.allocated_nodespaces_por_activators[parent] == node_id:
+            self.allocated_nodespaces_por_activators[parent] = 0
+        elif self.allocated_nodespaces_ret_activators[parent] == node_id:
+            self.allocated_nodespaces_ret_activators[parent] = 0
+        elif self.allocated_nodespaces_sub_activators[parent] == node_id:
+            self.allocated_nodespaces_sub_activators[parent] = 0
+        elif self.allocated_nodespaces_sur_activators[parent] == node_id:
+            self.allocated_nodespaces_sur_activators[parent] = 0
+        elif self.allocated_nodespaces_cat_activators[parent] == node_id:
+            self.allocated_nodespaces_cat_activators[parent] = 0
+        elif self.allocated_nodespaces_exp_activators[parent] == node_id:
+            self.allocated_nodespaces_exp_activators[parent] = 0
+
+    def unlink_node_completely(self, node_id):
+        type = self.allocated_nodes[node_id]
+        offset = self.allocated_node_offsets[node_id]
+        w_matrix = self.w.get_value(borrow=True)
+        for element in range (0, get_elements_per_type(type, self.nodenet.native_modules)):
+            w_matrix[offset + element, :] = 0
+            w_matrix[:, offset + element] = 0
+        self.w.set_value(w_matrix, borrow=True)
+
     def set_node_gate_parameter(self, id, gate_type, parameter, value):
         numerical_node_type = self.allocated_nodes[id]
         nodetype = None

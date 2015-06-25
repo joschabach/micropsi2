@@ -277,15 +277,18 @@ class TheanoNodenet(Nodenet):
             metadata['modulators'] = self.construct_modulators_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
+        sid = "%03i" % self.rootsection.sid
         # write bulk data to our own numpy-based file format
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data")
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + sid)
         self.rootsection.save(datafilename)
 
     def load(self, filename):
         """Load the node net from a file"""
         # try to access file
 
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
+        sid = "%03i" % self.rootsection.sid
+
+        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + sid + ".npz")
 
         with self.netlock:
             initfrom = {}

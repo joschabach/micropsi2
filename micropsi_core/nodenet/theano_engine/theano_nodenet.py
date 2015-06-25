@@ -169,8 +169,6 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        self.sparse = True
-
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
         INITIAL_NUMBER_OF_NODESPACES = 10
@@ -191,15 +189,15 @@ class TheanoNodenet(Nodenet):
 
         INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
 
-        self.sparse = True
+        sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']
         if configuredsparse == "True":
-            self.sparse = True
+            sparse = True
         elif configuredsparse == "False":
-            self.sparse = False
+            sparse = False
         else:
             self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
-            self.sparse = True
+            sparse = True
 
         precision = settings['theano']['precision']
         if precision == "32":
@@ -229,7 +227,7 @@ class TheanoNodenet(Nodenet):
         self.netapi = TheanoNetAPI(self)
         self.rootsection = TheanoSection(self,
                                          0,
-                                         self.sparse,
+                                         sparse,
                                          INITIAL_NUMBER_OF_NODES,
                                          INITIAL_NUMBER_OF_ELEMENTS,
                                          INITIAL_NUMBER_OF_NODESPACES)

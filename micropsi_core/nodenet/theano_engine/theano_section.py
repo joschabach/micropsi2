@@ -772,6 +772,39 @@ class TheanoSection():
         g_theta_array[self.nodegroups[nodespace_uid][group]] = thetas
         self.g_theta.set_value(g_theta_array, borrow=True)
 
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
+        if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+        if nodespace_to_uid not in self.nodegroups or group_to not in self.nodegroups[nodespace_to_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
+        w_matrix = self.w.get_value(borrow=True)
+        cols, rows = np.meshgrid(self.nodegroups[nodespace_from_uid][group_from], self.nodegroups[nodespace_to_uid][group_to])
+        if self.sparse:
+            return w_matrix[rows,cols].todense()
+        else:
+            return w_matrix[rows,cols]
+
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
+        if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+        if nodespace_to_uid not in self.nodegroups or group_to not in self.nodegroups[nodespace_to_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
+        if len(self.nodegroups[nodespace_from_uid][group_from]) != new_w.shape[1]:
+            raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[group_from]), new_w.shape[1]))
+        if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
+            raise ValueError("froup_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[group_to]), new_w.shape[0]))
+
+        w_matrix = self.w.get_value(borrow=True)
+        grp_from = self.nodegroups[nodespace_from_uid][group_from]
+        grp_to = self.nodegroups[nodespace_to_uid][group_to]
+        cols, rows = np.meshgrid(grp_from, grp_to)
+        w_matrix[rows, cols] = new_w
+        self.w.set_value(w_matrix, borrow=True)
+
+        # todo: only set this if one of the groups is por/ret relevant
+        if self.has_pipes:
+            self.por_ret_dirty = True
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

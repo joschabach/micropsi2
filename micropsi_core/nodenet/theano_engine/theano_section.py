@@ -99,17 +99,34 @@ class TheanoSection():
 
     def __init__(self, nodenet, sid, sparse, initial_NoN, initial_NoE, initial_NoNS):
 
+        # uids to instances of TheanoNode objects for living native modules
         self.native_module_instances = {}
+
+        # uids to TheanoNode objects for comments
         self.comment_instances = {}
+
+        # noddespace_uids to map map. level-2 map is groupname to list of numeric IDs
         self.nodegroups = {}
+
+        # nodenet section ID
         self.sid = sid
 
+        # number of nodes allocated in this section
         self.NoN = initial_NoN
+
+        # numer of elements allocated in this section
         self.NoE = initial_NoE
+
+        # numer of nodespaces allocated in this section
         self.NoNS = initial_NoNS
 
+        # the nodenet this section belongs to
         self.nodenet = nodenet
+
+        # sparsity flag for this section
         self.sparse = sparse
+
+        # logger used by this section
         self.logger = nodenet.logger
 
         # array, index is node id, value is numeric node type

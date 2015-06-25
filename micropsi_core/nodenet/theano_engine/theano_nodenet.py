@@ -1509,21 +1509,12 @@ class TheanoNodenet(Nodenet):
     def get_activations(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-
-        if nodespace_uid not in self.rootsection.nodegroups or group not in self.rootsection.nodegroups[nodespace_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        a_array = self.rootsection.a.get_value(borrow=True)
-        return a_array[self.rootsection.nodegroups[nodespace_uid][group]]
+        return self.rootsection.get_activations(nodespace_uid, group)
 
     def set_activations(self, nodespace_uid, group, new_activations):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-
-        if nodespace_uid not in self.rootsection.nodegroups or group not in self.rootsection.nodegroups[nodespace_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        a_array = self.rootsection.a.get_value(borrow=True)
-        a_array[self.rootsection.nodegroups[nodespace_uid][group]] = new_activations
-        self.rootsection.a.set_value(a_array, borrow=True)
+        self.rootsection.set_activations(nodespace_uid, group, new_activations)
 
     def get_thetas(self, nodespace_uid, group):
         if nodespace_uid is None:

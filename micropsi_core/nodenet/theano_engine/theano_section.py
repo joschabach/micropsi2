@@ -746,6 +746,19 @@ class TheanoSection():
         if nodespace_uid in self.nodegroups and group in self.nodegroups[nodespace_uid]:
             del self.nodegroups[nodespace_uid][group]
 
+    def get_activations(self, nodespace_uid, group):
+        if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
+        a_array = self.a.get_value(borrow=True)
+        return a_array[self.nodegroups[nodespace_uid][group]]
+
+    def set_activations(self, nodespace_uid, group, new_activations):
+        if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
+        a_array = self.a.get_value(borrow=True)
+        a_array[self.nodegroups[nodespace_uid][group]] = new_activations
+        self.a.set_value(a_array, borrow=True)
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

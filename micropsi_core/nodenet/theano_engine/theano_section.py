@@ -729,6 +729,54 @@ class TheanoSection():
                 self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
                                                       get_numerical_gate_type(gate_type)] = self.allocated_node_offsets[activator_id]
 
+    def set_link_weight(self, source_node_id, gate_type, target_node_id, slot_type, weight=1):
+        source_nodetype = None
+        target_nodetype = None
+        if self.allocated_nodes[source_node_id] > MAX_STD_NODETYPE:
+            source_nodetype = self.nodenet.get_nodetype(get_string_node_type(self.allocated_nodes[source_node_id], self.nodenet.native_modules))
+        if self.allocated_nodes[target_node_id] > MAX_STD_NODETYPE:
+            target_nodetype = self.nodenet.get_nodetype(get_string_node_type(self.allocated_nodes[target_node_id], self.nodenet.native_modules))
+
+        ngt = get_numerical_gate_type(gate_type, source_nodetype)
+        nst = get_numerical_slot_type(slot_type, target_nodetype)
+
+        if ngt > get_gates_per_type(self.allocated_nodes[source_node_id], self.nodenet.native_modules):
+            raise ValueError("Node %s does not have a gate of type %s" % (node_to_id(source_node_id, self.sid), gate_type))
+
+        if nst > get_slots_per_type(self.allocated_nodes[target_node_id], self.nodenet.native_modules):
+            raise ValueError("Node %s does not have a slot of type %s" % (node_to_id(target_node_id, self.sid), slot_type))
+
+        w_matrix = self.w.get_value(borrow=True)
+        x = self.allocated_node_offsets[target_node_id] + nst
+        y = self.allocated_node_offsets[source_node_id] + ngt
+        if self.sparse:
+            w_matrix[x, y] = weight
+        else:
+            w_matrix[x][y] = weight
+        self.w.set_value(w_matrix, borrow=True)
+
+        #if (slot_type == "por" or slot_type == "ret") and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
+        #    self.__por_ret_dirty = False
+
+        if slot_type == "por" and self.allocated_nodes[target_node_id] == PIPE:
+            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True)
+            if weight == 0:
+                for g in range(7):
+                    n_node_porlinked_array[self.allocated_node_offsets[target_node_id] + g] = 0
+            else:
+                for g in range(7):
+                    n_node_porlinked_array[self.allocated_node_offsets[target_node_id] + g] = 1
+            self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
+        if slot_type == "ret" and self.allocated_nodes[target_node_id] == PIPE:
+            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True)
+            if weight == 0:
+                for g in range(7):
+                    n_node_retlinked_array[self.allocated_node_offsets[target_node_id] + g] = 0
+            else:
+                for g in range(7):
+                    n_node_retlinked_array[self.allocated_node_offsets[target_node_id] + g] = 1
+            self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
+
     def group_nodes_by_ids(self, nodespace_uid, ids, group_name, gatetype="gen"):
 
         if nodespace_uid not in self.nodegroups:

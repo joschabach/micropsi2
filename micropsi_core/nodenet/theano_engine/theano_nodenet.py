@@ -1127,57 +1127,14 @@ class TheanoNodenet(Nodenet):
         return actuators
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
-        return True
+        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
 
-        source_nodetype = None
-        target_nodetype = None
-        if self.rootsection.allocated_nodes[node_from_id(source_node_uid)] > MAX_STD_NODETYPE:
-            source_nodetype = self.get_nodetype(get_string_node_type(self.rootsection.allocated_nodes[node_from_id(source_node_uid)], self.native_modules))
-        if self.rootsection.allocated_nodes[node_from_id(target_node_uid)] > MAX_STD_NODETYPE:
-            target_nodetype = self.get_nodetype(get_string_node_type(self.rootsection.allocated_nodes[node_from_id(target_node_uid)], self.native_modules))
+        source_node_id = node_from_id(source_node_uid)
+        target_node_id = node_from_id(target_node_uid)
 
-        ngt = get_numerical_gate_type(gate_type, source_nodetype)
-        nst = get_numerical_slot_type(slot_type, target_nodetype)
-
-        if ngt > get_gates_per_type(self.rootsection.allocated_nodes[node_from_id(source_node_uid)], self.native_modules):
-            raise ValueError("Node %s does not have a gate of type %s" % (source_node_uid, gate_type))
-
-        if nst > get_slots_per_type(self.rootsection.allocated_nodes[node_from_id(target_node_uid)], self.native_modules):
-            raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
-
-        w_matrix = self.rootsection.w.get_value(borrow=True)
-        x = self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + nst
-        y = self.rootsection.allocated_node_offsets[node_from_id(source_node_uid)] + ngt
-        if self.rootsection.sparse:
-            w_matrix[x, y] = weight
-        else:
-            w_matrix[x][y] = weight
-        self.rootsection.w.set_value(w_matrix, borrow=True)
-
-        #if (slot_type == "por" or slot_type == "ret") and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-        #    self.__por_ret_dirty = False
-
-        if slot_type == "por" and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-            n_node_porlinked_array = self.rootsection.n_node_porlinked.get_value(borrow=True)
-            if weight == 0:
-                for g in range(7):
-                    n_node_porlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 0
-            else:
-                for g in range(7):
-                    n_node_porlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
-            self.rootsection.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
-        if slot_type == "ret" and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-            n_node_retlinked_array = self.rootsection.n_node_retlinked.get_value(borrow=True)
-            if weight == 0:
-                for g in range(7):
-                    n_node_retlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 0
-            else:
-                for g in range(7):
-                    n_node_retlinked_array[self.rootsection.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
-            self.rootsection.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
+        self.rootsection.set_link_weight(source_node_id, gate_type, target_node_id, slot_type, weight)
 
         if source_node_uid in self.proxycache:
             self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
@@ -1187,8 +1144,7 @@ class TheanoNodenet(Nodenet):
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
-        return True
+        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
 
     def reload_native_modules(self, native_modules):
 

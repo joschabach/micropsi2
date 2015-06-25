@@ -1493,8 +1493,7 @@ class TheanoNodenet(Nodenet):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
-        if nodespace_uid in self.rootsection.nodegroups and group in self.rootsection.nodegroups[nodespace_uid]:
-            del self.rootsection.nodegroups[nodespace_uid][group]
+        self.rootsection.ungroup_nodes(nodespace_uid, group)
 
     def dump_group(self, nodespace_uid, group):
         if nodespace_uid is None:

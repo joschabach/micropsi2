@@ -742,6 +742,10 @@ class TheanoSection():
         gate = get_numerical_gate_type(gatetype)
         self.nodegroups[nodespace_uid][group_name] = self.allocated_node_offsets[ids] + gate
 
+    def ungroup_nodes(self, nodespace_uid, group):
+        if nodespace_uid in self.nodegroups and group in self.nodegroups[nodespace_uid]:
+            del self.nodegroups[nodespace_uid][group]
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

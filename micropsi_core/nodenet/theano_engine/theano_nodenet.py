@@ -331,12 +331,10 @@ class TheanoNodenet(Nodenet):
             return True
 
     def remove(self, filename):
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
-        try:
-            os.remove(datafilename)
-        except IOError:
-            pass
-        os.remove(filename)
+        neighbors = os.listdir(os.path.dirname(filename))
+        for neighbor in neighbors:
+            if neighbor.startswith(self.uid):
+                os.remove(os.path.join(os.path.dirname(filename), neighbor))
 
     def initialize_nodenet(self, initfrom):
 

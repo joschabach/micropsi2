@@ -774,7 +774,7 @@ def test_group_nodes_by_names(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_act = netapi.get_activations("sepp")
     assert len(seppen_act) == 3
 
@@ -782,7 +782,7 @@ def test_group_nodes_by_names(fixed_nodenet):
 def test_group_nodes_by_ids(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     ids = ["n0001", "n0002"]
-    netapi.group_nodes_by_ids(ids, "some")
+    netapi.group_nodes_by_ids(None, ids, "some")
     some_act = netapi.get_activations("some")
     assert len(some_act) == 2
 
@@ -790,7 +790,7 @@ def test_group_nodes_by_ids(fixed_nodenet):
 def test_ungroup_nodes(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     ids = ["n0001", "n0002"]
-    netapi.group_nodes_by_ids(ids, "some")
+    netapi.group_nodes_by_ids(None, ids, "some")
     netapi.ungroup_nodes("some")
 
 
@@ -799,7 +799,7 @@ def test_get_activations(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_act = netapi.get_activations("sepp")
     assert len(seppen_act) == 3
     assert seppen_act[0] == 0
@@ -820,7 +820,7 @@ def test_substitute_activations(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1").uid
     sepp2 = netapi.create_node("Register", None, "sepp2").uid
     sepp3 = netapi.create_node("Register", None, "sepp3").uid
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
     netapi.link(source, "gen", netapi.get_node(sepp2), "gen")
     net.step()
@@ -846,7 +846,7 @@ def test_get_thetas(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_theta = netapi.get_thetas("sepp")
     assert len(seppen_theta) == 3
     assert seppen_theta[0] == 0
@@ -859,7 +859,7 @@ def test_set_thetas(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
     some_thetas = [1, 2, 3]
     netapi.set_thetas("sepp", some_thetas)
@@ -878,11 +878,11 @@ def test_get_link_weights(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
     hugo1 = netapi.create_node("Register", None, "hugo1")
     hugo2 = netapi.create_node("Register", None, "hugo2")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="hugo")
+    netapi.group_nodes_by_names(None, node_name_prefix="hugo")
 
     netapi.link(sepp2, "gen", hugo1, "gen", 0.4)
 
@@ -910,11 +910,11 @@ def test_set_link_weights(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
 
     hugo1 = netapi.create_node("Register", None, "hugo1")
     hugo2 = netapi.create_node("Register", None, "hugo2")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="hugo")
+    netapi.group_nodes_by_names(None, node_name_prefix="hugo")
 
     netapi.link(sepp2, "gen", hugo1, "gen", 0.4)
 
@@ -972,7 +972,7 @@ def test_get_node_ids(fixed_nodenet):
     sepp1 = netapi.create_node("Register", None, "sepp1")
     sepp2 = netapi.create_node("Register", None, "sepp2")
     sepp3 = netapi.create_node("Register", None, "sepp3")
-    netapi.group_nodes_by_names(nodespace=None, node_name_prefix="sepp")
+    netapi.group_nodes_by_names(None, node_name_prefix="sepp")
     seppen_ids = netapi.get_node_ids("sepp")
     assert len(seppen_ids) == 3
     assert seppen_ids[0] == sepp1.uid

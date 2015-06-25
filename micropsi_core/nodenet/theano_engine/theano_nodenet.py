@@ -1466,16 +1466,28 @@ class TheanoNodenet(Nodenet):
 
         return actuator_values_to_write
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
         ids = []
         for uid, name in self.names.items():
             if name.startswith(node_name_prefix) and \
-                    (nodespace is None or self.rootsection.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace)):
+                    (self.rootsection.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
                 ids.append(uid)
-        self.group_nodes_by_ids(ids, node_name_prefix, gatetype, sortby)
+        self.group_nodes_by_ids(nodespace_uid, ids, node_name_prefix, gatetype, sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
-        ids = [node_from_id(uid) for uid in node_ids]
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        ids = [node_from_id(uid) for uid in node_uids]
+        parent_id = nodespace_from_id(nodespace_uid)
+
+        non_children = np.where(self.rootsection.allocated_node_parents[ids] != parent_id)[0]
+        if len(non_children) > 0:
+            raise ValueError("One ore more given nodes are not in nodespace %s" % nodespace)
+
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':

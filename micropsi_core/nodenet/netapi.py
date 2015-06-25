@@ -398,21 +398,21 @@ class NetAPI(object):
             mapping[node] = self.get_node(uidmap[node.uid])
         return mapping
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gate="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='id'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_names(nodespace, node_name_prefix, gatetype=gate, sortby=sortby)
+        self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name, gate="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gate="gen", sortby='id'):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
         """
-        self.__nodenet.group_nodes_by_ids(node_ids, group_name, gatetype=gate, sortby=sortby)
+        self.__nodenet.group_nodes_by_ids(nodespace_uid, node_uids, group_name, gatetype=gate, sortby=sortby)
 
     def ungroup_nodes(self, group):
         """

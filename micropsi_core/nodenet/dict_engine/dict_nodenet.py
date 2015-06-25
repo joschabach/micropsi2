@@ -586,18 +586,27 @@ class DictNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
-        nodes = self.netapi.get_nodes(nodespace, node_name_prefix)
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        nodes = self.netapi.get_nodes(nodespace_uid, node_name_prefix)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':
             nodes = sorted(nodes, key=lambda node: node.name)
         self.nodegroups[node_name_prefix] = (nodes, gatetype)
 
-    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
         nodes = []
-        for node_id in node_ids:
-            nodes.append(self.get_node(node_id))
+        for node_uid in node_uids:
+            node = self.get_node(node_uid)
+            if node.parent_nodespace != nodespace_uid:
+                raise ValueError("Node %s is not in nodespace %s" % (node_uid, nodespace_id))
+            nodes.append(node)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':

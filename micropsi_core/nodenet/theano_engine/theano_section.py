@@ -262,6 +262,8 @@ class TheanoSection():
 
         self.last_allocated_node = 0
         self.last_allocated_offset = 0
+        self.last_allocated_nodespace = 0
+
 
         # compile theano functions
         self.compile_propagate()
@@ -897,6 +899,32 @@ class TheanoSection():
             w_matrix[:, offset + element] = 0
         self.w.set_value(w_matrix, borrow=True)
 
+    def create_nodespace(self, parent_id, id=None):
+
+        # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
+        if id is None:
+            id = 0
+            for i in range((self.last_allocated_nodespace + 1), self.NoNS):
+                if self.allocated_nodespaces[i] == 0:
+                    id = i
+                    break
+
+            if id < 1:
+                for i in range(self.last_allocated_nodespace - 1):
+                    if self.allocated_nodespaces[i] == 0:
+                        id = i
+                        break
+
+            if id < 1:
+                growby = self.NoNS // 2
+                self.logger.info("All %d nodespace IDs in use in section %i, growing nodespace ID vector by %d elements" % (self.NoNS, self.sid, growby))
+                id = self.NoNS
+                self.grow_number_of_nodespaces(growby)
+
+        self.last_allocated_nodespace = id
+        self.allocated_nodespaces[id] = parent_id
+        return id
+
     def delete_nodespace(self, nodespace_id):
         children_ids = np.where(self.allocated_nodespaces == nodespace_id)[0]
         for child_id in children_ids:
@@ -1005,7 +1033,7 @@ class TheanoSection():
             w_matrix[x][y] = weight
         self.w.set_value(w_matrix, borrow=True)
 
-        #if (slot_type == "por" or slot_type == "ret") and self.rootsection.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
+        #if (slot_type == "por" or slot_type == "ret") and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
         #    self.__por_ret_dirty = False
 
         if slot_type == "por" and self.allocated_nodes[target_node_id] == PIPE:

@@ -151,8 +151,6 @@ class TheanoNodenet(Nodenet):
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
-        self.last_allocated_nodespace = 0
-
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
 
@@ -840,39 +838,18 @@ class TheanoNodenet(Nodenet):
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 
-        # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
-        if uid is None:
-            id = 0
-            for i in range((self.last_allocated_nodespace + 1), self.rootsection.NoNS):
-                if self.rootsection.allocated_nodespaces[i] == 0:
-                    id = i
-                    break
-
-            if id < 1:
-                for i in range(self.last_allocated_nodespace - 1):
-                    if self.rootsection.allocated_nodespaces[i] == 0:
-                        id = i
-                        break
-
-            if id < 1:
-                growby = self.rootsection.NoNS // 2
-                self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.rootsection.NoNS, growby))
-                id = self.rootsection.NoNS
-                self.rootsection.grow_number_of_nodespaces(growby)
-        else:
-            id = nodespace_from_id(uid)
-
-        self.last_allocated_nodespace = id
-
         parent_id = 0
         if parent_uid is not None:
             parent_id = nodespace_from_id(parent_uid)
-        elif id != 1:
+        elif uid != "s1":
             parent_id = 1
 
-        uid = nodespace_to_id(id)
+        id_to_pass = None
+        if uid is not None:
+            id_to_pass = nodespace_from_id(uid)
 
-        self.rootsection.allocated_nodespaces[id] = parent_id
+        id = self.rootsection.create_nodespace(parent_id, id_to_pass)
+        uid = nodespace_to_id(id)
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:

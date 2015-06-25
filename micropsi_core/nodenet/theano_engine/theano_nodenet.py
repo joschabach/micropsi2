@@ -784,16 +784,6 @@ class TheanoNodenet(Nodenet):
 
         self.rootsection.delete_node(node_id)
 
-        # clear from proxycache
-        if uid in self.proxycache:
-            del self.proxycache[uid]
-
-        # clear from name and positions dicts
-        if uid in self.names:
-            del self.names[uid]
-        if uid in self.positions:
-            del self.positions[uid]
-
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
             sensor = self.inverted_sensor_map[uid]
@@ -811,6 +801,8 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap[actuator].remove(node_id)
                 if len(self.actuatormap[actuator]) == 0:
                     del self.actuatormap[actuator]
+
+        self.clear_supplements(uid)
 
     def set_node_gate_parameter(self, uid, gate_type, parameter, value):
         id = node_from_id(uid)
@@ -888,15 +880,13 @@ class TheanoNodenet(Nodenet):
 
         return uid
 
-    def delete_nodespace(self, uid):
-        nodespace_id = nodespace_from_id(uid)
-        children_ids = np.where(self.rootsection.allocated_nodespaces == nodespace_id)[0]
-        for child_id in children_ids:
-            self.delete_nodespace(nodespace_to_id(child_id))
-        node_ids = np.where(self.rootsection.allocated_node_parents == nodespace_id)[0]
-        for node_id in node_ids:
-            self.delete_node(node_to_id(node_id, self.rootsection.sid))
+    def delete_nodespace(self, nodespace_uid):
+        if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
+            raise ValueError("The root nodespace cannot be deleted.")
+        nodespace_id = nodespace_from_id(nodespace_uid)
+        self.rootsection.delete_nodespace(nodespace_id)
 
+    def clear_supplements(self, uid):
         # clear from proxycache
         if uid in self.proxycache:
             del self.proxycache[uid]
@@ -906,10 +896,6 @@ class TheanoNodenet(Nodenet):
             del self.names[uid]
         if uid in self.positions:
             del self.positions[uid]
-
-        self.rootsection.allocated_nodespaces[nodespace_id] = 0
-
-        self.last_allocated_nodespace = nodespace_id
 
     def get_sensors(self, nodespace=None, datasource=None):
         sensors = {}

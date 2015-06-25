@@ -759,6 +759,19 @@ class TheanoSection():
         a_array[self.nodegroups[nodespace_uid][group]] = new_activations
         self.a.set_value(a_array, borrow=True)
 
+    def get_thetas(self, nodespace_uid, group):
+        if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
+        g_theta_array = self.g_theta.get_value(borrow=True)
+        return g_theta_array[self.nodegroups[nodespace_uid][group]]
+
+    def set_thetas(self, nodespace_uid, group, thetas):
+        if nodespace_uid not in self.nodegroups or group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
+        g_theta_array = self.g_theta.get_value(borrow=True)
+        g_theta_array[self.nodegroups[nodespace_uid][group]] = thetas
+        self.g_theta.set_value(g_theta_array, borrow=True)
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

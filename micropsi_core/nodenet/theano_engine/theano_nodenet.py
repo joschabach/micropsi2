@@ -1519,21 +1519,12 @@ class TheanoNodenet(Nodenet):
     def get_thetas(self, nodespace_uid, group):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
+        return self.rootsection.get_thetas(nodespace_uid, group)
 
-        if nodespace_uid not in self.rootsection.nodegroups or group not in self.rootsection.nodegroups[nodespace_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
-        return g_theta_array[self.rootsection.nodegroups[nodespace_uid][group]]
-
-    def set_thetas(self, nodespace_uid, group, thetas):
+    def set_thetas(self, nodespace_uid, group, new_thetas):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
-
-        if nodespace_uid not in self.rootsection.nodegroups or group not in self.rootsection.nodegroups[nodespace_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group, nodespace_uid))
-        g_theta_array = self.rootsection.g_theta.get_value(borrow=True)
-        g_theta_array[self.rootsection.nodegroups[nodespace_uid][group]] = thetas
-        self.rootsection.g_theta.set_value(g_theta_array, borrow=True)
+        self.rootsection.set_thetas(nodespace_uid, group, new_thetas)
 
     def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         if nodespace_from_uid is None:

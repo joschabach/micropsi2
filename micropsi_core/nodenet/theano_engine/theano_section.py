@@ -260,6 +260,9 @@ class TheanoSection():
         self.__has_gatefunction_one_over_x = False
         self.por_ret_dirty = True
 
+        self.last_allocated_node = 0
+        self.last_allocated_offset = 0
+
         # compile theano functions
         self.compile_propagate()
         self.compile_calculate_nodes()
@@ -660,6 +663,173 @@ class TheanoSection():
         if self.has_pipes:
             self.por_ret_dirty = True
 
+    def announce_nodes(self, number_of_nodes, average_elements_per_node):
+
+        free_nodes = self.NoN - np.count_nonzero(self.allocated_nodes)
+        free_elements = self.NoE - np.count_nonzero(self.allocated_elements_to_nodes)
+
+        if number_of_nodes > free_nodes:
+            gap = number_of_nodes - free_nodes
+            growby = gap + (gap // 3)
+            self.logger.info("Per announcement in section %i, growing ID vectors by %d elements" % (self.sid, growby))
+            self.grow_number_of_nodes(growby)
+
+        number_of_elements = number_of_nodes*average_elements_per_node
+        if number_of_elements > free_elements:
+            gap = number_of_elements - free_elements
+            growby = gap + (gap // 3)
+            self.logger.info("Per announcement in section %i, growing elements vectors by %d elements" % (self.sid, growby))
+            self.grow_number_of_elements(gap + (gap //3))
+
+    def create_node(self, nodetype, nodespace_id, id=None, parameters=None, gate_parameters=None, gate_functions=None):
+
+        # find a free ID / index in the allocated_nodes vector to hold the node type
+        if id is None:
+            id = 0
+            for i in range((self.last_allocated_node + 1), self.NoN):
+                if self.allocated_nodes[i] == 0:
+                    id = i
+                    break
+
+            if id < 1:
+                for i in range(self.last_allocated_node - 1):
+                    if self.allocated_nodes[i] == 0:
+                        id = i
+                        break
+
+            if id < 1:
+                growby = self.NoN // 2
+                self.logger.info("All %d node IDs in section %i in use, growing id vectors by %d elements" % (self.NoN, self.sid, growby))
+                id = self.NoN
+                self.grow_number_of_nodes(growby)
+
+        else:
+            if id > self.NoN:
+                growby = id - (self.NoN - 2)
+                self.logger.info("Requested ID larger than current size in section %i, growing id vectors by %d elements" % (self.sid, growby))
+                self.grow_number_of_nodes(growby)
+
+        # now find a range of free elements to be used by this node
+        number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype, self.nodenet.native_modules), self.nodenet.native_modules)
+        has_restarted_from_zero = False
+        offset = 0
+        i = self.last_allocated_offset + 1
+        while offset < 1:
+            freecount = 0
+            for j in range(0, number_of_elements):
+                if i+j < len(self.allocated_elements_to_nodes) and self.allocated_elements_to_nodes[i+j] == 0:
+                    freecount += 1
+                else:
+                    break
+            if freecount >= number_of_elements:
+                offset = i
+                break
+            else:
+                i += freecount+1
+
+            if i >= self.NoE:
+                if not has_restarted_from_zero:
+                    i = 0
+                    has_restarted_from_zero = True
+                else:
+                    growby = max(number_of_elements +1, self.NoE // 2)
+                    self.logger.info("All %d elements in use in section %i, growing elements vectors by %d elements" % (self.NoE, self.sid, growby))
+                    offset = self.NoE
+                    self.grow_number_of_elements(growby)
+
+        uid = node_to_id(id, self.sid)
+
+        self.last_allocated_node = id
+        self.last_allocated_offset = offset
+        self.allocated_nodes[id] = get_numerical_node_type(nodetype, self.nodenet.native_modules)
+        self.allocated_node_parents[id] = nodespace_id
+        self.allocated_node_offsets[id] = offset
+
+        for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.nodenet.native_modules)):
+            self.allocated_elements_to_nodes[offset + element] = id
+
+        if parameters is None:
+            parameters = {}
+
+        nto = self.nodenet.get_nodetype(nodetype)
+
+        if nodetype == "Pipe":
+            self.has_pipes = True
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
+            n_function_selector_array[offset + POR] = NFPG_PIPE_POR
+            n_function_selector_array[offset + RET] = NFPG_PIPE_RET
+            n_function_selector_array[offset + SUB] = NFPG_PIPE_SUB
+            n_function_selector_array[offset + SUR] = NFPG_PIPE_SUR
+            n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
+            n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+            self.allocated_elements_to_activators[offset + POR] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_por_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + RET] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_ret_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + SUB] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sub_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + SUR] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sur_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + CAT] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_cat_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + EXP] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[nodespace_id]]
+
+            if nto.parameter_defaults.get('expectation'):
+                value = nto.parameter_defaults['expectation']
+                g_expect_array = self.g_expect.get_value(borrow=True)
+                g_expect_array[offset + SUR] = float(value)
+                g_expect_array[offset + POR] = float(value)
+                self.g_expect.set_value(g_expect_array, borrow=True)
+
+            if nto.parameter_defaults.get('wait'):
+                value = nto.parameter_defaults['wait']
+                g_wait_array = self.g_wait.get_value(borrow=True)
+                g_wait_array[offset + SUR] = int(min(value, 128))
+                g_wait_array[offset + POR] = int(min(value, 128))
+                self.g_wait.set_value(g_wait_array, borrow=True)
+        elif nodetype == "Activator":
+            self.has_directional_activators = True
+            activator_type = parameters.get("type")
+            if activator_type is not None and len(activator_type) > 0:
+                self.set_nodespace_gatetype_activator(nodespace_id, activator_type, id)
+
+        if nodetype not in self.nodenet.get_standard_nodetype_definitions():
+            node_proxy = self.nodenet.get_node(uid)
+            self.native_module_instances[uid] = node_proxy
+            for key, value in parameters.items():
+                node_proxy.set_parameter(key, value)
+        elif nodetype == "Comment":
+            node_proxy = self.nodenet.get_node(uid)
+            self.comment_instances[uid] = node_proxy
+            for key, value in parameters.items():
+                node_proxy.set_parameter(key, value)
+
+        for gate, parameters in nto.gate_defaults.items():
+            if gate in nto.gatetypes:
+                for gate_parameter in parameters:
+                    self.set_node_gate_parameter(id, gate, gate_parameter, parameters[gate_parameter])
+        if gate_parameters is not None:
+            for gate, parameters in gate_parameters.items():
+                if gate in nto.gatetypes:
+                    for gate_parameter in parameters:
+                        self.set_node_gate_parameter(id, gate, gate_parameter, parameters[gate_parameter])
+
+        if gate_functions is not None:
+            for gate, gate_function in gate_functions.items():
+                if gate in nto.gatetypes:
+                    self.set_node_gatefunction_name(id, gate, gate_function)
+
+        # initialize activation to zero
+        a_array = self.a.get_value(borrow=True)
+        for element in range (0, get_elements_per_type(get_numerical_node_type(nodetype, self.nodenet.native_modules), self.nodenet.native_modules)):
+            a_array[offset + element] = 0
+        self.a.set_value(a_array)
+
+        return id
+
     def delete_node(self, node_id):
 
         type = self.allocated_nodes[node_id]
@@ -691,7 +861,7 @@ class TheanoSection():
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # hint at the free ID
-        self.nodenet.last_allocated_node = node_id - 1
+        self.last_allocated_node = node_id - 1
 
         # remove the native module or comment instance if there should be one
         uid = node_to_id(node_id, self.sid)

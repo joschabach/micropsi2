@@ -723,6 +723,11 @@ class TheanoNodenet(Nodenet):
             self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
         if target_node_uid in self.proxycache:
             self.proxycache[target_node_uid].get_slot(slot_type).invalidate_caches()
+        for section in self.sections.values():
+            if source_node_uid in section.native_module_instances:
+                section.native_module_instances[source_node_uid].get_gate(gate_type).invalidate_caches()
+            if target_node_uid in section.native_module_instances:
+                section.native_module_instances[target_node_uid].get_slot(slot_type).invalidate_caches()
 
         return True
 

@@ -23,8 +23,8 @@ class TheanoPropagate(Propagate):
     """
 
     def execute(self, nodenet, nodes, netapi):
-        nodenet.rootsection.propagate()
-
+        for section in nodenet.sections.values():
+            section.propagate()
 
 class TheanoCalculate(Calculate):
     """
@@ -62,8 +62,12 @@ class TheanoCalculate(Calculate):
             self.world.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
 
     def count_success_and_failure(self, nodenet):
-        nays = len(np.where((nodenet.rootsection.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) <= -1))[0])
-        yays = len(np.where((nodenet.rootsection.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (nodenet.rootsection.a.get_value(borrow=True) >= 1))[0])
+        nays = 0
+        yays = 0
+        for section in nodenet.sections.values():
+            if section.has_pipes:
+                nays += len(np.where((section.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (section.a.get_value(borrow=True) <= -1))[0])
+                yays += len(np.where((section.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (section.a.get_value(borrow=True) >= 1))[0])
         nodenet.set_modulator('base_number_of_expected_events', yays)
         nodenet.set_modulator('base_number_of_unexpected_events', nays)
 
@@ -72,9 +76,9 @@ class TheanoCalculate(Calculate):
 
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
-        nodenet.rootsection.calculate()
-        if nodenet.rootsection.has_pipes:
-            self.count_success_and_failure(nodenet)
+        for section in nodenet.sections.values():
+            section.calculate()
+        self.count_success_and_failure(nodenet)
 
 
 class TheanoPORRETDecay(StepOperator):
@@ -89,4 +93,5 @@ class TheanoPORRETDecay(StepOperator):
         return 100
 
     def execute(self, nodenet, nodes, netapi):
-        nodenet.rootsection.por_ret_decay()
+       for section in nodenet.sections.values():
+            section.por_ret_decay()

@@ -225,12 +225,18 @@ class TheanoNodenet(Nodenet):
                 self.logger.warn("Precision set to %s, but attempting to use gpu.", precision)
 
         self.netapi = TheanoNetAPI(self)
-        self.rootsection = TheanoSection(self,
+
+        self.sections = {}
+        rootsection = TheanoSection(self,
                                          0,
                                          sparse,
                                          INITIAL_NUMBER_OF_NODES,
                                          INITIAL_NUMBER_OF_ELEMENTS,
                                          INITIAL_NUMBER_OF_NODESPACES)
+
+        self.sections['root'] = rootsection
+        self.rootsection = rootsection
+
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
         self.__modulators = {}

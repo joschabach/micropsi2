@@ -481,7 +481,9 @@ class TheanoNodenet(Nodenet):
             self.__step += 1
 
     def get_section(self, uid):
-        return self.rootsection
+        if uid is None:
+            return self.rootsection
+        return self.sections[uid[1:4]]
 
     def get_node(self, uid):
         section = self.get_section(uid)

@@ -23,8 +23,8 @@ class TheanoPropagate(Propagate):
     """
 
     def execute(self, nodenet, nodes, netapi):
-        for section in nodenet.sections.values():
-            section.propagate()
+        for partition in nodenet.partitions.values():
+            partition.propagate()
 
 class TheanoCalculate(Calculate):
     """
@@ -64,10 +64,10 @@ class TheanoCalculate(Calculate):
     def count_success_and_failure(self, nodenet):
         nays = 0
         yays = 0
-        for section in nodenet.sections.values():
-            if section.has_pipes:
-                nays += len(np.where((section.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (section.a.get_value(borrow=True) <= -1))[0])
-                yays += len(np.where((section.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (section.a.get_value(borrow=True) >= 1))[0])
+        for partition in nodenet.partitions.values():
+            if partition.has_pipes:
+                nays += len(np.where((partition.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (partition.a.get_value(borrow=True) <= -1))[0])
+                yays += len(np.where((partition.n_function_selector.get_value(borrow=True) == NFPG_PIPE_SUR) & (partition.a.get_value(borrow=True) >= 1))[0])
         nodenet.set_modulator('base_number_of_expected_events', yays)
         nodenet.set_modulator('base_number_of_unexpected_events', nays)
 
@@ -76,8 +76,8 @@ class TheanoCalculate(Calculate):
 
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
-        for section in nodenet.sections.values():
-            section.calculate()
+        for partition in nodenet.partitions.values():
+            partition.calculate()
         self.count_success_and_failure(nodenet)
 
 
@@ -93,5 +93,5 @@ class TheanoPORRETDecay(StepOperator):
         return 100
 
     def execute(self, nodenet, nodes, netapi):
-       for section in nodenet.sections.values():
-            section.por_ret_decay()
+       for partition in nodenet.partitions.values():
+            partition.por_ret_decay()

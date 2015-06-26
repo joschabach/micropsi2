@@ -17,11 +17,11 @@ from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 from configuration import config as settings
 
-class TheanoSection():
+class TheanoPartition():
 
     @property
-    def ssid(self):
-        return "%03i" % self.sid
+    def spid(self):
+        return "%03i" % self.pid
 
     @property
     def has_new_usages(self):
@@ -101,7 +101,7 @@ class TheanoSection():
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
 
-    def __init__(self, nodenet, sid):
+    def __init__(self, nodenet, pid):
 
         INITIAL_NUMBER_OF_NODESPACES = 10
 
@@ -140,25 +140,25 @@ class TheanoSection():
         # noddespace_uids to map map. level-2 map is groupname to list of numeric IDs
         self.nodegroups = {}
 
-        # nodenet section ID
-        self.sid = sid
+        # nodenet partition ID
+        self.pid = pid
 
-        # number of nodes allocated in this section
+        # number of nodes allocated in this partition
         self.NoN = INITIAL_NUMBER_OF_NODES
 
-        # numer of elements allocated in this section
+        # numer of elements allocated in this partition
         self.NoE = INITIAL_NUMBER_OF_ELEMENTS
 
-        # numer of nodespaces allocated in this section
+        # numer of nodespaces allocated in this partition
         self.NoNS = INITIAL_NUMBER_OF_NODESPACES
 
-        # the nodenet this section belongs to
+        # the nodenet this partition belongs to
         self.nodenet = nodenet
 
-        # sparsity flag for this section
+        # sparsity flag for this partition
         self.sparse = sparse
 
-        # logger used by this section
+        # logger used by this partition
         self.logger = nodenet.logger
 
         # array, index is node id, value is numeric node type
@@ -670,7 +670,7 @@ class TheanoSection():
         datafile = None
         if os.path.isfile(datafilename):
             try:
-                self.logger.info("Loading nodenet %s section %i bulk data from file %s" % (self.nodenet.name, self.sid, datafilename))
+                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
                 datafile = np.load(datafilename)
             except ValueError:
                 warnings.warn("Could not read nodenet data from file %s" % datafile)
@@ -834,12 +834,12 @@ class TheanoSection():
 
         for id in np.nonzero(self.allocated_nodes)[0]:
             if self.allocated_nodes[id] > MAX_STD_NODETYPE:
-                uid = node_to_id(id, self.sid)
+                uid = node_to_id(id, self.pid)
                 if uid in nodes_data:
                     self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
                 self.native_module_instances[uid] = self.nodenet.get_node(uid)
             elif self.allocated_nodes[id] == COMMENT:
-                uid = node_to_id(id, self.sid)
+                uid = node_to_id(id, self.pid)
                 self.comment_instances[uid] = self.nodenet.get_node(uid)
 
 
@@ -953,14 +953,14 @@ class TheanoSection():
         if number_of_nodes > free_nodes:
             gap = number_of_nodes - free_nodes
             growby = gap + (gap // 3)
-            self.logger.info("Per announcement in section %i, growing ID vectors by %d elements" % (self.sid, growby))
+            self.logger.info("Per announcement in partition %i, growing ID vectors by %d elements" % (self.pid, growby))
             self.grow_number_of_nodes(growby)
 
         number_of_elements = number_of_nodes*average_elements_per_node
         if number_of_elements > free_elements:
             gap = number_of_elements - free_elements
             growby = gap + (gap // 3)
-            self.logger.info("Per announcement in section %i, growing elements vectors by %d elements" % (self.sid, growby))
+            self.logger.info("Per announcement in partition %i, growing elements vectors by %d elements" % (self.pid, growby))
             self.grow_number_of_elements(gap + (gap //3))
 
     def create_node(self, nodetype, nodespace_id, id=None, parameters=None, gate_parameters=None, gate_functions=None):
@@ -981,14 +981,14 @@ class TheanoSection():
 
             if id < 1:
                 growby = self.NoN // 2
-                self.logger.info("All %d node IDs in section %i in use, growing id vectors by %d elements" % (self.NoN, self.sid, growby))
+                self.logger.info("All %d node IDs in partition %i in use, growing id vectors by %d elements" % (self.NoN, self.pid, growby))
                 id = self.NoN
                 self.grow_number_of_nodes(growby)
 
         else:
             if id > self.NoN:
                 growby = id - (self.NoN - 2)
-                self.logger.info("Requested ID larger than current size in section %i, growing id vectors by %d elements" % (self.sid, growby))
+                self.logger.info("Requested ID larger than current size in partition %i, growing id vectors by %d elements" % (self.pid, growby))
                 self.grow_number_of_nodes(growby)
 
         # now find a range of free elements to be used by this node
@@ -1015,11 +1015,11 @@ class TheanoSection():
                     has_restarted_from_zero = True
                 else:
                     growby = max(number_of_elements +1, self.NoE // 2)
-                    self.logger.info("All %d elements in use in section %i, growing elements vectors by %d elements" % (self.NoE, self.sid, growby))
+                    self.logger.info("All %d elements in use in partition %i, growing elements vectors by %d elements" % (self.NoE, self.pid, growby))
                     offset = self.NoE
                     self.grow_number_of_elements(growby)
 
-        uid = node_to_id(id, self.sid)
+        uid = node_to_id(id, self.pid)
 
         self.last_allocated_node = id
         self.last_allocated_offset = offset
@@ -1146,7 +1146,7 @@ class TheanoSection():
         self.last_allocated_node = node_id - 1
 
         # remove the native module or comment instance if there should be one
-        uid = node_to_id(node_id, self.sid)
+        uid = node_to_id(node_id, self.pid)
         if uid in self.native_module_instances:
             del self.native_module_instances[uid]
         if uid in self.comment_instances:
@@ -1197,7 +1197,7 @@ class TheanoSection():
 
             if id < 1:
                 growby = self.NoNS // 2
-                self.logger.info("All %d nodespace IDs in use in section %i, growing nodespace ID vector by %d elements" % (self.NoNS, self.sid, growby))
+                self.logger.info("All %d nodespace IDs in use in partition %i, growing nodespace ID vector by %d elements" % (self.NoNS, self.pid, growby))
                 id = self.NoNS
                 self.grow_number_of_nodespaces(growby)
 
@@ -1212,9 +1212,9 @@ class TheanoSection():
         node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
         for node_id in node_ids:
             self.delete_node(node_id)
-            self.nodenet.clear_supplements(node_to_id(node_id, self.sid))
+            self.nodenet.clear_supplements(node_to_id(node_id, self.pid))
 
-        self.nodenet.clear_supplements(nodespace_to_id(nodespace_id, self.sid))
+        self.nodenet.clear_supplements(nodespace_to_id(nodespace_id, self.pid))
         self.allocated_nodespaces[nodespace_id] = 0
         self.last_allocated_nodespace = nodespace_id
 
@@ -1299,10 +1299,10 @@ class TheanoSection():
         nst = get_numerical_slot_type(slot_type, target_nodetype)
 
         if ngt > get_gates_per_type(self.allocated_nodes[source_node_id], self.nodenet.native_modules):
-            raise ValueError("Node %s does not have a gate of type %s" % (node_to_id(source_node_id, self.sid), gate_type))
+            raise ValueError("Node %s does not have a gate of type %s" % (node_to_id(source_node_id, self.pid), gate_type))
 
         if nst > get_slots_per_type(self.allocated_nodes[target_node_id], self.nodenet.native_modules):
-            raise ValueError("Node %s does not have a slot of type %s" % (node_to_id(target_node_id, self.sid), slot_type))
+            raise ValueError("Node %s does not have a slot of type %s" % (node_to_id(target_node_id, self.pid), slot_type))
 
         w_matrix = self.w.get_value(borrow=True)
         x = self.allocated_node_offsets[target_node_id] + nst

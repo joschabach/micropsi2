@@ -431,6 +431,7 @@ class TheanoSection():
 
     def calculate(self):
         if self.has_new_usages:
+            self.compile_propagate()
             self.compile_calculate_nodes()
             self.has_new_usages = False
 

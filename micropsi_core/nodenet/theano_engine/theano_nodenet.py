@@ -440,7 +440,7 @@ class TheanoNodenet(Nodenet):
         if necessary)
         """
         if keep_uids:
-            section = self.get_node(nodespace_uid)
+            section = self.get_section(nodespace_uid)
             id = nodespace_from_id(nodespace_uid)
             if section.allocated_nodespaces[id] == 0:
                 # move up the nodespace tree until we find an existing parent or hit root

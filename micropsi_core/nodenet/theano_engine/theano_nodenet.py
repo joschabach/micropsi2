@@ -342,9 +342,13 @@ class TheanoNodenet(Nodenet):
 
         # instantiate sections
         sections_to_instantiate = nodenet_data.get('section_parents', {})
+        largest_sid = 0
         for section_ssid, parent_uid in sections_to_instantiate.items():
             sid = int(section_ssid)
-            self.create_section(parent_uid)
+            if sid > largest_sid:
+                largest_sid = sid
+            self.create_section(sid, parent_uid)
+        self.last_allocated_section = largest_sid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
@@ -605,9 +609,8 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
-    def create_section(self, parent_uid):
-        self.last_allocated_section += 1
-        section = TheanoSection(self, self.last_allocated_section)
+    def create_section(self, sid, parent_uid):
+        section = TheanoSection(self, sid)
         self.sections[section.ssid] = section
         if parent_uid not in self.sectionmap:
             self.sectionmap[parent_uid] = []
@@ -637,7 +640,8 @@ class TheanoNodenet(Nodenet):
             id_to_pass = nodespace_from_id(uid)
 
         if new_section and parent_id != 0:
-            ssid = self.create_section(parent_uid)
+            self.last_allocated_section += 1
+            ssid = self.create_section(self.last_allocated_section, parent_uid)
             section = self.sections[ssid]
             id = section.create_nodespace(0, id_to_pass)
             uid = nodespace_to_id(id, section.sid)

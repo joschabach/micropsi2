@@ -171,34 +171,6 @@ class TheanoNodenet(Nodenet):
 
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
-        INITIAL_NUMBER_OF_NODESPACES = 10
-
-        AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4
-        configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
-        try:
-            AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = int(configured_elements_per_node_assumption)
-        except:
-            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
-
-        INITIAL_NUMBER_OF_NODES = 2000
-        configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
-        try:
-            INITIAL_NUMBER_OF_NODES = int(configured_initial_number_of_nodes)
-        except:
-            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
-
-        INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-
-        sparse = True
-        configuredsparse = settings['theano']['sparse_weight_matrix']
-        if configuredsparse == "True":
-            sparse = True
-        elif configuredsparse == "False":
-            sparse = False
-        else:
-            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
-            sparse = True
-
         precision = settings['theano']['precision']
         if precision == "32":
             T.config.floatX = "float32"
@@ -228,14 +200,8 @@ class TheanoNodenet(Nodenet):
 
         self.sections = {}
         self.last_allocated_section = 0
-        rootsection = TheanoSection(self,
-                                         self.last_allocated_section,
-                                         sparse,
-                                         INITIAL_NUMBER_OF_NODES,
-                                         INITIAL_NUMBER_OF_ELEMENTS,
-                                         INITIAL_NUMBER_OF_NODESPACES)
-
-        self.sections['000'] = rootsection
+        rootsection = TheanoSection(self, self.last_allocated_section)
+        self.sections[rootsection.ssid] = rootsection
         self.rootsection = rootsection
         self.sectionmap = {}
         self.inverted_sectionmap = {}
@@ -636,6 +602,10 @@ class TheanoNodenet(Nodenet):
 
         # todo: get this from... somewhere
         new_section = False
+        try:
+            new_section = settings['theano']['multi_sections'] == "True"
+        except:
+            self.logger.warning("Could not read 'multi_section' value from configuration, defaulting to False.")
 
         section = self.get_section(parent_uid)
 
@@ -651,12 +621,7 @@ class TheanoNodenet(Nodenet):
 
         if new_section and parent_id != 0:
             self.last_allocated_section += 1
-            section = TheanoSection(self,
-                                         self.last_allocated_section,
-                                         True,              # todo: get this from soemwhere
-                                         100,
-                                         1000,
-                                         10)
+            section = TheanoSection(self, self.last_allocated_section)
             self.sections[section.ssid] = section
             if parent_uid not in self.sectionmap:
                 self.sectionmap[parent_uid] = []

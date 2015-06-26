@@ -101,7 +101,35 @@ class TheanoSection():
             self.__has_new_usages = True
             self.__has_gatefunction_one_over_x = value
 
-    def __init__(self, nodenet, sid, sparse, initial_NoN, initial_NoE, initial_NoNS):
+    def __init__(self, nodenet, sid):
+
+        INITIAL_NUMBER_OF_NODESPACES = 10
+
+        AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4
+        configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
+        try:
+            AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = int(configured_elements_per_node_assumption)
+        except:
+            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+
+        INITIAL_NUMBER_OF_NODES = 2000
+        configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
+        try:
+            INITIAL_NUMBER_OF_NODES = int(configured_initial_number_of_nodes)
+        except:
+            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+
+        INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
+
+        sparse = True
+        configuredsparse = settings['theano']['sparse_weight_matrix']
+        if configuredsparse == "True":
+            sparse = True
+        elif configuredsparse == "False":
+            sparse = False
+        else:
+            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            sparse = True
 
         # uids to instances of TheanoNode objects for living native modules
         self.native_module_instances = {}
@@ -116,13 +144,13 @@ class TheanoSection():
         self.sid = sid
 
         # number of nodes allocated in this section
-        self.NoN = initial_NoN
+        self.NoN = INITIAL_NUMBER_OF_NODES
 
         # numer of elements allocated in this section
-        self.NoE = initial_NoE
+        self.NoE = INITIAL_NUMBER_OF_ELEMENTS
 
         # numer of nodespaces allocated in this section
-        self.NoNS = initial_NoNS
+        self.NoNS = INITIAL_NUMBER_OF_NODESPACES
 
         # the nodenet this section belongs to
         self.nodenet = nodenet

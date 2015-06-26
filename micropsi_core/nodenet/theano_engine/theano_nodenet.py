@@ -249,6 +249,7 @@ class TheanoNodenet(Nodenet):
             metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
+            metadata['section_parents'] = self.inverted_sectionmap
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         for section in self.sections.values():
@@ -338,6 +339,12 @@ class TheanoNodenet(Nodenet):
 
         # re-use the root nodespace
         uidmap["s0001"] = "s0001"
+
+        # instantiate sections
+        sections_to_instantiate = nodenet_data.get('section_parents', {})
+        for section_ssid, parent_uid in sections_to_instantiate.items():
+            sid = int(section_ssid)
+            self.create_section(parent_uid)
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
@@ -598,6 +605,16 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
+    def create_section(self, parent_uid):
+        self.last_allocated_section += 1
+        section = TheanoSection(self, self.last_allocated_section)
+        self.sections[section.ssid] = section
+        if parent_uid not in self.sectionmap:
+            self.sectionmap[parent_uid] = []
+        self.sectionmap[parent_uid].append(section)
+        self.inverted_sectionmap[section.ssid] = parent_uid
+        return section.ssid
+
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 
         # todo: get this from... somewhere
@@ -620,13 +637,8 @@ class TheanoNodenet(Nodenet):
             id_to_pass = nodespace_from_id(uid)
 
         if new_section and parent_id != 0:
-            self.last_allocated_section += 1
-            section = TheanoSection(self, self.last_allocated_section)
-            self.sections[section.ssid] = section
-            if parent_uid not in self.sectionmap:
-                self.sectionmap[parent_uid] = []
-            self.sectionmap[parent_uid].append(section)
-            self.inverted_sectionmap[section.ssid] = parent_uid
+            ssid = self.create_section(parent_uid)
+            section = self.sections[ssid]
             id = section.create_nodespace(0, id_to_pass)
             uid = nodespace_to_id(id, section.sid)
         else:

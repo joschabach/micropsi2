@@ -20,6 +20,10 @@ from configuration import config as settings
 class TheanoSection():
 
     @property
+    def ssid(self):
+        return "%03i" % self.sid
+
+    @property
     def has_new_usages(self):
         return self.__has_new_usages
 

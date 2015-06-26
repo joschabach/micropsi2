@@ -285,4 +285,4 @@ def nodespace_to_id(numericid, section):
 
 
 def nodespace_from_id(stringid):
-    return int(stringid[1:])
+    return int(stringid[4:])

@@ -227,8 +227,9 @@ class TheanoNodenet(Nodenet):
         self.netapi = TheanoNetAPI(self)
 
         self.sections = {}
+        self.last_allocated_section = 0
         rootsection = TheanoSection(self,
-                                         0,
+                                         self.last_allocated_section,
                                          sparse,
                                          INITIAL_NUMBER_OF_NODES,
                                          INITIAL_NUMBER_OF_ELEMENTS,
@@ -236,6 +237,8 @@ class TheanoNodenet(Nodenet):
 
         self.sections['000'] = rootsection
         self.rootsection = rootsection
+        self.sectionmap = {}
+        self.inverted_sectionmap = {}
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
@@ -623,13 +626,17 @@ class TheanoNodenet(Nodenet):
         ids = []
         for section in self.sections.values():
             ids.extend([nodespace_to_id(id, section.sid) for id in np.nonzero(section.allocated_nodespaces)[0]])
-        ids.append(nodespace_to_id(1, self.rootsection.sid))
+            ids.append(nodespace_to_id(1, section.sid))
         return ids
 
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
+
+        # todo: get this from... somewhere
+        new_section = False
+
         section = self.get_section(parent_uid)
 
         parent_id = 0
@@ -642,8 +649,25 @@ class TheanoNodenet(Nodenet):
         if uid is not None:
             id_to_pass = nodespace_from_id(uid)
 
-        id = section.create_nodespace(parent_id, id_to_pass)
-        uid = nodespace_to_id(id, section.sid)
+        if new_section and parent_id != 0:
+            self.last_allocated_section += 1
+            section = TheanoSection(self,
+                                         self.last_allocated_section,
+                                         True,              # todo: get this from soemwhere
+                                         100,
+                                         1000,
+                                         10)
+            self.sections[section.ssid] = section
+            if parent_uid not in self.sectionmap:
+                self.sectionmap[parent_uid] = []
+            self.sectionmap[parent_uid].append(section)
+            self.inverted_sectionmap[section.ssid] = parent_uid
+            id = section.create_nodespace(0, id_to_pass)
+            uid = nodespace_to_id(id, section.sid)
+        else:
+            id = section.create_nodespace(parent_id, id_to_pass)
+            uid = nodespace_to_id(id, section.sid)
+
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:
@@ -955,6 +979,11 @@ class TheanoNodenet(Nodenet):
 
                 if is_in_hierarchy:
                     data[nodespace_to_id(candidate_id, section.sid)] = self.get_nodespace(nodespace_to_id(candidate_id, section.sid)).data
+
+        if nodespace_uid in self.sectionmap:
+            for section in self.sectionmap[nodespace_uid]:
+                section_root_uid = "s%s1" % section.ssid
+                data[section_root_uid] = self.get_nodespace(section_root_uid).data
 
         return data
 

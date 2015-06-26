@@ -60,7 +60,10 @@ class TheanoNodespace(Nodespace):
     def parent_nodespace(self):
         parent_nodespace_id = self._section.allocated_nodespaces[self._id]
         if parent_nodespace_id == 0:
-            return None
+            if self._section.ssid in self._nodenet.inverted_sectionmap:
+                return self._nodenet.inverted_sectionmap[self._section.ssid]
+            else:
+                return None
         else:
             return nodespace_to_id(parent_nodespace_id, self._section.sid)
 
@@ -78,7 +81,11 @@ class TheanoNodespace(Nodespace):
         if entitytype == 'nodes':
             return [node_to_id(id, self._section.sid) for id in np.where(self._section.allocated_node_parents == self._id)[0]]
         elif entitytype == 'nodespaces':
-            return [nodespace_to_id(id, self._section.sid) for id in np.where(self._section.allocated_nodespaces == self._id)[0]]
+            uids = [nodespace_to_id(id, self._section.sid) for id in np.where(self._section.allocated_nodespaces == self._id)[0]]
+            if self.uid in self._nodenet.sectionmap:
+                for section in self._nodenet.sectionmap:
+                    uids.append("%s1" % section.ssid)
+            return uids
         elif entitytype == None:
             ids = self.get_known_ids('nodes')
             ids.extend(self.get_known_ids('nodespaces'))

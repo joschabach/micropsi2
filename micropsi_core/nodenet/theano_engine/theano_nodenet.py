@@ -282,18 +282,15 @@ class TheanoNodenet(Nodenet):
             metadata['modulators'] = self.construct_modulators_dict()
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
-        sid = "%03i" % self.rootsection.sid
-        # write bulk data to our own numpy-based file format
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + sid)
-        self.rootsection.save(datafilename)
+        for section in self.sections.values():
+            sid = "%03i" % section.sid
+            # write bulk data to our own numpy-based file format
+            datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + sid)
+            section.save(datafilename)
 
     def load(self, filename):
         """Load the node net from a file"""
         # try to access file
-
-        sid = "%03i" % self.rootsection.sid
-
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + sid + ".npz")
 
         with self.netlock:
             initfrom = {}
@@ -316,7 +313,11 @@ class TheanoNodenet(Nodenet):
             nodes_data = {}
             if 'nodes' in initfrom:
                 nodes_data = initfrom['nodes']
-            self.rootsection.load(datafilename, nodes_data)
+
+            for section in self.sections.values():
+                sid = "%03i" % section.sid
+                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + sid + ".npz")
+                section.load(datafilename, nodes_data)
 
             # reloading native modules ensures the types in allocated_nodes are up to date
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes

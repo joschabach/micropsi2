@@ -280,8 +280,8 @@ def node_from_id(stringid):
     return int(stringid[4:])
 
 
-def nodespace_to_id(numericid):
-    return "s%i" % numericid
+def nodespace_to_id(numericid, section):
+    return "s%03i%i" % (section, numericid)
 
 
 def nodespace_from_id(stringid):

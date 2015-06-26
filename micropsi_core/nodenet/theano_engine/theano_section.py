@@ -1181,7 +1181,7 @@ class TheanoSection():
             self.delete_node(node_id)
             self.nodenet.clear_supplements(node_to_id(node_id, self.sid))
 
-        self.nodenet.clear_supplements(nodespace_to_id(nodespace_id))
+        self.nodenet.clear_supplements(nodespace_to_id(nodespace_id, self.sid))
         self.allocated_nodespaces[nodespace_id] = 0
         self.last_allocated_nodespace = nodespace_id
 

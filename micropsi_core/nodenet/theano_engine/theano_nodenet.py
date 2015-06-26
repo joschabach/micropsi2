@@ -234,7 +234,7 @@ class TheanoNodenet(Nodenet):
                                          INITIAL_NUMBER_OF_ELEMENTS,
                                          INITIAL_NUMBER_OF_NODESPACES)
 
-        self.sections['root'] = rootsection
+        self.sections['000'] = rootsection
         self.rootsection = rootsection
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
@@ -256,7 +256,7 @@ class TheanoNodenet(Nodenet):
         for type, data in self.native_module_definitions.items():
             self.native_modules[type] = Nodetype(nodenet=self, **data)
 
-        self.create_nodespace(None, None, "Root", nodespace_to_id(1))
+        self.create_nodespace(None, None, "Root", nodespace_to_id(1, rootsection.sid))
 
         self.initialize_nodenet({})
 
@@ -365,10 +365,10 @@ class TheanoNodenet(Nodenet):
 
         uidmap = {}
         # for dict_engine compatibility
-        uidmap["Root"] = "s1"
+        uidmap["Root"] = "s0001"
 
         # re-use the root nodespace
-        uidmap["s1"] = "s1"
+        uidmap["s0001"] = "s0001"
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
@@ -447,7 +447,7 @@ class TheanoNodenet(Nodenet):
                 if id != 1:
                     parent_id = nodespace_from_id(data[nodespace_uid].get('parent_nodespace'))
                     if section.allocated_nodespaces[parent_id] == 0:
-                        self.merge_nodespace_data(nodespace_to_id(parent_id), data, uidmap, keep_uids)
+                        self.merge_nodespace_data(nodespace_to_id(parent_id, section.sid), data, uidmap, keep_uids)
                 self.create_nodespace(
                     data[nodespace_uid].get('parent_nodespace'),
                     data[nodespace_uid].get('position'),
@@ -494,7 +494,7 @@ class TheanoNodenet(Nodenet):
         elif self.is_node(uid):
             id = node_from_id(uid)
             parent_id = section.allocated_node_parents[id]
-            node = TheanoNode(self, section, nodespace_to_id(parent_id), uid, section.allocated_nodes[id])
+            node = TheanoNode(self, section, nodespace_to_id(parent_id, section.sid), uid, section.allocated_nodes[id])
             self.proxycache[node.uid] = node
             return node
         else:
@@ -606,7 +606,7 @@ class TheanoNodenet(Nodenet):
 
     def get_nodespace(self, uid):
         if uid is None:
-            uid = nodespace_to_id(1)
+            uid = nodespace_to_id(1, self.rootsection.sid)
 
         section = self.get_section(uid)
 
@@ -620,8 +620,8 @@ class TheanoNodenet(Nodenet):
     def get_nodespace_uids(self):
         ids = []
         for section in self.sections.values():
-            ids.extend([nodespace_to_id(id) for id in np.nonzero(section.allocated_nodespaces)[0]])
-        ids.append(nodespace_to_id(1))
+            ids.extend([nodespace_to_id(id, section.sid) for id in np.nonzero(section.allocated_nodespaces)[0]])
+        ids.append(nodespace_to_id(1, self.rootsection.sid))
         return ids
 
     def is_nodespace(self, uid):
@@ -633,7 +633,7 @@ class TheanoNodenet(Nodenet):
         parent_id = 0
         if parent_uid is not None:
             parent_id = nodespace_from_id(parent_uid)
-        elif uid != "s1":
+        elif uid != "s0001":
             parent_id = 1
 
         id_to_pass = None
@@ -641,7 +641,7 @@ class TheanoNodenet(Nodenet):
             id_to_pass = nodespace_from_id(uid)
 
         id = section.create_nodespace(parent_id, id_to_pass)
-        uid = nodespace_to_id(id)
+        uid = nodespace_to_id(id, section.sid)
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:
@@ -952,7 +952,7 @@ class TheanoNodenet(Nodenet):
                         is_in_hierarchy = True
 
                 if is_in_hierarchy:
-                    data[nodespace_to_id(candidate_id)] = self.get_nodespace(nodespace_to_id(candidate_id)).data
+                    data[nodespace_to_id(candidate_id, section.sid)] = self.get_nodespace(nodespace_to_id(candidate_id, section.sid)).data
 
         return data
 
@@ -1014,7 +1014,7 @@ class TheanoNodenet(Nodenet):
 
         ids = []
         for uid, name in self.names.items():
-            section = self.get_node(uid)
+            section = self.get_section(uid)
             if name.startswith(node_name_prefix) and \
                     (section.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
                 ids.append(uid)

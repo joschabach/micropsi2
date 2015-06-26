@@ -82,7 +82,7 @@ class TheanoNode(Node):
 
     @property
     def parent_nodespace(self):
-        return nodespace_to_id(self._parent_id)
+        return nodespace_to_id(self._parent_id, self._section.sid)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):

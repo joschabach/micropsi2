@@ -23,7 +23,7 @@ class TheanoNodespace(Nodespace):
 
     @property
     def uid(self):
-        return nodespace_to_id(self._id)
+        return nodespace_to_id(self._id, self._section.sid)
 
     @property
     def index(self):
@@ -62,7 +62,7 @@ class TheanoNodespace(Nodespace):
         if parent_nodespace_id == 0:
             return None
         else:
-            return nodespace_to_id(parent_nodespace_id)
+            return nodespace_to_id(parent_nodespace_id, self._section.sid)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
@@ -78,7 +78,7 @@ class TheanoNodespace(Nodespace):
         if entitytype == 'nodes':
             return [node_to_id(id, self._section.sid) for id in np.where(self._section.allocated_node_parents == self._id)[0]]
         elif entitytype == 'nodespaces':
-            return [nodespace_to_id(id) for id in np.where(self._section.allocated_nodespaces == self._id)[0]]
+            return [nodespace_to_id(id, self._section.sid) for id in np.where(self._section.allocated_nodespaces == self._id)[0]]
         elif entitytype == None:
             ids = self.get_known_ids('nodes')
             ids.extend(self.get_known_ids('nodespaces'))

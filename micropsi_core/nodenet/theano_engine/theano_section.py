@@ -267,10 +267,10 @@ class TheanoSection():
         g_expect_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_expect = theano.shared(value=g_expect_array, name="expectation", borrow=True)
 
-        g_countdown_array = np.zeros(self.NoE, dtype=np.int8)
+        g_countdown_array = np.zeros(self.NoE, dtype=np.int16)
         self.g_countdown = theano.shared(value=g_countdown_array, name="countdown", borrow=True)
 
-        g_wait_array = np.ones(self.NoE, dtype=np.int8)
+        g_wait_array = np.ones(self.NoE, dtype=np.int16)
         self.g_wait = theano.shared(value=g_wait_array, name="wait", borrow=True)
 
         n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
@@ -896,8 +896,8 @@ class TheanoSection():
         new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
         new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
         new_g_expect = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-        new_g_countdown = np.zeros(new_NoE, dtype=np.int8)
-        new_g_wait = np.ones(new_NoE, dtype=np.int8)
+        new_g_countdown = np.zeros(new_NoE, dtype=np.int16)
+        new_g_wait = np.ones(new_NoE, dtype=np.int16)
         new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
         new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
         new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)

@@ -440,12 +440,13 @@ class TheanoNodenet(Nodenet):
         if necessary)
         """
         if keep_uids:
+            section = self.get_node(nodespace_uid)
             id = nodespace_from_id(nodespace_uid)
-            if self.rootsection.allocated_nodespaces[id] == 0:
+            if section.allocated_nodespaces[id] == 0:
                 # move up the nodespace tree until we find an existing parent or hit root
                 if id != 1:
                     parent_id = nodespace_from_id(data[nodespace_uid].get('parent_nodespace'))
-                    if self.rootsection.allocated_nodespaces[parent_id] == 0:
+                    if section.allocated_nodespaces[parent_id] == 0:
                         self.merge_nodespace_data(nodespace_to_id(parent_id), data, uidmap, keep_uids)
                 self.create_nodespace(
                     data[nodespace_uid].get('parent_nodespace'),
@@ -506,7 +507,10 @@ class TheanoNodenet(Nodenet):
             section = self.get_section(group_nodespace_uid)
             return [node_to_id(nid, section.sid) for nid in section.allocated_elements_to_nodes[section.nodegroups[group_nodespace_uid][group]]]
         else:
-            return [node_to_id(id, self.rootsection.sid) for id in np.nonzero(self.rootsection.allocated_nodes)[0]]
+            uids = []
+            for section in self.sections.values():
+                uids.extend([node_to_id(id, section.sid) for id in np.nonzero(section.allocated_nodes)[0]])
+            return uids
 
     def is_node(self, uid):
         section = self.get_section(uid)
@@ -614,7 +618,9 @@ class TheanoNodenet(Nodenet):
             return nodespace
 
     def get_nodespace_uids(self):
-        ids = [nodespace_to_id(id) for id in np.nonzero(self.rootsection.allocated_nodespaces)[0]]
+        ids = []
+        for section in self.sections.values():
+            ids.extend([nodespace_to_id(id) for id in np.nonzero(section.allocated_nodespaces)[0]])
         ids.append(nodespace_to_id(1))
         return ids
 
@@ -723,65 +729,66 @@ class TheanoNodenet(Nodenet):
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
-        for uid, instance in self.rootsection.native_module_instances.items():
-            if instance.type not in native_modules:
-                self.logger.warn("No more definition available for node type %s, deleting instance %s" %
-                                (instance.type, uid))
-                instances_to_delete[uid] = instance
-                continue
+        for section in self.sections.values():
+            for uid, instance in section.native_module_instances.items():
+                if instance.type not in native_modules:
+                    self.logger.warn("No more definition available for node type %s, deleting instance %s" %
+                                    (instance.type, uid))
+                    instances_to_delete[uid] = instance
+                    continue
 
-            numeric_id = node_from_id(uid)
-            number_of_elements = len(np.where(self.rootsection.allocated_elements_to_nodes == numeric_id)[0])
-            new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
-            if number_of_elements != new_numer_of_elements:
-                self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
-                                (instance.type, number_of_elements, new_numer_of_elements, uid))
-                instances_to_recreate[uid] = instance.data
+                numeric_id = node_from_id(uid)
+                number_of_elements = len(np.where(section.allocated_elements_to_nodes == numeric_id)[0])
+                new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
+                if number_of_elements != new_numer_of_elements:
+                    self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                                    (instance.type, number_of_elements, new_numer_of_elements, uid))
+                    instances_to_recreate[uid] = instance.data
 
-        # actually remove the instances
-        for uid in instances_to_delete.keys():
-            self.delete_node(uid)
-        for uid in instances_to_recreate.keys():
-            self.delete_node(uid)
+            # actually remove the instances
+            for uid in instances_to_delete.keys():
+                self.delete_node(uid)
+            for uid in instances_to_recreate.keys():
+                self.delete_node(uid)
 
-        # update the node functions of all Nodetypes
-        self.native_modules = {}
-        for type, data in native_modules.items():
-            self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+            # update the node functions of all Nodetypes
+            self.native_modules = {}
+            for type, data in native_modules.items():
+                self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
 
-        # update the living instances that have the same slot/gate numbers
-        new_instances = {}
-        for id, instance in self.rootsection.native_module_instances.items():
-            parameters = instance.clone_parameters()
-            state = instance.clone_state()
-            position = instance.position
-            name = instance.name
-            new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.rootsection.allocated_nodes[node_from_id(id)])
-            new_native_module_instance.position = position
-            new_native_module_instance.name = name
-            for key, value in parameters.items():
-                new_native_module_instance.set_parameter(key, value)
-            for key, value in state.items():
-                new_native_module_instance.set_state(key, value)
-            new_instances[id] = new_native_module_instance
-        self.rootsection.native_module_instances = new_instances
+            # update the living instances that have the same slot/gate numbers
+            new_instances = {}
+            for id, instance in section.native_module_instances.items():
+                parameters = instance.clone_parameters()
+                state = instance.clone_state()
+                position = instance.position
+                name = instance.name
+                new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, section.allocated_nodes[node_from_id(id)])
+                new_native_module_instance.position = position
+                new_native_module_instance.name = name
+                for key, value in parameters.items():
+                    new_native_module_instance.set_parameter(key, value)
+                for key, value in state.items():
+                    new_native_module_instance.set_state(key, value)
+                new_instances[id] = new_native_module_instance
+            section.native_module_instances = new_instances
 
-        # recreate the deleted ones. Gate configurations and links will not be transferred.
-        for uid, data in instances_to_recreate.items():
-            new_uid = self.create_node(
-                data['type'],
-                data['parent_nodespace'],
-                data['position'],
-                name=data['name'],
-                uid=uid,
-                parameters=data['parameters'])
+            # recreate the deleted ones. Gate configurations and links will not be transferred.
+            for uid, data in instances_to_recreate.items():
+                new_uid = self.create_node(
+                    data['type'],
+                    data['parent_nodespace'],
+                    data['position'],
+                    name=data['name'],
+                    uid=uid,
+                    parameters=data['parameters'])
 
-        # update native modules numeric types, as these may have been set with a different native module
-        # node types list
-        native_module_ids = np.where(self.rootsection.allocated_nodes > MAX_STD_NODETYPE)[0]
-        for id in native_module_ids:
-            instance = self.get_node(node_to_id(id, self.rootsection.sid))
-            self.rootsection.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+            # update native modules numeric types, as these may have been set with a different native module
+            # node types list
+            native_module_ids = np.where(section.allocated_nodes > MAX_STD_NODETYPE)[0]
+            for id in native_module_ids:
+                instance = self.get_node(node_to_id(id, section.sid))
+                section.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def get_nodespace_data(self, nodespace_uid, include_links):
         section = self.get_section(nodespace_uid)

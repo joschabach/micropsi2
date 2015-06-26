@@ -794,7 +794,7 @@ class TheanoNodenet(Nodenet):
         section = self.get_section(nodespace_uid)
         data = {
             'links': {},
-            'nodes': self.construct_nodes_dict(nodespace_uid, self.rootsection.NoN),
+            'nodes': self.construct_nodes_dict(nodespace_uid, 1000),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict(),
             'modulators': self.construct_modulators_dict()
@@ -832,97 +832,103 @@ class TheanoNodenet(Nodenet):
 
     def construct_links_dict(self, nodespace_uid=None):
         data = {}
-        if nodespace_uid is not None:
-            section = self.get_section(nodespace_uid)
-            parent = nodespace_from_id(nodespace_uid)
-            node_ids = np.where(section.allocated_node_parents == parent)[0]
-        else:
-            node_ids = np.nonzero(self.rootsection.allocated_nodes)[0]
-        w_matrix = self.rootsection.w.get_value(borrow=True)
-        for node_id in node_ids:
 
-            source_type = self.rootsection.allocated_nodes[node_id]
-            for gate_type in range(get_gates_per_type(source_type, self.native_modules)):
-                gatecolumn = w_matrix[:, self.rootsection.allocated_node_offsets[node_id] + gate_type]
-                links_indices = np.nonzero(gatecolumn)[0]
-                for index in links_indices:
-                    target_id = self.rootsection.allocated_elements_to_nodes[index]
-                    target_type = self.rootsection.allocated_nodes[target_id]
-                    target_slot_numerical = index - self.rootsection.allocated_node_offsets[target_id]
-                    target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
-                    source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                    if self.rootsection.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                        weight = float(gatecolumn[index].data)
+        for section in self.sections.values():
+            if nodespace_uid is not None:
+                nssection = self.get_section(nodespace_uid)
+                if nssection != section:
+                    continue
+                parent = nodespace_from_id(nodespace_uid)
+                node_ids = np.where(section.allocated_node_parents == parent)[0]
+            else:
+                node_ids = np.nonzero(section.allocated_nodes)[0]
+            w_matrix = section.w.get_value(borrow=True)
+            for node_id in node_ids:
+
+                source_type = section.allocated_nodes[node_id]
+                for gate_type in range(get_gates_per_type(source_type, self.native_modules)):
+                    gatecolumn = w_matrix[:, section.allocated_node_offsets[node_id] + gate_type]
+                    links_indices = np.nonzero(gatecolumn)[0]
+                    for index in links_indices:
+                        target_id = section.allocated_elements_to_nodes[index]
+                        target_type = section.allocated_nodes[target_id]
+                        target_slot_numerical = index - section.allocated_node_offsets[target_id]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                        source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                        if section.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                            weight = float(gatecolumn[index].data)
+                        else:
+                            weight = gatecolumn[index].item()
+
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(node_id, section.sid), source_gate_type, target_slot_type, node_to_id(target_id, section.sid))
+                        linkdata = {
+                            "uid": linkuid,
+                            "weight": weight,
+                            "certainty": 1,
+                            "source_gate_name": source_gate_type,
+                            "source_node_uid": node_to_id(node_id, section.sid),
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(target_id, section.sid)
+                        }
+                        data[linkuid] = linkdata
+
+                target_type = section.allocated_nodes[node_id]
+                for slot_type in range(get_slots_per_type(target_type, self.native_modules)):
+                    slotrow = w_matrix[section.allocated_node_offsets[node_id] + slot_type]
+                    if section.sparse:
+                        links_indices = np.nonzero(slotrow)[1]
                     else:
-                        weight = gatecolumn[index].item()
+                        links_indices = np.nonzero(slotrow)[0]
+                    for index in links_indices:
+                        source_id = section.allocated_elements_to_nodes[index]
+                        source_type = section.allocated_nodes[source_id]
+                        source_gate_numerical = index - section.allocated_node_offsets[source_id]
+                        source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                        target_slot_type = get_string_slot_type(slot_type, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                        if section.sparse:
+                            weight = float(slotrow[0, index])
+                        else:
+                            weight = slotrow[index].item()
 
-                    linkuid = "%s:%s:%s:%s" % (node_to_id(node_id, self.rootsection.sid), source_gate_type, target_slot_type, node_to_id(target_id, self.rootsection.sid))
-                    linkdata = {
-                        "uid": linkuid,
-                        "weight": weight,
-                        "certainty": 1,
-                        "source_gate_name": source_gate_type,
-                        "source_node_uid": node_to_id(node_id, self.rootsection.sid),
-                        "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(target_id, self.rootsection.sid)
-                    }
-                    data[linkuid] = linkdata
-
-            target_type = self.rootsection.allocated_nodes[node_id]
-            for slot_type in range(get_slots_per_type(target_type, self.native_modules)):
-                slotrow = w_matrix[self.rootsection.allocated_node_offsets[node_id] + slot_type]
-                if self.rootsection.sparse:
-                    links_indices = np.nonzero(slotrow)[1]
-                else:
-                    links_indices = np.nonzero(slotrow)[0]
-                for index in links_indices:
-                    source_id = self.rootsection.allocated_elements_to_nodes[index]
-                    source_type = self.rootsection.allocated_nodes[source_id]
-                    source_gate_numerical = index - self.rootsection.allocated_node_offsets[source_id]
-                    source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                    target_slot_type = get_string_slot_type(slot_type, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
-                    if self.rootsection.sparse:
-                        weight = float(slotrow[0, index])
-                    else:
-                        weight = slotrow[index].item()
-
-                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, self.rootsection.sid), source_gate_type, target_slot_type, node_to_id(node_id, self.rootsection.sid))
-                    linkdata = {
-                        "uid": linkuid,
-                        "weight": weight,
-                        "certainty": 1,
-                        "source_gate_name": source_gate_type,
-                        "source_node_uid": node_to_id(source_id, self.rootsection.sid),
-                        "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(node_id, self.rootsection.sid)
-                    }
-                    data[linkuid] = linkdata
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, section.sid), source_gate_type, target_slot_type, node_to_id(node_id, section.sid))
+                        linkdata = {
+                            "uid": linkuid,
+                            "weight": weight,
+                            "certainty": 1,
+                            "source_gate_name": source_gate_type,
+                            "source_node_uid": node_to_id(source_id, section.sid),
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(node_id, section.sid)
+                        }
+                        data[linkuid] = linkdata
 
         return data
 
     def construct_native_modules_and_comments_dict(self):
         data = {}
         i = 0
-        nodeids = np.where((self.rootsection.allocated_nodes > MAX_STD_NODETYPE) | (self.rootsection.allocated_nodes == COMMENT))[0]
-        for node_id in nodeids:
-            i += 1
-            node_uid = node_to_id(node_id, self.rootsection.sid)
-            data[node_uid] = self.get_node(node_uid).data
+        for section in self.sections.values():
+            nodeids = np.where((section.allocated_nodes > MAX_STD_NODETYPE) | (section.allocated_nodes == COMMENT))[0]
+            for node_id in nodeids:
+                i += 1
+                node_uid = node_to_id(node_id, section.sid)
+                data[node_uid] = self.get_node(node_uid).data
         return data
 
     def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1):
         data = {}
         i = 0
-        nodeids = np.nonzero(self.rootsection.allocated_nodes)[0]
-        if nodespace_uid is not None:
-            parent_id = nodespace_from_id(nodespace_uid)
-            nodeids = np.where(self.rootsection.allocated_node_parents == parent_id)[0]
-        for node_id in nodeids:
-            i += 1
-            node_uid = node_to_id(node_id, self.rootsection.sid)
-            data[node_uid] = self.get_node(node_uid).data
-            if max_nodes > 0 and i > max_nodes:
-                break
+        for section in self.sections.values():
+            nodeids = np.nonzero(section.allocated_nodes)[0]
+            if nodespace_uid is not None:
+                parent_id = nodespace_from_id(nodespace_uid)
+                nodeids = np.where(section.allocated_node_parents == parent_id)[0]
+            for node_id in nodeids:
+                i += 1
+                node_uid = node_to_id(node_id, section.sid)
+                data[node_uid] = self.get_node(node_uid).data
+                if max_nodes > 0 and i > max_nodes:
+                    break
         return data
 
     def construct_nodespaces_dict(self, nodespace_uid):
@@ -930,22 +936,23 @@ class TheanoNodenet(Nodenet):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
-        nodespace_id = nodespace_from_id(nodespace_uid)
-        nodespace_ids = np.nonzero(self.rootsection.allocated_nodespaces)[0]
-        nodespace_ids = np.append(nodespace_ids, 1)
-        for candidate_id in nodespace_ids:
-            is_in_hierarchy = False
-            if candidate_id == nodespace_id:
-                is_in_hierarchy = True
-            else:
-                parent_id = self.rootsection.allocated_nodespaces[candidate_id]
-                while parent_id > 0 and parent_id != nodespace_id:
-                    parent_id = self.rootsection.allocated_nodespaces[parent_id]
-                if parent_id == nodespace_id:
+        for section in self.sections.values():
+            nodespace_id = nodespace_from_id(nodespace_uid)
+            nodespace_ids = np.nonzero(section.allocated_nodespaces)[0]
+            nodespace_ids = np.append(nodespace_ids, 1)
+            for candidate_id in nodespace_ids:
+                is_in_hierarchy = False
+                if candidate_id == nodespace_id:
                     is_in_hierarchy = True
+                else:
+                    parent_id = section.allocated_nodespaces[candidate_id]
+                    while parent_id > 0 and parent_id != nodespace_id:
+                        parent_id = section.allocated_nodespaces[parent_id]
+                    if parent_id == nodespace_id:
+                        is_in_hierarchy = True
 
-            if is_in_hierarchy:
-                data[nodespace_to_id(candidate_id)] = self.get_nodespace(nodespace_to_id(candidate_id)).data
+                if is_in_hierarchy:
+                    data[nodespace_to_id(candidate_id)] = self.get_nodespace(nodespace_to_id(candidate_id)).data
 
         return data
 
@@ -1007,8 +1014,9 @@ class TheanoNodenet(Nodenet):
 
         ids = []
         for uid, name in self.names.items():
+            section = self.get_node(uid)
             if name.startswith(node_name_prefix) and \
-                    (self.rootsection.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
+                    (section.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
                 ids.append(uid)
         self.group_nodes_by_ids(nodespace_uid, ids, node_name_prefix, gatetype, sortby)
 

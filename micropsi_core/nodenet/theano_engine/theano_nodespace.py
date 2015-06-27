@@ -83,8 +83,8 @@ class TheanoNodespace(Nodespace):
         elif entitytype == 'nodespaces':
             uids = [nodespace_to_id(id, self._partition.pid) for id in np.where(self._partition.allocated_nodespaces == self._id)[0]]
             if self.uid in self._nodenet.partitionmap:
-                for spid in self._nodenet.partitionmap[self.uid]:
-                    uids.append(spid)
+                for partition in self._nodenet.partitionmap[self.uid]:
+                    uids.append("s%s1" % partition.spid)
             return uids
         elif entitytype == None:
             ids = self.get_known_ids('nodes')

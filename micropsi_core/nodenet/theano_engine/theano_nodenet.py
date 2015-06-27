@@ -333,10 +333,10 @@ class TheanoNodenet(Nodenet):
 
         uidmap = {}
         # for dict_engine compatibility
-        uidmap["Root"] = self.rootpartition.rootnodespace_uid()
+        uidmap["Root"] = self.rootpartition.rootnodespace_uid
 
         # re-use the root nodespace
-        uidmap[self.rootpartition.rootnodespace_uid()] = self.rootpartition.rootnodespace_uid()
+        uidmap[self.rootpartition.rootnodespace_uid] = self.rootpartition.rootnodespace_uid
 
         # instantiate partitions
         partitions_to_instantiate = nodenet_data.get('partition_parents', {})
@@ -644,7 +644,7 @@ class TheanoNodenet(Nodenet):
         parent_id = 0
         if parent_uid is not None:
             parent_id = nodespace_from_id(parent_uid)
-        elif uid != self.rootpartition.rootnodespace_uid():
+        elif uid != self.rootpartition.rootnodespace_uid:
             parent_id = 1
 
         id_to_pass = None

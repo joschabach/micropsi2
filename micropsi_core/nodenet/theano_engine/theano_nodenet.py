@@ -610,6 +610,8 @@ class TheanoNodenet(Nodenet):
         return uid in self.get_nodespace_uids()
 
     def create_partition(self, pid, parent_uid):
+        if parent_uid is None:
+            parent_uid = self.get_nodespace(None).uid
         if pid > 999:
             raise NotImplementedError("Only partition IDs < 1000 are supported right now")
         partition = TheanoPartition(self, pid)

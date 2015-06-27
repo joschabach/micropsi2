@@ -610,6 +610,8 @@ class TheanoNodenet(Nodenet):
         return uid in self.get_nodespace_uids()
 
     def create_partition(self, pid, parent_uid):
+        if pid > 999:
+            raise NotImplementedError("Only partition IDs < 1000 are supported right now")
         partition = TheanoPartition(self, pid)
         self.partitions[partition.spid] = partition
         if parent_uid not in self.partitionmap:
@@ -618,9 +620,19 @@ class TheanoNodenet(Nodenet):
         self.inverted_partitionmap[partition.spid] = parent_uid
         return partition.spid
 
+    def delete_partition(self, pid):
+        spid = "%03i" % pid
+        partition = self.partitions[spid]
+        parent_uid = self.inverted_partitionmap[spid]
+        if parent_uid in self.partitionmap and partition in self.partitionmap[parent_uid]:
+            self.partitionmap[parent_uid].remove(partition)
+        if spid in self.inverted_partitionmap:
+            del self.inverted_partitionmap[spid]
+        if spid in self.partitions:
+            del self.partitions[spid]
+
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 
-        # todo: get this from... somewhere
         new_partition = False
         try:
             new_partition = settings['theano']['multi_partitions'] == "True"
@@ -657,12 +669,15 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_nodespace(self, nodespace_uid):
-        partition = self.get_partition(nodespace_uid)
-
         if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
             raise ValueError("The root nodespace cannot be deleted.")
+
+        partition = self.get_partition(nodespace_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
-        partition.delete_nodespace(nodespace_id)
+        if nodespace_id == 1 and partition.pid != self.rootpartition.pid:
+            self.delete_partition(partition.pid)
+        else:
+            partition.delete_nodespace(nodespace_id)
 
     def clear_supplements(self, uid):
         # clear from proxycache

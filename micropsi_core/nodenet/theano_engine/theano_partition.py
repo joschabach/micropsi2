@@ -23,6 +23,9 @@ class TheanoPartition():
     def spid(self):
         return "%03i" % self.pid
 
+    def rootnodespace_uid(self):
+        return "s%s1" % self.spid
+
     @property
     def has_new_usages(self):
         return self.__has_new_usages

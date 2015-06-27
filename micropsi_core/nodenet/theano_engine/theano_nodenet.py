@@ -253,9 +253,8 @@ class TheanoNodenet(Nodenet):
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
         for partition in self.partitions.values():
-            pid = "%03i" % partition.pid
             # write bulk data to our own numpy-based file format
-            datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + pid)
+            datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid)
             partition.save(datafilename)
 
     def load(self, filename):
@@ -285,8 +284,7 @@ class TheanoNodenet(Nodenet):
                 nodes_data = initfrom['nodes']
 
             for partition in self.partitions.values():
-                pid = "%03i" % partition.pid
-                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + pid + ".npz")
+                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
                 partition.load(datafilename, nodes_data)
 
             # reloading native modules ensures the types in allocated_nodes are up to date
@@ -335,10 +333,10 @@ class TheanoNodenet(Nodenet):
 
         uidmap = {}
         # for dict_engine compatibility
-        uidmap["Root"] = "s0001"
+        uidmap["Root"] = self.rootpartition.rootnodespace_uid()
 
         # re-use the root nodespace
-        uidmap["s0001"] = "s0001"
+        uidmap[self.rootpartition.rootnodespace_uid()] = self.rootpartition.rootnodespace_uid()
 
         # instantiate partitions
         partitions_to_instantiate = nodenet_data.get('partition_parents', {})
@@ -646,7 +644,7 @@ class TheanoNodenet(Nodenet):
         parent_id = 0
         if parent_uid is not None:
             parent_id = nodespace_from_id(parent_uid)
-        elif uid != "s0001":
+        elif uid != self.rootpartition.rootnodespace_uid():
             parent_id = 1
 
         id_to_pass = None
@@ -985,7 +983,7 @@ class TheanoNodenet(Nodenet):
 
         if nodespace_uid in self.partitionmap:
             for partition in self.partitionmap[nodespace_uid]:
-                partition_root_uid = "s%s1" % partition.spid
+                partition_root_uid = partition.rootnodespace_uid
                 data[partition_root_uid] = self.get_nodespace(partition_root_uid).data
 
         return data

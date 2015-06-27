@@ -221,6 +221,21 @@ def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
     assert node2.uid in [n.uid for n in nodes]
 
 
+def test_node_netapi_get_nodes_by_nodetype(fixed_nodenet):
+    # test get_nodes by name and nodespace
+    net, netapi, source = prepare(fixed_nodenet)
+    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    node1 = netapi.create_node("Pipe", nodespace.uid, "TestName1")
+    node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
+
+    nodes = netapi.get_nodes(nodetype="Register")
+    assert len(nodes) == 2
+    uids = [n.uid for n in nodes]
+    assert node1.uid not in uids
+    assert node2.uid in uids
+    assert source.uid in uids
+
+
 def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
     # test get_nodes by name and nodespace
     net, netapi, source = prepare(fixed_nodenet)

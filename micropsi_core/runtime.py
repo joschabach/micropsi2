@@ -701,6 +701,8 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         else:
             nodespaces.append(nodenet.get_nodespace(node_uid))
 
+    xpos = []
+    ypos = []
     nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
     nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
 
@@ -716,6 +718,8 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         else:
             lines.append("%s = netapi.create_node('Nodespace', None)" % (varname))
         idmap[nodespace.uid] = varname
+        xpos.append(node.position[0])
+        ypos.append(node.position[1])
 
     # nodes and gates
     for i, node in enumerate(nodes):
@@ -746,6 +750,8 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
                     lines.append("%s.set_parameter(\"%s\", %.2f)" % (varname, parameter, value))
 
         idmap[node.uid] = varname
+        xpos.append(node.position[0])
+        ypos.append(node.position[1])
 
     lines.append("")
 
@@ -810,21 +816,13 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     lines.append("")
 
     # positions
-
-    origin = None
-    originname = None
+    origin = (100, 100)
+    factor = (int(min(xpos)), int(min(ypos)))
+    lines.append("origin_pos = (%d, %d)" % origin)
     for node in nodes + nodespaces:
-
-        if origin is None:
-            originname = "%s_pos" % idmap[node.uid]
-            origin = node.position
-            lines.append("%s = (10, 10)" % originname)
-        else:
-            x = int(node.position[0] - origin[0])
-            y = int(node.position[1] - origin[1])
-            signx = "+" if x >= 0 else ""
-            signy = "+" if y >= 0 else ""
-            lines.append("%s.position = (%s[0]%s%i, %s[1]%s%i)" % (idmap[node.uid], originname, signx, x, originname, signy, y))
+        x = int(node.position[0] - factor[0])
+        y = int(node.position[1] - factor[1])
+        lines.append("%s.position = (origin_pos[0] + %i, origin_pos[1] + %i)" % (idmap[node.uid], x, y))
 
     return "\n".join(lines)
 
@@ -1024,10 +1022,11 @@ def get_available_recipes():
     """ Returns a dict of the available user-recipes """
     recipes = {}
     for name, data in custom_recipes.items():
-        recipes[name] = {
-            'name': name,
-            'parameters': data['parameters']
-        }
+        if not name.startswith('_'):
+            recipes[name] = {
+                'name': name,
+                'parameters': data['parameters']
+            }
     return recipes
 
 
@@ -1051,7 +1050,7 @@ def run_recipe(nodenet_uid, name, parameters):
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
             ps.print_stats('nodenet')
             logging.getLogger("nodenet").debug(s.getvalue())
-        return True, result
+        return True, str(result)
     else:
         return False, "Script not found"
 

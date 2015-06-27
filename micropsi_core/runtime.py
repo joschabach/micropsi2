@@ -1050,7 +1050,7 @@ def run_recipe(nodenet_uid, name, parameters):
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
             ps.print_stats('nodenet')
             logging.getLogger("nodenet").debug(s.getvalue())
-        return True, str(result)
+        return True, result
     else:
         return False, "Script not found"
 

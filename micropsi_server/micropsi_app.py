@@ -26,6 +26,7 @@ import os
 import json
 import inspect
 from micropsi_server import minidoc
+import logging
 
 from configuration import config as cfg
 
@@ -119,6 +120,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 except Exception as err:
                     response.status = 500
                     import traceback
+                    logging.getLogger('system').error("Error: " + str(err) + " \n " + traceback.format_exc())
                     return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
 
                 # except TypeError as err:

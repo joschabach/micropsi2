@@ -43,7 +43,7 @@ class NetAPI(object):
         """
         return self.__nodenet.get_node(uid)
 
-    def get_nodes(self, nodespace=None, node_name_prefix=None):
+    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None):
         """
         Returns a list of nodes in the given nodespace (all Nodespaces if None) whose names start with
         the given prefix (all if None)
@@ -57,8 +57,11 @@ class NetAPI(object):
 
         for node_uid in all_ids:
             node = self.__nodenet.get_node(node_uid)
-            if node_name_prefix is None or node.name.startswith(node_name_prefix):
-                nodes.append(node)
+            if nodetype is not None and nodetype != node.type:
+                continue
+            if node_name_prefix is not None and not node.name.startswith(node_name_prefix):
+                continue
+            nodes.append(node)
         return nodes
 
     def get_nodes_in_gate_field(self, node, gate=None, no_links_to=None, nodespace=None):

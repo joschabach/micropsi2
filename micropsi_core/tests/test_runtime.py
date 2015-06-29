@@ -97,4 +97,3 @@ def test_get_links_for_nodes(test_nodenet, node):
     assert pipe1.uid in data['nodes']
     assert pipe2.uid in data['nodes']
     assert pipe3.uid not in data['nodes']
->>>>>>> master

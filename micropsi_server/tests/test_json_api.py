@@ -139,12 +139,20 @@ def test_start_simulation_with_condition(app, test_nodenet):
     import time
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
-    response = app.post_json('/rpc/start_simulation_with_condition', params=dict(nodenet_uid=test_nodenet, steps='2'))
+    response = app.post_json('/rpc/set_runner_condition', params={
+        'nodenet_uid': test_nodenet,
+        'steps': '2'
+    })
+    assert_success(response)
+    assert response.json_body['data']['step'] == 2
+    response = app.post_json('/rpc/start_simulation', params=dict(nodenet_uid=test_nodenet))
     assert_success(response)
     time.sleep(1)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert not response.json_body['data']['is_active']
     assert response.json_body['data']['current_step'] == 2
+    response = app.post_json('/rpc/remove_runner_condition', params=dict(nodenet_uid=test_nodenet))
+    assert_success(response)
 
 
 def test_get_runner_properties(app):

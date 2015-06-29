@@ -464,6 +464,13 @@ table.emoexpression td {
   border-right: 1px solid #333;
   margin-right: 1px;
 }
+#simulation_controls .btn-expand {
+  font-size: 8px;
+  padding-left: 1px;
+  padding-right: 1px;
+  border-left: 0;
+  color: #333;
+}
 
 .running_indicator {
   font-size: 8px !important;

@@ -112,10 +112,12 @@
                     </span>
                   <a href="#" id="nodenet_reset" class="btn"  title="revert nodenet" data-nodenet-control><i class="icon-fast-backward"></i></a>
                   <a href="#" id="nodenet_step_forward" class="btn separated" title="step simulation" data-nodenet-control><i class="icon-step-forward"></i></a>
-                  <a href="#" id="nodenet_start" class="btn " title="run simulation" data-toggle="dropdown" data-nodenet-control><i class="icon-play"></i></a>
+                  <a href="#" id="nodenet_start" class="btn" title="run simulation" data-nodenet-control><i class="icon-play"></i></a>
+                  <a href="#" class="btn btn-expand" title="simulation settings" data-toggle="dropdown" data-nodenet-control>
+                  ▼</a>
                     <ul id="run_nodenet_choices" class="run_nodenet_choices dropdown-menu">
-                        <li><a href="#run" id="run_nodenet" data-run="indef">Run indefinitely</a></li>
-                        <li><a href="#condition" id="run_nodenet_condition" data-run="condition">Run until condition is met</a></li>
+                        <li><a href="#run" id="remove_runner_condition" data-run="indef">Remove condition</a></li>
+                        <li><a href="#condition" id="set_runner_condition" data-run="condition">Set a condition for the runner</a></li>
                     </ul>
 
                   <a href="#" id="nodenet_stop" title="stop simulation" class="btn" data-nodenet-control><i class="icon-pause"></i></a>

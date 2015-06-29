@@ -400,10 +400,14 @@ $(function() {
         });
     });
 
-    $('#run_nodenet').on('click', function(event){
-        startNodenetrunner(event);
+    var remove_condition = $('#remove_runner_condition');
+    var set_condition = $('#set_runner_condition');
+    remove_condition.on('click', function(event){
+        api.call('remove_runner_condition', {nodenet_uid: currentNodenet}, function(event){
+            fetch_stepping_info();
+        });
     });
-    $('#run_nodenet_condition').on('click', function(event){
+    set_condition.on('click', function(event){
         event.preventDefault();
         api.call('get_monitoring_info', {nodenet_uid: currentNodenet}, function(data){
             var html = '';
@@ -415,8 +419,8 @@ $(function() {
         });
     });
 
-    function handleRunConditionally(evt){
-        evt.preventDefault();
+    function set_runner_condition(event){
+        event.preventDefault();
         var text = '';
         var params = {nodenet_uid: currentNodenet};
         params.steps = $('#run_condition_steps').val() || null;
@@ -427,14 +431,14 @@ $(function() {
                 'value': monitor_val
             }
         }
-        api.call('start_simulation_with_condition', params, function(){
-            $(document).trigger('runner_started');
+        api.call('set_runner_condition', params, function(data){
+            fetch_stepping_info();
         });
         $('#run_nodenet_dialog').modal('hide');
     }
 
-    $('#run_nodenet_dialog button.btn-primary').on('click', handleRunConditionally);
-    $('#run_nodenet_dialog form').on('submit', handleRunConditionally);
+    $('#run_nodenet_dialog button.btn-primary').on('click', set_runner_condition);
+    $('#run_nodenet_dialog form').on('submit', set_runner_condition);
 
     var recipes = {};
     var recipe_name_input = $('#recipe_name_input');
@@ -542,19 +546,25 @@ fetch_stepping_info = function(){
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);
         var text = [];
-        if(data.simulation_condition && data.simulation_condition){
-            if(data.simulation_condition.step){
-                text.push("step < " + data.simulation_condition.step);
+        if(data.simulation_condition){
+            if(data.simulation_condition.step_amount){
+                text.push("run " + data.simulation_condition.step_amount + " steps");
+                $('#run_condition_steps').val(data.simulation_condition.step_amount);
             }
             if(data.simulation_condition.monitor){
                 text.push('<span style="color: #'+data.simulation_condition.monitor.uid.substr(2,6)+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
+                $('#run_condition_monitor_selector').val(data.simulation_condition.monitor.uid);
+                $('#run_condition_monitor_value').val(data.simulation_condition.monitor.value);
             }
         }
         if(text.length){
             $('#simulation_controls .runner_condition').html(text.join(" or "));
             $('#simulation_controls .running_conditional').show();
+            $('#remove_runner_condition').show();
         } else {
             $('#simulation_controls .running_conditional').hide();
+            $('#remove_runner_condition').hide();
+            $('#set_runner_condition').show();
         }
 
         var end = new Date().getTime();
@@ -624,7 +634,6 @@ function setButtonStates(running){
         $('#nodenet_stop').addClass('active');
         $('#simulation_controls .runner_running').hide();
         $('#simulation_controls .runner_paused').show();
-        $('#simulation_controls .running_text').hide();
     }
 }
 
@@ -681,10 +690,7 @@ function resetNodenet(event){
     }
 }
 $(function() {
-    // $('#nodenet_start').on('click', function(evt){
-        // startNodenetrunner(evt);
-        // clearTimeout(timeoutId);
-    // });
+    $('#nodenet_start').on('click', startNodenetrunner);
     $('#nodenet_stop').on('click', stopNodenetrunner);
     $('#nodenet_reset').on('click', resetNodenet);
     $('#nodenet_step_forward').on('click', stepNodenet);

@@ -120,6 +120,6 @@
     </div>
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal">Close</button>
-        <button class="btn btn-primary">Run</button>
+        <button class="btn btn-primary">Save</button>
     </div>
 </div>

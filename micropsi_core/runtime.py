@@ -97,6 +97,8 @@ class MicropsiRunner(threading.Thread):
             conditions = MicropsiRunner.conditions[nodenet_uid]
             net = nodenets[nodenet_uid]
             if 'step' in conditions and net.current_step >= conditions['step']:
+                if 'step_amount' in conditions:
+                    conditions['step'] = net.current_step + conditions['step_amount']
                 return False
             if 'monitor' in conditions and net.current_step > 0:
                 monitor = net.get_monitor(conditions['monitor']['uid'])
@@ -122,7 +124,6 @@ class MicropsiRunner(threading.Thread):
                 if nodenet.is_active:
                     if not self.check_conditions(uid):
                         nodenet.is_active = False
-                        MicropsiRunner.conditions[uid] = {}
                         continue
                     log = True
                     try:
@@ -448,19 +449,6 @@ def start_nodenetrunner(nodenet_uid):
     return True
 
 
-def start_nodenetrunner_with_condition(nodenet_uid, steps=-1, monitor=None):
-    """ Starts the runner for the given nodenet, but registers a halt-condition
-    The runner will either stop after the nodenet was advanced for the given numbers of steps,
-    or, if the given monitor shows the given value"""
-    MicropsiRunner.conditions[nodenet_uid] = {}
-    if steps and steps > 0:
-        MicropsiRunner.conditions[nodenet_uid]['step'] = nodenets[nodenet_uid].current_step + steps
-    if monitor:
-        MicropsiRunner.conditions[nodenet_uid]['monitor'] = monitor
-    start_nodenetrunner(nodenet_uid)
-    return True
-
-
 def set_runner_properties(timestep, factor):
     """Sets the speed of the nodenet simulation in ms.
 
@@ -471,6 +459,22 @@ def set_runner_properties(timestep, factor):
     runner['timestep'] = timestep
     configs['runner_factor'] = int(factor)
     runner['factor'] = int(factor)
+    return True
+
+
+def set_runner_condition(nodenet_uid, monitor=None, steps=None):
+    """ registers a condition that stops the runner if it is fulfilled"""
+    MicropsiRunner.conditions[nodenet_uid] = {}
+    if monitor is not None:
+        MicropsiRunner.conditions[nodenet_uid]['monitor'] = monitor
+    if steps is not None:
+        MicropsiRunner.conditions[nodenet_uid]['step'] = nodenets[nodenet_uid].current_step + steps
+        MicropsiRunner.conditions[nodenet_uid]['step_amount'] = steps
+    return True, MicropsiRunner.conditions[nodenet_uid]
+
+
+def remove_runner_condition(nodenet_uid):
+    MicropsiRunner.conditions[nodenet_uid] = {}
     return True
 
 

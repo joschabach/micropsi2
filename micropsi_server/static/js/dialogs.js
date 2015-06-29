@@ -547,7 +547,7 @@ fetch_stepping_info = function(){
                 text.push("step < " + data.simulation_condition.step);
             }
             if(data.simulation_condition.monitor){
-                text.push("monitor = " + data.simulation_condition.monitor.value);
+                text.push('<span style="color: #'+data.simulation_condition.monitor.uid.substr(2,6)+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
             }
         }
         if(text.length){

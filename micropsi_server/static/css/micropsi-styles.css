@@ -479,9 +479,10 @@ table.emoexpression td {
   opacity: 0.6;
 }
 
-.running_text span {
+.running_text > span {
   display: block;
   padding-left: 20px;
+  font-weight: bold;
 }
 .navbar .btn.disabled {
   background-color: #e0e0e0;

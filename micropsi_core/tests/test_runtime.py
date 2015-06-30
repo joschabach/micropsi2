@@ -51,6 +51,45 @@ def test_get_multiple_logger_messages_are_sorted():
     assert res['logs'][2]['logger'] == 'world'
 
 
+def test_register_runner_condition_step(test_nodenet):
+    import time
+    micropsi.set_runner_properties(1, 1)
+    success, data = micropsi.set_runner_condition(test_nodenet, steps=7)
+    assert data['step'] == 7
+    assert data['step_amount'] == 7
+    micropsi.start_nodenetrunner(test_nodenet)
+    assert micropsi.nodenets[test_nodenet].is_active
+    time.sleep(1)
+    assert micropsi.nodenets[test_nodenet].current_step == 7
+    assert not micropsi.nodenets[test_nodenet].is_active
+    # test that the condition stays active.
+    micropsi.start_nodenetrunner(test_nodenet)
+    assert micropsi.nodenets[test_nodenet].is_active
+    time.sleep(1)
+    assert micropsi.nodenets[test_nodenet].current_step == 14
+    assert not micropsi.nodenets[test_nodenet].is_active
+
+
+def test_register_runner_condition_monitor(test_nodenet):
+    import time
+    micropsi.set_runner_properties(1, 1)
+    nn = micropsi.nodenets[test_nodenet]
+    node = nn.netapi.create_node('Register', None)
+    nn.netapi.link(node, 'gen', node, 'gen', weight=2)
+    node.activation = 0.1
+    uid = micropsi.add_gate_monitor(test_nodenet, node.uid, 'gen')
+    micropsi.set_runner_condition(test_nodenet, monitor={
+        'uid': uid,
+        'value': 0.8
+    })
+    micropsi.start_nodenetrunner(test_nodenet)
+    assert micropsi.nodenets[test_nodenet].is_active
+    time.sleep(1)
+    assert not micropsi.nodenets[test_nodenet].is_active
+    assert micropsi.nodenets[test_nodenet].current_step == 3
+    assert round(nn.get_node(node.uid).get_gate('gen').activation, 4) == 0.8
+
+
 def test_get_links_for_nodes(test_nodenet, node):
     api = micropsi.nodenets[test_nodenet].netapi
     ns = api.create_node('Nodespace', None)

@@ -742,6 +742,8 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
     data = {}
     nodenet_obj = runtime.get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
+        if nodenet_uid in runtime.MicropsiRunner.conditions:
+            data['simulation_condition'] = runtime.MicropsiRunner.conditions[nodenet_uid]
         data['simulation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
@@ -793,6 +795,22 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 @rpc("start_simulation", permission_required="manage nodenets")
 def start_simulation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
+
+
+@rpc("set_runner_condition", permission_required="manage nodenets")
+def set_runner_condition(nodenet_uid, steps=-1, monitor=None):
+    if monitor and 'value' in monitor:
+        monitor['value'] = float(monitor['value'])
+    if steps:
+        steps = int(steps)
+        if steps < 0:
+            steps = None
+    return runtime.set_runner_condition(nodenet_uid, monitor, steps)
+
+
+@rpc("remove_runner_condition", permission_required="manage nodenets")
+def remove_runner_condition(nodenet_uid):
+    return runtime.remove_runner_condition(nodenet_uid)
 
 
 @rpc("set_runner_properties", permission_required="manage server")

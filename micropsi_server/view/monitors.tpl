@@ -16,6 +16,13 @@
                             class="icon-chevron-right"></i></span></td>
 
                     <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
+                    <td>
+                        <div class="btn-group nodenet_list">
+                            <a class="btn" href="#">
+                                (no nodenet selected)
+                            </a>
+                        </div>
+                    </td>
 
                     <td><div class="" id="monitor_controls collapse in">
                         <button class="add_custom_monitor btn">Add custom Monitor</button>

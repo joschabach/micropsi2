@@ -10,7 +10,7 @@
                                     class="icon-chevron-right"></i></span></td>
 
                             <td>
-                                <div class="btn-group" id="nodenet_list">
+                                <div class="btn-group nodenet_list">
                                     <a class="btn" href="#">
                                         (no nodenet selected)
                                     </a>

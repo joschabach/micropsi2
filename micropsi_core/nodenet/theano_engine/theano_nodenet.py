@@ -790,7 +790,8 @@ class TheanoNodenet(Nodenet):
                 state = instance.clone_state()
                 position = instance.position
                 name = instance.name
-                new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, partition.allocated_nodes[node_from_id(id)])
+                partition = self.get_partition(id)
+                new_native_module_instance = TheanoNode(self, partition, instance.parent_nodespace, id, partition.allocated_nodes[node_from_id(id)])
                 new_native_module_instance.position = position
                 new_native_module_instance.name = name
                 for key, value in parameters.items():

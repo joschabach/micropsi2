@@ -493,7 +493,6 @@ def get_is_nodenet_running(nodenet_uid):
 
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
-    MicropsiRunner.conditions[nodenet_uid] = {}
     nodenets[nodenet_uid].is_active = False
     test = {nodenets[uid].is_active for uid in nodenets}
     if True not in test:

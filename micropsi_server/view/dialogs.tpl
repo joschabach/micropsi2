@@ -88,3 +88,38 @@
         <button class="btn btn-primary">Run</button>
     </div>
 </div>
+
+<div class="modal hide" id="run_nodenet_dialog">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Run Nodenet</h3>
+    </div>
+    <div class="modal-body">
+        <p>Run the nodenet until one of the following conditions is met:</p>
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="run_condition_steps">Number of steps</label>
+                    <div class="controls">
+                        <input type="text" name="run_condition_steps" class="input-xlarge" id="run_condition_steps"/>
+                        <p class="help-block">Run until the nodenet was advanced for X number of steps</p>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="run_condition_monitor_value">Monitor value</label>
+                    <div class="controls">
+                        <select id="run_condition_monitor_selector"></select>
+                        <input type="text" name="run_condition_monitor_value" class="input-mini" id="run_condition_monitor_value"/>
+                        <p class="help-block">Run until the given monitor has the given value.</p>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="recipe_param_container">
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Save</button>
+    </div>
+</div>

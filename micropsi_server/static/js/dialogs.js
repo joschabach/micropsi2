@@ -400,6 +400,45 @@ $(function() {
         });
     });
 
+    var remove_condition = $('#remove_runner_condition');
+    var set_condition = $('#set_runner_condition');
+    remove_condition.on('click', function(event){
+        api.call('remove_runner_condition', {nodenet_uid: currentNodenet}, function(event){
+            fetch_stepping_info();
+        });
+    });
+    set_condition.on('click', function(event){
+        event.preventDefault();
+        api.call('get_monitoring_info', {nodenet_uid: currentNodenet}, function(data){
+            var html = '';
+            for(var key in data.monitors){
+                html += '<option value="'+key+'">'+data.monitors[key].name+'</option>';
+            }
+            $('#run_condition_monitor_selector').html(html);
+            $('#run_nodenet_dialog').modal('show');
+        });
+    });
+
+    function set_runner_condition(event){
+        event.preventDefault();
+        var text = '';
+        var params = {nodenet_uid: currentNodenet};
+        params.steps = $('#run_condition_steps').val() || null;
+        var monitor_val = $('#run_condition_monitor_value').val();
+        if (monitor_val){
+            params.monitor = {
+                'uid': $('#run_condition_monitor_selector').val(),
+                'value': monitor_val
+            }
+        }
+        api.call('set_runner_condition', params, function(data){
+            fetch_stepping_info();
+        });
+        $('#run_nodenet_dialog').modal('hide');
+    }
+
+    $('#run_nodenet_dialog button.btn-primary').on('click', set_runner_condition);
+    $('#run_nodenet_dialog form').on('submit', set_runner_condition);
 
     var recipes = {};
     var recipe_name_input = $('#recipe_name_input');
@@ -479,20 +518,16 @@ var listeners = {}
 var simulationRunning = false;
 var currentNodenet;
 var runner_properties = {};
+var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 
-
-$(function(){
-    setButtonStates(false);
-    currentNodenet = $.cookie('selected_nodenet') || '';
-    currentWorld = $.cookie('selected_world') || '';
-    if(currentNodenet){
-        fetch_stepping_info();
-    }
-});
 
 register_stepping_function = function(type, input, callback){
     listeners[type] = {'input': input, 'callback': callback};
 }
+unregister_stepping_function = function(type){
+    delete listeners[type];
+}
+
 
 fetch_stepping_info = function(){
     params = {
@@ -510,6 +545,28 @@ fetch_stepping_info = function(){
         }
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);
+        var text = [];
+        if(data.simulation_condition){
+            if(data.simulation_condition.step_amount){
+                text.push("run " + data.simulation_condition.step_amount + " steps");
+                $('#run_condition_steps').val(data.simulation_condition.step_amount);
+            }
+            if(data.simulation_condition.monitor){
+                text.push('<span style="color: #'+data.simulation_condition.monitor.uid.substr(2,6)+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
+                $('#run_condition_monitor_selector').val(data.simulation_condition.monitor.uid);
+                $('#run_condition_monitor_value').val(data.simulation_condition.monitor.value);
+            }
+        }
+        if(text.length){
+            $('#simulation_controls .runner_condition').html(text.join(" or "));
+            $('#simulation_controls .running_conditional').show();
+            $('#remove_runner_condition').show();
+        } else {
+            $('#simulation_controls .running_conditional').hide();
+            $('#remove_runner_condition').hide();
+            $('#set_runner_condition').show();
+        }
+
         var end = new Date().getTime();
         if(data.simulation_running){
             if(runner_properties.timestep - (end - start) > 0){
@@ -519,6 +576,9 @@ fetch_stepping_info = function(){
             }
         }
         setButtonStates(data.simulation_running);
+    }, error=function(data, outcome, type){
+        $(document).trigger('runner_stopped');
+        api.defaultErrorCallback(data, outcome, type);
     });
 }
 
@@ -526,6 +586,8 @@ $(document).on('runner_started', fetch_stepping_info);
 $(document).on('runner_stepped', fetch_stepping_info);
 $(document).on('nodenet_changed', function(event, new_uid){
     currentNodenet = new_uid;
+    $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+    refreshNodenetList();
 })
 $(document).on('form_submit', function(event, data){
     if(data.url == '/config/runner'){
@@ -542,13 +604,36 @@ api.call('get_runner_properties', {}, function(data){
     runner_properties = data;
 });
 
+function refreshNodenetList(){
+    $.get("/nodenet_list/"+(currentNodenet || ''), function(html){
+        $.each($('.nodenet_list'), function(idx, item){
+            $(item).html(html);
+            $('.nodenet_select', item).on('click', function(event){
+                event.preventDefault();
+                var el = $(event.target);
+                var uid = el.attr('data');
+                $(document).trigger('nodenet_changed', uid);
+            });
+        });
+    });
+}
+
+$(document).on('refreshNodenetList', refreshNodenetList);
+
+var default_title = $(document).prop('title');
 function setButtonStates(running){
     if(running){
+        $(document).prop('title', "▶ " + default_title);
         $('#nodenet_start').addClass('active');
         $('#nodenet_stop').removeClass('active');
+        $('#simulation_controls .runner_running').show();
+        $('#simulation_controls .runner_paused').hide();
     } else {
+        $(document).prop('title', default_title);
         $('#nodenet_start').removeClass('active');
         $('#nodenet_stop').addClass('active');
+        $('#simulation_controls .runner_running').hide();
+        $('#simulation_controls .runner_paused').show();
     }
 }
 
@@ -618,12 +703,24 @@ $.extend( $.fn.dataTableExt.oStdClasses, {
 } );
 
 $(document).ready(function() {
+    currentNodenet = $.cookie('selected_nodenet') || '';
+    currentWorld = $.cookie('selected_world') || '';
     $('#nodenet_mgr').dataTable( {
         "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
         "sPaginationType": "bootstrap"
     } );
     $('textarea.loc').autogrow();
-} );
+    if($('.frontend_section').length == 1){
+        $('.frontend_section').addClass('in');
+    } else {
+        $.each(sections, cookiebindings);
+    }
+    refreshNodenetList();
+    setButtonStates(false);
+    if(currentNodenet){
+        fetch_stepping_info();
+    }
+});
 
 
 // section collapse bindings
@@ -645,12 +742,4 @@ function cookiebindings(index, name){
     }
 }
 
-var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 
-$(document).ready(function() {
-    if($('.frontend_section').length == 1){
-        $('.frontend_section').addClass('in');
-    } else {
-        $.each(sections, cookiebindings);
-    }
-});

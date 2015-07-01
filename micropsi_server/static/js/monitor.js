@@ -15,7 +15,7 @@ $(function(){
     var currentMonitors = [];
 
     var currentSimulationStep = 0;
-    var currentNodenet = null;
+    var currentNodenet = $.cookie('selected_nodenet');
 
     var capturedLoggers = {
         'system': false,
@@ -72,20 +72,24 @@ $(function(){
         currentMonitors.push(new_monitor)
         refreshMonitors();
     });
-    $(document).on('nodenetChanged', function(data, newNodenet){
-        refreshMonitors(newNodenet);
+    $(document).on('nodenet_changed', function(data, newNodenet){
+        currentNodenet = newNodenet;
+        init();
     });
 
     function init() {
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
+            $('#loading').show();
             api.call('load_nodenet', {
                 nodenet_uid: currentNodenet,
                 include_links: false
             }, function(data) {
+                $('#loading').hide();
                 refreshMonitors();
             },
             function(data) {
+                $('#loading').hide();
                 if(data.status == 500){
                     api.defaultErrorCallback(data);
                 } else {

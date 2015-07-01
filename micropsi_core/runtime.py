@@ -528,7 +528,7 @@ def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
     nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
-    nodenet_data[nodenet_uid] = Bunch(**nodenet.data)
+    nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
 

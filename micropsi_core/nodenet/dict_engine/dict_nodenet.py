@@ -455,13 +455,13 @@ class DictNodenet(Nodenet):
             uid = "Root"
         return self.__nodespaces[uid]
 
-    def get_node_uids(self, group=None):
-        if group is None:
-            return list(self.__nodes.keys())
-        elif group in self.nodegroups:
-            return [n.uid for n in self.nodegroups[group][0]]
+    def get_node_uids(self, group_nodespace_uid=None, group=None):
+        if group is not None:
+            if group_nodespace_uid is None:
+                group_nodespace_uid = self.get_nodespace(None).uid
+            return [n.uid for n in self.nodegroups[group_nodespace_uid][group][0]]
         else:
-            return []
+            return list(self.__nodes.keys())
 
     def get_nodespace_uids(self):
         return list(self.__nodespaces.keys())
@@ -586,74 +586,109 @@ class DictNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
-        nodes = self.netapi.get_nodes(nodespace, node_name_prefix)
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        if nodespace_uid not in self.nodegroups:
+            self.nodegroups[nodespace_uid] = {}
+
+        nodes = self.netapi.get_nodes(nodespace_uid, node_name_prefix)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':
             nodes = sorted(nodes, key=lambda node: node.name)
-        self.nodegroups[node_name_prefix] = (nodes, gatetype)
+        self.nodegroups[nodespace_uid][node_name_prefix] = (nodes, gatetype)
 
-    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        if nodespace_uid not in self.nodegroups:
+            self.nodegroups[nodespace_uid] = {}
+
         nodes = []
-        for node_id in node_ids:
-            nodes.append(self.get_node(node_id))
+        for node_uid in node_uids:
+            node = self.get_node(node_uid)
+            if node.parent_nodespace != nodespace_uid:
+                raise ValueError("Node %s is not in nodespace %s" % (node_uid, nodespace_uid))
+            nodes.append(node)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':
             nodes = sorted(nodes, key=lambda node: node.name)
-        self.nodegroups[group_name] = (nodes, gatetype)
+        self.nodegroups[nodespace_uid][group_name] = (nodes, gatetype)
 
-    def ungroup_nodes(self, group):
+    def ungroup_nodes(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
         if group in self.nodegroups:
-            del self.nodegroups[group]
+            del self.nodegroups[nodespace_uid][group]
 
-    def get_activations(self, group):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
+    def get_activations(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        if group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group, nodespace_uid))
         activations = []
-        nodes = self.nodegroups[group][0]
-        gate = self.nodegroups[group][1]
+        nodes = self.nodegroups[nodespace_uid][group][0]
+        gate = self.nodegroups[nodespace_uid][group][1]
         for node in nodes:
             activations.append(node.get_gate(gate).activation)
         return activations
 
-    def set_activations(self, group, new_activations):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
-        nodes = self.nodegroups[group][0]
-        gate = self.nodegroups[group][1]
+    def set_activations(self, nodespace_uid, group, new_activations):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        if group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group, nodespace_uid))
+        nodes = self.nodegroups[nodespace_uid][group][0]
+        gate = self.nodegroups[nodespace_uid][group][1]
         for i in range(len(nodes)):
             nodes[i].set_gate_activation(gate, new_activations[i])
 
-    def get_thetas(self, group):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
+    def get_thetas(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        if group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group, nodespace_uid))
         thetas = []
-        nodes = self.nodegroups[group][0]
-        gate = self.nodegroups[group][1]
+        nodes = self.nodegroups[nodespace_uid][group][0]
+        gate = self.nodegroups[nodespace_uid][group][1]
         for node in nodes:
             thetas.append(node.get_gate(gate).get_parameter('theta'))
         return thetas
 
-    def set_thetas(self, group, thetas):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
-        nodes = self.nodegroups[group][0]
-        gate = self.nodegroups[group][1]
+    def set_thetas(self, nodespace_uid, group, thetas):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
+        if group not in self.nodegroups[nodespace_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group, nodespace_uid))
+        nodes = self.nodegroups[nodespace_uid][group][0]
+        gate = self.nodegroups[nodespace_uid][group][1]
         for i in range(len(nodes)):
             nodes[i].set_gate_parameter(gate, 'theta', thetas[i])
 
-    def get_link_weights(self, group_from, group_to):
-        if group_from not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_from)
-        if group_to not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_to)
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
+        if nodespace_from_uid is None:
+            nodespace_from_uid = self.get_nodespace(None).uid
+        if nodespace_to_uid is None:
+            nodespace_to_uid = self.get_nodespace(None).uid
+
+        if group_from not in self.nodegroups[nodespace_from_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group_from, nodespace_from_uid))
+        if group_to not in self.nodegroups[nodespace_to_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group_to, nodespace_to_uid))
         rows = []
-        to_nodes = self.nodegroups[group_to][0]
-        to_slot = self.nodegroups[group_to][1]
-        from_nodes = self.nodegroups[group_from][0]
-        from_gate = self.nodegroups[group_from][1]
+        to_nodes = self.nodegroups[nodespace_to_uid][group_to][0]
+        to_slot = self.nodegroups[nodespace_to_uid][group_to][1]
+        from_nodes = self.nodegroups[nodespace_from_uid][group_from][0]
+        from_gate = self.nodegroups[nodespace_from_uid][group_from][1]
         for to_node in to_nodes:
             row = []
             for from_node in from_nodes:
@@ -670,15 +705,20 @@ class DictNodenet(Nodenet):
             rows.append(row)
         return rows
 
-    def set_link_weights(self, group_from, group_to, new_w):
-        if group_from not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_from)
-        if group_to not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_to)
-        to_nodes = self.nodegroups[group_to][0]
-        to_slot = self.nodegroups[group_to][1]
-        from_nodes = self.nodegroups[group_from][0]
-        from_gate = self.nodegroups[group_from][1]
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
+        if nodespace_from_uid is None:
+            nodespace_from_uid = self.get_nodespace(None).uid
+        if nodespace_to_uid is None:
+            nodespace_to_uid = self.get_nodespace(None).uid
+
+        if group_from not in self.nodegroups[nodespace_from_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group_from, nodespace_from_uid))
+        if group_to not in self.nodegroups[nodespace_to_uid]:
+            raise ValueError("Group %s does not exist in nodespace %s" % (group_to, nodespace_to_uid))
+        to_nodes = self.nodegroups[nodespace_to_uid][group_to][0]
+        to_slot = self.nodegroups[nodespace_to_uid][group_to][1]
+        from_nodes = self.nodegroups[nodespace_from_uid][group_from][0]
+        from_gate = self.nodegroups[nodespace_from_uid][group_from][1]
         for row in range(len(to_nodes)):
             to_node = to_nodes[row]
             for column in range(len(from_nodes)):

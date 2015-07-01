@@ -51,17 +51,20 @@ logfile = /tmp/micropsi.log
 
 [theano]
 
+# Whether to use one nodenet partition per nodespace (True) or only a single partition (False).
+multi_partitions = False
+
 # floating point precision for theano_engine. 32 or 64.
 precision = 32
 
-# use sparse weight matrix. True or False.
+# use sparse weight matrices. True or False.
 sparse_weight_matrix = True
 
-# number of nodes to inizialize new theano_engine node nets with
+# number of nodes to inizialize new theano_engine partitions with
 initial_number_of_nodes = 2000
 
 # number of elements to create per node initially
 # a node net with an expected ratio of concept nodes : registers of 1:1
 # should use a (7 + 1) / 2 = 4 elements assumption
-# pure register nets can use a 1 element assumption
+# pure register partitions can use a 1 element assumption
 elements_per_node_assumption = 4

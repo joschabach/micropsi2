@@ -30,12 +30,12 @@ class TheanoLink(Link):
     def weight(self):
         source_nodetype = self.__nodenet.get_node(self.__source_node_uid).nodetype
         target_nodetype = self.__nodenet.get_node(self.__target_node_uid).nodetype
-        w_matrix = self.__nodenet.w.get_value(borrow=True)
+        w_matrix = self.__partition.w.get_value(borrow=True)
         ngt = get_numerical_gate_type(self.__source_gate_type, source_nodetype)
         nst = get_numerical_slot_type(self.__target_slot_type, target_nodetype)
-        x = self.__nodenet.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
-        y = self.__nodenet.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
-        if self.__nodenet.sparse:
+        x = self.__partition.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
+        y = self.__partition.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
+        if self.__partition.sparse:
             weight = w_matrix[x, y]
         else:
             weight = w_matrix[x][y]
@@ -62,8 +62,9 @@ class TheanoLink(Link):
     def target_slot(self):
         return self.target_node.get_slot(self.__target_slot_type)
 
-    def __init__(self, nodenet, source_node_uid, source_gate_type, target_node_uid, target_slot_type):
+    def __init__(self, nodenet, partition, source_node_uid, source_gate_type, target_node_uid, target_slot_type):
         self.__nodenet = nodenet
+        self.__partition = partition
         self.__source_node_uid = source_node_uid
         self.__source_gate_type = source_gate_type
         self.__target_node_uid = target_node_uid

@@ -272,17 +272,17 @@ def get_slots_per_type(type, nativemodules=None):
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
-def node_to_id(numericid):
-    return "n%i" % numericid
+def node_to_id(numericid, partition):
+    return "n%03i%i" % (partition, numericid)
 
 
 def node_from_id(stringid):
-    return int(stringid[1:])
+    return int(stringid[4:])
 
 
-def nodespace_to_id(numericid):
-    return "s%i" % numericid
+def nodespace_to_id(numericid, partition):
+    return "s%03i%i" % (partition, numericid)
 
 
 def nodespace_from_id(stringid):
-    return int(stringid[1:])
+    return int(stringid[4:])

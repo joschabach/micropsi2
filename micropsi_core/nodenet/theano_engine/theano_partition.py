@@ -639,6 +639,28 @@ class TheanoPartition():
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
+        inlink_element_count = 0
+        for spid, inlinks in self.inlinks.items():
+            inlink_element_count += len(inlinks[0])
+        inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
+        inlink_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
+        inlink_from_elements = np.zeros(inlink_element_count, dtype=np.int32)
+        inlink_to_elements = np.zeros(inlink_element_count, dtype=np.int32)
+        inlink_weights = np.zeros(inlink_element_count, dtype=self.nodenet.numpyfloatX)
+
+        offset = 0
+        for i, spid in enumerate(self.inlinks.keys()):
+            inlinks_pids[i] = int(spid)
+            from_elements = self.inlinks[spid][0]
+            to_elements = self.inlinks[spid][1]
+            weights = self.inlinks[spid][2]
+            length = len(self.inlinks[spid][0])
+            inlink_lengths[i] = length
+            inlink_from_elements[offset:offset+length] = from_elements
+            inlink_to_elements[offset:offset+length] = to_elements
+            inlink_weights[offset:offset+length] = weights
+            offset += length
+
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
                  allocated_node_offsets=allocated_node_offsets,
@@ -667,7 +689,12 @@ class TheanoPartition():
                  allocated_nodespaces_sub_activators=allocated_nodespaces_sub_activators,
                  allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
-                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators)
+                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
+                 inlink_pids=inlinks_pids,
+                 inlink_lengths=inlink_lengths,
+                 inlink_from_elements=inlink_from_elements,
+                 inlink_to_elements=inlink_to_elements,
+                 inlink_weights=inlink_weights)
 
     def load(self, datafilename, nodes_data):
         """Load the node net from a file"""
@@ -820,6 +847,24 @@ class TheanoPartition():
             self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
         else:
             self.logger.warn("no n_function_selector in file, falling back to defaults")
+
+        if 'inlink_pids' in datafile and \
+            'inlink_lengths' in datafile and \
+            'inlink_from_elements' in datafile and \
+            'inlink_to_elements' in datafile and \
+            'inlink_weights' in datafile:
+
+            inlink_pids = datafile['inlink_pids']
+            inlink_lengths = datafile['inlink_lengths']
+            inlink_from_elements = np.split(datafile['inlink_from_elements'], inlink_lengths)
+            inlink_to_elements = np.split(datafile['inlink_to_elements'], inlink_lengths)
+            inlink_weights = np.split(datafile['inlink_weights'], inlink_lengths)
+
+            for i, pid in enumerate(inlink_pids):
+                self.inlinks["%03i" % pid] = (inlink_from_elements[i], inlink_to_elements[i], inlink_weights[i])
+
+        else:
+            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
 
         # reconstruct other states
 

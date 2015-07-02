@@ -234,6 +234,8 @@ class TheanoPartition():
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
+        self.inlinks = {}
+
         # instantiate theano data structures
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=nodenet.scipyfloatX), name="w")
@@ -1414,6 +1416,13 @@ class TheanoPartition():
         # todo: only set this if one of the groups is por/ret relevant
         if self.has_pipes:
             self.por_ret_dirty = True
+
+    def set_inlink_weights(self, partition_from_spid, elements_from_indices, elements_to_indices, new_w):
+        if not partition_from_spid in self.inlinks:
+            self.inlinks[partition_from_spid] = ([],[],[])
+
+        # todo: grow existing inlink tuple if there
+        self.inlinks[partition_from_spid] = (elements_from_indices, elements_to_indices, new_w)
 
     def integrity_check(self):
 

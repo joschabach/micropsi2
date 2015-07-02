@@ -726,13 +726,34 @@ class TheanoNodenet(Nodenet):
         source_partition = self.get_partition(source_node_uid)
         target_partition = self.get_partition(target_node_uid)
 
-        if target_partition != source_partition:
-            raise ValueError("Links between partitions aren't supported yet, but will be")
-
         source_node_id = node_from_id(source_node_uid)
         target_node_id = node_from_id(target_node_uid)
 
-        source_partition.set_link_weight(source_node_id, gate_type, target_node_id, slot_type, weight)
+        if target_partition != source_partition:
+
+            source_nodetype = None
+            target_nodetype = None
+            if source_partition.allocated_nodes[source_node_id] > MAX_STD_NODETYPE:
+                source_nodetype = self.get_nodetype(get_string_node_type(source_partition.allocated_nodes[source_node_id], self.native_modules))
+            if target_partition.allocated_nodes[target_node_id] > MAX_STD_NODETYPE:
+                target_nodetype = self.get_nodetype(get_string_node_type(target_partition.allocated_nodes[target_node_id], self.native_modules))
+
+            ngt = get_numerical_gate_type(gate_type, source_nodetype)
+            nst = get_numerical_slot_type(slot_type, target_nodetype)
+
+            if ngt > get_gates_per_type(source_partition.allocated_nodes[source_node_id], self.native_modules):
+                raise ValueError("Node %s does not have a gate of type %s" % (source_node_uid, gate_type))
+
+            if nst > get_slots_per_type(target_partition.allocated_nodes[target_node_id], self.native_modules):
+                raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
+
+            elements_from_indices = [source_partition.allocated_node_offsets[source_node_id] + ngt]
+            elements_to_indices = [target_partition.allocated_node_offsets[target_node_id] + nst]
+            new_w = [weight]
+
+            target_partition.set_inlink_weights(source_partition.spid, elements_from_indices, elements_to_indices, new_w)
+        else:
+            source_partition.set_link_weight(source_node_id, gate_type, target_node_id, slot_type, weight)
 
         if source_node_uid in self.proxycache:
             self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
@@ -928,6 +949,69 @@ class TheanoNodenet(Nodenet):
                             "target_slot_name": target_slot_type,
                             "target_node_uid": node_to_id(node_id, partition.pid)
                         }
+                        data[linkuid] = linkdata
+
+            # find links coming in from other partitions
+            for partition_from_spid, inlinks in partition.inlinks.items():
+                from_partition = self.partitions[partition_from_spid]
+
+                from_elements = inlinks[0]
+                to_elements = inlinks[1]
+                weights = inlinks[2]
+                for i, element in enumerate(from_elements):
+                    source_id = from_partition.allocated_elements_to_nodes[element]
+                    source_type = from_partition.allocated_nodes[source_id]
+                    source_gate_numerical = element - partition.allocated_node_offsets[source_id]
+                    source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                    target_id = partition.allocated_elements_to_nodes[to_elements[i]]
+                    target_type = partition.allocated_nodes[target_id]
+                    target_slot_numerical = to_elements[i] - partition.allocated_node_offsets[to_elements[i]]
+                    target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, partition.pid))
+                    linkdata = {
+                        "uid": linkuid,
+                        "weight": weights[i],
+                        "certainty": 1,
+                        "source_gate_name": source_gate_type,
+                        "source_node_uid": node_to_id(source_id, from_partition.pid),
+                        "target_slot_name": target_slot_type,
+                        "target_node_uid": node_to_id(node_id, partition.pid)
+                    }
+                    print("adding interlink ID %s" % linkuid)
+                    data[linkuid] = linkdata
+
+            # find links going out to other partitions
+            for partition_to_spid, to_partition in self.partitions.items():
+                if partition.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[partition.spid]
+
+                    from_elements = inlinks[0]
+                    to_elements = inlinks[1]
+                    weights = inlinks[2]
+                    for i, element in enumerate(from_elements):
+                        source_id = partition.allocated_elements_to_nodes[element]
+                        source_type = partition.allocated_nodes[source_id]
+                        source_gate_numerical = element - partition.allocated_node_offsets[source_id]
+                        source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                        target_id = to_partition.allocated_elements_to_nodes[to_elements[i]]
+                        target_type = to_partition.allocated_nodes[target_id]
+                        target_slot_numerical = to_elements[i] - to_partition.allocated_node_offsets[to_elements[i]]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, to_partition.pid))
+                        linkdata = {
+                            "uid": linkuid,
+                            "weight": weights[i],
+                            "certainty": 1,
+                            "source_gate_name": source_gate_type,
+                            "source_node_uid": node_to_id(source_id, partition.pid),
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(node_id, to_partition.pid)
+                        }
+                        print("adding interlink ID %s" % linkuid)
                         data[linkuid] = linkdata
 
         return data
@@ -1131,9 +1215,17 @@ class TheanoNodenet(Nodenet):
         partition_to = self.get_partition(nodespace_to_uid)
 
         if partition_to != partition_from:
-            raise ValueError("Links between partitions aren't supported yet, but will be.")
+            if nodespace_from_uid not in partition_from.nodegroups or group_from not in partition_from.nodegroups[nodespace_from_uid]:
+                raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+            if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
+                raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
-        partition_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
+            elements_from_indices = partition_from.nodegroups[nodespace_from_uid][group_from]
+            elements_to_indices = partition_to.nodegroups[nodespace_to_uid][group_to]
+
+            partition_to.set_inlink_weights(partition_from.spid, elements_from_indices, elements_to_indices, new_w)
+        else:
+            partition_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
         uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
         uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))

@@ -969,7 +969,7 @@ class TheanoNodenet(Nodenet):
                     target_slot_numerical = to_elements[i] - partition.allocated_node_offsets[to_elements[i]]
                     target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
 
-                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, partition.pid))
+                    linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))
                     linkdata = {
                         "uid": linkuid,
                         "weight": weights[i],
@@ -977,7 +977,7 @@ class TheanoNodenet(Nodenet):
                         "source_gate_name": source_gate_type,
                         "source_node_uid": node_to_id(source_id, from_partition.pid),
                         "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(node_id, partition.pid)
+                        "target_node_uid": node_to_id(target_id, partition.pid)
                     }
                     data[linkuid] = linkdata
 
@@ -1000,7 +1000,7 @@ class TheanoNodenet(Nodenet):
                         target_slot_numerical = element - to_partition.allocated_node_offsets[to_elements[i]]
                         target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
 
-                        linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, to_partition.pid))
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, to_partition.pid))
                         linkdata = {
                             "uid": linkuid,
                             "weight": weights[i],
@@ -1008,7 +1008,7 @@ class TheanoNodenet(Nodenet):
                             "source_gate_name": source_gate_type,
                             "source_node_uid": node_to_id(source_id, partition.pid),
                             "target_slot_name": target_slot_type,
-                            "target_node_uid": node_to_id(node_id, to_partition.pid)
+                            "target_node_uid": node_to_id(target_id, to_partition.pid)
                         }
                         data[linkuid] = linkdata
 

@@ -972,7 +972,7 @@ class TheanoNodenet(Nodenet):
                     linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))
                     linkdata = {
                         "uid": linkuid,
-                        "weight": weights[i],
+                        "weight": float(weights[i]),
                         "certainty": 1,
                         "source_gate_name": source_gate_type,
                         "source_node_uid": node_to_id(source_id, from_partition.pid),
@@ -1003,7 +1003,7 @@ class TheanoNodenet(Nodenet):
                         linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, to_partition.pid))
                         linkdata = {
                             "uid": linkuid,
-                            "weight": weights[i],
+                            "weight": float(weights[i]),
                             "certainty": 1,
                             "source_gate_name": source_gate_type,
                             "source_node_uid": node_to_id(source_id, partition.pid),

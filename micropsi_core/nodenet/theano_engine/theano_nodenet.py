@@ -979,7 +979,6 @@ class TheanoNodenet(Nodenet):
                         "target_slot_name": target_slot_type,
                         "target_node_uid": node_to_id(node_id, partition.pid)
                     }
-                    print("adding interlink ID %s" % linkuid)
                     data[linkuid] = linkdata
 
             # find links going out to other partitions
@@ -990,15 +989,15 @@ class TheanoNodenet(Nodenet):
                     from_elements = inlinks[0]
                     to_elements = inlinks[1]
                     weights = inlinks[2]
-                    for i, element in enumerate(from_elements):
-                        source_id = partition.allocated_elements_to_nodes[element]
+                    for i, element in enumerate(to_elements):
+                        source_id = partition.allocated_elements_to_nodes[from_elements[i]]
                         source_type = partition.allocated_nodes[source_id]
-                        source_gate_numerical = element - partition.allocated_node_offsets[source_id]
+                        source_gate_numerical = from_elements[i] - partition.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
 
-                        target_id = to_partition.allocated_elements_to_nodes[to_elements[i]]
+                        target_id = to_partition.allocated_elements_to_nodes[element]
                         target_type = to_partition.allocated_nodes[target_id]
-                        target_slot_numerical = to_elements[i] - to_partition.allocated_node_offsets[to_elements[i]]
+                        target_slot_numerical = element - to_partition.allocated_node_offsets[to_elements[i]]
                         target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
 
                         linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, to_partition.pid))
@@ -1011,7 +1010,6 @@ class TheanoNodenet(Nodenet):
                             "target_slot_name": target_slot_type,
                             "target_node_uid": node_to_id(node_id, to_partition.pid)
                         }
-                        print("adding interlink ID %s" % linkuid)
                         data[linkuid] = linkdata
 
         return data

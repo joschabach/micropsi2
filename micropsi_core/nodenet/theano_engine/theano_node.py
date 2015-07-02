@@ -384,7 +384,7 @@ class TheanoGate(Gate):
                         element_index = np.where(from_elements == element)[0][0]
                         target_id = to_partition.allocated_elements_to_nodes[to_elements[element_index]]
                         target_type = to_partition.allocated_nodes[target_id]
-                        target_slot_numerical = element - to_partition.allocated_node_offsets[target_id]
+                        target_slot_numerical = to_elements[element_index] - to_partition.allocated_node_offsets[target_id]
                         target_nodetype = self.__nodenet.get_nodetype(get_string_node_type(target_type, self.__nodenet.native_modules))
                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                         link = TheanoLink(self.__nodenet, None, self.__node.uid, self.__type, node_to_id(target_id, to_partition.pid), target_slot_type)
@@ -481,7 +481,7 @@ class TheanoSlot(Slot):
                     element_index = np.where(to_elements == element)[0][0]
                     source_id = from_partition.allocated_elements_to_nodes[from_elements[element_index]]
                     source_type = from_partition.allocated_nodes[source_id]
-                    source_gate_numerical = element - from_partition.allocated_node_offsets[source_id]
+                    source_gate_numerical = from_elements[element_index] - from_partition.allocated_node_offsets[source_id]
                     source_nodetype = self.__nodenet.get_nodetype(get_string_node_type(source_type, self.__nodenet.native_modules))
                     source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
                     link = TheanoLink(self.__nodenet, None, node_to_id(source_id, from_partition.pid), source_gate_type, self.__node.uid, self.__type)

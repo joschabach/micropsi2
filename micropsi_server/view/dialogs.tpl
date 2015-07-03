@@ -52,12 +52,7 @@
                         <p class="help-block">You can enter custom python code returning a float for each step. You have access to the netapi.</p>
                     </div>
                 </div>
-                <div class="control-group gate_monitor slot_monitor">
-                    <label class="control-label" for="monitor_node_input">Node</label>
-                    <div class="controls">
-                        <input type="text" id="monitor_node_input" name="monitor_node_input"/>
-                    </div>
-                </div>
+                <input type="hidden" id="monitor_node_input" name="monitor_node_input"/>
                 <div class="control-group node_monitor">
                     <label class="control-label">Type</label>
                     <div class="controls">

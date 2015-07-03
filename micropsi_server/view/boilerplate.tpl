@@ -22,6 +22,7 @@
     <link href="/static/css/bootstrap-responsive.css" rel="stylesheet">
     <link href="/static/css/datatables-bootstrap.css" rel="stylesheet">
     <link href="/static/css/micropsi-styles.css" rel="stylesheet">
+    <link href="/static/css/bootstrap-colorpicker.min.css" rel="stylesheet">
 
     <!-- HTML5 shim, for IE6-8 -->
     <!--[if lt IE 9]>
@@ -34,6 +35,7 @@
     <script src="/static/js/paging.js" type="text/javascript"></script>
     <script src="/static/js/dialogs.js" type="text/javascript"></script>
     <script src="/static/js/jquery.plugins.js" type="text/javascript"></script>
+    <script src="/static/js/bootstrap-colorpicker.min.js" type="text/javascript"></script>
 
     <link rel="shortcut icon" href="/static/favicon.png">
 </head>

@@ -508,3 +508,14 @@ table.emoexpression td {
   text-align: left;
   padding-left: 6px;
 }
+
+.color-chooser .input-group-addon i{
+  display: inline-block;
+  width: 220px !important;
+  height: 20px !important;
+  vertical-align: middle;
+
+}
+.color-chooser input {
+  display: none;
+}

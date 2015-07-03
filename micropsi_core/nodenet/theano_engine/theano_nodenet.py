@@ -465,6 +465,8 @@ class TheanoNodenet(Nodenet):
 
     def get_node(self, uid):
         partition = self.get_partition(uid)
+        if partition is None:
+            raise KeyError("No node with id %s exists", uid)
         if uid in partition.native_module_instances:
             return partition.native_module_instances[uid]
         elif uid in partition.comment_instances:
@@ -626,7 +628,11 @@ class TheanoNodenet(Nodenet):
 
     def delete_partition(self, pid):
         spid = "%03i" % pid
+        partitionrootspace = "s%s1" %spid
         partition = self.partitions[spid]
+        for subspace_uid in self.get_nodespace(partitionrootspace).get_known_ids('nodespaces'):
+            self.delete_nodespace(subspace_uid)
+
         parent_uid = self.inverted_partitionmap[spid]
         if parent_uid in self.partitionmap and partition in self.partitionmap[parent_uid]:
             self.partitionmap[parent_uid].remove(partition)
@@ -634,6 +640,9 @@ class TheanoNodenet(Nodenet):
             del self.inverted_partitionmap[spid]
         if spid in self.partitions:
             del self.partitions[spid]
+        for otherpartition in self.partitions.values():
+            if spid in otherpartition.inlinks:
+                del otherpartition.inlinks[spid]
 
     def create_nodespace(self, parent_uid, position, name="", uid=None):
 

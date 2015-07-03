@@ -377,9 +377,9 @@ class TheanoGate(Gate):
             for partition_to_spid, to_partition in self.__nodenet.partitions.items():
                 if self.__partition.spid in to_partition.inlinks:
                     inlinks = to_partition.inlinks[self.__partition.spid]
-                    from_elements = inlinks[0]
-                    to_elements = inlinks[1]
-                    weights = inlinks[2].get_value()
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
                     if element in from_elements:
                         element_index = np.where(from_elements == element)[0][0]
                         gatecolumn = weights[:, element_index]
@@ -475,9 +475,9 @@ class TheanoSlot(Slot):
 
             element = self.__partition.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype
             for partition_from_spid, inlinks in self.__partition.inlinks.items():
-                from_elements = inlinks[0]
-                to_elements = inlinks[1]
-                weights = inlinks[2].get_value()
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
                 if element in to_elements:
                     from_partition = self.__nodenet.partitions[partition_from_spid]
                     element_index = np.where(to_elements == element)[0][0]

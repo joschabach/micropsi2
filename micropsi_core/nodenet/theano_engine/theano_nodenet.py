@@ -957,10 +957,9 @@ class TheanoNodenet(Nodenet):
             # find links coming in from other partitions
             for partition_from_spid, inlinks in partition.inlinks.items():
                 from_partition = self.partitions[partition_from_spid]
-
-                from_elements = inlinks[0]
-                to_elements = inlinks[1]
-                weights = inlinks[2].get_value()
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
                 for i, element in enumerate(from_elements):
                     gatecolumn = weights[:, i]
                     links_indices = np.nonzero(gatecolumn)[0]
@@ -991,10 +990,9 @@ class TheanoNodenet(Nodenet):
             for partition_to_spid, to_partition in self.partitions.items():
                 if partition.spid in to_partition.inlinks:
                     inlinks = to_partition.inlinks[partition.spid]
-
-                    from_elements = inlinks[0]
-                    to_elements = inlinks[1]
-                    weights = inlinks[2].get_value()
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
                     for i, element in enumerate(to_elements):
                         slotrow = weights[i]
                         links_indices = np.nonzero(slotrow)[0]

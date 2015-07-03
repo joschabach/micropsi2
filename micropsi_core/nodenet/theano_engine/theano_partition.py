@@ -473,12 +473,10 @@ class TheanoPartition():
         # put the theano graph into a callable function to be executed
         self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
 
-    def get_compiled_propagate_inlinks(self, from_partition, weights):
-        from_elements = T.vector("from_elements", 'int32')
-        to_elements = T.vector("to_elements", 'int32')
+    def get_compiled_propagate_inlinks(self, from_partition, from_elements, to_elements, weights):
         propagated_a = T.dot(weights, from_partition.a[from_elements])
         a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a, inplace=True, tolerate_inplace_aliasing=True)
-        return theano.function([from_elements, to_elements], None, updates=[(self.a_in, a_in)], accept_inplace=True)
+        return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def calculate(self):
         if self.has_new_usages:
@@ -664,9 +662,9 @@ class TheanoPartition():
         offset = 0
         for i, spid in enumerate(self.inlinks.keys()):
             inlinks_pids[i] = int(spid)
-            from_elements = self.inlinks[spid][0]
-            to_elements = self.inlinks[spid][1]
-            weights = self.inlinks[spid][2]
+            from_elements = self.inlinks[spid][0].get_value(borrow=True)
+            to_elements = self.inlinks[spid][1].get_value(borrow=True)
+            weights = self.inlinks[spid][2].get_value(borrow=True)
             length = len(self.inlinks[spid][0])
             inlink_lengths[i] = length
             inlink_from_elements[offset:offset+length] = from_elements
@@ -1480,12 +1478,14 @@ class TheanoPartition():
             self.por_ret_dirty = True
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
-        if not partition_from_spid in self.inlinks:
-            self.inlinks[partition_from_spid] = (np.zeros(0, dtype=np.int32), np.zeros(0, dtype=np.int32), np.eye(0), None)
-
-        old_from_elements = self.inlinks[partition_from_spid][0]
-        old_to_elements = self.inlinks[partition_from_spid][1]
-        old_weights = self.inlinks[partition_from_spid][2]
+        if partition_from_spid in self.inlinks:
+            old_from_elements = self.inlinks[partition_from_spid][0].get_value(borrow=True)
+            old_to_elements = self.inlinks[partition_from_spid][1].get_value(borrow=True)
+            old_weights = self.inlinks[partition_from_spid][2].get_value(borrow=True)
+        else:
+            old_from_elements = np.zeros(0, dtype=np.int32)
+            old_to_elements = np.zeros(0, dtype=np.int32)
+            old_weights = np.eye(0)
 
         from_elements = np.union1d(old_from_elements, new_from_elements)
         to_elements = np.union1d(old_to_elements, new_to_elements)
@@ -1502,12 +1502,24 @@ class TheanoPartition():
         weights[newrows, newcols] = new_weights
 
         weightsname = "w_%s_%s" % (partition_from_spid, self.spid)
+        fromname = "in_from_%s_%s" % (partition_from_spid, self.spid)
+        toname = "in_to_%s_%s" % (partition_from_spid, self.spid)
+        theano_from_elements = theano.shared(value=from_elements, name=fromname, borrow=True)
+        theano_to_elements = theano.shared(value=to_elements, name=toname, borrow=True)
         theano_weights = theano.shared(value=weights.astype(T.config.floatX), name=weightsname, borrow=True)
 
         from_partition = self.nodenet.partitions[partition_from_spid]
-        propagation_function = self.get_compiled_propagate_inlinks(from_partition, theano_weights)
+        propagation_function = self.get_compiled_propagate_inlinks(
+            from_partition,
+            theano_from_elements,
+            theano_to_elements,
+            theano_weights)
 
-        self.inlinks[partition_from_spid] = (from_elements, to_elements, theano_weights, propagation_function)
+        self.inlinks[partition_from_spid] = (
+            theano_from_elements,
+            theano_to_elements,
+            theano_weights,
+            propagation_function)
 
     def integrity_check(self):
 

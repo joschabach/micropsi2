@@ -119,33 +119,35 @@ class MicropsiRunner(threading.Thread):
 
             start = datetime.now()
             log = False
-            for uid in nodenets:
-                nodenet = nodenets[uid]
-                if nodenet.is_active:
-                    if not self.check_conditions(uid):
-                        nodenet.is_active = False
-                        continue
-                    log = True
-                    try:
-                        if self.profiler:
-                            self.profiler.enable()
-                        nodenet.step()
-                        if self.profiler:
-                            self.profiler.disable()
-                        nodenet.update_monitors()
-                    except:
-                        if self.profiler:
-                            self.profiler.disable()
-                        nodenet.is_active = False
-                        logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
-                        MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                    if nodenet.world and nodenet.current_step % runner['factor'] == 0:
-                        try:
-                            nodenet.world.step()
-                        except:
+            uids = list(nodenets.keys())
+            for uid in uids:
+                if uid in nodenets:
+                    nodenet = nodenets[uid]
+                    if nodenet.is_active:
+                        if not self.check_conditions(uid):
                             nodenet.is_active = False
-                            logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
-                            MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
+                            continue
+                        log = True
+                        try:
+                            if self.profiler:
+                                self.profiler.enable()
+                            nodenet.step()
+                            if self.profiler:
+                                self.profiler.disable()
+                            nodenet.update_monitors()
+                        except:
+                            if self.profiler:
+                                self.profiler.disable()
+                            nodenet.is_active = False
+                            logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
+                            MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
+                        if nodenet.world and nodenet.current_step % runner['factor'] == 0:
+                            try:
+                                nodenet.world.step()
+                            except:
+                                nodenet.is_active = False
+                                logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
+                                MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:

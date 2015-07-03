@@ -1213,9 +1213,9 @@ class TheanoNodenet(Nodenet):
 
             if partition_from.spid in partition_to.inlinks:
                 inlinks = partition_to.inlinks[partition_from.spid]
-                indices = np.where((inlinks[0] == partition_from.nodegroups[nodespace_from_uid][group_from]) &
-                                   (inlinks[1] == partition_to.nodegroups[nodespace_to_uid][group_to]))[0]
-                return inlinks[2][indices]
+                indices = np.where((inlinks[0].get_value(borrow=True) == partition_from.nodegroups[nodespace_from_uid][group_from]) &
+                                   (inlinks[1].get_value(borrow=True) == partition_to.nodegroups[nodespace_to_uid][group_to]))[0]
+                return inlinks[2].get_value(borrow=True)[indices]
         else:
             return partition_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 

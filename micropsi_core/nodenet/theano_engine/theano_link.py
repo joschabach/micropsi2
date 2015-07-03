@@ -51,7 +51,7 @@ class TheanoLink(Link):
             inlinks = target_partition.inlinks[source_partition.spid]
             from_elements = inlinks[0]
             to_elements = inlinks[1]
-            weights = inlinks[2]
+            weights = inlinks[2].get_value()
             target_element = target_partition.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
             source_element = source_partition.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
             x = np.where(from_elements == source_element)[0][0]

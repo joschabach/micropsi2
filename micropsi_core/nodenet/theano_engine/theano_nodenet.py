@@ -960,7 +960,7 @@ class TheanoNodenet(Nodenet):
 
                 from_elements = inlinks[0]
                 to_elements = inlinks[1]
-                weights = inlinks[2]
+                weights = inlinks[2].get_value()
                 for i, element in enumerate(from_elements):
                     gatecolumn = weights[:, i]
                     links_indices = np.nonzero(gatecolumn)[0]
@@ -994,7 +994,7 @@ class TheanoNodenet(Nodenet):
 
                     from_elements = inlinks[0]
                     to_elements = inlinks[1]
-                    weights = inlinks[2]
+                    weights = inlinks[2].get_value()
                     for i, element in enumerate(to_elements):
                         slotrow = weights[i]
                         links_indices = np.nonzero(slotrow)[0]

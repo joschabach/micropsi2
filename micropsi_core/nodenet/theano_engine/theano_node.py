@@ -379,7 +379,7 @@ class TheanoGate(Gate):
                     inlinks = to_partition.inlinks[self.__partition.spid]
                     from_elements = inlinks[0]
                     to_elements = inlinks[1]
-                    weights = inlinks[2]
+                    weights = inlinks[2].get_value()
                     if element in from_elements:
                         element_index = np.where(from_elements == element)[0][0]
                         gatecolumn = weights[:, element_index]
@@ -477,7 +477,7 @@ class TheanoSlot(Slot):
             for partition_from_spid, inlinks in self.__partition.inlinks.items():
                 from_elements = inlinks[0]
                 to_elements = inlinks[1]
-                weights = inlinks[2]
+                weights = inlinks[2].get_value()
                 if element in to_elements:
                     from_partition = self.__nodenet.partitions[partition_from_spid]
                     element_index = np.where(to_elements == element)[0][0]

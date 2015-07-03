@@ -197,6 +197,8 @@ class TheanoPartition():
         self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
                             # this is a view on the activation values instrumental in calculating concept node functions
 
+        self.a_in = None         # vector of activations coming in from the outside (other partitions typically)
+
         self.g_factor = None     # vector of gate factors, controlled by directional activators
         self.g_threshold = None  # vector of thresholds (gate parameters)
         self.g_amplification = None  # vector of amplification factors
@@ -248,6 +250,9 @@ class TheanoPartition():
 
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
+
+        a_in_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
+        self.a_in = theano.shared(value=a_in_array.astype(T.config.floatX), name="a_in", borrow=True)
 
         g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
@@ -309,9 +314,11 @@ class TheanoPartition():
 
     def compile_propagate(self):
         if self.sparse:
-            self.propagate = theano.function([], None, updates={self.a: ST.dot(self.w, self.a)})
+            self.propagate_partition = theano.function([], None, updates=[(self.a, self.a_in + ST.dot(self.w, self.a)),
+                                                                          (self.a_in, T.zeros_like(self.a_in))])
         else:
-            self.propagate = theano.function([], None, updates={self.a: T.dot(self.w, self.a)})
+            self.propagate_partition = theano.function([], None, updates=[(self.a, self.a_in + T.dot(self.w, self.a)),
+                                                                          (self.a_in, T.zeros_like(self.a_in))])
 
     def compile_calculate_nodes(self):
         slots = self.a_shifted
@@ -466,6 +473,24 @@ class TheanoPartition():
 
         # put the theano graph into a callable function to be executed
         self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+
+    def get_compiled_propagate_inlinks(self, from_partition, weights):
+        from_elements = T.vector("from_elements", 'int32')
+        to_elements = T.vector("to_elements", 'int32')
+        propagated_a = T.dot(weights, from_partition.a[from_elements])
+        a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a)
+        return theano.function([from_elements, to_elements], None, updates=[(self.a_in, a_in)])
+
+    def propagate(self):
+        for from_partition_spid, inlinks in self.inlinks.items():
+            from_partition = self.nodenet.partitions[from_partition_spid]
+            from_elements = inlinks[0]
+            to_elements = inlinks[1]
+            weights = inlinks[2]
+            propagate_inlinks = inlinks[3]
+            propagate_inlinks(from_elements, to_elements)
+
+        self.propagate_partition()
 
     def calculate(self):
         if self.has_new_usages:
@@ -861,8 +886,12 @@ class TheanoPartition():
             inlink_weights = np.split(datafile['inlink_weights'], inlink_lengths*inlink_lengths)
 
             for i, pid in enumerate(inlink_pids):
-                self.inlinks["%03i" % pid] = (inlink_from_elements[i], inlink_to_elements[i], np.reshape(inlink_weights[i], (inlink_lengths[i], inlink_lengths[i])))
-
+                self.set_inlink_weights(
+                    "%03i" % pid,
+                    inlink_from_elements[i],
+                    inlink_to_elements[i],
+                    np.reshape(inlink_weights[i], (inlink_lengths[i], inlink_lengths[i]))
+                )
         else:
             self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
 
@@ -1464,7 +1493,7 @@ class TheanoPartition():
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
         if not partition_from_spid in self.inlinks:
-            self.inlinks[partition_from_spid] = ([],[],[])
+            self.inlinks[partition_from_spid] = (np.zeros(0, dtype=np.int32), np.zeros(0, dtype=np.int32), np.eye(0), None)
 
         old_from_elements = self.inlinks[partition_from_spid][0]
         old_to_elements = self.inlinks[partition_from_spid][1]
@@ -1484,7 +1513,13 @@ class TheanoPartition():
         newcols, newrows = np.meshgrid(new_from_indices, new_to_indices)
         weights[newrows, newcols] = new_weights
 
-        self.inlinks[partition_from_spid] = (from_elements, to_elements, weights)
+        weightsname = "w_%s_%s" % (partition_from_spid, self.spid)
+        theano_weights = theano.shared(value=weights.astype(T.config.floatX), name=weightsname, borrow=True)
+
+        from_partition = self.nodenet.partitions[partition_from_spid]
+        propagation_function = self.get_compiled_propagate_inlinks(from_partition, theano_weights)
+
+        self.inlinks[partition_from_spid] = (from_elements, to_elements, theano_weights, propagation_function)
 
     def integrity_check(self):
 

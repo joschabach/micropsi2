@@ -25,7 +25,7 @@ class TheanoPropagate(Propagate):
     def execute(self, nodenet, nodes, netapi):
         # propagate cross-partition to the a_in vectors
         for partition in nodenet.partitions.values():
-            for from_partition_spid, inlinks in partition.inlinks.items():
+            for inlinks in partition.inlinks.values():
                 from_elements = inlinks[0]
                 to_elements = inlinks[1]
                 propagate_inlinks = inlinks[3]

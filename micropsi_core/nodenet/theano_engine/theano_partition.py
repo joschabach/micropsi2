@@ -477,8 +477,8 @@ class TheanoPartition():
         from_elements = T.vector("from_elements", 'int32')
         to_elements = T.vector("to_elements", 'int32')
         propagated_a = T.dot(weights, from_partition.a[from_elements])
-        a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a)
-        return theano.function([from_elements, to_elements], None, updates=[(self.a_in, a_in)])
+        a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a, inplace=True, tolerate_inplace_aliasing=True)
+        return theano.function([from_elements, to_elements], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def calculate(self):
         if self.has_new_usages:

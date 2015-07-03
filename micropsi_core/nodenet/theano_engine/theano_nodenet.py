@@ -751,7 +751,8 @@ class TheanoNodenet(Nodenet):
 
             elements_from_indices = [source_partition.allocated_node_offsets[source_node_id] + ngt]
             elements_to_indices = [target_partition.allocated_node_offsets[target_node_id] + nst]
-            new_w = [weight]
+            new_w = np.eye(1)
+            new_w[0, 0] = weight
 
             target_partition.set_inlink_weights(source_partition.spid, elements_from_indices, elements_to_indices, new_w)
         else:

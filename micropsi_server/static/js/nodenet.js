@@ -390,7 +390,7 @@ function setNodespaceData(data, changed){
                         removeLink(links[uid]);
                     }
                 }
-                addLinks(data);
+                addLinks(data.links);
             });
         } else {
             for(var uid in links) {
@@ -721,6 +721,11 @@ function redrawLink(link, forceRedraw){
 function removeLink(link) {
     sourceNode = nodes[link.sourceNodeUid];
     targetNode = nodes[link.targetNodeUid];
+    if(!sourceNode || ! targetNode){
+        delete links[link.uid];
+        if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
+        return;
+    }
     if(sourceNode.parent != targetNode.parent){
         sourceNode.linksToOutside.splice(sourceNode.linksToOutside.indexOf(link.uid), 1);
         targetNode.linksFromOutside.splice(targetNode.linksFromOutside.indexOf(link.uid), 1);
@@ -2335,15 +2340,19 @@ function loadLinksForSelection(callback){
         api.call('get_links_for_nodes',
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
-            callback || function(data){
-                addLinks(data.links);
-                for(var uid in data.nodes){
-                    addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
+              function(data){
+                if(callback){
+                    callback(data);
+                } else {
+                    for(var uid in data.nodes){
+                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
+                    }
+                    addLinks(data.links);
+                    if(uids.length == 1 && uids[0] in selection){
+                        showNodeForm(uids[0]);
+                    }
                 }
-                view.draw();
-                if(uids.length == 1 && uids[0] in selection){
-                    showNodeForm(uids[0]);
-                }
+                view.draw(true);
             }
         );
     }

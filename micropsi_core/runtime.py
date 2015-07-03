@@ -119,7 +119,7 @@ class MicropsiRunner(threading.Thread):
 
             start = datetime.now()
             log = False
-            for uid in nodenets:
+            for uid in nodenets.copy():
                 nodenet = nodenets[uid]
                 if nodenet.is_active:
                     if not self.check_conditions(uid):

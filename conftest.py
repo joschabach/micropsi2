@@ -19,6 +19,8 @@ from configuration import config
 config['paths']['resource_path'] = '/tmp/micropsi_tests'
 config['paths']['server_settings_path'] = os.path.join(config['paths']['resource_path'], 'server_config.json')
 config['paths']['usermanager_path'] = os.path.join(config['paths']['resource_path'], 'user-db.json')
+if 'theano' in config:
+    config['theano']['initial_number_of_nodes'] = '50'
 
 from micropsi_core import runtime as micropsi
 

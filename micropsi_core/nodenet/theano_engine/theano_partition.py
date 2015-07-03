@@ -646,7 +646,7 @@ class TheanoPartition():
         inlink_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
         inlink_from_elements = np.zeros(inlink_element_count, dtype=np.int32)
         inlink_to_elements = np.zeros(inlink_element_count, dtype=np.int32)
-        inlink_weights = np.zeros(inlink_element_count, dtype=self.nodenet.numpyfloatX)
+        inlink_weights = np.zeros(inlink_element_count*inlink_element_count, dtype=self.nodenet.numpyfloatX)
 
         offset = 0
         for i, spid in enumerate(self.inlinks.keys()):
@@ -658,7 +658,7 @@ class TheanoPartition():
             inlink_lengths[i] = length
             inlink_from_elements[offset:offset+length] = from_elements
             inlink_to_elements[offset:offset+length] = to_elements
-            inlink_weights[offset:offset+length] = weights
+            inlink_weights[(offset*offset):((offset+length)*(offset+length))] = np.ravel(weights)
             offset += length
 
         np.savez(datafilename,
@@ -858,10 +858,10 @@ class TheanoPartition():
             inlink_lengths = datafile['inlink_lengths']
             inlink_from_elements = np.split(datafile['inlink_from_elements'], inlink_lengths)
             inlink_to_elements = np.split(datafile['inlink_to_elements'], inlink_lengths)
-            inlink_weights = np.split(datafile['inlink_weights'], inlink_lengths)
+            inlink_weights = np.split(datafile['inlink_weights'], inlink_lengths*inlink_lengths)
 
             for i, pid in enumerate(inlink_pids):
-                self.inlinks["%03i" % pid] = (inlink_from_elements[i], inlink_to_elements[i], inlink_weights[i])
+                self.inlinks["%03i" % pid] = (inlink_from_elements[i], inlink_to_elements[i], np.reshape(inlink_weights[i], (inlink_lengths[i], inlink_lengths[i])))
 
         else:
             self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")

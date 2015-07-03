@@ -307,17 +307,16 @@ class TheanoPartition():
         self.last_allocated_offset = 0
         self.last_allocated_nodespace = 0
 
-
         # compile theano functions
         self.compile_propagate()
         self.compile_calculate_nodes()
 
     def compile_propagate(self):
         if self.sparse:
-            self.propagate_partition = theano.function([], None, updates=[(self.a, self.a_in + ST.dot(self.w, self.a)),
+            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + ST.dot(self.w, self.a)),
                                                                           (self.a_in, T.zeros_like(self.a_in))])
         else:
-            self.propagate_partition = theano.function([], None, updates=[(self.a, self.a_in + T.dot(self.w, self.a)),
+            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + T.dot(self.w, self.a)),
                                                                           (self.a_in, T.zeros_like(self.a_in))])
 
     def compile_calculate_nodes(self):
@@ -480,17 +479,6 @@ class TheanoPartition():
         propagated_a = T.dot(weights, from_partition.a[from_elements])
         a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a)
         return theano.function([from_elements, to_elements], None, updates=[(self.a_in, a_in)])
-
-    def propagate(self):
-        for from_partition_spid, inlinks in self.inlinks.items():
-            from_partition = self.nodenet.partitions[from_partition_spid]
-            from_elements = inlinks[0]
-            to_elements = inlinks[1]
-            weights = inlinks[2]
-            propagate_inlinks = inlinks[3]
-            propagate_inlinks(from_elements, to_elements)
-
-        self.propagate_partition()
 
     def calculate(self):
         if self.has_new_usages:

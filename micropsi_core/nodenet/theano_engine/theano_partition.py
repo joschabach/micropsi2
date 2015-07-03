@@ -652,7 +652,7 @@ class TheanoPartition():
 
         inlink_element_count = 0
         for spid, inlinks in self.inlinks.items():
-            inlink_element_count += len(inlinks[0])
+            inlink_element_count += len(inlinks[0].get_value(borrow=True))
         inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
         inlink_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
         inlink_from_elements = np.zeros(inlink_element_count, dtype=np.int32)
@@ -665,7 +665,7 @@ class TheanoPartition():
             from_elements = self.inlinks[spid][0].get_value(borrow=True)
             to_elements = self.inlinks[spid][1].get_value(borrow=True)
             weights = self.inlinks[spid][2].get_value(borrow=True)
-            length = len(self.inlinks[spid][0])
+            length = len(self.inlinks[spid][0].get_value(borrow=True))
             inlink_lengths[i] = length
             inlink_from_elements[offset:offset+length] = from_elements
             inlink_to_elements[offset:offset+length] = to_elements

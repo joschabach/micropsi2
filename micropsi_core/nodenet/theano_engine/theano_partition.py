@@ -307,9 +307,7 @@ class TheanoPartition():
         self.last_allocated_offset = 0
         self.last_allocated_nodespace = 0
 
-        # compile theano functions
         self.compile_propagate()
-        self.compile_calculate_nodes()
 
     def compile_propagate(self):
         if self.sparse:

@@ -1479,17 +1479,36 @@ class TheanoPartition():
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
         if partition_from_spid in self.inlinks:
-            old_from_elements = self.inlinks[partition_from_spid][0].get_value(borrow=True)
-            old_to_elements = self.inlinks[partition_from_spid][1].get_value(borrow=True)
-            old_weights = self.inlinks[partition_from_spid][2].get_value(borrow=True)
+            theano_from_elements = self.inlinks[partition_from_spid][0]
+            theano_to_elements = self.inlinks[partition_from_spid][1]
+            theano_weights = self.inlinks[partition_from_spid][2]
+            old_from_elements = theano_from_elements.get_value(borrow=True)
+            old_to_elements = theano_to_elements.get_value(borrow=True)
+            old_weights = theano_weights.get_value(borrow=True)
+            propagation_function = self.inlinks[partition_from_spid][3]
         else:
             old_from_elements = np.zeros(0, dtype=np.int32)
             old_to_elements = np.zeros(0, dtype=np.int32)
-            old_weights = np.eye(0)
+            old_weights = np.eye(0, dtype=T.config.floatX)
+
+            weightsname = "w_%s_%s" % (partition_from_spid, self.spid)
+            fromname = "in_from_%s_%s" % (partition_from_spid, self.spid)
+            toname = "in_to_%s_%s" % (partition_from_spid, self.spid)
+            theano_from_elements = theano.shared(value=old_from_elements, name=fromname, borrow=True)
+            theano_to_elements = theano.shared(value=old_to_elements, name=toname, borrow=True)
+            theano_weights = theano.shared(value=old_weights.astype(T.config.floatX), name=weightsname, borrow=True)
+
+            from_partition = self.nodenet.partitions[partition_from_spid]
+
+            propagation_function = self.get_compiled_propagate_inlinks(
+                from_partition,
+                theano_from_elements,
+                theano_to_elements,
+                theano_weights)
 
         from_elements = np.union1d(old_from_elements, new_from_elements)
         to_elements = np.union1d(old_to_elements, new_to_elements)
-        weights = np.zeros((len(to_elements), len(from_elements)))
+        weights = np.zeros((len(to_elements), len(from_elements)), dtype=T.config.floatX)
 
         old_from_indices = np.searchsorted(from_elements, old_from_elements)
         old_to_indices = np.searchsorted(to_elements, old_to_elements)
@@ -1501,19 +1520,9 @@ class TheanoPartition():
         newcols, newrows = np.meshgrid(new_from_indices, new_to_indices)
         weights[newrows, newcols] = new_weights
 
-        weightsname = "w_%s_%s" % (partition_from_spid, self.spid)
-        fromname = "in_from_%s_%s" % (partition_from_spid, self.spid)
-        toname = "in_to_%s_%s" % (partition_from_spid, self.spid)
-        theano_from_elements = theano.shared(value=from_elements, name=fromname, borrow=True)
-        theano_to_elements = theano.shared(value=to_elements, name=toname, borrow=True)
-        theano_weights = theano.shared(value=weights.astype(T.config.floatX), name=weightsname, borrow=True)
-
-        from_partition = self.nodenet.partitions[partition_from_spid]
-        propagation_function = self.get_compiled_propagate_inlinks(
-            from_partition,
-            theano_from_elements,
-            theano_to_elements,
-            theano_weights)
+        theano_from_elements.set_value(from_elements, borrow=True)
+        theano_to_elements.set_value(to_elements, borrow=True)
+        theano_weights.set_value(weights, borrow=True)
 
         self.inlinks[partition_from_spid] = (
             theano_from_elements,

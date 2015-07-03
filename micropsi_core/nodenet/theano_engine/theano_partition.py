@@ -874,8 +874,8 @@ class TheanoPartition():
             for i, pid in enumerate(inlink_pids):
                 self.set_inlink_weights(
                     "%03i" % pid,
-                    inlink_from_elements[i],
-                    inlink_to_elements[i],
+                    inlink_from_elements[i].astype(np.int32),
+                    inlink_to_elements[i].astype(np.int32),
                     np.reshape(inlink_weights[i], (inlink_lengths[i], inlink_lengths[i]))
                 )
         else:

@@ -461,7 +461,7 @@ class TheanoNodenet(Nodenet):
     def get_partition(self, uid):
         if uid is None:
             return self.rootpartition
-        return self.partitions[uid[1:4]]
+        return self.partitions.get(uid[1:4], None)
 
     def get_node(self, uid):
         partition = self.get_partition(uid)
@@ -496,6 +496,8 @@ class TheanoNodenet(Nodenet):
         if uid is None or uid[0] != 'n':
             return False
         partition = self.get_partition(uid)
+        if partition is None:
+            return False
         numid = node_from_id(uid)
         return numid < partition.NoN and partition.allocated_nodes[numid] != 0
 
@@ -749,9 +751,9 @@ class TheanoNodenet(Nodenet):
             if nst > get_slots_per_type(target_partition.allocated_nodes[target_node_id], self.native_modules):
                 raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
 
-            elements_from_indices = [source_partition.allocated_node_offsets[source_node_id] + ngt]
-            elements_to_indices = [target_partition.allocated_node_offsets[target_node_id] + nst]
-            new_w = np.eye(1)
+            elements_from_indices = np.asarray([source_partition.allocated_node_offsets[source_node_id] + ngt], dtype=np.int32)
+            elements_to_indices = np.asarray([target_partition.allocated_node_offsets[target_node_id] + nst], dtype=np.int32)
+            new_w = np.eye(1, dtype=T.config.floatX)
             new_w[0, 0] = weight
 
             target_partition.set_inlink_weights(source_partition.spid, elements_from_indices, elements_to_indices, new_w)

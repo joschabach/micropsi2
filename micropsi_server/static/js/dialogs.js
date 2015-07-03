@@ -419,6 +419,13 @@ $(function() {
         }
         api.call(func, params, function(data){
             dialogs.notification("monitor saved");
+            if($.cookie('currentMonitors')){
+                currentMonitors = JSON.parse($.cookie('currentMonitors'));
+            } else {
+                currentMonitors = [];
+            }
+            currentMonitors.push(data)
+            $.cookie('currentMonitors', JSON.stringify(currentMonitors), {path:'/', expires:7})
             $(document).trigger('monitorsChanged', data);
             $('#monitor_modal').modal('hide');
         }, function(data){

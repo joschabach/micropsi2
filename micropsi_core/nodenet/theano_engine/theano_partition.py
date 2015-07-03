@@ -1462,12 +1462,29 @@ class TheanoPartition():
         if self.has_pipes:
             self.por_ret_dirty = True
 
-    def set_inlink_weights(self, partition_from_spid, elements_from_indices, elements_to_indices, new_w):
+    def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
         if not partition_from_spid in self.inlinks:
             self.inlinks[partition_from_spid] = ([],[],[])
 
-        # todo: grow existing inlink tuple if there
-        self.inlinks[partition_from_spid] = (elements_from_indices, elements_to_indices, new_w)
+        old_from_elements = self.inlinks[partition_from_spid][0]
+        old_to_elements = self.inlinks[partition_from_spid][1]
+        old_weights = self.inlinks[partition_from_spid][2]
+
+        from_elements = np.union1d(old_from_elements, new_from_elements)
+        to_elements = np.union1d(old_to_elements, new_to_elements)
+        weights = np.zeros((len(to_elements), len(from_elements)))
+
+        old_from_indices = np.searchsorted(from_elements, old_from_elements)
+        old_to_indices = np.searchsorted(to_elements, old_to_elements)
+        oldcols, oldrows = np.meshgrid(old_from_indices, old_to_indices)
+        weights[oldrows, oldcols] = old_weights
+
+        new_from_indices = np.searchsorted(from_elements, new_from_elements)
+        new_to_indices = np.searchsorted(to_elements, new_to_elements)
+        newcols, newrows = np.meshgrid(new_from_indices, new_to_indices)
+        weights[newrows, newcols] = new_weights
+
+        self.inlinks[partition_from_spid] = (from_elements, to_elements, weights)
 
     def integrity_check(self):
 

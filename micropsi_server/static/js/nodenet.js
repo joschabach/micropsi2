@@ -2585,7 +2585,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Actor"){
         html += '<li><a href="#">Select datatarget</li>';
     }
-    html  += '<li><a href="#">Rename node</a></li>' +
+    html += '<li><a href="#">Add Monitor</a></li>' +
+            '<li class="divider"></li>' +
+             '<li><a href="#">Rename node</a></li>' +
              '<li><a href="#">Delete node</a></li>' +
              '<li data-copy-nodes><a href="#">Copy node</a></li>';
     menu.html(html);
@@ -2699,6 +2701,9 @@ function handleContextMenu(event) {
                     var html = get_datatarget_options(currentWorldadapter);
                     target_select.html(html);
                     target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
+                    break;
+                case "Add Monitor":
+                    addMonitor("node", nodes[clickOriginUid]);
                     break;
                 case "Expand":
                     for(uid in selection){

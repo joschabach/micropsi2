@@ -384,6 +384,17 @@ $(function() {
         addMonitor('custom');
     });
 
+    $('#monitor_modal input[name="monitor_node_type"]').on('change', function(event){
+        if(event.target.id == 'monitor_node_type_slot'){
+            $('.control-group.gate_monitor').hide();
+            $('.control-group.slot_monitor').show();
+            $('#monitor_type').val('slot')
+        } else {
+            $('.control-group.slot_monitor').hide();
+            $('.control-group.gate_monitor').show();
+            $('#monitor_type').val('gate')
+        }
+    })
     $('#monitor_modal .btn-primary').on('click', function(event){
         event.preventDefault();
         var type = $('#monitor_type').val();
@@ -778,6 +789,7 @@ function cookiebindings(index, name){
     }
 }
 
+
 window.addMonitor = function(type, param, val){
     $('#monitor_modal .control-group').hide();
     $('#monitor_modal .control-group.all_monitors').show();
@@ -785,6 +797,17 @@ window.addMonitor = function(type, param, val){
     $('#monitor_name_input').val('');
     $('#monitor_type').val(type);
     switch(type){
+        case 'node':
+            var html = '';
+            for(var key in param['gates']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_gate_input').html(html);
+            var html = '';
+            for(var key in param['slots']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_slot_input').html(html);
         case 'slot':
         case 'gate':
             var html = '';

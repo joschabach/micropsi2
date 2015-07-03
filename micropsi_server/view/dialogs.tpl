@@ -58,6 +58,13 @@
                         <input type="text" id="monitor_node_input" name="monitor_node_input"/>
                     </div>
                 </div>
+                <div class="control-group node_monitor">
+                    <label class="control-label">Type</label>
+                    <div class="controls">
+                        <label><input type="radio" id="monitor_node_type_gate" name="monitor_node_type"/> Gate Monitor</label>
+                        <label><input type="radio" id="monitor_node_type_slot" name="monitor_node_type"/> Slot Monitor</label>
+                    </div>
+                </div>
                 <div class="control-group gate_monitor">
                     <label class="control-label" for="monitor_gate_input">Gate</label>
                     <div class="controls">

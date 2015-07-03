@@ -372,7 +372,7 @@ graphs
 
 label input[type="radio"], label input[type="checkbox"] {
   padding: 0;
-  vertical-align: middle;
+  vertical-align: text-top;
   margin: 0;
 }
 

@@ -1231,6 +1231,12 @@ def parse_recipe_file():
 
 
 def reload_native_modules():
+    # stop nodenets, save state
+    runners = {}
+    for uid in nodenets:
+        if nodenets[uid].is_active:
+            runners[uid] = True
+            nodenets[uid].is_active = False
     load_user_files(True)
     import importlib
     custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
@@ -1239,6 +1245,9 @@ def reload_native_modules():
         loader.load_module()
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
+    # restart previously active nodenets
+    for uid in runners:
+        nodenets[uid].is_active = True
     return True
 
 

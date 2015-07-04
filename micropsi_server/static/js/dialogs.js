@@ -375,30 +375,77 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
+    var colorpicker = $('.color-chooser').colorpicker({
+        color: "#990000"
+    });
+
     $('.add_custom_monitor').on('click', function(event){
         event.preventDefault();
-        $('#monitor_name_input').val('');
-        $('#monitor_code_input').val('');
-        $('#monitor_modal .custom_monitor').show();
-        $('#monitor_modal').modal('show');
-        $('#monitor_modal .btn-primary').on('click', function(event){
-            api.call('add_custom_monitor', {
-                'nodenet_uid': currentNodenet,
-                'function': $('#monitor_code_input').val(),
-                'name': $('#monitor_name_input').val()
-            }, function(data){
-                dialogs.notification("monitor saved");
-                $(document).trigger('monitorsChanged', data);
-                $('#monitor_modal .btn-primary').off();
-                $('#monitor_modal').modal('hide');
-            }, function(data){
-                api.defaultErrorCallback(data);
-                $('#monitor_modal .btn-primary').off();
-                $('#monitor_modal').modal('hide');
-            },
-            method="post");
-        });
+        addMonitor('custom');
     });
+
+    $('#monitor_modal input[name="monitor_node_type"]').on('change', function(event){
+        if(event.target.id == 'monitor_node_type_slot'){
+            $('.control-group.gate_monitor').hide();
+            $('.control-group.slot_monitor').show();
+            $('#monitor_type').val('slot')
+        } else {
+            $('.control-group.slot_monitor').hide();
+            $('.control-group.gate_monitor').show();
+            $('#monitor_type').val('gate')
+        }
+    })
+    $('#monitor_modal .btn-primary').on('click', function(event){
+        event.preventDefault();
+        var type = $('#monitor_type').val();
+        var func;
+        var params = {
+            nodenet_uid: currentNodenet,
+            name: $('#monitor_name_input').val(),
+            color: $('#monitor_color_input').val()
+        };
+        switch(type){
+            case 'gate':
+            case 'slot':
+                func = 'add_'+type+'_monitor';
+                params['node_uid'] = $('#monitor_node_uid_input').val();
+                params[type] = $('#monitor_'+type+'_input').val()
+                break;
+            case 'link':
+                func = 'add_link_monitor';
+                params['source_node_uid'] = $('#monitor_link_sourcenode_uid_input').val();
+                params['gate_type'] = $('#monitor_link_sourcegate_type_input').val();
+                params['target_node_uid'] = $('#monitor_link_targetnode_uid_input').val();
+                params['slot_type'] = $('#monitor_link_targetslot_type_input').val();
+                params['property'] = 'weight';
+                break;
+            case 'modulator':
+                func = 'add_modulator_monitor';
+                params['modulator'] = $('#monitor_modulator_input').val();
+                break;
+            case 'custom':
+                func = "add_custom_monitor";
+                params['function'] = $('#monitor_code_input').val();
+                break;
+        }
+        api.call(func, params, function(data){
+            dialogs.notification("monitor saved");
+            if($.cookie('currentMonitors')){
+                currentMonitors = JSON.parse($.cookie('currentMonitors'));
+            } else {
+                currentMonitors = [];
+            }
+            currentMonitors.push(data)
+            $.cookie('currentMonitors', JSON.stringify(currentMonitors), {path:'/', expires:7})
+            $(document).trigger('monitorsChanged', data);
+            $('#monitor_modal').modal('hide');
+        }, function(data){
+            api.defaultErrorCallback(data);
+            $('#monitor_modal').modal('hide');
+        },
+        method="post");
+    });
+
 
     var remove_condition = $('#remove_runner_condition');
     var set_condition = $('#set_runner_condition');
@@ -740,6 +787,59 @@ function cookiebindings(index, name){
             $.cookie('section_state_'+name, false);
         });
     }
+}
+
+
+window.addMonitor = function(type, param, val){
+    $('#monitor_modal .control-group').hide();
+    $('#monitor_modal .control-group.all_monitors').show();
+    $('#monitor_modal .control-group.'+type+'_monitor').show();
+    $('#monitor_name_input').val('');
+    $('#monitor_type').val(type);
+    switch(type){
+        case 'node':
+            var html = '';
+            for(var key in param['gates']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_gate_input').html(html);
+            var html = '';
+            for(var key in param['slots']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_slot_input').html(html);
+        case 'slot':
+        case 'gate':
+            var html = '';
+            for(var key in param[type+'s']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_'+type+'_input').html(html);
+            if(val){
+                $('#monitor_'+type+'_input').val(val);
+            }
+            $('#monitor_node_input').val(param.name || param.uid);
+            $('#monitor_node_uid_input').val(param.uid);
+            if(param.name){
+                $('#monitor_name_input').val(param.name);
+            }
+            break;
+        case 'link':
+            $('#monitor_link_input').val(param.uid);
+            $('#monitor_link_sourcenode_uid_input').val(param.sourceNodeUid);
+            $('#monitor_link_sourcegate_type_input').val(param.gateName);
+            $('#monitor_link_targetnode_uid_input').val(param.targetNodeUid);
+            $('#monitor_link_targetslot_type_input').val(param.slotName);
+            break;
+        case 'modulator':
+            $('#monitor_modulator_input').val(param);
+            $('#monitor_name_input').val(param);
+            break;
+        case 'custom':
+            $('#monitor_code_input').val('');
+            break;
+    }
+    $('#monitor_modal').modal('show');
 }
 
 

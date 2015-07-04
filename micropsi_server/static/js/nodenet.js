@@ -530,16 +530,7 @@ function updateModulators(data){
     $('button', table).each(function(idx, button){
         $(button).on('click', function(evt){
             evt.preventDefault();
-            var mod = $(button).attr('data');
-            api.call('add_modulator_monitor', {
-                    nodenet_uid: currentNodenet,
-                    modulator: mod,
-                    name: mod
-                }, function(data){
-                    dialogs.notification('Monitor added', 'success');
-                    $(document).trigger('monitorsChanged', data);
-                }
-            );
+            addMonitor('modulator', $(button).attr('data'));
         });
     });
 }
@@ -2594,7 +2585,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Actor"){
         html += '<li><a href="#">Select datatarget</li>';
     }
-    html  += '<li><a href="#">Rename node</a></li>' +
+    html += '<li><a href="#">Add Monitor</a></li>' +
+            '<li class="divider"></li>' +
+             '<li><a href="#">Rename node</a></li>' +
              '<li><a href="#">Delete node</a></li>' +
              '<li data-copy-nodes><a href="#">Copy node</a></li>';
     menu.html(html);
@@ -2709,6 +2702,9 @@ function handleContextMenu(event) {
                     target_select.html(html);
                     target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     break;
+                case "Add Monitor":
+                    addMonitor("node", nodes[clickOriginUid]);
+                    break;
                 case "Expand":
                     for(uid in selection){
                         nodes[uid].renderCompact = false;
@@ -2734,7 +2730,8 @@ function handleContextMenu(event) {
         case "slot":
             switch (menuText) {
                 case "Add monitor to slot":
-                    addSlotMonitor(nodes[clickOriginUid], clickIndex);
+                    var target = nodes[clickOriginUid];
+                    addMonitor('slot', target, target.slotIndexes[clickIndex])
                     break;
                 case "Remove monitor from slot":
                     removeMonitor(nodes[clickOriginUid], nodes[clickOriginUid].slotIndexes[clickIndex], 'slot');
@@ -2747,7 +2744,8 @@ function handleContextMenu(event) {
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":
-                    addGateMonitor(nodes[clickOriginUid], clickIndex);
+                    var target = nodes[clickOriginUid];
+                    addMonitor('gate', target, target.gateIndexes[clickIndex]);
                     break;
                 case "Remove monitor from gate":
                     removeMonitor(nodes[clickOriginUid], nodes[clickOriginUid].gateIndexes[clickIndex], 'gate');
@@ -2757,7 +2755,7 @@ function handleContextMenu(event) {
         case "link":
             switch (menuText) {
                 case "Add link-weight monitor":
-                    addLinkMonitor(clickOriginUid);
+                    addMonitor('link', links[clickOriginUid]);
                     break;
                 case "Delete link":
                     deleteLinkHandler(clickOriginUid);
@@ -3253,34 +3251,6 @@ function cancelLinkCreationHandler() {
     linkCreationStart = null;
 }
 
-function addLinkMonitor(clickOriginUid){
-    var link = links[clickOriginUid];
-    event.preventDefault();
-    $('#monitor_name_input').val('');
-    $('#monitor_modal .custom_monitor').hide();
-    $('#monitor_modal').modal('show');
-    $('#monitor_modal .btn-primary').on('click', function(event){
-        api.call('add_link_monitor', {
-            nodenet_uid: currentNodenet,
-            source_node_uid: link.sourceNodeUid,
-            gate_type: link.gateName,
-            target_node_uid: link.targetNodeUid,
-            slot_type: link.slotName,
-            name: $('#monitor_name_input').val(),
-            property:'weight'
-        }, function(data){
-            dialogs.notification("monitor saved");
-            $(document).trigger('monitorsChanged', data);
-            $('#monitor_modal .btn-primary').off();
-            $('#monitor_modal').modal('hide');
-        }, function(data){
-            api.defaultErrorCallback(data);
-            $('#monitor_modal .btn-primary').off();
-            $('#monitor_modal').modal('hide');
-        });
-    });
-}
-
 function moveNode(nodeUid, x, y){
     api.call("set_node_position", {
         nodenet_uid: currentNodenet,
@@ -3521,29 +3491,6 @@ function handleEditNodespace(event){
     }
 }
 
-function addSlotMonitor(node, index){
-    api.call('add_slot_monitor', {
-        nodenet_uid: currentNodenet,
-        node_uid: node.uid,
-        slot: node.slotIndexes[index]
-    }, function(data){
-        $(document).trigger('monitorsChanged', data);
-        monitors[data] = {};
-        setMonitorData(data);
-    });
-}
-
-function addGateMonitor(node, index){
-    api.call('add_gate_monitor', {
-        nodenet_uid: currentNodenet,
-        node_uid: node.uid,
-        gate: node.gateIndexes[index]
-    }, function(data){
-        $(document).trigger('monitorsChanged', data);
-        monitors[data] = {};
-        setMonitorData(data);
-    });
-}
 
 function setMonitorData(uid){
     api.call('export_monitor_data', params={

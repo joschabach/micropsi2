@@ -1047,6 +1047,11 @@ class TheanoNodenet(Nodenet):
         data = {}
         i = 0
         for partition in self.partitions.values():
+            if nodespace_uid is not None:
+                nodespace_partition = self.get_partition(nodespace_uid)
+                if nodespace_partition != partition:
+                    continue
+
             nodeids = np.nonzero(partition.allocated_nodes)[0]
             if nodespace_uid is not None:
                 parent_id = nodespace_from_id(nodespace_uid)

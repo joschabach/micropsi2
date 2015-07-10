@@ -352,7 +352,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 #     if k != 'hack_situation' and k != 'temperature':
                 #         self.datasources[k] = 0.
 
-                self.datasoures['current_location_index'] = self.loco_nodes_indexes.index(self.current_loco_node['name'])
+                self.datasources['current_location_index'] = self.loco_nodes_indexes.index(self.current_loco_node['name'])
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder

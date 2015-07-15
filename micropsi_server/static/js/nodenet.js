@@ -2870,7 +2870,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     }
     api.call(method, params,
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, params));
+            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, parameters));
             view.draw();
             selectNode(uid);
             if(callback) callback(uid);

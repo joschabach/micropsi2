@@ -149,13 +149,23 @@ class NetAPI(object):
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
         pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
 
-        # todo: There should be a separate method for this Nodespaces are net entities, but they're not nodes.
-        if nodetype == "Nodespace":
-            uid = self.__nodenet.create_nodespace(nodespace, pos, name=name)
-            entity = self.__nodenet.get_nodespace(uid)
-        else:
-            uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
-            entity = self.__nodenet.get_node(uid)
+        uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
+        entity = self.__nodenet.get_node(uid)
+        return entity
+
+    def create_nodespace(self, parent_nodespace, name=None, options=None):
+        """
+        Create a new nodespace with the given name in the given parent_nodespace
+        Options:
+            new_partition - Whether or not to create a seperate partition for this nodespace
+                            Attention: Experimental Feature, Sensors & Actors only work in the root-partition
+        """
+        if name is None:
+            name = ""   # TODO: empty names crash the client right now, but really shouldn't
+        pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
+
+        uid = self.__nodenet.create_nodespace(parent_nodespace, pos, name=name, options=options)
+        entity = self.__nodenet.get_nodespace(uid)
         return entity
 
     def link(self, source_node, source_gate, target_node, target_slot, weight=1, certainty=1):

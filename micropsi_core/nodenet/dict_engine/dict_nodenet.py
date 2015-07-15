@@ -442,7 +442,7 @@ class DictNodenet(Nodenet):
             gate_parameters=gate_parameters)
         return node.uid
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
+    def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
         parent_uid = self.get_nodespace(parent_uid).uid
         nodespace = DictNodespace(self, parent_uid, position=position, name=name, uid=uid)
         return nodespace.uid

@@ -750,9 +750,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
             pythonname = __pythonify(name)
             if pythonname not in idmap.values():
                 varname = pythonname
-            lines.append("%s = netapi.create_node('Nodespace', None, \"%s\")" % (varname, name))
+            lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
         else:
-            lines.append("%s = netapi.create_node('Nodespace', None)" % (varname))
+            lines.append("%s = netapi.create_nodespace(None)" % (varname))
         idmap[nodespace.uid] = varname
         xpos.append(node.position[0])
         ypos.append(node.position[1])

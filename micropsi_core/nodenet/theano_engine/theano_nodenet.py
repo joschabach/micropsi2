@@ -644,13 +644,10 @@ class TheanoNodenet(Nodenet):
             if spid in otherpartition.inlinks:
                 del otherpartition.inlinks[spid]
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
-
-        new_partition = False
-        try:
-            new_partition = settings['theano']['multi_partitions'] == "True"
-        except:
-            self.logger.warning("Could not read 'multi_partition' value from configuration, defaulting to False.")
+    def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
+        if options is None:
+            options = {}
+        new_partition = options.get('new_partition', False)
 
         partition = self.get_partition(parent_uid)
 

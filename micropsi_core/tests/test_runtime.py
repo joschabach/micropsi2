@@ -92,7 +92,7 @@ def test_register_runner_condition_monitor(test_nodenet):
 
 def test_get_links_for_nodes(test_nodenet, node):
     api = micropsi.nodenets[test_nodenet].netapi
-    ns = api.create_node('Nodespace', None)
+    ns = api.create_nodespace(None)
     node = api.get_node(node)
     pipe1 = api.create_node("Pipe", ns.uid, "pipe1")
     pipe2 = api.create_node("Pipe", ns.uid, "pipe2")

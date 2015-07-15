@@ -2964,9 +2964,17 @@ function handlePasteNodes(pastemode){
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
-    function deleteNodeOnServer(node_uid){
-        api.call("delete_node",
-            {nodenet_uid:currentNodenet, node_uid: node_uid},
+    function deleteNodeOnServer(node){
+        var method = "";
+        var params = {nodenet_uid: currentNodenet};
+        if(node.type == "Nodespace"){
+            method = "delete_nodespace";
+            params.nodespace_uid = node.uid;
+        } else {
+            method = "delete_node";
+            params.node_uid = node.uid;
+        }
+        api.call(method, params,
             success=function(data){
                 dialogs.notification('node deleted', 'success');
                 getNodespaceList();
@@ -2975,13 +2983,13 @@ function deleteNodeHandler(nodeUid) {
     }
     var deletedNodes = [];
     if (nodeUid in nodes) {
-        deletedNodes.push(nodeUid);
+        deletedNodes.push(nodes[nodeUid]);
         removeNode(nodes[nodeUid]);
         if (nodeUid in selection) delete selection[nodeUid];
     }
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            deletedNodes.push(selected);
+            deletedNodes.push(nodes[selected]);
             removeNode(nodes[selected]);
             delete selection[selected];
         }

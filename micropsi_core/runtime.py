@@ -909,16 +909,20 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 
 def delete_node(nodenet_uid, node_uid):
     """Removes the node or node space"""
-
-    # todo: There should be a separate JSON API method for deleting node spaces -- they're entities, but NOT nodes!
-
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_nodespace(node_uid):
-            nodenet.delete_nodespace(node_uid)
-            return True
-        elif nodenet.is_node(node_uid):
+        if nodenet.is_node(node_uid):
             nodenets[nodenet_uid].delete_node(node_uid)
+            return True
+        return False
+
+
+def delete_nodespace(nodenet_uid, nodespace_uid):
+    """ Removes the given node space and all its contents"""
+    nodenet = nodenets[nodenet_uid]
+    with nodenet.netlock:
+        if nodenet.is_nodespace(nodespace_uid):
+            nodenet.delete_nodespace(nodespace_uid)
             return True
         return False
 

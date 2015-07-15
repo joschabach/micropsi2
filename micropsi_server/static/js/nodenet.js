@@ -1217,7 +1217,7 @@ function renderComment(node){
     var bounds = node.bounds;
     var commentGroup = new Group();
     commentText = new PointText(bounds.x + 10, bounds.y + viewProperties.lineHeight * viewProperties.zoomFactor);
-    commentText.content = node.parameters.comment;
+    commentText.content = node.parameters.comment || '';
     commentText.name = "comment";
     commentText.fillColor = viewProperties.nodeFontColor;
     commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;

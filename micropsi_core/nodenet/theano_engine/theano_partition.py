@@ -1150,8 +1150,8 @@ class TheanoPartition():
         elif nodetype == "Comment":
             node_proxy = self.nodenet.get_node(uid)
             self.comment_instances[uid] = node_proxy
-            for key, value in parameters.items():
-                node_proxy.set_parameter(key, value)
+            for key in self.nodenet.get_standard_nodetype_definitions()[nodetype]['parameters']:
+                node_proxy.set_parameter(key, parameters.get(key, ''))
 
         for gate, parameters in nto.gate_defaults.items():
             if gate in nto.gatetypes:

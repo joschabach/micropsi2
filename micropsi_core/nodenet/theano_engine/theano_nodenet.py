@@ -979,7 +979,7 @@ class TheanoNodenet(Nodenet):
 
                         target_id = partition.allocated_elements_to_nodes[to_elements[link_index]]
                         target_type = partition.allocated_nodes[target_id]
-                        target_slot_numerical = to_elements[link_index] - partition.allocated_node_offsets[to_elements[link_index]]
+                        target_slot_numerical = to_elements[link_index] - partition.allocated_node_offsets[target_id]
                         target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
 
                         linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))

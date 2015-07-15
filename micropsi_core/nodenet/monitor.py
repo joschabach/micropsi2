@@ -4,6 +4,7 @@
 Monitor definition
 """
 
+import random
 import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
 
@@ -28,15 +29,17 @@ class Monitor(metaclass=ABCMeta):
             "uid": self.uid,
             "values": self.values,
             "name": self.name,
+            "color": self.color,
             "classname": self.__class__.__name__
         }
         return data
 
-    def __init__(self, nodenet, name='', uid=None):
+    def __init__(self, nodenet, name='', uid=None, color=None):
         self.uid = uid or micropsi_core.tools.generate_uid()
         self.nodenet = nodenet
         self.values = {}
         self.name = name or "some monitor"
+        self.color = color or "#%02d%02d%02d" % (random.randint(0,99), random.randint(0,99), random.randint(0,99))
         nodenet._register_monitor(self)
 
     @abstractmethod
@@ -60,9 +63,9 @@ class NodeMonitor(Monitor):
         })
         return data
 
-    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, **_):
+    def __init__(self, nodenet, node_uid, type, target, sheaf=None, name=None, uid=None, color=None, **_):
         name = name or "%s %s @ Node %s" % (type, target, nodenet.netapi.get_node(node_uid).name or nodenet.netapi.get_node(node_uid).uid)
-        super(NodeMonitor, self).__init__(nodenet, name, uid)
+        super(NodeMonitor, self).__init__(nodenet, name, uid, color=color)
         self.node_uid = node_uid
         self.type = type
         self.target = target or 'gen'
@@ -92,10 +95,10 @@ class LinkMonitor(Monitor):
         })
         return data
 
-    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, **_):
+    def __init__(self, nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, uid=None, color=None, **_):
         api = nodenet.netapi
         name = name or "%s:%s -> %s:%s" % (api.get_node(source_node_uid).name, gate_type, api.get_node(source_node_uid).name, slot_type)
-        super(LinkMonitor, self).__init__(nodenet, name, uid)
+        super(LinkMonitor, self).__init__(nodenet, name, uid, color=color)
         self.source_node_uid = source_node_uid
         self.target_node_uid = target_node_uid
         self.gate_type = gate_type
@@ -130,10 +133,10 @@ class ModulatorMonitor(Monitor):
         })
         return data
 
-    def __init__(self, nodenet, modulator, name=None, uid=None, **_):
+    def __init__(self, nodenet, modulator, name=None, uid=None, color=None, **_):
         api = nodenet.netapi
         name = name or "Modulator: %s" % modulator
-        super(ModulatorMonitor, self).__init__(nodenet, name, uid)
+        super(ModulatorMonitor, self).__init__(nodenet, name, uid, color=color)
         self.modulator = modulator
         self.nodenet = nodenet
 
@@ -151,8 +154,8 @@ class CustomMonitor(Monitor):
         })
         return data
 
-    def __init__(self, nodenet, function, name=None, uid=None, **_):
-        super(CustomMonitor, self).__init__(nodenet, name, uid)
+    def __init__(self, nodenet, function, name=None, uid=None, color=None, **_):
+        super(CustomMonitor, self).__init__(nodenet, name, uid, color=color)
         self.function = function
         self.compiled_function = micropsi_core.tools.create_function(self.function, parameters="netapi")
 

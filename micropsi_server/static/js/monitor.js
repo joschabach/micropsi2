@@ -205,7 +205,7 @@ $(function(){
             if(currentMonitors.indexOf(uid) > -1){
                 html += ' checked="checked"';
             }
-            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
+            html += ' /> <label for="'+uid+'" style="display:inline;color:'+monitors[uid].color+'"><strong>' + monitors[uid].name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);
@@ -353,7 +353,7 @@ $(function(){
                     .data(data)
                     .enter().append("svg:circle")
                      .attr("stroke", "black")
-                     .attr("fill", function(d, i) { return '#' + uid.substr(2, 6); })
+                     .attr("fill", function(d, i) { return  currentMonitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y2(d[1]); })
                      .attr("r", function(d, i) { return 2 });
@@ -373,7 +373,7 @@ $(function(){
                 var points = svg.selectAll(".point")
                     .data(data)
                     .enter().append("svg:circle")
-                     .attr("fill", function(d, i) { return '#' + uid.substr(2, 6); })
+                     .attr("fill", function(d, i) { return currentMonitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y1(d[1]); })
                      .attr("r", function(d, i) { return 2 });
@@ -383,7 +383,7 @@ $(function(){
 
             var len = data.length;
             data.splice(0, len - xvalues - 1);
-            var color = '#' + uid.substr(2, 6);
+            var color =  currentMonitors[uid].color;
             svg.append("path")
                 .datum(data)
                 .attr("class", "line")

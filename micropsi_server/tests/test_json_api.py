@@ -1249,7 +1249,8 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
         'nodenet_uid': test_nodenet,
         'node_uid': node,
         'gate': 'gen',
-        'name': 'Testmonitor'
+        'name': 'Testmonitor',
+        'color': '#332211'
     })
     monitor_uid = response.json_body['data']
 
@@ -1272,6 +1273,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['monitors'][monitor_uid]['type'] == 'gate'
     assert data['monitors'][monitor_uid]['uid'] == monitor_uid
     assert data['monitors'][monitor_uid]['values'] == {}
+    assert data['monitors'][monitor_uid]['color'] == '#332211'
     assert data['monitors'][monitor_uid] == monitor_data
 
     # Nodes

@@ -12,7 +12,7 @@ from math import sqrt, radians, cos, sin, tan
 class MinecraftVision(MinecraftGraphLocomotion):
 
     # see init() for further supported datasources
-    supported_datasources = []
+    supported_datasources = ['current_location_index']
 
     # see init() for further supported datatargets
     supported_datatargets = [
@@ -164,6 +164,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     self.datatarget_feedback[k] = 0.
 
             if not self.simulated_vision:
+
+                self.datasources['current_location_index'] = self.loco_nodes_indexes.index(self.current_loco_node['name'])
 
                 if not self.spockplugin.is_connected():
                     return

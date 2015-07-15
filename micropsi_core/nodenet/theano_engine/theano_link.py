@@ -54,8 +54,8 @@ class TheanoLink(Link):
             weights = inlinks[2].get_value(borrow=True)
             target_element = target_partition.allocated_node_offsets[node_from_id(self.__target_node_uid)] + nst
             source_element = source_partition.allocated_node_offsets[node_from_id(self.__source_node_uid)] + ngt
-            x = np.where(from_elements == source_element)[0][0]
-            y = np.where(to_elements == target_element)[0][0]
+            y = np.where(from_elements == source_element)[0][0]
+            x = np.where(to_elements == target_element)[0][0]
             return float(weights[x][y])
 
     @property

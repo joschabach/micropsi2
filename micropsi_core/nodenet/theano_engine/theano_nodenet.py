@@ -974,7 +974,7 @@ class TheanoNodenet(Nodenet):
                     for link_index in links_indices:
                         source_id = from_partition.allocated_elements_to_nodes[element]
                         source_type = from_partition.allocated_nodes[source_id]
-                        source_gate_numerical = element - partition.allocated_node_offsets[source_id]
+                        source_gate_numerical = element - from_partition.allocated_node_offsets[source_id]
                         source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
 
                         target_id = partition.allocated_elements_to_nodes[to_elements[link_index]]

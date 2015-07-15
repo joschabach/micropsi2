@@ -28,7 +28,7 @@ class TheanoPropagate(Propagate):
             for inlinks in partition.inlinks.values():
                 inlinks[3]()                                # call the theano_function at [3]
 
-        # the propagate internally in all partitions
+        # then propagate internally in all partitions
         for partition in nodenet.partitions.values():
             partition.propagate()
 

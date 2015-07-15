@@ -105,7 +105,7 @@ class LinkMonitor(Monitor):
         self.slot_type = slot_type
         self.property = property or 'weight'
 
-    def findLink(self):
+    def find_link(self):
         if self.nodenet.is_node(self.source_node_uid) and self.nodenet.is_node(self.target_node_uid):
             gate = self.nodenet.netapi.get_node(self.source_node_uid).get_gate(self.gate_type)
             if gate:
@@ -116,9 +116,9 @@ class LinkMonitor(Monitor):
         return None
 
     def step(self, step):
-        link = self.findLink()
+        link = self.find_link()
         if link:
-            self.values[step] = getattr(self.findLink(), self.property)
+            self.values[step] = getattr(self.find_link(), self.property)
         else:
             self.values[step] = None
 
@@ -134,7 +134,6 @@ class ModulatorMonitor(Monitor):
         return data
 
     def __init__(self, nodenet, modulator, name=None, uid=None, color=None, **_):
-        api = nodenet.netapi
         name = name or "Modulator: %s" % modulator
         super(ModulatorMonitor, self).__init__(nodenet, name, uid, color=color)
         self.modulator = modulator

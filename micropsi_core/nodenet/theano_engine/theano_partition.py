@@ -652,23 +652,28 @@ class TheanoPartition():
         for spid, inlinks in self.inlinks.items():
             inlink_element_count += len(inlinks[0].get_value(borrow=True))
         inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
-        inlink_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
+        inlink_from_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
+        inlink_to_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
         inlink_from_elements = np.zeros(inlink_element_count, dtype=np.int32)
         inlink_to_elements = np.zeros(inlink_element_count, dtype=np.int32)
         inlink_weights = np.zeros(inlink_element_count*inlink_element_count, dtype=self.nodenet.numpyfloatX)
 
-        offset = 0
+        from_offset = 0
+        to_offset = 0
         for i, spid in enumerate(self.inlinks.keys()):
             inlinks_pids[i] = int(spid)
             from_elements = self.inlinks[spid][0].get_value(borrow=True)
             to_elements = self.inlinks[spid][1].get_value(borrow=True)
             weights = self.inlinks[spid][2].get_value(borrow=True)
-            length = len(self.inlinks[spid][0].get_value(borrow=True))
-            inlink_lengths[i] = length
-            inlink_from_elements[offset:offset+length] = from_elements
-            inlink_to_elements[offset:offset+length] = to_elements
-            inlink_weights[(offset*offset):((offset+length)*(offset+length))] = np.ravel(weights)
-            offset += length
+            from_length = len(from_elements)
+            to_length = len(to_elements)
+            inlink_from_lengths[i] = from_length
+            inlink_to_lengths[i] = to_length
+            inlink_from_elements[from_offset:from_offset+from_length] = from_elements
+            inlink_to_elements[to_offset:to_offset+to_length] = to_elements
+            inlink_weights[(from_offset*to_offset):((from_offset+from_length)*(to_offset+to_length))] = np.ravel(weights)
+            from_offset += from_length
+            to_offset += to_length
 
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
@@ -700,7 +705,8 @@ class TheanoPartition():
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
                  allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
                  inlink_pids=inlinks_pids,
-                 inlink_lengths=inlink_lengths,
+                 inlink_from_lengths=inlink_from_lengths,
+                 inlink_to_lengths=inlink_to_lengths,
                  inlink_from_elements=inlink_from_elements,
                  inlink_to_elements=inlink_to_elements,
                  inlink_weights=inlink_weights)
@@ -858,23 +864,25 @@ class TheanoPartition():
             self.logger.warn("no n_function_selector in file, falling back to defaults")
 
         if 'inlink_pids' in datafile and \
-            'inlink_lengths' in datafile and \
+            'inlink_from_lengths' in datafile and \
+            'inlink_to_lengths' in datafile and \
             'inlink_from_elements' in datafile and \
             'inlink_to_elements' in datafile and \
             'inlink_weights' in datafile:
 
             inlink_pids = datafile['inlink_pids']
-            inlink_lengths = datafile['inlink_lengths']
-            inlink_from_elements = np.split(datafile['inlink_from_elements'], inlink_lengths)
-            inlink_to_elements = np.split(datafile['inlink_to_elements'], inlink_lengths)
-            inlink_weights = np.split(datafile['inlink_weights'], inlink_lengths*inlink_lengths)
+            inlink_from_lengths = datafile['inlink_from_lengths']
+            inlink_to_lengths = datafile['inlink_to_lengths']
+            inlink_from_elements = np.split(datafile['inlink_from_elements'], inlink_from_lengths)
+            inlink_to_elements = np.split(datafile['inlink_to_elements'], inlink_to_lengths)
+            inlink_weights = np.split(datafile['inlink_weights'], inlink_from_lengths*inlink_to_lengths)
 
             for i, pid in enumerate(inlink_pids):
                 self.set_inlink_weights(
                     "%03i" % pid,
                     inlink_from_elements[i].astype(np.int32),
                     inlink_to_elements[i].astype(np.int32),
-                    np.reshape(inlink_weights[i], (inlink_lengths[i], inlink_lengths[i]))
+                    np.reshape(inlink_weights[i], (inlink_to_lengths[i], inlink_from_lengths[i]))
                 )
         else:
             self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")

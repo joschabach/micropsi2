@@ -1048,6 +1048,11 @@ def add_node(nodenet_uid, type, position, nodespace, state=None, name="", parame
     return runtime.add_node(nodenet_uid, type, position, nodespace, state=state, name=name, parameters=parameters)
 
 
+@rpc("add_nodespace", permission_required="manage nodenets")
+def add_nodespace(nodenet_uid, position, nodespace, name="", options=None):
+    return runtime.add_nodespace(nodenet_uid, position, nodespace, name=name, options=options)
+
+
 @rpc("clone_nodes", permission_required="manage nodenets")
 def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset=[50, 50]):
     return runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)

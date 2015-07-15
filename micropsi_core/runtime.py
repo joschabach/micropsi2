@@ -631,7 +631,7 @@ def get_node(nodenet_uid, node_uid):
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
-    """Creates a new node. (Including nodespace, native module.)
+    """Creates a new node. (Including native module.)
 
     Arguments:
         nodenet_uid: uid of the nodespace manager
@@ -647,10 +647,21 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    if type == "Nodespace":
-        uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
-    else:
-        uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    return True, uid
+
+def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
+    """Creates a new nodespace
+    Arguments:
+        nodenet_uid: uid of the nodespace manager
+        position: position of the node in the current nodespace
+        nodespace: uid of the parent nodespace
+        uid (optional): if not supplied, a uid will be generated
+        name (optional): if not supplied, the uid will be used instead of a display name
+        options (optional): a dict of options. TBD
+    """
+    nodenet = get_nodenet(nodenet_uid)
+    uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid, options=options)
     return True, uid
 
 

@@ -2855,13 +2855,20 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             params[param] = parameters[param] || def;
         }
     }
-    api.call("add_node", {
+    var method = "";
+    var params = {
         nodenet_uid: currentNodenet,
-        type: type,
         position: [x,y],
         nodespace: currentNodeSpace,
-        name: name,
-        parameters: params },
+        name: name}
+    if(type == "Nodespace"){
+        method = "add_nodespace";
+    } else {
+        method = "add_node"
+        params.type = type;
+        params.parameters = parameters;
+    }
+    api.call(method, params,
         success=function(uid){
             addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, params));
             view.draw();

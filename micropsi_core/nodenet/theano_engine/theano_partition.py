@@ -648,15 +648,17 @@ class TheanoPartition():
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
-        inlink_element_count = 0
+        inlink_from_element_count = 0
+        inlink_to_element_count = 0
         for spid, inlinks in self.inlinks.items():
-            inlink_element_count += len(inlinks[0].get_value(borrow=True))
+            inlink_from_element_count += len(inlinks[0].get_value(borrow=True))
+            inlink_to_element_count += len(inlinks[1].get_value(borrow=True))
         inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
         inlink_from_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
         inlink_to_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
-        inlink_from_elements = np.zeros(inlink_element_count, dtype=np.int32)
-        inlink_to_elements = np.zeros(inlink_element_count, dtype=np.int32)
-        inlink_weights = np.zeros(inlink_element_count*inlink_element_count, dtype=self.nodenet.numpyfloatX)
+        inlink_from_elements = np.zeros(inlink_from_element_count, dtype=np.int32)
+        inlink_to_elements = np.zeros(inlink_to_element_count, dtype=np.int32)
+        inlink_weights = np.zeros(inlink_from_element_count*inlink_to_element_count, dtype=self.nodenet.numpyfloatX)
 
         from_offset = 0
         to_offset = 0

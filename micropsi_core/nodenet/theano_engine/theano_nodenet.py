@@ -867,7 +867,8 @@ class TheanoNodenet(Nodenet):
                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
 
             for uid in followupnodes:
-                if partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
+                followup_partition = self.get_partition(uid)
+                if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
                     data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:

@@ -415,7 +415,8 @@ def delete_nodenet(nodenet_uid):
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    nodenets[nodenet_uid].remove(filename)
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.remove(filename)
     unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
     return True

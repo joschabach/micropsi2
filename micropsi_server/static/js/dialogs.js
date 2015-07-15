@@ -625,7 +625,10 @@ fetch_stepping_info = function(){
         setButtonStates(data.simulation_running);
     }, error=function(data, outcome, type){
         $(document).trigger('runner_stopped');
-        api.defaultErrorCallback(data, outcome, type);
+        if(data.data == 'No such nodenet'){
+            currentNodenet = null;
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+        }
     });
 }
 
@@ -803,6 +806,8 @@ window.addMonitor = function(type, param, val){
                 html += '<option>'+key+'</option>';
             }
             $('#monitor_gate_input').html(html);
+            $('#monitor_node_type_gate').prop('checked', false);
+            $('#monitor_node_type_slot').prop('checked', false);
             var html = '';
             for(var key in param['slots']){
                 html += '<option>'+key+'</option>';

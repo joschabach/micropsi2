@@ -102,7 +102,7 @@ class MicropsiRunner(threading.Thread):
                 return False
             if 'monitor' in conditions and net.current_step > 0:
                 monitor = net.get_monitor(conditions['monitor']['uid'])
-                if round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
+                if net.current_step in monitor.values and round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
                     return False
         return True
 
@@ -415,7 +415,8 @@ def delete_nodenet(nodenet_uid):
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    nodenets[nodenet_uid].remove(filename)
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.remove(filename)
     unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
     return True

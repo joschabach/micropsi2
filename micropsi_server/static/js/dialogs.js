@@ -806,6 +806,8 @@ window.addMonitor = function(type, param, val){
                 html += '<option>'+key+'</option>';
             }
             $('#monitor_gate_input').html(html);
+            $('#monitor_node_type_gate').prop('checked', false);
+            $('#monitor_node_type_slot').prop('checked', false);
             var html = '';
             for(var key in param['slots']){
                 html += '<option>'+key+'</option>';

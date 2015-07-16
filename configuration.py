@@ -19,7 +19,7 @@ except OSError:
     warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
     raise RuntimeError("config.ini not found")
 
-config['micropsi2']['version'] = "0.5-alpha3"
+config['micropsi2']['version'] = "0.6-alpha4-dev"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')

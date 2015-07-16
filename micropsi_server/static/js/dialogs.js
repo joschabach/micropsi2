@@ -599,7 +599,7 @@ fetch_stepping_info = function(){
                 $('#run_condition_steps').val(data.simulation_condition.step_amount);
             }
             if(data.simulation_condition.monitor){
-                text.push('<span style="color: #'+data.simulation_condition.monitor.uid.substr(2,6)+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
+                text.push('<span style="color: '+data.simulation_condition.monitor.color+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
                 $('#run_condition_monitor_selector').val(data.simulation_condition.monitor.uid);
                 $('#run_condition_monitor_value').val(data.simulation_condition.monitor.value);
             }

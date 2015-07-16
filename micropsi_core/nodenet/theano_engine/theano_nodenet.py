@@ -23,6 +23,7 @@ from micropsi_core.nodenet.theano_engine.theano_definitions import *
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_nodespace import *
 from micropsi_core.nodenet.theano_engine.theano_netapi import TheanoNetAPI
+from micropsi_core.nodenet.theano_engine.theano_partition import TheanoPartition
 
 from configuration import config as settings
 
@@ -148,118 +149,7 @@ class TheanoNodenet(Nodenet):
         data['modulators'] = self.construct_modulators_dict()
         return data
 
-    @property
-    def has_new_usages(self):
-        return self.__has_new_usages
-
-    @has_new_usages.setter
-    def has_new_usages(self, value):
-        self.__has_new_usages = value
-
-    @property
-    def has_pipes(self):
-        return self.__has_pipes
-
-    @has_pipes.setter
-    def has_pipes(self, value):
-        if value != self.__has_pipes:
-            self.__has_new_usages = True
-            self.__has_pipes = value
-
-    @property
-    def has_directional_activators(self):
-        return self.__has_directional_activators
-
-    @has_directional_activators.setter
-    def has_directional_activators(self, value):
-        if value != self.__has_directional_activators:
-            self.__has_new_usages = True
-            self.__has_directional_activators = value
-
-    @property
-    def has_gatefunction_absolute(self):
-        return self.__has_gatefunction_absolute
-
-    @has_gatefunction_absolute.setter
-    def has_gatefunction_absolute(self, value):
-        if value != self.__has_gatefunction_absolute:
-            self.__has_new_usages = True
-            self.__has_gatefunction_absolute = value
-
-    @property
-    def has_gatefunction_sigmoid(self):
-        return self.__has_gatefunction_sigmoid
-
-    @has_gatefunction_sigmoid.setter
-    def has_gatefunction_sigmoid(self, value):
-        if value != self.__has_gatefunction_sigmoid:
-            self.__has_new_usages = True
-            self.__has_gatefunction_sigmoid = value
-
-    @property
-    def has_gatefunction_tanh(self):
-        return self.__has_gatefunction_tanh
-
-    @has_gatefunction_tanh.setter
-    def has_gatefunction_tanh(self, value):
-        if value != self.__has_gatefunction_tanh:
-            self.__has_new_usages = True
-            self.__has_gatefunction_tanh = value
-
-    @property
-    def has_gatefunction_rect(self):
-        return self.__has_gatefunction_rect
-
-    @has_gatefunction_rect.setter
-    def has_gatefunction_rect(self, value):
-        if value != self.__has_gatefunction_rect:
-            self.__has_new_usages = True
-            self.__has_gatefunction_rect = value
-
-    @property
-    def has_gatefunction_one_over_x(self):
-        return self.__has_gatefunction_one_over_x
-
-    @has_gatefunction_one_over_x.setter
-    def has_gatefunction_one_over_x(self, value):
-        if value != self.__has_gatefunction_one_over_x:
-            self.__has_new_usages = True
-            self.__has_gatefunction_one_over_x = value
-
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
-
-        # array, index is node id, value is numeric node type
-        self.allocated_nodes = None
-
-        # array, index is node id, value is offset in a and w
-        self.allocated_node_offsets = None
-
-        # array, index is node id, value is nodespace id
-        self.allocated_node_parents = None
-
-        # array, index is element index, value is node id
-        self.allocated_elements_to_nodes = None
-
-        # array, index is nodespace id, value is parent nodespace id
-        self.allocated_nodespaces = None
-
-        # directional activator assignment, key is nodespace ID, value is activator ID
-        self.allocated_nodespaces_por_activators = None
-        self.allocated_nodespaces_ret_activators = None
-        self.allocated_nodespaces_sub_activators = None
-        self.allocated_nodespaces_sur_activators = None
-        self.allocated_nodespaces_cat_activators = None
-        self.allocated_nodespaces_exp_activators = None
-
-        # directional activators map, index is element id, value is the directional activator's element id
-        self.allocated_elements_to_activators = None
-
-        self.last_allocated_node = 0
-        self.last_allocated_offset = 0
-        self.last_allocated_nodespace = 0
-
-        self.native_module_instances = {}
-        self.comment_instances = {}
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -279,72 +169,7 @@ class TheanoNodenet(Nodenet):
         # map of numerical node IDs to data targets
         self.inverted_actuator_map = {}
 
-        # theano tensors for performing operations
-        self.w = None            # matrix of weights
-        self.a = None            # vector of activations
-        self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
-                            # this is a view on the activation values instrumental in calculating concept node functions
-
-        self.g_factor = None     # vector of gate factors, controlled by directional activators
-        self.g_threshold = None  # vector of thresholds (gate parameters)
-        self.g_amplification = None  # vector of amplification factors
-        self.g_min = None        # vector of lower bounds
-        self.g_max = None        # vector of upper bounds
-
-        self.g_function_selector = None # vector of gate function selectors
-
-        self.g_theta = None      # vector of thetas (i.e. biases, use depending on gate function)
-
-        self.g_expect = None     # vector of expectations
-        self.g_countdown = None  # vector of number of steps until expectation needs to be met
-        self.g_wait = None       # vector of initial values for g_countdown
-
-        self.n_function_selector = None      # vector of per-gate node function selectors
-        self.n_node_porlinked = None         # vector with 0/1 flags to indicated whether the element belongs to a por-linked
-                                        # node. This could in theory be inferred with T.max() on upshifted versions of w,
-                                        # but for now, we manually track this property
-        self.n_node_retlinked = None         # same for ret
-
-        self.sparse = True
-
-        self.__has_new_usages = True
-        self.__has_pipes = False
-        self.__has_directional_activators = False
-        self.__has_gatefunction_absolute = False
-        self.__has_gatefunction_sigmoid = False
-        self.__has_gatefunction_tanh = False
-        self.__has_gatefunction_rect = False
-        self.__has_gatefunction_one_over_x = False
-
         super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
-
-        INITIAL_NUMBER_OF_NODESPACES = 10
-
-        AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4
-        configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
-        try:
-            AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = int(configured_elements_per_node_assumption)
-        except:
-            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
-
-        INITIAL_NUMBER_OF_NODES = 2000
-        configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
-        try:
-            INITIAL_NUMBER_OF_NODES = int(configured_initial_number_of_nodes)
-        except:
-            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
-
-        INITIAL_NUMBER_OF_ELEMENTS = INITIAL_NUMBER_OF_NODES * AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION
-
-        self.sparse = True
-        configuredsparse = settings['theano']['sparse_weight_matrix']
-        if configuredsparse == "True":
-            self.sparse = True
-        elif configuredsparse == "False":
-            self.sparse = False
-        else:
-            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
-            self.sparse = True
 
         precision = settings['theano']['precision']
         if precision == "32":
@@ -373,9 +198,13 @@ class TheanoNodenet(Nodenet):
 
         self.netapi = TheanoNetAPI(self)
 
-        self.NoN = INITIAL_NUMBER_OF_NODES
-        self.NoE = INITIAL_NUMBER_OF_ELEMENTS
-        self.NoNS = INITIAL_NUMBER_OF_NODESPACES
+        self.partitions = {}
+        self.last_allocated_partition = 0
+        rootpartition = TheanoPartition(self, self.last_allocated_partition)
+        self.partitions[rootpartition.spid] = rootpartition
+        self.rootpartition = rootpartition
+        self.partitionmap = {}
+        self.inverted_partitionmap = {}
 
         self.__version = NODENET_VERSION  # used to check compatibility of the node net data
         self.__step = 0
@@ -383,71 +212,6 @@ class TheanoNodenet(Nodenet):
         self.__modulators['por_ret_decay'] = 0.
 
         self.proxycache = {}
-
-        self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
-        self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
-        self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
-        self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
-        self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
-        self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
-
-        self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_ret_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sub_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sur_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_cat_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
-
-        if self.sparse:
-            self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=self.scipyfloatX), name="w")
-        else:
-            w_matrix = np.zeros((self.NoE, self.NoE), dtype=self.scipyfloatX)
-            self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
-
-        a_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
-
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
-        self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
-
-        g_theta_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
-
-        g_factor_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
-
-        g_threshold_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.g_threshold = theano.shared(value=g_threshold_array.astype(T.config.floatX), name="g_threshold", borrow=True)
-
-        g_amplification_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_amplification = theano.shared(value=g_amplification_array.astype(T.config.floatX), name="g_amplification", borrow=True)
-
-        g_min_array = np.zeros(self.NoE, dtype=self.numpyfloatX)
-        self.g_min = theano.shared(value=g_min_array.astype(T.config.floatX), name="g_min", borrow=True)
-
-        g_max_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_max = theano.shared(value=g_max_array.astype(T.config.floatX), name="g_max", borrow=True)
-
-        g_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
-        self.g_function_selector = theano.shared(value=g_function_selector_array, name="gatefunction", borrow=True)
-
-        g_expect_array = np.ones(self.NoE, dtype=self.numpyfloatX)
-        self.g_expect = theano.shared(value=g_expect_array, name="expectation", borrow=True)
-
-        g_countdown_array = np.zeros(self.NoE, dtype=np.int8)
-        self.g_countdown = theano.shared(value=g_countdown_array, name="countdown", borrow=True)
-
-        g_wait_array = np.ones(self.NoE, dtype=np.int8)
-        self.g_wait = theano.shared(value=g_wait_array, name="wait", borrow=True)
-
-        n_function_selector_array = np.zeros(self.NoE, dtype=np.int8)
-        self.n_function_selector = theano.shared(value=n_function_selector_array, name="nodefunction_per_gate", borrow=True)
-
-        n_node_porlinked_array = np.zeros(self.NoE, dtype=np.int8)
-        self.n_node_porlinked = theano.shared(value=n_node_porlinked_array, name="porlinked", borrow=True)
-
-        n_node_retlinked_array = np.zeros(self.NoE, dtype=np.int8)
-        self.n_node_retlinked = theano.shared(value=n_node_retlinked_array, name="retlinked", borrow=True)
 
         self.stepoperators = []
         self.initialize_stepoperators()
@@ -461,17 +225,15 @@ class TheanoNodenet(Nodenet):
         for type, data in self.native_module_definitions.items():
             self.native_modules[type] = Nodetype(nodenet=self, **data)
 
-        self.nodegroups = {}
-
-        self.create_nodespace(None, None, "Root", nodespace_to_id(1))
+        self.create_nodespace(None, None, "Root", nodespace_to_id(1, rootpartition.pid))
 
         self.initialize_nodenet({})
 
     def initialize_stepoperators(self):
         self.stepoperators = [
-            TheanoPropagate(self),
+            TheanoPropagate(),
             TheanoCalculate(self),
-            TheanoPORRETDecay(self),
+            TheanoPORRETDecay(),
             DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
@@ -487,85 +249,17 @@ class TheanoNodenet(Nodenet):
             metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
+            metadata['partition_parents'] = self.inverted_partitionmap
             fp.write(json.dumps(metadata, sort_keys=True, indent=4))
 
-        # write bulk data to our own numpy-based file format
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data")
-
-        allocated_nodes = self.allocated_nodes
-        allocated_node_offsets = self.allocated_node_offsets
-        allocated_elements_to_nodes = self.allocated_elements_to_nodes
-        allocated_node_parents = self.allocated_node_parents
-        allocated_nodespaces = self.allocated_nodespaces
-        allocated_elements_to_activators = self.allocated_elements_to_activators
-
-        allocated_nodespaces_por_activators = self.allocated_nodespaces_por_activators
-        allocated_nodespaces_ret_activators = self.allocated_nodespaces_ret_activators
-        allocated_nodespaces_sub_activators = self.allocated_nodespaces_sub_activators
-        allocated_nodespaces_sur_activators = self.allocated_nodespaces_sur_activators
-        allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
-        allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
-
-        w = self.w.get_value(borrow=True)
-
-        # if we're sparse, convert to sparse matrix for persistency
-        if not self.sparse:
-            w = sp.csr_matrix(w)
-
-        a = self.a.get_value(borrow=True)
-        g_theta = self.g_theta.get_value(borrow=True)
-        g_factor = self.g_factor.get_value(borrow=True)
-        g_threshold = self.g_threshold.get_value(borrow=True)
-        g_amplification = self.g_amplification.get_value(borrow=True)
-        g_min = self.g_min.get_value(borrow=True)
-        g_max = self.g_max.get_value(borrow=True)
-        g_function_selector = self.g_function_selector.get_value(borrow=True)
-        g_expect = self.g_expect.get_value(borrow=True)
-        g_countdown = self.g_countdown.get_value(borrow=True)
-        g_wait = self.g_wait.get_value(borrow=True)
-        n_function_selector = self.n_function_selector.get_value(borrow=True)
-        n_node_porlinked = self.n_node_porlinked.get_value(borrow=True)
-        n_node_retlinked = self.n_node_retlinked.get_value(borrow=True)
-
-        sizeinformation = [self.NoN, self.NoE, self.NoNS]
-
-        np.savez(datafilename,
-                 allocated_nodes=allocated_nodes,
-                 allocated_node_offsets=allocated_node_offsets,
-                 allocated_elements_to_nodes=allocated_elements_to_nodes,
-                 allocated_node_parents=allocated_node_parents,
-                 allocated_nodespaces=allocated_nodespaces,
-                 w_data=w.data,
-                 w_indices=w.indices,
-                 w_indptr=w.indptr,
-                 a=a,
-                 g_theta=g_theta,
-                 g_factor=g_factor,
-                 g_threshold=g_threshold,
-                 g_amplification=g_amplification,
-                 g_min=g_min,
-                 g_max=g_max,
-                 g_function_selector=g_function_selector,
-                 g_expect=g_expect,
-                 g_countdown=g_countdown,
-                 g_wait=g_wait,
-                 n_function_selector=n_function_selector,
-                 n_node_porlinked=n_node_porlinked,
-                 n_node_retlinked=n_node_retlinked,
-                 sizeinformation=sizeinformation,
-                 allocated_elements_to_activators=allocated_elements_to_activators,
-                 allocated_nodespaces_por_activators=allocated_nodespaces_por_activators,
-                 allocated_nodespaces_ret_activators=allocated_nodespaces_ret_activators,
-                 allocated_nodespaces_sub_activators=allocated_nodespaces_sub_activators,
-                 allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
-                 allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
-                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators)
+        for partition in self.partitions.values():
+            # write bulk data to our own numpy-based file format
+            datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid)
+            partition.save(datafilename)
 
     def load(self, filename):
         """Load the node net from a file"""
         # try to access file
-
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
 
         with self.netlock:
             initfrom = {}
@@ -582,201 +276,28 @@ class TheanoNodenet(Nodenet):
                     warnings.warn("Could not open nodenet metadata file %s", filename)
                     return False
 
-            if os.path.isfile(datafilename):
-                try:
-                    self.logger.info("Loading nodenet %s bulk data from file %s", self.name, datafilename)
-                    datafile = np.load(datafilename)
-                except ValueError:
-                    warnings.warn("Could not read nodenet data from file %", datafile)
-                    return False
-                except IOError:
-                    warnings.warn("Could not open nodenet file %s", datafile)
-                    return False
-
             # initialize with metadata
             self.initialize_nodenet(initfrom)
 
-            if datafile:
+            nodes_data = {}
+            if 'nodes' in initfrom:
+                nodes_data = initfrom['nodes']
 
-                if 'sizeinformation' in datafile:
-                    self.NoN = datafile['sizeinformation'][0]
-                    self.NoE = datafile['sizeinformation'][1]
-                    self.NoNS = datafile['sizeinformation'][2]
-                else:
-                    self.logger.warn("no sizeinformation in file, falling back to defaults")
+            for partition in self.partitions.values():
+                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
+                partition.load(datafilename, nodes_data)
 
-                # the load bulk data into numpy arrays
-                if 'allocated_nodes' in datafile:
-                    self.allocated_nodes = datafile['allocated_nodes']
-                else:
-                    self.logger.warn("no allocated_nodes in file, falling back to defaults")
-
-                if 'allocated_node_offsets' in datafile:
-                    self.allocated_node_offsets = datafile['allocated_node_offsets']
-                else:
-                    self.logger.warn("no allocated_node_offsets in file, falling back to defaults")
-
-                if 'allocated_elements_to_nodes' in datafile:
-                    self.allocated_elements_to_nodes = datafile['allocated_elements_to_nodes']
-                else:
-                    self.logger.warn("no allocated_elements_to_nodes in file, falling back to defaults")
-
-                if 'allocated_nodespaces' in datafile:
-                    self.allocated_nodespaces = datafile['allocated_nodespaces']
-                else:
-                    self.logger.warn("no allocated_nodespaces in file, falling back to defaults")
-
-                if 'allocated_node_parents' in datafile:
-                    self.allocated_node_parents = datafile['allocated_node_parents']
-                else:
-                    self.logger.warn("no allocated_node_parents in file, falling back to defaults")
-
-                if 'allocated_elements_to_activators' in datafile:
-                    self.allocated_elements_to_activators = datafile['allocated_elements_to_activators']
-                else:
-                    self.logger.warn("no allocated_elements_to_activators in file, falling back to defaults")
-
-                if 'allocated_nodespaces_por_activators' in datafile:
-                    self.allocated_nodespaces_por_activators = datafile['allocated_nodespaces_por_activators']
-                else:
-                    self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
-
-                if 'allocated_nodespaces_ret_activators' in datafile:
-                    self.allocated_nodespaces_ret_activators = datafile['allocated_nodespaces_ret_activators']
-                else:
-                    self.logger.warn("no allocated_nodespaces_ret_activators in file, falling back to defaults")
-
-                if 'allocated_nodespaces_sub_activators' in datafile:
-                    self.allocated_nodespaces_sub_activators = datafile['allocated_nodespaces_sub_activators']
-                else:
-                    self.logger.warn("no allocated_nodespaces_sub_activators in file, falling back to defaults")
-
-                if 'allocated_nodespaces_sur_activators' in datafile:
-                    self.allocated_nodespaces_sur_activators = datafile['allocated_nodespaces_sur_activators']
-                else:
-                    self.logger.warn("no allocated_nodespaces_sur_activators in file, falling back to defaults")
-
-                if 'allocated_nodespaces_cat_activators' in datafile:
-                    self.allocated_nodespaces_cat_activators = datafile['allocated_nodespaces_cat_activators']
-                else:
-                    self.logger.warn("no allocated_nodespaces_cat_activators in file, falling back to defaults")
-
-                if 'allocated_nodespaces_exp_activators' in datafile:
-                    self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
-                else:
-                    self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
-
-
-                if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
-                    w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
-                    # if we're configured to be dense, convert from csr
-                    if not self.sparse:
-                        w = w.todense()
-                    self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
-                    self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
-                else:
-                    self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
-
-                if 'g_theta' in datafile:
-                    self.g_theta = theano.shared(value=datafile['g_theta'].astype(T.config.floatX), name="theta", borrow=False)
-                else:
-                    self.logger.warn("no g_theta in file, falling back to defaults")
-
-                if 'g_factor' in datafile:
-                    self.g_factor = theano.shared(value=datafile['g_factor'].astype(T.config.floatX), name="g_factor", borrow=False)
-                else:
-                    self.logger.warn("no g_factor in file, falling back to defaults")
-
-                if 'g_threshold' in datafile:
-                    self.g_threshold = theano.shared(value=datafile['g_threshold'].astype(T.config.floatX), name="g_threshold", borrow=False)
-                else:
-                    self.logger.warn("no g_threshold in file, falling back to defaults")
-
-                if 'g_amplification' in datafile:
-                    self.g_amplification = theano.shared(value=datafile['g_amplification'].astype(T.config.floatX), name="g_amplification", borrow=False)
-                else:
-                    self.logger.warn("no g_amplification in file, falling back to defaults")
-
-                if 'g_min' in datafile:
-                    self.g_min = theano.shared(value=datafile['g_min'].astype(T.config.floatX), name="g_min", borrow=False)
-                else:
-                    self.logger.warn("no g_min in file, falling back to defaults")
-
-                if 'g_max' in datafile:
-                    self.g_max = theano.shared(value=datafile['g_max'].astype(T.config.floatX), name="g_max", borrow=False)
-                else:
-                    self.logger.warn("no g_max in file, falling back to defaults")
-
-                if 'g_function_selector' in datafile:
-                    self.g_function_selector = theano.shared(value=datafile['g_function_selector'], name="gatefunction", borrow=False)
-                else:
-                    self.logger.warn("no g_function_selector in file, falling back to defaults")
-
-                if 'g_expect' in datafile:
-                    self.g_expect = theano.shared(value=datafile['g_expect'], name="expectation", borrow=False)
-                else:
-                    self.logger.warn("no g_expect in file, falling back to defaults")
-
-                if 'g_countdown' in datafile:
-                    self.g_countdown = theano.shared(value=datafile['g_countdown'], name="countdown", borrow=False)
-                else:
-                    self.logger.warn("no g_countdown in file, falling back to defaults")
-
-                if 'g_wait' in datafile:
-                    self.g_wait = theano.shared(value=datafile['g_wait'], name="wait", borrow=False)
-                else:
-                    self.logger.warn("no g_wait in file, falling back to defaults")
-
-
-                if 'n_function_selector' in datafile:
-                    self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
-                else:
-                    self.logger.warn("no n_function_selector in file, falling back to defaults")
-
-
-                if 'n_node_porlinked' in datafile:
-                    self.n_node_porlinked = theano.shared(value=datafile['n_node_porlinked'], name="porlinked", borrow=False)
-                else:
-                    self.logger.warn("no n_node_porlinked in file, falling back to defaults")
-
-                if 'n_node_retlinked' in datafile:
-                    self.n_node_retlinked = theano.shared(value=datafile['n_node_retlinked'], name="retlinked", borrow=False)
-                else:
-                    self.logger.warn("no n_node_retlinked in file, falling back to defaults")
-
-                # reconstruct other states
-                if 'g_function_selector' in datafile:
-                    g_function_selector = datafile['g_function_selector']
-                    self.has_new_usages = True
-                    self.has_pipes = PIPE in self.allocated_nodes
-                    self.has_directional_activators = ACTIVATOR in self.allocated_nodes
-                    self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
-                    self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
-                    self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
-                    self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
-                    self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
-                else:
-                    self.logger.warn("no g_function_selector in file, falling back to defaults")
-
-                for id in range(len(self.allocated_nodes)):
-                    if self.allocated_nodes[id] > MAX_STD_NODETYPE:
-                        uid = node_to_id(id)
-                        self.native_module_instances[uid] = self.get_node(uid)
-                    elif self.allocated_nodes[id] == COMMENT:
-                        uid = node_to_id(id)
-                        self.comment_instances[uid] = self.get_node(uid)
-
-                # reloading native modules ensures the types in allocated_nodes are up to date
-                # (numerical native module types are runtime dependent and may differ from when allocated_nodes
-                # was saved).
-                self.reload_native_modules(self.native_module_definitions)
+            # reloading native modules ensures the types in allocated_nodes are up to date
+            # (numerical native module types are runtime dependent and may differ from when allocated_nodes
+            # was saved).
+            self.reload_native_modules(self.native_module_definitions)
 
             for sensor, id_list in self.sensormap.items():
                 for id in id_list:
-                    self.inverted_sensor_map[node_to_id(id)] = sensor
+                    self.inverted_sensor_map[node_to_id(id, self.rootpartition.pid)] = sensor
             for actuator, id_list in self.actuatormap.items():
                 for id in id_list:
-                    self.inverted_actuator_map[node_to_id(id)] = actuator
+                    self.inverted_actuator_map[node_to_id(id, self.rootpartition.pid)] = actuator
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -784,12 +305,10 @@ class TheanoNodenet(Nodenet):
             return True
 
     def remove(self, filename):
-        datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data.npz")
-        try:
-            os.remove(datafilename)
-        except IOError:
-            pass
-        os.remove(filename)
+        neighbors = os.listdir(os.path.dirname(filename))
+        for neighbor in neighbors:
+            if neighbor.startswith(self.uid):
+                os.remove(os.path.join(os.path.dirname(filename), neighbor))
 
     def initialize_nodenet(self, initfrom):
 
@@ -806,16 +325,28 @@ class TheanoNodenet(Nodenet):
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
                 self.sensormap = initfrom['sensormap']
+            if 'current_step' in initfrom:
+                self.__step = initfrom['current_step']
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
         uidmap = {}
         # for dict_engine compatibility
-        uidmap["Root"] = "s1"
+        uidmap["Root"] = self.rootpartition.rootnodespace_uid
 
         # re-use the root nodespace
-        uidmap["s1"] = "s1"
+        uidmap[self.rootpartition.rootnodespace_uid] = self.rootpartition.rootnodespace_uid
+
+        # instantiate partitions
+        partitions_to_instantiate = nodenet_data.get('partition_parents', {})
+        largest_pid = 0
+        for partition_spid, parent_uid in partitions_to_instantiate.items():
+            pid = int(partition_spid)
+            if pid > largest_pid:
+                largest_pid = pid
+            self.create_partition(pid, parent_uid)
+        self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())
@@ -887,13 +418,14 @@ class TheanoNodenet(Nodenet):
         if necessary)
         """
         if keep_uids:
+            partition = self.get_partition(nodespace_uid)
             id = nodespace_from_id(nodespace_uid)
-            if self.allocated_nodespaces[id] == 0:
+            if partition.allocated_nodespaces[id] == 0:
                 # move up the nodespace tree until we find an existing parent or hit root
                 if id != 1:
                     parent_id = nodespace_from_id(data[nodespace_uid].get('parent_nodespace'))
-                    if self.allocated_nodespaces[parent_id] == 0:
-                        self.merge_nodespace_data(nodespace_to_id(parent_id), data, uidmap, keep_uids)
+                    if partition.allocated_nodespaces[parent_id] == 0:
+                        self.merge_nodespace_data(nodespace_to_id(parent_id, partition.pid), data, uidmap, keep_uids)
                 self.create_nodespace(
                     data[nodespace_uid].get('parent_nodespace'),
                     data[nodespace_uid].get('position'),
@@ -921,218 +453,71 @@ class TheanoNodenet(Nodenet):
                                                         # but instead the world object itself
 
         with self.netlock:
-
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
             self.__step += 1
 
+    def get_partition(self, uid):
+        if uid is None:
+            return self.rootpartition
+        return self.partitions.get(uid[1:4], None)
+
     def get_node(self, uid):
-        if uid in self.native_module_instances:
-            return self.native_module_instances[uid]
-        elif uid in self.comment_instances:
-            return self.comment_instances[uid]
+        partition = self.get_partition(uid)
+        if partition is None:
+            raise KeyError("No node with id %s exists", uid)
+        if uid in partition.native_module_instances:
+            return partition.native_module_instances[uid]
+        elif uid in partition.comment_instances:
+            return partition.comment_instances[uid]
         elif uid in self.proxycache:
             return self.proxycache[uid]
-        elif uid in self.get_node_uids():
+        elif self.is_node(uid):
             id = node_from_id(uid)
-            parent_id = self.allocated_node_parents[id]
-            node = TheanoNode(self, nodespace_to_id(parent_id), uid, self.allocated_nodes[id])
+            parent_id = partition.allocated_node_parents[id]
+            node = TheanoNode(self, partition, nodespace_to_id(parent_id, partition.pid), uid, partition.allocated_nodes[id])
             self.proxycache[node.uid] = node
             return node
         else:
             raise KeyError("No node with id %s exists", uid)
 
-    def get_node_uids(self):
-        return [node_to_id(id) for id in np.nonzero(self.allocated_nodes)[0]]
+    def get_node_uids(self, group_nodespace_uid=None, group=None):
+        if group is not None:
+            if group_nodespace_uid is None:
+                group_nodespace_uid = self.get_nodespace(None).uid
+            partition = self.get_partition(group_nodespace_uid)
+            return [node_to_id(nid, partition.pid) for nid in partition.allocated_elements_to_nodes[partition.nodegroups[group_nodespace_uid][group]]]
+        else:
+            uids = []
+            for partition in self.partitions.values():
+                uids.extend([node_to_id(id, partition.pid) for id in np.nonzero(partition.allocated_nodes)[0]])
+            return uids
 
     def is_node(self, uid):
-        return uid in self.get_node_uids()
+        if uid is None or uid[0] != 'n':
+            return False
+        partition = self.get_partition(uid)
+        if partition is None:
+            return False
+        numid = node_from_id(uid)
+        return numid < partition.NoN and partition.allocated_nodes[numid] != 0
 
-    def grow_number_of_nodes(self, growby):
-
-        new_NoN = int(self.NoN + growby)
-
-        new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)
-        new_allocated_node_parents = np.zeros(new_NoN, dtype=np.int32)
-        new_allocated_node_offsets = np.zeros(new_NoN, dtype=np.int32)
-
-        new_allocated_nodes[0:self.NoN] = self.allocated_nodes
-        new_allocated_node_parents[0:self.NoN] = self.allocated_node_parents
-        new_allocated_node_offsets[0:self.NoN] = self.allocated_node_offsets
-
-        self.NoN = new_NoN
-        self.allocated_nodes = new_allocated_nodes
-        self.allocated_node_parents = new_allocated_node_parents
-        self.allocated_node_offsets = new_allocated_node_offsets
-        self.has_new_usages = True
-
-    def grow_number_of_nodespaces(self, growby):
-
-        new_NoNS = int(self.NoNS + growby)
-
-        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
-        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
-
-        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
-        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
-        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
-        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
-        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
-        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
-        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
-
-        with self.netlock:
-            self.NoNS = new_NoNS
-            self.allocated_nodespaces = new_allocated_nodespaces
-            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
-            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
-            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
-            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
-            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
-            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
-            self.has_new_usages = True
-
-    def grow_number_of_elements(self, growby):
-
-        new_NoE = int(self.NoE + growby)
-
-        new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
-        new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
-
-        if self.sparse:
-            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.scipyfloatX)
-        else:
-            new_w = np.zeros((new_NoE, new_NoE), dtype=self.scipyfloatX)
-
-        new_a = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.byte_per_float, self.byte_per_float))
-        new_g_theta = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_g_factor = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_threshold = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_g_amplification = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_min = np.zeros(new_NoE, dtype=self.numpyfloatX)
-        new_g_max = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
-        new_g_expect = np.ones(new_NoE, dtype=self.numpyfloatX)
-        new_g_countdown = np.zeros(new_NoE, dtype=np.int8)
-        new_g_wait = np.ones(new_NoE, dtype=np.int8)
-        new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
-        new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
-        new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
-
-        new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
-        new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
-
-        new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
-
-        new_a[0:self.NoE] = self.a.get_value(borrow=True)
-        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
-        new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
-        new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
-        new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
-        new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
-        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
-        new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
-        new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
-        new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
-        new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
-        new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
-        new_n_node_porlinked[0:self.NoE] = self.n_node_porlinked.get_value(borrow=True)
-        new_n_node_retlinked[0:self.NoE] = self.n_node_retlinked.get_value(borrow=True)
-
-        with self.netlock:
-            self.NoE = new_NoE
-            self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
-            self.allocated_elements_to_activators = new_allocated_elements_to_activators
-            self.w.set_value(new_w, borrow=True)
-            self.a.set_value(new_a, borrow=True)
-            self.a_shifted.set_value(new_a_shifted, borrow=True)
-            self.g_theta.set_value(new_g_theta, borrow=True)
-            self.g_factor.set_value(new_g_factor, borrow=True)
-            self.g_threshold.set_value(new_g_threshold, borrow=True)
-            self.g_amplification.set_value(new_g_amplification, borrow=True)
-            self.g_min.set_value(new_g_min, borrow=True)
-            self.g_max.set_value(new_g_max, borrow=True)
-            self.g_function_selector.set_value(new_g_function_selector, borrow=True)
-            self.g_expect.set_value(new_g_expect, borrow=True)
-            self.g_countdown.set_value(new_g_countdown, borrow=True)
-            self.g_wait.set_value(new_g_wait, borrow=True)
-            self.n_function_selector.set_value(new_n_function_selector, borrow=True)
-            self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
-            self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
-            self.has_new_usages = True
+    def announce_nodes(self, nodespace_uid, number_of_nodes, average_elements_per_node):
+        partition = self.get_partition(nodespace_uid)
+        partition.announce_nodes(number_of_nodes, average_elements_per_node)
 
     def create_node(self, nodetype, nodespace_uid, position, name=None, uid=None, parameters=None, gate_parameters=None, gate_functions=None):
-
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
+        partition = self.get_partition(nodespace_uid)
+        nodespace_id = nodespace_from_id(nodespace_uid)
 
-        # find a free ID / index in the allocated_nodes vector to hold the node type
-        if uid is None:
-            id = 0
-            for i in range((self.last_allocated_node + 1), self.NoN):
-                if self.allocated_nodes[i] == 0:
-                    id = i
-                    break
+        id_to_pass = None
+        if uid is not None:
+            id_to_pass = node_from_id(uid)
 
-            if id < 1:
-                for i in range(self.last_allocated_node - 1):
-                    if self.allocated_nodes[i] == 0:
-                        id = i
-                        break
-
-            if id < 1:
-                growby = self.NoN // 2
-                self.logger.info("All %d node IDs in use, growing id vectors by %d elements" % (self.NoN, growby))
-                id = self.NoN
-                self.grow_number_of_nodes(growby)
-
-        else:
-            id = node_from_id(uid)
-
-        uid = node_to_id(id)
-
-        # now find a range of free elements to be used by this node
-        number_of_elements = get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)
-        has_restarted_from_zero = False
-        offset = 0
-        i = self.last_allocated_offset + 1
-        while offset < 1:
-            freecount = 0
-            for j in range(0, number_of_elements):
-                if i+j < len(self.allocated_elements_to_nodes) and self.allocated_elements_to_nodes[i+j] == 0:
-                    freecount += 1
-                else:
-                    break
-            if freecount >= number_of_elements:
-                offset = i
-                break
-            else:
-                i += freecount+1
-
-            if i >= self.NoE:
-                if not has_restarted_from_zero:
-                    i = 0
-                    has_restarted_from_zero = True
-                else:
-                    growby = max(number_of_elements +1, self.NoE // 2)
-                    self.logger.info("All %d elements in use, growing elements vectors by %d elements" % (self.NoE, growby))
-                    offset = self.NoE
-                    self.grow_number_of_elements(growby)
-
-        self.last_allocated_node = id
-        self.last_allocated_offset = offset
-        self.allocated_nodes[id] = get_numerical_node_type(nodetype, self.native_modules)
-        self.allocated_node_parents[id] = nodespace_from_id(nodespace_uid)
-        self.allocated_node_offsets[id] = offset
-
-        for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.native_modules)):
-            self.allocated_elements_to_nodes[offset + element] = id
+        id = partition.create_node(nodetype, nodespace_id, id_to_pass, parameters, gate_parameters, gate_functions)
+        uid = node_to_id(id, partition.pid)
 
         if position is not None:
             self.positions[uid] = position
@@ -1158,139 +543,21 @@ class TheanoNodenet(Nodenet):
                     connectedactuators.append(id)
                     self.actuatormap[datatarget] = connectedactuators
                     self.inverted_actuator_map[uid] = datatarget
-        elif nodetype == "Pipe":
-            self.has_pipes = True
-            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-            n_function_selector_array[offset + GEN] = NFPG_PIPE_GEN
-            n_function_selector_array[offset + POR] = NFPG_PIPE_POR
-            n_function_selector_array[offset + RET] = NFPG_PIPE_RET
-            n_function_selector_array[offset + SUB] = NFPG_PIPE_SUB
-            n_function_selector_array[offset + SUR] = NFPG_PIPE_SUR
-            n_function_selector_array[offset + CAT] = NFPG_PIPE_CAT
-            n_function_selector_array[offset + EXP] = NFPG_PIPE_EXP
-            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
-            self.allocated_elements_to_activators[offset + POR] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_por_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + RET] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_ret_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + SUB] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sub_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + SUR] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sur_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + CAT] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_cat_activators[nodespace_from_id(nodespace_uid)]]
-            self.allocated_elements_to_activators[offset + EXP] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_exp_activators[nodespace_from_id(nodespace_uid)]]
-
-            if self.__nodetypes[nodetype].parameter_defaults.get('expectation'):
-                value = self.__nodetypes[nodetype].parameter_defaults['expectation']
-                g_expect_array = self.g_expect.get_value(borrow=True)
-                g_expect_array[offset + SUR] = float(value)
-                g_expect_array[offset + POR] = float(value)
-                self.g_expect.set_value(g_expect_array, borrow=True)
-
-            if self.__nodetypes[nodetype].parameter_defaults.get('wait'):
-                value = self.__nodetypes[nodetype].parameter_defaults['wait']
-                g_wait_array = self.g_wait.get_value(borrow=True)
-                g_wait_array[offset + SUR] = int(min(value, 128))
-                g_wait_array[offset + POR] = int(min(value, 128))
-                self.g_wait.set_value(g_wait_array, borrow=True)
-        elif nodetype == "Activator":
-            self.has_directional_activators = True
-            activator_type = parameters.get("type")
-            if activator_type is not None and len(activator_type) > 0:
-                self.set_nodespace_gatetype_activator(nodespace_uid, activator_type, uid)
-
-        node_proxy = self.get_node(uid)
-
-        if nodetype not in STANDARD_NODETYPES:
-            self.native_module_instances[uid] = node_proxy
-            for key, value in parameters.items():
-                node_proxy.set_parameter(key, value)
-        elif nodetype == "Comment":
-            self.comment_instances[uid] = node_proxy
-            for key, value in parameters.items():
-                node_proxy.set_parameter(key, value)
-
-        for gate, parameters in self.get_nodetype(nodetype).gate_defaults.items():
-            if gate in node_proxy.nodetype.gatetypes:
-                for gate_parameter in parameters:
-                    node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
-        if gate_parameters is not None:
-            for gate, parameters in gate_parameters.items():
-                if gate in node_proxy.nodetype.gatetypes:
-                    for gate_parameter in parameters:
-                        node_proxy.set_gate_parameter(gate, gate_parameter, parameters[gate_parameter])
-
-        if gate_functions is not None:
-            for gate, gate_function in gate_functions.items():
-                if gate in node_proxy.nodetype.gatetypes:
-                    node_proxy.set_gatefunction_name(gate, gate_function)
-
-        # initialize activation to zero
-        a_array = self.a.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(get_numerical_node_type(nodetype, self.native_modules), self.native_modules)):
-            a_array[offset + element] = 0
-        self.a.set_value(a_array)
 
         return uid
 
     def delete_node(self, uid):
+        partition = self.get_partition(uid)
+        node_id = node_from_id(uid)
 
-        type = self.allocated_nodes[node_from_id(uid)]
-        offset = self.allocated_node_offsets[node_from_id(uid)]
-        parent = self.allocated_node_parents[node_from_id(uid)]
-
-        # unlink
-        self.get_node(uid).unlink_completely()
-
-        # forget
-        self.allocated_nodes[node_from_id(uid)] = 0
-        self.allocated_node_offsets[node_from_id(uid)] = 0
-        self.allocated_node_parents[node_from_id(uid)] = 0
-        g_function_selector_array = self.g_function_selector.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(type, self.native_modules)):
-            self.allocated_elements_to_nodes[offset + element] = 0
-            g_function_selector_array[offset + element] = 0
-        self.g_function_selector.set_value(g_function_selector_array, borrow=True)
-        self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_from_id(uid))[0]] = 0
-
-        if type == PIPE:
-            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
-            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
-            n_function_selector_array[offset + RET] = NFPG_PIPE_NON
-            n_function_selector_array[offset + SUB] = NFPG_PIPE_NON
-            n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
-            n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
-            n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
-            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
-
-        # clear from proxycache
-        if uid in self.proxycache:
-            del self.proxycache[uid]
-
-        # clear from name and positions dicts
-        if uid in self.names:
-            del self.names[uid]
-        if uid in self.positions:
-            del self.positions[uid]
-
-        # hint at the free ID
-        self.last_allocated_node = node_from_id(uid) - 1
-
-        # remove the native module or comment instance if there should be one
-        if uid in self.native_module_instances:
-            del self.native_module_instances[uid]
-        if uid in self.comment_instances:
-            del self.comment_instances[uid]
+        partition.delete_node(node_id)
 
         # remove sensor association if there should be one
         if uid in self.inverted_sensor_map:
             sensor = self.inverted_sensor_map[uid]
             del self.inverted_sensor_map[uid]
             if sensor in self.sensormap:
-                self.sensormap[sensor].remove(node_from_id(uid))
+                self.sensormap[sensor].remove(node_id)
                 if len(self.sensormap[sensor]) == 0:
                     del self.sensormap[sensor]
 
@@ -1299,109 +566,111 @@ class TheanoNodenet(Nodenet):
             actuator = self.inverted_actuator_map[uid]
             del self.inverted_actuator_map[uid]
             if actuator in self.actuatormap:
-                self.actuatormap[actuator].remove(node_from_id(uid))
+                self.actuatormap[actuator].remove(node_id)
                 if len(self.actuatormap[actuator]) == 0:
                     del self.actuatormap[actuator]
 
-        # clear activator usage if there should be one
-        used_as_activator_by = np.where(self.allocated_elements_to_activators == offset)
-        if len(used_as_activator_by) > 0:
-            self.allocated_elements_to_activators[used_as_activator_by] = 0
+        self.clear_supplements(uid)
 
-        if self.allocated_nodespaces_por_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_por_activators[parent] = 0
-        elif self.allocated_nodespaces_ret_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_ret_activators[parent] = 0
-        elif self.allocated_nodespaces_sub_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_sub_activators[parent] = 0
-        elif self.allocated_nodespaces_sur_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_sur_activators[parent] = 0
-        elif self.allocated_nodespaces_cat_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_cat_activators[parent] = 0
-        elif self.allocated_nodespaces_exp_activators[parent] == node_from_id(uid):
-            self.allocated_nodespaces_exp_activators[parent] = 0
+    def set_node_gate_parameter(self, uid, gate_type, parameter, value):
+        partition = self.get_partition(uid)
+        id = node_from_id(uid)
+        partition.set_node_gate_parameter(id, gate_type, parameter, value)
+
+    def set_node_gatefunction_name(self, uid, gate_type, gatefunction_name):
+        partition = self.get_partition(uid)
+        id = node_from_id(uid)
+        partition.set_node_gatefunction_name(id, gate_type, gatefunction_name)
 
     def set_nodespace_gatetype_activator(self, nodespace_uid, gate_type, activator_uid):
-
+        partition = self.get_partition(nodespace_uid)
         activator_id = 0
         if activator_uid is not None and len(activator_uid) > 0:
             activator_id = node_from_id(activator_uid)
-
         nodespace_id = nodespace_from_id(nodespace_uid)
-
-        if gate_type == "por":
-            self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
-        elif gate_type == "ret":
-            self.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
-        elif gate_type == "sub":
-            self.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
-        elif gate_type == "sur":
-            self.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
-        elif gate_type == "cat":
-            self.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
-        elif gate_type == "exp":
-            self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
-
-        nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
-        for nid in nodes_in_nodespace:
-            if self.allocated_nodes[nid] == PIPE:
-                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
-                                                      get_numerical_gate_type(gate_type)] = self.allocated_node_offsets[activator_id]
+        partition.set_nodespace_gatetype_activator(nodespace_id, gate_type, activator_id)
 
     def get_nodespace(self, uid):
         if uid is None:
-            uid = nodespace_to_id(1)
+            uid = nodespace_to_id(1, self.rootpartition.pid)
+
+        partition = self.get_partition(uid)
 
         if uid in self.proxycache:
             return self.proxycache[uid]
         else:
-            nodespace = TheanoNodespace(self, uid)
+            nodespace = TheanoNodespace(self, partition, uid)
             self.proxycache[uid] = nodespace
             return nodespace
 
     def get_nodespace_uids(self):
-        ids = [nodespace_to_id(id) for id in np.nonzero(self.allocated_nodespaces)[0]]
-        ids.append(nodespace_to_id(1))
+        ids = []
+        for partition in self.partitions.values():
+            ids.extend([nodespace_to_id(id, partition.pid) for id in np.nonzero(partition.allocated_nodespaces)[0]])
+            ids.append(nodespace_to_id(1, partition.pid))
         return ids
 
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
-    def create_nodespace(self, parent_uid, position, name="", uid=None):
+    def create_partition(self, pid, parent_uid):
+        if parent_uid is None:
+            parent_uid = self.get_nodespace(None).uid
+        if pid > 999:
+            raise NotImplementedError("Only partition IDs < 1000 are supported right now")
+        partition = TheanoPartition(self, pid)
+        self.partitions[partition.spid] = partition
+        if parent_uid not in self.partitionmap:
+            self.partitionmap[parent_uid] = []
+        self.partitionmap[parent_uid].append(partition)
+        self.inverted_partitionmap[partition.spid] = parent_uid
+        return partition.spid
 
-        # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
-        if uid is None:
-            id = 0
-            for i in range((self.last_allocated_nodespace + 1), self.NoNS):
-                if self.allocated_nodespaces[i] == 0:
-                    id = i
-                    break
+    def delete_partition(self, pid):
+        spid = "%03i" % pid
+        partitionrootspace = "s%s1" %spid
+        partition = self.partitions[spid]
+        for subspace_uid in self.get_nodespace(partitionrootspace).get_known_ids('nodespaces'):
+            self.delete_nodespace(subspace_uid)
 
-            if id < 1:
-                for i in range(self.last_allocated_nodespace - 1):
-                    if self.allocated_nodespaces[i] == 0:
-                        id = i
-                        break
+        parent_uid = self.inverted_partitionmap[spid]
+        if parent_uid in self.partitionmap and partition in self.partitionmap[parent_uid]:
+            self.partitionmap[parent_uid].remove(partition)
+        if spid in self.inverted_partitionmap:
+            del self.inverted_partitionmap[spid]
+        if spid in self.partitions:
+            del self.partitions[spid]
+        for otherpartition in self.partitions.values():
+            if spid in otherpartition.inlinks:
+                del otherpartition.inlinks[spid]
 
-            if id < 1:
-                growby = self.NoNS // 2
-                self.logger.info("All %d nodespace IDs in use, growing nodespace ID vector by %d elements" % (self.NoNS, growby))
-                id = self.NoNS
-                self.grow_number_of_nodespaces(growby)
-        else:
-            id = nodespace_from_id(uid)
+    def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
+        if options is None:
+            options = {}
+        new_partition = options.get('new_partition', False)
 
-        self.last_allocated_nodespace = id
+        partition = self.get_partition(parent_uid)
 
         parent_id = 0
         if parent_uid is not None:
             parent_id = nodespace_from_id(parent_uid)
-        elif id != 1:
+        elif uid != self.rootpartition.rootnodespace_uid:
             parent_id = 1
 
-        uid = nodespace_to_id(id)
+        id_to_pass = None
+        if uid is not None:
+            id_to_pass = nodespace_from_id(uid)
 
-        self.allocated_nodespaces[id] = parent_id
+        if new_partition and parent_id != 0:
+            self.last_allocated_partition += 1
+            spid = self.create_partition(self.last_allocated_partition, parent_uid)
+            partition = self.partitions[spid]
+            id = partition.create_nodespace(0, id_to_pass)
+            uid = nodespace_to_id(id, partition.pid)
+        else:
+            id = partition.create_nodespace(parent_id, id_to_pass)
+            uid = nodespace_to_id(id, partition.pid)
+
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:
@@ -1409,15 +678,18 @@ class TheanoNodenet(Nodenet):
 
         return uid
 
-    def delete_nodespace(self, uid):
-        nodespace_id = nodespace_from_id(uid)
-        children_ids = np.where(self.allocated_nodespaces == nodespace_id)[0]
-        for child_id in children_ids:
-            self.delete_nodespace(nodespace_to_id(child_id))
-        node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
-        for node_id in node_ids:
-            self.delete_node(node_to_id(node_id))
+    def delete_nodespace(self, nodespace_uid):
+        if nodespace_uid is None or nodespace_uid == self.get_nodespace(None).uid:
+            raise ValueError("The root nodespace cannot be deleted.")
 
+        partition = self.get_partition(nodespace_uid)
+        nodespace_id = nodespace_from_id(nodespace_uid)
+        if nodespace_id == 1 and partition.pid != self.rootpartition.pid:
+            self.delete_partition(partition.pid)
+        else:
+            partition.delete_nodespace(nodespace_id)
+
+    def clear_supplements(self, uid):
         # clear from proxycache
         if uid in self.proxycache:
             del self.proxycache[uid]
@@ -1427,10 +699,6 @@ class TheanoNodenet(Nodenet):
             del self.names[uid]
         if uid in self.positions:
             del self.positions[uid]
-
-        self.allocated_nodespaces[nodespace_id] = 0
-
-        self.last_allocated_nodespace = nodespace_id
 
     def get_sensors(self, nodespace=None, datasource=None):
         sensors = {}
@@ -1441,8 +709,8 @@ class TheanoNodenet(Nodenet):
         elif datasource in self.sensormap:
             sensorlist = self.sensormap[datasource]
         for id in sensorlist:
-            if nodespace is None or self.allocated_node_parents[id] == nodespace_from_id(nodespace):
-                uid = node_to_id(id)
+            if nodespace is None or self.rootpartition.allocated_node_parents[id] == nodespace_from_id(nodespace):
+                uid = node_to_id(id, self.rootpartition.pid)
                 sensors[uid] = self.get_node(uid)
         return sensors
 
@@ -1455,65 +723,63 @@ class TheanoNodenet(Nodenet):
         elif datatarget in self.actuatormap:
             actuatorlist = self.actuatormap[datatarget]
         for id in actuatorlist:
-            if nodespace is None or self.allocated_node_parents[id] == nodespace_from_id(nodespace):
-                uid = node_to_id(id)
+            if nodespace is None or self.rootpartition.allocated_node_parents[id] == nodespace_from_id(nodespace):
+                uid = node_to_id(id, self.rootpartition.pid)
                 actuators[uid] = self.get_node(uid)
         return actuators
 
     def create_link(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
-        self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
-        return True
+        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight)
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
 
-        source_nodetype = None
-        target_nodetype = None
-        if self.allocated_nodes[node_from_id(source_node_uid)] > MAX_STD_NODETYPE:
-            source_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[node_from_id(source_node_uid)], self.native_modules))
-        if self.allocated_nodes[node_from_id(target_node_uid)] > MAX_STD_NODETYPE:
-            target_nodetype = self.get_nodetype(get_string_node_type(self.allocated_nodes[node_from_id(target_node_uid)], self.native_modules))
+        source_partition = self.get_partition(source_node_uid)
+        target_partition = self.get_partition(target_node_uid)
 
-        ngt = get_numerical_gate_type(gate_type, source_nodetype)
-        nst = get_numerical_slot_type(slot_type, target_nodetype)
-        w_matrix = self.w.get_value(borrow=True)
-        x = self.allocated_node_offsets[node_from_id(target_node_uid)] + nst
-        y = self.allocated_node_offsets[node_from_id(source_node_uid)] + ngt
-        if self.sparse:
-            w_matrix[x, y] = weight
+        source_node_id = node_from_id(source_node_uid)
+        target_node_id = node_from_id(target_node_uid)
+
+        if target_partition != source_partition:
+
+            source_nodetype = None
+            target_nodetype = None
+            if source_partition.allocated_nodes[source_node_id] > MAX_STD_NODETYPE:
+                source_nodetype = self.get_nodetype(get_string_node_type(source_partition.allocated_nodes[source_node_id], self.native_modules))
+            if target_partition.allocated_nodes[target_node_id] > MAX_STD_NODETYPE:
+                target_nodetype = self.get_nodetype(get_string_node_type(target_partition.allocated_nodes[target_node_id], self.native_modules))
+
+            ngt = get_numerical_gate_type(gate_type, source_nodetype)
+            nst = get_numerical_slot_type(slot_type, target_nodetype)
+
+            if ngt > get_gates_per_type(source_partition.allocated_nodes[source_node_id], self.native_modules):
+                raise ValueError("Node %s does not have a gate of type %s" % (source_node_uid, gate_type))
+
+            if nst > get_slots_per_type(target_partition.allocated_nodes[target_node_id], self.native_modules):
+                raise ValueError("Node %s does not have a slot of type %s" % (target_node_uid, slot_type))
+
+            elements_from_indices = np.asarray([source_partition.allocated_node_offsets[source_node_id] + ngt], dtype=np.int32)
+            elements_to_indices = np.asarray([target_partition.allocated_node_offsets[target_node_id] + nst], dtype=np.int32)
+            new_w = np.eye(1, dtype=T.config.floatX)
+            new_w[0, 0] = weight
+
+            target_partition.set_inlink_weights(source_partition.spid, elements_from_indices, elements_to_indices, new_w)
         else:
-            w_matrix[x][y] = weight
-        self.w.set_value(w_matrix, borrow=True)
+            source_partition.set_link_weight(source_node_id, gate_type, target_node_id, slot_type, weight)
 
-        if slot_type == "por" and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-            n_node_porlinked_array = self.n_node_porlinked.get_value(borrow=True)
-            if weight == 0:
-                for g in range(7):
-                    n_node_porlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 0
-            else:
-                for g in range(7):
-                    n_node_porlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
-            self.n_node_porlinked.set_value(n_node_porlinked_array, borrow=True)
-
-        if slot_type == "ret" and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
-            n_node_retlinked_array = self.n_node_retlinked.get_value(borrow=True)
-            if weight == 0:
-                for g in range(7):
-                    n_node_retlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 0
-            else:
-                for g in range(7):
-                    n_node_retlinked_array[self.allocated_node_offsets[node_from_id(target_node_uid)] + g] = 1
-            self.n_node_retlinked.set_value(n_node_retlinked_array, borrow=True)
-
-        if weight == 0:
-            linkid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
-            if linkid in self.proxycache:
-                del self.proxycache[linkid]
+        if source_node_uid in self.proxycache:
+            self.proxycache[source_node_uid].get_gate(gate_type).invalidate_caches()
+        if target_node_uid in self.proxycache:
+            self.proxycache[target_node_uid].get_slot(slot_type).invalidate_caches()
+        for partition in self.partitions.values():
+            if source_node_uid in partition.native_module_instances:
+                partition.native_module_instances[source_node_uid].get_gate(gate_type).invalidate_caches()
+            if target_node_uid in partition.native_module_instances:
+                partition.native_module_instances[target_node_uid].get_slot(slot_type).invalidate_caches()
 
         return True
 
     def delete_link(self, source_node_uid, gate_type, target_node_uid, slot_type):
-        self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
-        return True
+        return self.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, 0)
 
     def reload_native_modules(self, native_modules):
 
@@ -1522,70 +788,73 @@ class TheanoNodenet(Nodenet):
         # check which instances need to be recreated because of gate/slot changes and keep their .data
         instances_to_recreate = {}
         instances_to_delete = {}
-        for uid, instance in self.native_module_instances.items():
-            if instance.type not in native_modules:
-                self.logger.warn("No more definition available for node type %s, deleting instance %s" %
-                                (instance.type, uid))
-                instances_to_delete[uid] = instance
-                continue
+        for partition in self.partitions.values():
+            for uid, instance in partition.native_module_instances.items():
+                if instance.type not in native_modules:
+                    self.logger.warn("No more definition available for node type %s, deleting instance %s" %
+                                    (instance.type, uid))
+                    instances_to_delete[uid] = instance
+                    continue
 
-            numeric_id = node_from_id(uid)
-            number_of_elements = len(np.where(self.allocated_elements_to_nodes == numeric_id)[0])
-            new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
-            if number_of_elements != new_numer_of_elements:
-                self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
-                                (instance.type, number_of_elements, new_numer_of_elements, uid))
-                instances_to_recreate[uid] = instance.data
+                numeric_id = node_from_id(uid)
+                number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
+                new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
+                if number_of_elements != new_numer_of_elements:
+                    self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
+                                    (instance.type, number_of_elements, new_numer_of_elements, uid))
+                    instances_to_recreate[uid] = instance.data
 
-        # actually remove the instances
-        for uid in instances_to_delete.keys():
-            self.delete_node(uid)
-        for uid in instances_to_recreate.keys():
-            self.delete_node(uid)
+            # actually remove the instances
+            for uid in instances_to_delete.keys():
+                self.delete_node(uid)
+            for uid in instances_to_recreate.keys():
+                self.delete_node(uid)
 
-        # update the node functions of all Nodetypes
-        self.native_modules = {}
-        for type, data in native_modules.items():
-            self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
+            # update the node functions of all Nodetypes
+            self.native_modules = {}
+            for type, data in native_modules.items():
+                self.native_modules[type] = Nodetype(nodenet=self, **native_modules[type])
 
-        # update the living instances that have the same slot/gate numbers
-        new_instances = {}
-        for id, instance in self.native_module_instances.items():
-            parameters = instance.clone_parameters()
-            state = instance.clone_state()
-            position = instance.position
-            name = instance.name
-            new_native_module_instance = TheanoNode(self, instance.parent_nodespace, id, self.allocated_nodes[node_from_id(id)])
-            new_native_module_instance.position = position
-            new_native_module_instance.name = name
-            for key, value in parameters.items():
-                new_native_module_instance.set_parameter(key, value)
-            for key, value in state.items():
-                new_native_module_instance.set_state(key, value)
-            new_instances[id] = new_native_module_instance
-        self.native_module_instances = new_instances
+            # update the living instances that have the same slot/gate numbers
+            new_instances = {}
+            for id, instance in partition.native_module_instances.items():
+                parameters = instance.clone_parameters()
+                state = instance.clone_state()
+                position = instance.position
+                name = instance.name
+                partition = self.get_partition(id)
+                new_native_module_instance = TheanoNode(self, partition, instance.parent_nodespace, id, partition.allocated_nodes[node_from_id(id)])
+                new_native_module_instance.position = position
+                new_native_module_instance.name = name
+                for key, value in parameters.items():
+                    new_native_module_instance.set_parameter(key, value)
+                for key, value in state.items():
+                    new_native_module_instance.set_state(key, value)
+                new_instances[id] = new_native_module_instance
+            partition.native_module_instances = new_instances
 
-        # recreate the deleted ones. Gate configurations and links will not be transferred.
-        for uid, data in instances_to_recreate.items():
-            new_uid = self.create_node(
-                data['type'],
-                data['parent_nodespace'],
-                data['position'],
-                name=data['name'],
-                uid=uid,
-                parameters=data['parameters'])
+            # recreate the deleted ones. Gate configurations and links will not be transferred.
+            for uid, data in instances_to_recreate.items():
+                new_uid = self.create_node(
+                    data['type'],
+                    data['parent_nodespace'],
+                    data['position'],
+                    name=data['name'],
+                    uid=uid,
+                    parameters=data['parameters'])
 
-        # update native modules numeric types, as these may have been set with a different native module
-        # node types list
-        native_module_ids = np.where(self.allocated_nodes > MAX_STD_NODETYPE)[0]
-        for id in native_module_ids:
-            instance = self.get_node(node_to_id(id))
-            self.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
+            # update native modules numeric types, as these may have been set with a different native module
+            # node types list
+            native_module_ids = np.where(partition.allocated_nodes > MAX_STD_NODETYPE)[0]
+            for id in native_module_ids:
+                instance = self.get_node(node_to_id(id, partition.pid))
+                partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
     def get_nodespace_data(self, nodespace_uid, include_links):
+        partition = self.get_partition(nodespace_uid)
         data = {
             'links': {},
-            'nodes': self.construct_nodes_dict(nodespace_uid, self.NoN),
+            'nodes': self.construct_nodes_dict(nodespace_uid, 1000),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict(),
             'modulators': self.construct_modulators_dict()
@@ -1598,7 +867,8 @@ class TheanoNodenet(Nodenet):
                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
 
             for uid in followupnodes:
-                if self.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid):
+                followup_partition = self.get_partition(uid)
+                if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
                     data['nodes'][uid] = self.get_node(uid).data
 
         if self.user_prompt is not None:
@@ -1623,64 +893,173 @@ class TheanoNodenet(Nodenet):
 
     def construct_links_dict(self, nodespace_uid=None):
         data = {}
-        if nodespace_uid is not None:
-            parent = nodespace_from_id(nodespace_uid)
-        w_matrix = self.w.get_value(borrow=True)
-        for source_id in np.nonzero(self.allocated_nodes)[0]:
-            source_type = self.allocated_nodes[source_id]
-            for gate_type in range(get_elements_per_type(source_type, self.native_modules)):
-                gatecolumn = w_matrix[:, self.allocated_node_offsets[source_id] + gate_type]
-                links_indices = np.nonzero(gatecolumn)[0]
-                for index in links_indices:
-                    target_id = self.allocated_elements_to_nodes[index]
-                    if nodespace_uid is not None:
-                        if self.allocated_node_parents[source_id] != parent and self.allocated_node_parents[target_id] != parent:
-                            continue
-                    target_type = self.allocated_nodes[target_id]
-                    target_slot_numerical = index - self.allocated_node_offsets[target_id]
-                    target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
-                    source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
-                    if self.sparse:               # sparse matrices return matrices of dimension (1,1) as values
-                        weight = float(gatecolumn[index].data)
-                    else:
-                        weight = gatecolumn[index].item()
 
-                    linkuid = node_to_id(source_id)+":"+source_gate_type+":"+target_slot_type+":"+node_to_id(target_id)
-                    linkdata = {
-                        "uid": linkuid,
-                        "weight": weight,
-                        "certainty": 1,
-                        "source_gate_name": source_gate_type,
-                        "source_node_uid": node_to_id(source_id),
-                        "target_slot_name": target_slot_type,
-                        "target_node_uid": node_to_id(target_id)
-                    }
-                    data[linkuid] = linkdata
+        for partition in self.partitions.values():
+            if nodespace_uid is not None:
+                nspartition = self.get_partition(nodespace_uid)
+                if nspartition != partition:
+                    continue
+                parent = nodespace_from_id(nodespace_uid)
+                node_ids = np.where(partition.allocated_node_parents == parent)[0]
+            else:
+                node_ids = np.nonzero(partition.allocated_nodes)[0]
+            w_matrix = partition.w.get_value(borrow=True)
+            for node_id in node_ids:
+
+                source_type = partition.allocated_nodes[node_id]
+                for gate_type in range(get_gates_per_type(source_type, self.native_modules)):
+                    gatecolumn = w_matrix[:, partition.allocated_node_offsets[node_id] + gate_type]
+                    links_indices = np.nonzero(gatecolumn)[0]
+                    for index in links_indices:
+                        target_id = partition.allocated_elements_to_nodes[index]
+                        target_type = partition.allocated_nodes[target_id]
+                        target_slot_numerical = index - partition.allocated_node_offsets[target_id]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                        source_gate_type = get_string_gate_type(gate_type, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                        if partition.sparse:               # sparse matrices return matrices of dimension (1,1) as values
+                            weight = float(gatecolumn[index].data)
+                        else:
+                            weight = gatecolumn[index].item()
+
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(node_id, partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))
+                        linkdata = {
+                            "uid": linkuid,
+                            "weight": weight,
+                            "certainty": 1,
+                            "source_gate_name": source_gate_type,
+                            "source_node_uid": node_to_id(node_id, partition.pid),
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(target_id, partition.pid)
+                        }
+                        data[linkuid] = linkdata
+
+                target_type = partition.allocated_nodes[node_id]
+                for slot_type in range(get_slots_per_type(target_type, self.native_modules)):
+                    slotrow = w_matrix[partition.allocated_node_offsets[node_id] + slot_type]
+                    if partition.sparse:
+                        links_indices = np.nonzero(slotrow)[1]
+                    else:
+                        links_indices = np.nonzero(slotrow)[0]
+                    for index in links_indices:
+                        source_id = partition.allocated_elements_to_nodes[index]
+                        source_type = partition.allocated_nodes[source_id]
+                        source_gate_numerical = index - partition.allocated_node_offsets[source_id]
+                        source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+                        target_slot_type = get_string_slot_type(slot_type, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+                        if partition.sparse:
+                            weight = float(slotrow[0, index])
+                        else:
+                            weight = slotrow[index].item()
+
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, partition.pid))
+                        linkdata = {
+                            "uid": linkuid,
+                            "weight": weight,
+                            "certainty": 1,
+                            "source_gate_name": source_gate_type,
+                            "source_node_uid": node_to_id(source_id, partition.pid),
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(node_id, partition.pid)
+                        }
+                        data[linkuid] = linkdata
+
+            # find links coming in from other partitions
+            for partition_from_spid, inlinks in partition.inlinks.items():
+                from_partition = self.partitions[partition_from_spid]
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
+                for i, element in enumerate(from_elements):
+                    gatecolumn = weights[:, i]
+                    links_indices = np.nonzero(gatecolumn)[0]
+                    for link_index in links_indices:
+                        source_id = from_partition.allocated_elements_to_nodes[element]
+                        source_type = from_partition.allocated_nodes[source_id]
+                        source_gate_numerical = element - from_partition.allocated_node_offsets[source_id]
+                        source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                        target_id = partition.allocated_elements_to_nodes[to_elements[link_index]]
+                        target_type = partition.allocated_nodes[target_id]
+                        target_slot_numerical = to_elements[link_index] - partition.allocated_node_offsets[target_id]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                        linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))
+                        linkdata = {
+                            "uid": linkuid,
+                            "weight": float(weights[link_index, i]),
+                            "certainty": 1,
+                            "source_gate_name": source_gate_type,
+                            "source_node_uid": node_to_id(source_id, from_partition.pid),
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(target_id, partition.pid)
+                        }
+                        data[linkuid] = linkdata
+
+            # find links going out to other partitions
+            for partition_to_spid, to_partition in self.partitions.items():
+                if partition.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
+                    for i, element in enumerate(to_elements):
+                        slotrow = weights[i]
+                        links_indices = np.nonzero(slotrow)[0]
+                        for link_index in links_indices:
+                            source_id = partition.allocated_elements_to_nodes[from_elements[link_index]]
+                            source_type = partition.allocated_nodes[source_id]
+                            source_gate_numerical = from_elements[link_index] - partition.allocated_node_offsets[source_id]
+                            source_gate_type = get_string_gate_type(source_gate_numerical, self.get_nodetype(get_string_node_type(source_type, self.native_modules)))
+
+                            target_id = to_partition.allocated_elements_to_nodes[element]
+                            target_type = to_partition.allocated_nodes[target_id]
+                            target_slot_numerical = element - to_partition.allocated_node_offsets[target_id]
+                            target_slot_type = get_string_slot_type(target_slot_numerical, self.get_nodetype(get_string_node_type(target_type, self.native_modules)))
+
+                            linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, to_partition.pid))
+                            linkdata = {
+                                "uid": linkuid,
+                                "weight": float(weights[i, link_index]),
+                                "certainty": 1,
+                                "source_gate_name": source_gate_type,
+                                "source_node_uid": node_to_id(source_id, partition.pid),
+                                "target_slot_name": target_slot_type,
+                                "target_node_uid": node_to_id(target_id, to_partition.pid)
+                            }
+                            data[linkuid] = linkdata
+
         return data
 
     def construct_native_modules_and_comments_dict(self):
         data = {}
         i = 0
-        nodeids = np.where((self.allocated_nodes > MAX_STD_NODETYPE) | (self.allocated_nodes == COMMENT))[0]
-        for node_id in nodeids:
-            i += 1
-            node_uid = node_to_id(node_id)
-            data[node_uid] = self.get_node(node_uid).data
+        for partition in self.partitions.values():
+            nodeids = np.where((partition.allocated_nodes > MAX_STD_NODETYPE) | (partition.allocated_nodes == COMMENT))[0]
+            for node_id in nodeids:
+                i += 1
+                node_uid = node_to_id(node_id, partition.pid)
+                data[node_uid] = self.get_node(node_uid).data
         return data
 
     def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1):
         data = {}
         i = 0
-        nodeids = np.nonzero(self.allocated_nodes)[0]
-        if nodespace_uid is not None:
-            parent_id = nodespace_from_id(nodespace_uid)
-            nodeids = np.where(self.allocated_node_parents == parent_id)[0]
-        for node_id in nodeids:
-            i += 1
-            node_uid = node_to_id(node_id)
-            data[node_uid] = self.get_node(node_uid).data
-            if max_nodes > 0 and i > max_nodes:
-                break
+        for partition in self.partitions.values():
+            if nodespace_uid is not None:
+                nodespace_partition = self.get_partition(nodespace_uid)
+                if nodespace_partition != partition:
+                    continue
+
+            nodeids = np.nonzero(partition.allocated_nodes)[0]
+            if nodespace_uid is not None:
+                parent_id = nodespace_from_id(nodespace_uid)
+                nodeids = np.where(partition.allocated_node_parents == parent_id)[0]
+            for node_id in nodeids:
+                i += 1
+                node_uid = node_to_id(node_id, partition.pid)
+                data[node_uid] = self.get_node(node_uid).data
+                if max_nodes > 0 and i > max_nodes:
+                    break
         return data
 
     def construct_nodespaces_dict(self, nodespace_uid):
@@ -1688,22 +1067,28 @@ class TheanoNodenet(Nodenet):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
-        nodespace_id = nodespace_from_id(nodespace_uid)
-        nodespace_ids = np.nonzero(self.allocated_nodespaces)[0]
-        nodespace_ids = np.append(nodespace_ids, 1)
-        for candidate_id in nodespace_ids:
-            is_in_hierarchy = False
-            if candidate_id == nodespace_id:
-                is_in_hierarchy = True
-            else:
-                parent_id = self.allocated_nodespaces[candidate_id]
-                while parent_id > 0 and parent_id != nodespace_id:
-                    parent_id = self.allocated_nodespaces[parent_id]
-                if parent_id == nodespace_id:
+        for partition in self.partitions.values():
+            nodespace_id = nodespace_from_id(nodespace_uid)
+            nodespace_ids = np.nonzero(partition.allocated_nodespaces)[0]
+            nodespace_ids = np.append(nodespace_ids, 1)
+            for candidate_id in nodespace_ids:
+                is_in_hierarchy = False
+                if candidate_id == nodespace_id:
                     is_in_hierarchy = True
+                else:
+                    parent_id = partition.allocated_nodespaces[candidate_id]
+                    while parent_id > 0 and parent_id != nodespace_id:
+                        parent_id = partition.allocated_nodespaces[parent_id]
+                    if parent_id == nodespace_id:
+                        is_in_hierarchy = True
 
-            if is_in_hierarchy:
-                data[nodespace_to_id(candidate_id)] = self.get_nodespace(nodespace_to_id(candidate_id)).data
+                if is_in_hierarchy:
+                    data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).data
+
+        if nodespace_uid in self.partitionmap:
+            for partition in self.partitionmap[nodespace_uid]:
+                partition_root_uid = partition.rootnodespace_uid
+                data[partition_root_uid] = self.get_nodespace(partition_root_uid).data
 
         return data
 
@@ -1721,23 +1106,23 @@ class TheanoNodenet(Nodenet):
         Sets the sensors for the given data sources to the given values
         """
 
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootpartition.a.get_value(borrow=True)
 
         for datasource in datasource_to_value_map:
             value = datasource_to_value_map.get(datasource)
             sensor_uids = self.sensormap.get(datasource, [])
 
             for sensor_uid in sensor_uids:
-                a_array[self.allocated_node_offsets[sensor_uid] + GEN] = value
+                a_array[self.rootpartition.allocated_node_offsets[sensor_uid] + GEN] = value
 
         for datatarget in datatarget_to_value_map:
             value = datatarget_to_value_map.get(datatarget)
             actuator_uids = self.actuatormap.get(datatarget, [])
 
             for actuator_uid in actuator_uids:
-                a_array[self.allocated_node_offsets[actuator_uid] + GEN] = value
+                a_array[self.rootpartition.allocated_node_offsets[actuator_uid] + GEN] = value
 
-        self.a.set_value(a_array, borrow=True)
+        self.rootpartition.a.set_value(a_array, borrow=True)
 
     def read_actuators(self):
         """
@@ -1746,95 +1131,136 @@ class TheanoNodenet(Nodenet):
 
         actuator_values_to_write = {}
 
-        a_array = self.a.get_value(borrow=True)
+        a_array = self.rootpartition.a.get_value(borrow=True)
 
         for datatarget in self.actuatormap:
             actuator_node_activations = 0
             for actuator_id in self.actuatormap[datatarget]:
-                actuator_node_activations += a_array[self.allocated_node_offsets[actuator_id] + GEN]
+                actuator_node_activations += a_array[self.rootpartition.allocated_node_offsets[actuator_id] + GEN]
 
             actuator_values_to_write[datatarget] = actuator_node_activations
 
-        self.a.set_value(a_array, borrow=True)
+        self.rootpartition.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
 
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+
         ids = []
         for uid, name in self.names.items():
-            if name.startswith(node_name_prefix) and \
-                    (nodespace is None or self.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace)):
+            partition = self.get_partition(uid)
+            if self.is_node(uid) and name.startswith(node_name_prefix) and \
+                    (partition.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
                 ids.append(uid)
-        self.group_nodes_by_ids(ids, node_name_prefix, gatetype, sortby)
+        self.group_nodes_by_ids(nodespace_uid, ids, node_name_prefix, gatetype, sortby)
 
-    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
-        ids = [node_from_id(uid) for uid in node_ids]
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
+
+        ids = [node_from_id(uid) for uid in node_uids]
         if sortby == 'id':
             ids = sorted(ids)
         elif sortby == 'name':
-            ids = sorted(ids, key=lambda id: self.names[node_to_id(id)])
-        gate = get_numerical_gate_type(gatetype)
-        self.nodegroups[group_name] = self.allocated_node_offsets[ids] + gate
+            ids = sorted(ids, key=lambda id: self.names[node_to_id(id, partition.pid)])
 
-    def ungroup_nodes(self, group):
-        if group in self.nodegroups:
-            del self.nodegroups[group]
+        partition.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype)
 
-    def get_activations(self, group):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
-        a_array = self.a.get_value(borrow=True)
-        return a_array[self.nodegroups[group]]
+    def ungroup_nodes(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
+        partition.ungroup_nodes(nodespace_uid, group)
 
-    def set_activations(self, group, new_activations):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
-        a_array = self.a.get_value(borrow=True)
-        a_array[self.nodegroups[group]] = new_activations
-        self.a.set_value(a_array, borrow=True)
+    def dump_group(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
 
-    def get_thetas(self, group):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        return g_theta_array[self.nodegroups[group]]
+        ids = partition.nodegroups[nodespace_uid][group]
+        for element in ids:
+            nid = partition.allocated_elements_to_nodes[element]
+            uid = node_to_id(nid, partition.pid)
+            node = self.get_node(uid)
+            print("%s %s" % (node.uid, node.name))
 
-    def set_thetas(self, group, thetas):
-        if group not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group)
-        g_theta_array = self.g_theta.get_value(borrow=True)
-        g_theta_array[self.nodegroups[group]] = thetas
-        self.g_theta.set_value(g_theta_array, borrow=True)
+    def get_activations(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
+        return partition.get_activations(nodespace_uid, group)
 
-    def get_link_weights(self, group_from, group_to):
-        if group_from not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_from)
-        if group_to not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_to)
-        w_matrix = self.w.get_value(borrow=True)
-        cols, rows = np.meshgrid(self.nodegroups[group_from], self.nodegroups[group_to])
-        if self.sparse:
-            return w_matrix[rows,cols].todense()
+    def set_activations(self, nodespace_uid, group, new_activations):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
+        partition.set_activations(nodespace_uid, group, new_activations)
+
+    def get_thetas(self, nodespace_uid, group):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
+        return partition.get_thetas(nodespace_uid, group)
+
+    def set_thetas(self, nodespace_uid, group, new_thetas):
+        if nodespace_uid is None:
+            nodespace_uid = self.get_nodespace(None).uid
+        partition = self.get_partition(nodespace_uid)
+        partition.set_thetas(nodespace_uid, group, new_thetas)
+
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
+        if nodespace_from_uid is None:
+            nodespace_from_uid = self.get_nodespace(None).uid
+        if nodespace_to_uid is None:
+            nodespace_to_uid = self.get_nodespace(None).uid
+        partition_from = self.get_partition(nodespace_from_uid)
+        partition_to = self.get_partition(nodespace_to_uid)
+
+        if partition_to != partition_from:
+            if nodespace_from_uid not in partition_from.nodegroups or group_from not in partition_from.nodegroups[nodespace_from_uid]:
+                raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+            if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
+                raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
+
+            if partition_from.spid in partition_to.inlinks:
+                inlinks = partition_to.inlinks[partition_from.spid]
+                indices = np.where((inlinks[0].get_value(borrow=True) == partition_from.nodegroups[nodespace_from_uid][group_from]) &
+                                   (inlinks[1].get_value(borrow=True) == partition_to.nodegroups[nodespace_to_uid][group_to]))[0]
+                return inlinks[2].get_value(borrow=True)[indices]
         else:
-            return w_matrix[rows,cols]
+            return partition_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 
-    def set_link_weights(self, group_from, group_to, new_w):
-        if group_from not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_from)
-        if group_to not in self.nodegroups:
-            raise ValueError("Group %s does not exist." % group_to)
-        w_matrix = self.w.get_value(borrow=True)
-        grp_from = self.nodegroups[group_from]
-        grp_to = self.nodegroups[group_to]
-        cols, rows = np.meshgrid(grp_from, grp_to)
-        w_matrix[rows, cols] = new_w
-        self.w.set_value(w_matrix, borrow=True)
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
+        if nodespace_from_uid is None:
+            nodespace_from_uid = self.get_nodespace(None).uid
+        if nodespace_to_uid is None:
+            nodespace_to_uid = self.get_nodespace(None).uid
+
+        partition_from = self.get_partition(nodespace_from_uid)
+        partition_to = self.get_partition(nodespace_to_uid)
+
+        if partition_to != partition_from:
+            if nodespace_from_uid not in partition_from.nodegroups or group_from not in partition_from.nodegroups[nodespace_from_uid]:
+                raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+            if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
+                raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
+
+            elements_from_indices = partition_from.nodegroups[nodespace_from_uid][group_from]
+            elements_to_indices = partition_to.nodegroups[nodespace_to_uid][group_to]
+
+            partition_to.set_inlink_weights(partition_from.spid, elements_from_indices, elements_to_indices, new_w)
+        else:
+            partition_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
+
+        uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
+        uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
+
+        for uid in uids_to_invalidate:
+            if uid in self.proxycache:
+                del self.proxycache[uid]
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
-
-    def rebuild_shifted(self):
-        a_array = self.a.get_value(borrow=True)
-        a_rolled_array = np.roll(a_array, 7)
-        a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.byte_per_float, self.byte_per_float))
-        self.a_shifted.set_value(a_shifted_matrix, borrow=True)

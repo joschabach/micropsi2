@@ -135,6 +135,26 @@ def test_start_simulation(app, test_nodenet):
     assert response.json_body['data']['is_active']
 
 
+def test_start_simulation_with_condition(app, test_nodenet):
+    import time
+    app.set_auth()
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    response = app.post_json('/rpc/set_runner_condition', params={
+        'nodenet_uid': test_nodenet,
+        'steps': '2'
+    })
+    assert_success(response)
+    assert response.json_body['data']['step'] == 2
+    response = app.post_json('/rpc/start_simulation', params=dict(nodenet_uid=test_nodenet))
+    assert_success(response)
+    time.sleep(1)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    assert not response.json_body['data']['is_active']
+    assert response.json_body['data']['current_step'] == 2
+    response = app.post_json('/rpc/remove_runner_condition', params=dict(nodenet_uid=test_nodenet))
+    assert_success(response)
+
+
 def test_get_runner_properties(app):
     app.set_auth()
     response = app.get_json('/rpc/get_runner_properties()')
@@ -734,6 +754,21 @@ def test_add_node(app, test_nodenet):
     assert response.json_body['data']['name'] == 'N2'
 
 
+def test_add_nodespace(app, test_nodenet):
+    app.set_auth()
+    response = app.post_json('/rpc/add_nodespace', params={
+        'nodenet_uid': test_nodenet,
+        'position': [23, 42],
+        'nodespace': None,
+        'name': 'nodespace'
+    })
+    assert_success(response)
+    uid = response.json_body['data']
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % (test_nodenet))
+    assert uid in response.json_body['data']['nodespaces']
+    assert uid not in response.json_body['data']['nodes']
+
+
 def test_clone_nodes(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/clone_nodes', params={
@@ -785,6 +820,24 @@ def test_delete_node(app, test_nodenet, node):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['nodes'] == {}
+
+
+def test_delete_nodespace(app, test_nodenet, node):
+    app.set_auth()
+    response = app.post_json('/rpc/add_nodespace', params={
+        'nodenet_uid': test_nodenet,
+        'position': [23, 42],
+        'nodespace': None,
+        'name': 'nodespace'
+    })
+    uid = response.json_body['data']
+    response = app.post_json('/rpc/delete_nodespace', params={
+        'nodenet_uid': test_nodenet,
+        'nodespace_uid': uid
+    })
+    assert_success(response)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    assert uid not in response.json_body['data']['nodespaces']
 
 
 def test_align_nodes(app, test_nodenet):
@@ -987,7 +1040,7 @@ def test_get_links_for_nodes(app, test_nodenet, node):
         'node_uids': [node]
     })
     assert_success(response)
-    link = list(response.json_body['data'].values())[0]
+    link = list(response.json_body['data']['links'].values())[0]
     assert link['source_node_uid'] == node
 
 
@@ -1177,9 +1230,8 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
-    response = app.post_json('/rpc/add_node', params={
+    response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Nodespace',
         'position': [23, 23],
         'nodespace': None,
         'name': 'Test-Node-Space'
@@ -1197,7 +1249,8 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
         'nodenet_uid': test_nodenet,
         'node_uid': node,
         'gate': 'gen',
-        'name': 'Testmonitor'
+        'name': 'Testmonitor',
+        'color': '#332211'
     })
     monitor_uid = response.json_body['data']
 
@@ -1220,6 +1273,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['monitors'][monitor_uid]['type'] == 'gate'
     assert data['monitors'][monitor_uid]['uid'] == monitor_uid
     assert data['monitors'][monitor_uid]['values'] == {}
+    assert data['monitors'][monitor_uid]['color'] == '#332211'
     assert data['monitors'][monitor_uid] == monitor_data
 
     # Nodes

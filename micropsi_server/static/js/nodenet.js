@@ -28,7 +28,7 @@ var viewProperties = {
     slotWidth: 34,
     lineHeight: 15,
     compactNodes: false,
-    outsideDummyDistance: 70,
+    outsideDummyDistance: 30,
     outsideDummySize: 15,
     outsideDummyColor: new Color("#cccccc"),
     groupOutsideLinksThreshold: 0,
@@ -145,7 +145,6 @@ currentSimulationStep = 0;
 nodenetRunning = false;
 
 get_available_worlds();
-refreshNodenetList();
 
 registerResizeHandler();
 
@@ -160,28 +159,16 @@ $(document).on('load_nodenet', function(event, uid){
     setCurrentNodenet(uid, ns);
 });
 
+$(document).on('nodenet_changed', function(event, new_nodenet){
+    setCurrentNodenet(new_nodenet);
+});
+
 function toggleButtons(on){
     if(on)
         $('[data-nodenet-control]').removeAttr('disabled');
     else
         $('[data-nodenet-control]').attr('disabled', 'disabled');
 }
-
-function refreshNodenetList(){
-    $("#nodenet_list").load("/nodenet_list/"+(currentNodenet || ''), function(data){
-        $('#nodenet_list .nodenet_select').on('click', function(event){
-            event.preventDefault();
-            var el = $(event.target);
-            var uid = el.attr('data');
-            $(document).trigger('nodenet_changed', uid);
-            setCurrentNodenet(uid, 'Root', true);
-        });
-    });
-}
-// make function available in global javascript scope
-window.refreshNodenetList = function(){
-    refreshNodenetList();
-};
 
 function get_available_worlds(){
     api.call('get_available_worlds', {}, success=function(data){
@@ -320,7 +307,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             } else {
                 setNodespaceData(data, (nodespaceChanged));
             }
-            refreshNodenetList();
+            $(document).trigger('refreshNodenetList');
             nodenet_loaded = true;
         },
         function(data) {
@@ -403,7 +390,7 @@ function setNodespaceData(data, changed){
                         removeLink(links[uid]);
                     }
                 }
-                addLinks(data);
+                addLinks(data.links);
             });
         } else {
             for(var uid in links) {
@@ -470,7 +457,17 @@ function get_nodenet_data(){
     }
 }
 
-register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+
+if($('#nodenet_editor').height() > 0){
+    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+}
+
+$('#nodenet_editor').on('shown', function(){
+    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+});
+$('#nodenet_editor').on('hidden', function(){
+    unregister_stepping_function('nodenet');
+});
 
 function refreshNodespace(nodespace, step, callback){
     if(!nodespace) nodespace = currentNodeSpace;
@@ -533,16 +530,7 @@ function updateModulators(data){
     $('button', table).each(function(idx, button){
         $(button).on('click', function(evt){
             evt.preventDefault();
-            var mod = $(button).attr('data');
-            api.call('add_modulator_monitor', {
-                    nodenet_uid: currentNodenet,
-                    modulator: mod,
-                    name: mod
-                }, function(data){
-                    dialogs.notification('Monitor added', 'success');
-                    $(document).trigger('monitorsChanged', data);
-                }
-            );
+            addMonitor('modulator', $(button).attr('data'));
         });
     });
 }
@@ -724,6 +712,11 @@ function redrawLink(link, forceRedraw){
 function removeLink(link) {
     sourceNode = nodes[link.sourceNodeUid];
     targetNode = nodes[link.targetNodeUid];
+    if(!sourceNode || ! targetNode){
+        delete links[link.uid];
+        if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
+        return;
+    }
     if(sourceNode.parent != targetNode.parent){
         sourceNode.linksToOutside.splice(sourceNode.linksToOutside.indexOf(link.uid), 1);
         targetNode.linksFromOutside.splice(targetNode.linksFromOutside.indexOf(link.uid), 1);
@@ -1215,7 +1208,7 @@ function renderComment(node){
     var bounds = node.bounds;
     var commentGroup = new Group();
     commentText = new PointText(bounds.x + 10, bounds.y + viewProperties.lineHeight * viewProperties.zoomFactor);
-    commentText.content = node.parameters.comment;
+    commentText.content = node.parameters.comment || '';
     commentText.name = "comment";
     commentText.fillColor = viewProperties.nodeFontColor;
     commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
@@ -2338,12 +2331,19 @@ function loadLinksForSelection(callback){
         api.call('get_links_for_nodes',
             {'nodenet_uid': currentNodenet,
              'node_uids': uids },
-            callback || function(data){
-                addLinks(data);
-                view.draw();
-                if(uids.length == 1 && uids[0] in selection){
-                    showNodeForm(uids[0]);
+              function(data){
+                if(callback){
+                    callback(data);
+                } else {
+                    for(var uid in data.nodes){
+                        addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
+                    }
+                    addLinks(data.links);
+                    if(uids.length == 1 && uids[0] in selection && clickType != "gate"){
+                        showNodeForm(uids[0]);
+                    }
                 }
+                view.draw(true);
             }
         );
     }
@@ -2385,7 +2385,7 @@ function initializeControls(){
     $('#nodespace_control').on('click', ['data-nodespace'] ,function(event){
         event.preventDefault();
         var nodespace = $(event.target).attr('data-nodespace');
-        if(nodespace != currentNodeSpace){
+        if(nodespace && nodespace != currentNodeSpace){
             refreshNodespace(nodespace, -1);
         }
     });
@@ -2454,7 +2454,11 @@ function initializeDialogs(){
             resume_nodenet: startnet
         }, function(data){
             currentSimulationStep -= 1;
-            refreshNodespace();
+            if(startnet){
+                $(document).trigger("runner_started");
+            } else {
+                refreshNodespace();
+            }
         });
         $('#nodenet_user_prompt').modal('hide');
     });
@@ -2537,6 +2541,7 @@ function openMultipleNodesContextMenu(event){
     if(sametype){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
+    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
     menu.html(html);
     if(Object.keys(clipboard).length === 0){
         $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
@@ -2580,7 +2585,9 @@ function openNodeContextMenu(menu_id, event, nodeUid) {
     if(node.type == "Actor"){
         html += '<li><a href="#">Select datatarget</li>';
     }
-    html  += '<li><a href="#">Rename node</a></li>' +
+    html += '<li><a href="#">Add Monitor</a></li>' +
+            '<li class="divider"></li>' +
+             '<li><a href="#">Rename node</a></li>' +
              '<li><a href="#">Delete node</a></li>' +
              '<li data-copy-nodes><a href="#">Copy node</a></li>';
     menu.html(html);
@@ -2598,6 +2605,9 @@ function handleContextMenu(event) {
     if($el.parent().attr('data-copy-nodes') === ""){
         copyNodes();
         $el.parentsUntil('.dropdown-menu').dropdown('toggle');
+        return;
+    } else if($el.parent().attr('data-generate-fragment') === ""){
+        generateFragment();
         return;
     } else if($el.parent().attr('data-paste-nodes') === ""){
         pasteNodes(clickPosition);
@@ -2692,6 +2702,9 @@ function handleContextMenu(event) {
                     target_select.html(html);
                     target_select.val(nodes[clickOriginUid].parameters['datatarget']).select().focus();
                     break;
+                case "Add Monitor":
+                    addMonitor("node", nodes[clickOriginUid]);
+                    break;
                 case "Expand":
                     for(uid in selection){
                         nodes[uid].renderCompact = false;
@@ -2717,7 +2730,8 @@ function handleContextMenu(event) {
         case "slot":
             switch (menuText) {
                 case "Add monitor to slot":
-                    addSlotMonitor(nodes[clickOriginUid], clickIndex);
+                    var target = nodes[clickOriginUid];
+                    addMonitor('slot', target, target.slotIndexes[clickIndex])
                     break;
                 case "Remove monitor from slot":
                     removeMonitor(nodes[clickOriginUid], nodes[clickOriginUid].slotIndexes[clickIndex], 'slot');
@@ -2730,7 +2744,8 @@ function handleContextMenu(event) {
                     createLinkHandler(clickOriginUid, clickIndex);
                     break;
                 case "Add monitor to gate":
-                    addGateMonitor(nodes[clickOriginUid], clickIndex);
+                    var target = nodes[clickOriginUid];
+                    addMonitor('gate', target, target.gateIndexes[clickIndex]);
                     break;
                 case "Remove monitor from gate":
                     removeMonitor(nodes[clickOriginUid], nodes[clickOriginUid].gateIndexes[clickIndex], 'gate');
@@ -2740,7 +2755,7 @@ function handleContextMenu(event) {
         case "link":
             switch (menuText) {
                 case "Add link-weight monitor":
-                    addLinkMonitor(clickOriginUid);
+                    addMonitor('link', links[clickOriginUid]);
                     break;
                 case "Delete link":
                     deleteLinkHandler(clickOriginUid);
@@ -2838,15 +2853,22 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             params[param] = parameters[param] || def;
         }
     }
-    api.call("add_node", {
+    var method = "";
+    var params = {
         nodenet_uid: currentNodenet,
-        type: type,
         position: [x,y],
         nodespace: currentNodeSpace,
-        name: name,
-        parameters: params },
+        name: name}
+    if(type == "Nodespace"){
+        method = "add_nodespace";
+    } else {
+        method = "add_node"
+        params.type = type;
+        params.parameters = parameters;
+    }
+    api.call(method, params,
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, params));
+            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, parameters));
             view.draw();
             selectNode(uid);
             if(callback) callback(uid);
@@ -2878,6 +2900,19 @@ function createNativeModuleHandler(event){
         $('#native_module_name').val('');
         modal.modal("show");
     }
+}
+
+function generateFragment(){
+    api.call("generate_netapi_fragment",
+        {nodenet_uid:currentNodenet, node_uids: selection},
+        success=function(data){
+            var modal = $('#copy_paste_modal');
+            $('#copy_paste_modal .title').html("Netapi code fragment");
+            $('#copy_paste_text').val(data);
+            modal.modal("show");
+            $('#copy_paste_text').select();
+        }
+    );
 }
 
 copyPosition = null;
@@ -2927,9 +2962,17 @@ function handlePasteNodes(pastemode){
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
-    function deleteNodeOnServer(node_uid){
-        api.call("delete_node",
-            {nodenet_uid:currentNodenet, node_uid: node_uid},
+    function deleteNodeOnServer(node){
+        var method = "";
+        var params = {nodenet_uid: currentNodenet};
+        if(node.type == "Nodespace"){
+            method = "delete_nodespace";
+            params.nodespace_uid = node.uid;
+        } else {
+            method = "delete_node";
+            params.node_uid = node.uid;
+        }
+        api.call(method, params,
             success=function(data){
                 dialogs.notification('node deleted', 'success');
                 getNodespaceList();
@@ -2938,13 +2981,13 @@ function deleteNodeHandler(nodeUid) {
     }
     var deletedNodes = [];
     if (nodeUid in nodes) {
-        deletedNodes.push(nodeUid);
+        deletedNodes.push(nodes[nodeUid]);
         removeNode(nodes[nodeUid]);
         if (nodeUid in selection) delete selection[nodeUid];
     }
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            deletedNodes.push(selected);
+            deletedNodes.push(nodes[selected]);
             removeNode(nodes[selected]);
             delete selection[selected];
         }
@@ -3223,34 +3266,6 @@ function cancelLinkCreationHandler() {
     linkCreationStart = null;
 }
 
-function addLinkMonitor(clickOriginUid){
-    var link = links[clickOriginUid];
-    event.preventDefault();
-    $('#monitor_name_input').val('');
-    $('#monitor_modal .custom_monitor').hide();
-    $('#monitor_modal').modal('show');
-    $('#monitor_modal .btn-primary').on('click', function(event){
-        api.call('add_link_monitor', {
-            nodenet_uid: currentNodenet,
-            source_node_uid: link.sourceNodeUid,
-            gate_type: link.gateName,
-            target_node_uid: link.targetNodeUid,
-            slot_type: link.slotName,
-            name: $('#monitor_name_input').val(),
-            property:'weight'
-        }, function(data){
-            dialogs.notification("monitor saved");
-            $(document).trigger('monitorsChanged', data);
-            $('#monitor_modal .btn-primary').off();
-            $('#monitor_modal').modal('hide');
-        }, function(data){
-            api.defaultErrorCallback(data);
-            $('#monitor_modal .btn-primary').off();
-            $('#monitor_modal').modal('hide');
-        });
-    });
-}
-
 function moveNode(nodeUid, x, y){
     api.call("set_node_position", {
         nodenet_uid: currentNodenet,
@@ -3491,29 +3506,6 @@ function handleEditNodespace(event){
     }
 }
 
-function addSlotMonitor(node, index){
-    api.call('add_slot_monitor', {
-        nodenet_uid: currentNodenet,
-        node_uid: node.uid,
-        slot: node.slotIndexes[index]
-    }, function(data){
-        $(document).trigger('monitorsChanged', data);
-        monitors[data] = {};
-        setMonitorData(data);
-    });
-}
-
-function addGateMonitor(node, index){
-    api.call('add_gate_monitor', {
-        nodenet_uid: currentNodenet,
-        node_uid: node.uid,
-        gate: node.gateIndexes[index]
-    }, function(data){
-        $(document).trigger('monitorsChanged', data);
-        monitors[data] = {};
-        setMonitorData(data);
-    });
-}
 
 function setMonitorData(uid){
     api.call('export_monitor_data', params={

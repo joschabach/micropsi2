@@ -9,13 +9,14 @@ from micropsi_core import runtime as micropsi
 
 
 def test_add_gate_monitor(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n1', 'gen', sheaf='default')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', sheaf='default')
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.name == 'gate gen @ Node A1'
-    assert monitor.node_uid == 'n1'
+    assert monitor.node_uid == 'n0001'
     assert monitor.target == 'gen'
     assert monitor.type == 'gate'
     assert monitor.sheaf == 'default'
+    assert monitor.color.startswith('#')
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
@@ -24,12 +25,13 @@ def test_add_gate_monitor(fixed_nodenet):
 
 @pytest.mark.engine("dict_engine")
 def test_add_slot_monitor(fixed_nodenet):
-    uid = micropsi.add_slot_monitor(fixed_nodenet, 'n1', 'gen', name="FooBarMonitor")
+    uid = micropsi.add_slot_monitor(fixed_nodenet, 'n0001', 'gen', name="FooBarMonitor", color="#112233")
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.name == 'FooBarMonitor'
-    assert monitor.node_uid == 'n1'
+    assert monitor.node_uid == 'n0001'
     assert monitor.target == 'gen'
     assert monitor.type == 'slot'
+    assert monitor.color == '#112233'
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
@@ -37,19 +39,20 @@ def test_add_slot_monitor(fixed_nodenet):
 
 
 def test_add_link_monitor(fixed_nodenet):
-    uid = micropsi.add_link_monitor(fixed_nodenet, 'n5', 'gen', 'n3', 'gen', 'weight', 'Testmonitor')
+    uid = micropsi.add_link_monitor(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen', 'weight', 'Testmonitor', color="#112233")
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.name == 'Testmonitor'
     assert monitor.property == 'weight'
-    assert monitor.source_node_uid == 'n5'
-    assert monitor.target_node_uid == 'n3'
+    assert monitor.source_node_uid == 'n0005'
+    assert monitor.target_node_uid == 'n0003'
     assert monitor.gate_type == 'gen'
     assert monitor.slot_type == 'gen'
+    assert monitor.color == "#112233"
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert round(monitor.values[1], 2) == 1
-    micropsi.nodenets[fixed_nodenet].set_link_weight('n5', 'gen', 'n3', 'gen', weight=0.7)
+    micropsi.nodenets[fixed_nodenet].set_link_weight('n0005', 'gen', 'n0003', 'gen', weight=0.7)
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert len(monitor.values) == 2
@@ -57,10 +60,11 @@ def test_add_link_monitor(fixed_nodenet):
 
 
 def test_add_modulator_monitor(fixed_nodenet):
-    uid = micropsi.add_modulator_monitor(fixed_nodenet, 'base_test', 'Testmonitor')
+    uid = micropsi.add_modulator_monitor(fixed_nodenet, 'base_test', 'Testmonitor', color="#112233")
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.name == 'Testmonitor'
     assert monitor.modulator == 'base_test'
+    assert monitor.color == "#112233"
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
@@ -74,11 +78,12 @@ def test_add_modulator_monitor(fixed_nodenet):
 
 def test_add_custom_monitor(fixed_nodenet):
     code = """return len(netapi.get_nodes())"""
-    uid = micropsi.add_custom_monitor(fixed_nodenet, code, 'Nodecount')
+    uid = micropsi.add_custom_monitor(fixed_nodenet, code, 'Nodecount', color="#112233")
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
     assert monitor.name == 'Nodecount'
     assert monitor.compiled_function is not None
     assert monitor.function == code
+    assert monitor.color == "#112233"
     assert len(monitor.values) == 0
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
@@ -87,7 +92,7 @@ def test_add_custom_monitor(fixed_nodenet):
 
 
 def test_remove_monitor(fixed_nodenet):
-    uid = micropsi.add_slot_monitor(fixed_nodenet, 'n1', 'gen')
+    uid = micropsi.add_slot_monitor(fixed_nodenet, 'n0001', 'gen')
     assert micropsi.nodenets[fixed_nodenet].get_monitor(uid) is not None
     micropsi.remove_monitor(fixed_nodenet, uid)
     gone = False
@@ -99,31 +104,31 @@ def test_remove_monitor(fixed_nodenet):
 
 
 def test_remove_monitored_node(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n1', 'gen', sheaf='default')
-    micropsi.delete_node(fixed_nodenet, 'n1')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', sheaf='default')
+    micropsi.delete_node(fixed_nodenet, 'n0001')
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.export_monitor_data(fixed_nodenet)
     assert monitor[uid]['values'][1] is None
 
 
 def test_remove_monitored_link(fixed_nodenet):
-    uid = micropsi.add_link_monitor(fixed_nodenet, 'n5', 'gen', 'n3', 'gen', 'weight', 'Testmonitor')
-    micropsi.delete_link(fixed_nodenet, 'n5', 'gen', 'n3', 'gen')
+    uid = micropsi.add_link_monitor(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen', 'weight', 'Testmonitor')
+    micropsi.delete_link(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.export_monitor_data(fixed_nodenet)
     assert monitor[uid]['values'][1] is None
 
 
 def test_remove_monitored_link_via_delete_node(fixed_nodenet):
-    uid = micropsi.add_link_monitor(fixed_nodenet, 'n5', 'gen', 'n3', 'gen', 'weight', 'Testmonitor')
-    micropsi.delete_node(fixed_nodenet, 'n5')
+    uid = micropsi.add_link_monitor(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen', 'weight', 'Testmonitor')
+    micropsi.delete_node(fixed_nodenet, 'n0005')
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.export_monitor_data(fixed_nodenet)
     assert monitor[uid]['values'][1] is None
 
 
 def test_get_monitor_data(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n1', 'gen', name="Testmonitor")
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', name="Testmonitor")
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.get_monitor_data(fixed_nodenet)
     assert data['current_step'] == 1
@@ -134,8 +139,8 @@ def test_get_monitor_data(fixed_nodenet):
 
 
 def test_export_monitor_data(fixed_nodenet):
-    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'n1', 'gen')
-    uid2 = micropsi.add_gate_monitor(fixed_nodenet, 'n3', 'gen')
+    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
+    uid2 = micropsi.add_gate_monitor(fixed_nodenet, 'n0003', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.export_monitor_data(fixed_nodenet)
     assert uid1 in data
@@ -144,8 +149,8 @@ def test_export_monitor_data(fixed_nodenet):
 
 
 def test_export_monitor_data_with_id(fixed_nodenet):
-    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'n1', 'gen', name="Testmonitor")
-    micropsi.add_gate_monitor(fixed_nodenet, 'n3', 'gen')
+    uid1 = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', name="Testmonitor")
+    micropsi.add_gate_monitor(fixed_nodenet, 'n0003', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid1)
     assert data['name'] == 'Testmonitor'
@@ -153,7 +158,7 @@ def test_export_monitor_data_with_id(fixed_nodenet):
 
 
 def test_clear_monitor(fixed_nodenet):
-    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n1', 'gen')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
     micropsi.step_nodenet(fixed_nodenet)
     micropsi.clear_monitor(fixed_nodenet, uid)
     data = micropsi.get_monitor_data(fixed_nodenet)

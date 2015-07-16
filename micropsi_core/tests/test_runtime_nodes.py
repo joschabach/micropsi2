@@ -66,7 +66,7 @@ def test_get_nodespace_list(test_nodenet):
 
 
 def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
-    res, uid = micropsi.add_node(test_nodenet, "Nodespace", (200, 250), None, state=None, name="Foospace")
+    res, uid = micropsi.add_nodespace(test_nodenet, (200, 250), None, name="Foospace")
     data = micropsi.get_nodespace_list(test_nodenet)
     assert data[uid]['nodes'] == {}
 

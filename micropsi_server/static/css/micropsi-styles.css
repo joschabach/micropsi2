@@ -38,7 +38,12 @@ h3 {
 .delete_monitor i { opacity: 0.5; }
 .delete_monitor:hover i { opacity: 1; }
 
-.logentry{ display:block; white-space: nowrap;}
+.logentry{
+  display:block;
+  white-space: pre;
+  font-size: 11px;
+  line-height: 13px;
+}
 
 .contentbox {
   height: 100%;
@@ -367,7 +372,7 @@ graphs
 
 label input[type="radio"], label input[type="checkbox"] {
   padding: 0;
-  vertical-align: middle;
+  vertical-align: text-top;
   margin: 0;
 }
 
@@ -388,17 +393,6 @@ label input[type="radio"], label input[type="checkbox"] {
   background-color: transparent;
 }
 
-#simulation_controls{
-  margin-right: 20px;
-}
-
-#simulation_controls .step_counters {
-  font-size: 8px;
-  line-height: 9px;
-  text-align: left;
-  padding-top: 5px;
-  padding-bottom: 5px;
-}
 
 div.modulators_container{
   max-height: 200px;
@@ -450,4 +444,78 @@ table.emoexpression td {
 
 .modal {
   top: 100px !important;
+}
+
+#simulation_controls{
+  margin-right: 20px;
+}
+
+#simulation_controls .step_counters {
+  font-size: 8px;
+  line-height: 9px;
+  text-align: left;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin-right: 1px;
+  border-right: 1px solid #333;
+}
+
+.btn-group .btn.separated {
+  border-right: 1px solid #333;
+  margin-right: 1px;
+}
+#simulation_controls .btn-expand {
+  font-size: 8px;
+  padding-left: 1px;
+  padding-right: 1px;
+  border-left: 0;
+  color: #333;
+}
+
+.running_indicator {
+  font-size: 8px !important;
+  line-height: 9px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  height: 18px
+}
+.running_icon {
+  float: left;
+}
+.runner_paused {
+  opacity: 0.6;
+}
+
+.running_text > span {
+  display: block;
+  padding-left: 20px;
+  font-weight: bold;
+}
+.navbar .btn.disabled {
+  background-color: #e0e0e0;
+  opacity: 1;
+}
+
+#copy_paste_text {
+  width: 100%;
+  min-height: 250px;
+}
+
+.layoutbtn {
+  width: 30px;
+  height: 30px;
+  font-size: 27px;
+  text-align: left;
+  padding-left: 6px;
+}
+
+.color-chooser .input-group-addon i{
+  display: inline-block;
+  width: 220px !important;
+  height: 20px !important;
+  vertical-align: middle;
+
+}
+.color-chooser input {
+  display: none;
 }

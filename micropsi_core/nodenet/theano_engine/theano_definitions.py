@@ -37,7 +37,7 @@ NFPG_PIPE_CAT = 6
 NFPG_PIPE_EXP = 7
 
 def get_numerical_gate_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.gatetypes) > 0:
+    if nodetype is not None and type in nodetype.gatetypes:
         return nodetype.gatetypes.index(type)
     elif type == "gen":
         return GEN
@@ -79,7 +79,7 @@ def get_string_gate_type(type, nodetype=None):
 
 
 def get_numerical_slot_type(type, nodetype=None):
-    if nodetype is not None and len(nodetype.slottypes) > 0:
+    if nodetype is not None and type in nodetype.slottypes:
         return nodetype.slottypes.index(type)
     elif type == "gen":
         return GEN
@@ -248,17 +248,41 @@ def get_gates_per_type(type, nativemodules=None):
         raise ValueError("Supplied type is not a valid node type: "+str(type))
 
 
-def node_to_id(numericid):
-    return "n%i" % numericid
+def get_slots_per_type(type, nativemodules=None):
+    if type == REGISTER:
+        return 1
+    elif type == SENSOR:
+        return 1
+    elif type == ACTUATOR:
+        return 1
+    elif type == ACTIVATOR:
+        return 0
+    elif type == CONCEPT:
+        return 7
+    elif type == SCRIPT:
+        return 7
+    elif type == PIPE:
+        return 7
+    elif type == COMMENT:
+        return 0
+    elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
+        native_module_definition = nativemodules[get_string_node_type(type, nativemodules)]
+        return len(native_module_definition.slottypes)
+    else:
+        raise ValueError("Supplied type is not a valid node type: "+str(type))
+
+
+def node_to_id(numericid, partition):
+    return "n%03i%i" % (partition, numericid)
 
 
 def node_from_id(stringid):
-    return int(stringid[1:])
+    return int(stringid[4:])
 
 
-def nodespace_to_id(numericid):
-    return "s%i" % numericid
+def nodespace_to_id(numericid, partition):
+    return "s%03i%i" % (partition, numericid)
 
 
 def nodespace_from_id(stringid):
-    return int(stringid[1:])
+    return int(stringid[4:])

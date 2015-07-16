@@ -4,7 +4,8 @@ $(function(){
     var viewProperties = {
         height: 420,
         padding: 20,
-        xvalues: 100
+        xvalues: 100,
+        max_log_entries: 2000
     };
 
     var container = $('#graph');
@@ -14,13 +15,15 @@ $(function(){
     var currentMonitors = [];
 
     var currentSimulationStep = 0;
-    var currentNodenet = null;
+    var currentNodenet = $.cookie('selected_nodenet');
 
     var capturedLoggers = {
         'system': false,
         'world': false,
         'nodenet': false
     };
+
+    var logs = [];
 
     if($.cookie('capturedLoggers')){
         capturedLoggers = JSON.parse($.cookie('capturedLoggers'));
@@ -35,23 +38,58 @@ $(function(){
 
     init();
 
+    $('.layoutbtn').on('click', function(event){
+        event.preventDefault();
+        var target = $(event.target);
+        if(!target.hasClass('active')){
+            var layout = target.attr('data');
+            if(layout == 'vertical'){
+                $('.layout_field').addClass('span6');
+            } else if(layout == 'horizontal'){
+                $('.layout_field').removeClass('span6');
+            }
+            refreshMonitors();
+            $('.layoutbtn').removeClass('active');
+            target.addClass('active');
+        }
+    })
+
+    $('#monitor_x_axis').on('change', function(){
+        viewProperties.xvalues = parseInt($('#monitor_x_axis').val());
+        refreshMonitors();
+    });
+
+    var filter_timeout=null;
+    $('#monitor_filter_logs').on('keydown', function(event){
+        if(event.keyCode == 13){
+            event.preventDefault();
+        }
+        clearTimeout(filter_timeout);
+        filter_timeout = setTimeout(refreshLoggerView, 400);
+    })
+
     $(document).on('monitorsChanged', function(evt, new_monitor){
         currentMonitors.push(new_monitor)
         refreshMonitors();
     });
-    $(document).on('nodenetChanged', function(data, newNodenet){
-        refreshMonitors(newNodenet);
+    $(document).on('nodenet_changed', function(data, newNodenet){
+        currentNodenet = newNodenet;
+        init();
     });
 
     function init() {
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
+            $('#loading').show();
             api.call('load_nodenet', {
-                nodenet_uid: currentNodenet
+                nodenet_uid: currentNodenet,
+                include_links: false
             }, function(data) {
+                $('#loading').hide();
                 refreshMonitors();
             },
             function(data) {
+                $('#loading').hide();
                 if(data.status == 500){
                     api.defaultErrorCallback(data);
                 } else {
@@ -105,14 +143,36 @@ $(function(){
     }
 
     function setLoggingData(data){
+        last_logger_call = data.logs.servertime;
+        for(var idx in data.logs.logs){
+            logs.push(data.logs.logs[idx]);
+        }
+        if(logs.length > viewProperties.max_log_entries){
+            logs.splice(0, logs.length - viewProperties.max_log_entries);
+            console.log('splicing ' + logs.length - viewProperties.max_log_entries + ' entries');
+        }
+        refreshLoggerView();
+    }
+
+    function refreshLoggerView(){
         var height = log_container.height();
         var scrollHeight = log_container[0].scrollHeight;
         var st = log_container.scrollTop();
         var doscroll = (st >= (scrollHeight - height));
-        last_logger_call = data.logs.servertime;
-        for(var idx in data.logs.logs){
-            log_container.append($('<span class="logentry log_'+data.logs.logs[idx].level+'">'+data.logs.logs[idx].logger+' | ' + data.logs.logs[idx].msg +'</span>'));
+        var html = '';
+        var filter = $('#monitor_filter_logs').val().toLowerCase();
+        for(var idx in logs){
+            item = logs[idx];
+            if(filter){
+                var check = (item.logger + item.msg + item.module+ item.function + item.level).toLowerCase();
+                if(check.indexOf(filter) > -1){
+                    html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+                }
+            } else {
+                html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+            }
         }
+        log_container.html(html);
         if(doscroll){
             log_container.scrollTop(log_container[0].scrollHeight);
         }
@@ -145,7 +205,7 @@ $(function(){
             if(currentMonitors.indexOf(uid) > -1){
                 html += ' checked="checked"';
             }
-            html += ' /> <label for="'+uid+'" style="display:inline;color:#'+uid.substr(2,6)+'"><strong>' + monitors[uid].name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
+            html += ' /> <label for="'+uid+'" style="display:inline;color:'+monitors[uid].color+'"><strong>' + monitors[uid].name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);
@@ -187,10 +247,15 @@ $(function(){
             height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
         var xmax = Math.max(viewProperties.xvalues, currentSimulationStep);
+
+        var xvalues = viewProperties.xvalues;
+        if(viewProperties.xvalues < 0){
+            xvalues = xmax;
+        }
         var x = d3.scale.linear()
-            .domain([xmax - viewProperties.xvalues, xmax])
+            .domain([xmax - xvalues, xmax])
             .range([0, width]);
-        var xstart = xmax - viewProperties.xvalues;
+        var xstart = xmax - xvalues;
 
         var y1values = [];
         var y2values = [];
@@ -288,7 +353,7 @@ $(function(){
                     .data(data)
                     .enter().append("svg:circle")
                      .attr("stroke", "black")
-                     .attr("fill", function(d, i) { return '#' + uid.substr(2, 6); })
+                     .attr("fill", function(d, i) { return  currentMonitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y2(d[1]); })
                      .attr("r", function(d, i) { return 2 });
@@ -308,7 +373,7 @@ $(function(){
                 var points = svg.selectAll(".point")
                     .data(data)
                     .enter().append("svg:circle")
-                     .attr("fill", function(d, i) { return '#' + uid.substr(2, 6); })
+                     .attr("fill", function(d, i) { return currentMonitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y1(d[1]); })
                      .attr("r", function(d, i) { return 2 });
@@ -317,8 +382,8 @@ $(function(){
 
 
             var len = data.length;
-            data.splice(0, len - viewProperties.xvalues - 1);
-            var color = '#' + uid.substr(2, 6);
+            data.splice(0, len - xvalues - 1);
+            var color =  currentMonitors[uid].color;
             svg.append("path")
                 .datum(data)
                 .attr("class", "line")

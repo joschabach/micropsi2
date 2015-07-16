@@ -39,13 +39,13 @@ def test_new_nodenet(test_nodenet, resourcepath, engine):
 def test_nodenet_data_gate_parameters(fixed_nodenet):
     from micropsi_core.nodenet.node import Nodetype
     data = micropsi.nodenets[fixed_nodenet].data
-    assert data['nodes']['n5']['gate_parameters'] == {}
-    micropsi.set_gate_parameters(fixed_nodenet, 'n5', 'gen', {'threshold': 1})
+    assert data['nodes']['n0005']['gate_parameters'] == {}
+    micropsi.set_gate_parameters(fixed_nodenet, 'n0005', 'gen', {'threshold': 1})
     data = micropsi.nodenets[fixed_nodenet].data
-    assert data['nodes']['n5']['gate_parameters'] == {'gen': {'threshold': 1}}
+    assert data['nodes']['n0005']['gate_parameters'] == {'gen': {'threshold': 1}}
     defaults = Nodetype.GATE_DEFAULTS.copy()
     defaults.update({'threshold': 1})
-    data = micropsi.nodenets[fixed_nodenet].get_node('n5').data['gate_parameters']
+    data = micropsi.nodenets[fixed_nodenet].get_node('n0005').data['gate_parameters']
     assert data == {'gen': {'threshold': 1}}
 
 
@@ -88,21 +88,21 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
     nodefunc = mock.Mock()
     nodefunctions.concept = nodefunc
     micropsi.nodenets[fixed_nodenet].step()
-    foo = micropsi.nodenets[fixed_nodenet].get_node('n1').clone_parameters()
+    foo = micropsi.nodenets[fixed_nodenet].get_node('n0001').clone_parameters()
     foo.update({'foo_parameter': 42})
-    assert nodefunc.called_with(micropsi.nodenets[fixed_nodenet].netapi, micropsi.nodenets[fixed_nodenet].get_node('n1'), foo)
-    micropsi.nodenets[fixed_nodenet].get_node('n1').clear_parameter('foo_parameter')
-    assert micropsi.nodenets[fixed_nodenet].get_node('n1').get_parameter('foo_parameter') is None
+    assert nodefunc.called_with(micropsi.nodenets[fixed_nodenet].netapi, micropsi.nodenets[fixed_nodenet].get_node('n0001'), foo)
+    micropsi.nodenets[fixed_nodenet].get_node('n0001').clear_parameter('foo_parameter')
+    assert micropsi.nodenets[fixed_nodenet].get_node('n0001').get_parameter('foo_parameter') is None
     nodefunctions.concept = tmp
 
 
 def test_nodespace_removal(fixed_nodenet):
-    res, uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100, 100], nodespace=None, name="testspace")
+    res, uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 100], nodespace=uid, name="sub1")
     res, n2_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 200], nodespace=uid, name="sub2")
     micropsi.add_link(fixed_nodenet, n1_uid, 'gen', n2_uid, 'gen', weight=1, certainty=1)
-    res, sub_uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100, 100], nodespace=uid, name="subsubspace")
-    micropsi.delete_node(fixed_nodenet, uid)
+    res, sub_uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=uid, name="subsubspace")
+    micropsi.delete_nodespace(fixed_nodenet, uid)
     # assert that the nodespace is gone
     assert not micropsi.nodenets[fixed_nodenet].is_nodespace(uid)
     assert uid not in micropsi.nodenets[fixed_nodenet].data['nodespaces']
@@ -125,7 +125,7 @@ def test_nodespace_removal(fixed_nodenet):
 
 def test_clone_nodes_nolinks(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    success, result = micropsi.clone_nodes(fixed_nodenet, ['n1', 'n2'], 'none', offset=[10, 20])
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'none', offset=[10, 20])
     assert success
     if result['nodes'][0]['name'] == 'A1_copy':
         a1_copy = result['nodes'][0]
@@ -135,21 +135,21 @@ def test_clone_nodes_nolinks(fixed_nodenet):
         a2_copy = result['nodes'][0]
 
     assert nodenet.is_node(a1_copy['uid'])
-    assert a1_copy['uid'] != 'n1'
-    assert a1_copy['type'] == nodenet.get_node('n1').type
-    assert a1_copy['parameters'] == nodenet.get_node('n1').clone_parameters()
-    assert a1_copy['position'][0] == nodenet.get_node('n1').position[0] + 10
-    assert a1_copy['position'][1] == nodenet.get_node('n1').position[1] + 20
+    assert a1_copy['uid'] != 'n0001'
+    assert a1_copy['type'] == nodenet.get_node('n0001').type
+    assert a1_copy['parameters'] == nodenet.get_node('n0001').clone_parameters()
+    assert a1_copy['position'][0] == nodenet.get_node('n0001').position[0] + 10
+    assert a1_copy['position'][1] == nodenet.get_node('n0001').position[1] + 20
     assert nodenet.is_node(a2_copy['uid'])
-    assert a2_copy['name'] == nodenet.get_node('n2').name + '_copy'
-    assert a2_copy['uid'] != 'n2'
+    assert a2_copy['name'] == nodenet.get_node('n0002').name + '_copy'
+    assert a2_copy['uid'] != 'n0002'
     assert len(result['nodes']) == 2
     assert len(result['links']) == 0
 
 
 def test_clone_nodes_all_links(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    success, result = micropsi.clone_nodes(fixed_nodenet, ['n1', 'n2'], 'all')
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'all')
     assert success
     assert len(result['nodes']) == 2
     assert len(result['links']) == 2
@@ -161,7 +161,7 @@ def test_clone_nodes_all_links(fixed_nodenet):
         a1_copy = result['nodes'][1]
         a2_copy = result['nodes'][0]
 
-    sensor = nodenet.get_node('n5')
+    sensor = nodenet.get_node('n0005')
     a1_copy = nodenet.get_node(a1_copy['uid'])
     a2_copy = nodenet.get_node(a2_copy['uid'])
     l1_uid = list(a1_copy.get_gate('por').get_links())[0].uid
@@ -194,7 +194,7 @@ def test_clone_nodes_all_links(fixed_nodenet):
 
 def test_clone_nodes_internal_links(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    success, result = micropsi.clone_nodes(fixed_nodenet, ['n1', 'n2'], 'internal')
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'internal')
     assert success
     assert len(result['nodes']) == 2
     assert len(result['links']) == 1
@@ -224,9 +224,9 @@ def test_clone_nodes_internal_links(fixed_nodenet):
 def test_clone_nodes_to_new_nodespace(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
 
-    res, testspace_uid = micropsi.add_node(fixed_nodenet, 'Nodespace', [100, 100], nodespace=None, name="testspace")
+    res, testspace_uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
 
-    success, result = micropsi.clone_nodes(fixed_nodenet, ['n1', 'n2'], 'internal', nodespace=testspace_uid)
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'internal', nodespace=testspace_uid)
 
     assert success
     assert len(result['nodes']) == 2
@@ -248,8 +248,8 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
 
 def test_clone_nodes_copies_gate_params(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
-    micropsi.set_gate_parameters(fixed_nodenet, 'n1', 'gen', {'maximum': 0.1})
-    success, result = micropsi.clone_nodes(fixed_nodenet, ['n1'], 'internal')
+    micropsi.set_gate_parameters(fixed_nodenet, 'n0001', 'gen', {'maximum': 0.1})
+    success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001'], 'internal')
     assert success
     copy = nodenet.get_node(result['nodes'][0]['uid'])
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1

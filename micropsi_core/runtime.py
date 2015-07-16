@@ -8,11 +8,12 @@ maintains a set of users, worlds (up to one per user), and nodenets, and provide
 
 from micropsi_core._runtime_api_world import *
 from micropsi_core._runtime_api_monitors import *
+import re
 
 __author__ = 'joscha'
 __date__ = '10.05.12'
 
-from configuration import RESOURCE_PATH, SERVER_SETTINGS_PATH, LOGGING
+from configuration import config as cfg
 
 from micropsi_core.nodenet import node_alignment
 from micropsi_core import config
@@ -34,8 +35,9 @@ from .micropsi_logger import MicropsiLogger
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
+RESOURCE_PATH = cfg['paths']['resource_path']
 
-configs = config.ConfigurationManager(SERVER_SETTINGS_PATH)
+configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
 worlds = {}
 nodenets = {}
@@ -47,12 +49,17 @@ runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 signal_handler_registry = []
 
 logger = MicropsiLogger({
-    'system': LOGGING['level_system'],
-    'world': LOGGING['level_world'],
-    'nodenet': LOGGING['level_nodenet']
-}, LOGGING.get("logfile"))
+    'system': cfg['logging']['level_system'],
+    'world': cfg['logging']['level_world'],
+    'nodenet': cfg['logging']['level_nodenet']
+}, cfg['logging'].get('logfile'))
 
 nodenet_lock = threading.Lock()
+
+if cfg['micropsi2'].get('profile_runner'):
+    import cProfile
+    import pstats
+    import io
 
 
 def add_signal_handler(handler):
@@ -72,13 +79,32 @@ class MicropsiRunner(threading.Thread):
     number_of_samples = 0
     total_steps = 0
     granularity = 10
+    conditions = {}
 
     def __init__(self):
         threading.Thread.__init__(self)
+        if cfg['micropsi2'].get('profile_runner'):
+            self.profiler = cProfile.Profile()
+        else:
+            self.profiler = None
         self.daemon = True
         self.paused = True
         self.state = threading.Condition()
         self.start()
+
+    def check_conditions(self, nodenet_uid):
+        if nodenet_uid in MicropsiRunner.conditions:
+            conditions = MicropsiRunner.conditions[nodenet_uid]
+            net = nodenets[nodenet_uid]
+            if 'step' in conditions and net.current_step >= conditions['step']:
+                if 'step_amount' in conditions:
+                    conditions['step'] = net.current_step + conditions['step_amount']
+                return False
+            if 'monitor' in conditions and net.current_step > 0:
+                monitor = net.get_monitor(conditions['monitor']['uid'])
+                if net.current_step in monitor.values and round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
+                    return False
+        return True
 
     def run(self):
         while runner['running']:
@@ -93,24 +119,35 @@ class MicropsiRunner(threading.Thread):
 
             start = datetime.now()
             log = False
-            for uid in nodenets:
-                nodenet = nodenets[uid]
-                if nodenet.is_active:
-                    log = True
-                    try:
-                        nodenet.step()
-                        nodenet.update_monitors()
-                    except:
-                        nodenet.is_active = False
-                        logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
-                        MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
-                    if nodenet.world and nodenet.current_step % runner['factor'] == 0:
-                        try:
-                            nodenet.world.step()
-                        except:
+            uids = list(nodenets.keys())
+            for uid in uids:
+                if uid in nodenets:
+                    nodenet = nodenets[uid]
+                    if nodenet.is_active:
+                        if not self.check_conditions(uid):
                             nodenet.is_active = False
-                            logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
-                            MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
+                            continue
+                        log = True
+                        try:
+                            if self.profiler:
+                                self.profiler.enable()
+                            nodenet.step()
+                            if self.profiler:
+                                self.profiler.disable()
+                            nodenet.update_monitors()
+                        except:
+                            if self.profiler:
+                                self.profiler.disable()
+                            nodenet.is_active = False
+                            logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
+                            MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
+                        if nodenet.world and nodenet.current_step % runner['factor'] == 0:
+                            try:
+                                nodenet.world.step()
+                            except:
+                                nodenet.is_active = False
+                                logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
+                                MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:
@@ -120,6 +157,13 @@ class MicropsiRunner(threading.Thread):
                 self.total_steps += 1
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
+                    if self.profiler:
+                        s = io.StringIO()
+                        sortby = 'cumtime'
+                        ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
+                        ps.print_stats('nodenet')
+                        logging.getLogger("nodenet").debug(s.getvalue())
+
                     logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0
@@ -371,7 +415,8 @@ def delete_nodenet(nodenet_uid):
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
-    nodenets[nodenet_uid].remove(filename)
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.remove(filename)
     unload_nodenet(nodenet_uid)
     del nodenet_data[nodenet_uid]
     return True
@@ -417,6 +462,22 @@ def set_runner_properties(timestep, factor):
     runner['timestep'] = timestep
     configs['runner_factor'] = int(factor)
     runner['factor'] = int(factor)
+    return True
+
+
+def set_runner_condition(nodenet_uid, monitor=None, steps=None):
+    """ registers a condition that stops the runner if it is fulfilled"""
+    MicropsiRunner.conditions[nodenet_uid] = {}
+    if monitor is not None:
+        MicropsiRunner.conditions[nodenet_uid]['monitor'] = monitor
+    if steps is not None:
+        MicropsiRunner.conditions[nodenet_uid]['step'] = nodenets[nodenet_uid].current_step + steps
+        MicropsiRunner.conditions[nodenet_uid]['step_amount'] = steps
+    return True, MicropsiRunner.conditions[nodenet_uid]
+
+
+def remove_runner_condition(nodenet_uid):
+    MicropsiRunner.conditions[nodenet_uid] = {}
     return True
 
 
@@ -469,7 +530,7 @@ def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
     nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
-    nodenet_data[nodenet_uid] = Bunch(**nodenet.data)
+    nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
 
@@ -571,7 +632,7 @@ def get_node(nodenet_uid, node_uid):
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
-    """Creates a new node. (Including nodespace, native module.)
+    """Creates a new node. (Including native module.)
 
     Arguments:
         nodenet_uid: uid of the nodespace manager
@@ -587,10 +648,21 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    if type == "Nodespace":
-        uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
-    else:
-        uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    return True, uid
+
+def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
+    """Creates a new nodespace
+    Arguments:
+        nodenet_uid: uid of the nodespace manager
+        position: position of the node in the current nodespace
+        nodespace: uid of the parent nodespace
+        uid (optional): if not supplied, a uid will be generated
+        name (optional): if not supplied, the uid will be used instead of a display name
+        options (optional): a dict of options. TBD
+    """
+    nodenet = get_nodenet(nodenet_uid)
+    uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid, options=options)
     return True, uid
 
 
@@ -660,6 +732,149 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
+def __pythonify(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name).lower()
+    return re.sub('([\s+\W])', '_', s1)
+
+
+def generate_netapi_fragment(nodenet_uid, node_uids):
+    lines = []
+    idmap = {}
+    nodenet = get_nodenet(nodenet_uid)
+    nodes = []
+    nodespaces = []
+    for node_uid in node_uids:
+        if not nodenet.is_nodespace(node_uid):
+            nodes.append(nodenet.get_node(node_uid))
+        else:
+            nodespaces.append(nodenet.get_nodespace(node_uid))
+
+    xpos = []
+    ypos = []
+    nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
+    nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
+
+    # nodespaces
+    for i, nodespace in enumerate(nodespaces):
+        name = nodespace.name.strip() if nodespace.name != nodespace.uid else None
+        varname = "nodespace%i" % i
+        if name:
+            pythonname = __pythonify(name)
+            if pythonname not in idmap.values():
+                varname = pythonname
+            lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
+        else:
+            lines.append("%s = netapi.create_nodespace(None)" % (varname))
+        idmap[nodespace.uid] = varname
+        xpos.append(node.position[0])
+        ypos.append(node.position[1])
+
+    # nodes and gates
+    for i, node in enumerate(nodes):
+        name = node.name.strip() if node.name != node.uid else None
+        varname = "node%i" % i
+        if name:
+            pythonname = __pythonify(name)
+            if pythonname not in idmap.values():
+                varname = pythonname
+            lines.append("%s = netapi.create_node('%s', None, \"%s\")" % (varname, node.type, name))
+        else:
+            lines.append("%s = netapi.create_node('%s', None)" % (varname, node.type))
+
+        ndgps = node.clone_non_default_gate_parameters()
+        for gatetype in ndgps.keys():
+            for parameter, value in ndgps[gatetype].items():
+                lines.append("%s.set_gate_parameter('%s', \"%s\", %.2f)" % (varname, gatetype, parameter, value))
+
+        nps = node.clone_parameters()
+        for parameter, value in nps.items():
+            if value is None:
+                continue
+
+            if parameter not in node.nodetype.parameter_defaults or node.nodetype.parameter_defaults[parameter] != value:
+                if isinstance(value, str):
+                    lines.append("%s.set_parameter(\"%s\", \"%s\")" % (varname, parameter, value))
+                else:
+                    lines.append("%s.set_parameter(\"%s\", %.2f)" % (varname, parameter, value))
+
+        idmap[node.uid] = varname
+        xpos.append(node.position[0])
+        ypos.append(node.position[1])
+
+    lines.append("")
+
+    # links
+    for node in nodes:
+        for gatetype in node.get_gate_types():
+            gate = node.get_gate(gatetype)
+            for link in gate.get_links():
+                if link.source_node.uid not in idmap or link.target_node.uid not in idmap:
+                    continue
+
+                source_id = idmap[link.source_node.uid]
+                target_id = idmap[link.target_node.uid]
+
+                reciprocal = False
+                if link.source_gate.type == 'sub' and 'sur' in link.target_node.get_gate_types() and link.weight == 1:
+                    surgate = link.target_node.get_gate('sur')
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'sur' and rec_link.weight == 1:
+                            reciprocal = True
+                            lines.append("netapi.link_with_reciprocal(%s, %s, 'subsur')" % (source_id, target_id))
+
+                if link.source_gate.type == 'sur' and 'sub' in link.target_node.get_gate_types() and link.weight == 1:
+                    subgate = link.target_node.get_gate('sub')
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'sub' and rec_link.weight == 1:
+                            reciprocal = True
+
+                if link.source_gate.type == 'por' and 'ret' in link.target_node.get_gate_types() and link.weight == 1:
+                    surgate = link.target_node.get_gate('ret')
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'ret' and rec_link.weight == 1:
+                            reciprocal = True
+                            lines.append("netapi.link_with_reciprocal(%s, %s, 'porret')" % (source_id, target_id))
+
+                if link.source_gate.type == 'ret' and 'por' in link.target_node.get_gate_types() and link.weight == 1:
+                    subgate = link.target_node.get_gate('por')
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'por' and rec_link.weight == 1:
+                            reciprocal = True
+
+                if link.source_gate.type == 'cat' and 'exp' in link.target_node.get_gate_types() and link.weight == 1:
+                    surgate = link.target_node.get_gate('exp')
+                    for rec_link in surgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'exp' and rec_link.weight == 1:
+                            reciprocal = True
+                            lines.append("netapi.link_with_reciprocal(%s, %s, 'catexp')" % (source_id, target_id))
+
+                if link.source_gate.type == 'exp' and 'cat' in link.target_node.get_gate_types() and link.weight == 1:
+                    subgate = link.target_node.get_gate('cat')
+                    for rec_link in subgate.get_links():
+                        if rec_link.target_node.uid == node.uid and rec_link.target_slot.type == 'cat' and rec_link.weight == 1:
+                            reciprocal = True
+
+                if not reciprocal:
+                    weight = link.weight if link.weight != 1 else None
+                    if weight is not None:
+                        lines.append("netapi.link(%s, '%s', %s, '%s', %.8f)" % (source_id, gatetype, target_id, link.target_slot.type, weight))
+                    else:
+                        lines.append("netapi.link(%s, '%s', %s, '%s')" % (source_id, gatetype, target_id, link.target_slot.type))
+
+    lines.append("")
+
+    # positions
+    origin = (100, 100)
+    factor = (int(min(xpos)), int(min(ypos)))
+    lines.append("origin_pos = (%d, %d)" % origin)
+    for node in nodes + nodespaces:
+        x = int(node.position[0] - factor[0])
+        y = int(node.position[1] - factor[1])
+        lines.append("%s.position = (origin_pos[0] + %i, origin_pos[1] + %i)" % (idmap[node.uid], x, y))
+
+    return "\n".join(lines)
+
+
 def set_node_position(nodenet_uid, node_uid, pos):
     """Positions the specified node at the given coordinates."""
     nodenet = nodenets[nodenet_uid]
@@ -695,16 +910,20 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 
 def delete_node(nodenet_uid, node_uid):
     """Removes the node or node space"""
-
-    # todo: There should be a separate JSON API method for deleting node spaces -- they're entities, but NOT nodes!
-
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_nodespace(node_uid):
-            nodenet.delete_nodespace(node_uid)
-            return True
-        elif nodenet.is_node(node_uid):
+        if nodenet.is_node(node_uid):
             nodenets[nodenet_uid].delete_node(node_uid)
+            return True
+        return False
+
+
+def delete_nodespace(nodenet_uid, nodespace_uid):
+    """ Removes the given node space and all its contents"""
+    nodenet = nodenets[nodenet_uid]
+    with nodenet.netlock:
+        if nodenet.is_nodespace(nodespace_uid):
+            nodenet.delete_nodespace(nodespace_uid)
             return True
         return False
 
@@ -818,14 +1037,19 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
 def get_links_for_nodes(nodenet_uid, node_uids):
     """ Returns a dict of links connected to the given nodes """
     nodenet = nodenets[nodenet_uid]
-    nodes = [nodenet.get_node(uid) for uid in node_uids]
+    source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
-    for node in nodes:
-        for g in node.get_gate_types():
-            links.update(dict((l.uid, l.data) for l in node.get_gate(g).get_links()))
-        for s in node.get_slot_types():
-            links.update(dict((l.uid, l.data) for l in node.get_slot(s).get_links()))
-    return links
+    nodes = {}
+    for node in source_nodes:
+        nodelinks = node.get_associated_links()
+        for l in nodelinks:
+            links[l.uid] = l.data
+            if l.source_node.parent_nodespace != node.parent_nodespace:
+                nodes[l.source_node.uid] = l.source_node.data
+            if l.target_node.parent_nodespace != node.parent_nodespace:
+                nodes[l.target_node.uid] = l.target_node.data
+    return {'links': links, 'nodes': nodes}
+
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
@@ -850,10 +1074,11 @@ def get_available_recipes():
     """ Returns a dict of the available user-recipes """
     recipes = {}
     for name, data in custom_recipes.items():
-        recipes[name] = {
-            'name': name,
-            'parameters': data['parameters']
-        }
+        if not name.startswith('_'):
+            recipes[name] = {
+                'name': name,
+                'parameters': data['parameters']
+            }
     return recipes
 
 
@@ -866,7 +1091,18 @@ def run_recipe(nodenet_uid, name, parameters):
             params[key] = parameters[key]
     if name in custom_recipes:
         func = custom_recipes[name]['function']
-        return True, func(netapi, **params)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler = cProfile.Profile()
+            profiler.enable()
+        result = func(netapi, **params)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler.disable()
+            s = io.StringIO()
+            sortby = 'cumtime'
+            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps.print_stats('nodenet')
+            logging.getLogger("nodenet").debug(s.getvalue())
+        return True, result
     else:
         return False, "Script not found"
 
@@ -1011,6 +1247,12 @@ def parse_recipe_file():
 
 
 def reload_native_modules():
+    # stop nodenets, save state
+    runners = {}
+    for uid in nodenets:
+        if nodenets[uid].is_active:
+            runners[uid] = True
+            nodenets[uid].is_active = False
     load_user_files(True)
     import importlib
     custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
@@ -1019,6 +1261,9 @@ def reload_native_modules():
         loader.load_module()
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
+    # restart previously active nodenets
+    for uid in runners:
+        nodenets[uid].is_active = True
     return True
 
 

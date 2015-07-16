@@ -26,13 +26,18 @@ import os
 import json
 import inspect
 from micropsi_server import minidoc
-from configuration import DEFAULT_HOST, DEFAULT_PORT, VERSION, APPTITLE, SERVER
+import logging
+
+from configuration import config as cfg
+
+VERSION = cfg['micropsi2']['version']
+APPTITLE = cfg['micropsi2']['apptitle']
 
 APP_PATH = os.path.dirname(__file__)
 
 micropsi_app = Bottle()
 
-bottle.debug(False)  # devV
+bottle.debug(cfg['micropsi2'].get('debug', False))  # devV
 
 bottle.TEMPLATE_PATH.insert(0, os.path.join(APP_PATH, 'view', ''))
 bottle.TEMPLATE_PATH.insert(1, os.path.join(APP_PATH, 'static', ''))
@@ -115,6 +120,7 @@ def rpc(command, route_prefix="/rpc/", method="GET", permission_required=None):
                 except Exception as err:
                     response.status = 500
                     import traceback
+                    logging.getLogger('system').error("Error: " + str(err) + " \n " + traceback.format_exc())
                     return {'status': 'error', 'data': str(err), 'traceback': traceback.format_exc()}
 
                 # except TypeError as err:
@@ -736,6 +742,10 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
     data = {}
     nodenet_obj = runtime.get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
+        if nodenet_uid in runtime.MicropsiRunner.conditions:
+            data['simulation_condition'] = runtime.MicropsiRunner.conditions[nodenet_uid]
+            if 'monitor' in data['simulation_condition']:
+                data['simulation_condition']['monitor']['color'] = nodenet_obj.get_monitor(data['simulation_condition']['monitor']['uid']).color
         data['simulation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
@@ -787,6 +797,22 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 @rpc("start_simulation", permission_required="manage nodenets")
 def start_simulation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
+
+
+@rpc("set_runner_condition", permission_required="manage nodenets")
+def set_runner_condition(nodenet_uid, steps=-1, monitor=None):
+    if monitor and 'value' in monitor:
+        monitor['value'] = float(monitor['value'])
+    if steps:
+        steps = int(steps)
+        if steps < 0:
+            steps = None
+    return runtime.set_runner_condition(nodenet_uid, monitor, steps)
+
+
+@rpc("remove_runner_condition", permission_required="manage nodenets")
+def remove_runner_condition(nodenet_uid):
+    return runtime.remove_runner_condition(nodenet_uid)
 
 
 @rpc("set_runner_properties", permission_required="manage server")
@@ -950,28 +976,28 @@ def import_world_rpc(worlddata):
 # Monitor
 
 @rpc("add_gate_monitor")
-def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None):
-    return True, runtime.add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=sheaf, name=name)
+def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=None):
+    return True, runtime.add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=sheaf, name=name, color=color)
 
 
 @rpc("add_slot_monitor")
-def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None):
-    return True, runtime.add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=sheaf, name=name)
+def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=None):
+    return True, runtime.add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=sheaf, name=name, color=color)
 
 
 @rpc("add_link_monitor")
-def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name):
-    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name)
+def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
+    return True, runtime.add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
 
 
 @rpc("add_modulator_monitor")
-def add_modulator_monitor(nodenet_uid, modulator, name):
-    return True, runtime.add_modulator_monitor(nodenet_uid, modulator, name)
+def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
+    return True, runtime.add_modulator_monitor(nodenet_uid, modulator, name, color=color)
 
 
 @rpc("add_custom_monitor")
-def add_custom_monitor(nodenet_uid, function, name):
-    return True, runtime.add_custom_monitor(nodenet_uid, function, name)
+def add_custom_monitor(nodenet_uid, function, name, color=None):
+    return True, runtime.add_custom_monitor(nodenet_uid, function, name, color=color)
 
 
 @rpc("remove_monitor")
@@ -1001,6 +1027,7 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
 def get_monitor_data(nodenet_uid, step):
     return True, runtime.get_monitor_data(nodenet_uid, step)
 
+
 # Nodenet
 
 @rpc("get_nodespace_list")
@@ -1024,6 +1051,11 @@ def add_node(nodenet_uid, type, position, nodespace, state=None, name="", parame
     return runtime.add_node(nodenet_uid, type, position, nodespace, state=state, name=name, parameters=parameters)
 
 
+@rpc("add_nodespace", permission_required="manage nodenets")
+def add_nodespace(nodenet_uid, position, nodespace, name="", options=None):
+    return runtime.add_nodespace(nodenet_uid, position, nodespace, name=name, options=options)
+
+
 @rpc("clone_nodes", permission_required="manage nodenets")
 def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset=[50, 50]):
     return runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)
@@ -1044,9 +1076,19 @@ def delete_node(nodenet_uid, node_uid):
     return runtime.delete_node(nodenet_uid, node_uid)
 
 
+@rpc("delete_nodespace", permission_required="manage nodenets")
+def delete_nodespace(nodenet_uid, nodespace_uid):
+    return runtime.delete_nodespace(nodenet_uid, nodespace_uid)
+
+
 @rpc("align_nodes", permission_required="manage nodenets")
 def align_nodes(nodenet_uid, nodespace):
     return runtime.align_nodes(nodenet_uid, nodespace)
+
+
+@rpc("generate_netapi_fragment", permission_required="manage nodenets")
+def generate_netapi_fragment(nodenet_uid, node_uids):
+    return True, runtime.generate_netapi_fragment(nodenet_uid, node_uids)
 
 
 @rpc("get_available_node_types")
@@ -1175,13 +1217,16 @@ def get_available_recipes():
 
 # -----------------------------------------------------------------------------------------------
 
-def main(host=DEFAULT_HOST, port=DEFAULT_PORT):
-    print("Starting App on Port " + str(DEFAULT_PORT))
-    run(micropsi_app, host=host, port=port, quiet=True, server=SERVER)
+def main(host=None, port=None):
+    host = host or cfg['micropsi2']['host']
+    port = port or cfg['micropsi2']['port']
+    server = cfg['micropsi2']['server']
+    print("Starting App on Port " + str(port))
+    run(micropsi_app, host=host, port=port, quiet=True, server=server)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start the %s server." % APPTITLE)
-    parser.add_argument('-d', '--host', type=str, default=DEFAULT_HOST)
-    parser.add_argument('-p', '--port', type=int, default=DEFAULT_PORT)
+    parser.add_argument('-d', '--host', type=str, default=cfg['micropsi2']['host'])
+    parser.add_argument('-p', '--port', type=int, default=cfg['micropsi2']['port'])
     args = parser.parse_args()
     main(host=args.host, port=args.port)

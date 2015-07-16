@@ -19,8 +19,8 @@ except OSError:
     warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
     raise RuntimeError("config.ini not found")
 
-VERSION = "0.4-alpha2"
-APPTITLE = "MicroPsi"
+config['micropsi2']['version'] = "0.5-alpha3"
+config['micropsi2']['apptitle'] = "MicroPsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')
 
@@ -29,14 +29,7 @@ if homedir:
 else:
     data_path = config['micropsi2']['data_directory']
 
-RESOURCE_PATH = os.path.join(os.path.dirname(__file__), data_path)
-USERMANAGER_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
-SERVER_SETTINGS_PATH = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')
-
-LOGGING = config['logging']
-
-DEFAULT_PORT = config['micropsi2']['port']
-
-DEFAULT_HOST = config['micropsi2']['host']
-
-SERVER = config['micropsi2']['server']
+config.add_section('paths')
+config['paths']['resource_path'] = os.path.join(os.path.dirname(__file__), data_path)
+config['paths']['usermanager_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
+config['paths']['server_settings_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')

@@ -10,7 +10,7 @@
                                     class="icon-chevron-right"></i></span></td>
 
                             <td>
-                                <div class="btn-group" id="nodenet_list">
+                                <div class="btn-group nodenet_list">
                                     <a class="btn" href="#">
                                         (no nodenet selected)
                                     </a>
@@ -392,6 +392,26 @@
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal">Close</button>
         <button class="btn btn-primary">Apply changes</button>
+    </div>
+</div>
+
+
+<div class="modal hide" id="copy_paste_modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3 class="title"></h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <div class="control-group">
+                <fieldset>
+                    <textarea id="copy_paste_text"></textarea>
+                </fieldset>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
     </div>
 </div>
 

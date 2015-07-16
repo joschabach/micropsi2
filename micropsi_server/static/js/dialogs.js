@@ -375,31 +375,117 @@ $(function() {
         window.location.replace(event.target.href + '/' + currentWorld);
     });
 
+    var colorpicker = $('.color-chooser').colorpicker({
+        color: "#990000"
+    });
+
     $('.add_custom_monitor').on('click', function(event){
         event.preventDefault();
-        $('#monitor_name_input').val('');
-        $('#monitor_code_input').val('');
-        $('#monitor_modal .custom_monitor').show();
-        $('#monitor_modal').modal('show');
-        $('#monitor_modal .btn-primary').on('click', function(event){
-            api.call('add_custom_monitor', {
-                'nodenet_uid': currentNodenet,
-                'function': $('#monitor_code_input').val(),
-                'name': $('#monitor_name_input').val()
-            }, function(data){
-                dialogs.notification("monitor saved");
-                $(document).trigger('monitorsChanged', data);
-                $('#monitor_modal .btn-primary').off();
-                $('#monitor_modal').modal('hide');
-            }, function(data){
-                api.defaultErrorCallback(data);
-                $('#monitor_modal .btn-primary').off();
-                $('#monitor_modal').modal('hide');
-            },
-            method="post");
+        addMonitor('custom');
+    });
+
+    $('#monitor_modal input[name="monitor_node_type"]').on('change', function(event){
+        if(event.target.id == 'monitor_node_type_slot'){
+            $('.control-group.gate_monitor').hide();
+            $('.control-group.slot_monitor').show();
+            $('#monitor_type').val('slot')
+        } else {
+            $('.control-group.slot_monitor').hide();
+            $('.control-group.gate_monitor').show();
+            $('#monitor_type').val('gate')
+        }
+    })
+    $('#monitor_modal .btn-primary').on('click', function(event){
+        event.preventDefault();
+        var type = $('#monitor_type').val();
+        var func;
+        var params = {
+            nodenet_uid: currentNodenet,
+            name: $('#monitor_name_input').val(),
+            color: $('#monitor_color_input').val()
+        };
+        switch(type){
+            case 'gate':
+            case 'slot':
+                func = 'add_'+type+'_monitor';
+                params['node_uid'] = $('#monitor_node_uid_input').val();
+                params[type] = $('#monitor_'+type+'_input').val()
+                break;
+            case 'link':
+                func = 'add_link_monitor';
+                params['source_node_uid'] = $('#monitor_link_sourcenode_uid_input').val();
+                params['gate_type'] = $('#monitor_link_sourcegate_type_input').val();
+                params['target_node_uid'] = $('#monitor_link_targetnode_uid_input').val();
+                params['slot_type'] = $('#monitor_link_targetslot_type_input').val();
+                params['property'] = 'weight';
+                break;
+            case 'modulator':
+                func = 'add_modulator_monitor';
+                params['modulator'] = $('#monitor_modulator_input').val();
+                break;
+            case 'custom':
+                func = "add_custom_monitor";
+                params['function'] = $('#monitor_code_input').val();
+                break;
+        }
+        api.call(func, params, function(data){
+            dialogs.notification("monitor saved");
+            if($.cookie('currentMonitors')){
+                currentMonitors = JSON.parse($.cookie('currentMonitors'));
+            } else {
+                currentMonitors = [];
+            }
+            currentMonitors.push(data)
+            $.cookie('currentMonitors', JSON.stringify(currentMonitors), {path:'/', expires:7})
+            $(document).trigger('monitorsChanged', data);
+            $('#monitor_modal').modal('hide');
+        }, function(data){
+            api.defaultErrorCallback(data);
+            $('#monitor_modal').modal('hide');
+        },
+        method="post");
+    });
+
+
+    var remove_condition = $('#remove_runner_condition');
+    var set_condition = $('#set_runner_condition');
+    remove_condition.on('click', function(event){
+        api.call('remove_runner_condition', {nodenet_uid: currentNodenet}, function(event){
+            fetch_stepping_info();
+        });
+    });
+    set_condition.on('click', function(event){
+        event.preventDefault();
+        api.call('get_monitoring_info', {nodenet_uid: currentNodenet}, function(data){
+            var html = '';
+            for(var key in data.monitors){
+                html += '<option value="'+key+'">'+data.monitors[key].name+'</option>';
+            }
+            $('#run_condition_monitor_selector').html(html);
+            $('#run_nodenet_dialog').modal('show');
         });
     });
 
+    function set_runner_condition(event){
+        event.preventDefault();
+        var text = '';
+        var params = {nodenet_uid: currentNodenet};
+        params.steps = $('#run_condition_steps').val() || null;
+        var monitor_val = $('#run_condition_monitor_value').val();
+        if (monitor_val){
+            params.monitor = {
+                'uid': $('#run_condition_monitor_selector').val(),
+                'value': monitor_val
+            }
+        }
+        api.call('set_runner_condition', params, function(data){
+            fetch_stepping_info();
+        });
+        $('#run_nodenet_dialog').modal('hide');
+    }
+
+    $('#run_nodenet_dialog button.btn-primary').on('click', set_runner_condition);
+    $('#run_nodenet_dialog form').on('submit', set_runner_condition);
 
     var recipes = {};
     var recipe_name_input = $('#recipe_name_input');
@@ -422,7 +508,8 @@ $(function() {
         }
     };
 
-    var run_recipe = function(){
+    var run_recipe = function(event){
+        event.preventDefault();
         var form = $('#recipe_modal form');
         data = form.serializeArray();
         parameters = {};
@@ -455,7 +542,6 @@ $(function() {
             var options = '';
             var items = Object.values(data);
             var sorted = items.sort(sortByName);
-            console.log(sorted)
             for(var idx in sorted){
                 options += '<option>' + items[idx].name + '</option>';
             }
@@ -479,20 +565,16 @@ var listeners = {}
 var simulationRunning = false;
 var currentNodenet;
 var runner_properties = {};
+var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 
-
-$(function(){
-    setButtonStates(false);
-    currentNodenet = $.cookie('selected_nodenet') || '';
-    currentWorld = $.cookie('selected_world') || '';
-    if(currentNodenet){
-        fetch_stepping_info();
-    }
-});
 
 register_stepping_function = function(type, input, callback){
     listeners[type] = {'input': input, 'callback': callback};
 }
+unregister_stepping_function = function(type){
+    delete listeners[type];
+}
+
 
 fetch_stepping_info = function(){
     params = {
@@ -510,6 +592,28 @@ fetch_stepping_info = function(){
         }
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);
+        var text = [];
+        if(data.simulation_condition){
+            if(data.simulation_condition.step_amount){
+                text.push("run " + data.simulation_condition.step_amount + " steps");
+                $('#run_condition_steps').val(data.simulation_condition.step_amount);
+            }
+            if(data.simulation_condition.monitor){
+                text.push('<span style="color: '+data.simulation_condition.monitor.color+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
+                $('#run_condition_monitor_selector').val(data.simulation_condition.monitor.uid);
+                $('#run_condition_monitor_value').val(data.simulation_condition.monitor.value);
+            }
+        }
+        if(text.length){
+            $('#simulation_controls .runner_condition').html(text.join(" or "));
+            $('#simulation_controls .running_conditional').show();
+            $('#remove_runner_condition').show();
+        } else {
+            $('#simulation_controls .running_conditional').hide();
+            $('#remove_runner_condition').hide();
+            $('#set_runner_condition').show();
+        }
+
         var end = new Date().getTime();
         if(data.simulation_running){
             if(runner_properties.timestep - (end - start) > 0){
@@ -519,6 +623,13 @@ fetch_stepping_info = function(){
             }
         }
         setButtonStates(data.simulation_running);
+    }, error=function(data, outcome, type){
+        $(document).trigger('runner_stopped');
+        setButtonStates(false);
+        if(data.data == 'No such nodenet'){
+            currentNodenet = null;
+            $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
+        }
     });
 }
 
@@ -526,6 +637,8 @@ $(document).on('runner_started', fetch_stepping_info);
 $(document).on('runner_stepped', fetch_stepping_info);
 $(document).on('nodenet_changed', function(event, new_uid){
     currentNodenet = new_uid;
+    $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+    refreshNodenetList();
 })
 $(document).on('form_submit', function(event, data){
     if(data.url == '/config/runner'){
@@ -542,13 +655,36 @@ api.call('get_runner_properties', {}, function(data){
     runner_properties = data;
 });
 
+function refreshNodenetList(){
+    $.get("/nodenet_list/"+(currentNodenet || ''), function(html){
+        $.each($('.nodenet_list'), function(idx, item){
+            $(item).html(html);
+            $('.nodenet_select', item).on('click', function(event){
+                event.preventDefault();
+                var el = $(event.target);
+                var uid = el.attr('data');
+                $(document).trigger('nodenet_changed', uid);
+            });
+        });
+    });
+}
+
+$(document).on('refreshNodenetList', refreshNodenetList);
+
+var default_title = $(document).prop('title');
 function setButtonStates(running){
     if(running){
+        $(document).prop('title', "▶ " + default_title);
         $('#nodenet_start').addClass('active');
         $('#nodenet_stop').removeClass('active');
+        $('#simulation_controls .runner_running').show();
+        $('#simulation_controls .runner_paused').hide();
     } else {
+        $(document).prop('title', default_title);
         $('#nodenet_start').removeClass('active');
         $('#nodenet_stop').addClass('active');
+        $('#simulation_controls .runner_running').hide();
+        $('#simulation_controls .runner_paused').show();
     }
 }
 
@@ -618,12 +754,24 @@ $.extend( $.fn.dataTableExt.oStdClasses, {
 } );
 
 $(document).ready(function() {
+    currentNodenet = $.cookie('selected_nodenet') || '';
+    currentWorld = $.cookie('selected_world') || '';
     $('#nodenet_mgr').dataTable( {
         "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
         "sPaginationType": "bootstrap"
     } );
     $('textarea.loc').autogrow();
-} );
+    if($('.frontend_section').length == 1){
+        $('.frontend_section').addClass('in');
+    } else {
+        $.each(sections, cookiebindings);
+    }
+    refreshNodenetList();
+    setButtonStates(false);
+    if(currentNodenet){
+        fetch_stepping_info();
+    }
+});
 
 
 // section collapse bindings
@@ -645,12 +793,59 @@ function cookiebindings(index, name){
     }
 }
 
-var sections = ['nodenet_editor', 'monitor', 'world_editor'];
 
-$(document).ready(function() {
-    if($('.frontend_section').length == 1){
-        $('.frontend_section').addClass('in');
-    } else {
-        $.each(sections, cookiebindings);
+window.addMonitor = function(type, param, val){
+    $('#monitor_modal .control-group').hide();
+    $('#monitor_modal .control-group.all_monitors').show();
+    $('#monitor_modal .control-group.'+type+'_monitor').show();
+    $('#monitor_name_input').val('');
+    $('#monitor_type').val(type);
+    switch(type){
+        case 'node':
+            var html = '';
+            for(var key in param['gates']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_gate_input').html(html);
+            $('#monitor_node_type_gate').prop('checked', false);
+            $('#monitor_node_type_slot').prop('checked', false);
+            var html = '';
+            for(var key in param['slots']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_slot_input').html(html);
+        case 'slot':
+        case 'gate':
+            var html = '';
+            for(var key in param[type+'s']){
+                html += '<option>'+key+'</option>';
+            }
+            $('#monitor_'+type+'_input').html(html);
+            if(val){
+                $('#monitor_'+type+'_input').val(val);
+            }
+            $('#monitor_node_input').val(param.name || param.uid);
+            $('#monitor_node_uid_input').val(param.uid);
+            if(param.name){
+                $('#monitor_name_input').val(param.name);
+            }
+            break;
+        case 'link':
+            $('#monitor_link_input').val(param.uid);
+            $('#monitor_link_sourcenode_uid_input').val(param.sourceNodeUid);
+            $('#monitor_link_sourcegate_type_input').val(param.gateName);
+            $('#monitor_link_targetnode_uid_input').val(param.targetNodeUid);
+            $('#monitor_link_targetslot_type_input').val(param.slotName);
+            break;
+        case 'modulator':
+            $('#monitor_modulator_input').val(param);
+            $('#monitor_name_input').val(param);
+            break;
+        case 'custom':
+            $('#monitor_code_input').val('');
+            break;
     }
-});
+    $('#monitor_modal').modal('show');
+}
+
+

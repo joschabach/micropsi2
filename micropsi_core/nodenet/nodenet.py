@@ -218,9 +218,10 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_node_uids(self):
+    def get_node_uids(self, group_nodespace_uid=None, group=None):
         """
         Returns a list of the UIDs of all Node objects that exist in the node net
+        If group_nodespace_uid/group parameters are given, all uids of nodes in the given group will be returned
         """
         pass  # pragma: no cover
 
@@ -369,6 +370,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_modulator(self, modulator):
         """
+
         Returns the numeric value of the given global modulator
         """
         pass  # pragma: no cover
@@ -395,7 +397,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def group_nodes_by_names(self, nodespace=None, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
         """
         Groups the given set of nodes.
         Groups can be used in bulk operations.
@@ -404,7 +406,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def group_nodes_by_ids(self, node_ids, group_name, gatetype="gen", sortby='id'):
+    def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
         """
         Groups the given set of nodes.
         Groups can be used in bulk operations.
@@ -413,14 +415,14 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def ungroup_nodes(self, group):
+    def ungroup_nodes(self, nodespace_uid, group):
         """
         Deletes the given group (not the nodes, just the group assignment)
         """
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_activations(self, group):
+    def get_activations(self, nodespace_uid, group):
         """
         Returns an array of activations for the given group.
         For multi-gate nodes, the activations of the gate specified when creating the group will be returned.
@@ -428,7 +430,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_activations(self, group, new_activations):
+    def set_activations(self, nodespace_uid, group, new_activations):
         """
         Sets the activation of the given elements to the given value.
         Note that this overrides the calculated activations, including all gate mechanics,
@@ -438,7 +440,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_thetas(self, group):
+    def get_thetas(self, nodespace_uid, group):
         """
         Returns a list of theta values for the given group.
         For multi-gate nodes, the thetas of the gen gates will be returned
@@ -446,7 +448,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_thetas(self, group, thetas):
+    def set_thetas(self, nodespace_uid, group, thetas):
         """
         Bulk-sets thetas for the given group.
         new_thetas dimensionality has to match the group length
@@ -454,7 +456,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_link_weights(self, group_from, group_to):
+    def get_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to):
         """
         Returns the weights of links between two groups as a matrix.
         Rows are group_to slots, columns are group_from gates.
@@ -463,7 +465,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def set_link_weights(self, group_from, group_to, new_w):
+    def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
         """
         Sets the weights of links between two groups from the given matrix new_w.
         Rows are group_to slots, columns are group_from gates.

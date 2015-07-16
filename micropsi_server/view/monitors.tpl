@@ -3,12 +3,26 @@
     <script src="/static/js/monitor.js" type="text/javascript"></script>
     <div class="sectionbar">
         <form class="navbar-form">
+            <div class="pull-right">
+                <button data="vertical" class="layoutbtn btn active">◫</button>
+                <button data="horizontal" class="layoutbtn btn" style="-webkit-transform: rotate(-90deg);
+                        -moz-transform: rotate(-90deg);
+                        -ms-transform: rotate(-90deg);
+                        -o-transform: rotate(-90deg);">◫</button>
+            </div>
             <table>
                 <tr>
                     <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
                             class="icon-chevron-right"></i></span></td>
 
                     <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Nodenet Monitor &nbsp;</td>
+                    <td>
+                        <div class="btn-group nodenet_list">
+                            <a class="btn" href="#">
+                                (no nodenet selected)
+                            </a>
+                        </div>
+                    </td>
 
                     <td><div class="" id="monitor_controls collapse in">
                         <button class="add_custom_monitor btn">Add custom Monitor</button>
@@ -22,21 +36,33 @@
 
     <div id="monitor" class="section-margin frontend_section collapse in">
         <div class="section multiple">
-            <div class="monitor_field span6">
+            <div class="monitor_field layout_field span6">
                 <h4>Monitors</h4>
                 <div class="contentbox section">
                     <div id="graph"></div>
                     <div class="monitor_seperator">
+                        <form class="form-horizontal monitor_list">
+                            <label for="monitor_x_axis">
+                                No. of steps:
+                            </label>
+                            <select id="monitor_x_axis" class="input-mini">
+                                <option>100</option>
+                                <option>200</option>
+                                <option>500</option>
+                                <option>1000</option>
+                                <option value="-1">all</option>
+                            </select>
+                        </form>
                         <ul id="monitor_selector" class="monitor_list">
                         </ul>
                     </div>
                 </div>
             </div>
-            <div class="logger_field span6">
+            <div class="logger_field layout_field span6">
                 <h4>Logs</h4>
                 <div class="contentbox section">
                     <div id="logs"></div>
-                    <form class="form-horizontal monitor_seperator">
+                    <form class="form-horizontal span4 monitor_seperator">
                         <ul id="log_selector" class="monitor_list">
                             <li>
                                 <label for="log_system" class="system_log">
@@ -75,6 +101,10 @@
                                 </select>
                             </li>
                         </ul>
+                    </form>
+                    <form class="form-horizontal span4 monitor_list">
+                        <label for="monitor_filter_logs">Filter:</label>
+                        <input type="text" value="" id="monitor_filter_logs" class="input-small"/>
                     </form>
                 </div>
             </div>

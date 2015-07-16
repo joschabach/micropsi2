@@ -15,10 +15,12 @@ os.makedirs('/tmp/micropsi_tests/nodenets')
 
 
 # override config
-import configuration
-configuration.RESOURCE_PATH = '/tmp/micropsi_tests'
-configuration.SERVER_SETTINGS_PATH = configuration.RESOURCE_PATH + '/server_config.json'
-configuration.USERMANAGER_PATH = configuration.RESOURCE_PATH + '/user-db.json'
+from configuration import config
+config['paths']['resource_path'] = '/tmp/micropsi_tests'
+config['paths']['server_settings_path'] = os.path.join(config['paths']['resource_path'], 'server_config.json')
+config['paths']['usermanager_path'] = os.path.join(config['paths']['resource_path'], 'user-db.json')
+if 'theano' in config:
+    config['theano']['initial_number_of_nodes'] = '50'
 
 from micropsi_core import runtime as micropsi
 
@@ -36,9 +38,9 @@ logging.getLogger('nodenet').setLevel(logging.WARNING)
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
 
-nodetype_file = os.path.join(configuration.RESOURCE_PATH, 'nodetypes.json')
-nodefunc_file = os.path.join(configuration.RESOURCE_PATH, 'nodefunctions.py')
-recipes_file = os.path.join(configuration.RESOURCE_PATH, 'recipes.py')
+nodetype_file = os.path.join(config['paths']['resource_path'], 'nodetypes.json')
+nodefunc_file = os.path.join(config['paths']['resource_path'], 'nodefunctions.py')
+recipes_file = os.path.join(config['paths']['resource_path'], 'recipes.py')
 
 
 try:
@@ -87,7 +89,7 @@ def pytest_runtest_setup(item):
 def pytest_runtest_teardown(item, nextitem):
     if nextitem is None:
         print("DELETING ALL STUFF")
-        shutil.rmtree(configuration.RESOURCE_PATH)
+        shutil.rmtree(config['paths']['resource_path'])
     else:
         uids = list(micropsi.nodenets.keys())
         for uid in uids:
@@ -105,7 +107,7 @@ def pytest_runtest_teardown(item, nextitem):
 
 @pytest.fixture(scope="session")
 def resourcepath():
-    return configuration.RESOURCE_PATH
+    return config['paths']['resource_path']
 
 
 @pytest.fixture()

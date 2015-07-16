@@ -61,8 +61,8 @@ class DictNode(NetEntity, Node):
             activation = 0
 
         self.sheaves[sheaf]['activation'] = float(activation)
-        if len(self.nodetype.gatetypes):
-            self.set_gate_activation(self.nodetype.gatetypes[0], activation, sheaf)
+        if 'gen' in self.nodetype.gatetypes:
+            self.set_gate_activation('gen', activation, sheaf)
 
     def __init__(self, nodenet, parent_nodespace, position, state=None, activation=0,
                  name="", type="Concept", uid=None, index=None, parameters=None, gate_parameters=None, gate_activations=None, gate_functions=None, **_):
@@ -83,7 +83,9 @@ class DictNode(NetEntity, Node):
 
         self.__gates = {}
         self.__slots = {}
-        self.__gatefunctions = gate_functions or {}
+        self.__gatefunctions = {}
+        if gate_functions is None:
+            gate_functions = {}
         self.__parameters = dict((key, self.nodetype.parameter_defaults.get(key)) for key in self.nodetype.parameters)
         if parameters is not None:
             for key in parameters:
@@ -92,7 +94,7 @@ class DictNode(NetEntity, Node):
 
         for gate_name in gate_parameters:
             for key in gate_parameters[gate_name]:
-                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults.get(key, None):
+                if gate_parameters[gate_name][key] != self.nodetype.gate_defaults[gate_name].get(key, None):
                     if gate_name not in self.__non_default_gate_parameters:
                         self.__non_default_gate_parameters[gate_name] = {}
                     self.__non_default_gate_parameters[gate_name][key] = gate_parameters[gate_name][key]
@@ -115,10 +117,10 @@ class DictNode(NetEntity, Node):
                     gate_parameters[gate_name][key] = float(gate_parameters[gate_name][key])
 
         for gate in self.nodetype.gatetypes:
-            if gate not in self.__gatefunctions:
+            if gate not in gate_functions:
                 self.__gatefunctions[gate] = gatefunctions.identity
             else:
-                self.__gatefunctions[gate] = getattr(gatefunctions, self.__gatefunctions[gate])
+                self.__gatefunctions[gate] = getattr(gatefunctions, gate_functions[gate])
             if gate_activations is None or gate not in gate_activations:
                 sheaves_to_use = None
             else:
@@ -340,11 +342,11 @@ class DictNode(NetEntity, Node):
         target = self.nodenet.get_node(target_node_uid)
 
         if slot_name not in target.get_slot_types():
-            return None
+            raise ValueError("Node %s has no slot %s" % (target_node_uid, slot_name))
 
         gate = self.get_gate(gate_name)
         if gate is None:
-            return None
+            raise ValueError("Node %s has no slot %s" % (self.uid, gate_name))
         link = None
         for candidate in gate.get_links():
             if candidate.target_node.uid == target.uid and candidate.target_slot == slot_name:
@@ -353,7 +355,7 @@ class DictNode(NetEntity, Node):
         if link is None:
             link = DictLink(self, gate_name, target, slot_name)
 
-        link.set_weight(weight, certainty)
+        link._set_weight(weight, certainty)
         return link
 
     def unlink_completely(self):

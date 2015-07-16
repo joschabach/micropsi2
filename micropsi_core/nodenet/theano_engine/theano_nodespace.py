@@ -23,7 +23,7 @@ class TheanoNodespace(Nodespace):
 
     @property
     def uid(self):
-        return nodespace_to_id(self._id)
+        return nodespace_to_id(self._id, self._partition.pid)
 
     @property
     def index(self):
@@ -58,26 +58,34 @@ class TheanoNodespace(Nodespace):
 
     @property
     def parent_nodespace(self):
-        parent_nodespace_id = self._nodenet.allocated_nodespaces[self._id]
+        parent_nodespace_id = self._partition.allocated_nodespaces[self._id]
         if parent_nodespace_id == 0:
-            return None
+            if self._partition.spid in self._nodenet.inverted_partitionmap:
+                return self._nodenet.inverted_partitionmap[self._partition.spid]
+            else:
+                return None
         else:
-            return nodespace_to_id(parent_nodespace_id)
+            return nodespace_to_id(parent_nodespace_id, self._partition.pid)
 
     @parent_nodespace.setter
     def parent_nodespace(self, uid):
-        self._nodenet.allocated_nodespaces[self._id] = nodespace_from_id(uid)
+        self._partition.allocated_nodespaces[self._id] = nodespace_from_id(uid)
 
-    def __init__(self, nodenet, uid):
+    def __init__(self, nodenet, partition, uid):
         self.__activators = {}
         self._nodenet = nodenet
+        self._partition = partition
         self._id = nodespace_from_id(uid)
 
     def get_known_ids(self, entitytype=None):
         if entitytype == 'nodes':
-            return [node_to_id(id) for id in np.where(self._nodenet.allocated_node_parents == self._id)[0]]
+            return [node_to_id(id, self._partition.pid) for id in np.where(self._partition.allocated_node_parents == self._id)[0]]
         elif entitytype == 'nodespaces':
-            return [nodespace_to_id(id) for id in np.where(self._nodenet.allocated_nodespaces == self._id)[0]]
+            uids = [nodespace_to_id(id, self._partition.pid) for id in np.where(self._partition.allocated_nodespaces == self._id)[0]]
+            if self.uid in self._nodenet.partitionmap:
+                for partition in self._nodenet.partitionmap[self.uid]:
+                    uids.append(partition.rootnodespace_uid)
+            return uids
         elif entitytype == None:
             ids = self.get_known_ids('nodes')
             ids.extend(self.get_known_ids('nodespaces'))

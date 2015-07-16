@@ -39,11 +39,10 @@
     <div class="modal-body">
         <form class="form-horizontal">
             <fieldset>
-                <div class="control-group">
+                <div class="control-group all_monitors">
                     <label class="control-label" for="monitor_name_input">Name</label>
                     <div class="controls">
                         <input type="text" name="monitor_name_input"class="input-xlarge" id="monitor_name_input">
-                        <p class="help-block">If you do not give the net entity a name, it will be referred by its uid.</p>
                     </div>
                 </div>
                 <div class="control-group custom_monitor">
@@ -53,6 +52,51 @@
                         <p class="help-block">You can enter custom python code returning a float for each step. You have access to the netapi.</p>
                     </div>
                 </div>
+                <input type="hidden" id="monitor_node_input" name="monitor_node_input"/>
+                <div class="control-group node_monitor">
+                    <label class="control-label">Type</label>
+                    <div class="controls">
+                        <label><input type="radio" id="monitor_node_type_gate" name="monitor_node_type"/> Gate Monitor</label>
+                        <label><input type="radio" id="monitor_node_type_slot" name="monitor_node_type"/> Slot Monitor</label>
+                    </div>
+                </div>
+                <div class="control-group gate_monitor">
+                    <label class="control-label" for="monitor_gate_input">Gate</label>
+                    <div class="controls">
+                        <select id="monitor_gate_input" name="monitor_gate_input"></select>
+                    </div>
+                </div>
+                <div class="control-group slot_monitor">
+                    <label class="control-label" for="monitor_slot_input">Slot</label>
+                    <div class="controls">
+                        <select id="monitor_slot_input" name="monitor_slot_input"></select>
+                    </div>
+                </div>
+                <div class="control-group modulator_monitor">
+                    <label class="control-label" for="monitor_modulator_input">Modulator</label>
+                    <div class="controls">
+                        <input type="text" id="monitor_modulator_input" name="monitor_modulator_input" />
+                    </div>
+                </div>
+                <div class="control-group link_monitor">
+                    <label class="control-label" for="monitor_link_input">Link</label>
+                    <div class="controls">
+                        <input type="text" id="monitor_link_input" name="monitor_link_input"/>
+                    </div>
+                    <input type="hidden" name="monitor_link_sourcenode_uid_input" id="monitor_link_sourcenode_uid_input">
+                    <input type="hidden" name="monitor_link_sourcegate_type_input" id="monitor_link_sourcegate_type_input">
+                    <input type="hidden" name="monitor_link_targetnode_uid_input" id="monitor_link_targetnode_uid_input">
+                    <input type="hidden" name="monitor_link_targetslot_type_input" id="monitor_link_targetslot_type_input">
+                </div>
+                <div class="control-group all_monitors">
+                    <label class="control-label" for="monitor_color_input">Color</label>
+                    <div class="controls color-chooser">
+                        <span class="input-group-addon"><i></i></span>
+                        <input type="text" id="monitor_color_input" name="monitor_color_input" value="#990000"/>
+                    </div>
+                </div>
+                <input type="hidden" name="monitor_type" id="monitor_type"/>
+                <input type="hidden" name="monitor_node_uid_input" id="monitor_node_uid_input"/>
             </fieldset>
         </form>
     </div>
@@ -80,10 +124,46 @@
             </fieldset>
             <fieldset class="recipe_param_container">
             </fieldset>
+            <input type="submit" style="display:none"/>
         </form>
     </div>
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal">Close</button>
         <button class="btn btn-primary">Run</button>
+    </div>
+</div>
+
+<div class="modal hide" id="run_nodenet_dialog">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3>Run Nodenet</h3>
+    </div>
+    <div class="modal-body">
+        <p>Run the nodenet until one of the following conditions is met:</p>
+        <form class="form-horizontal">
+            <fieldset>
+                <div class="control-group">
+                    <label class="control-label" for="run_condition_steps">Number of steps</label>
+                    <div class="controls">
+                        <input type="text" name="run_condition_steps" class="input-xlarge" id="run_condition_steps"/>
+                        <p class="help-block">Run until the nodenet was advanced for X number of steps</p>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="run_condition_monitor_value">Monitor value</label>
+                    <div class="controls">
+                        <select id="run_condition_monitor_selector"></select>
+                        <input type="text" name="run_condition_monitor_value" class="input-mini" id="run_condition_monitor_value"/>
+                        <p class="help-block">Run until the given monitor has the given value.</p>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="recipe_param_container">
+            </fieldset>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Save</button>
     </div>
 </div>

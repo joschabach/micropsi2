@@ -1,6 +1,11 @@
 
-0.5-alpha3 - unreleased
+0.5-alpha3 (2015-07-16)
 ==========
+
+ * Improved monitor and logging UI
+ * Introduced runner conditions
+ * Introduced netapi fragment generation
+ * Introduced concept of "Partitions"
 
 
 0.4-alpha2 (2015-06-05)

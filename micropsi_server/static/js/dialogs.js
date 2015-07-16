@@ -625,6 +625,7 @@ fetch_stepping_info = function(){
         setButtonStates(data.simulation_running);
     }, error=function(data, outcome, type){
         $(document).trigger('runner_stopped');
+        setButtonStates(false);
         if(data.data == 'No such nodenet'){
             currentNodenet = null;
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });

@@ -1208,7 +1208,7 @@ function renderComment(node){
     var bounds = node.bounds;
     var commentGroup = new Group();
     commentText = new PointText(bounds.x + 10, bounds.y + viewProperties.lineHeight * viewProperties.zoomFactor);
-    commentText.content = node.parameters.comment;
+    commentText.content = node.parameters.comment || '';
     commentText.name = "comment";
     commentText.fillColor = viewProperties.nodeFontColor;
     commentText.fontSize = viewProperties.fontSize * viewProperties.zoomFactor;
@@ -2853,15 +2853,22 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             params[param] = parameters[param] || def;
         }
     }
-    api.call("add_node", {
+    var method = "";
+    var params = {
         nodenet_uid: currentNodenet,
-        type: type,
         position: [x,y],
         nodespace: currentNodeSpace,
-        name: name,
-        parameters: params },
+        name: name}
+    if(type == "Nodespace"){
+        method = "add_nodespace";
+    } else {
+        method = "add_node"
+        params.type = type;
+        params.parameters = parameters;
+    }
+    api.call(method, params,
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, params));
+            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, parameters));
             view.draw();
             selectNode(uid);
             if(callback) callback(uid);
@@ -2955,9 +2962,17 @@ function handlePasteNodes(pastemode){
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
-    function deleteNodeOnServer(node_uid){
-        api.call("delete_node",
-            {nodenet_uid:currentNodenet, node_uid: node_uid},
+    function deleteNodeOnServer(node){
+        var method = "";
+        var params = {nodenet_uid: currentNodenet};
+        if(node.type == "Nodespace"){
+            method = "delete_nodespace";
+            params.nodespace_uid = node.uid;
+        } else {
+            method = "delete_node";
+            params.node_uid = node.uid;
+        }
+        api.call(method, params,
             success=function(data){
                 dialogs.notification('node deleted', 'success');
                 getNodespaceList();
@@ -2966,13 +2981,13 @@ function deleteNodeHandler(nodeUid) {
     }
     var deletedNodes = [];
     if (nodeUid in nodes) {
-        deletedNodes.push(nodeUid);
+        deletedNodes.push(nodes[nodeUid]);
         removeNode(nodes[nodeUid]);
         if (nodeUid in selection) delete selection[nodeUid];
     }
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            deletedNodes.push(selected);
+            deletedNodes.push(nodes[selected]);
             removeNode(nodes[selected]);
             delete selection[selected];
         }

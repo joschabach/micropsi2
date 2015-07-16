@@ -142,7 +142,7 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
 def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
     # test register node in nodespace creation
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node = netapi.create_node("Register", nodespace.uid, "TestName")
 
     assert node.parent_nodespace == nodespace.uid
@@ -152,7 +152,7 @@ def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
 def test_node_netapi_get_nodespace_one(fixed_nodenet):
     # test single nodespace querying
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "TestName")
+    nodespace = netapi.create_nodespace(None, "TestName")
 
     queried_nodespace = netapi.get_nodespace(nodespace.uid)
     assert queried_nodespace.uid == nodespace.uid
@@ -162,9 +162,9 @@ def test_node_netapi_get_nodespace_one(fixed_nodenet):
 def test_node_netapi_get_nodespace_multi(fixed_nodenet):
     # test nodespace listing
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace1 = netapi.create_node("Nodespace", None, "TestName1")
-    nodespace2 = netapi.create_node("Nodespace", None, "TestName2")
-    nodespace3 = netapi.create_node("Nodespace", nodespace2.uid, "TestName3")
+    nodespace1 = netapi.create_nodespace(None, "TestName1")
+    nodespace2 = netapi.create_nodespace(None, "TestName2")
+    nodespace3 = netapi.create_nodespace(nodespace2.uid, "TestName3")
     root_ns = netapi.get_nodespace(None)
     queried_nodespaces = netapi.get_nodespaces(root_ns.uid)
     assert len(queried_nodespaces) == 2
@@ -211,7 +211,7 @@ def test_node_netapi_get_nodes_by_name(fixed_nodenet):
 def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
     # test get_nodes by name and nodespace
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", nodespace.uid, "TestName1")
     node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
 
@@ -224,7 +224,7 @@ def test_node_netapi_get_nodes_by_nodespace(fixed_nodenet):
 def test_node_netapi_get_nodes_by_nodetype(fixed_nodenet):
     # test get_nodes by name and nodespace
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", nodespace.uid, "TestName1")
     node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
 
@@ -239,7 +239,7 @@ def test_node_netapi_get_nodes_by_nodetype(fixed_nodenet):
 def test_node_netapi_get_nodes_by_name_and_nodespace(fixed_nodenet):
     # test get_nodes by name and nodespace
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", nodespace.uid, "TestName2")
 
@@ -306,7 +306,7 @@ def test_node_netapi_get_nodes_in_gate_field_with_limitations(fixed_nodenet):
 def test_node_netapi_get_nodes_in_gate_field_with_limitations_and_nodespace(fixed_nodenet):
     # test get_nodes_in_gate_field with limitations: no por links
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
     node3 = netapi.create_node("Pipe", None, "TestName3")
@@ -362,7 +362,7 @@ def test_node_netapi_get_nodes_in_slot_field_all_links(fixed_nodenet):
 def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
     # test get_nodes_feed with nodespace limitation
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     node3 = netapi.create_node("Register", None, "TestName3")
@@ -381,7 +381,7 @@ def test_node_netapi_get_nodes_with_nodespace_limitation(fixed_nodenet):
 def test_node_netapi_get_nodes_in_slot_field_with_limitations_and_nodespace(fixed_nodenet):
     # test get_nodes_in_gate_field with limitations: no por links
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Pipe", None, "TestName1")
     node2 = netapi.create_node("Pipe", None, "TestName2")
     node3 = netapi.create_node("Pipe", None, "TestName3")
@@ -398,7 +398,7 @@ def test_node_netapi_get_nodes_in_slot_field_with_limitations_and_nodespace(fixe
 def test_node_netapi_get_nodes_active(fixed_nodenet):
     # test get_nodes_active
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     node3 = netapi.create_node("Register", None, "TestName3")
@@ -427,7 +427,7 @@ def test_node_netapi_get_nodes_active(fixed_nodenet):
 def test_node_netapi_get_nodes_active_with_nodespace_limitation(fixed_nodenet):
     # test get_nodes_active with nodespace filtering
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     node3 = netapi.create_node("Register", None, "TestName3")
@@ -467,7 +467,7 @@ def test_node_netapi_delete_node(fixed_nodenet):
 def test_node_netapi_delete_nodespace(fixed_nodenet):
     # test delete node case deleting a nodespace
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node("Nodespace", None, "NestedNodespace")
+    nodespace = netapi.create_nodespace(None, "NestedNodespace")
     node1 = netapi.create_node("Register", None, "TestName1")
     node2 = netapi.create_node("Register", None, "TestName2")
     node3 = netapi.create_node("Register", None, "TestName3")
@@ -768,7 +768,7 @@ def test_autoalign(fixed_nodenet):
 
 def test_copy_nodes(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
-    nodespace = netapi.create_node('Nodespace', None, name='copy')
+    nodespace = netapi.create_nodespace(None, name='copy')
     a1 = netapi.get_node('n0001')
     a2 = netapi.get_node('n0002')
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)

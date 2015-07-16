@@ -632,7 +632,7 @@ def get_node(nodenet_uid, node_uid):
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
-    """Creates a new node. (Including nodespace, native module.)
+    """Creates a new node. (Including native module.)
 
     Arguments:
         nodenet_uid: uid of the nodespace manager
@@ -648,10 +648,21 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
         None if failure.
     """
     nodenet = get_nodenet(nodenet_uid)
-    if type == "Nodespace":
-        uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid)
-    else:
-        uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
+    return True, uid
+
+def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
+    """Creates a new nodespace
+    Arguments:
+        nodenet_uid: uid of the nodespace manager
+        position: position of the node in the current nodespace
+        nodespace: uid of the parent nodespace
+        uid (optional): if not supplied, a uid will be generated
+        name (optional): if not supplied, the uid will be used instead of a display name
+        options (optional): a dict of options. TBD
+    """
+    nodenet = get_nodenet(nodenet_uid)
+    uid = nodenet.create_nodespace(nodespace, pos, name=name, uid=uid, options=options)
     return True, uid
 
 
@@ -751,9 +762,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
             pythonname = __pythonify(name)
             if pythonname not in idmap.values():
                 varname = pythonname
-            lines.append("%s = netapi.create_node('Nodespace', None, \"%s\")" % (varname, name))
+            lines.append("%s = netapi.create_nodespace(None, \"%s\")" % (varname, name))
         else:
-            lines.append("%s = netapi.create_node('Nodespace', None)" % (varname))
+            lines.append("%s = netapi.create_nodespace(None)" % (varname))
         idmap[nodespace.uid] = varname
         xpos.append(node.position[0])
         ypos.append(node.position[1])
@@ -899,16 +910,20 @@ def set_node_activation(nodenet_uid, node_uid, activation):
 
 def delete_node(nodenet_uid, node_uid):
     """Removes the node or node space"""
-
-    # todo: There should be a separate JSON API method for deleting node spaces -- they're entities, but NOT nodes!
-
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_nodespace(node_uid):
-            nodenet.delete_nodespace(node_uid)
-            return True
-        elif nodenet.is_node(node_uid):
+        if nodenet.is_node(node_uid):
             nodenets[nodenet_uid].delete_node(node_uid)
+            return True
+        return False
+
+
+def delete_nodespace(nodenet_uid, nodespace_uid):
+    """ Removes the given node space and all its contents"""
+    nodenet = nodenets[nodenet_uid]
+    with nodenet.netlock:
+        if nodenet.is_nodespace(nodespace_uid):
+            nodenet.delete_nodespace(nodespace_uid)
             return True
         return False
 

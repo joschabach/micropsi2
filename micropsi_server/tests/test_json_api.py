@@ -754,6 +754,21 @@ def test_add_node(app, test_nodenet):
     assert response.json_body['data']['name'] == 'N2'
 
 
+def test_add_nodespace(app, test_nodenet):
+    app.set_auth()
+    response = app.post_json('/rpc/add_nodespace', params={
+        'nodenet_uid': test_nodenet,
+        'position': [23, 42],
+        'nodespace': None,
+        'name': 'nodespace'
+    })
+    assert_success(response)
+    uid = response.json_body['data']
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % (test_nodenet))
+    assert uid in response.json_body['data']['nodespaces']
+    assert uid not in response.json_body['data']['nodes']
+
+
 def test_clone_nodes(app, test_nodenet, node):
     app.set_auth()
     response = app.post_json('/rpc/clone_nodes', params={
@@ -805,6 +820,24 @@ def test_delete_node(app, test_nodenet, node):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['nodes'] == {}
+
+
+def test_delete_nodespace(app, test_nodenet, node):
+    app.set_auth()
+    response = app.post_json('/rpc/add_nodespace', params={
+        'nodenet_uid': test_nodenet,
+        'position': [23, 42],
+        'nodespace': None,
+        'name': 'nodespace'
+    })
+    uid = response.json_body['data']
+    response = app.post_json('/rpc/delete_nodespace', params={
+        'nodenet_uid': test_nodenet,
+        'nodespace_uid': uid
+    })
+    assert_success(response)
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    assert uid not in response.json_body['data']['nodespaces']
 
 
 def test_align_nodes(app, test_nodenet):
@@ -1197,9 +1230,8 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     with open(nodefunc_def, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
-    response = app.post_json('/rpc/add_node', params={
+    response = app.post_json('/rpc/add_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'type': 'Nodespace',
         'position': [23, 23],
         'nodespace': None,
         'name': 'Test-Node-Space'

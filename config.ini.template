@@ -51,9 +51,6 @@ logfile = /tmp/micropsi.log
 
 [theano]
 
-# Whether to use one nodenet partition per nodespace (True) or only a single partition (False).
-multi_partitions = False
-
 # floating point precision for theano_engine. 32 or 64.
 precision = 32
 

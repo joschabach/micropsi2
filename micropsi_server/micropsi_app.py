@@ -1025,6 +1025,7 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
 def get_monitor_data(nodenet_uid, step):
     return True, runtime.get_monitor_data(nodenet_uid, step)
 
+
 # Nodenet
 
 @rpc("get_nodespace_list")
@@ -1048,6 +1049,11 @@ def add_node(nodenet_uid, type, position, nodespace, state=None, name="", parame
     return runtime.add_node(nodenet_uid, type, position, nodespace, state=state, name=name, parameters=parameters)
 
 
+@rpc("add_nodespace", permission_required="manage nodenets")
+def add_nodespace(nodenet_uid, position, nodespace, name="", options=None):
+    return runtime.add_nodespace(nodenet_uid, position, nodespace, name=name, options=options)
+
+
 @rpc("clone_nodes", permission_required="manage nodenets")
 def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset=[50, 50]):
     return runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)
@@ -1068,13 +1074,20 @@ def delete_node(nodenet_uid, node_uid):
     return runtime.delete_node(nodenet_uid, node_uid)
 
 
+@rpc("delete_nodespace", permission_required="manage nodenets")
+def delete_nodespace(nodenet_uid, nodespace_uid):
+    return runtime.delete_nodespace(nodenet_uid, nodespace_uid)
+
+
 @rpc("align_nodes", permission_required="manage nodenets")
 def align_nodes(nodenet_uid, nodespace):
     return runtime.align_nodes(nodenet_uid, nodespace)
 
+
 @rpc("generate_netapi_fragment", permission_required="manage nodenets")
 def generate_netapi_fragment(nodenet_uid, node_uids):
     return True, runtime.generate_netapi_fragment(nodenet_uid, node_uids)
+
 
 @rpc("get_available_node_types")
 def get_available_node_types(nodenet_uid):

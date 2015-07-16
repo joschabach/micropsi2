@@ -197,6 +197,8 @@ class TheanoPartition():
         self.a_shifted = None    # matrix with each row defined as [a[n], a[n+1], a[n+2], a[n+3], a[n+4], a[n+5], a[n+6]]
                             # this is a view on the activation values instrumental in calculating concept node functions
 
+        self.a_in = None         # vector of activations coming in from the outside (other partitions typically)
+
         self.g_factor = None     # vector of gate factors, controlled by directional activators
         self.g_threshold = None  # vector of thresholds (gate parameters)
         self.g_amplification = None  # vector of amplification factors
@@ -234,6 +236,8 @@ class TheanoPartition():
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
+        self.inlinks = {}
+
         # instantiate theano data structures
         if self.sparse:
             self.w = theano.shared(sp.csr_matrix((self.NoE, self.NoE), dtype=nodenet.scipyfloatX), name="w")
@@ -246,6 +250,9 @@ class TheanoPartition():
 
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
         self.a_shifted = theano.shared(value=a_shifted_matrix.astype(T.config.floatX), name="a_shifted", borrow=True)
+
+        a_in_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
+        self.a_in = theano.shared(value=a_in_array.astype(T.config.floatX), name="a_in", borrow=True)
 
         g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
@@ -300,16 +307,15 @@ class TheanoPartition():
         self.last_allocated_offset = 0
         self.last_allocated_nodespace = 0
 
-
-        # compile theano functions
         self.compile_propagate()
-        self.compile_calculate_nodes()
 
     def compile_propagate(self):
         if self.sparse:
-            self.propagate = theano.function([], None, updates={self.a: ST.dot(self.w, self.a)})
+            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + ST.dot(self.w, self.a)),
+                                                                          (self.a_in, T.zeros_like(self.a_in))])
         else:
-            self.propagate = theano.function([], None, updates={self.a: T.dot(self.w, self.a)})
+            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + T.dot(self.w, self.a)),
+                                                                          (self.a_in, T.zeros_like(self.a_in))])
 
     def compile_calculate_nodes(self):
         slots = self.a_shifted
@@ -464,6 +470,11 @@ class TheanoPartition():
 
         # put the theano graph into a callable function to be executed
         self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+
+    def get_compiled_propagate_inlinks(self, from_partition, from_elements, to_elements, weights):
+        propagated_a = T.dot(weights, from_partition.a[from_elements])
+        a_in = T.inc_subtensor(self.a_in[to_elements], propagated_a, inplace=True, tolerate_inplace_aliasing=True)
+        return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def calculate(self):
         if self.has_new_usages:
@@ -637,6 +648,35 @@ class TheanoPartition():
 
         sizeinformation = [self.NoN, self.NoE, self.NoNS]
 
+        inlink_from_element_count = 0
+        inlink_to_element_count = 0
+        for spid, inlinks in self.inlinks.items():
+            inlink_from_element_count += len(inlinks[0].get_value(borrow=True))
+            inlink_to_element_count += len(inlinks[1].get_value(borrow=True))
+        inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
+        inlink_from_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
+        inlink_to_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
+        inlink_from_elements = np.zeros(inlink_from_element_count, dtype=np.int32)
+        inlink_to_elements = np.zeros(inlink_to_element_count, dtype=np.int32)
+        inlink_weights = np.zeros(inlink_from_element_count*inlink_to_element_count, dtype=self.nodenet.numpyfloatX)
+
+        from_offset = 0
+        to_offset = 0
+        for i, spid in enumerate(self.inlinks.keys()):
+            inlinks_pids[i] = int(spid)
+            from_elements = self.inlinks[spid][0].get_value(borrow=True)
+            to_elements = self.inlinks[spid][1].get_value(borrow=True)
+            weights = self.inlinks[spid][2].get_value(borrow=True)
+            from_length = len(from_elements)
+            to_length = len(to_elements)
+            inlink_from_lengths[i] = from_length
+            inlink_to_lengths[i] = to_length
+            inlink_from_elements[from_offset:from_offset+from_length] = from_elements
+            inlink_to_elements[to_offset:to_offset+to_length] = to_elements
+            inlink_weights[(from_offset*to_offset):((from_offset+from_length)*(to_offset+to_length))] = np.ravel(weights)
+            from_offset += from_length
+            to_offset += to_length
+
         np.savez(datafilename,
                  allocated_nodes=allocated_nodes,
                  allocated_node_offsets=allocated_node_offsets,
@@ -665,7 +705,13 @@ class TheanoPartition():
                  allocated_nodespaces_sub_activators=allocated_nodespaces_sub_activators,
                  allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
-                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators)
+                 allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
+                 inlink_pids=inlinks_pids,
+                 inlink_from_lengths=inlink_from_lengths,
+                 inlink_to_lengths=inlink_to_lengths,
+                 inlink_from_elements=inlink_from_elements,
+                 inlink_to_elements=inlink_to_elements,
+                 inlink_weights=inlink_weights)
 
     def load(self, datafilename, nodes_data):
         """Load the node net from a file"""
@@ -818,6 +864,30 @@ class TheanoPartition():
             self.n_function_selector = theano.shared(value=datafile['n_function_selector'], name="nodefunction_per_gate", borrow=False)
         else:
             self.logger.warn("no n_function_selector in file, falling back to defaults")
+
+        if 'inlink_pids' in datafile and \
+            'inlink_from_lengths' in datafile and \
+            'inlink_to_lengths' in datafile and \
+            'inlink_from_elements' in datafile and \
+            'inlink_to_elements' in datafile and \
+            'inlink_weights' in datafile:
+
+            inlink_pids = datafile['inlink_pids']
+            inlink_from_lengths = datafile['inlink_from_lengths']
+            inlink_to_lengths = datafile['inlink_to_lengths']
+            inlink_from_elements = np.split(datafile['inlink_from_elements'], inlink_from_lengths)
+            inlink_to_elements = np.split(datafile['inlink_to_elements'], inlink_to_lengths)
+            inlink_weights = np.split(datafile['inlink_weights'], inlink_from_lengths*inlink_to_lengths)
+
+            for i, pid in enumerate(inlink_pids):
+                self.set_inlink_weights(
+                    "%03i" % pid,
+                    inlink_from_elements[i].astype(np.int32),
+                    inlink_to_elements[i].astype(np.int32),
+                    np.reshape(inlink_weights[i], (inlink_to_lengths[i], inlink_from_lengths[i]))
+                )
+        else:
+            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
 
         # reconstruct other states
 
@@ -1090,8 +1160,8 @@ class TheanoPartition():
         elif nodetype == "Comment":
             node_proxy = self.nodenet.get_node(uid)
             self.comment_instances[uid] = node_proxy
-            for key, value in parameters.items():
-                node_proxy.set_parameter(key, value)
+            for key in self.nodenet.get_standard_nodetype_definitions()[nodetype]['parameters']:
+                node_proxy.set_parameter(key, parameters.get(key, ''))
 
         for gate, parameters in nto.gate_defaults.items():
             if gate in nto.gatetypes:
@@ -1414,6 +1484,59 @@ class TheanoPartition():
         # todo: only set this if one of the groups is por/ret relevant
         if self.has_pipes:
             self.por_ret_dirty = True
+
+    def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
+        if partition_from_spid in self.inlinks:
+            theano_from_elements = self.inlinks[partition_from_spid][0]
+            theano_to_elements = self.inlinks[partition_from_spid][1]
+            theano_weights = self.inlinks[partition_from_spid][2]
+            old_from_elements = theano_from_elements.get_value(borrow=True)
+            old_to_elements = theano_to_elements.get_value(borrow=True)
+            old_weights = theano_weights.get_value(borrow=True)
+            propagation_function = self.inlinks[partition_from_spid][3]
+        else:
+            old_from_elements = np.zeros(0, dtype=np.int32)
+            old_to_elements = np.zeros(0, dtype=np.int32)
+            old_weights = np.eye(0, dtype=T.config.floatX)
+
+            weightsname = "w_%s_%s" % (partition_from_spid, self.spid)
+            fromname = "in_from_%s_%s" % (partition_from_spid, self.spid)
+            toname = "in_to_%s_%s" % (partition_from_spid, self.spid)
+            theano_from_elements = theano.shared(value=old_from_elements, name=fromname, borrow=True)
+            theano_to_elements = theano.shared(value=old_to_elements, name=toname, borrow=True)
+            theano_weights = theano.shared(value=old_weights.astype(T.config.floatX), name=weightsname, borrow=True)
+
+            from_partition = self.nodenet.partitions[partition_from_spid]
+
+            propagation_function = self.get_compiled_propagate_inlinks(
+                from_partition,
+                theano_from_elements,
+                theano_to_elements,
+                theano_weights)
+
+        from_elements = np.union1d(old_from_elements, new_from_elements)
+        to_elements = np.union1d(old_to_elements, new_to_elements)
+        weights = np.zeros((len(to_elements), len(from_elements)), dtype=T.config.floatX)
+
+        old_from_indices = np.searchsorted(from_elements, old_from_elements)
+        old_to_indices = np.searchsorted(to_elements, old_to_elements)
+        oldcols, oldrows = np.meshgrid(old_from_indices, old_to_indices)
+        weights[oldrows, oldcols] = old_weights
+
+        new_from_indices = np.searchsorted(from_elements, new_from_elements)
+        new_to_indices = np.searchsorted(to_elements, new_to_elements)
+        newcols, newrows = np.meshgrid(new_from_indices, new_to_indices)
+        weights[newrows, newcols] = new_weights
+
+        theano_from_elements.set_value(from_elements, borrow=True)
+        theano_to_elements.set_value(to_elements, borrow=True)
+        theano_weights.set_value(weights, borrow=True)
+
+        self.inlinks[partition_from_spid] = (
+            theano_from_elements,
+            theano_to_elements,
+            theano_weights,
+            propagation_function)
 
     def integrity_check(self):
 

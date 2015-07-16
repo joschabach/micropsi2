@@ -23,6 +23,12 @@ class TheanoPropagate(Propagate):
     """
 
     def execute(self, nodenet, nodes, netapi):
+        # propagate cross-partition to the a_in vectors
+        for partition in nodenet.partitions.values():
+            for inlinks in partition.inlinks.values():
+                inlinks[3]()                                # call the theano_function at [3]
+
+        # then propagate internally in all partitions
         for partition in nodenet.partitions.values():
             partition.propagate()
 

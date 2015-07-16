@@ -1051,7 +1051,6 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     return {'links': links, 'nodes': nodes}
 
 
-
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
@@ -1077,7 +1076,8 @@ def get_available_recipes():
         if not name.startswith('_'):
             recipes[name] = {
                 'name': name,
-                'parameters': data['parameters']
+                'parameters': data['parameters'],
+                'docstring': data['docstring']
             }
     return recipes
 
@@ -1242,7 +1242,8 @@ def parse_recipe_file():
         custom_recipes[name] = {
             'name': name,
             'parameters': params,
-            'function': func
+            'function': func,
+            'docstring': inspect.getdoc(func)
         }
 
 

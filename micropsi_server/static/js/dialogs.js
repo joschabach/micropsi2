@@ -492,6 +492,18 @@ $(function() {
 
     var update_parameters_for_recipe = function(){
         var name = recipe_name_input.val();
+        if(Object.keys(recipes).length && name in recipes){
+            $('#recipe_modal .default_explanation').hide();
+            $('#recipe_modal .docstring').show();
+            $('#recipe_modal .docstring').html(recipes[name].docstring);
+            $('#recipe_modal .btn-primary').show();
+            $('#recipe_modal form').show();
+        } else {
+            $('#recipe_modal .default_explanation').show();
+            $('#recipe_modal .docstring').hide();
+            $('#recipe_modal .btn-primary').hide();
+            $('#recipe_modal form').hide();
+        }
         if(name in recipes){
             var html = '';
             for(var i in recipes[name].parameters){

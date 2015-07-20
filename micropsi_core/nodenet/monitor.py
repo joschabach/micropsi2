@@ -40,7 +40,6 @@ class Monitor(metaclass=ABCMeta):
         self.values = {}
         self.name = name or "some monitor"
         self.color = color or "#%02d%02d%02d" % (random.randint(0,99), random.randint(0,99), random.randint(0,99))
-        nodenet._register_monitor(self)
 
     @abstractmethod
     def step(self, step):

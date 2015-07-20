@@ -3,16 +3,14 @@
 """
 Nodenet definition
 """
-from copy import deepcopy
 
 import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
 
-from .node import Node
 from threading import Lock
 import logging
-from .nodespace import Nodespace
 from .netapi import NetAPI
+from . import monitor
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -483,6 +481,46 @@ class Nodenet(metaclass=ABCMeta):
     def clear(self):
         self.__monitors = {}
 
+    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+        """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
+        value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
+        self.__monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+        """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
+        value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
+        self.__monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
+        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
+        The monitor will collect respective value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+        self.__monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_modulator_monitor(self, modulator, name, color=None):
+        """Adds a continuous monitor to a global modulator.
+        The monitor will collect respective value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.ModulatorMonitor(self, modulator, property=property, name=name, color=color)
+        self.__monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_custom_monitor(self, function, name, color=None):
+        """Adds a continuous monitor, that evaluates the given python-code and collects the
+        return-value for every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.CustomMonitor(self, function=function, name=name, color=color)
+        self.__monitors[mon.uid] = mon
+        return mon.uid
+
     def get_monitor(self, uid):
         return self.__monitors.get(uid)
 
@@ -496,8 +534,5 @@ class Nodenet(metaclass=ABCMeta):
             data[monitor_uid] = self.__monitors[monitor_uid].data
         return data
 
-    def _register_monitor(self, monitor):
-        self.__monitors[monitor.uid] = monitor
-
-    def _unregister_monitor(self, monitor_uid):
+    def remove_monitor(self, monitor_uid):
         del self.__monitors[monitor_uid]

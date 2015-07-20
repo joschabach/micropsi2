@@ -362,7 +362,7 @@ def unload_nodenet(nodenet_uid):
         Arguments:
             nodenet_uid
     """
-    if not nodenet_uid in nodenets:
+    if nodenet_uid not in nodenets:
         return False
     if nodenets[nodenet_uid].world:
         nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)

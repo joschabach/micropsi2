@@ -404,12 +404,14 @@ class TheanoNodenet(Nodenet):
                     data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
-                    getattr(monitor, data['classname'])(self, **data)
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self.__monitors[mon.uid] = mon
                 else:
                     self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
-                monitor.NodeMonitor(self, name=data['node_name'], **data)
+                mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
+                self.__monitors[mon.uid] = mon
 
     def merge_nodespace_data(self, nodespace_uid, data, uidmap, keep_uids=False):
         """

@@ -95,12 +95,8 @@ def test_remove_monitor(fixed_nodenet):
     uid = micropsi.add_slot_monitor(fixed_nodenet, 'n0001', 'gen')
     assert micropsi.nodenets[fixed_nodenet].get_monitor(uid) is not None
     micropsi.remove_monitor(fixed_nodenet, uid)
-    gone = False
-    try:
-        micropsi.nodenets[fixed_nodenet].get_monitor(uid)
-    except KeyError:
-        gone = True
-    assert gone
+    monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)
+    assert monitor is None
 
 
 def test_remove_monitored_node(fixed_nodenet):

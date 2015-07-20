@@ -102,8 +102,11 @@ class MicropsiRunner(threading.Thread):
                 return False
             if 'monitor' in conditions and net.current_step > 0:
                 monitor = net.get_monitor(conditions['monitor']['uid'])
-                if net.current_step in monitor.values and round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
-                    return False
+                if monitor:
+                    if net.current_step in monitor.values and round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
+                        return False
+                else:
+                    del self.conditions['monitor']
         return True
 
     def run(self):

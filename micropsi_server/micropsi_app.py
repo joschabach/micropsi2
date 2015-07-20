@@ -745,7 +745,11 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
         if nodenet_uid in runtime.MicropsiRunner.conditions:
             data['simulation_condition'] = runtime.MicropsiRunner.conditions[nodenet_uid]
             if 'monitor' in data['simulation_condition']:
-                data['simulation_condition']['monitor']['color'] = nodenet_obj.get_monitor(data['simulation_condition']['monitor']['uid']).color
+                monitor = nodenet_obj.get_monitor(data['simulation_condition']['monitor']['uid'])
+                if monitor:
+                    data['simulation_condition']['monitor']['color'] = monitor.color
+                else:
+                    del data['simulation_condition']['monitor']
         data['simulation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0

@@ -484,7 +484,7 @@ class Nodenet(metaclass=ABCMeta):
         self.__monitors = {}
 
     def get_monitor(self, uid):
-        return self.__monitors[uid]
+        return self.__monitors.get(uid)
 
     def update_monitors(self):
         for uid in self.__monitors:

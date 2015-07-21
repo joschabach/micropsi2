@@ -458,8 +458,10 @@ $(function() {
         event.preventDefault();
         api.call('get_monitoring_info', {nodenet_uid: currentNodenet}, function(data){
             var html = '';
-            for(var key in data.monitors){
-                html += '<option value="'+key+'">'+data.monitors[key].name+'</option>';
+            var sorted = Object.values(data.monitors);
+            sorted.sort(sortByName);
+            for(var i in sorted){
+                html += '<option value="'+sorted[i].uid+'">'+sorted[i].name+'</option>';
             }
             $('#run_condition_monitor_selector').html(html);
             $('#run_nodenet_dialog').modal('show');

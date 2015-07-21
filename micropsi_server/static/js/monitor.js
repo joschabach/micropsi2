@@ -200,12 +200,15 @@ $(function(){
     function updateMonitorList(monitors){
         var list = $('#monitor_selector');
         var html = '';
-        for(var uid in monitors){
-            html += '<li><input type="checkbox" class="monitor_checkbox" value="'+uid+'" id="'+uid+'"';
-            if(currentMonitors.indexOf(uid) > -1){
+        var sorted = Object.values(monitors);
+        sorted.sort(sortByName);
+        for(var i = 0; i < sorted.length; i++){
+            var mon = sorted[i];
+            html += '<li><input type="checkbox" class="monitor_checkbox" value="'+mon.uid+'" id="'+mon.uid+'"';
+            if(currentMonitors.indexOf(mon.uid) > -1){
                 html += ' checked="checked"';
             }
-            html += ' /> <label for="'+uid+'" style="display:inline;color:'+monitors[uid].color+'"><strong>' + monitors[uid].name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+uid+'"><i class="icon-trash"></i></a></li>';
+            html += ' /> <label for="'+mon.uid+'" style="display:inline;color:'+mon.color+'"><strong>' + mon.name + '</strong></label> <a href="#" class="delete_monitor" title="delete monitor" data="'+mon.uid+'"><i class="icon-trash"></i></a></li>';
         }
         list.html(html);
         $('.monitor_checkbox', list).on('change', updateMonitorSelection);

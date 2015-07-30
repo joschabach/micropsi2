@@ -132,12 +132,12 @@ class Node(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    #@property
-    #@abstractmethod
-    #def activations(self):
-    #    """
-    #    This node's activation properties (dict of all sheaves) as calculated once per step by its node function
-    #    """
+    # @property
+    # @abstractmethod
+    # def activations(self):
+    #     """
+    #     This node's activation properties (dict of all sheaves) as calculated once per step by its node function
+    #     """
 
     @property
     @abstractmethod
@@ -161,21 +161,21 @@ class Node(metaclass=ABCMeta):
         """
         The node's type (as a string)
         """
-        return self.__nodetype_name
+        return self._nodetype_name
 
     @property
     def nodetype(self):
         """
         The Nodetype instance for this node
         """
-        return self.__nodetype
+        return self._nodetype
 
     def __init__(self, nodetype_name, nodetype):
         """
         Constructor needs the string name of this node's type, and a Nodetype instance
         """
-        self.__nodetype_name = nodetype_name
-        self.__nodetype = nodetype
+        self._nodetype_name = nodetype_name
+        self._nodetype = nodetype
 
     @abstractmethod
     def get_gate(self, type):

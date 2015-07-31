@@ -332,8 +332,23 @@ class MinecraftVision(MinecraftGraphLocomotion):
         #     homogeneous_patch = True
         #     norm_sensor_values = [0.0] * len_x * len_y
 
-        # else:  # else normalize the sensor values
-        norm_sensor_values = self.normalize_sensor_values(sensor_values)
+        # preprocess sensor values
+        # # BINARIZE
+        # # convert block types into binary values: map air and emptiness to black (0), everything else to white (1)
+        # sensor_values_ = [0.0 if v <= 0 else 1.0 for v in sensor_values]
+        # GRAY-SCALE VALUES
+        from .structs import block_colors
+        # fetch RGB value, convert it to gray-scale value in YUV space
+        sensor_values_ = []
+        for bt in sensor_values:
+            red, green, blue = block_colors[str(bt)]
+            red, green, blue = red / 255., green / 255., blue / 255.  # normalize to [0, 1]
+            # RGB to Y transform
+            y = 0.299 * red + 0.587 * green + 0.114 * blue  # digital CCIR601
+            sensor_values_.append(y)
+
+        # normalize the sensor values
+        norm_sensor_values = self.normalize_sensor_values(sensor_values_)
 
         # write new sensor values to datasources
         self.write_visual_input_to_datasources(norm_sensor_values, len_x, len_y)
@@ -385,13 +400,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
         Normalize sensor values to zero mean and 3 standard deviation.
         TODO: make doc correct and precise.
         """
-        # convert block types into binary values: map air and emptiness to black (0), everything else to white (1)
-        patch_ = [0.0 if v <= 0 else 1.0 for v in patch]
-
         # normalize block type values
         # subtract the sample mean from each of its pixels
-        mean = float(sum(patch_)) / len(patch_)
-        patch_avg = [x - mean for x in patch_]  # TODO: throws error in ipython - why not here !?
+        mean = float(sum(patch)) / len(patch)
+        patch_avg = [x - mean for x in patch]  # TODO: throws error in ipython - why not here !?
 
         # truncate to +/- 3 standard deviations and scale to -1 and +1
 

@@ -93,14 +93,14 @@ class MinecraftVision(MinecraftGraphLocomotion):
         # add datasources for fovea position sensors aka fov_pos__*_*
         for x in range(self.tiling_x):
             for y in range(self.tiling_y):
-                name = "fov_pos__%02d_%02d" % (x, y)
+                name = "fov_pos__%02d_%02d" % (y, x)
                 self.datasources[name] = 0.
                 self.supported_datasources.append(name)
 
         # add fovea actors to datatargets, datatarget_feedback, datatarget_history, and actions
         for x in range(self.tiling_x):
             for y in range(self.tiling_y):
-                name = "fov_act__%02d_%02d" % (x, y)
+                name = "fov_act__%02d_%02d" % (y, x)
                 self.datatargets[name] = 0.
                 self.datatarget_feedback[name] = 0.
                 self.datatarget_history[name] = 0.
@@ -175,8 +175,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
                 has_non_zero = False
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
-                        actor_name = "fov_act__%02d_%02d" % (x, y)
-                        sensor_name = "fov_pos__%02d_%02d" % (x, y)
+                        actor_name = "fov_act__%02d_%02d" % (y, x)
+                        sensor_name = "fov_pos__%02d_%02d" % (y, x)
                         self.datasources[sensor_name] = self.datatargets[actor_name]
                         if self.datatargets[actor_name] > 0.:
                             # provide action feedback for fovea actor
@@ -202,7 +202,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
                 # sample all the time
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
                 # get indices of section currently viewed, i.e. the respective active fovea actor
-                x_sec, y_sec = [int(val) for val in self.active_fovea_actor.split('_')[-2:]]
+                y_sec, x_sec = [int(val) for val in self.active_fovea_actor.split('_')[-2:]]
                 # translate x_sec, y_sec, and z_oom to fov_x, fov_y, res_x, res_y
                 fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(x_sec, y_sec, 1)  # z_oom = 1
                 self.get_visual_input(fov_x, fov_y, res_x, res_y, self.len_x, self.len_y, loco_label)

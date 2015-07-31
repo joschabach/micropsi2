@@ -1,12 +1,9 @@
 from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
-from micropsi_core import tools
 from configuration import config as cfg
 import random
 import logging
-import time
 from functools import partial
-from math import sqrt, radians, cos, sin, tan
 
 
 class MinecraftVision(MinecraftGraphLocomotion):

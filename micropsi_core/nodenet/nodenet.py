@@ -497,7 +497,7 @@ class Nodenet(metaclass=ABCMeta):
         self._monitors[mon.uid] = mon
         return mon.uid
 
-    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
         The monitor will collect respective value in every simulation step.
         Returns the uid of the new monitor."""
@@ -509,7 +509,7 @@ class Nodenet(metaclass=ABCMeta):
         """Adds a continuous monitor to a global modulator.
         The monitor will collect respective value in every simulation step.
         Returns the uid of the new monitor."""
-        mon = monitor.ModulatorMonitor(self, modulator, property=property, name=name, color=color)
+        mon = monitor.ModulatorMonitor(self, modulator, name=name, color=color)
         self._monitors[mon.uid] = mon
         return mon.uid
 

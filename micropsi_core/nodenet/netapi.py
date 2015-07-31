@@ -496,7 +496,7 @@ class NetAPI(object):
         Returns the uid of the new monitor."""
         return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
 
-    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
         The monitor will collect respective value in every simulation step.
         Returns the uid of the new monitor."""
@@ -506,13 +506,13 @@ class NetAPI(object):
         """Adds a continuous monitor to a global modulator.
         The monitor will collect respective value in every simulation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_modulator_monitor(modulator, property=property, name=name, color=color)
+        return self.__nodenet.add_modulator_monitor(modulator, name, color=color)
 
     def add_custom_monitor(self, function, name, color=None):
         """Adds a continuous monitor, that evaluates the given python-code and collects the
         return-value for every simulation step.
         Returns the uid of the new monitor."""
-        return self.__nodenet.add_custom_monitor(function=function, name=name, color=color)
+        return self.__nodenet.add_custom_monitor(function, name, color=color)
 
     def get_monitor(self, uid):
         """Returns the monitor with the given uid"""

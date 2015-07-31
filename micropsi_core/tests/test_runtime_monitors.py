@@ -92,7 +92,7 @@ def test_add_custom_monitor(fixed_nodenet):
 
 
 def test_remove_monitor(fixed_nodenet):
-    uid = micropsi.add_slot_monitor(fixed_nodenet, 'n0001', 'gen')
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
     assert micropsi.nodenets[fixed_nodenet].get_monitor(uid) is not None
     micropsi.remove_monitor(fixed_nodenet, uid)
     monitor = micropsi.nodenets[fixed_nodenet].get_monitor(uid)

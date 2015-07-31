@@ -264,8 +264,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
         x_sec, y_sec, and z_oom. These need to be translated to the parameters which
         determine where to compute the visual input. This translation happens here.
         """
-        fov_x = ((1. / (4 * 2)) * x_sec)  # / 4
-        fov_y = ((1. / (2 * 2)) * y_sec)  # / 2
+        # add a buffer to self.tiling_x/y because the rays peak out of their
+        # assigned image plane sections #TODO validate the magic number 2
+        fov_x = (1.0 / (self.tiling_x + 2)) * x_sec
+        fov_y = (1.0 / (self.tiling_y + 2)) * y_sec
 
         res_x = (self.len_x * (4 ** z_oom)) / self.im_width
         res_y = (self.len_y * (2 ** z_oom)) / self.im_height

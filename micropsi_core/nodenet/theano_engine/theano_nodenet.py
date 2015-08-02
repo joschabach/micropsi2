@@ -135,7 +135,7 @@ class TheanoNodenet(Nodenet):
 
     @property
     def current_step(self):
-        return self.__step
+        return self._step
 
     @property
     def data(self):
@@ -145,7 +145,7 @@ class TheanoNodenet(Nodenet):
         # for uid in data['nodes']:
         #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
         data['nodespaces'] = self.construct_nodespaces_dict(None)
-        data['version'] = self.__version
+        data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
 
@@ -206,19 +206,19 @@ class TheanoNodenet(Nodenet):
         self.partitionmap = {}
         self.inverted_partitionmap = {}
 
-        self.__version = NODENET_VERSION  # used to check compatibility of the node net data
-        self.__step = 0
-        self.__modulators = {}
-        self.__modulators['por_ret_decay'] = 0.
+        self._version = NODENET_VERSION  # used to check compatibility of the node net data
+        self._step = 0
+        self._modulators = {}
+        self._modulators['por_ret_decay'] = 0.
 
         self.proxycache = {}
 
         self.stepoperators = []
         self.initialize_stepoperators()
 
-        self.__nodetypes = {}
+        self._nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
-            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
+            self._nodetypes[type] = Nodetype(nodenet=self, **data)
 
         self.native_module_definitions = native_modules
         self.native_modules = {}
@@ -312,7 +312,7 @@ class TheanoNodenet(Nodenet):
 
     def initialize_nodenet(self, initfrom):
 
-        self.__modulators.update(initfrom.get("modulators", {}))
+        self._modulators.update(initfrom.get("modulators", {}))
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
@@ -326,7 +326,7 @@ class TheanoNodenet(Nodenet):
             if 'sensormap' in initfrom:
                 self.sensormap = initfrom['sensormap']
             if 'current_step' in initfrom:
-                self.__step = initfrom['current_step']
+                self._step = initfrom['current_step']
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -359,7 +359,7 @@ class TheanoNodenet(Nodenet):
             parent_uid = data['parent_nodespace']
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
-            if data['type'] in self.__nodetypes or data['type'] in self.native_modules:
+            if data['type'] in self._nodetypes or data['type'] in self.native_modules:
                 olduid = None
                 if keep_uids:
                     olduid = uid
@@ -404,12 +404,14 @@ class TheanoNodenet(Nodenet):
                     data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
-                    getattr(monitor, data['classname'])(self, **data)
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self._monitors[mon.uid] = mon
                 else:
                     self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
-                monitor.NodeMonitor(self, name=data['node_name'], **data)
+                mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
+                self._monitors[mon.uid] = mon
 
     def merge_nodespace_data(self, nodespace_uid, data, uidmap, keep_uids=False):
         """
@@ -456,7 +458,7 @@ class TheanoNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
-            self.__step += 1
+            self._step += 1
 
     def get_partition(self, uid):
         if uid is None:
@@ -877,17 +879,17 @@ class TheanoNodenet(Nodenet):
         return data
 
     def get_modulator(self, modulator):
-        return self.__modulators.get(modulator, 1)
+        return self._modulators.get(modulator, 1)
 
     def change_modulator(self, modulator, diff):
-        self.__modulators[modulator] = self.__modulators.get(modulator, 0) + diff
+        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
 
     def set_modulator(self, modulator, value):
-        self.__modulators[modulator] = value
+        self._modulators[modulator] = value
 
     def get_nodetype(self, type):
-        if type in self.__nodetypes:
-            return self.__nodetypes[type]
+        if type in self._nodetypes:
+            return self._nodetypes[type]
         else:
             return self.native_modules.get(type)
 
@@ -1093,7 +1095,7 @@ class TheanoNodenet(Nodenet):
         return data
 
     def construct_modulators_dict(self):
-        return self.__modulators.copy()
+        return self._modulators.copy()
 
     def get_standard_nodetype_definitions(self):
         """
@@ -1264,3 +1266,6 @@ class TheanoNodenet(Nodenet):
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
+
+    def add_slot_monitor(self, node_uid, slot, **_):
+        raise RuntimeError("Theano engine does not support slot monitors")

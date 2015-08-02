@@ -598,6 +598,7 @@ def test_add_gate_monitor(app, test_nodenet, node):
     assert response.json_body['data']['values'] == {}
 
 
+@pytest.mark.engine("dict_engine")
 def test_add_slot_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -659,10 +660,10 @@ def test_add_custom_monitor(app, test_nodenet):
 
 
 def test_remove_monitor(app, test_nodenet, node):
-    response = app.post_json('/rpc/add_slot_monitor', params={
+    response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
-        'slot': 'gen'
+        'gate': 'gen'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/remove_monitor', params={
@@ -677,10 +678,10 @@ def test_remove_monitor(app, test_nodenet, node):
 
 
 def test_clear_monitor(app, test_nodenet, node):
-    response = app.post_json('/rpc/add_slot_monitor', params={
+    response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
-        'slot': 'gen'
+        'gate': 'gen'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/clear_monitor', params={

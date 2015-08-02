@@ -3,16 +3,14 @@
 """
 Nodenet definition
 """
-from copy import deepcopy
 
 import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
 
-from .node import Node
 from threading import Lock
 import logging
-from .nodespace import Nodespace
 from .netapi import NetAPI
+from . import monitor
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -86,8 +84,8 @@ class Nodenet(metaclass=ABCMeta):
             'name': self.name,
             'is_active': self.is_active,
             'current_step': self.current_step,
-            'world': self.__world_uid,
-            'worldadapter': self.__worldadapter_uid,
+            'world': self._world_uid,
+            'worldadapter': self._worldadapter_uid,
             'version': NODENET_VERSION
         }
         return data
@@ -97,15 +95,15 @@ class Nodenet(metaclass=ABCMeta):
         """
         Returns the uid of the node net
         """
-        return self.__uid
+        return self._uid
 
     @property
     def name(self):
         """
         Returns the name of the node net for display purposes
         """
-        if self.__name is not None:
-            return self.__name
+        if self._name is not None:
+            return self._name
         else:
             return self.uid
 
@@ -114,16 +112,16 @@ class Nodenet(metaclass=ABCMeta):
         """
         Sets the name of the node net to the given string
         """
-        self.__name = name
+        self._name = name
 
     @property
     def world(self):
         """
         Returns the currently connected world (as an object) or none if no world is set
         """
-        if self.__world_uid is not None:
+        if self._world_uid is not None:
             from micropsi_core.runtime import worlds
-            return worlds.get(self.__world_uid)
+            return worlds.get(self._world_uid)
         return None
 
     @world.setter
@@ -132,43 +130,43 @@ class Nodenet(metaclass=ABCMeta):
         Connects the node net to the given world object, or disconnects if None is given
         """
         if world:
-            self.__world_uid = world.uid
+            self._world_uid = world.uid
         else:
-            self.__world_uid = None
+            self._world_uid = None
 
     @property
     def worldadapter(self):
         """
         Returns the uid of the currently connected world adapter
         """
-        return self.__worldadapter_uid
+        return self._worldadapter_uid
 
     @worldadapter.setter
     def worldadapter(self, worldadapter_uid):
         """
         Connects the node net to the given world adapter uid, or disconnects if None is given
         """
-        self.__worldadapter_uid = worldadapter_uid
+        self._worldadapter_uid = worldadapter_uid
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
-        self.__uid = uid or micropsi_core.tools.generate_uid()
-        self.__name = name
-        self.__world_uid = None
-        self.__worldadapter_uid = None
+        self._uid = uid or micropsi_core.tools.generate_uid()
+        self._name = name
+        self._world_uid = None
+        self._worldadapter_uid = None
         self.is_active = False
 
-        self.__version = NODENET_VERSION  # used to check compatibility of the node net data
-        self.__uid = uid
+        self._version = NODENET_VERSION  # used to check compatibility of the node net data
+        self._uid = uid
 
         self.world = world
         self.owner = owner
         if world and worldadapter:
             self.worldadapter = worldadapter
 
-        self.__monitors = {}
+        self._monitors = {}
 
         self.max_coords = {'x': 0, 'y': 0}
 
@@ -481,23 +479,60 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     def clear(self):
-        self.__monitors = {}
+        self._monitors = {}
+
+    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+        """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
+        value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.NodeMonitor(self, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+        """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
+        value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.NodeMonitor(self, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
+        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
+        The monitor will collect respective value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.LinkMonitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_modulator_monitor(self, modulator, name, color=None):
+        """Adds a continuous monitor to a global modulator.
+        The monitor will collect respective value in every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.ModulatorMonitor(self, modulator, name=name, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
+
+    def add_custom_monitor(self, function, name, color=None):
+        """Adds a continuous monitor, that evaluates the given python-code and collects the
+        return-value for every simulation step.
+        Returns the uid of the new monitor."""
+        mon = monitor.CustomMonitor(self, function=function, name=name, color=color)
+        self._monitors[mon.uid] = mon
+        return mon.uid
 
     def get_monitor(self, uid):
-        return self.__monitors.get(uid)
+        return self._monitors.get(uid)
 
     def update_monitors(self):
-        for uid in self.__monitors:
-            self.__monitors[uid].step(self.current_step)
+        for uid in self._monitors:
+            self._monitors[uid].step(self.current_step)
 
     def construct_monitors_dict(self):
         data = {}
-        for monitor_uid in self.__monitors:
-            data[monitor_uid] = self.__monitors[monitor_uid].data
+        for monitor_uid in self._monitors:
+            data[monitor_uid] = self._monitors[monitor_uid].data
         return data
 
-    def _register_monitor(self, monitor):
-        self.__monitors[monitor.uid] = monitor
-
-    def _unregister_monitor(self, monitor_uid):
-        del self.__monitors[monitor_uid]
+    def remove_monitor(self, monitor_uid):
+        del self._monitors[monitor_uid]

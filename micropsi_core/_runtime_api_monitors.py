@@ -7,8 +7,6 @@ Runtime API functionality for creating and maintaining activation monitors
 __author__ = 'dominik'
 __date__ = '11.12.12'
 
-from micropsi_core.nodenet import monitor
-
 import micropsi_core
 
 
@@ -17,8 +15,7 @@ def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=N
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
-    return mon.uid
+    return nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
 
 
 def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=None):
@@ -26,8 +23,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=N
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
-    return mon.uid
+    return nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
 
 
 def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
@@ -35,8 +31,7 @@ def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, s
     The monitor will collect respective value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.LinkMonitor(nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
-    return mon.uid
+    return nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
 
 
 def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
@@ -44,8 +39,7 @@ def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
     The monitor will collect respective value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.ModulatorMonitor(nodenet, modulator, property=property, name=name, color=color)
-    return mon.uid
+    return nodenet.add_modulator_monitor(modulator, name, color=color)
 
 
 def add_custom_monitor(nodenet_uid, function, name, color=None):
@@ -53,13 +47,12 @@ def add_custom_monitor(nodenet_uid, function, name, color=None):
     return-value for every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.CustomMonitor(nodenet, function=function, name=name, color=color)
-    return mon.uid
+    return nodenet.add_custom_monitor(function, name, color=color)
 
 
 def remove_monitor(nodenet_uid, monitor_uid):
     """Deletes an activation monitor."""
-    micropsi_core.runtime.nodenets[nodenet_uid]._unregister_monitor(monitor_uid)
+    micropsi_core.runtime.nodenets[nodenet_uid].remove_monitor(monitor_uid)
     return True
 
 

@@ -80,6 +80,8 @@ class MinecraftVision(MinecraftGraphLocomotion):
         self.waiting_for_spock = True
         self.logger = logging.getLogger("world")
 
+        self.previous_active_fovea_actor = None
+
         # add datasources for fovea sensors aka fov__*_*
         for i in range(self.len_x):
             for j in range(self.len_y):
@@ -168,7 +170,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     return
 
                 # route activation of fovea actors /datatargets to fovea position sensors
-                self.active_fovea_actor = "fov_act__00_00"  # snap back to (0,0)
+                self.active_fovea_actor = self.previous_active_fovea_actor or "fov_act__00_00"
                 has_non_zero = False
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
@@ -176,12 +178,13 @@ class MinecraftVision(MinecraftGraphLocomotion):
                         sensor_name = "fov_pos__%02d_%02d" % (y, x)
                         self.datasources[sensor_name] = self.datatargets[actor_name]
                         if self.datatargets[actor_name] > 0.:
+                            self.previous_active_fovea_actor = actor_name
                             # provide action feedback for fovea actor
                             self.datatarget_feedback[actor_name] = 1.
                             self.active_fovea_actor = actor_name
                             has_non_zero = True
                 if not has_non_zero:
-                    self.datasources["fov_pos__00_00"] = 1.
+                    self.datasources[self.active_fovea_actor] = 1.
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder

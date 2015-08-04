@@ -977,6 +977,10 @@ class TheanoPartition():
             new_a[0:self.NoE] = self.a.get_value(borrow=True)
             self.a.set_value(new_a, borrow=True)
 
+            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
+            self.a_in.set_value(new_a, borrow=True)
+
             new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
             self.a_shifted.set_value(new_a_shifted, borrow=True)
 

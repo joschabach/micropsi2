@@ -1269,9 +1269,9 @@ class TheanoPartition():
         type = self.allocated_nodes[node_id]
         offset = self.allocated_node_offsets[node_id]
         w_matrix = self.w.get_value(borrow=True)
-        for element in range (0, get_elements_per_type(type, self.nodenet.native_modules)):
-            w_matrix[offset + element, :] = 0
-            w_matrix[:, offset + element] = 0
+        number_of_elements_to_clear = get_elements_per_type(type, self.nodenet.native_modules)
+        w_matrix[offset:offset+number_of_elements_to_clear, :] = 0
+        w_matrix[:, offset:offset+number_of_elements_to_clear] = 0
         self.w.set_value(w_matrix, borrow=True)
 
     def create_nodespace(self, parent_id, id=None):

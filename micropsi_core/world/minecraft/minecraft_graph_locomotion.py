@@ -500,9 +500,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
         action_function()
 
     def has_bread(self):
-        for item in self.spockplugin.inventory:
+        for idx, item in enumerate(self.spockplugin.quickslots):
             if item.get('id', 0) == 297:
+                self.spockplugin.change_held_item(idx)
                 return True
+        self.logger.debug('Agent has no bread!')
         return False
 
     def check_eat_feedback(self, old_value):

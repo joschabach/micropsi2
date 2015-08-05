@@ -139,8 +139,13 @@ class MicropsiPlugin(object):
         self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
 
     def update_inventory(self, event, packet):
+        # 0     = crafting output
+        # 1-4   = crafting ingredients
+        # 5-8   = wearables from helm to boot
+        # 9-35  = inventory by rows
+        # 36-44 = quickslots
         self.inventory = packet.data['slots']
-        self.quickslots = packet.data['slots'][36:9]
+        self.quickslots = packet.data['slots'][36:45]
 
     def count_inventory_item(self, item):
         count = 0
@@ -151,7 +156,7 @@ class MicropsiPlugin(object):
 
     def change_held_item(self, target_slot):
         """ Changes the held item to a quick inventory slot """
-        self.net.push(Packet(ident='PLAY>Held Item Change', data={'Slot': target_slot}))
+        self.net.push(Packet(ident='PLAY>Held Item Change', data={'slot': target_slot}))
 
     def move(self, position=None):
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):

@@ -393,13 +393,13 @@ class MinecraftGraphLocomotion(WorldAdapter):
                     self.datasources['temperature'] = self.spockplugin.get_temperature()
                 self.datasources['food_supply'] = self.spockplugin.count_inventory_item(297)  # count bread
 
-                # compute fatigue: 0.2 per half a day:
+                # compute fatigue: 0.1 per half a day:
                 # timeofday = self.spockplugin.world.time_of_day % 24000
                 no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
-                fatigue = no_sleep * 0.2
+                fatigue = no_sleep * 0.1
                 if self.sleeping:
                     fatigue = 0
-                self.datasources['fatigue'] = fatigue
+                self.datasources['fatigue'] = round(fatigue, 2)
 
                 self.check_for_action_feedback()
 

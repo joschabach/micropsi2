@@ -90,6 +90,25 @@ STANDARD_NODETYPES = {
         "parameters": ["type"],
         "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
         "nodefunction_name": "activator"
+    },
+    "LSTM": {
+        "name": "LSTM",
+        "slottypes": ["gen", "por", "gin", "gou", "gfg"],
+        "gatetypes": ["gen", "por"],
+        "nodefunction_name": "lstm",
+        "symbol": "◷",
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "por": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1
+            }
+        }
     }
 }
 
@@ -442,6 +461,12 @@ class DictNodenet(Nodenet):
             uid=uid,
             parameters=parameters,
             gate_parameters=gate_parameters)
+        if nodetype == 'LSTM':
+            node.set_gatefunction_name("por", "sigmoid")
+            self.create_link(node.uid, "gen", node.uid, "gen")
+            self.create_link(node.uid, "gen", node.uid, "gin")
+            self.create_link(node.uid, "gen", node.uid, "gou")
+            self.create_link(node.uid, "gen", node.uid, "gfg")
         return node.uid
 
     def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):

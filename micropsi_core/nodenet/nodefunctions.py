@@ -1,3 +1,6 @@
+
+from micropsi_core.nodenet.gatefunctions import sigmoid
+
 ####################################################################################################
 #
 # These are the reference implementations for the node functions of the standard node types.
@@ -231,3 +234,18 @@ def pipe(netapi, node=None, sheaf="default", **params):
 def activator(netapi, node, **params):
     node.activation = node.get_slot("gen").activation
     netapi.get_nodespace(node.parent_nodespace).set_activator_value(node.get_parameter('type'), node.activation)
+
+def lstm(netapi, node, **params):
+
+    # squash lstm gating values
+    gin = sigmoid(node.get_slot("gin").activation, 0, 0)    # TODO: probably make theta learnable
+    gou = sigmoid(node.get_slot("gou").activation, 0, 0)    # TODO: probably make theta learnable
+    gfg = sigmoid(node.get_slot("gfg").activation, 0, 0)    # TODO: probably make theta learnable
+
+    # calculate node net gates (gen is the lstm cec)
+    gen = (node.get_slot("gen").activation * gfg) + (node.get_slot("por").activation * gin)
+    por = node.get_slot("gen").activation * gou
+
+    node.activation = node.get_slot("gen").activation
+    node.get_gate("gen").gate_function(gen)
+    node.get_gate("por").gate_function(por)

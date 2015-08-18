@@ -119,6 +119,26 @@ STANDARD_NODETYPES = {
         "parameters": ["type"],
         "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp"]},
         "nodefunction_name": "activator"
+    },
+    "LSTM": {
+        "name": "LSTM",
+        "slottypes": ["gen", "por", "gin", "gou", "gfg"],
+        "gatetypes": ["gen", "por"],
+        "nodefunction_name": "lstm",
+        "symbol": "◷",
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "por": {
+                "minimum": -1,
+                "maximum": 1,
+                "threshold": -1,
+                "gatefunction": "sigmoid"
+            }
+        }
     }
 }
 

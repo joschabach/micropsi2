@@ -5,7 +5,8 @@ ACTIVATOR = 4
 CONCEPT = 5
 SCRIPT = 6
 PIPE = 7
-COMMENT = 8
+LSTM = 8
+COMMENT = 100
 
 MAX_STD_NODETYPE = COMMENT
 
@@ -16,8 +17,11 @@ SUB = 3
 SUR = 4
 CAT = 5
 EXP = 6
+GIN = 7
+GOU = 8
+GFG = 9
 
-MAX_STD_GATE = EXP
+MAX_STD_GATE = GFG
 
 
 GATE_FUNCTION_IDENTITY = 0
@@ -35,6 +39,7 @@ NFPG_PIPE_SUB = 4
 NFPG_PIPE_SUR = 5
 NFPG_PIPE_CAT = 6
 NFPG_PIPE_EXP = 7
+
 
 def get_numerical_gate_type(type, nodetype=None):
     if nodetype is not None and type in nodetype.gatetypes:
@@ -95,6 +100,12 @@ def get_numerical_slot_type(type, nodetype=None):
         return CAT
     elif type == "exp":
         return EXP
+    elif type == "gin":
+        return GIN
+    elif type == "gou":
+        return GOU
+    elif type == "gfg":
+        return GFG
     else:
         raise ValueError("Supplied type is not a valid slot type: "+str(type))
 
@@ -116,6 +127,12 @@ def get_string_slot_type(type, nodetype=None):
         return "cat"
     elif type == EXP:
         return "exp"
+    elif type == GIN:
+        return "gin"
+    elif type == GOU:
+        return "gou"
+    elif type == GFG:
+        return "gfg"
     else:
         raise ValueError("Supplied type is not a valid slot type: "+str(type))
 
@@ -135,6 +152,8 @@ def get_numerical_node_type(type, nativemodules=None):
         return SCRIPT
     elif type == "Pipe":
         return PIPE
+    elif type == "LSTM":
+        return LSTM
     elif type == "Comment":
         return COMMENT
     elif nativemodules is not None and type in nativemodules:
@@ -158,6 +177,8 @@ def get_string_node_type(type, nativemodules=None):
         return "Script"
     elif type == PIPE:
         return "Pipe"
+    elif type == LSTM:
+        return "LSTM"
     elif type == COMMENT:
         return "Comment"
     elif nativemodules is not None and len(nativemodules) >= (type - MAX_STD_NODETYPE):
@@ -215,6 +236,8 @@ def get_elements_per_type(type, nativemodules=None):
         return 7
     elif type == PIPE:
         return 7
+    elif type == LSTM:
+        return 5
     elif type == COMMENT:
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
@@ -239,6 +262,8 @@ def get_gates_per_type(type, nativemodules=None):
         return 7
     elif type == PIPE:
         return 7
+    elif type == LSTM:
+        return 2
     elif type == COMMENT:
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:
@@ -263,6 +288,8 @@ def get_slots_per_type(type, nativemodules=None):
         return 7
     elif type == PIPE:
         return 7
+    elif type == LSTM:
+        return 5
     elif type == COMMENT:
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:

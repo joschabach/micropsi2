@@ -1,5 +1,5 @@
 
-from micropsi_core.nodenet.gatefunctions import sigmoid
+import math
 
 ####################################################################################################
 #
@@ -237,15 +237,27 @@ def activator(netapi, node, **params):
 
 def lstm(netapi, node, **params):
 
-    # squash lstm gating values
-    gin = sigmoid(node.get_slot("gin").activation, 0, 0)    # TODO: probably make theta learnable
-    gou = sigmoid(node.get_slot("gou").activation, 0, 0)    # TODO: probably make theta learnable
-    gfg = sigmoid(node.get_slot("gfg").activation, 0, 0)    # TODO: probably make theta learnable
+    def sigmoid_one(input_activation):
+        return 1.0 / (1.0 + math.exp(-input_activation))                # (3)
 
-    # calculate node net gates (gen is the lstm cec)
-    gen = (node.get_slot("gen").activation * gfg) + (node.get_slot("por").activation * gin)
-    por = node.get_slot("gen").activation * gou
+    def sigmoid_two(input_activation):
+        return (2.0 / (1.0 + math.exp(-input_activation))) - 1          # (4)
 
+    def sigmoid_four(input_activation):
+        return (4.0 / (1.0 + math.exp(-input_activation))) - 2          # (5)
+
+    # simple-sigmoid squash lstm gating values
+    gin = sigmoid_one(node.get_slot("gin").activation)                  # (7)
+    gou = sigmoid_one(node.get_slot("gou").activation)                  # (8)
+    gfg = sigmoid_one(node.get_slot("gfg").activation)
+
+    # calculate node net gates (the gen gen loop is the lstm cec)
+    # squash-shift-and-scale por input
+    # double squash-shift-and-scale gen loop activation
+    gen = (gfg * node.get_slot("gen").activation) + (gin * sigmoid_two(node.get_slot("por").activation))    # (9)
+    por = gou * sigmoid_four(gen)                                                                   # (9)
+
+    # both por and gen gate functions need to be set to linear
     node.activation = node.get_slot("gen").activation
     node.get_gate("gen").gate_function(gen)
     node.get_gate("por").gate_function(por)

@@ -462,7 +462,6 @@ class DictNodenet(Nodenet):
             parameters=parameters,
             gate_parameters=gate_parameters)
         if nodetype == 'LSTM':
-            node.set_gatefunction_name("por", "sigmoid")
             self.create_link(node.uid, "gen", node.uid, "gen")
             self.create_link(node.uid, "gen", node.uid, "gin")
             self.create_link(node.uid, "gen", node.uid, "gou")

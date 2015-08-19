@@ -255,7 +255,7 @@ def lstm(netapi, node, **params):
     # squash-shift-and-scale por input
     # double squash-shift-and-scale gen loop activation
     gen = (gfg * node.get_slot("gen").activation) + (gin * sigmoid_two(node.get_slot("por").activation))    # (9)
-    por = gou * sigmoid_four(gen)                                                                   # (9)
+    por = gou * sigmoid_four(gen)                                                                           # (9)
 
     # both por and gen gate functions need to be set to linear
     node.activation = node.get_slot("gen").activation

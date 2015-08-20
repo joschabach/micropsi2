@@ -233,7 +233,7 @@ $(function(){
             }
         });
         $.cookie('currentMonitors', JSON.stringify(currentMonitors), {path:'/', expires:7})
-        drawGraph(currentMonitors);
+        refreshMonitors();
     }
 
     function drawGraph(currentMonitors) {

@@ -46,6 +46,16 @@ class TheanoPartition():
             self.__has_pipes = value
 
     @property
+    def has_lstms(self):
+        return self.__has_lstms
+
+    @has_lstms.setter
+    def has_lstms(self, value):
+        if value != self.__has_lstms:
+            self.__has_new_usages = True
+            self.__has_lstms = value
+
+    @property
     def has_directional_activators(self):
         return self.__has_directional_activators
 
@@ -295,6 +305,7 @@ class TheanoPartition():
 
         self.__has_new_usages = True
         self.__has_pipes = False
+        self.__has_lstms = False
         self.__has_directional_activators = False
         self.__has_gatefunction_absolute = False
         self.__has_gatefunction_sigmoid = False
@@ -431,6 +442,35 @@ class TheanoPartition():
             countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
             countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
 
+        # lstm logic
+
+        ###############################################################
+        # lookup table for source activation in a_shifted
+        # when calculating the gate on the y axis...
+        # ... find the slot at the given index on the x axis
+        #
+        #       0   1   2   3   4   5   6   7   8   9   10  11  12  13
+        # gen                               gen por gin gou gfg
+        # por                           gen por gin gou gfg
+        #
+
+        ### gen
+        cec = (T.nnet.sigmoid(slots[:,11]) * slots[:, 7])                           # cec is forget gate * gen
+        incoming = (T.nnet.sigmoid(slots[:,9]) * (2 * T.nnet.sigmoid(slots[:,8])-1))# inc. is in gate * por
+        lstm_gen = cec + incoming
+
+        ### por
+        cec = (T.nnet.sigmoid(slots[:,10]) * slots[:, 6])                           # cec is forget gate * gen
+        incoming = (T.nnet.sigmoid(slots[:,8]) * (2 * T.nnet.sigmoid(slots[:,7])-1))# inc. is in gate * por
+        gen = cec + incoming
+        lstm_por = T.nnet.sigmoid(slots[:,9]) * (4 * T.nnet.sigmoid(gen)-2)         # por is gou * gen value
+
+        if self.has_lstms:
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_POR), lstm_por, nodefunctions)
+            # note that gin, gou and gfg don't need to be calculated
+            # values are irrelevant after gen/por calculation and will be replaced by propagate
+
         # gate logic
 
         # multiply with gate factor for the node space
@@ -488,7 +528,7 @@ class TheanoPartition():
             self.por_ret_dirty = False
 
         self.__take_native_module_slot_snapshots()
-        if self.has_pipes:
+        if self.has_pipes or self.has_lstms:
             self.__rebuild_shifted()
         if self.has_directional_activators:
             self.__calculate_g_factors()
@@ -898,6 +938,7 @@ class TheanoPartition():
             g_function_selector = datafile['g_function_selector']
             self.has_new_usages = True
             self.has_pipes = PIPE in self.allocated_nodes
+            self.has_lstms = LSTM in self.allocated_nodes
             self.has_directional_activators = ACTIVATOR in self.allocated_nodes
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
@@ -1167,6 +1208,12 @@ class TheanoPartition():
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))
                 self.g_wait.set_value(g_wait_array, borrow=True)
+        elif nodetype == "LSTM":
+            self.has_lstms = True
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_LSTM_GEN
+            n_function_selector_array[offset + POR] = NFPG_LSTM_POR
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")
@@ -1235,6 +1282,12 @@ class TheanoPartition():
             n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
             n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
             n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+
+        if type == LSTM:
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # hint at the free ID

@@ -133,10 +133,9 @@ STANDARD_NODETYPES = {
                 "threshold": -1000
             },
             "por": {
-                "minimum": -1,
-                "maximum": 1,
-                "threshold": -1,
-                "gatefunction": "sigmoid"
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
             }
         }
     }

@@ -6,7 +6,7 @@ CONCEPT = 5
 SCRIPT = 6
 PIPE = 7
 LSTM = 8
-COMMENT = 100
+COMMENT = 9
 
 MAX_STD_NODETYPE = COMMENT
 
@@ -17,9 +17,9 @@ SUB = 3
 SUR = 4
 CAT = 5
 EXP = 6
-GIN = 7
-GOU = 8
-GFG = 9
+GIN = 2
+GOU = 3
+GFG = 4
 
 MAX_STD_GATE = GFG
 
@@ -39,6 +39,8 @@ NFPG_PIPE_SUB = 4
 NFPG_PIPE_SUR = 5
 NFPG_PIPE_CAT = 6
 NFPG_PIPE_EXP = 7
+NFPG_LSTM_GEN = 8
+NFPG_LSTM_POR = 9
 
 
 def get_numerical_gate_type(type, nodetype=None):
@@ -58,6 +60,12 @@ def get_numerical_gate_type(type, nodetype=None):
         return CAT
     elif type == "exp":
         return EXP
+    elif type == "gin":
+        return GIN
+    elif type == "gou":
+        return GOU
+    elif type == "gfg":
+        return GFG
     else:
         raise ValueError("Supplied type is not a valid gate type: "+str(type))
 
@@ -79,6 +87,12 @@ def get_string_gate_type(type, nodetype=None):
         return "cat"
     elif type == EXP:
         return "exp"
+    elif type == GIN:
+        return "gin"
+    elif type == GOU:
+        return "gou"
+    elif type == GFG:
+        return "gfg"
     else:
         raise ValueError("Supplied type is not a valid gate type: "+str(type))
 

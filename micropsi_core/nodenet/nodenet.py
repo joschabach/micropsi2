@@ -395,11 +395,12 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         """
         Groups the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
+        If no group name is given, the node_name_prefix will be used as group name
         """
         pass  # pragma: no cover
 

@@ -518,7 +518,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # hand the agent a bread, if it just arrived at the farm, or at the village
             if target_loco_node == self.village_uid or target_loco_node == self.farm_uid:
                 self.spockplugin.give_item('bread')
-            self.datasources['hack_situation'] = self.loco_nodes_indexes.index(self.loco_nodes[target_loco_node]['name'])
             return True
         return False
 

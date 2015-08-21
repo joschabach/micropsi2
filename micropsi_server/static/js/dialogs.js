@@ -514,7 +514,7 @@ $(function() {
                 '<div class="control-group">'+
                     '<label class="control-label" for="params_'+param.name+'_input">'+param.name+'</label>'+
                     '<div class="controls">'+
-                        '<input type="text" name="'+param.name+'" class="input-xlarge" id="params_'+param.name+'_input" value="'+(param.default || '')+'"/>'+
+                        '<input type="text" name="'+param.name+'" class="input-xlarge" id="params_'+param.name+'_input" value="'+((param.default == null) ? '' : param.default)+'"/>'+
                     '</div>'+
                 '</div>';
             }

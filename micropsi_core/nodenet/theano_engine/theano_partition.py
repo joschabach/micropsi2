@@ -912,6 +912,7 @@ class TheanoPartition():
                 uid = node_to_id(id, self.pid)
                 if uid in nodes_data:
                     self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+            if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                 self.native_module_instances[uid] = self.nodenet.get_node(uid)
             elif self.allocated_nodes[id] == COMMENT:
                 uid = node_to_id(id, self.pid)

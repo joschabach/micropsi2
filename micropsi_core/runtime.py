@@ -355,6 +355,38 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
+    """ returns the current state of the nodenet
+    TODO: maybe merge with above get_nodenet_data?
+    """
+    data = {}
+    nodenet_obj = get_nodenet(nodenet_uid)
+    if nodenet_obj is not None:
+        if nodenet_uid in MicropsiRunner.conditions:
+            data['simulation_condition'] = MicropsiRunner.conditions[nodenet_uid]
+            if 'monitor' in data['simulation_condition']:
+                monitor = nodenet_obj.get_monitor(data['simulation_condition']['monitor']['uid'])
+                if monitor:
+                    data['simulation_condition']['monitor']['color'] = monitor.color
+                else:
+                    del data['simulation_condition']['monitor']
+        data['simulation_running'] = nodenet_obj.is_active
+        data['current_nodenet_step'] = nodenet_obj.current_step
+        data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
+        if nodenet is not None:
+            data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+        if nodenet_obj.user_prompt:
+            data['user_prompt'] = nodenet_obj.user_prompt
+            nodenet_obj.user_prompt = None
+        if world is not None and nodenet_obj.world:
+            data['world'] = get_world_view(world_uid=nodenet_obj.world.uid, **world)
+        if monitors is not None:
+            data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
+        return True, data
+    else:
+        return False, "No such nodenet"
+
+
 def unload_nodenet(nodenet_uid):
     """ Unload the nodenet.
         Deletes the instance of this nodenet without deleting it from the storage
@@ -1070,6 +1102,7 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     for key, value in values.items():
         nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
     nodenets[nodenet_uid].is_active = resume_nodenet
+    nodenets[nodenet_uid].user_prompt = None
 
 
 def get_available_recipes():

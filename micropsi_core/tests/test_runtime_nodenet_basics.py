@@ -74,7 +74,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
         "foobar",
         options
     )
-    data = micropsi.get_nodenet_data(fixed_nodenet, 'Root')
+    result, data = micropsi.get_current_state(fixed_nodenet, nodenet={'nodespace': 'Root'})
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
     assert data['user_prompt']['node']['uid'] == uid

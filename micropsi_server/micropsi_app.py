@@ -755,6 +755,9 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
         data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
         if nodenet is not None:
             data['nodenet'] = runtime.get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+        if nodenet_obj.user_prompt:
+            data['user_prompt'] = nodenet_obj.user_prompt
+            nodenet_obj.user_prompt = None
         if world is not None and nodenet_obj.world:
             data['world'] = runtime.get_world_view(world_uid=nodenet_obj.world.uid, **world)
         if monitors is not None:

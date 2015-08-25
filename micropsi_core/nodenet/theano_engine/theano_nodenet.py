@@ -453,7 +453,6 @@ class TheanoNodenet(Nodenet):
                 uidmap[nodespace_uid] = newuid
 
     def step(self):
-        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
@@ -878,9 +877,6 @@ class TheanoNodenet(Nodenet):
                 if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
                     data['nodes'][uid] = self.get_node(uid).data
 
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
         return data
 
     def get_modulator(self, modulator):

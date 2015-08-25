@@ -305,9 +305,6 @@ class DictNodenet(Nodenet):
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
         links = []
         followupnodes = []
         for uid in self._nodes:
@@ -427,7 +424,6 @@ class DictNodenet(Nodenet):
 
     def step(self):
         """perform a simulation step"""
-        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,

@@ -560,6 +560,7 @@ $(function() {
                 options += '<option>' + items[idx].name + '</option>';
             }
             recipe_name_input.html(options);
+            recipe_name_input.focus();
             update_parameters_for_recipe();
         });
     });

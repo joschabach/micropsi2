@@ -237,18 +237,10 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0):
 
 
 def get_logging_levels():
-    inverse_map = {
-        50: 'CRITICAL',
-        40: 'ERROR',
-        30: 'WARNING',
-        20: 'INFO',
-        10: 'DEBUG',
-        0: 'NOTSET'
-    }
     levels = {
-        'system': inverse_map[logging.getLogger('system').getEffectiveLevel()],
-        'world': inverse_map[logging.getLogger('world').getEffectiveLevel()],
-        'nodenet': inverse_map[logging.getLogger('nodenet').getEffectiveLevel()],
+        'system': logging.getLevelName(logging.getLogger('system').getEffectiveLevel()),
+        'world': logging.getLevelName(logging.getLogger('world').getEffectiveLevel()),
+        'nodenet': logging.getLevelName(logging.getLogger('nodenet').getEffectiveLevel()),
     }
     return levels
 

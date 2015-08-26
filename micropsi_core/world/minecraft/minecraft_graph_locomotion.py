@@ -34,7 +34,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'temperature',
         'food_supply',
         'fatigue',
-        'hack_situation',
         'hack_decay_factor',
         'current_location_index'
     ]
@@ -239,7 +238,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['health'] = 1
         self.datasources['food'] = 1
         self.datasources['temperature'] = 0.5
-        self.datasources['hack_situation'] = -1
         self.datasources['hack_decay_factor'] = 1
 
         # a collection of conditions to check on every update(..), eg., for action feedback
@@ -346,11 +344,6 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
                 if not self.spockplugin.is_connected():
                     return
-
-                # reset self.datasources
-                # for k in self.datasources.keys():
-                #     if k != 'hack_situation' and k != 'temperature':
-                #         self.datasources[k] = 0.
 
                 self.datasources['current_location_index'] = self.loco_nodes_indexes.index(self.current_loco_node['name'])
 

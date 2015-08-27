@@ -36,7 +36,7 @@ $(function(){
 
     var log_container = $('#logs');
 
-    var updateGraph = true;
+    var fixed_position = null;
 
     init();
 
@@ -84,11 +84,13 @@ $(function(){
         var step = el.attr('data-step');
         if(el.hasClass('highlight')){
             el.removeClass('highlight');
+            fixed_position = null;
             drawGraph(nodenetMonitors);
         } else {
             $('.logentry').removeClass('highlight');
             if(step && parseInt(step)){
-                drawGraph(nodenetMonitors, parseInt(step));
+                fixed_position = parseInt(step);
+                drawGraph(nodenetMonitors);
                 $(this).addClass('highlight');
             }
         }
@@ -153,9 +155,7 @@ $(function(){
     function setMonitorData(data){
         updateMonitorList(data.monitors);
         nodenetMonitors = data.monitors;
-        if (updateGraph){
-            drawGraph(nodenetMonitors);
-        }
+        drawGraph(nodenetMonitors);
     }
 
     function setLoggingData(data){
@@ -169,7 +169,7 @@ $(function(){
         if(logs.length > viewProperties.max_log_entries){
             logs.splice(0, logs.length - viewProperties.max_log_entries);
         }
-        if(updateGraph){
+        if(!fixed_position){
             refreshLoggerView();
         }
     }
@@ -256,10 +256,9 @@ $(function(){
         refreshMonitors();
     }
 
-    function drawGraph(monitors, position) {
+    function drawGraph(monitors) {
 
-        updateGraph = !Boolean(position);
-
+        var position = fixed_position;
         var customMonitors = false;
         container.html(''); // TODO: come up with a way to redraw
         var margin = {
@@ -267,9 +266,9 @@ $(function(){
                 right: 50,
                 bottom: 30,
                 left: 50
-            },
-            width = container.width() - margin.left - margin.right - viewProperties.padding,
-            height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
+            };
+        var width = container.width() - margin.left - margin.right - viewProperties.padding;
+        var height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
         var xmax = Math.max(viewProperties.xvalues, currentSimulationStep);
         if(position && xmax > viewProperties.xvalues){
@@ -335,9 +334,6 @@ $(function(){
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-        if(position){
-            // highlight xpositioin
-        }
         svg.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + x_axis_pos + ")")
@@ -356,6 +352,22 @@ $(function(){
             .attr("dy", ".71em")
             .style("text-anchor", "end")
             .text("Activation");
+        if(position){
+            svg.append('line')
+                .attr('x1', x(position))
+                .attr('y1', 0)
+                .attr('x2', x(position))
+                .attr('y2', x_axis_pos)
+                .attr('stroke-width', 0.5)
+                .attr('stroke', '#999');
+            svg.append('text')
+                .attr('x', x(position))
+                .attr('y', 0)
+                .text(position)
+                .attr('font-size', '10px')
+                .attr('font-family', 'monospace')
+                .attr('fill', 'black')
+        }
         if(customMonitors){
             svg.append("g")
                 .attr("class", "y axis")

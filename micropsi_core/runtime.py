@@ -235,7 +235,7 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0):
 
 
 def get_logging_levels(nodenet_uid=None):
-    levels = {}
+    levels = {'agent': cfg['logging']['level_agent']}
     for key in logging.Logger.manager.loggerDict:
         levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
     return levels

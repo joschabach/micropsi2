@@ -20,7 +20,7 @@ $(function(){
     var capturedLoggers = {
         'system': false,
         'world': false,
-        'nodenet': false
+        'agent': false
     };
 
     var logs = [];
@@ -105,7 +105,9 @@ $(function(){
         var poll = [];
         for(var logger in capturedLoggers){
             if(capturedLoggers[logger]){
-                poll.push(logger);
+                var name = logger;
+                if(logger == 'agent') name = "agent." + currentNodenet;
+                poll.push(name);
             }
         }
         return {
@@ -145,6 +147,9 @@ $(function(){
     function setLoggingData(data){
         last_logger_call = data.logs.servertime;
         for(var idx in data.logs.logs){
+            if(data.logs.logs[idx].logger.indexOf("agent.") > -1){
+                data.logs.logs[idx].logger = "agent";
+            }
             logs.push(data.logs.logs[idx]);
         }
         if(logs.length > viewProperties.max_log_entries){
@@ -186,8 +191,8 @@ $(function(){
         });
         $('.log_level_switch').on('change', function(event){
             var el = $(event.target);
-            var data = {}
-            data[el.attr('data')] = el.val();
+            var data = {'logging_levels': {}}
+            data['logging_levels'][el.attr('data')] = el.val();
             api.call('set_logging_levels', data);
         });
         $('.log_switch').each(function(idx, el){

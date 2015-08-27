@@ -394,8 +394,9 @@ $(function(){
                     })
                     .defined(function(d){ return d[1] == 0 || Boolean(d[1])});
                 for (var step in monitors[uid].values) {
+                    step = parseInt(step, 10);
                     if(step >= xstart && step <= xmax){
-                        data.push([parseInt(step, 10), parseFloat(monitors[uid].values[step])]);
+                        data.push([step, parseFloat(monitors[uid].values[step])]);
                     }
                 }
                 var points = svg.selectAll(".point")
@@ -417,9 +418,14 @@ $(function(){
                     .y(function(d) {
                         return y1(d[1]);
                     })
-                    .defined(function(d){ return d[1] == 0 || Boolean(d[1])});
+                    .defined(function(d){
+                        return d[1] == 0 || Boolean(d[1])
+                    });
                 for (var step in monitors[uid].values) {
-                    data.push([parseInt(step, 10), parseFloat(monitors[uid].values[step])]);
+                    step = parseInt(step, 10);
+                    if(step >= xstart && step <= xmax){
+                        data.push([step, parseFloat(monitors[uid].values[step])]);
+                    }
                 }
                 var points = svg.selectAll(".point")
                     .data(data)
@@ -430,17 +436,14 @@ $(function(){
                      .attr("r", function(d) {
                         return ((position && d[0] == position) ? 4 : 2);
                       });
-
             }
 
-
-            var len = data.length;
-            data.splice(0, len - xvalues - 1);
             var color =  monitors[uid].color;
             svg.append("path")
                 .datum(data)
                 .attr("class", "line")
                 .attr("stroke", color)
+                .attr("transform", "translate(0,0)")
                 .attr("d", line);
         }
     }

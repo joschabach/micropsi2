@@ -61,12 +61,6 @@ class MicropsiLogger():
         'DEBUG': logging.DEBUG
     }
 
-    frontend_loggers = {
-        'system': {},
-        'world': {},
-        'agent': {}
-    }
-
     loggers = {}
 
     record_storage = {}

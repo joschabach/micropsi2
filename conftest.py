@@ -33,7 +33,7 @@ user_token = usermanager.start_session('Pytest User', 'test', True)
 # reset logging levels
 logging.getLogger('system').setLevel(logging.WARNING)
 logging.getLogger('world').setLevel(logging.WARNING)
-logging.getLogger('nodenet').setLevel(logging.WARNING)
+logging.getLogger('agent').setLevel(logging.WARNING)
 
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
@@ -53,7 +53,7 @@ except:
 def set_logging_levels():
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
-    logging.getLogger('nodenet').setLevel(logging.WARNING)
+    logging.getLogger('agent').setLevel(logging.WARNING)
 
 
 def pytest_addoption(parser):
@@ -84,6 +84,7 @@ def pytest_runtest_setup(item):
         engine_marker = engine_marker.args[0]
         if engine_marker != item.callspec.params['engine']:
             pytest.skip("test requires engine %s" % engine_marker)
+    micropsi.logger.clear_logs()
 
 
 def pytest_runtest_teardown(item, nextitem):
@@ -101,7 +102,6 @@ def pytest_runtest_teardown(item, nextitem):
         if os.path.isfile(recipes_file):
             os.remove(recipes_file)
         micropsi.reload_native_modules()
-        micropsi.logger.clear_logs()
         set_logging_levels()
 
 

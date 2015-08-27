@@ -1123,15 +1123,15 @@ def test_user_prompt_response(app, test_nodenet, nodetype_def, nodefunc_def):
 
 def test_set_logging_levels(app):
     response = app.post_json('/rpc/set_logging_levels', params={
-        'system': 'INFO',
-        'world': 'DEBUG',
-        'nodenet': 'CRITICAL'
+        'logging_levels': {
+            'system': 'INFO',
+            'world': 'DEBUG',
+        }
     })
     assert_success(response)
     import logging
-    assert logging.getLogger('nodenet').getEffectiveLevel() == 50
-    assert logging.getLogger('world').getEffectiveLevel() == 10
-    assert logging.getLogger('system').getEffectiveLevel() == 20
+    assert logging.getLogger('world').getEffectiveLevel() == logging.DEBUG
+    assert logging.getLogger('system').getEffectiveLevel() == logging.INFO
 
 
 def test_get_logger_messages(app, test_nodenet):

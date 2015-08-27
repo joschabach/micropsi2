@@ -1169,8 +1169,8 @@ def get_emoexpression_parameters(nodenet_uid):
 
 
 @rpc("set_logging_levels")
-def set_logging_levels(system=None, world=None, nodenet=None):
-    runtime.set_logging_levels(system, world, nodenet)
+def set_logging_levels(logging_levels):
+    runtime.set_logging_levels(logging_levels)
     return True
 
 

@@ -50,8 +50,7 @@ signal_handler_registry = []
 
 logger = MicropsiLogger({
     'system': cfg['logging']['level_system'],
-    'world': cfg['logging']['level_world'],
-    'nodenet': cfg['logging']['level_nodenet']
+    'world': cfg['logging']['level_world']
 }, cfg['logging'].get('logfile'))
 
 nodenet_lock = threading.Lock()
@@ -142,7 +141,7 @@ class MicropsiRunner(threading.Thread):
                             if self.profiler:
                                 self.profiler.disable()
                             nodenet.is_active = False
-                            logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
+                            logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
@@ -165,9 +164,9 @@ class MicropsiRunner(threading.Thread):
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
                         ps.print_stats('nodenet')
-                        logging.getLogger("nodenet").debug(s.getvalue())
+                        logging.getLogger("agent.%s" % uid).debug(s.getvalue())
 
-                    logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    logging.getLogger("agent.%s" % uid).debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0
                     if average_duration < 0.0001:
@@ -211,13 +210,12 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 
 # loggers
-def set_logging_levels(system=None, world=None, nodenet=None):
-    if system is not None and system in logger.logging_levels:
-        logger.set_logging_level('system', system)
-    if world is not None and world in logger.logging_levels:
-        logger.set_logging_level('world', world)
-    if nodenet is not None and nodenet in logger.logging_levels:
-        logger.set_logging_level('nodenet', nodenet)
+def set_logging_levels(logging_levels):
+    for key in logging_levels:
+        if key == 'agent':
+            cfg['logging']['level_agent'] = logging_levels[key]
+        else:
+            logger.set_logging_level(key, logging_levels[key])
     return True
 
 
@@ -236,12 +234,10 @@ def get_monitoring_info(nodenet_uid, logger=[], after=0):
     return data
 
 
-def get_logging_levels():
-    levels = {
-        'system': logging.getLevelName(logging.getLogger('system').getEffectiveLevel()),
-        'world': logging.getLevelName(logging.getLogger('world').getEffectiveLevel()),
-        'nodenet': logging.getLevelName(logging.getLogger('nodenet').getEffectiveLevel()),
-    }
+def get_logging_levels(nodenet_uid=None):
+    levels = {}
+    for key in logging.Logger.manager.loggerDict:
+        levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
     return levels
 
 
@@ -311,6 +307,7 @@ def load_nodenet(nodenet_uid):
                 nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
+            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
             nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
             if "settings" in data:
@@ -1129,7 +1126,7 @@ def run_recipe(nodenet_uid, name, parameters):
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
             ps.print_stats('nodenet')
-            logging.getLogger("nodenet").debug(s.getvalue())
+            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
         return True, result
     else:
         return False, "Script not found"

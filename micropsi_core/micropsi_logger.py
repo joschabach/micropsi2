@@ -15,11 +15,12 @@ MAX_RECORDS_PER_STORAGE = 1000
 
 class RecordWebStorageHandler(logging.Handler):
 
-    def __init__(self, record_storage):
+    def __init__(self, record_storage, name):
         """
         Initialize the handler
         """
         logging.Handler.__init__(self)
+        self.name = name
         self.record_storage = record_storage
 
     def flush(self):
@@ -29,8 +30,8 @@ class RecordWebStorageHandler(logging.Handler):
 
     def emit(self, record):
         self.format(record)
-        while len(self.record_storage) >= MAX_RECORDS_PER_STORAGE:
-            del self.record_storage[0]
+        while len(self.record_storage[self.name]) >= MAX_RECORDS_PER_STORAGE:
+            del self.record_storage[self.name][0]
         dictrecord = {
             "logger": record.name,
             "time": record.created * 1000,
@@ -39,7 +40,7 @@ class RecordWebStorageHandler(logging.Handler):
             "module": record.module,
             "msg": record.message
         }
-        self.record_storage.append(dictrecord)
+        self.record_storage[self.name].append(dictrecord)
 
 
 class MicropsiLogger():
@@ -55,14 +56,12 @@ class MicropsiLogger():
     frontend_loggers = {
         'system': {},
         'world': {},
-        'nodenet': {}
+        'agent': {}
     }
 
-    nodenet_record_storage = []
-    world_record_storage = []
-    system_record_storage = []
+    loggers = {}
 
-    records = {}
+    record_storage = {}
 
     handlers = {}
 
@@ -76,46 +75,36 @@ class MicropsiLogger():
             datefmt='%d.%m. %H:%M:%S'
         )
 
-        self.system_logger = logging.getLogger("system")
-        self.world_logger = logging.getLogger("world")
-        self.nodenet_logger = logging.getLogger("nodenet")
-
-        self.system_logger.setLevel(self.logging_levels.get(default_logging_levels.get('system', {}), logging.WARNING))
-        self.world_logger.setLevel(self.logging_levels.get(default_logging_levels.get('world', {}), logging.WARNING))
-        self.nodenet_logger.setLevel(self.logging_levels.get(default_logging_levels.get('nodenet', {}), logging.WARNING))
-
-        logging.captureWarnings(True)
-
-        self.handlers = {
-            'system': RecordWebStorageHandler(self.system_record_storage),
-            'world': RecordWebStorageHandler(self.world_record_storage),
-            'nodenet': RecordWebStorageHandler(self.nodenet_record_storage)
-        }
+        self.log_to_file = log_to_file
         self.filehandlers = {}
         if log_to_file:
             if os.path.isfile(log_to_file):
                 os.remove(log_to_file)
-            for key in self.handlers:
-                self.filehandlers[key] = logging.FileHandler(log_to_file, mode='a')
 
+        self.register_logger("system", self.logging_levels.get(default_logging_levels.get('system', {}), logging.WARNING))
+        self.register_logger("world", self.logging_levels.get(default_logging_levels.get('world', {}), logging.WARNING))
+
+        logging.captureWarnings(True)
         logging.getLogger("py.warnings").addHandler(self.handlers['system'])
 
-        formatter = logging.Formatter(self.default_format)
-        for key in self.handlers:
-            self.handlers[key].setFormatter(formatter)
-            logging.getLogger(key).addHandler(self.handlers[key])
-            if key in self.filehandlers:
-                self.filehandlers[key].setFormatter(formatter)
-                logging.getLogger(key).addHandler(self.filehandlers[key])
+    def register_logger(self, name, level):
+        self.loggers[name] = logging.getLogger(name)
+        self.loggers[name].setLevel(level)
+        self.record_storage[name] = []
+        self.handlers[name] = RecordWebStorageHandler(self.record_storage, name)
+        self.filehandlers[name] = logging.FileHandler(self.log_to_file, mode='a')
 
-        logging.getLogger("system").debug("System logger ready.")
-        logging.getLogger("world").debug("World logger ready.")
-        logging.getLogger("nodenet").debug("Nodenet logger ready.")
+        formatter = logging.Formatter(self.default_format)
+        self.handlers[name].setFormatter(formatter)
+        logging.getLogger(name).addHandler(self.handlers[name])
+        if name in self.filehandlers:
+            self.filehandlers[name].setFormatter(formatter)
+            logging.getLogger(name).addHandler(self.filehandlers[name])
+        self.loggers[name].debug("Logger %s ready" % name)
 
     def clear_logs(self):
-        del self.system_record_storage[:]
-        del self.world_record_storage[:]
-        del self.nodenet_record_storage[:]
+        for key in self.record_storage:
+            self.record_storage[key] = []
 
     def set_logging_level(self, logger, level):
         logging.getLogger(logger).setLevel(self.logging_levels[level])
@@ -126,12 +115,9 @@ class MicropsiLogger():
             filtered by logger name and timestamp
         """
         logs = []
-        if 'system' in logger:
-            logs.extend(self.system_record_storage)
-        if 'world' in logger:
-            logs.extend(self.world_record_storage)
-        if 'nodenet' in logger:
-            logs.extend(self.nodenet_record_storage)
+        for key in logger:
+            if key in self.record_storage:
+                logs.extend(self.record_storage[key])
 
         logs = sorted(logs, key=itemgetter('time'))
 

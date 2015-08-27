@@ -1141,6 +1141,18 @@ def test_get_logger_messages(app, test_nodenet):
     assert response.json_body['data']['logs'] == []
 
 
+def test_get_nodenet_logger_messages(app, test_nodenet):
+    import logging
+    logging.getLogger('agent.%s' % test_nodenet).warning('asdf')
+    logging.getLogger('system').warning('foobar')
+    response = app.get_json('/rpc/get_logger_messages(logger=["system", "agent.%s"])' % test_nodenet)
+    assert 'servertime' in response.json_body['data']
+    netlog = response.json_body['data']['logs'][-2]
+    syslog = response.json_body['data']['logs'][-1]
+    assert netlog['step'] == 0
+    assert syslog['step'] is None
+
+
 def test_get_monitoring_info(app, test_nodenet):
     response = app.get_json('/rpc/get_monitoring_info(nodenet_uid="%s",logger=["system,world"])' % test_nodenet)
     assert_success(response)

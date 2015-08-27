@@ -36,6 +36,7 @@ def test_get_logger_messages():
     assert item['logger'] == 'system'
     assert item['level'] == 'INFO'
     assert 'time' in item
+    assert item['step'] is None
 
 
 def test_nodenet_specific_loggers():
@@ -47,6 +48,7 @@ def test_nodenet_specific_loggers():
     res = micropsi.get_logger_messages("agent.%s" % uid1)
     item = res['logs'][-1]
     assert item['msg'] == "hello!"
+    assert item['step'] == 0
 
 
 def test_get_multiple_logger_messages_are_sorted():

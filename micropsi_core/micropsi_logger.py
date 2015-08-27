@@ -38,8 +38,16 @@ class RecordWebStorageHandler(logging.Handler):
             "level": record.levelname,
             "function": record.funcName,
             "module": record.module,
-            "msg": record.message
+            "msg": record.message,
+            "step": None
         }
+        if record.name.startswith('agent.'):
+            from micropsi_core.runtime import nodenets
+            uid = record.name.split('.').pop(1)
+            if uid in nodenets:
+                dictrecord['step'] = nodenets[uid].current_step
+            else:
+                dictrecord['step'] = 0
         self.record_storage[self.name].append(dictrecord)
 
 

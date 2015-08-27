@@ -290,6 +290,8 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
+            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
+
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
@@ -307,7 +309,6 @@ def load_nodenet(nodenet_uid):
                 nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
             nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
             if "settings" in data:

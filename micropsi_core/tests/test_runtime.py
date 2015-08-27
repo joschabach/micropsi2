@@ -51,6 +51,16 @@ def test_nodenet_specific_loggers():
     assert item['step'] == 0
 
 
+def test_unregister_logger():
+    res, uid1 = micropsi.new_nodenet("test1")
+    logging.getLogger("agent.%s" % uid1).warning('hello!')
+    micropsi.delete_nodenet(uid1)
+    assert "agent.%s" % uid1 not in micropsi.logger.loggers
+    assert "agent.%s" % uid1 not in micropsi.logger.record_storage
+    assert "agent.%s" % uid1 not in micropsi.logger.handlers
+    assert "agent.%s" % uid1 not in micropsi.logger.filehandlers
+
+
 def test_get_multiple_logger_messages_are_sorted():
     logging.getLogger('world').warning('First.')
     logging.getLogger('system').warning('Second')

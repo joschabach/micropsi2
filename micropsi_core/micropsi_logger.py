@@ -110,6 +110,12 @@ class MicropsiLogger():
             logging.getLogger(name).addHandler(self.filehandlers[name])
         self.loggers[name].debug("Logger %s ready" % name)
 
+    def unregister_logger(self, name):
+        del self.handlers[name]
+        del self.record_storage[name]
+        del self.loggers[name]
+        del self.filehandlers[name]
+
     def clear_logs(self):
         for key in self.record_storage:
             self.record_storage[key] = []

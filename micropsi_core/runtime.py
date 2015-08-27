@@ -389,6 +389,7 @@ def unload_nodenet(nodenet_uid):
     if nodenets[nodenet_uid].world:
         nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
     del nodenets[nodenet_uid]
+    logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
 
 

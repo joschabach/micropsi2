@@ -150,11 +150,11 @@ class World(object):
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, worldobject in self.data['objects'].copy().items():
-            if worldobject['type'] in self.supported_worldobjects:
-                self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
+        for uid, object_data in self.data['objects'].copy().items():
+            if object_data['type'] in self.supported_worldobjects:
+                self.objects[uid] = self.supported_worldobjects[object_data['type']](self, **object_data)
             else:
-                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % worldobject['type'])
+                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
                 del self.data['objects'][uid]
 
     def step(self):
@@ -167,7 +167,7 @@ class World(object):
         for uid in self.agents.copy():
             if not self.agents[uid].is_alive():
                 self.unregister_nodenet(uid)
-                #TODO: prevent respawn?
+                # TODO: prevent respawn?
         self.current_step += 1
 
     def get_world_view(self, step):

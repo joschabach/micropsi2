@@ -6,7 +6,6 @@ Nodenet definition
 import json
 import os
 import copy
-import warnings
 
 import theano
 from theano import tensor as T
@@ -270,10 +269,10 @@ class TheanoNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet metadata from file %s", filename)
+                    self.logger.warn("Could not read nodenet metadata from file %s", filename)
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet metadata file %s", filename)
+                    self.logger.warn("Could not open nodenet metadata file %s", filename)
                     return False
 
             # initialize with metadata
@@ -368,7 +367,7 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 del data['gate_parameters']
                 invalid_nodes.append(uid)
-                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             new_uid = self.create_node(
                 data['type'],
                 parent_uid,

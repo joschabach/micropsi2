@@ -23,7 +23,6 @@ import os
 import sys
 from micropsi_core import tools
 import json
-import warnings
 import threading
 from datetime import datetime, timedelta
 import time
@@ -1162,9 +1161,9 @@ def crawl_definition_files(path, type="definition"):
                         data = parse_definition(json.load(file), filename)
                         result[data.uid] = data
                 except ValueError:
-                    warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warn("Invalid %s data in file '%s'" % (type, definition_file_name))
                 except IOError:
-                    warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warn("Could not open %s data file '%s'" % (type, definition_file_name))
     return result
 
 
@@ -1212,9 +1211,9 @@ def init_worlds(world_data):
             except TypeError:
                 worlds[uid] = world.World(**world_data[uid])
             except AttributeError as err:
-                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
+                logging.getLogger('system').warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
             except:
-                warnings.warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
+                logging.getLogger('system').warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
         else:
             worlds[uid] = world.World(**world_data[uid])
     return worlds
@@ -1231,7 +1230,7 @@ def load_user_files(do_reload=False):
             with open(custom_nodetype_file) as fp:
                 native_modules = json.load(fp)
         except ValueError:
-            warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+            logging.getLogger('system').warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
     sys.path.append(RESOURCE_PATH)
     parse_recipe_file()

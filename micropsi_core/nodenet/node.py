@@ -13,10 +13,8 @@ default Nodetypes
 
 from abc import ABCMeta, abstractmethod
 
-import warnings
 import micropsi_core.tools
 from .link import Link
-import logging
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -176,6 +174,7 @@ class Node(metaclass=ABCMeta):
         """
         self._nodetype_name = nodetype_name
         self._nodetype = nodetype
+        self.logger = nodetype.logger
 
     @abstractmethod
     def get_gate(self, type):
@@ -584,7 +583,7 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function(nodefunction_definition,
                 parameters="nodenet, node, " + args)
         except SyntaxError as err:
-            warnings.warn("Syntax error while compiling node function: %s", str(err))
+            self.logger.warn("Syntax error while compiling node function: %s", str(err))
             raise err
 
     @property
@@ -603,7 +602,7 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, nodefunction_name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
+            self.logger.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
@@ -626,6 +625,8 @@ class Nodetype(object):
         self.name = name
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
+
+        self.logger = nodenet.logger
 
         self.gate_defaults = {}
         for g in self.gatetypes:

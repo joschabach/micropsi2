@@ -3,8 +3,6 @@
 Nodespace definition
 """
 
-import warnings
-
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
 from micropsi_core.nodenet.nodespace import Nodespace
 import micropsi_core.tools

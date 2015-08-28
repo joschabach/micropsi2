@@ -10,7 +10,6 @@ __date__ = '10.05.12'
 
 import json
 import os
-import warnings
 import sys
 import micropsi_core
 from micropsi_core.world import worldadapter
@@ -121,23 +120,23 @@ class World(object):
             try:
                 self.data.update(json.loads(string))
             except ValueError:
-                warnings.warn("Could not read world data from string")
+                self.logger.warn("Could not read world data from string")
                 return False
         else:
             try:
                 with open(self.filename) as file:
                     self.data.update(json.load(file))
             except ValueError:
-                warnings.warn("Could not read world data")
+                self.logger.warn("Could not read world data")
                 return False
             except IOError:
-                warnings.warn("Could not open world file: " + self.filename)
+                self.logger.warn("Could not open world file: " + self.filename)
         self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
             return True
         else:
-            warnings.warn("Wrong version of the world data")
+            self.logger.warn("Wrong version of the world data")
             return False
 
     def get_available_worldadapters(self):

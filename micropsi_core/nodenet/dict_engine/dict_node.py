@@ -79,8 +79,6 @@ class DictNode(NetEntity, Node):
 
         self.__non_default_gate_parameters = {}
 
-        self.logger = nodenet.logger
-
         self.__state = {}
 
         self.__gates = {}

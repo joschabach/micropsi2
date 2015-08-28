@@ -86,9 +86,6 @@ class MicropsiLogger():
         self.register_logger("system", self.logging_levels.get(default_logging_levels.get('system', {}), logging.WARNING))
         self.register_logger("world", self.logging_levels.get(default_logging_levels.get('world', {}), logging.WARNING))
 
-        logging.captureWarnings(True)
-        logging.getLogger("py.warnings").addHandler(self.handlers['system'])
-
     def register_logger(self, name, level):
         self.loggers[name] = logging.getLogger(name)
         self.loggers[name].setLevel(level)

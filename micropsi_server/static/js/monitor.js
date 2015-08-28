@@ -126,7 +126,9 @@ $(function(){
         for(var logger in capturedLoggers){
             if(capturedLoggers[logger]){
                 var name = logger;
-                if(logger == 'agent') name = "agent." + currentNodenet;
+                if(logger == 'agent') {
+                    name = "agent." + currentNodenet;
+                }
                 poll.push(name);
             }
         }
@@ -207,7 +209,11 @@ $(function(){
         $('.log_level_switch').on('change', function(event){
             var el = $(event.target);
             var data = {'logging_levels': {}}
-            data['logging_levels'][el.attr('data')] = el.val();
+            if(el.attr('data') == "agent" && currentNodenet){
+                data['logging_levels']['agent.' + currentNodenet] = el.val();
+            } else {
+                data['logging_levels'][el.attr('data')] = el.val();
+            }
             api.call('set_logging_levels', data);
         });
         $('.log_switch').each(function(idx, el){

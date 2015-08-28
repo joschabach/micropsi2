@@ -301,6 +301,7 @@ $(function(){
         var y2min = 0;
         for (var idx in currentMonitors) {
             var uid = currentMonitors[idx];
+            if(!monitors[uid]) continue;
             for (var step in monitors[uid].values) {
                 if(monitors[uid].classname == 'CustomMonitor'){
                     customMonitors = true;
@@ -390,6 +391,7 @@ $(function(){
         for (var idx in currentMonitors) {
             var uid = currentMonitors[idx];
             var data = [];
+            if(!monitors[uid]) continue;
             if(monitors[uid].classname == 'CustomMonitor'){
                 var line = d3.svg.line()
                     .x(function(d) {

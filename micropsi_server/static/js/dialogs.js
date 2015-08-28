@@ -848,23 +848,30 @@ window.addMonitor = function(type, param, val){
             for(var key in param['gates']){
                 html += '<option>'+key+'</option>';
             }
+            var has_gates = Boolean(html);
             $('#monitor_gate_input').html(html);
-            $('#monitor_node_type_gate').prop('checked', false);
-            $('#monitor_node_type_slot').prop('checked', false);
             var html = '';
             for(var key in param['slots']){
                 html += '<option>'+key+'</option>';
             }
             $('#monitor_slot_input').html(html);
+            var has_slots = Boolean(html);
+            $('#monitor_node_type_gate').prop('checked', has_gates);
+            $('#monitor_node_type_slot').prop('checked', !has_gates);
+            $('#monitor_node_type_gate').prop('disabled', !has_gates);
+            $('#monitor_node_type_slot').prop('disabled', !has_slots);
+            $('#monitor_node_type_gate').trigger('change');
         case 'slot':
         case 'gate':
-            var html = '';
-            for(var key in param[type+'s']){
-                html += '<option>'+key+'</option>';
-            }
-            $('#monitor_'+type+'_input').html(html);
-            if(val){
-                $('#monitor_'+type+'_input').val(val);
+            if(type == 'slot' || type == 'gate'){
+                var html = '';
+                for(var key in param[type+'s']){
+                    html += '<option>'+key+'</option>';
+                }
+                $('#monitor_'+type+'_input').html(html);
+                if(val){
+                    $('#monitor_'+type+'_input').val(val);
+                }
             }
             $('#monitor_node_input').val(param.name || param.uid);
             $('#monitor_node_uid_input').val(param.uid);

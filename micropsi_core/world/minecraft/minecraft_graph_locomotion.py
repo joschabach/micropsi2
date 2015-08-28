@@ -292,7 +292,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         """ Interprete this as waking up, if we're sleeping, and it's morning"""
         if (abs(round(data.data['x']) + 102.5)) < 1 and (abs(round(data.data['z']) - 59.5) < 1):
             # server set our position to bed
-            self.sleeping = True
+            self.sleeping = self.spockplugin.world.age
         elif self.sleeping:
             self.sleeping = False
             self.last_slept = self.spockplugin.world.age
@@ -388,10 +388,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
                 # compute fatigue: 0.1 per half a day:
                 # timeofday = self.spockplugin.world.time_of_day % 24000
-                no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
-                fatigue = no_sleep * 0.1
                 if self.sleeping:
-                    fatigue = 0
+                    no_sleep = ((self.spockplugin.world.age - self.sleeping) // 3000) / 2
+                else:
+                    no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
+                fatigue = no_sleep * 0.1
                 self.datasources['fatigue'] = round(fatigue, 2)
 
                 self.check_for_action_feedback()

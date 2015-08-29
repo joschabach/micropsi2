@@ -237,27 +237,33 @@ def activator(netapi, node, **params):
 
 def lstm(netapi, node, **params):
 
-    def sigmoid_one(input_activation):
-        return 1.0 / (1.0 + math.exp(-input_activation))                # (3)
+    def f(x):
+        return 1.0 / (1.0 + math.exp(-x))                # (3)
 
-    def sigmoid_two(input_activation):
-        return (2.0 / (1.0 + math.exp(-input_activation))) - 1          # (4)
+    def h(x):
+        return (2.0 / (1.0 + math.exp(-x))) - 1          # (4)
 
-    def sigmoid_four(input_activation):
-        return (4.0 / (1.0 + math.exp(-input_activation))) - 2          # (5)
+    def g(x):
+        return (4.0 / (1.0 + math.exp(-x))) - 2          # (5)
+
+    s_prev = node.get_slot("gen").activation
+    net_c = node.get_slot("por").activation
+    net_in = node.get_slot("gin").activation
+    net_out = node.get_slot("gou").activation
+    net_phi = node.get_slot("gfg").activation
 
     # simple-sigmoid squash lstm gating values
-    gin = sigmoid_one(node.get_slot("gin").activation)                  # (7)
-    gou = sigmoid_one(node.get_slot("gou").activation)                  # (8)
-    gfg = sigmoid_one(node.get_slot("gfg").activation)
+    y_in = f(net_in)                                     # (7)
+    y_out = f(net_out)                                   # (8)
+    y_phi = f(net_phi)
 
     # calculate node net gates (the gen gen loop is the lstm cec)
     # squash-shift-and-scale por input
     # double squash-shift-and-scale gen loop activation
-    gen = (gfg * node.get_slot("gen").activation) + (gin * sigmoid_two(node.get_slot("por").activation))    # (9)
-    por = gou * sigmoid_four(gen)                                                                           # (9)
+    s = (y_phi * s_prev) + (y_in * g(net_c))    # (9)
+    y_c = y_out * h(s)                                                   # (9)
 
     # both por and gen gate functions need to be set to linear
-    node.activation = node.get_slot("gen").activation
-    node.get_gate("gen").gate_function(gen)
-    node.get_gate("por").gate_function(por)
+    node.activation = s
+    node.get_gate("gen").gate_function(s)
+    node.get_gate("por").gate_function(y_c)

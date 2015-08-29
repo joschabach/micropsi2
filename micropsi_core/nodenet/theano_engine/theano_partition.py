@@ -456,14 +456,14 @@ class TheanoPartition():
 
         ### gen
         cec = (T.nnet.sigmoid(slots[:,11]) * slots[:, 7])                           # cec is forget gate * gen
-        incoming = (T.nnet.sigmoid(slots[:,9]) * (2 * T.nnet.sigmoid(slots[:,8])-1))# inc. is in gate * por
+        incoming = (T.nnet.sigmoid(slots[:,9]) * (4 * T.nnet.sigmoid(slots[:,8])-2))# inc. is in gate * por
         lstm_gen = cec + incoming
 
         ### por
         cec = (T.nnet.sigmoid(slots[:,10]) * slots[:, 6])                           # cec is forget gate * gen
-        incoming = (T.nnet.sigmoid(slots[:,8]) * (2 * T.nnet.sigmoid(slots[:,7])-1))# inc. is in gate * por
+        incoming = (T.nnet.sigmoid(slots[:,8]) * (4 * T.nnet.sigmoid(slots[:,7])-2))# inc. is in gate * por
         gen = cec + incoming
-        lstm_por = T.nnet.sigmoid(slots[:,9]) * (4 * T.nnet.sigmoid(gen)-2)         # por is gou * gen value
+        lstm_por = T.nnet.sigmoid(slots[:,9]) * (2 * T.nnet.sigmoid(gen)-1)         # por is gou * gen value
 
         if self.has_lstms:
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)

@@ -208,6 +208,7 @@ class TheanoPartition():
                             # this is a view on the activation values instrumental in calculating concept node functions
 
         self.a_in = None         # vector of activations coming in from the outside (other partitions typically)
+        self.a_prev = None       # vector of output activations at t-1 (not all gate types maintain this)
 
         self.g_factor = None     # vector of gate factors, controlled by directional activators
         self.g_threshold = None  # vector of thresholds (gate parameters)
@@ -255,6 +256,8 @@ class TheanoPartition():
             w_matrix = np.zeros((self.NoE, self.NoE), dtype=nodenet.scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
+        self.t = theano.shared(value=np.int32(0), name="t", borrow=False)
+
         a_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
@@ -263,6 +266,9 @@ class TheanoPartition():
 
         a_in_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a_in = theano.shared(value=a_in_array.astype(T.config.floatX), name="a_in", borrow=True)
+
+        a_prev_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
+        self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
 
         g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
@@ -322,10 +328,10 @@ class TheanoPartition():
 
     def compile_propagate(self):
         if self.sparse:
-            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + ST.dot(self.w, self.a)),
+            self.propagate = theano.function([], None, updates=[(self.a_prev, self.a), (self.a, self.a_in + ST.dot(self.w, self.a)),
                                                                           (self.a_in, T.zeros_like(self.a_in))])
         else:
-            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + T.dot(self.w, self.a)),
+            self.propagate = theano.function([], None, updates=[(self.a_prev, self.a), (self.a, self.a_in + T.dot(self.w, self.a)),
                                                                           (self.a_in, T.zeros_like(self.a_in))])
 
     def compile_calculate_nodes(self):
@@ -336,6 +342,8 @@ class TheanoPartition():
 
         # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = self.a
+        a_prev = self.a_prev
+        t = self.t
 
         # pipe logic
 
@@ -455,19 +463,22 @@ class TheanoPartition():
         #
 
         ### gen
-        cec = (T.nnet.sigmoid(slots[:,11]) * slots[:, 7])                           # cec is forget gate * gen
-        incoming = (T.nnet.sigmoid(slots[:,9]) * (4 * T.nnet.sigmoid(slots[:,8])-2))# inc. is in gate * por
-        lstm_gen = cec + incoming
+
+        incoming = (T.nnet.sigmoid(slots[:, 9]) * (4 * T.nnet.sigmoid(slots[:, 8])-2))# inc. is in gate * por
+        lstm_gen = (T.nnet.sigmoid(slots[:, 11]) * slots[:, 7]) + incoming
+        lstm_gen = T.switch(T.eq(T.mod(t, 3), 2), lstm_gen, a_prev)              # only sample every three steps
 
         ### por
         cec = (T.nnet.sigmoid(slots[:,10]) * slots[:, 6])                           # cec is forget gate * gen
         incoming = (T.nnet.sigmoid(slots[:,8]) * (4 * T.nnet.sigmoid(slots[:,7])-2))# inc. is in gate * por
-        gen = cec + incoming
+        gen = T.switch(T.eq(T.mod(t, 3), 2), cec + incoming, slots[:, 6])           # only sample every three steps
         lstm_por = T.nnet.sigmoid(slots[:,9]) * (2 * T.nnet.sigmoid(gen)-1)         # por is gou * gen value
+        lstm_por = T.switch(T.eq(T.mod(t, 3), 2), lstm_por, a_prev)              # only sample every three steps
 
         if self.has_lstms:
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_POR), lstm_por, nodefunctions)
+
             # note that gin, gou and gfg don't need to be calculated
             # values are irrelevant after gen/por calculation and will be replaced by propagate
 
@@ -509,7 +520,10 @@ class TheanoPartition():
         gatefunctions = limited_gate_function_output
 
         # put the theano graph into a callable function to be executed
-        self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+        if self.has_pipes:
+            self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+        else:
+            self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions)])
 
     def get_compiled_propagate_inlinks(self, from_partition, from_elements, to_elements, weights):
         propagated_a = T.dot(weights, from_partition.a[from_elements])

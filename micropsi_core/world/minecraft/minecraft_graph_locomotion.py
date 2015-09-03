@@ -34,7 +34,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'temperature',
         'food_supply',
         'fatigue',
-        'hack_decay_factor',
+        'awake',
         'current_location_index'
     ]
 
@@ -238,7 +238,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['health'] = 1
         self.datasources['food'] = 1
         self.datasources['temperature'] = 0.5
-        self.datasources['hack_decay_factor'] = 1
+        self.datasources['awake'] = 1
 
         # a collection of conditions to check on every update(..), eg., for action feedback
         self.waiting_list = []
@@ -293,7 +293,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         """ Interprete this as waking up, if we're sleeping, and it's morning"""
         if (abs(round(data.data['x']) + 102.5)) < 1 and (abs(round(data.data['z']) - 59.5) < 1):
             # server set our position to bed
-            self.sleeping = True
+            self.sleeping = self.spockplugin.world.age
         elif self.sleeping:
             self.sleeping = False
             self.last_slept = self.spockplugin.world.age
@@ -305,7 +305,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
-        self.datasources['hack_decay_factor'] = 0 if self.sleeping else 1
+        self.datasources['awake'] = 0 if self.sleeping else 1
 
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:
@@ -389,10 +389,11 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
                 # compute fatigue: 0.1 per half a day:
                 # timeofday = self.spockplugin.world.time_of_day % 24000
-                no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
-                fatigue = no_sleep * 0.1
                 if self.sleeping:
-                    fatigue = 0
+                    no_sleep = ((self.spockplugin.world.age - self.sleeping) // 3000) / 2
+                else:
+                    no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
+                fatigue = no_sleep * 0.1
                 self.datasources['fatigue'] = round(fatigue, 2)
 
                 self.check_for_action_feedback()

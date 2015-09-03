@@ -34,7 +34,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         'temperature',
         'food_supply',
         'fatigue',
-        'hack_decay_factor',
+        'awake',
         'current_location_index'
     ]
 
@@ -238,7 +238,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['health'] = 1
         self.datasources['food'] = 1
         self.datasources['temperature'] = 0.5
-        self.datasources['hack_decay_factor'] = 1
+        self.datasources['awake'] = 1
 
         # a collection of conditions to check on every update(..), eg., for action feedback
         self.waiting_list = []
@@ -304,7 +304,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
     def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
-        self.datasources['hack_decay_factor'] = 0 if self.sleeping else 1
+        self.datasources['awake'] = 0 if self.sleeping else 1
 
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:

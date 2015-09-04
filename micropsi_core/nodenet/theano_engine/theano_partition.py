@@ -273,6 +273,9 @@ class TheanoPartition():
         g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
 
+        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
+        self.g_theta_shifted = theano.shared(value=g_theta_shifted_matrix.astype(T.config.floatX), name="g_theta_shifted_shifted", borrow=True)
+
         g_factor_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
 
@@ -336,6 +339,7 @@ class TheanoPartition():
 
     def compile_calculate_nodes(self):
         slots = self.a_shifted
+        biases = self.g_theta_shifted
         countdown = self.g_countdown
         por_linked = self.n_node_porlinked
         ret_linked = self.n_node_retlinked
@@ -460,27 +464,55 @@ class TheanoPartition():
         #       0   1   2   3   4   5   6   7   8   9   10  11  12  13
         # gen                               gen por gin gou gfg
         # por                           gen por gin gou gfg
+        # gin                       gen por gin gou gfg
+        # gou                   gen por gin gou gfg
+        # gfg               gen por gin gou gfg
         #
 
         ### gen
-
-        incoming = (T.nnet.sigmoid(slots[:, 9]) * (4 * T.nnet.sigmoid(slots[:, 8])-2))# inc. is in gate * por
-        lstm_gen = (T.nnet.sigmoid(slots[:, 11]) * slots[:, 7]) + incoming
+        s = slots[:, 7]
+        net_c = slots[:, 8] + biases[:, 8]
+        net_in = slots[:, 9] + biases[:, 9]
+        net_phi = slots[:, 11] + biases[:, 11]
+        y_in = T.nnet.sigmoid(net_in)
+        y_phi = T.nnet.sigmoid(net_phi)
+        g = (4 * T.nnet.sigmoid(net_c)-2)
+        lstm_gen = s * y_phi + g * y_in                                          # gen is next step's s
         lstm_gen = T.switch(T.eq(T.mod(t, 3), 2), lstm_gen, a_prev)              # only sample every three steps
 
         ### por
-        cec = (T.nnet.sigmoid(slots[:,10]) * slots[:, 6])                           # cec is forget gate * gen
-        incoming = (T.nnet.sigmoid(slots[:,8]) * (4 * T.nnet.sigmoid(slots[:,7])-2))# inc. is in gate * por
-        gen = T.switch(T.eq(T.mod(t, 3), 2), cec + incoming, slots[:, 6])           # only sample every three steps
-        lstm_por = T.nnet.sigmoid(slots[:,9]) * (2 * T.nnet.sigmoid(gen)-1)         # por is gou * gen value
+        s = slots[:, 6]
+        net_c = slots[:, 7] + biases[:, 7]
+        net_in = slots[:, 8] + biases[:, 8]
+        net_out = slots[:, 9] + biases[:, 9]
+        net_phi = slots[:, 10] + biases[:, 10]
+        y_in = T.nnet.sigmoid(net_in)
+        y_out = T.nnet.sigmoid(net_out)
+        y_phi = T.nnet.sigmoid(net_phi)
+        g = (4 * T.nnet.sigmoid(net_c)-2)
+        s = s * y_phi + g * y_in
+        h = (2 * T.nnet.sigmoid(s)-1)                                            # por biases will be ignored
+        lstm_por = h * y_out
         lstm_por = T.switch(T.eq(T.mod(t, 3), 2), lstm_por, a_prev)              # only sample every three steps
+
+        ### gin
+        lstm_gin = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
+        lstm_gin = T.switch(T.eq(T.mod(t, 3), 2), lstm_gin, a_prev)
+
+        ### gou
+        lstm_gou = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
+        lstm_gou = T.switch(T.eq(T.mod(t, 3), 2), lstm_gou, a_prev)
+
+        ### gfg
+        lstm_gfg = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
+        lstm_gfg = T.switch(T.eq(T.mod(t, 3), 2), lstm_gfg, a_prev)
 
         if self.has_lstms:
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_POR), lstm_por, nodefunctions)
-
-            # note that gin, gou and gfg don't need to be calculated
-            # values are irrelevant after gen/por calculation and will be replaced by propagate
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GIN), lstm_gin, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GOU), lstm_gou, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GFG), lstm_gfg, nodefunctions)
 
         # gate logic
 
@@ -590,6 +622,11 @@ class TheanoPartition():
         a_rolled_array = np.roll(a_array, 7)
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)
+
+        g_theta_array = self.g_theta.get_value(borrow=True)
+        g_theta_rolled_array = np.roll(g_theta_array, 7)
+        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_theta_shifted.set_value(g_theta_shifted_matrix, borrow=True)
 
     def rebuild_por_linked(self):
 
@@ -1227,6 +1264,9 @@ class TheanoPartition():
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_LSTM_GEN
             n_function_selector_array[offset + POR] = NFPG_LSTM_POR
+            n_function_selector_array[offset + GIN] = NFPG_LSTM_GIN
+            n_function_selector_array[offset + GOU] = NFPG_LSTM_GOU
+            n_function_selector_array[offset + GFG] = NFPG_LSTM_GFG
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
         elif nodetype == "Activator":
             self.has_directional_activators = True
@@ -1302,6 +1342,9 @@ class TheanoPartition():
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
             n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GIN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GOU] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GFG] = NFPG_PIPE_NON
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # hint at the free ID

@@ -94,7 +94,7 @@ STANDARD_NODETYPES = {
     "LSTM": {
         "name": "LSTM",
         "slottypes": ["gen", "por", "gin", "gou", "gfg"],
-        "gatetypes": ["gen", "por"],
+        "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
         "nodefunction_name": "lstm",
         "symbol": "◷",
         "gate_defaults": {
@@ -104,6 +104,21 @@ STANDARD_NODETYPES = {
                 "threshold": -1000
             },
             "por": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gin": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gou": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gfg": {
                 "minimum": -1000,
                 "maximum": 1000,
                 "threshold": -1000

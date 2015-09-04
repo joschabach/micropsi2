@@ -41,6 +41,9 @@ NFPG_PIPE_CAT = 6
 NFPG_PIPE_EXP = 7
 NFPG_LSTM_GEN = 8
 NFPG_LSTM_POR = 9
+NFPG_LSTM_GIN = 10
+NFPG_LSTM_GOU = 11
+NFPG_LSTM_GFG = 10
 
 
 def get_numerical_gate_type(type, nodetype=None):
@@ -277,7 +280,7 @@ def get_gates_per_type(type, nativemodules=None):
     elif type == PIPE:
         return 7
     elif type == LSTM:
-        return 2
+        return 5
     elif type == COMMENT:
         return 0
     elif nativemodules is not None and get_string_node_type(type, nativemodules) in nativemodules:

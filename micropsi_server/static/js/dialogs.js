@@ -394,8 +394,9 @@ $(function() {
             $('.control-group.gate_monitor').show();
             $('#monitor_type').val('gate')
         }
-    })
-    $('#monitor_modal .btn-primary').on('click', function(event){
+    });
+
+    function submitMonitorModal(event){
         event.preventDefault();
         var type = $('#monitor_type').val();
         var func;
@@ -444,8 +445,9 @@ $(function() {
             $('#monitor_modal').modal('hide');
         },
         method="post");
-    });
-
+    }
+    $('#monitor_modal .btn-primary').on('click', submitMonitorModal);
+    $('#monitor_modal form').on('submit', submitMonitorModal);
 
     var remove_condition = $('#remove_runner_condition');
     var set_condition = $('#set_runner_condition');
@@ -465,6 +467,7 @@ $(function() {
             }
             $('#run_condition_monitor_selector').html(html);
             $('#run_nodenet_dialog').modal('show');
+            $('#run_condition_steps').focus();
         });
     });
 
@@ -895,6 +898,7 @@ window.addMonitor = function(type, param, val){
             break;
     }
     $('#monitor_modal').modal('show');
+    $('#monitor_name_input').focus();
 }
 
 function promptUser(data){

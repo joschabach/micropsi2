@@ -85,12 +85,12 @@ $(function(){
         if(el.hasClass('highlight')){
             el.removeClass('highlight');
             fixed_position = null;
-            drawGraph(nodenetMonitors);
+            refreshMonitors();
         } else {
             $('.logentry').removeClass('highlight');
             if(step && parseInt(step)){
                 fixed_position = parseInt(step);
-                drawGraph(nodenetMonitors);
+                refreshMonitors();
                 $(this).addClass('highlight');
             }
         }
@@ -132,10 +132,15 @@ $(function(){
                 poll.push(name);
             }
         }
-        return {
+        var params = {
             logger: poll,
-            after: last_logger_call
+            after: last_logger_call,
+            monitor_count: viewProperties.xvalues
         }
+        if(fixed_position){
+            params['monitor_from'] = Math.max(fixed_position - (viewProperties.xvalues / 2), 1);
+        }
+        return params;
     }
 
     function setData(data){
@@ -410,6 +415,7 @@ $(function(){
                 var points = svg.selectAll(".point")
                     .data(data)
                     .enter().append("svg:circle")
+                    .filter(function(d, i){ return d[1] == 0 || Boolean(d[1]) })
                      .attr("stroke", "black")
                      .attr("fill", function(d, i) { return  monitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
@@ -438,6 +444,7 @@ $(function(){
                 var points = svg.selectAll(".point")
                     .data(data)
                     .enter().append("svg:circle")
+                    .filter(function(d, i){ return d[1] == 0 || Boolean(d[1]) })
                      .attr("fill", function(d, i) { return monitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y1(d[1]); })

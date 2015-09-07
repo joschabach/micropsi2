@@ -233,7 +233,9 @@ def test_get_current_state(app, test_nodenet, test_world, node):
         },
         'monitors': {
             'logger': ['system', 'world', 'nodenet'],
-            'after': 0
+            'after': 0,
+            'monitor_from': 2,
+            'monitor_count': 2
         },
         'world': {
             'step': -1
@@ -252,7 +254,7 @@ def test_get_current_state(app, test_nodenet, test_world, node):
 
     assert 'servertime' in data['monitors']['logs']
     assert 'logs' in data['monitors']['logs']
-    assert len(data['monitors']['monitors'][monitor_uid]['values']) == data['nodenet']['current_step']
+    assert len(data['monitors']['monitors'][monitor_uid]['values']) == 2
 
     assert test_nodenet in data['world']['agents']
     assert data['world']['current_step'] > 0
@@ -700,7 +702,9 @@ def test_get_monitor_data(app, test_nodenet, node):
     uid = response.json_body['data']
     response = app.post_json('/rpc/get_monitor_data', params={
         'nodenet_uid': test_nodenet,
-        'step': 0
+        'step': 0,
+        'monitor_from': 3,
+        'monitor_count': 20
     })
     assert_success(response)
     assert uid in response.json_body['data']['monitors']
@@ -1154,7 +1158,7 @@ def test_get_nodenet_logger_messages(app, test_nodenet):
 
 
 def test_get_monitoring_info(app, test_nodenet):
-    response = app.get_json('/rpc/get_monitoring_info(nodenet_uid="%s",logger=["system,world"])' % test_nodenet)
+    response = app.get_json('/rpc/get_monitoring_info(nodenet_uid="%s",logger=["system,world"],monitor_from=3,monitor_count=10)' % test_nodenet)
     assert_success(response)
     assert 'logs' in response.json_body['data']
     assert 'current_step' in response.json_body['data']

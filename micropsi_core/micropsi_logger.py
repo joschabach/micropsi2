@@ -91,7 +91,8 @@ class MicropsiLogger():
         self.loggers[name].setLevel(level)
         self.record_storage[name] = []
         self.handlers[name] = RecordWebStorageHandler(self.record_storage, name)
-        self.filehandlers[name] = logging.FileHandler(self.log_to_file, mode='a')
+        if self.log_to_file:
+            self.filehandlers[name] = logging.FileHandler(self.log_to_file, mode='a')
 
         formatter = logging.Formatter(self.default_format)
         self.handlers[name].setFormatter(formatter)
@@ -105,7 +106,8 @@ class MicropsiLogger():
         del self.handlers[name]
         del self.record_storage[name]
         del self.loggers[name]
-        del self.filehandlers[name]
+        if name in self.filehandlers:
+            del self.filehandlers[name]
 
     def clear_logs(self):
         for key in self.record_storage:

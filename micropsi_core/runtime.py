@@ -52,10 +52,6 @@ logger = MicropsiLogger({
     'world': cfg['logging']['level_world']
 }, cfg['logging'].get('logfile'))
 
-if 'level_agent' not in cfg['logging']:
-    logging.getLogger('system').warn("Logging level level_agent not defined in config.ini. defaulting to WARNING")
-    cfg['logging']['level_agent'] = 'WARNING'
-
 nodenet_lock = threading.Lock()
 
 if cfg['micropsi2'].get('profile_runner'):

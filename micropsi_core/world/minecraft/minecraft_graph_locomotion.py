@@ -294,6 +294,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
             # server set our position to bed
             self.sleeping = self.spockplugin.world.age
         elif self.sleeping:
+            self.logger.info('WAKE UP!')
             self.sleeping = False
             self.last_slept = self.spockplugin.world.age
 
@@ -389,7 +390,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 # compute fatigue: 0.1 per half a day:
                 # timeofday = self.spockplugin.world.time_of_day % 24000
                 if self.sleeping:
-                    no_sleep = ((self.spockplugin.world.age - self.sleeping) // 3000) / 2
+                    no_sleep = ((self.sleeping - self.last_slept) // 3000) / 2
                 else:
                     no_sleep = ((self.spockplugin.world.age - self.last_slept) // 3000) / 2
                 fatigue = no_sleep * 0.1

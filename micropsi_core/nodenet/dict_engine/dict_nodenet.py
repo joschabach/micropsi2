@@ -387,7 +387,7 @@ class DictNodenet(Nodenet):
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
-                del data['gate_parameters']
+                data.pop('gate_parameters', '')
                 invalid_nodes.append(uid)
                 warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             self._nodes[newuid] = DictNode(self, **data)

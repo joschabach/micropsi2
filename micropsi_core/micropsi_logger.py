@@ -103,6 +103,7 @@ class MicropsiLogger():
         self.loggers[name].debug("Logger %s ready" % name)
 
     def unregister_logger(self, name):
+        logging.getLogger(name).removeHandler(self.handlers[name])
         del self.handlers[name]
         del self.record_storage[name]
         del self.loggers[name]

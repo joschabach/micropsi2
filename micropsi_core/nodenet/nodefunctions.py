@@ -246,24 +246,42 @@ def lstm(netapi, node, **params):
     def g(x):
         return (4.0 / (1.0 + math.exp(-x))) - 2          # (5)
 
-    s_prev = node.get_slot("gen").activation
-    net_c = node.get_slot("por").activation
-    net_in = node.get_slot("gin").activation
-    net_out = node.get_slot("gou").activation
-    net_phi = node.get_slot("gfg").activation
-
-    # simple-sigmoid squash lstm gating values
-    y_in = f(net_in)                                     # (7)
-    y_out = f(net_out)                                   # (8)
-    y_phi = f(net_phi)
-
-    # calculate node net gates (the gen gen loop is the lstm cec)
-    # squash-shift-and-scale por input
-    # double squash-shift-and-scale gen loop activation
-    s = (y_phi * s_prev) + (y_in * g(net_c))    # (9)
-    y_c = y_out * h(s)                                                   # (9)
-
     # both por and gen gate functions need to be set to linear
-    node.activation = s
-    node.get_gate("gen").gate_function(s)
-    node.get_gate("por").gate_function(y_c)
+    if netapi.step % 3 == 0:
+
+        s_prev = node.get_slot("gen").activation
+        net_c = node.get_slot("por").activation
+        net_in = node.get_slot("gin").activation
+        net_out = node.get_slot("gou").activation
+        net_phi = node.get_slot("gfg").activation
+
+        # simple-sigmoid squash lstm gating values
+        y_in = f(net_in)                                     # (7)
+        y_out = f(net_out)                                   # (8)
+        y_phi = f(net_phi)
+
+        # calculate node net gates (the gen gen loop is the lstm cec)
+        # squash-shift-and-scale por input
+        # double squash-shift-and-scale gen loop activation
+        s = (y_phi * s_prev) + (y_in * g(net_c))             # (9)
+        y_c = y_out * h(s)                                   # (9)
+
+        node.activation = s
+        node.get_gate("gen").gate_function(s)
+        node.get_gate("por").gate_function(y_c)
+        node.get_gate("gin").gate_function(y_in)
+        node.get_gate("gou").gate_function(y_out)
+        node.get_gate("gfg").gate_function(y_phi)
+        node.set_state("s_prev", s)
+        node.set_state("y_c_prev", y_c)
+        node.set_state("y_in_prev", y_in)
+        node.set_state("y_out_prev", y_out)
+        node.set_state("y_phi_prev", y_phi)
+
+    else:
+        node.activation = float(node.get_state("s_prev") or 0)
+        node.get_gate("gen").gate_function(float(node.get_state("s_prev") or 0))
+        node.get_gate("por").gate_function(float(node.get_state("y_c_prev") or 0))
+        node.get_gate("gin").gate_function(float(node.get_state("y_in_prev") or 0))
+        node.get_gate("gou").gate_function(float(node.get_state("y_out_prev") or 0))
+        node.get_gate("gfg").gate_function(float(node.get_state("y_phi_prev") or 0))

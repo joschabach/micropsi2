@@ -89,15 +89,15 @@
                                 </select>
                             </li>
                             <li>
-                                <label for="log_nodenet" class="nodenet_log">
-                                    <input type="checkbox" id="log_nodenet" class="log_switch" data="nodenet" />
-                                    Nodenet
+                                <label for="log_agent" class="agent_log">
+                                    <input type="checkbox" id="log_agent" class="log_switch" data="agent" />
+                                    Agent
                                 </label>
-                                <select id="level_log_nodenet" class="log_level_switch" data="nodenet">
-                                    <option value="DEBUG" {{'selected="selected"' if logging_levels['nodenet'] == "DEBUG" else ""}}>Debug</option>
-                                    <option value="INFO" {{'selected="selected"' if logging_levels['nodenet'] == "INFO" else ""}}>Info</option>
-                                    <option value="WARNING" {{'selected="selected"' if logging_levels['nodenet'] == "WARNING" else ""}}>Warning</option>
-                                    <option value="ERROR" {{'selected="selected"' if logging_levels['nodenet'] == "ERROR" else ""}}>Error</option>
+                                <select id="level_log_agent" class="log_level_switch" data="agent">
+                                    <option value="DEBUG" {{'selected="selected"' if logging_levels['agent'] == "DEBUG" else ""}}>Debug</option>
+                                    <option value="INFO" {{'selected="selected"' if logging_levels['agent'] == "INFO" else ""}}>Info</option>
+                                    <option value="WARNING" {{'selected="selected"' if logging_levels['agent'] == "WARNING" else ""}}>Warning</option>
+                                    <option value="ERROR" {{'selected="selected"' if logging_levels['agent'] == "ERROR" else ""}}>Error</option>
                                 </select>
                             </li>
                         </ul>

@@ -30,6 +30,9 @@ h3 {
   height: 400px;
 }
 
+.logentry {cursor: pointer; border: 1px solid transparent;}
+.logentry:hover {background: #fff;}
+.logentry.highlight { background: white; border: 1px solid #a8d1ff; }
 .log_DEBUG {color: #9c9c9c;}
 .log_INFO {color: #4b4b4b;}
 .log_WARNING{color: #942628;}
@@ -255,7 +258,7 @@ graphs
 
 .line {
   fill: none;
-  stroke-width: 1.5px;
+  stroke-width: 1px;
 }
 
 

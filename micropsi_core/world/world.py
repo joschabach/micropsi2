@@ -10,7 +10,6 @@ __date__ = '10.05.12'
 
 import json
 import os
-import warnings
 import sys
 import micropsi_core
 from micropsi_core.world import worldadapter
@@ -121,23 +120,23 @@ class World(object):
             try:
                 self.data.update(json.loads(string))
             except ValueError:
-                warnings.warn("Could not read world data from string")
+                self.logger.warn("Could not read world data from string")
                 return False
         else:
             try:
                 with open(self.filename) as file:
                     self.data.update(json.load(file))
             except ValueError:
-                warnings.warn("Could not read world data")
+                self.logger.warn("Could not read world data")
                 return False
             except IOError:
-                warnings.warn("Could not open world file: " + self.filename)
+                self.logger.warn("Could not open world file: " + self.filename)
         self.data['world_type'] = self.__class__.__name__
         if "version" in self.data and self.data["version"] == WORLD_VERSION:
             self.initialize_world()
             return True
         else:
-            warnings.warn("Wrong version of the world data")
+            self.logger.warn("Wrong version of the world data")
             return False
 
     def get_available_worldadapters(self):
@@ -150,11 +149,11 @@ class World(object):
         Parses the nodenet data and set up the non-persistent data structures necessary for efficient
         computation of the world
         """
-        for uid, worldobject in self.data['objects'].copy().items():
-            if worldobject['type'] in self.supported_worldobjects:
-                self.objects[uid] = self.supported_worldobjects[worldobject['type']](self, **worldobject)
+        for uid, object_data in self.data['objects'].copy().items():
+            if object_data['type'] in self.supported_worldobjects:
+                self.objects[uid] = self.supported_worldobjects[object_data['type']](self, **object_data)
             else:
-                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % worldobject['type'])
+                self.logger.warn('Worldobject of type %s not supported anymore. Deleting object of this type.' % object_data['type'])
                 del self.data['objects'][uid]
 
     def step(self):
@@ -167,7 +166,7 @@ class World(object):
         for uid in self.agents.copy():
             if not self.agents[uid].is_alive():
                 self.unregister_nodenet(uid)
-                #TODO: prevent respawn?
+                # TODO: prevent respawn?
         self.current_step += 1
 
     def get_world_view(self, step):

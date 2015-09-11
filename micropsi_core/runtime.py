@@ -23,7 +23,6 @@ import os
 import sys
 from micropsi_core import tools
 import json
-import warnings
 import threading
 from datetime import datetime, timedelta
 import time
@@ -50,8 +49,7 @@ signal_handler_registry = []
 
 logger = MicropsiLogger({
     'system': cfg['logging']['level_system'],
-    'world': cfg['logging']['level_world'],
-    'nodenet': cfg['logging']['level_nodenet']
+    'world': cfg['logging']['level_world']
 }, cfg['logging'].get('logfile'))
 
 nodenet_lock = threading.Lock()
@@ -142,7 +140,7 @@ class MicropsiRunner(threading.Thread):
                             if self.profiler:
                                 self.profiler.disable()
                             nodenet.is_active = False
-                            logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
+                            logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
@@ -165,9 +163,9 @@ class MicropsiRunner(threading.Thread):
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
                         ps.print_stats('nodenet')
-                        logging.getLogger("nodenet").debug(s.getvalue())
+                        logging.getLogger("agent.%s" % uid).debug(s.getvalue())
 
-                    logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    logging.getLogger("agent.%s" % uid).debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0
                     if average_duration < 0.0001:
@@ -211,13 +209,12 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 
 # loggers
-def set_logging_levels(system=None, world=None, nodenet=None):
-    if system is not None and system in logger.logging_levels:
-        logger.set_logging_level('system', system)
-    if world is not None and world in logger.logging_levels:
-        logger.set_logging_level('world', world)
-    if nodenet is not None and nodenet in logger.logging_levels:
-        logger.set_logging_level('nodenet', nodenet)
+def set_logging_levels(logging_levels):
+    for key in logging_levels:
+        if key == 'agent':
+            cfg['logging']['level_agent'] = logging_levels[key]
+        else:
+            logger.set_logging_level(key, logging_levels[key])
     return True
 
 
@@ -229,27 +226,18 @@ def get_logger_messages(loggers=[], after=0):
     return logger.get_logs(loggers, after)
 
 
-def get_monitoring_info(nodenet_uid, logger=[], after=0):
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
     """ Returns log-messages and monitor-data for the given nodenet."""
-    data = get_monitor_data(nodenet_uid, 0)
+    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
     data['logs'] = get_logger_messages(logger, after)
     return data
 
 
-def get_logging_levels():
-    inverse_map = {
-        50: 'CRITICAL',
-        40: 'ERROR',
-        30: 'WARNING',
-        20: 'INFO',
-        10: 'DEBUG',
-        0: 'NOTSET'
-    }
-    levels = {
-        'system': inverse_map[logging.getLogger('system').getEffectiveLevel()],
-        'world': inverse_map[logging.getLogger('world').getEffectiveLevel()],
-        'nodenet': inverse_map[logging.getLogger('nodenet').getEffectiveLevel()],
-    }
+def get_logging_levels(nodenet_uid=None):
+    levels = {}
+    for key in logging.Logger.manager.loggerDict:
+        levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
+    levels['agent'] = cfg['logging']['level_agent']
     return levels
 
 
@@ -301,6 +289,8 @@ def load_nodenet(nodenet_uid):
                     worldadapter = data.get('worldadapter')
 
             engine = data.get('engine', 'dict_engine')
+
+            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
@@ -399,6 +389,7 @@ def unload_nodenet(nodenet_uid):
     if nodenets[nodenet_uid].world:
         nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
     del nodenets[nodenet_uid]
+    logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
 
 
@@ -1137,7 +1128,7 @@ def run_recipe(nodenet_uid, name, parameters):
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
             ps.print_stats('nodenet')
-            logging.getLogger("nodenet").debug(s.getvalue())
+            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
         return True, result
     else:
         return False, "Script not found"
@@ -1170,9 +1161,9 @@ def crawl_definition_files(path, type="definition"):
                         data = parse_definition(json.load(file), filename)
                         result[data.uid] = data
                 except ValueError:
-                    warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warn("Invalid %s data in file '%s'" % (type, definition_file_name))
                 except IOError:
-                    warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warn("Could not open %s data file '%s'" % (type, definition_file_name))
     return result
 
 
@@ -1220,9 +1211,9 @@ def init_worlds(world_data):
             except TypeError:
                 worlds[uid] = world.World(**world_data[uid])
             except AttributeError as err:
-                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
+                logging.getLogger('system').warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
             except:
-                warnings.warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
+                logging.getLogger('system').warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
         else:
             worlds[uid] = world.World(**world_data[uid])
     return worlds
@@ -1239,7 +1230,7 @@ def load_user_files(do_reload=False):
             with open(custom_nodetype_file) as fp:
                 native_modules = json.load(fp)
         except ValueError:
-            warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+            logging.getLogger('system').warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
     sys.path.append(RESOURCE_PATH)
     parse_recipe_file()

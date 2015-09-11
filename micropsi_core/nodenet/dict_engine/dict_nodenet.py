@@ -3,11 +3,10 @@ __author__ = 'rvuine'
 import json
 import os
 
-import warnings
 import micropsi_core
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
-from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
+from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from .dict_stepoperators import DictPropagate, DictPORRETDecay, DictCalculate
 from .dict_node import DictNode
@@ -92,6 +91,7 @@ STANDARD_NODETYPES = {
         "nodefunction_name": "activator"
     }
 }
+
 
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
@@ -193,10 +193,11 @@ class DictNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet data")
+                    self.logger.warn("Could not read nodenet data")
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet file")
+                    self.logger.warn("Could not open nodenet file")
+                    return False
 
             if self._version == NODENET_VERSION:
                 self.initialize_nodenet(initfrom)
@@ -389,7 +390,7 @@ class DictNodenet(Nodenet):
                 data['type'] = 'Comment'
                 data.pop('gate_parameters', '')
                 invalid_nodes.append(uid)
-                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links

@@ -62,15 +62,40 @@ def clear_monitor(nodenet_uid, monitor_uid):
     return True
 
 
-def export_monitor_data(nodenet_uid, monitor_uid=None):
+def export_monitor_data(nodenet_uid, monitor_uid=None, monitor_from=0, monitor_count=-1):
     """Returns a string with all currently stored monitor data for the given nodenet."""
+    nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
+    if monitor_from == 0 and monitor_count > 0:
+        monitor_count = min(nodenet.current_step + 1, monitor_count)
+        monitor_from = max(0, nodenet.current_step + 1 - monitor_count)
+    if monitor_from > 0:
+        if monitor_count < 1:
+            monitor_count = (nodenet.current_step + 1 - monitor_from)
+        elif monitor_from + monitor_count > nodenet.current_step:
+            monitor_from = max(nodenet.current_step + 1 - monitor_count, 0)
     if monitor_uid is not None:
-        return micropsi_core.runtime.nodenets[nodenet_uid].construct_monitors_dict()[monitor_uid]
+        data = nodenet.construct_monitors_dict()[monitor_uid]
+        if monitor_from > 0 or monitor_count > 0:
+            values = {}
+            i = monitor_from
+            while i < monitor_count + monitor_from:
+                values[i] = data['values'].get(i)
+                i += 1
+            data['values'] = values
     else:
-        return micropsi_core.runtime.nodenets[nodenet_uid].construct_monitors_dict()
+        data = nodenet.construct_monitors_dict()
+        if monitor_from > 0 or monitor_count > 0:
+            for uid in data:
+                values = {}
+                i = monitor_from
+                while i < monitor_count + monitor_from:
+                    values[i] = data[uid]['values'].get(i)
+                    i += 1
+                data[uid]['values'] = values
+    return data
 
 
-def get_monitor_data(nodenet_uid, step=0):
+def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     """Returns monitor and nodenet data for drawing monitor plots for the current step,
     if the current step is newer than the supplied simulation step."""
     data = {
@@ -80,5 +105,5 @@ def get_monitor_data(nodenet_uid, step=0):
     if step > data['current_step']:
         return data
     else:
-        data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid)
+        data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid, None, monitor_from=monitor_from, monitor_count=monitor_count)
         return data

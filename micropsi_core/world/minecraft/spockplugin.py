@@ -30,6 +30,8 @@ class MicropsiPlugin(object):
             self.update_inventory
         )
 
+        self.worldadapter = None
+
         # make references between micropsi world and MicropsiPlugin
         self.micropsi_world = settings['micropsi_world']
         self.micropsi_world.spockplugin = self
@@ -119,7 +121,7 @@ class MicropsiPlugin(object):
 
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
-        logging.getLogger('world').debug('eating a bread')
+        self.worldadapter.logger.debug('eating a bread')
         data = {
             'location': self.get_int_coordinates(),
             'direction': -1,

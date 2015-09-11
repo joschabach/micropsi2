@@ -251,8 +251,9 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.sleeping = False
 
         self.spockplugin = self.world.spockplugin
+        self.spockplugin.worldadapter = self
         self.waiting_for_spock = True
-        self.logger = logging.getLogger("world")
+        self.logger = logging.getLogger("agent.%s" % self.uid)
         self.spockplugin.event.reg_event_handler('PLAY<Spawn Position', self.set_datasources)
         self.spockplugin.event.reg_event_handler('PLAY<Player Position and Look', self.server_set_position)
         self.spockplugin.event.reg_event_handler('PLAY<Chat Message', self.server_chat_message)
@@ -526,7 +527,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
 
     def sleep(self):
         """ Attempts to use the bed located at -103/63/59"""
-        logging.getLogger('world').debug('going to sleep')
+        self.logger.debug('going to sleep')
         data = {
             'location': {
                 'x': -103,

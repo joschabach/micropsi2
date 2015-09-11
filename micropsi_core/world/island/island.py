@@ -343,7 +343,7 @@ class Survivor(WorldAdapter):
 
         if self.currentobject is not nearest_worldobject and hasattr(nearest_worldobject, "structured_object_type"):
             self.currentobject = nearest_worldobject
-            logging.getLogger("world").debug("Survivor WA selected new scene: %s",
+            logging.getLogger("agent.%s" % self.uid).debug("Survivor WA selected new scene: %s",
                                              self.currentobject.structured_object_type)
         self.manage_body_parameters(nearest_worldobject)
 
@@ -365,13 +365,13 @@ class Survivor(WorldAdapter):
                         self.water += delta_water
                         self.integrity += delta_integrity
                         self.datatarget_feedback[datatarget] = 1
-                        logging.getLogger("world").debug("Agent "+self.name+" "+ datatarget +
+                        logging.getLogger("agent.%s" % self.uid).debug("Agent "+self.name+" "+ datatarget +
                                                          "("+nearest_worldobject.data["type"]+") result: "+
                                                          " energy "+str(delta_energy)+
                                                          " water "+str(delta_water)+
                                                          " integrity "+str(delta_integrity))
                     else:
-                        logging.getLogger("world").debug("Agent "+self.name+" "+ datatarget +
+                        logging.getLogger("agent.%s" % self.uid).debug("Agent "+self.name+" "+ datatarget +
                                                          "("+nearest_worldobject.data["type"]+") result: "+
                                                          "cannot do.")
 
@@ -385,7 +385,7 @@ class Survivor(WorldAdapter):
 
         if self.energy <= 0 or self.water <= 0 or self.integrity <= 0:
             self.is_dead = True
-            logging.getLogger("world").debug("Agent "+self.name+" has died:"+
+            logging.getLogger("agent.%s" % self.uid).debug("Agent "+self.name+" has died:"+
                     " energy "+str(self.energy)+
                     " water "+str(self.water)+
                     " integrity "+str(self.integrity))

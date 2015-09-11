@@ -1006,8 +1006,8 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
 
 
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step):
-    return True, runtime.get_monitor_data(nodenet_uid, step)
+def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
+    return True, runtime.get_monitor_data(nodenet_uid, step, monitor_from, monitor_count)
 
 
 # Nodenet
@@ -1169,8 +1169,8 @@ def get_emoexpression_parameters(nodenet_uid):
 
 
 @rpc("set_logging_levels")
-def set_logging_levels(system=None, world=None, nodenet=None):
-    runtime.set_logging_levels(system, world, nodenet)
+def set_logging_levels(logging_levels):
+    runtime.set_logging_levels(logging_levels)
     return True
 
 
@@ -1180,8 +1180,8 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0):
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
     return True, data
 
 

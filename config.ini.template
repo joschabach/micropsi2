@@ -45,7 +45,7 @@ port = 25565
 # must be one of CRITICAL, ERROR, WARNING, INFO, DEBUG;
 level_system = WARNING
 level_world = WARNING
-level_nodenet = WARNING
+level_agent = WARNING
 
 logfile = /tmp/micropsi.log
 

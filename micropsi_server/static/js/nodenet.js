@@ -2821,7 +2821,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             if(nodetypes[type].parameter_defaults){
                 def = nodetypes[type].parameter_defaults[param] || '';
             }
-            params[param] = parameters[param] || def;
+            parameters[param] = parameters[param] || def;
         }
     }
     var method = "";
@@ -2839,7 +2839,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     }
     api.call(method, params,
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, parameters));
+            addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
             view.draw();
             selectNode(uid);
             if(callback) callback(uid);
@@ -2870,6 +2870,7 @@ function createNativeModuleHandler(event){
         $('[data-native-module-type]', modal).html(html);
         $('#native_module_name').val('');
         modal.modal("show");
+        $('[data-native-module-type]', modal).focus();
     }
 }
 

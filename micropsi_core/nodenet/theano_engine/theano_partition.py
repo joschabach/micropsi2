@@ -988,23 +988,12 @@ class TheanoPartition():
             self.has_new_usages = True
             self.has_pipes = PIPE in self.allocated_nodes
             self.has_lstms = LSTM in self.allocated_nodes
+            self.has_directional_activators = ACTIVATOR in self.allocated_nodes
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
             self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
             self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
-
-            self.has_directional_activators = False
-            activator_ids = np.where(self.allocated_nodes == ACTIVATOR)
-            for activator_id in activator_ids:
-                if activator_id in self.allocated_nodespaces_por_activators or \
-                   activator_id in self.allocated_nodespaces_ret_activators or \
-                   activator_id in self.allocated_nodespaces_sub_activators or \
-                   activator_id in self.allocated_nodespaces_sur_activators or \
-                   activator_id in self.allocated_nodespaces_cat_activators or \
-                   activator_id in self.allocated_nodespaces_exp_activators:
-                    self.has_directional_activators = True
-
         else:
             self.logger.warn("no g_function_selector in file, falling back to defaults")
 
@@ -1279,9 +1268,8 @@ class TheanoPartition():
             n_function_selector_array[offset + GFG] = NFPG_LSTM_GFG
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
         elif nodetype == "Activator":
+            self.has_directional_activators = True
             activator_type = parameters.get("type")
-            if activator_type in ["por", "ret", "sub", "sur", "cat", "exp"]:
-                self.has_directional_activators = True
             if activator_type is not None and len(activator_type) > 0:
                 self.set_nodespace_gatetype_activator(nodespace_id, activator_type, id)
 
@@ -1351,11 +1339,11 @@ class TheanoPartition():
 
         if type == LSTM:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-            n_function_selector_array[offset + GEN] = NFPG_LSTM_NON
-            n_function_selector_array[offset + POR] = NFPG_LSTM_NON
-            n_function_selector_array[offset + GIN] = NFPG_LSTM_NON
-            n_function_selector_array[offset + GOU] = NFPG_LSTM_NON
-            n_function_selector_array[offset + GFG] = NFPG_LSTM_NON
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GIN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GOU] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GFG] = NFPG_PIPE_NON
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # hint at the free ID

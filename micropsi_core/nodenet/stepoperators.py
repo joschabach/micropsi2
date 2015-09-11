@@ -117,8 +117,8 @@ class DoernerianEmotionalModulators(StepOperator):
 
         base_age += 1
 
-        emo_activation = ((base_sum_importance_of_intentions + base_sum_urgency_of_intentions) /
-                          ((base_number_of_active_motives * 2) + 1))
+        emo_activation = max(0, ((base_sum_importance_of_intentions + base_sum_urgency_of_intentions) /
+                          ((base_number_of_active_motives * 2) + 1)) + base_urge_change)
 
         base_unexpectedness = max(min(base_unexpectedness_prev + gentle_sigmoid((base_number_of_unexpected_events - base_number_of_expected_events) / 10), 1), 0)
         fear = 0                    # todo: understand the formula in Principles 185

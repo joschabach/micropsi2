@@ -394,8 +394,9 @@ $(function() {
             $('.control-group.gate_monitor').show();
             $('#monitor_type').val('gate')
         }
-    })
-    $('#monitor_modal .btn-primary').on('click', function(event){
+    });
+
+    function submitMonitorModal(event){
         event.preventDefault();
         var type = $('#monitor_type').val();
         var func;
@@ -444,8 +445,9 @@ $(function() {
             $('#monitor_modal').modal('hide');
         },
         method="post");
-    });
-
+    }
+    $('#monitor_modal .btn-primary').on('click', submitMonitorModal);
+    $('#monitor_modal form').on('submit', submitMonitorModal);
 
     var remove_condition = $('#remove_runner_condition');
     var set_condition = $('#set_runner_condition');
@@ -465,6 +467,7 @@ $(function() {
             }
             $('#run_condition_monitor_selector').html(html);
             $('#run_nodenet_dialog').modal('show');
+            $('#run_condition_steps').focus();
         });
     });
 
@@ -514,7 +517,7 @@ $(function() {
                 '<div class="control-group">'+
                     '<label class="control-label" for="params_'+param.name+'_input">'+param.name+'</label>'+
                     '<div class="controls">'+
-                        '<input type="text" name="'+param.name+'" class="input-xlarge" id="params_'+param.name+'_input" value="'+(param.default || '')+'"/>'+
+                        '<input type="text" name="'+param.name+'" class="input-xlarge" id="params_'+param.name+'_input" value="'+((param.default == null) ? '' : param.default)+'"/>'+
                     '</div>'+
                 '</div>';
             }
@@ -560,6 +563,7 @@ $(function() {
                 options += '<option>' + items[idx].name + '</option>';
             }
             recipe_name_input.html(options);
+            recipe_name_input.focus();
             update_parameters_for_recipe();
         });
     });
@@ -637,6 +641,9 @@ fetch_stepping_info = function(){
             }
         }
         setButtonStates(data.simulation_running);
+        if(data.user_prompt){
+            promptUser(data.user_prompt);
+        }
     }, error=function(data, outcome, type){
         $(document).trigger('runner_stopped');
         setButtonStates(false);
@@ -644,6 +651,30 @@ fetch_stepping_info = function(){
             currentNodenet = null;
             $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
         }
+    });
+
+    $('#nodenet_user_prompt .btn-primary').on('click', function(event){
+        event.preventDefault();
+        var form = $('#nodenet_user_prompt form');
+        values = {};
+        var startnet = false;
+        var fields = form.serializeArray();
+        for(var idx in fields){
+            if(fields[idx].name == 'run_nodenet'){
+                startnet = true;
+            } else {
+                values[fields[idx].name] = fields[idx].value;
+            }
+        }
+        api.call('user_prompt_response', {
+            nodenet_uid: currentNodenet,
+            node_uid: $('#user_prompt_node_uid').val(),
+            values: values,
+            resume_nodenet: startnet
+        }, function(data){
+            $(document).trigger("runner_started");
+        });
+        $('#nodenet_user_prompt').modal('hide');
     });
 }
 
@@ -820,23 +851,30 @@ window.addMonitor = function(type, param, val){
             for(var key in param['gates']){
                 html += '<option>'+key+'</option>';
             }
+            var has_gates = Boolean(html);
             $('#monitor_gate_input').html(html);
-            $('#monitor_node_type_gate').prop('checked', false);
-            $('#monitor_node_type_slot').prop('checked', false);
             var html = '';
             for(var key in param['slots']){
                 html += '<option>'+key+'</option>';
             }
             $('#monitor_slot_input').html(html);
+            var has_slots = Boolean(html);
+            $('#monitor_node_type_gate').prop('checked', has_gates);
+            $('#monitor_node_type_slot').prop('checked', !has_gates);
+            $('#monitor_node_type_gate').prop('disabled', !has_gates);
+            $('#monitor_node_type_slot').prop('disabled', !has_slots);
+            $('#monitor_node_type_gate').trigger('change');
         case 'slot':
         case 'gate':
-            var html = '';
-            for(var key in param[type+'s']){
-                html += '<option>'+key+'</option>';
-            }
-            $('#monitor_'+type+'_input').html(html);
-            if(val){
-                $('#monitor_'+type+'_input').val(val);
+            if(type == 'slot' || type == 'gate'){
+                var html = '';
+                for(var key in param[type+'s']){
+                    html += '<option>'+key+'</option>';
+                }
+                $('#monitor_'+type+'_input').html(html);
+                if(val){
+                    $('#monitor_'+type+'_input').val(val);
+                }
             }
             $('#monitor_node_input').val(param.name || param.uid);
             $('#monitor_node_uid_input').val(param.uid);
@@ -860,6 +898,41 @@ window.addMonitor = function(type, param, val){
             break;
     }
     $('#monitor_modal').modal('show');
+    $('#monitor_name_input').focus();
+}
+
+function promptUser(data){
+    var html = '';
+    html += '<p>Nodenet interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
+    html += "<p>" + data.msg +"</p>";
+    html += '<form class="well form-horizontal">';
+    if (data.options){
+        for(var idx in data.options){
+            var item = data.options[idx];
+            html += '<div class="control-group"><label class="control-label">' + item.label + '</label>';
+            if(item.values && typeof item.values == 'object'){
+                html += '<div class="controls"><select name="'+item.key+'">';
+                for(var val in item.values){
+                    if(item.values instanceof Array){
+                        html += '<option>'+item.values[val]+'</option>';
+                    } else {
+                        html += '<option value="'+val+'">'+item.values[val]+'</option>';
+                    }
+                }
+                html += '</select></div></div>';
+            } else if(item.type && item.type == "textarea"){
+                html += '<div class="controls"><textarea name="'+item.key+'">'+(item.values || '')+'</textarea></div></div>';
+            } else {
+                html += '<div class="controls"><input name="'+item.key+'" value="'+(item.values || '')+'" /></div></div>';
+            }
+        }
+    }
+    html += '<div class="control-group"><label class="control-label">Continue running nodenet?</label>';
+    html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
+    html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
+    html += '</form>';
+    $('#nodenet_user_prompt .modal-body').html(html);
+    $('#nodenet_user_prompt').modal("show");
 }
 
 

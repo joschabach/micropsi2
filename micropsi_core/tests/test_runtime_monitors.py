@@ -160,3 +160,42 @@ def test_clear_monitor(fixed_nodenet):
     data = micropsi.get_monitor_data(fixed_nodenet)
     values = data['monitors'][uid]['values']
     assert len(values.keys()) == 0
+
+
+def test_fetch_partial_monitor_data(fixed_nodenet):
+    uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen')
+    i = 0
+    while i < 50:
+        micropsi.step_nodenet(fixed_nodenet)
+        i += 1
+    assert micropsi.nodenets[fixed_nodenet].current_step == 50
+
+    # get 10 items from [20 - 29]
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_from=20, monitor_count=10)
+    values = data[uid]['values']
+    assert len(values.keys()) == 10
+    assert set(list(values.keys())) == set(range(20, 30))
+
+    # get 10 items from [20 - 29] for one monitor
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_uid=uid, monitor_from=20, monitor_count=10)
+    values = data['values']
+    assert len(values.keys()) == 10
+    assert set(list(values.keys())) == set(range(20, 30))
+
+    # get 10 newest values [41-50]
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_count=10)
+    values = data[uid]['values']
+    assert len(values.keys()) == 10
+    assert set(list(values.keys())) == set(range(41, 51))
+
+    # get 10 items, starting at 45 -- assert they are filled up to the left.
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_from=40, monitor_count=15)
+    values = data[uid]['values']
+    assert len(values.keys()) == 15
+    assert set(list(values.keys())) == set(range(36, 51))
+
+    # get all items, starting at 10
+    data = micropsi.export_monitor_data(fixed_nodenet, monitor_from=10)
+    values = data[uid]['values']
+    assert len(values.keys()) == 41
+    assert set(list(values.keys())) == set(range(10, 51))

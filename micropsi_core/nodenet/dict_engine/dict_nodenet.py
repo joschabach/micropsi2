@@ -3,11 +3,10 @@ __author__ = 'rvuine'
 import json
 import os
 
-import warnings
 import micropsi_core
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
-from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
+from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
 from .dict_stepoperators import DictPropagate, DictPORRETDecay, DictCalculate
 from .dict_node import DictNode
@@ -127,6 +126,7 @@ STANDARD_NODETYPES = {
     }
 }
 
+
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
 
@@ -227,10 +227,11 @@ class DictNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet data")
+                    self.logger.warn("Could not read nodenet data")
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet file")
+                    self.logger.warn("Could not open nodenet file")
+                    return False
 
             if self._version == NODENET_VERSION:
                 self.initialize_nodenet(initfrom)
@@ -339,9 +340,6 @@ class DictNodenet(Nodenet):
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
         links = []
         followupnodes = []
         for uid in self._nodes:
@@ -408,6 +406,7 @@ class DictNodenet(Nodenet):
             self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
         uidmap = {}
+        invalid_nodes = []
 
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
@@ -418,14 +417,21 @@ class DictNodenet(Nodenet):
                 newuid = uid
             data['uid'] = newuid
             uidmap[uid] = newuid
-            if data['type'] in self._nodetypes or data['type'] in self._native_modules:
-                self._nodes[newuid] = DictNode(self, **data)
-            else:
-                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+            if data['type'] not in self._nodetypes and data['type'] not in self._native_modules:
+                data['parameters'] = {
+                    'comment': 'There was a %s node here' % data['type']
+                }
+                data['type'] = 'Comment'
+                data.pop('gate_parameters', '')
+                invalid_nodes.append(uid)
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+            self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links
         for linkid in nodenet_data.get('links', {}):
             data = nodenet_data['links'][linkid]
+            if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
+                continue
             self.create_link(
                 uidmap[data['source_node_uid']],
                 data['source_gate_name'],
@@ -453,7 +459,6 @@ class DictNodenet(Nodenet):
 
     def step(self):
         """perform a simulation step"""
-        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,

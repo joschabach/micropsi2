@@ -29,6 +29,14 @@ if homedir:
 else:
     data_path = config['micropsi2']['data_directory']
 
+if 'logging' not in config:
+    config['logging'] = {}
+
+for level in ['level_agent', 'level_system', 'level_world']:
+    if level not in config['logging']:
+        warnings.warn('logging level for %s not set in config.ini - defaulting to WARNING' % level)
+        config['logging'][level] = 'WARNING'
+
 config.add_section('paths')
 config['paths']['resource_path'] = os.path.join(os.path.dirname(__file__), data_path)
 config['paths']['usermanager_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')

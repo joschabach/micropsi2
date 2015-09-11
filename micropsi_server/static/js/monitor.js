@@ -20,7 +20,7 @@ $(function(){
     var capturedLoggers = {
         'system': false,
         'world': false,
-        'nodenet': false
+        'agent': false
     };
 
     var logs = [];
@@ -35,6 +35,8 @@ $(function(){
     var last_logger_call = 0;
 
     var log_container = $('#logs');
+
+    var fixed_position = null;
 
     init();
 
@@ -77,6 +79,24 @@ $(function(){
         init();
     });
 
+    log_container.on('click', '.logentry', function(event){
+        var el = $(this)
+        var step = el.attr('data-step');
+        if(el.hasClass('highlight')){
+            el.removeClass('highlight');
+            fixed_position = null;
+            refreshMonitors();
+        } else {
+            $('.logentry').removeClass('highlight');
+            if(step && parseInt(step)){
+                fixed_position = parseInt(step);
+                refreshMonitors();
+                $(this).addClass('highlight');
+            }
+        }
+    });
+
+
     function init() {
         bindEvents();
         if (currentNodenet = $.cookie('selected_nodenet')) {
@@ -105,19 +125,28 @@ $(function(){
         var poll = [];
         for(var logger in capturedLoggers){
             if(capturedLoggers[logger]){
-                poll.push(logger);
+                var name = logger;
+                if(logger == 'agent') {
+                    name = "agent." + currentNodenet;
+                }
+                poll.push(name);
             }
         }
-        return {
+        var params = {
             logger: poll,
-            after: last_logger_call
+            after: last_logger_call,
+            monitor_count: viewProperties.xvalues
         }
+        if(fixed_position){
+            params['monitor_from'] = Math.max(fixed_position - (viewProperties.xvalues / 2), 1);
+        }
+        return params;
     }
 
     function setData(data){
+        currentSimulationStep = data.current_step;
         setMonitorData(data);
         setLoggingData(data);
-        currentSimulationStep = data.current_step;
     }
 
     register_stepping_function('monitors', getPollParams, setData);
@@ -133,25 +162,23 @@ $(function(){
     function setMonitorData(data){
         updateMonitorList(data.monitors);
         nodenetMonitors = data.monitors;
-        var m = {};
-        for (var uid in nodenetMonitors) {
-            if (currentMonitors.indexOf(uid) >= 0) {
-                m[uid] = nodenetMonitors[uid];
-            }
-        }
-        drawGraph(m);
+        drawGraph(nodenetMonitors);
     }
 
     function setLoggingData(data){
         last_logger_call = data.logs.servertime;
         for(var idx in data.logs.logs){
+            if(data.logs.logs[idx].logger.indexOf("agent.") > -1){
+                data.logs.logs[idx].logger = "agent";
+            }
             logs.push(data.logs.logs[idx]);
         }
         if(logs.length > viewProperties.max_log_entries){
             logs.splice(0, logs.length - viewProperties.max_log_entries);
-            console.log('splicing ' + logs.length - viewProperties.max_log_entries + ' entries');
         }
-        refreshLoggerView();
+        if(!fixed_position){
+            refreshLoggerView();
+        }
     }
 
     function refreshLoggerView(){
@@ -166,10 +193,10 @@ $(function(){
             if(filter){
                 var check = (item.logger + item.msg + item.module+ item.function + item.level).toLowerCase();
                 if(check.indexOf(filter) > -1){
-                    html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+                    html += '<span class="logentry log_'+item.level+'" data-step="'+(item.step||'')+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
                 }
             } else {
-                html += '<span class="logentry log_'+item.level+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+                html += '<span class="logentry log_'+item.level+'" data-step="'+(item.step||'')+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
             }
         }
         log_container.html(html);
@@ -186,8 +213,12 @@ $(function(){
         });
         $('.log_level_switch').on('change', function(event){
             var el = $(event.target);
-            var data = {}
-            data[el.attr('data')] = el.val();
+            var data = {'logging_levels': {}}
+            if(el.attr('data') == "agent" && currentNodenet){
+                data['logging_levels']['agent.' + currentNodenet] = el.val();
+            } else {
+                data['logging_levels'][el.attr('data')] = el.val();
+            }
             api.call('set_logging_levels', data);
         });
         $('.log_switch').each(function(idx, el){
@@ -233,11 +264,12 @@ $(function(){
             }
         });
         $.cookie('currentMonitors', JSON.stringify(currentMonitors), {path:'/', expires:7})
-        drawGraph(currentMonitors);
+        refreshMonitors();
     }
 
-    function drawGraph(currentMonitors) {
+    function drawGraph(monitors) {
 
+        var position = fixed_position;
         var customMonitors = false;
         container.html(''); // TODO: come up with a way to redraw
         var margin = {
@@ -245,11 +277,17 @@ $(function(){
                 right: 50,
                 bottom: 30,
                 left: 50
-            },
-            width = container.width() - margin.left - margin.right - viewProperties.padding,
-            height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
+            };
+        var width = container.width() - margin.left - margin.right - viewProperties.padding;
+        var height = viewProperties.height - margin.top - margin.bottom - viewProperties.padding;
 
         var xmax = Math.max(viewProperties.xvalues, currentSimulationStep);
+        if(position && xmax > viewProperties.xvalues){
+            xmax = Math.min(position + (viewProperties.xvalues/2), xmax);
+            if(xmax - viewProperties.xvalues < 0) {
+                xmax -= (xmax - viewProperties.xvalues)
+            }
+        }
 
         var xvalues = viewProperties.xvalues;
         if(viewProperties.xvalues < 0){
@@ -266,20 +304,22 @@ $(function(){
         var y1min = 0;
         var y2max = 1.0;
         var y2min = 0;
-        for (var uid in currentMonitors) {
-            for (var step in currentMonitors[uid].values) {
-                if(currentMonitors[uid].classname == 'CustomMonitor'){
+        for (var idx in currentMonitors) {
+            var uid = currentMonitors[idx];
+            if(!monitors[uid]) continue;
+            for (var step in monitors[uid].values) {
+                if(monitors[uid].classname == 'CustomMonitor'){
                     customMonitors = true;
-                    y2values.push(currentMonitors[uid].values[step]);
-                    if (step >= xstart) {
-                        y2max = Math.max(y2max, currentMonitors[uid].values[step]);
-                        y2min = Math.min(y2min, currentMonitors[uid].values[step]);
+                    y2values.push(monitors[uid].values[step]);
+                    if (step >= xstart && step <= xmax) {
+                        y2max = Math.max(y2max, monitors[uid].values[step]);
+                        y2min = Math.min(y2min, monitors[uid].values[step]);
                     }
                 } else {
-                    y1values.push(currentMonitors[uid].values[step]);
-                    if (step >= xstart) {
-                        y1max = Math.max(y1max, currentMonitors[uid].values[step]);
-                        y1min = Math.min(y1min, currentMonitors[uid].values[step]);
+                    y1values.push(monitors[uid].values[step]);
+                    if (step >= xstart && step <= xmax) {
+                        y1max = Math.max(y1max, monitors[uid].values[step]);
+                        y1min = Math.min(y1min, monitors[uid].values[step]);
                     }
                 }
             }
@@ -306,7 +346,6 @@ $(function(){
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
         svg.append("g")
             .attr("class", "x axis")
             .attr("transform", "translate(0," + x_axis_pos + ")")
@@ -325,6 +364,22 @@ $(function(){
             .attr("dy", ".71em")
             .style("text-anchor", "end")
             .text("Activation");
+        if(position){
+            svg.append('line')
+                .attr('x1', x(position))
+                .attr('y1', 0)
+                .attr('x2', x(position))
+                .attr('y2', x_axis_pos)
+                .attr('stroke-width', 0.5)
+                .attr('stroke', '#999');
+            svg.append('text')
+                .attr('x', x(position))
+                .attr('y', 0)
+                .text(position)
+                .attr('font-size', '10px')
+                .attr('font-family', 'monospace')
+                .attr('fill', 'black')
+        }
         if(customMonitors){
             svg.append("g")
                 .attr("class", "y axis")
@@ -338,9 +393,11 @@ $(function(){
                 .text("Value");
         }
 
-        for (var uid in currentMonitors) {
+        for (var idx in currentMonitors) {
+            var uid = currentMonitors[idx];
             var data = [];
-            if(currentMonitors[uid].classname == 'CustomMonitor'){
+            if(!monitors[uid]) continue;
+            if(monitors[uid].classname == 'CustomMonitor'){
                 var line = d3.svg.line()
                     .x(function(d) {
                         return x(d[0]);
@@ -349,17 +406,23 @@ $(function(){
                         return y2(d[1]);
                     })
                     .defined(function(d){ return d[1] == 0 || Boolean(d[1])});
-                for (var step in currentMonitors[uid].values) {
-                    data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
+                for (var step in monitors[uid].values) {
+                    step = parseInt(step, 10);
+                    if(step >= xstart && step <= xmax){
+                        data.push([step, parseFloat(monitors[uid].values[step])]);
+                    }
                 }
                 var points = svg.selectAll(".point")
                     .data(data)
                     .enter().append("svg:circle")
+                    .filter(function(d, i){ return d[1] == 0 || Boolean(d[1]) })
                      .attr("stroke", "black")
-                     .attr("fill", function(d, i) { return  currentMonitors[uid].color })
+                     .attr("fill", function(d, i) { return  monitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y2(d[1]); })
-                     .attr("r", function(d, i) { return 2 });
+                     .attr("r", function(d) {
+                        return ((position && d[0] == position) ? 4 : 2);
+                      });
 
             } else {
                 var line = d3.svg.line()
@@ -369,28 +432,33 @@ $(function(){
                     .y(function(d) {
                         return y1(d[1]);
                     })
-                    .defined(function(d){ return d[1] == 0 || Boolean(d[1])});
-                for (var step in currentMonitors[uid].values) {
-                    data.push([parseInt(step, 10), parseFloat(currentMonitors[uid].values[step])]);
+                    .defined(function(d){
+                        return d[1] == 0 || Boolean(d[1])
+                    });
+                for (var step in monitors[uid].values) {
+                    step = parseInt(step, 10);
+                    if(step >= xstart && step <= xmax){
+                        data.push([step, parseFloat(monitors[uid].values[step])]);
+                    }
                 }
                 var points = svg.selectAll(".point")
                     .data(data)
                     .enter().append("svg:circle")
-                     .attr("fill", function(d, i) { return currentMonitors[uid].color })
+                    .filter(function(d, i){ return d[1] == 0 || Boolean(d[1]) })
+                     .attr("fill", function(d, i) { return monitors[uid].color })
                      .attr("cx", function(d, i) { return x(d[0]); })
                      .attr("cy", function(d, i) { return y1(d[1]); })
-                     .attr("r", function(d, i) { return 2 });
-
+                     .attr("r", function(d) {
+                        return ((position && d[0] == position) ? 4 : 2);
+                      });
             }
 
-
-            var len = data.length;
-            data.splice(0, len - xvalues - 1);
-            var color =  currentMonitors[uid].color;
+            var color =  monitors[uid].color;
             svg.append("path")
                 .datum(data)
                 .attr("class", "line")
                 .attr("stroke", color)
+                .attr("transform", "translate(0,0)")
                 .attr("d", line);
         }
     }

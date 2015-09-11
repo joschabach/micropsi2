@@ -78,7 +78,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
         self.spockplugin = self.world.spockplugin
         self.waiting_for_spock = True
-        self.logger = logging.getLogger("world")
+        self.logger = logging.getLogger("agent.%s" % self.uid)
 
         self.previous_active_fovea_actor = None
 

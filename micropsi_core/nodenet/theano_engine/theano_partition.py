@@ -1,9 +1,6 @@
 
 
-import json
 import os
-import copy
-import warnings
 
 import theano
 from theano import tensor as T
@@ -16,6 +13,7 @@ from theano.tensor import nnet as N
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
 
 from configuration import config as settings
+
 
 class TheanoPartition():
 
@@ -117,6 +115,9 @@ class TheanoPartition():
 
     def __init__(self, nodenet, pid):
 
+        # logger used by this partition
+        self.logger = nodenet.logger
+
         INITIAL_NUMBER_OF_NODESPACES = 10
 
         AVERAGE_ELEMENTS_PER_NODE_ASSUMPTION = 4
@@ -171,9 +172,6 @@ class TheanoPartition():
 
         # sparsity flag for this partition
         self.sparse = sparse
-
-        # logger used by this partition
-        self.logger = nodenet.logger
 
         # array, index is node id, value is numeric node type
         self.allocated_nodes = None
@@ -819,10 +817,10 @@ class TheanoPartition():
                 self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
                 datafile = np.load(datafilename)
             except ValueError:
-                warnings.warn("Could not read nodenet data from file %s" % datafile)
+                self.logger.warn("Could not read nodenet data from file %s" % datafile)
                 return False
             except IOError:
-                warnings.warn("Could not open nodenet file %s" % datafile)
+                self.logger.warn("Could not open nodenet file %s" % datafile)
                 return False
 
         if not datafile:
@@ -1013,6 +1011,7 @@ class TheanoPartition():
                 uid = node_to_id(id, self.pid)
                 if uid in nodes_data:
                     self.allocated_nodes[id] = get_numerical_node_type(nodes_data[uid]['type'], self.nodenet.native_modules)
+            if self.allocated_nodes[id] > MAX_STD_NODETYPE:
                 self.native_module_instances[uid] = self.nodenet.get_node(uid)
             elif self.allocated_nodes[id] == COMMENT:
                 uid = node_to_id(id, self.pid)

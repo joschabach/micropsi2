@@ -98,6 +98,7 @@
                 <input type="hidden" name="monitor_type" id="monitor_type"/>
                 <input type="hidden" name="monitor_node_uid_input" id="monitor_node_uid_input"/>
             </fieldset>
+            <input type="submit" style="display:none"/>
         </form>
     </div>
     <div class="modal-footer">
@@ -161,6 +162,7 @@
             </fieldset>
             <fieldset class="recipe_param_container">
             </fieldset>
+            <input type="submit" style="display:none"/>
         </form>
     </div>
     <div class="modal-footer">

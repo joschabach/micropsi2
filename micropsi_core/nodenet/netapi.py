@@ -342,7 +342,7 @@ class NetAPI(object):
         Parameters:
             node: the node object that emits this message
             msg: a string to display to the user
-            options: an array of objects representing the variables to set by the user. Needs key, label. Optional: array or object of values
+            options: an array of objects representing the variables to set by the user. Needs key, label. Optional: type (textarea or text), values: an array or object of possible values
 
         example usage:
             options = [{
@@ -352,6 +352,7 @@ class NetAPI(object):
             }, {
                 'key': 'wait':
                 'label': 'How long should I wait until I go there?',
+                'type': 'textarea'
             }]
             netapi.ask_user_for_parameter(node, "Please decide what to do next", options)
         """

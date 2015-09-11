@@ -409,9 +409,6 @@ function setNodespaceData(data, changed){
         if(changed){
             updateNodespaceForm();
         }
-        if(data.user_prompt){
-            promptUser(data.user_prompt);
-        }
     }
     updateViewSize();
     drawGridLines(view.element);
@@ -2435,35 +2432,6 @@ function initializeDialogs(){
     $('#datasource_select').on('change', function(){
         $("#select_datasource_modal .btn-primary").focus();
     });
-    $('#nodenet_user_prompt .btn-primary').on('click', function(event){
-        event.preventDefault();
-        var form = $('#nodenet_user_prompt form');
-        values = {};
-        var startnet = false;
-        var fields = form.serializeArray();
-        for(var idx in fields){
-            if(fields[idx].name == 'run_nodenet'){
-                startnet = true;
-            } else {
-                values[fields[idx].name] = fields[idx].value;
-            }
-        }
-        api.call('user_prompt_response', {
-            nodenet_uid: currentNodenet,
-            node_uid: $('#user_prompt_node_uid').val(),
-            values: values,
-            resume_nodenet: startnet
-        }, function(data){
-            currentSimulationStep -= 1;
-            if(startnet){
-                $(document).trigger("runner_started");
-            } else {
-                refreshNodespace();
-            }
-        });
-        $('#nodenet_user_prompt').modal('hide');
-    });
-
     $('#paste_mode_selection_modal .btn-primary').on('click', function(event){
         event.preventDefault();
         var form = $('#paste_mode_selection_modal form');
@@ -3841,39 +3809,6 @@ function registerResizeHandler(){
         $(window).unbind("mousemove");
     });
 }
-
-function promptUser(data){
-    var html = '';
-    html += '<p>Nodenet interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
-    html += "<p>" + data.msg +"</p>";
-    html += '<form class="well form-horizontal">';
-    if (data.options){
-        for(var idx in data.options){
-            var item = data.options[idx];
-            html += '<div class="control-group"><label class="control-label">' + item.label + '</label>';
-            if(item.values && typeof item.values == 'object'){
-                html += '<div class="controls"><select name="'+item.key+'">';
-                for(var val in item.values){
-                    if(item.values instanceof Array){
-                        html += '<option>'+item.values[val]+'</option>';
-                    } else {
-                        html += '<option value="'+val+'">'+item.values[val]+'</option>';
-                    }
-                }
-                html += '</select></div></div>';
-            } else {
-                html += '<div class="controls"><input name="'+item.key+'" value="'+(item.values || '')+'" /></div></div>';
-            }
-        }
-    }
-    html += '<div class="control-group"><label class="control-label">Continue running nodenet?</label>';
-    html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
-    html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
-    html += '</form>';
-    $('#nodenet_user_prompt .modal-body').html(html);
-    $('#nodenet_user_prompt').modal("show");
-}
-
 
 // hack. credits: http://stackoverflow.com/a/19743610
 // this is a workaround, until paper.js supports AreaText

@@ -78,7 +78,7 @@ class StructuredObjects(WorldAdapter):
             self.scene.load_object(self.currentobject.structured_object_type,
                                    OBJECTS[self.currentobject.structured_object_type]['shape_grid'])
             self.datasources["major-newscene"] = 1
-            logging.getLogger("world").debug("StructuredObjects WA selected new scene: %s",
+            logging.getLogger("agent.%s" % self.uid).debug("StructuredObjects WA selected new scene: %s",
                                              self.currentobject.structured_object_type)
 
         #manage the scene

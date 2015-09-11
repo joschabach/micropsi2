@@ -739,29 +739,7 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 @rpc("get_current_state")
 def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
-    data = {}
-    nodenet_obj = runtime.get_nodenet(nodenet_uid)
-    if nodenet_obj is not None:
-        if nodenet_uid in runtime.MicropsiRunner.conditions:
-            data['simulation_condition'] = runtime.MicropsiRunner.conditions[nodenet_uid]
-            if 'monitor' in data['simulation_condition']:
-                monitor = nodenet_obj.get_monitor(data['simulation_condition']['monitor']['uid'])
-                if monitor:
-                    data['simulation_condition']['monitor']['color'] = monitor.color
-                else:
-                    del data['simulation_condition']['monitor']
-        data['simulation_running'] = nodenet_obj.is_active
-        data['current_nodenet_step'] = nodenet_obj.current_step
-        data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
-        if nodenet is not None:
-            data['nodenet'] = runtime.get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
-        if world is not None and nodenet_obj.world:
-            data['world'] = runtime.get_world_view(world_uid=nodenet_obj.world.uid, **world)
-        if monitors is not None:
-            data['monitors'] = runtime.get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
-        return True, data
-    else:
-        return False, "No such nodenet"
+    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, world=world, monitors=monitors)
 
 
 @rpc("generate_uid")
@@ -1028,8 +1006,8 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
 
 
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step):
-    return True, runtime.get_monitor_data(nodenet_uid, step)
+def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
+    return True, runtime.get_monitor_data(nodenet_uid, step, monitor_from, monitor_count)
 
 
 # Nodenet
@@ -1191,8 +1169,8 @@ def get_emoexpression_parameters(nodenet_uid):
 
 
 @rpc("set_logging_levels")
-def set_logging_levels(system=None, world=None, nodenet=None):
-    runtime.set_logging_levels(system, world, nodenet)
+def set_logging_levels(logging_levels):
+    runtime.set_logging_levels(logging_levels)
     return True
 
 
@@ -1202,8 +1180,8 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0):
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
     return True, data
 
 

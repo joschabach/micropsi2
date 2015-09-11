@@ -6,7 +6,6 @@ Nodenet definition
 import json
 import os
 import copy
-import warnings
 
 import theano
 from theano import tensor as T
@@ -304,10 +303,10 @@ class TheanoNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet metadata from file %s", filename)
+                    self.logger.warn("Could not read nodenet metadata from file %s", filename)
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet metadata file %s", filename)
+                    self.logger.warn("Could not open nodenet metadata file %s", filename)
                     return False
 
             # initialize with metadata
@@ -366,6 +365,8 @@ class TheanoNodenet(Nodenet):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
 
         uidmap = {}
+        invalid_nodes = []
+
         # for dict_engine compatibility
         uidmap["Root"] = self.rootpartition.rootnodespace_uid
 
@@ -393,35 +394,38 @@ class TheanoNodenet(Nodenet):
             parent_uid = data['parent_nodespace']
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
-            if data['type'] in self._nodetypes or data['type'] in self.native_modules:
-                olduid = None
-                if keep_uids:
-                    olduid = uid
-                new_uid = self.create_node(
-                    data['type'],
-                    parent_uid,
-                    data['position'],
-                    name=data['name'],
-                    uid=olduid,
-                    parameters=data.get('parameters'),
-                    gate_parameters=data.get('gate_parameters'),
-                    gate_functions=data.get('gate_functions'))
-                uidmap[uid] = new_uid
-                node_proxy = self.get_node(new_uid)
-                for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
-                    if gatetype in node_proxy.nodetype.gatetypes:
-                        node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
-                state = data.get('state', {})
-                if state is not None:
-                    for key, value in state.items():
-                        node_proxy.set_state(key, value)
-
-            else:
-                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+            if data['type'] not in self._nodetypes and data['type'] not in self.native_modules:
+                data['parameters'] = {
+                    'comment': 'There was a %s node here' % data['type']
+                }
+                data['type'] = 'Comment'
+                del data['gate_parameters']
+                invalid_nodes.append(uid)
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+            new_uid = self.create_node(
+                data['type'],
+                parent_uid,
+                data['position'],
+                name=data['name'],
+                uid=uid,
+                parameters=data.get('parameters'),
+                gate_parameters=data.get('gate_parameters'),
+                gate_functions=data.get('gate_functions'))
+            uidmap[uid] = new_uid
+            node_proxy = self.get_node(new_uid)
+            for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
+                if gatetype in node_proxy.nodetype.gatetypes:
+                    node_proxy.get_gate(gatetype).activation = data['gate_activations'][gatetype]['default']['activation']
+            state = data.get('state', {})
+            if state is not None:
+                for key, value in state.items():
+                    node_proxy.set_state(key, value)
 
         # merge in links
         for linkid in nodenet_data.get('links', {}):
             data = nodenet_data['links'][linkid]
+            if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
+                continue
             self.create_link(
                 uidmap[data['source_node_uid']],
                 data['source_gate_name'],
@@ -482,7 +486,6 @@ class TheanoNodenet(Nodenet):
                 uidmap[nodespace_uid] = newuid
 
     def step(self):
-        self.user_prompt = None
         if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
             self.world.agents[self.uid].snapshot()      # world adapter snapshot
                                                         # TODO: Not really sure why we don't just know our world adapter,
@@ -907,9 +910,6 @@ class TheanoNodenet(Nodenet):
                 if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
                     data['nodes'][uid] = self.get_node(uid).data
 
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
         return data
 
     def get_modulator(self, modulator):

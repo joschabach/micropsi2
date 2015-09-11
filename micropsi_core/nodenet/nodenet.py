@@ -172,7 +172,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.netlock = Lock()
 
-        self.logger = logging.getLogger("nodenet")
+        self.logger = logging.getLogger('agent.%s' % self.uid)
         self.logger.info("Setting up nodenet %s with engine %s", self.name, self.engine)
 
         self.user_prompt = None

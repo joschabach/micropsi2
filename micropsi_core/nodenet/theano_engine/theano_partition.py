@@ -195,7 +195,6 @@ class TheanoPartition():
         self.allocated_nodespaces_sur_activators = None
         self.allocated_nodespaces_cat_activators = None
         self.allocated_nodespaces_exp_activators = None
-        self.allocated_nodespaces_sample_activators = None
 
         # directional activators map, index is element id, value is the directional activator's element id
         self.allocated_elements_to_activators = None
@@ -243,7 +242,6 @@ class TheanoPartition():
         self.allocated_nodespaces_sur_activators = np.zeros(self.NoNS, dtype=np.int32)
         self.allocated_nodespaces_cat_activators = np.zeros(self.NoNS, dtype=np.int32)
         self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
-        self.allocated_nodespaces_sample_activators = np.zeros(self.NoNS, dtype=np.int32)
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
@@ -718,7 +716,6 @@ class TheanoPartition():
         allocated_nodespaces_sur_activators = self.allocated_nodespaces_sur_activators
         allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
         allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
-        allocated_nodespaces_sample_activators = self.allocated_nodespaces_sample_activators
 
         w = self.w.get_value(borrow=True)
 
@@ -799,7 +796,6 @@ class TheanoPartition():
                  allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
                  allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
-                 allocated_nodespaces_sample_activators=allocated_nodespaces_sample_activators,
                  inlink_pids=inlinks_pids,
                  inlink_from_lengths=inlink_from_lengths,
                  inlink_to_lengths=inlink_to_lengths,
@@ -893,11 +889,6 @@ class TheanoPartition():
             self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
         else:
             self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
-
-        if 'allocated_nodespaces_sample_activators' in datafile:
-            self.allocated_nodespaces_sample_activators = datafile['allocated_nodespaces_sample_activators']
-        else:
-            self.logger.warn("no allocated_nodespaces_sample_activators in file, falling back to defaults")
 
         if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
             w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
@@ -1060,10 +1051,6 @@ class TheanoPartition():
             new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
             new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
             self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
-
-            new_allocated_nodespaces_sample_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sample_activators[0:self.NoNS] = self.allocated_nodespaces_sample_activators
-            self.allocated_nodespaces_sample_activators = new_allocated_nodespaces_sample_activators
 
             self.has_new_usages = True
             self.NoNS = new_NoNS
@@ -1291,22 +1278,12 @@ class TheanoPartition():
             n_function_selector_array[offset + GOU] = NFPG_LSTM_GOU
             n_function_selector_array[offset + GFG] = NFPG_LSTM_GFG
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
-            self.allocated_elements_to_activators[offset + GEN] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sample_activators[nodespace_id]]
-            self.allocated_elements_to_activators[offset + POR] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sample_activators[nodespace_id]]
-            self.allocated_elements_to_activators[offset + GIN] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sample_activators[nodespace_id]]
-            self.allocated_elements_to_activators[offset + GOU] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sample_activators[nodespace_id]]
-            self.allocated_elements_to_activators[offset + GFG] = \
-                self.allocated_node_offsets[self.allocated_nodespaces_sample_activators[nodespace_id]]
         elif nodetype == "Activator":
             activator_type = parameters.get("type")
             if activator_type in ["por", "ret", "sub", "sur", "cat", "exp"]:
                 self.has_directional_activators = True
             if activator_type is not None and len(activator_type) > 0:
-                self.set_nodespace_activator(nodespace_id, activator_type, id)
+                self.set_nodespace_gatetype_activator(nodespace_id, activator_type, id)
 
         if nodetype not in self.nodenet.get_standard_nodetype_definitions():
             node_proxy = self.nodenet.get_node(uid)
@@ -1408,8 +1385,6 @@ class TheanoPartition():
             self.allocated_nodespaces_cat_activators[parent] = 0
         elif self.allocated_nodespaces_exp_activators[parent] == node_id:
             self.allocated_nodespaces_exp_activators[parent] = 0
-        elif self.allocated_nodespaces_sample_activators[parent] == node_id:
-            self.allocated_nodespaces_sample_activators[parent] = 0
 
     def unlink_node_completely(self, node_id):
         type = self.allocated_nodes[node_id]
@@ -1508,42 +1483,31 @@ class TheanoPartition():
         elif g_function_selector[elementindex] == GATE_FUNCTION_DIST:
             self.has_gatefunction_one_over_x = True
 
-    def set_nodespace_activator(self, nodespace_id, activator_type, activator_id):
-        if activator_type == "por":
+    def set_nodespace_gatetype_activator(self, nodespace_id, gate_type, activator_id):
+        if gate_type == "por":
             self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
             self.has_directional_activators = True
-        elif activator_type == "ret":
+        elif gate_type == "ret":
             self.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
             self.has_directional_activators = True
-        elif activator_type == "sub":
+        elif gate_type == "sub":
             self.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
             self.has_directional_activators = True
-        elif activator_type == "sur":
+        elif gate_type == "sur":
             self.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
             self.has_directional_activators = True
-        elif activator_type == "cat":
+        elif gate_type == "cat":
             self.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
             self.has_directional_activators = True
-        elif activator_type == "exp":
+        elif gate_type == "exp":
             self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
             self.has_directional_activators = True
-        elif activator_type == "sample":
-            self.allocated_nodespaces_sample_activators[nodespace_id] = activator_id
-            self.has_directional_activators = True
 
-        if activator_type in ["por", "ret", "sub", "sur", "cat", "exp"]:
-            nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
-            for nid in nodes_in_nodespace:
-                if self.allocated_nodes[nid] == PIPE:
-                    self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
-                                                          get_numerical_gate_type(activator_type)] = self.allocated_node_offsets[activator_id]
-        elif activator_type == "sample":
-            nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
-            for nid in nodes_in_nodespace:
-                if self.allocated_nodes[nid] == LSTM:
-                    for gate_type_numerical in range(GEN, GFG+1):
-                        self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
-                                                              gate_type_numerical] = self.allocated_node_offsets[activator_id]
+        nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
+        for nid in nodes_in_nodespace:
+            if self.allocated_nodes[nid] == PIPE:
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
+                                                      get_numerical_gate_type(gate_type)] = self.allocated_node_offsets[activator_id]
 
     def set_link_weight(self, source_node_id, gate_type, target_node_id, slot_type, weight=1):
         source_nodetype = None

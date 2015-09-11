@@ -997,12 +997,23 @@ class TheanoPartition():
             self.has_new_usages = True
             self.has_pipes = PIPE in self.allocated_nodes
             self.has_lstms = LSTM in self.allocated_nodes
-            self.has_directional_activators = ACTIVATOR in self.allocated_nodes
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
             self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
             self.has_gatefunction_rect = GATE_FUNCTION_RECT in g_function_selector
             self.has_gatefunction_one_over_x = GATE_FUNCTION_DIST in g_function_selector
+
+            self.has_directional_activators = False
+            activator_ids = np.where(self.allocated_nodes == ACTIVATOR)
+            for activator_id in activator_ids:
+                if activator_id in self.allocated_nodespaces_por_activators or \
+                   activator_id in self.allocated_nodespaces_ret_activators or \
+                   activator_id in self.allocated_nodespaces_sub_activators or \
+                   activator_id in self.allocated_nodespaces_sur_activators or \
+                   activator_id in self.allocated_nodespaces_cat_activators or \
+                   activator_id in self.allocated_nodespaces_exp_activators:
+                    self.has_directional_activators = True
+
         else:
             self.logger.warn("no g_function_selector in file, falling back to defaults")
 
@@ -1291,8 +1302,9 @@ class TheanoPartition():
             self.allocated_elements_to_activators[offset + GFG] = \
                 self.allocated_node_offsets[self.allocated_nodespaces_sample_activators[nodespace_id]]
         elif nodetype == "Activator":
-            self.has_directional_activators = True
             activator_type = parameters.get("type")
+            if activator_type in ["por", "ret", "sub", "sur", "cat", "exp"]:
+                self.has_directional_activators = True
             if activator_type is not None and len(activator_type) > 0:
                 self.set_nodespace_activator(nodespace_id, activator_type, id)
 
@@ -1362,11 +1374,11 @@ class TheanoPartition():
 
         if type == LSTM:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
-            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
-            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
-            n_function_selector_array[offset + GIN] = NFPG_PIPE_NON
-            n_function_selector_array[offset + GOU] = NFPG_PIPE_NON
-            n_function_selector_array[offset + GFG] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GEN] = NFPG_LSTM_NON
+            n_function_selector_array[offset + POR] = NFPG_LSTM_NON
+            n_function_selector_array[offset + GIN] = NFPG_LSTM_NON
+            n_function_selector_array[offset + GOU] = NFPG_LSTM_NON
+            n_function_selector_array[offset + GFG] = NFPG_LSTM_NON
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # hint at the free ID
@@ -1499,29 +1511,39 @@ class TheanoPartition():
     def set_nodespace_activator(self, nodespace_id, activator_type, activator_id):
         if activator_type == "por":
             self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif activator_type == "ret":
             self.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif activator_type == "sub":
             self.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif activator_type == "sur":
             self.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif activator_type == "cat":
             self.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif activator_type == "exp":
             self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif activator_type == "sample":
             self.allocated_nodespaces_sample_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
 
-        nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
-        for nid in nodes_in_nodespace:
-            if self.allocated_nodes[nid] == PIPE:
-                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
-                                                      get_numerical_gate_type(activator_type)] = self.allocated_node_offsets[activator_id]
-            elif self.allocated_nodes[nid] == LSTM:
-                for gate_type_numerical in range(GEN, GFG):
+        if activator_type in ["por", "ret", "sub", "sur", "cat", "exp"]:
+            nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
+            for nid in nodes_in_nodespace:
+                if self.allocated_nodes[nid] == PIPE:
                     self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
-                                                          gate_type_numerical] = self.allocated_node_offsets[activator_id]
-
+                                                          get_numerical_gate_type(activator_type)] = self.allocated_node_offsets[activator_id]
+        elif activator_type == "sample":
+            nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
+            for nid in nodes_in_nodespace:
+                if self.allocated_nodes[nid] == LSTM:
+                    for gate_type_numerical in range(GEN, GFG+1):
+                        self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
+                                                              gate_type_numerical] = self.allocated_node_offsets[activator_id]
 
     def set_link_weight(self, source_node_id, gate_type, target_node_id, slot_type, weight=1):
         source_nodetype = None

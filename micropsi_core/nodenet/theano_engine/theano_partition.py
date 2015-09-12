@@ -1508,11 +1508,11 @@ class TheanoPartition():
         ngt = get_numerical_gate_type(gate_type, source_nodetype)
         nst = get_numerical_slot_type(slot_type, target_nodetype)
 
-        #if ngt > get_gates_per_type(self.allocated_nodes[source_node_id], self.nodenet.native_modules):
-        #    raise ValueError("Node %s does not have a gate of type %s" % (node_to_id(source_node_id, self.pid), gate_type))
+        if ngt > get_gates_per_type(self.allocated_nodes[source_node_id], self.nodenet.native_modules):
+            raise ValueError("Node %s does not have a gate of type %s" % (node_to_id(source_node_id, self.pid), gate_type))
 
-        #if nst > get_slots_per_type(self.allocated_nodes[target_node_id], self.nodenet.native_modules):
-        #    raise ValueError("Node %s does not have a slot of type %s" % (node_to_id(target_node_id, self.pid), slot_type))
+        if nst > get_slots_per_type(self.allocated_nodes[target_node_id], self.nodenet.native_modules):
+            raise ValueError("Node %s does not have a slot of type %s" % (node_to_id(target_node_id, self.pid), slot_type))
 
         w_matrix = self.w.get_value(borrow=True)
         x = self.allocated_node_offsets[target_node_id] + nst

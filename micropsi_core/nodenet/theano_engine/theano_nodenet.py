@@ -489,10 +489,8 @@ class TheanoNodenet(Nodenet):
                 uidmap[nodespace_uid] = newuid
 
     def step(self):
-        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
-            self.world.agents[self.uid].snapshot()      # world adapter snapshot
-                                                        # TODO: Not really sure why we don't just know our world adapter,
-                                                        # but instead the world object itself
+        if self.worldadapter_instance is not None:
+            self.worldadapter_instance.snapshot()
 
         with self.netlock:
             self._step += 1

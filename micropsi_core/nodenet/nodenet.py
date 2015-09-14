@@ -118,22 +118,16 @@ class Nodenet(metaclass=ABCMeta):
     @property
     def world(self):
         """
-        Returns the currently connected world (as an object) or none if no world is set
+        Returns the currently connected world_uid
         """
-        if self._world_uid is not None:
-            from micropsi_core.runtime import worlds
-            return worlds.get(self._world_uid)
-        return None
+        return self._world_uid
 
     @world.setter
-    def world(self, world):
+    def world(self, world_uid):
         """
-        Connects the node net to the given world object, or disconnects if None is given
+        Sets the world_uid of this nodenet
         """
-        if world:
-            self._world_uid = world.uid
-        else:
-            self._world_uid = None
+        self._world_uid = world_uid
 
     @property
     def worldadapter(self):
@@ -145,9 +139,23 @@ class Nodenet(metaclass=ABCMeta):
     @worldadapter.setter
     def worldadapter(self, worldadapter_uid):
         """
-        Connects the node net to the given world adapter uid, or disconnects if None is given
+        Sets the worldadapter uid of this nodenet
         """
         self._worldadapter_uid = worldadapter_uid
+
+    @property
+    def worldadapter_instance(self):
+        """
+        Returns the uid of the currently connected world adapter
+        """
+        return self._worldadapter_instance
+
+    @worldadapter_instance.setter
+    def worldadapter_instance(self, _worldadapter_instance):
+        """
+        Connects the node net to the given world adapter uid, or disconnects if None is given
+        """
+        self._worldadapter_instance = _worldadapter_instance
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None):
         """
@@ -155,19 +163,16 @@ class Nodenet(metaclass=ABCMeta):
         """
         self._uid = uid or micropsi_core.tools.generate_uid()
         self._name = name
-        self._world_uid = None
-        self._worldadapter_uid = None
+        self._world_uid = world
+        self._worldadapter_uid = worldadapter if world else None
+        self._worldadapter_instance = None
         self.is_active = False
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._uid = uid
         self._runner_condition = None
 
-        self.world = world
         self.owner = owner
-        if world and worldadapter:
-            self.worldadapter = worldadapter
-
         self._monitors = {}
 
         self.max_coords = {'x': 0, 'y': 0}

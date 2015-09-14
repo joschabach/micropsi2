@@ -168,6 +168,10 @@ class World(object):
             if not self.agents[uid].is_alive():
                 self.unregister_nodenet(uid)
                 # TODO: prevent respawn?
+                # remove from living agents for the moment
+                # TODO: unregister?
+                # TODO: respawn?
+                del self.agents[uid]
 
     def get_world_view(self, step):
         """ returns a list of world objects, and the current step of the simulation """
@@ -235,30 +239,32 @@ class World(object):
                 return True, nodenet.uid
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-        return self.spawn_agent(worldadapter, nodenet.uid, name=nodenet.name)
+        return self.spawn_agent(worldadapter, nodenet, name=nodenet.name)
 
-    def unregister_nodenet(self, nodenet_uid):
+    def unregister_nodenet(self, nodenet):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
         agent object
         """
-        if nodenet_uid in self.agents:
+        if nodenet.uid in self.agents:
             # stop corresponding nodenet
-            micropsi_core.runtime.stop_nodenetrunner(nodenet_uid)
+            micropsi_core.runtime.stop_nodenetrunner(nodenet.uid)
 
             # remove agent
-            del self.agents[nodenet_uid]
-        if nodenet_uid in self.data['agents']:
-            del self.data['agents'][nodenet_uid]
+            nodenet.worldadapter_instance = None
+            del self.agents[nodenet.uid]
+        if nodenet.uid in self.data['agents']:
+            del self.data['agents'][nodenet.uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
+    def spawn_agent(self, worldadapter_name, nodenet, **options):
         """Creates an agent object,
 
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
         try:
-            self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet_uid, **options)
-            return True, nodenet_uid
+            self.agents[nodenet.uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet.uid, **options)
+            nodenet.worldadapter_instance = self.agents[nodenet.uid]
+            return True, nodenet.uid
         except AttributeError:
             return False, "Worldadapter \"%s\" not found" % worldadapter_name
         except KeyError:
@@ -303,33 +309,33 @@ class World(object):
             return True
         return False
 
-    def get_available_datasources(self, nodenet_uid):
-        """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
-        if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].get_available_datasources()
-        return None
+    # def get_available_datasources(self, nodenet_uid):
+    #     """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
+    #     if nodenet_uid in self.agents:
+    #         return self.agents[nodenet_uid].get_available_datasources()
+    #     return None
 
-    def get_available_datatargets(self, nodenet_uid):
-        """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
-        if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].get_available_datatargets()
-        return None
+    # def get_available_datatargets(self, nodenet_uid):
+    #     """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
+    #     if nodenet_uid in self.agents:
+    #         return self.agents[nodenet_uid].get_available_datatargets()
+    #     return None
 
-    def get_datasource(self, nodenet_uid, key):
-        """allows the nodenet to read a value from a datasource"""
-        if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].get_datasource(key)
-        return None
+    # def get_datasource(self, nodenet_uid, key):
+    #     """allows the nodenet to read a value from a datasource"""
+    #     if nodenet_uid in self.agents:
+    #         return self.agents[nodenet_uid].get_datasource(key)
+    #     return None
 
-    def add_to_datatarget(self, nodenet_uid, key, value):
-        """allows the nodenet to write a value to a datatarget"""
-        if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].add_to_datatarget(key, value)
+    # def add_to_datatarget(self, nodenet_uid, key, value):
+    #     """allows the nodenet to write a value to a datatarget"""
+    #     if nodenet_uid in self.agents:
+    #         return self.agents[nodenet_uid].add_to_datatarget(key, value)
 
-    def get_datatarget_feedback(self, nodenet_uid, key):
-        """reads the feedback-value for a given datatarget from the worldadapter"""
-        if nodenet_uid in self.agents:
-            return self.agents[nodenet_uid].get_datatarget_feedback(key)
+    # def get_datatarget_feedback(self, nodenet_uid, key):
+    #     """reads the feedback-value for a given datatarget from the worldadapter"""
+    #     if nodenet_uid in self.agents:
+    #         return self.agents[nodenet_uid].get_datatarget_feedback(key)
 
 
 # imports of individual world types:

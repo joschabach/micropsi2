@@ -21,9 +21,9 @@ def calc_emoexpression_parameters(nodenet):
     base_unexpectedness = nodenet.get_modulator("base_unexpectedness")
 
     integrity = 1
-    if nodenet.world is not None and "health" in nodenet.world.get_available_datasources(nodenet.uid):
-        if nodenet.world.get_datasource(nodenet.uid, "health"):
-            integrity = nodenet.world.get_datasource(nodenet.uid, "health")
+    if nodenet.world is not None and "health" in nodenet.worldadapter_instance.get_available_datasources():
+        if nodenet.worldadapter_instance.get_datasource("health"):
+            integrity = nodenet.worldadapter_instance.get_datasource("health")
 
     exp_pain = 1 - integrity
     exp_activation = emo_activation

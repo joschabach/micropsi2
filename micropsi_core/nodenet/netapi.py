@@ -14,8 +14,8 @@ class NetAPI(object):
         return self.__nodenet.current_step
 
     @property
-    def world(self):
-        return self.__nodenet.world
+    def worldadapter(self):
+        return self.__nodenet.worldadapter_instance
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet
@@ -230,7 +230,7 @@ class NetAPI(object):
         Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
         a new actor will be created, otherwise the first actor found will be used
         """
-        if datatarget not in self.world.get_available_datatargets(self.__nodenet.uid):
+        if datatarget not in self.worldadapter.get_available_datatargets():
             raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
@@ -241,14 +241,14 @@ class NetAPI(object):
             actor.set_parameter('datatarget', datatarget)
 
         self.link(node, gate, actor, 'gen', weight, certainty)
-        #self.link(actor, 'gen', node, slot)
+        # self.link(actor, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur'):
         """
         Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
         a new sensor will be created, otherwise the first sensor found will be used
         """
-        if datasource not in self.world.get_available_datasources(self.__nodenet.uid):
+        if datasource not in self.worldadapter.get_available_datasources():
             raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
@@ -266,10 +266,10 @@ class NetAPI(object):
         exists in the given nodespace.
         """
         all_actors = []
-        if self.world is None:
+        if self.worldadapter is None:
             return all_actors
 
-        datatargets = self.world.get_available_datatargets(self.__nodenet.uid)
+        datatargets = self.worldadapter.get_available_datatargets()
         datatargets = sorted(datatargets)
 
         for datatarget in datatargets:
@@ -290,10 +290,10 @@ class NetAPI(object):
         exists in the given nodespace.
         """
         all_sensors = []
-        if self.world is None:
+        if self.worldadapter is None:
             return all_sensors
 
-        datasources = self.world.get_available_datasources(self.__nodenet.uid)
+        datasources = self.worldadapter.get_available_datasources()
         datasources = sorted(datasources)
 
         for datasource in datasources:

@@ -144,11 +144,11 @@ class MicropsiRunner(threading.Thread):
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
-                                nodenet.world.step()
+                                worlds[nodenet.world].step()
                             except:
                                 nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
-                                MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
+                                MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:
@@ -277,7 +277,7 @@ def load_nodenet(nodenet_uid):
 
     """
     if nodenet_uid in nodenet_data:
-        world = worldadapter = None
+        world_uid = worldadapter = None
 
         nodenet_lock.acquire()
         if nodenet_uid not in nodenets:
@@ -285,8 +285,10 @@ def load_nodenet(nodenet_uid):
 
             if data.world:
                 if data.world in worlds:
-                    world = worlds.get(data.world)
+                    world_uid = data.world
                     worldadapter = data.get('worldadapter')
+                else:
+                    logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
 
             engine = data.get('engine', 'dict_engine')
 
@@ -296,13 +298,13 @@ def load_nodenet(nodenet_uid):
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
                     name=data.name, worldadapter=worldadapter,
-                    world=world, owner=data.owner, uid=data.uid,
+                    world=world_uid, owner=data.owner, uid=data.uid,
                     native_modules=filter_native_modules(engine))
             elif engine == 'theano_engine':
                 from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                 nodenets[nodenet_uid] = TheanoNodenet(
                     name=data.name, worldadapter=worldadapter,
-                    world=world, owner=data.owner, uid=data.uid,
+                    world=world_uid, owner=data.owner, uid=data.uid,
                     native_modules=filter_native_modules(engine))
             # Add additional engine types here
             else:
@@ -316,10 +318,10 @@ def load_nodenet(nodenet_uid):
             else:
                 nodenets[nodenet_uid].settings = {}
         else:
-            world = nodenets[nodenet_uid].world or None
+            world_uid = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
-        if world:
-            world.register_nodenet(worldadapter, nodenets[nodenet_uid])
+        if world_uid:
+            worlds[world_uid].register_nodenet(worldadapter, nodenets[nodenet_uid])
 
         nodenet_lock.release()
         return True, nodenet_uid
@@ -362,14 +364,14 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
                     del data['simulation_condition']['monitor']
         data['simulation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
-        data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
+        data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
             data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
         if world is not None and nodenet_obj.world:
-            data['world'] = get_world_view(world_uid=nodenet_obj.world.uid, **world)
+            data['world'] = get_world_view(world_uid=nodenet_obj.world, **world)
         if monitors is not None:
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
         return True, data
@@ -386,8 +388,9 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
-    if nodenets[nodenet_uid].world:
-        nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
+    nodenet = nodenets[nodenet_uid]
+    if nodenet.world:
+        worlds[nodenet.world].unregister_nodenet(nodenet)
     del nodenets[nodenet_uid]
     logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
@@ -452,14 +455,14 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = nodenets[nodenet_uid]
-    if nodenet.world and nodenet.world.uid != world_uid:
-        nodenet.world.unregister_nodenet(nodenet_uid)
+    if nodenet.world and nodenet.world != world_uid:
+        worlds[nodenet.world].unregister_nodenet(nodenet)
         nodenet.world = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:
         assert worldadapter in worlds[world_uid].supported_worldadapters
-        nodenet.world = worlds[world_uid]
+        nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
         worlds[world_uid].register_nodenet(worldadapter, nodenet)
     if nodenet_name:
@@ -541,7 +544,7 @@ def step_nodenet(nodenet_uid):
     nodenets[nodenet_uid].step()
     nodenets[nodenet_uid].update_monitors()
     if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
-        nodenets[nodenet_uid].world.step()
+        worlds[nodenets[nodenet_uid].world].step()
     return nodenets[nodenet_uid].current_step
 
 
@@ -1006,14 +1009,16 @@ def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
 
 def get_available_datasources(nodenet_uid):
     """Returns a list of available datasource types for the given nodenet."""
-    world_uid = nodenets[nodenet_uid].world.uid
-    return worlds[world_uid].get_available_datasources(nodenet_uid)
+    if nodenets[nodenet_uid].worldadapter_instance:
+        return nodenets[nodenet_uid].worldadapter_instance.get_available_datasources()
+    return []
 
 
 def get_available_datatargets(nodenet_uid):
     """Returns a list of available datatarget types for the given nodenet."""
-    world_uid = nodenets[nodenet_uid].world.uid
-    return worlds[world_uid].get_available_datatargets(nodenet_uid)
+    if nodenets[nodenet_uid].worldadapter_instance:
+        return nodenets[nodenet_uid].worldadapter_instance.get_available_datatargets()
+    return []
 
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
@@ -1050,7 +1055,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
     uid = None
     if success:                                                       # todo: check whether clients need these uids
-        uid = source_node_uid+":"+gate_type+":"+slot_type+":"+target_node_uid
+        uid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
     return success, uid
 
 

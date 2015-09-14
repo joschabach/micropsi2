@@ -84,7 +84,7 @@ def test_register_agent(test_world, test_nodenet):
     nodenet = runtime.get_nodenet(test_nodenet)
     assert nodenet.uid not in world.data['agents']
     runtime.load_nodenet(test_nodenet)
-    nodenet.world = world
+    nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     assert nodenet.uid in world.data['agents']
     assert nodenet.uid in world.agents
@@ -115,14 +115,12 @@ def test_agent_dying_unregisters_agent(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     runtime.load_nodenet(test_nodenet)
-    nodenet.world = world
+    nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
-    assert nodenet.uid in world.data['agents']
     assert nodenet.uid in world.agents
     mockdead = mock.Mock(return_value=False)
     world.agents[nodenet.uid].is_alive = mockdead
     world.step()
-    assert nodenet.uid not in world.data['agents']
     assert nodenet.uid not in world.agents
 
 
@@ -156,7 +154,7 @@ def test_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     runtime.load_nodenet(test_nodenet)
-    nodenet.world = world
+    nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     world.agents[test_nodenet].datatargets['engine_r'] = 0.7
     world.agents[test_nodenet].datatargets['engine_l'] = 0.2
@@ -169,7 +167,7 @@ def test_actuators_do_not_reset_each_others_datatarget(test_world, test_nodenet)
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     runtime.load_nodenet(test_nodenet)
-    nodenet.world = world
+    nodenet.world = test_world
     runtime.set_runner_properties(200, 1)
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     actor1 = nodenet.netapi.create_node("Actor", None)
@@ -192,7 +190,7 @@ def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)
     runtime.load_nodenet(test_nodenet)
-    nodenet.world = world
+    nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
     world.agents[test_nodenet].reset_datatargets = mock.MagicMock(name='reset')
     runtime.step_nodenet(test_nodenet)

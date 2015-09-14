@@ -153,9 +153,6 @@ class DictNodenet(Nodenet):
             'por_ret_decay': 0.
         }
 
-        if world and worldadapter:
-            self.worldadapter = worldadapter
-
         self._nodes = {}
         self._nodespaces = {}
         self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
@@ -292,8 +289,6 @@ class DictNodenet(Nodenet):
             return self._native_modules.get(type)
 
     def get_nodespace_data(self, nodespace, include_links):
-        world_uid = self.world.uid if self.world is not None else None
-
         data = {
             'links': {},
             'nodes': {},
@@ -302,7 +297,7 @@ class DictNodenet(Nodenet):
             'is_active': self.is_active,
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
-            'world': world_uid,
+            'world': self.world,
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
@@ -425,10 +420,8 @@ class DictNodenet(Nodenet):
 
     def step(self):
         """perform a simulation step"""
-        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
-            self.world.agents[self.uid].snapshot()      # world adapter snapshot
-                                                        # TODO: Not really sure why we don't just know our world adapter,
-                                                        # but instead the world object itself
+        if self.worldadapter_instance:
+            self.worldadapter_instance.snapshot()
 
         with self.netlock:
 

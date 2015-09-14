@@ -307,34 +307,6 @@ class World(object):
             return True
         return False
 
-    # def get_available_datasources(self, nodenet_uid):
-    #     """Returns the datasource types for a registered nodenet, or None if the nodenet is not registered."""
-    #     if nodenet_uid in self.agents:
-    #         return self.agents[nodenet_uid].get_available_datasources()
-    #     return None
-
-    # def get_available_datatargets(self, nodenet_uid):
-    #     """Returns the datatarget types for a registered nodenet, or None if the nodenet is not registered."""
-    #     if nodenet_uid in self.agents:
-    #         return self.agents[nodenet_uid].get_available_datatargets()
-    #     return None
-
-    # def get_datasource(self, nodenet_uid, key):
-    #     """allows the nodenet to read a value from a datasource"""
-    #     if nodenet_uid in self.agents:
-    #         return self.agents[nodenet_uid].get_datasource(key)
-    #     return None
-
-    # def add_to_datatarget(self, nodenet_uid, key, value):
-    #     """allows the nodenet to write a value to a datatarget"""
-    #     if nodenet_uid in self.agents:
-    #         return self.agents[nodenet_uid].add_to_datatarget(key, value)
-
-    # def get_datatarget_feedback(self, nodenet_uid, key):
-    #     """reads the feedback-value for a given datatarget from the worldadapter"""
-    #     if nodenet_uid in self.agents:
-    #         return self.agents[nodenet_uid].get_datatarget_feedback(key)
-
 
 # imports of individual world types:
 try:

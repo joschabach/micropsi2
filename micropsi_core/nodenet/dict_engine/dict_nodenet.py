@@ -736,3 +736,20 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+
+    def get_dashboard(self):
+        data = super(DictNodenet, self).get_dashboard()
+        link_uids = []
+        node_uids = self.get_node_uids()
+        data['count_nodes'] = len(node_uids)
+        data['count_positive_nodes'] = 0
+        data['count_negative_nodes'] = 0
+        for uid in node_uids:
+            link_uids.extend(self.get_node(uid).get_associated_links())
+            if self._nodes[uid].activation > 0:
+                data['count_positive_nodes'] += 1
+            elif self._nodes[uid].activation < 0:
+                data['count_negative_nodes'] += 1
+        data['modulators'] = self.construct_modulators_dict()
+        data['count_links'] = len(set(link_uids))
+        return data

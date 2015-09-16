@@ -1197,6 +1197,11 @@ def get_available_recipes():
     return True, runtime.get_available_recipes()
 
 
+@rpc('get_agent_dashboard')
+def get_agent_dashboard(nodenet_uid):
+    return True, runtime.get_agent_dashboard(nodenet_uid)
+
+
 # -----------------------------------------------------------------------------------------------
 
 def main(host=None, port=None):

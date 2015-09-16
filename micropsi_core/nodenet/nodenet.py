@@ -4,11 +4,13 @@
 Nodenet definition
 """
 
-import micropsi_core.tools
+
+import logging
+from datetime import datetime
+from threading import Lock
 from abc import ABCMeta, abstractmethod
 
-from threading import Lock
-import logging
+import micropsi_core.tools
 from .netapi import NetAPI
 from . import monitor
 
@@ -184,6 +186,9 @@ class Nodenet(metaclass=ABCMeta):
 
         self.netapi = NetAPI(self)
 
+        self.stepping_rate = []
+        self.dashboard_values = {}
+
     @abstractmethod
     def save(self, filename):
         """
@@ -205,6 +210,13 @@ class Nodenet(metaclass=ABCMeta):
         have created for persistency
         """
         pass  # pragma: no cover
+
+    def timed_step(self):
+        start = datetime.now()
+        self.step()
+        elapsed = datetime.now() - start
+        self.stepping_rate.append(elapsed.seconds + ((elapsed.microseconds // 1000) / 1000))
+        self.stepping_rate = self.stepping_rate[-100:]
 
     @abstractmethod
     def step(self):
@@ -296,7 +308,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_actors(self, nodespace=None, datatarget=None):
         """
-        Returns a dict of all sensor nodes. Optionally filtered by the given nodespace and data target
+        Returns a dict of all actor nodes. Optionally filtered by the given nodespace and data target
         """
         pass  # pragma: no cover
 
@@ -541,3 +553,22 @@ class Nodenet(metaclass=ABCMeta):
 
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
+
+    def get_dashboard(self):
+        data = self.dashboard_values.copy()
+        sensors = {}
+        actors = {}
+        if self.worldadapter_instance:
+            for s in self.worldadapter_instance.get_available_datasources():
+                sensors[s] = self.worldadapter_instance.get_datasource(s)
+            for uid, actor in self.get_actors().items():
+                actors[actor.get_parameter('datatarget')] = actor.activation
+        data['sensors'] = sensors
+        data['actors'] = actors
+        data['is_active'] = self.is_active
+        data['step'] = self.current_step
+        if self.stepping_rate:
+            data['stepping_rate'] = sum(self.stepping_rate) / len(self.stepping_rate)
+        else:
+            data['stepping_rate'] = -1
+        return data

@@ -522,3 +522,7 @@ class NetAPI(object):
     def remove_monitor(self, uid):
         """Removes the monitor with the given uid"""
         return self.__nodenet.remove_monitor(uid)
+
+    def set_dashboard_value(self, name, value):
+        """Allows the netapi to set values for the statistics and dashboard"""
+        self.__nodenet.dashboard_values[name] = value

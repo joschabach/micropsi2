@@ -132,7 +132,7 @@ class MicropsiRunner(threading.Thread):
                         try:
                             if self.profiler:
                                 self.profiler.enable()
-                            nodenet.step()
+                            nodenet.timed_step()
                             if self.profiler:
                                 self.profiler.disable()
                             nodenet.update_monitors()
@@ -163,9 +163,9 @@ class MicropsiRunner(threading.Thread):
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
                         ps.print_stats('nodenet')
-                        logging.getLogger("agent.%s" % uid).debug(s.getvalue())
+                        logging.getLogger("system").debug(s.getvalue())
 
-                    logging.getLogger("agent.%s" % uid).debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0
                     if average_duration < 0.0001:
@@ -1137,6 +1137,10 @@ def run_recipe(nodenet_uid, name, parameters):
         return True, result
     else:
         return False, "Script not found"
+
+
+def get_agent_dashboard(nodenet_uid):
+    return nodenets[nodenet_uid].get_dashboard()
 
 
 # --- end of API

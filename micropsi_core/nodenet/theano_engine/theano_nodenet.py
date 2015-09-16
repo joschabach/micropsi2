@@ -1267,3 +1267,21 @@ class TheanoNodenet(Nodenet):
 
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
+
+    def get_dashboard(self):
+        data = super(TheanoNodenet, self).get_dashboard()
+        data['count_nodes'] = 0
+        data['count_links'] = -1
+        data['count_positive_nodes'] = 0
+        data['count_negative_nodes'] = 0
+        data['modulators'] = self.construct_modulators_dict()
+        for uid, partition in self.partitions.items():
+            node_ids = np.nonzero(partition.allocated_nodes)[0]
+            data['count_nodes'] += len(node_ids)
+            for id in node_ids:
+                act = float(partition.a.get_value(borrow=True)[partition.allocated_node_offsets[id] + GEN])
+                if act > 0:
+                    data['count_positive_nodes'] += 1
+                elif act < 0:
+                    data['count_negative_nodes'] += 1
+        return data

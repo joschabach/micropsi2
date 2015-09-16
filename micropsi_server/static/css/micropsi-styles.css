@@ -522,3 +522,14 @@ table.emoexpression td {
 .color-chooser input {
   display: none;
 }
+
+.dashboard-item {
+  float: left;
+}
+.dashboard-table th {
+  margin-top: 1em;
+  text-align: left;
+}
+.dashboard-table td {
+  padding-left: 1em;
+}

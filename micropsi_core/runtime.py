@@ -347,7 +347,7 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?
     """
@@ -374,6 +374,8 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
             data['world'] = get_world_view(world_uid=nodenet_obj.world, **world)
         if monitors is not None:
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
+        if dashboard is not None:
+            data['dashboard'] = get_agent_dashboard(nodenet_uid)
         return True, data
     else:
         return False, "No such nodenet"

@@ -568,7 +568,7 @@ class Nodenet(metaclass=ABCMeta):
         data['is_active'] = self.is_active
         data['step'] = self.current_step
         if self.stepping_rate:
-            data['stepping_rate'] = sum(self.stepping_rate) / len(self.stepping_rate)
+            data['stepping_rate'] = "%.2f" % (sum(self.stepping_rate) / len(self.stepping_rate))
         else:
             data['stepping_rate'] = -1
         return data

@@ -22,6 +22,9 @@
 %if mode == "face":
     %include face
 % end
+%if mode == "dashboard":
+    %include dashboard
+% end
 
 %if mode == "all":
     %include nodenet

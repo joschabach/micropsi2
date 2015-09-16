@@ -164,9 +164,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
         countdown = int(node.get_parameter("wait") or 1)
 
     # silencing for pipes in in por-ret chains
-    if not node.get_slot("ret").empty:                    # we're not-last in a chain
-        if not(node.get_slot("ret").get_activation(sheaf) == 0 and node.get_slot("sub").get_activation(sheaf) > 0):
-            sur = 0
+    if not node.get_slot("ret").empty and node.get_slot("sur").get_activation(sheaf) > 0:  # we're not-last in a chain and want to report positive
+        sur = 0
     if not node.get_slot("por").empty and node.get_slot("por").get_activation(sheaf) <= 0:
         sur = 0
 

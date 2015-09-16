@@ -388,7 +388,7 @@ class TheanoPartition():
         countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
 
         pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
-        pipe_sur_cond = pipe_sur_cond + (T.ge(slots[:, 5],0) * T.gt(slots[:, 6], 0))# or (ret is 0, but sub > 0))
+        pipe_sur_cond = pipe_sur_cond + T.lt(slots[:, 7], 0)                        # or sur < 0)
         pipe_sur_cond = pipe_sur_cond * (T.eq(por_linked, 0) + T.gt(slots[:, 4], 0))# and (not por-linked or por > 0)
         pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 

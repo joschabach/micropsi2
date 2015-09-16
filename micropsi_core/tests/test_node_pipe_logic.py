@@ -365,7 +365,11 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     netapi.link_with_reciprocal(n_a, n_b, "porret")
     netapi.link_with_reciprocal(n_b, n_c, "porret")
     netapi.link_with_reciprocal(n_b_a1, n_b_a2, "porret")
+
+    # alternativ linkage
     netapi.link(n_b_a1, "por", n_b_a2, "por", -1)
+    netapi.link(n_b_a2, "sur", n_b, "sur", 2)
+
     netapi.link(source, "gen", n_head, "sub")
     net.step()
     net.step()
@@ -401,19 +405,19 @@ def test_node_pipe_logic_alternatives(fixed_nodenet):
     netapi.link(source, "gen", n_b_a1, "sur", -1)
     net.step()
     net.step()
-    assert round(n_b_a1.get_gate("sur").activation, 2) == 0
+    assert round(n_b_a1.get_gate("sur").activation, 2) == -1
     assert round(n_b_a1.get_gate("por").activation, 2) == -1
 
     # second alternative requesting
     assert round(n_b_a2.get_gate("sub").activation, 2) == 1
     assert round(n_b_a2.get_gate("sur").activation, 2) == 0
-    assert round(n_b.get_gate("sur").activation, 2) == 0
+    assert round(n_b.get_gate("sur").activation, 2) == -1
 
     # reply: succeed!
     netapi.link(source, "gen", n_b_a2, "sur", 1)
     net.step()
     net.step()
-    assert round(n_b_a1.get_gate("sur").activation, 2) == 0
+    assert round(n_b_a1.get_gate("sur").activation, 2) == -1
     assert round(n_b_a1.get_gate("por").activation, 2) == -1
     assert round(n_b_a2.get_gate("sub").activation, 2) == 1
     assert round(n_b_a2.get_gate("sur").activation, 2) == 1

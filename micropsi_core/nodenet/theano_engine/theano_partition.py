@@ -368,7 +368,7 @@ class TheanoPartition():
         countdown_por = T.switch(T.ge(pipe_por, self.g_expect), self.g_wait, countdown_por)
 
         ### ret plumbing
-        pipe_ret = -slots[:, 8] * T.ge(slots[:, 6], 0)                              # start with -sub if por >= 0
+        pipe_ret = T.lt(slots[:, 6], 0)                                             # 1 if por is negative
                                                                                     # add ret (for search) if sub=sur=0
         pipe_ret = pipe_ret + (slots[:, 7] * T.eq(slots[:, 8], 0) * T.eq(slots[:, 9], 0))
 
@@ -387,9 +387,7 @@ class TheanoPartition():
                                                                                     # count down failure countdown
         countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
 
-        pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
-        pipe_sur_cond = pipe_sur_cond + T.lt(slots[:, 7], 0)                        # or sur < 0)
-        pipe_sur_cond = pipe_sur_cond * (T.eq(por_linked, 0) + T.gt(slots[:, 4], 0))# and (not por-linked or por > 0)
+        pipe_sur_cond = T.eq(por_linked, 0) + T.gt(slots[:, 4], 0)                  # not por-linked or por > 0
         pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 
         pipe_sur = slots[:, 7]                                                      # start with sur
@@ -401,6 +399,8 @@ class TheanoPartition():
         pipe_sur = T.switch(T.le(countdown, 0) * T.lt(pipe_sur, self.g_expect), -1, pipe_sur)
                                                                                     # reset failure countdown on confirm
         countdown_sur = T.switch(T.ge(pipe_sur, self.g_expect), self.g_wait, countdown_sur)
+
+        pipe_sur = pipe_sur * T.switch(T.eq(ret_linked, 1), slots[:, 5], 1)         # multiply ret if ret-linked
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
 
         ### cat plumbing

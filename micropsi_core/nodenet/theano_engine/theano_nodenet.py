@@ -313,6 +313,9 @@ class TheanoNodenet(Nodenet):
 
         self._modulators.update(initfrom.get("modulators", {}))
 
+        if initfrom.get('runner_condition'):
+            self.set_runner_condition(initfrom['runner_condition'])
+
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)

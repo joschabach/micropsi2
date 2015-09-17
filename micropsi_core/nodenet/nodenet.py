@@ -86,7 +86,8 @@ class Nodenet(metaclass=ABCMeta):
             'current_step': self.current_step,
             'world': self._world_uid,
             'worldadapter': self._worldadapter_uid,
-            'version': NODENET_VERSION
+            'version': NODENET_VERSION,
+            'runner_condition': self._runner_condition
         }
         return data
 
@@ -160,6 +161,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._uid = uid
+        self._runner_condition = None
 
         self.world = world
         self.owner = owner
@@ -536,3 +538,27 @@ class Nodenet(metaclass=ABCMeta):
 
     def remove_monitor(self, monitor_uid):
         del self._monitors[monitor_uid]
+
+    def set_runner_condition(self, condition):
+        self._runner_condition = condition
+
+    def unset_runner_condition(self):
+        self._runner_condition = None
+
+    def get_runner_condition(self):
+        return self._runner_condition
+
+    def check_stop_runner_condition(self):
+        if self._runner_condition:
+            if 'step' in self._runner_condition and self.current_step >= self._runner_condition['step']:
+                if 'step_amount' in self._runner_condition:
+                    self._runner_condition['step'] = self.current_step + self._runner_condition['step_amount']
+                return True
+            if 'monitor' in self._runner_condition and self.current_step > 0:
+                monitor = self.get_monitor(self._runner_condition['monitor']['uid'])
+                if monitor:
+                    if self.current_step in monitor.values and round(monitor.values[self.current_step], 4) == round(self._runner_condition['monitor']['value'], 4):
+                        return True
+                else:
+                    del self.self._runner_condition['monitor']
+        return False

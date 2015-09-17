@@ -239,6 +239,9 @@ class DictNodenet(Nodenet):
 
         self._modulators = initfrom.get("modulators", {})
 
+        if initfrom.get('runner_condition'):
+            self.set_runner_condition(initfrom['runner_condition'])
+
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
         self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")

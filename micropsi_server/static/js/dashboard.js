@@ -10,7 +10,7 @@ $(function(){
     var datatable = $('<div id="dashboard_datatable" class="dashboard-item"></div>');
     var sensors = $('<div id="dashboard_sensors" class="dashboard-item"></div>');
 
-    container.append(urges, modulators, nodes, datatable, sensors, $('<p style="break:both"></p>'));
+    container.append(datatable, urges, modulators, nodes, sensors, $('<p style="break:both"></p>'));
 
 
     function getPollParams(){
@@ -60,7 +60,7 @@ $(function(){
         var data = [
             {'value': dashboard['count_negative_nodes'], 'name': 'failing', 'color': 'red'},
             {'value': dashboard['count_positive_nodes'], 'name': 'success', 'color': 'green'},
-            {'value': total - dashboard['count_negative_nodes'] - dashboard['count_negative_nodes'], name: 'off', color: 'grey'}
+            {'value': total - dashboard['count_negative_nodes'] - dashboard['count_negative_nodes'], name: 'off', color: 'lightgrey'}
         ];
         var label = total + " Nodes"
         nodes.html('');
@@ -96,8 +96,24 @@ $(function(){
 
         html += "<tr><th><strong>sec/step:</strong></th><th>"+dashboard.stepping_rate+"</th></tr>"
 
+        if(dashboard.concepts){
+            var data = [
+                {'value': dashboard.concepts.failed.length, 'name': 'failing', 'color': 'red'},
+                {'value': dashboard.concepts.verified.length, 'name': 'success', 'color': 'green'},
+                {'value': dashboard.concepts.checking.length, 'name': 'checking', 'color': 'lightgrey'},
+                {'value': dashboard.concepts.off, 'name': 'off', 'color': 'darkgrey'}
+            ];
+            html += "<tr><th>Concepts:</th><th><div id=\"concept_graph\"></div></th></tr>";
+            html += "<tr><td>Verified:</td><td>" + dashboard.concepts.verified.sort().join('<br />') + "</td></tr>";
+            html += "<tr><td>Checking:</td><td>" + dashboard.concepts.checking.sort().join('<br />') + "</td></tr>";
+            html += "<tr><td>Failed:</td><td>" + dashboard.concepts.failed.sort().join('<br />') + "</td></tr>";
+        }
+
         html += "</table>"
         datatable.html(html);
+        if(dashboard.concepts){
+            draw_circle_chart(data, '#concept_graph', dashboard.concepts.total, 80, 5);
+        }
     }
 
 
@@ -172,12 +188,12 @@ $(function(){
         svg.selectAll('g.x.axis g text').each(insertLinebreaks);
     }
 
-    function draw_circle_chart(data, selector, label){
+    function draw_circle_chart(data, selector, label, height, margin){
         //Width and height
-        var margin = 20;
+        var margin = margin || 20;
 
-        var w = 160;
-        var h = 180;
+        var h = height || 180;
+        var w = h - margin;
 
         var outerRadius = w / 2;
         var innerRadius = w / 3;
@@ -190,8 +206,8 @@ $(function(){
         //Create SVG element
         var svg = d3.select(selector)
                     .append("svg")
-                    .attr("width", w + 20)
-                    .attr("height", h + 20);
+                    .attr("width", w + margin)
+                    .attr("height", h + margin);
 
         //Set up groups
         var values = [];
@@ -211,9 +227,12 @@ $(function(){
                 return data[i].color;
             })
             .attr("d", arc);
-        arcs.append("text")
-            .text(label)
-            .style("text-anchor", "middle")
+        if(label){
+            arcs.append("text")
+                .text(label)
+                .style("text-anchor", "middle")
+                .attr("dy", ".4em")
+        }
     }
 
 });

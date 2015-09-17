@@ -526,6 +526,12 @@ table.emoexpression td {
 .dashboard-item {
   float: left;
 }
+#dashboard_datatable{
+  float:right;
+}
+.dashboard-table {
+  margin: 20px;
+}
 .dashboard-table th {
   margin-top: 1em;
   text-align: left;

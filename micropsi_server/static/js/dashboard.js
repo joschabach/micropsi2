@@ -12,6 +12,7 @@ $(function(){
 
     container.append(datatable, urges, modulators, nodes, sensors, $('<p style="break:both"></p>'));
 
+    var d3graphs = {};
 
     function getPollParams(){
         return 1
@@ -51,7 +52,7 @@ $(function(){
                 data.push({'name': key.substr(4).replace('_', ' '), 'value': dashboard.modulators[key], 'color': colors[key]});
             }
         }
-        drawBarChart(data, '#dashboard_modulators');
+        if(data.length) drawBarChart(data, '#dashboard_modulators');
     }
 
     function draw_nodes(dashboard){
@@ -62,7 +63,6 @@ $(function(){
             {'value': total - dashboard['count_negative_nodes'] - dashboard['count_negative_nodes'], name: 'off', color: 'lightgrey'}
         ];
         var label = total + " Nodes"
-        nodes.html('');
         draw_circle_chart(data, '#dashboard_nodes', label);
     }
 
@@ -79,7 +79,7 @@ $(function(){
         for(var key in dashboard.urges){
             data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
         }
-        drawBarChart(data, '#dashboard_urges')
+        if(data.length) drawBarChart(data, '#dashboard_urges')
     }
 
     function draw_datatable(dashboard){
@@ -173,7 +173,6 @@ $(function(){
 
             }
 
-            x.domain(data.map(function(d) { return d.name; }));
             var ymin = 0;
             var ymax = 1;
             for(var i=0; i < data.length; i++){
@@ -181,6 +180,7 @@ $(function(){
                 if(data[i].value < ymin) ymin = data[i].value;
                 else if(data[i].value > ymax) ymax = data[i].value;
             }
+            x.domain(data.map(function(d) { return d.name; }));
             y.domain([ymin, ymax]);
 
             svg.select(".y.axis")
@@ -224,10 +224,18 @@ $(function(){
            svg.selectAll('g.x.axis g text').each(insertLinebreaks);
     }
 
+    var piecharts = {}
+
+
+
     function draw_circle_chart(data, selector, label, height, margin){
+
+        var values = [];
+        for(var i = 0; i < data.length; i++){
+            values.push(data[i].value);
+        }
         //Width and height
         var margin = margin || 20;
-
         var h = height || 180;
         var w = h - margin;
 
@@ -237,7 +245,33 @@ $(function(){
                     .innerRadius(innerRadius)
                     .outerRadius(outerRadius);
 
-        var pie = d3.layout.pie();
+
+        function arcTween(a) {
+          var i = d3.interpolate(this._current, a);
+          this._current = i(0);
+          return function(t) {
+            return arc(i(t));
+          };
+        }
+
+        var svg = d3.select(selector).select("svg");
+        if(!svg.empty() && piecharts[selector]){
+
+            var text = svg.select("text");
+            var pie = piecharts[selector]['pie']
+            text.text(label)
+            pie.value(function(d, i){return values[i]})
+            path = piecharts[selector]['path'].data(pie); // compute the new angles
+            path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
+            return
+        }
+
+        piecharts[selector] = {}
+
+        var pie = d3.layout.pie()
+                    .value(function(d, i){return values[i]});
+
+        piecharts[selector]['pie'] = pie;
 
         //Create SVG element
         var svg = d3.select(selector)
@@ -245,30 +279,23 @@ $(function(){
                     .attr("width", w + margin)
                     .attr("height", h + margin);
 
-        //Set up groups
-        var values = [];
-        for(var i = 0; i < data.length; i++){
-            values.push(data[i].value);
-        }
-        var arcs = svg.selectAll("g.arc")
-                      .data(pie(values))
+        piecharts[selector]['path'] = svg.datum(values).selectAll("path")
+                      .data(pie)
                       .enter()
-                      .append("g")
+                      .append("path")
                       .attr("class", "arc")
+                      .attr("d", arc)
+                      .attr("fill", function(d, i) {
+                        return data[i].color;
+                      })
+                      .each(function(d) { this._current = d; })
                       .attr("transform", "translate(" + (outerRadius + margin) +"," + (outerRadius + margin) + ")")
 
-        //Draw arc paths
-        arcs.append("path")
-            .attr("fill", function(d, i) {
-                return data[i].color;
-            })
-            .attr("d", arc);
-        if(label){
-            arcs.append("text")
-                .text(label)
-                .style("text-anchor", "middle")
-                .attr("dy", ".4em")
-        }
+        svg.append("text")
+            .text(label)
+            .style("text-anchor", "left")
+            .attr("dx", w/2 - margin/1.5)
+            .attr("dy", h/2 + margin/1.5)
     }
 
 });

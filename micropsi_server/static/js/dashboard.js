@@ -45,7 +45,6 @@ $(function(){
             emo_selection_threshold: 'gray',
             emo_sustaining_joy: 'green'
         }
-        modulators.html('');
         var data = [];
         for(var key in dashboard.modulators){
             if(key in colors){
@@ -76,7 +75,6 @@ $(function(){
             'coldness': 'blue',
             'heal': 'green'
         }
-        urges.html('');
         var data = [];
         for(var key in dashboard.urges){
             data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
@@ -131,61 +129,99 @@ $(function(){
     }
 
     function drawBarChart(data, selector){
-        var margin = {top: 20, right: 20, bottom: 70, left: 40},
-            width = 500 - margin.left - margin.right,
-            height = 250 - margin.top - margin.bottom;
 
-        var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
-        var y = d3.scale.linear().range([height, 0]);
+            d3graphs[selector] = {};
+            var margin = {top: 20, right: 20, bottom: 70, left: 40},
+                width = 500 - margin.left - margin.right,
+                height = 250 - margin.top - margin.bottom;
 
-        var xAxis = d3.svg.axis()
-            .scale(x)
-            .orient("bottom")
+            var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
+            var y = d3.scale.linear().range([height, 0]);
 
-        var yAxis = d3.svg.axis()
-            .scale(y)
-            .orient("left")
-            .ticks(10);
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
 
-        var svg = d3.select(selector).append("svg")
-            .attr("width", width + margin.left + margin.right)
-            .attr("height", height + margin.top + margin.bottom)
-          .append("g")
-            .attr("transform",
-                  "translate(" + margin.left + "," + margin.top + ")");
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .ticks(10);
 
-        x.domain(data.map(function(d) { return d.name; }));
-        var ymin = 0;
-        var ymax = 1;
-        for(var i=0; i < data.length; i++){
-            if(data[i].value < ymin) ymin = data[i].value;
-            else if(data[i].value > ymax) ymax = data[i].value;
-        }
-        y.domain([ymin, ymax]);
+            var svg = d3.select(selector).select("svg");
 
-        svg.append("g")
-            .attr("class", "x axis")
-            .attr("transform", "translate(0," + height + ")")
-            .call(xAxis)
-          .selectAll("text")
-            .style("text-anchor", "middle")
-            .style("font-size", "80%")
+            if (svg.empty()){
+                svg = d3.select(selector).append("svg")
+                    .attr("width", width + margin.left + margin.right)
+                    .attr("height", height + margin.top + margin.bottom)
+                  .append("g")
+                    .attr("transform",
+                          "translate(" + margin.left + "," + margin.top + ")");
 
-        svg.append("g")
-            .attr("class", "y axis")
-            .call(yAxis)
-          .selectAll("text")
-            .style("font-size", "80%")
+                svg.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + height + ")")
+                    .call(xAxis)
+                  .selectAll("text")
+                    .style("text-anchor", "middle")
+                    .style("font-size", "80%")
 
-        svg.selectAll("bar")
-            .data(data)
-          .enter().append("rect")
-            .style("fill", function(d) { return d.color})
-            .attr("x", function(d) { return x(d.name); })
-            .attr("width", x.rangeBand())
-            .attr("y", function(d) { return y(d.value); })
-            .attr("height", function(d) { return height - y(d.value); });
-        svg.selectAll('g.x.axis g text').each(insertLinebreaks);
+                svg.append("g")
+                    .attr("class", "y axis")
+                    .call(yAxis)
+                  .selectAll("text")
+                    .style("font-size", "80%")
+
+            }
+
+            x.domain(data.map(function(d) { return d.name; }));
+            var ymin = 0;
+            var ymax = 1;
+            for(var i=0; i < data.length; i++){
+                data[i].value = Math.max(0, data[i].value);
+                if(data[i].value < ymin) ymin = data[i].value;
+                else if(data[i].value > ymax) ymax = data[i].value;
+            }
+            y.domain([ymin, ymax]);
+
+            svg.select(".y.axis")
+                .transition().duration(500).ease("sin-in-out")  // https://github.com/mbostock/d3/wiki/Transitions#wiki-d3_ease
+                .call(yAxis);
+            svg.select(".x.axis")
+                .transition().duration(500).ease("sin-in-out")  // https://github.com/mbostock/d3/wiki/Transitions#wiki-d3_ease
+                .call(xAxis);
+
+            var bars = svg.selectAll('.bar')
+                .data(data)
+            //update
+            bars
+                .attr("fill", "#009")
+
+            //enter
+            bars.enter()
+                .append("svg:rect")
+                .attr("class", "bar")
+                .attr("fill", "#900")
+
+
+            //exit
+            bars.exit()
+            .transition()
+            .duration(300)
+            .ease("exp")
+                .attr("height", 0)
+                .remove()
+
+            bars
+            .transition()
+            .duration(300)
+            .ease("quad")
+               .style("fill", function(d) { return d.color})
+               .attr("x", function(d) { return x(d.name); })
+               .attr("width", x.rangeBand())
+               .attr("y", function(d) { return y(d.value); })
+               .attr("height", function(d) { return height - y(d.value); });
+
+           svg.selectAll('g.x.axis g text').each(insertLinebreaks);
     }
 
     function draw_circle_chart(data, selector, label, height, margin){

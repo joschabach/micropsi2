@@ -771,6 +771,8 @@ def test_copy_nodes(fixed_nodenet):
     nodespace = netapi.create_nodespace(None, name='copy')
     a1 = netapi.get_node('n0001')
     a2 = netapi.get_node('n0002')
+    a1.set_parameter('expecation', 0.6)
+    a1.set_gate_parameter('gen', 'amplification', 0.27)
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
     assert a2 in mapping

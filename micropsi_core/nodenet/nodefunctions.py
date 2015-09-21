@@ -120,25 +120,21 @@ def pipe(netapi, node=None, sheaf="default", **params):
     exp = 0.0
 
     countdown = int(node.get_state("countdown") or 0)
-    expectation = float(node.get_parameter("expectation") or 1.0)
+    expectation = float(node.get_parameter("expectation")) if node.get_parameter("expectation") is not None else 1
     if node.get_slot("sub").activation <= 0 or (not node.get_slot("por").empty and node.get_slot("por").activation <= 0):
         countdown = int(node.get_parameter("wait") or 1)
     else:
         countdown -= 1
 
+    gen_sur_exp = node.get_slot("sur").get_activation(sheaf) + node.get_slot("exp").get_activation(sheaf)
+    if 0 < gen_sur_exp < expectation:                                   # don't report anything below expectation
+        gen_sur_exp = 0
+
     gen += node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)
-    if abs(gen) < 0.1: gen = 0                                          # cut off gen loop at lower threshold
+    if abs(gen) < 0.1: gen = gen_sur_exp                                # cut off gen loop at lower threshold
 
     if node.get_slot("por").get_activation(sheaf) == 0 and not node.get_slot("por").empty:
-        gen = 0
-
-    if gen == 0:
-        gen += node.get_slot("sur").get_activation(sheaf)
-        gen += node.get_slot("exp").get_activation(sheaf)
-
-    # commented: trigger and pipes should be able to escape the [-1;1] cage on gen
-    # if gen > 1: gen = 1
-    # if gen < -1: gen = -1
+        gen = gen_sur_exp
 
     sub += max(node.get_slot("sur").get_activation(sheaf), 0)
     sub += node.get_slot("sub").get_activation(sheaf)
@@ -163,11 +159,9 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if sur >= expectation:                                                  # success, reset countdown counter
         countdown = int(node.get_parameter("wait") or 1)
 
-    # silencing for pipes in in por-ret chains
-    if not node.get_slot("ret").empty:                    # we're not-last in a chain
-        if not(node.get_slot("ret").get_activation(sheaf) == 0 and node.get_slot("sub").get_activation(sheaf) > 0):
-            sur = 0
-    if not node.get_slot("por").empty and node.get_slot("por").get_activation(sheaf) <= 0:
+    if not node.get_slot("ret").empty:
+        sur = sur * node.get_slot("ret").get_activation(sheaf)
+    if node.get_slot("por").get_activation(sheaf) < 0:
         sur = 0
 
     if sur > 1:
@@ -189,8 +183,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if por > 0: por = 1
 
     ret += node.get_slot("ret").get_activation(sheaf) if node.get_slot("sub").get_activation(sheaf) == 0 and node.get_slot("sur").get_activation(sheaf) == 0 else 0
-    if node.get_slot("por").get_activation(sheaf) >= 0:
-        ret -= node.get_slot("sub").get_activation(sheaf)
+    if node.get_slot("por").get_activation(sheaf) < 0:
+        ret = 1
     if ret > 1:
         ret = 1
 

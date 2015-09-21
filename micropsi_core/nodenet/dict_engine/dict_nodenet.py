@@ -89,6 +89,40 @@ STANDARD_NODETYPES = {
         "parameters": ["type"],
         "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
         "nodefunction_name": "activator"
+    },
+    "LSTM": {
+        "name": "LSTM",
+        "slottypes": ["gen", "por", "gin", "gou", "gfg"],
+        "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
+        "nodefunction_name": "lstm",
+        "symbol": "◷",
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "por": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gin": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gou": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gfg": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            }
+        }
     }
 }
 
@@ -596,19 +630,22 @@ class DictNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
         if nodespace_uid not in self.nodegroups:
             self.nodegroups[nodespace_uid] = {}
 
+        if group_name is None:
+            group_name = node_name_prefix
+
         nodes = self.netapi.get_nodes(nodespace_uid, node_name_prefix)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':
             nodes = sorted(nodes, key=lambda node: node.name)
-        self.nodegroups[nodespace_uid][node_name_prefix] = (nodes, gatetype)
+        self.nodegroups[nodespace_uid][group_name] = (nodes, gatetype)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
         if nodespace_uid is None:

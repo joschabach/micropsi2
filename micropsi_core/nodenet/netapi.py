@@ -412,13 +412,14 @@ class NetAPI(object):
             mapping[node] = self.get_node(uidmap[node.uid])
         return mapping
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='id', group_name=None):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
+        If no group name is given, the node_name_prefix will be used as group name.
         """
-        self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby)
+        self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby, group_name=group_name)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gate="gen", sortby='id'):
         """

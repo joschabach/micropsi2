@@ -84,6 +84,7 @@ class TheanoCalculate(Calculate):
         self.read_sensors_and_actuator_feedback()
         for partition in nodenet.partitions.values():
             partition.calculate()
+            partition.t.set_value(np.int32(nodenet.current_step))
         self.count_success_and_failure(nodenet)
 
 

@@ -343,6 +343,10 @@ class TheanoPartition():
 
         ### gen plumbing
         pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+                                                                                    # drop to 0 if < expectation
+        pipe_gen_sur_exp = T.switch(T.lt(pipe_gen_sur_exp, self.g_expect) * T.gt(pipe_gen_sur_exp, 0), 0, pipe_gen_sur_exp)
+
+
         pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
         pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
                                                                                     # drop to def. if por == 0 and por slot is linked
@@ -1156,6 +1160,7 @@ class TheanoPartition():
             if nto.parameter_defaults.get('expectation'):
                 value = nto.parameter_defaults['expectation']
                 g_expect_array = self.g_expect.get_value(borrow=True)
+                g_expect_array[offset + GEN] = float(value)
                 g_expect_array[offset + SUR] = float(value)
                 g_expect_array[offset + POR] = float(value)
                 self.g_expect.set_value(g_expect_array, borrow=True)

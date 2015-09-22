@@ -421,13 +421,13 @@ class DictNodenet(Nodenet):
             data['uid'] = newuid
             uidmap[uid] = newuid
             if data['type'] not in self._nodetypes and data['type'] not in self._native_modules:
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
                 data.pop('gate_parameters', '')
                 invalid_nodes.append(uid)
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links

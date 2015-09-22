@@ -398,13 +398,13 @@ class TheanoNodenet(Nodenet):
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
             if data['type'] not in self._nodetypes and data['type'] not in self.native_modules:
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
                 del data['gate_parameters']
                 invalid_nodes.append(uid)
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             new_uid = self.create_node(
                 data['type'],
                 parent_uid,

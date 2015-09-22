@@ -4,13 +4,13 @@ $(function(){
 
     var container = $('#dashboard_container');
 
-    var urges = $('<div id="dashboard_urges" class="dashboard-item"></div>');
-    var modulators = $('<div id="dashboard_modulators" class="dashboard-item"></div>');
-    var nodes = $('<div id="dashboard_nodes" class="dashboard-item"></div>');
-    var datatable = $('<div id="dashboard_datatable" class="dashboard-item"></div>');
+    var nodes = $('<div id="dashboard_nodes" class="dashboard-item right"></div>');
+    var datatable = $('<div id="dashboard_datatable" class="dashboard-item right"></div>');
+    var urges = $('<div id="dashboard_urges" class="dashboard-item left"></div>');
+    var modulators = $('<div id="dashboard_modulators" class="dashboard-item left"></div>');
     var sensors = $('<div id="dashboard_sensors" class="dashboard-item"></div>');
 
-    container.append(datatable, urges, modulators, nodes, sensors, $('<p style="break:both"></p>'));
+    container.append(datatable, nodes, urges, modulators, sensors, $('<p style="break:both"></p>'));
 
     var d3graphs = {};
 
@@ -186,11 +186,15 @@ $(function(){
             y.domain([ymin, ymax]);
 
             svg.select(".y.axis")
-                .transition().duration(500).ease("sin-in-out")  // https://github.com/mbostock/d3/wiki/Transitions#wiki-d3_ease
-                .call(yAxis);
+                .call(yAxis)
+                .selectAll("text")
+                .style("font-size", "80%")
+
             svg.select(".x.axis")
-                .transition().duration(500).ease("sin-in-out")  // https://github.com/mbostock/d3/wiki/Transitions#wiki-d3_ease
-                .call(xAxis);
+                .call(xAxis)
+                .selectAll("text")
+                .style("font-size", "80%");
+
 
             var bars = svg.selectAll('.bar')
                 .data(data)

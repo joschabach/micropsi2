@@ -523,10 +523,10 @@ table.emoexpression td {
   display: none;
 }
 
-.dashboard-item {
+.dashboard-item.left {
   float: left;
 }
-#dashboard_datatable{
+.dashboard-item.right{
   float:right;
 }
 .dashboard-table {

@@ -89,6 +89,40 @@ STANDARD_NODETYPES = {
         "parameters": ["type"],
         "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
         "nodefunction_name": "activator"
+    },
+    "LSTM": {
+        "name": "LSTM",
+        "slottypes": ["gen", "por", "gin", "gou", "gfg"],
+        "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
+        "nodefunction_name": "lstm",
+        "symbol": "◷",
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "por": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gin": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gou": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gfg": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            }
+        }
     }
 }
 
@@ -236,6 +270,9 @@ class DictNodenet(Nodenet):
 
         self._modulators = initfrom.get("modulators", {})
 
+        if initfrom.get('runner_condition'):
+            self.set_runner_condition(initfrom['runner_condition'])
+
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
         self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
@@ -379,13 +416,13 @@ class DictNodenet(Nodenet):
             data['uid'] = newuid
             uidmap[uid] = newuid
             if data['type'] not in self._nodetypes and data['type'] not in self._native_modules:
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
                 data.pop('gate_parameters', '')
                 invalid_nodes.append(uid)
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links
@@ -586,19 +623,22 @@ class DictNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
         if nodespace_uid not in self.nodegroups:
             self.nodegroups[nodespace_uid] = {}
 
+        if group_name is None:
+            group_name = node_name_prefix
+
         nodes = self.netapi.get_nodes(nodespace_uid, node_name_prefix)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':
             nodes = sorted(nodes, key=lambda node: node.name)
-        self.nodegroups[nodespace_uid][node_name_prefix] = (nodes, gatetype)
+        self.nodegroups[nodespace_uid][group_name] = (nodes, gatetype)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
         if nodespace_uid is None:

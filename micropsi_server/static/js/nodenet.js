@@ -1313,6 +1313,7 @@ function createCompactNodeShape(node) {
             shape.cubicCurveTo(new Point(bounds.x + bounds.width * 0.65, bounds.y-bounds.height * 0.2), new Point(bounds.right, bounds.y-bounds.height * 0.2), bounds.bottomRight);
             shape.closePath();
             break;
+        case "LSTM": // draw circle
         case "Concept": // draw circle
         case "Pipe": // draw circle
         case "Script": // draw circle
@@ -2523,9 +2524,11 @@ function getNodeLinkageContextMenuHTML(node){
     var html = '';
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            if(gateName in inverse_link_map){
+            if(gateName in inverse_link_map && inverse_link_targets.indexOf(gateName) != -1){
                 var compound = gateName+'/'+inverse_link_map[gateName];
                 html += ('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
+            } else if(node.type == "LSTM" && gateName == "por"){
+                html += ('<li><a href="#" data-link-type="lstmpor">Draw lstm por links</a></li>');
             } else if(inverse_link_targets.indexOf(gateName) == -1){
                 html += ('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
             }
@@ -3132,6 +3135,14 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
             var newlinks = [];
 
             switch (linkCreationStart[i].creationType) {
+                case "lstmpor":
+                    if (targetNode.type == "LSTM"){
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gin", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gou", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gfg", 1, 1));
+                    }
+                    break;
                 case "por/ret":
                     // the por link
                     if (targetSlots > 2) {

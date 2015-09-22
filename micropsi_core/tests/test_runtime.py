@@ -111,6 +111,13 @@ def test_register_runner_condition_monitor(test_nodenet):
     assert round(nn.get_node(node.uid).get_gate('gen').activation, 4) == 0.8
 
 
+def test_runner_condition_persists(test_nodenet):
+    micropsi.set_runner_condition(test_nodenet, steps=7)
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    assert micropsi.nodenets[test_nodenet].get_runner_condition()['step'] == 7
+
+
 def test_get_links_for_nodes(test_nodenet, node):
     api = micropsi.nodenets[test_nodenet].netapi
     ns = api.create_nodespace(None)

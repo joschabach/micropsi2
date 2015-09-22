@@ -228,6 +228,7 @@ class TheanoNode(Node):
             self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
         elif self.type == "Pipe" and parameter == "expectation":
             g_expect_array = self._partition.g_expect.get_value(borrow=True)
+            g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("gen")] = float(value)
             g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
             g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = float(value)
             self._partition.g_expect.set_value(g_expect_array, borrow=True)

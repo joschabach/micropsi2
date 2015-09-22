@@ -44,6 +44,16 @@ class TheanoPartition():
             self.__has_pipes = value
 
     @property
+    def has_lstms(self):
+        return self.__has_lstms
+
+    @has_lstms.setter
+    def has_lstms(self, value):
+        if value != self.__has_lstms:
+            self.__has_new_usages = True
+            self.__has_lstms = value
+
+    @property
     def has_directional_activators(self):
         return self.__has_directional_activators
 
@@ -196,6 +206,7 @@ class TheanoPartition():
                             # this is a view on the activation values instrumental in calculating concept node functions
 
         self.a_in = None         # vector of activations coming in from the outside (other partitions typically)
+        self.a_prev = None       # vector of output activations at t-1 (not all gate types maintain this)
 
         self.g_factor = None     # vector of gate factors, controlled by directional activators
         self.g_threshold = None  # vector of thresholds (gate parameters)
@@ -243,6 +254,8 @@ class TheanoPartition():
             w_matrix = np.zeros((self.NoE, self.NoE), dtype=nodenet.scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
+        self.t = theano.shared(value=np.int32(0), name="t", borrow=False)
+
         a_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)
 
@@ -252,8 +265,14 @@ class TheanoPartition():
         a_in_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a_in = theano.shared(value=a_in_array.astype(T.config.floatX), name="a_in", borrow=True)
 
+        a_prev_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
+        self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
+
         g_theta_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_theta = theano.shared(value=g_theta_array.astype(T.config.floatX), name="theta", borrow=True)
+
+        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_array, shape=(self.NoE, 7), strides=(nodenet.byte_per_float, nodenet.byte_per_float))
+        self.g_theta_shifted = theano.shared(value=g_theta_shifted_matrix.astype(T.config.floatX), name="g_theta_shifted_shifted", borrow=True)
 
         g_factor_array = np.ones(self.NoE, dtype=nodenet.numpyfloatX)
         self.g_factor = theano.shared(value=g_factor_array.astype(T.config.floatX), name="g_factor", borrow=True)
@@ -293,6 +312,7 @@ class TheanoPartition():
 
         self.__has_new_usages = True
         self.__has_pipes = False
+        self.__has_lstms = False
         self.__has_directional_activators = False
         self.__has_gatefunction_absolute = False
         self.__has_gatefunction_sigmoid = False
@@ -309,20 +329,23 @@ class TheanoPartition():
 
     def compile_propagate(self):
         if self.sparse:
-            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + ST.dot(self.w, self.a)),
+            self.propagate = theano.function([], None, updates=[(self.a_prev, self.a), (self.a, self.a_in + ST.dot(self.w, self.a)),
                                                                           (self.a_in, T.zeros_like(self.a_in))])
         else:
-            self.propagate = theano.function([], None, updates=[(self.a, self.a_in + T.dot(self.w, self.a)),
+            self.propagate = theano.function([], None, updates=[(self.a_prev, self.a), (self.a, self.a_in + T.dot(self.w, self.a)),
                                                                           (self.a_in, T.zeros_like(self.a_in))])
 
     def compile_calculate_nodes(self):
         slots = self.a_shifted
+        biases = self.g_theta_shifted
         countdown = self.g_countdown
         por_linked = self.n_node_porlinked
         ret_linked = self.n_node_retlinked
 
         # node functions implemented with identity by default (native modules are calculated by python)
         nodefunctions = self.a
+        a_prev = self.a_prev
+        t = self.t
 
         # pipe logic
 
@@ -343,6 +366,10 @@ class TheanoPartition():
 
         ### gen plumbing
         pipe_gen_sur_exp = slots[:, 11] + slots[:, 13]                              # sum of sur and exp as default
+                                                                                    # drop to 0 if < expectation
+        pipe_gen_sur_exp = T.switch(T.lt(pipe_gen_sur_exp, self.g_expect) * T.gt(pipe_gen_sur_exp, 0), 0, pipe_gen_sur_exp)
+
+
         pipe_gen = slots[:, 7] * slots[:, 10]                                       # gen * sub
         pipe_gen = T.switch(abs(pipe_gen) > 0.1, pipe_gen, pipe_gen_sur_exp)        # drop to def. if below 0.1
                                                                                     # drop to def. if por == 0 and por slot is linked
@@ -368,7 +395,7 @@ class TheanoPartition():
         countdown_por = T.switch(T.ge(pipe_por, self.g_expect), self.g_wait, countdown_por)
 
         ### ret plumbing
-        pipe_ret = -slots[:, 8] * T.ge(slots[:, 6], 0)                              # start with -sub if por >= 0
+        pipe_ret = T.lt(slots[:, 6], 0)                                             # 1 if por is negative
                                                                                     # add ret (for search) if sub=sur=0
         pipe_ret = pipe_ret + (slots[:, 7] * T.eq(slots[:, 8], 0) * T.eq(slots[:, 9], 0))
 
@@ -387,9 +414,7 @@ class TheanoPartition():
                                                                                     # count down failure countdown
         countdown_sur = T.switch(cd_reset_cond, self.g_wait, T.maximum(countdown - 1, -1))
 
-        pipe_sur_cond = T.eq(ret_linked, 0)                                         # (not ret-linked
-        pipe_sur_cond = pipe_sur_cond + (T.ge(slots[:, 5],0) * T.gt(slots[:, 6], 0))# or (ret is 0, but sub > 0))
-        pipe_sur_cond = pipe_sur_cond * (T.eq(por_linked, 0) + T.gt(slots[:, 4], 0))# and (not por-linked or por > 0)
+        pipe_sur_cond = T.eq(por_linked, 0) + T.gt(slots[:, 4], 0)                  # not por-linked or por > 0
         pipe_sur_cond = T.gt(pipe_sur_cond, 0)
 
         pipe_sur = slots[:, 7]                                                      # start with sur
@@ -401,6 +426,8 @@ class TheanoPartition():
         pipe_sur = T.switch(T.le(countdown, 0) * T.lt(pipe_sur, self.g_expect), -1, pipe_sur)
                                                                                     # reset failure countdown on confirm
         countdown_sur = T.switch(T.ge(pipe_sur, self.g_expect), self.g_wait, countdown_sur)
+
+        pipe_sur = pipe_sur * T.switch(T.eq(ret_linked, 1), slots[:, 5], 1)         # multiply ret if ret-linked
         pipe_sur = pipe_sur * pipe_sur_cond                                         # apply conditions
 
         ### cat plumbing
@@ -428,6 +455,66 @@ class TheanoPartition():
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
             countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
             countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
+
+        # lstm logic
+
+        ###############################################################
+        # lookup table for source activation in a_shifted
+        # when calculating the gate on the y axis...
+        # ... find the slot at the given index on the x axis
+        #
+        #       0   1   2   3   4   5   6   7   8   9   10  11  12  13
+        # gen                               gen por gin gou gfg
+        # por                           gen por gin gou gfg
+        # gin                       gen por gin gou gfg
+        # gou                   gen por gin gou gfg
+        # gfg               gen por gin gou gfg
+        #
+
+        ### gen
+        s = slots[:, 7]
+        net_c = slots[:, 8] + biases[:, 8]
+        net_in = slots[:, 9] + biases[:, 9]
+        net_phi = slots[:, 11] + biases[:, 11]
+        y_in = T.nnet.sigmoid(net_in)
+        y_phi = T.nnet.sigmoid(net_phi)
+        g = (4 * T.nnet.sigmoid(net_c)-2)
+        lstm_gen = s * y_phi + g * y_in                                          # gen is next step's s
+        lstm_gen = T.switch(T.eq(T.mod(t, 3), 2), lstm_gen, a_prev)              # only sample every three steps
+
+        ### por
+        s = slots[:, 6]
+        net_c = slots[:, 7] + biases[:, 7]
+        net_in = slots[:, 8] + biases[:, 8]
+        net_out = slots[:, 9] + biases[:, 9]
+        net_phi = slots[:, 10] + biases[:, 10]
+        y_in = T.nnet.sigmoid(net_in)
+        y_out = T.nnet.sigmoid(net_out)
+        y_phi = T.nnet.sigmoid(net_phi)
+        g = (4 * T.nnet.sigmoid(net_c)-2)
+        s = s * y_phi + g * y_in
+        h = (2 * T.nnet.sigmoid(s)-1)                                            # por biases will be ignored
+        lstm_por = h * y_out
+        lstm_por = T.switch(T.eq(T.mod(t, 3), 2), lstm_por, a_prev)              # only sample every three steps
+
+        ### gin
+        lstm_gin = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
+        lstm_gin = T.switch(T.eq(T.mod(t, 3), 2), lstm_gin, a_prev)
+
+        ### gou
+        lstm_gou = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
+        lstm_gou = T.switch(T.eq(T.mod(t, 3), 2), lstm_gou, a_prev)
+
+        ### gfg
+        lstm_gfg = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
+        lstm_gfg = T.switch(T.eq(T.mod(t, 3), 2), lstm_gfg, a_prev)
+
+        if self.has_lstms:
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_POR), lstm_por, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GIN), lstm_gin, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GOU), lstm_gou, nodefunctions)
+            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GFG), lstm_gfg, nodefunctions)
 
         # gate logic
 
@@ -467,7 +554,10 @@ class TheanoPartition():
         gatefunctions = limited_gate_function_output
 
         # put the theano graph into a callable function to be executed
-        self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+        if self.has_pipes:
+            self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions), (self.g_countdown, countdown)])
+        else:
+            self.calculate_nodes = theano.function([], None, updates=[(self.a, gatefunctions)])
 
     def get_compiled_propagate_inlinks(self, from_partition, from_elements, to_elements, weights):
         propagated_a = T.dot(weights, from_partition.a[from_elements])
@@ -486,7 +576,7 @@ class TheanoPartition():
             self.por_ret_dirty = False
 
         self.__take_native_module_slot_snapshots()
-        if self.has_pipes:
+        if self.has_pipes or self.has_lstms:
             self.__rebuild_shifted()
         if self.has_directional_activators:
             self.__calculate_g_factors()
@@ -534,6 +624,11 @@ class TheanoPartition():
         a_rolled_array = np.roll(a_array, 7)
         a_shifted_matrix = np.lib.stride_tricks.as_strided(a_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
         self.a_shifted.set_value(a_shifted_matrix, borrow=True)
+
+        g_theta_array = self.g_theta.get_value(borrow=True)
+        g_theta_rolled_array = np.roll(g_theta_array, 7)
+        g_theta_shifted_matrix = np.lib.stride_tricks.as_strided(g_theta_rolled_array, shape=(self.NoE, 14), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_theta_shifted.set_value(g_theta_shifted_matrix, borrow=True)
 
     def rebuild_por_linked(self):
 
@@ -896,6 +991,7 @@ class TheanoPartition():
             g_function_selector = datafile['g_function_selector']
             self.has_new_usages = True
             self.has_pipes = PIPE in self.allocated_nodes
+            self.has_lstms = LSTM in self.allocated_nodes
             self.has_directional_activators = ACTIVATOR in self.allocated_nodes
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
@@ -1156,6 +1252,7 @@ class TheanoPartition():
             if nto.parameter_defaults.get('expectation'):
                 value = nto.parameter_defaults['expectation']
                 g_expect_array = self.g_expect.get_value(borrow=True)
+                g_expect_array[offset + GEN] = float(value)
                 g_expect_array[offset + SUR] = float(value)
                 g_expect_array[offset + POR] = float(value)
                 self.g_expect.set_value(g_expect_array, borrow=True)
@@ -1166,6 +1263,15 @@ class TheanoPartition():
                 g_wait_array[offset + SUR] = int(min(value, 128))
                 g_wait_array[offset + POR] = int(min(value, 128))
                 self.g_wait.set_value(g_wait_array, borrow=True)
+        elif nodetype == "LSTM":
+            self.has_lstms = True
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_LSTM_GEN
+            n_function_selector_array[offset + POR] = NFPG_LSTM_POR
+            n_function_selector_array[offset + GIN] = NFPG_LSTM_GIN
+            n_function_selector_array[offset + GOU] = NFPG_LSTM_GOU
+            n_function_selector_array[offset + GFG] = NFPG_LSTM_GFG
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")
@@ -1234,6 +1340,15 @@ class TheanoPartition():
             n_function_selector_array[offset + SUR] = NFPG_PIPE_NON
             n_function_selector_array[offset + CAT] = NFPG_PIPE_NON
             n_function_selector_array[offset + EXP] = NFPG_PIPE_NON
+            self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+
+        if type == LSTM:
+            n_function_selector_array = self.n_function_selector.get_value(borrow=True)
+            n_function_selector_array[offset + GEN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + POR] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GIN] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GOU] = NFPG_PIPE_NON
+            n_function_selector_array[offset + GFG] = NFPG_PIPE_NON
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
 
         # hint at the free ID
@@ -1364,16 +1479,22 @@ class TheanoPartition():
     def set_nodespace_gatetype_activator(self, nodespace_id, gate_type, activator_id):
         if gate_type == "por":
             self.allocated_nodespaces_por_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif gate_type == "ret":
             self.allocated_nodespaces_ret_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif gate_type == "sub":
             self.allocated_nodespaces_sub_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif gate_type == "sur":
             self.allocated_nodespaces_sur_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif gate_type == "cat":
             self.allocated_nodespaces_cat_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
         elif gate_type == "exp":
             self.allocated_nodespaces_exp_activators[nodespace_id] = activator_id
+            self.has_directional_activators = True
 
         nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
         for nid in nodes_in_nodespace:

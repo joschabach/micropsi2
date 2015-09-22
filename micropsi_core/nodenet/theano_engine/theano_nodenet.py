@@ -118,6 +118,40 @@ STANDARD_NODETYPES = {
         "parameters": ["type"],
         "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp"]},
         "nodefunction_name": "activator"
+    },
+    "LSTM": {
+        "name": "LSTM",
+        "slottypes": ["gen", "por", "gin", "gou", "gfg"],
+        "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
+        "nodefunction_name": "lstm",
+        "symbol": "◷",
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "por": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gin": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gou": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gfg": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            }
+        }
     }
 }
 
@@ -313,6 +347,9 @@ class TheanoNodenet(Nodenet):
 
         self._modulators.update(initfrom.get("modulators", {}))
 
+        if initfrom.get('runner_condition'):
+            self.set_runner_condition(initfrom['runner_condition'])
+
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
@@ -361,13 +398,13 @@ class TheanoNodenet(Nodenet):
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
             if data['type'] not in self._nodetypes and data['type'] not in self.native_modules:
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
                     'comment': 'There was a %s node here' % data['type']
                 }
                 data['type'] = 'Comment'
                 del data['gate_parameters']
                 invalid_nodes.append(uid)
-                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
             new_uid = self.create_node(
                 data['type'],
                 parent_uid,
@@ -1144,9 +1181,12 @@ class TheanoNodenet(Nodenet):
 
         return actuator_values_to_write
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
+
+        if group_name is None:
+            group_name = node_name_prefix
 
         ids = []
         for uid, name in self.names.items():
@@ -1154,7 +1194,7 @@ class TheanoNodenet(Nodenet):
             if self.is_node(uid) and name.startswith(node_name_prefix) and \
                     (partition.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace_uid)):
                 ids.append(uid)
-        self.group_nodes_by_ids(nodespace_uid, ids, node_name_prefix, gatetype, sortby)
+        self.group_nodes_by_ids(nodespace_uid, ids, group_name, gatetype, sortby)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
         if nodespace_uid is None:

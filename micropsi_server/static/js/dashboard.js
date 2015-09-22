@@ -90,7 +90,9 @@ $(function(){
             html += "<tr><td>Weight:</td><td>"+dashboard.motive.weight+"</td></tr>"
             html += "<tr><td>Gain:</td><td>"+dashboard.motive.gain+"</td></tr>"
         }
-        html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
+        if(dashboard.action){
+            html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
+        }
 
         html += "<tr><th><strong>sec/step:</strong></th><th>"+dashboard.stepping_rate+"</th></tr>"
 
@@ -102,14 +104,14 @@ $(function(){
                 {'value': dashboard.concepts.off, 'name': 'off', 'color': 'darkgrey'}
             ];
             html += "<tr><th>Concepts:</th><th><div id=\"concept_graph\"></div></th></tr>";
-            html += "<tr><td>Verified:</td><td>" + dashboard.concepts.verified.sort().join('<br />') + "</td></tr>";
-            html += "<tr><td>Checking:</td><td>" + dashboard.concepts.checking.sort().join('<br />') + "</td></tr>";
-            html += "<tr><td>Failed:</td><td>" + dashboard.concepts.failed.sort().join('<br />') + "</td></tr>";
+            html += "<tr><td>Verified:</td><td>" + (dashboard.concepts.verified.sort().join('<br />') || '--') + "</td></tr>";
+            html += "<tr><td>Checking:</td><td>" + (dashboard.concepts.checking.sort().join('<br />') || '--') + "</td></tr>";
+            html += "<tr><td>Failed:</td><td>" + (dashboard.concepts.failed.sort().join('<br />') || '--') + "</td></tr>";
         }
 
         html += "</table>"
         datatable.html(html);
-        if(dashboard.concepts){
+        if(dashboard.concepts && dashboard.concepts.total){
             draw_circle_chart(data, '#concept_graph', dashboard.concepts.total, 80, 5);
         }
     }

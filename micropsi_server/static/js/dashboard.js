@@ -87,14 +87,14 @@ $(function(){
 
         if(dashboard.motive){
             html += "<tr><th><strong>Motive:</strong></th><th>"+dashboard.motive.motive+"</th></tr>"
-            html += "<tr><td>Weight:</td><td>"+dashboard.motive.weight+"</td></tr>"
-            html += "<tr><td>Gain:</td><td>"+dashboard.motive.gain+"</td></tr>"
+            html += "<tr><td>Weight:</td><td>"+parseFloat(dashboard.motive.weight).toFixed(3)+"</td></tr>"
+            html += "<tr><td>Gain:</td><td>"+parseFloat(dashboard.motive.gain).toFixed(3)+"</td></tr>"
         }
-        if(dashboard.action){
+        if('action' in dashboard){
             html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
         }
 
-        html += "<tr><th><strong>sec/step:</strong></th><th>"+dashboard.stepping_rate+"</th></tr>"
+        html += "<tr><th><strong>sec/step:</strong></th><th>"+parseFloat(dashboard.stepping_rate).toFixed(3)+"</th></tr>"
 
         if(dashboard.concepts){
             var data = [

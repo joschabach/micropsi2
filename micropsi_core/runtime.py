@@ -1142,7 +1142,9 @@ def run_recipe(nodenet_uid, name, parameters):
 
 
 def get_agent_dashboard(nodenet_uid):
-    return nodenets[nodenet_uid].get_dashboard()
+    net = nodenets[nodenet_uid]
+    with net.netlock:
+        return net.get_dashboard()
 
 
 # --- end of API

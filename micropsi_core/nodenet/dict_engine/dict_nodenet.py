@@ -469,10 +469,11 @@ class DictNodenet(Nodenet):
 
         with self.netlock:
 
+            self._step += 1
+
             for operator in self.stepoperators:
                 operator.execute(self, self._nodes.copy(), self.netapi)
 
-            self._step += 1
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid

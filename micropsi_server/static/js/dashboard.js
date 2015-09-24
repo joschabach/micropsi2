@@ -2,6 +2,24 @@
 
 $(function(){
 
+    jQuery.fn.highlight = function(color) {
+       $(this).each(function() {
+            var el = $(this);
+            $("<i>")
+                .width(el.parent().width())
+                .height(el.height())
+                .css({
+                    "position": "absolute",
+                    "background-color": color,
+                    "opacity": ".9",
+                    "z-index": 0
+                })
+                .prependTo(el)
+                .fadeOut(1500);
+        });
+    }
+
+
     var container = $('#dashboard_container');
 
     var nodes = $('<div id="dashboard_nodes" class="dashboard-item right"></div>');
@@ -114,16 +132,23 @@ $(function(){
         }
 
         if(dashboard.automatisms){
-            html += "<tr><th>Automatisms:</th><td>"
+            html += "<tr><th colspan=\"2\">Automatisms:</th></tr>"
             for(var i = 0; i < dashboard.automatisms.length; i++){
                 var auto = dashboard.automatisms[i]
-                html += auto.name + "(c:"+auto.complexity+", w:"+auto.competence+") <br />"
+                html += "<tr><td class=\""+auto.name.replace(">","")+"\">" + auto.name + "</td><td>c:"+auto.complexity+", w:"+parseFloat(auto.competence).toFixed(3)+" </td></tr>"
             }
-            html += "</td><tr>"
         }
 
         html += "</table>"
         datatable.html(html);
+        if(dashboard.reinforcement){
+            if (dashboard.reinforcement.result > 0){
+                var color = "#0F0";
+            } else {
+                var color = "#F00";
+            }
+            $('.' + dashboard.reinforcement.name.replace(">","")).highlight(color);
+        }
         if(dashboard.concepts && dashboard.concepts.total){
             draw_circle_chart(data, '#concept_graph', dashboard.concepts.total, 80, 5);
         }

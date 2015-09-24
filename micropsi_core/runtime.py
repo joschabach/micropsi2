@@ -1127,9 +1127,12 @@ def run_recipe(nodenet_uid, name, parameters):
 
 
 def get_agent_dashboard(nodenet_uid):
+    from .emoexpression import calc_emoexpression_parameters
     net = nodenets[nodenet_uid]
     with net.netlock:
-        return net.get_dashboard()
+        data = net.get_dashboard()
+        data['face'] = calc_emoexpression_parameters(net)
+        return data
 
 
 # --- end of API

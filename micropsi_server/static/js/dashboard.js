@@ -8,9 +8,9 @@ $(function(){
     var datatable = $('<div id="dashboard_datatable" class="dashboard-item right"></div>');
     var urges = $('<div id="dashboard_urges" class="dashboard-item left"></div>');
     var modulators = $('<div id="dashboard_modulators" class="dashboard-item left"></div>');
-    var sensors = $('<div id="dashboard_sensors" class="dashboard-item"></div>');
+    var face = $('<div id="dashboard_face" class="dashboard-item right"></div>');
 
-    container.append(datatable, nodes, urges, modulators, sensors, $('<p style="break:both"></p>'));
+    container.append(datatable, nodes,  face, urges, modulators, $('<p style="break:both"></p>'));
 
     var d3graphs = {};
 
@@ -23,6 +23,7 @@ $(function(){
         draw_modulators(data);
         draw_nodes(data);
         draw_datatable(data);
+        draw_face(data);
     }
 
     register_stepping_function('dashboard', getPollParams, setData);
@@ -302,6 +303,273 @@ $(function(){
             .style("text-anchor", "left")
             .attr("dx", w/2 - margin/1.5)
             .attr("dy", h/2 + margin/1.5)
+    }
+
+    function draw_face(data, selector){
+        var margin = 30;
+        var width = 100;
+        var height = 100;
+
+        var raster = width / 8; // face has 8x8 pixels
+        var eye_color = '#fff'
+        var pup_color = '#523D89'
+        var nose_color = '#694032'
+        var mouth_color = '#764237'
+
+        var emoexpression = data.face;
+
+        var shapes = {
+            'eye_l': {
+                width: 2*raster,
+                height: raster,
+                x: margin + raster,
+                y: margin + 4*raster,
+                color: eye_color
+            },
+            'eye_r': {
+                width: 2*raster,
+                height: raster,
+                x: margin + 5*raster,
+                y: margin + 4*raster,
+                color: eye_color
+            },
+            'pup_l': {
+                width: raster,
+                height: raster,
+                x: margin + 2*raster,
+                y: margin + 4*raster,
+                color: pup_color
+            },
+            'pup_r': {
+                width: raster,
+                height: raster,
+                x: margin + 5*raster,
+                y: margin + 4*raster,
+                color: pup_color
+            },
+            'nose': {
+                width: 2*raster,
+                height: 0.9 * raster,
+                x: margin + 3*raster,
+                y: margin + 5*raster,
+                color: nose_color
+            },
+            'upper_lip': {
+                width: 4 * raster,
+                height: 0.5 * raster,
+                x: margin + 2*raster,
+                y: margin + 6*raster,
+                color: mouth_color
+            },
+            'lower_lip': {
+                width: 4*raster,
+                height: 0.5 * raster,
+                x: margin + 2*raster,
+                y: margin + 6.5*raster,
+                color: mouth_color
+            },
+            'corner_l': {
+                width: 0.5 * raster,
+                height: 0.9 * raster,
+                x: margin + 2*raster,
+                y: margin + 6*raster,
+                color: mouth_color
+            },
+            'corner_r': {
+                width: 0.5 * raster,
+                height: 0.9 * raster,
+                x: margin + 5.5*raster,
+                y: margin + 6*raster,
+                color: mouth_color
+            }
+        }
+
+        var svg = d3.select('#dashboard_face').select('svg');
+
+        if (svg.empty()){
+            svg = d3.select('#dashboard_face')
+                    .append("svg")
+                    .attr("width", width + 2*margin)
+                    .attr("height", height + 2*margin);
+
+            // add image
+            var imgs = svg.selectAll("image").data([0]);
+            imgs.enter()
+                .append("svg:image")
+                .attr("xlink:href", "/static/face/stevehead.png")
+                .attr("x", margin)
+                .attr("y", margin)
+                .attr("width", width)
+                .attr("height", height);
+
+            var coloroverlay = svg.append("rect")
+                .attr("x", margin)
+                .attr("y", margin)
+                .attr("width", width)
+                .attr("height", height)
+                .attr("class", "coloroverlay")
+                .attr("opacity", "0")
+
+            for(var key in shapes){
+                svg.append("rect")
+                    .attr("x", shapes[key].x)
+                    .attr("y", shapes[key].y)
+                    .attr("width", shapes[key].width)
+                    .attr("height", shapes[key].height)
+                    .attr("fill", shapes[key].color)
+                    .attr("class", key);
+            }
+        }
+
+        face_r = 100;
+        face_g = 100;
+        face_b = 100;
+
+        // activation slightly reddens the face
+        face_r += 255 * emoexpression["exp_activation"] / 5;
+
+        // anger strongly reddens the face
+        face_r += 255 * emoexpression["exp_anger"] / 3;
+        face_g -= 255 * emoexpression["exp_anger"] / 10;
+        face_b -= 255 * emoexpression["exp_anger"] / 10;
+
+        // fear pales the face
+        face_r -= 255 * emoexpression["exp_fear"] / 5;
+        face_g -= 255 * emoexpression["exp_fear"] / 5;
+        face_b -= 255 * emoexpression["exp_fear"] / 5;
+
+        // pain greens the face
+        face_r -= 255 * emoexpression["exp_pain"] / 20;
+        face_g += 255 * emoexpression["exp_pain"] / 20;
+        face_b -= 255 * emoexpression["exp_pain"] / 20;
+
+        // face_background_m.uniforms["color"]["value"] = new THREE.Color(face_r, face_g, face_b );
+        svg.selectAll(".coloroverlay")
+            .attr("opacity", "0")
+            .attr("fill", d3.rgb(face_r, face_g, face_b).toString())
+
+        // -- pupil position
+        pup_depressor = 0
+        pup_depressor += emoexpression["exp_sadness"];
+        svg.selectAll('.pup_l')
+            .attr('y', shapes.pup_l.y + pup_depressor * 6)
+            .attr('height', shapes.pup_l.height * (1 - pup_depressor/2))
+        svg.selectAll('.pup_r')
+            .attr('y', shapes.pup_r.y + pup_depressor * 6)
+            .attr('height', shapes.pup_r.height * (1 - pup_depressor/2))
+
+        // -- eye height
+        eye_l_h = 1;
+        eye_r_h = 1;
+
+        // pain lowers eye height left and increases right
+        eye_l_h -= emoexpression["exp_pain"] / 2;
+        eye_r_h += emoexpression["exp_pain"] / 2;
+
+        // surprise increaes eye height
+        eye_l_h += emoexpression["exp_surprise"] * 1.8;
+        eye_r_h += emoexpression["exp_surprise"] * 1.8;
+
+        // anger decreases eye height
+        eye_l_h -= emoexpression["exp_anger"] / 2;
+        eye_r_h -= emoexpression["exp_anger"] / 2;
+
+        // fear increases eye height
+        eye_l_h += emoexpression["exp_fear"];
+        eye_r_h += emoexpression["exp_fear"];
+
+        eye_l_newheight = shapes.eye_l.height * eye_l_h
+        diff_eye_l_h = eye_l_newheight - shapes.eye_l.height
+        eye_r_newheight = shapes.eye_r.height * eye_r_h
+        diff_eye_r_h = eye_r_newheight - shapes.eye_r.height
+
+        // -- eye width
+        eye_l_w = 1;
+        eye_r_w = 1;
+
+        // surprise decreases eye width, slightly
+        eye_l_w -= emoexpression["exp_surprise"] / 5;
+        eye_r_w -= emoexpression["exp_surprise"] / 5;
+
+        // anger increases eye width
+        eye_l_w += emoexpression["exp_anger"] / 2;
+        eye_r_w += emoexpression["exp_anger"] / 2;
+
+        // fear increases eye width
+        eye_l_w += emoexpression["exp_fear"] / 2;
+        eye_r_w += emoexpression["exp_fear"] / 2;
+
+        eye_l_newwidth = shapes.eye_l.width * eye_l_w
+        diff_eye_l_w = eye_l_newwidth - shapes.eye_l.width
+        eye_r_newwidth = shapes.eye_r.width * eye_r_w
+        diff_eye_r_w = eye_r_newwidth - shapes.eye_r.width
+
+        // -- eye position
+        eye_raiser = 0
+
+        // surprise increaes eye position
+        eye_raiser += emoexpression["exp_surprise"] * 8;
+
+        svg.selectAll('.eye_l')
+            .attr("y", shapes.eye_l.y - (diff_eye_l_h/2) - eye_raiser)
+            .attr("x", shapes.eye_l.x - (diff_eye_l_w/2) + eye_raiser/10)
+            .attr("width", eye_l_newwidth)
+            .attr("height", eye_l_newheight)
+        svg.selectAll('.eye_r')
+            .attr("y", shapes.eye_r.y - (diff_eye_r_h/2) - eye_raiser)
+            .attr("x", shapes.eye_r.x - (diff_eye_r_w/2) + eye_raiser/10)
+            .attr("width", eye_r_newwidth)
+            .attr("height", eye_l_newheight)
+
+        // -- lip corners
+        lip_corner_depressor = 0
+
+        // sadness depresses lip corners
+        lip_corner_depressor -= emoexpression["exp_sadness"] * 40;
+
+        // joy raises 'em
+        lip_corner_depressor += emoexpression["exp_joy"] * 20;
+
+        // -- lip presser
+        lip_presser = 0;
+
+        lip_presser += emoexpression["exp_pain"] * 0.5;
+        lip_presser += emoexpression["exp_anger"] * 0.5;
+        lip_presser += emoexpression["exp_fear"] * 0.5;
+        lip_presser += emoexpression["exp_joy"] * 0.2;
+
+        lip_presser = lip_presser
+        lip_corner_depressor = lip_corner_depressor
+
+        svg.selectAll('.corner_l')
+            .attr("width", shapes.corner_l.width * (1 - lip_presser))
+            .attr("height", shapes.corner_l.height * (1 - lip_presser))
+            .attr("y", shapes.corner_l.y + (lip_presser * 50 - lip_corner_depressor)/5)
+        svg.selectAll('.corner_r')
+            .attr("width", shapes.corner_l.width * (1 - lip_presser))
+            .attr("height", shapes.corner_r.height * (1 - lip_presser))
+            .attr("y", shapes.corner_r.y + (lip_presser * 50 - lip_corner_depressor)/5)
+
+        // -- lower lip depressor
+        lower_lip_depressor = 0;
+        lower_lip_depressor += emoexpression["exp_surprise"] * 50;
+        if(lower_lip_depressor > 50) {
+            lower_lip_depressor = 50;
+        }
+        lower_lip_depressor = lower_lip_depressor / 10
+
+        diff_upper_lip_h = shapes.upper_lip.height - (shapes.upper_lip.height * (1 - lip_presser))
+
+        svg.selectAll('.upper_lip')
+            .attr("height", shapes.upper_lip.height * (1 - lip_presser))
+            .attr("width", shapes.upper_lip.width * (1 - (lip_presser / 4)))
+            .attr("y", shapes.upper_lip.y + diff_upper_lip_h + lip_presser * 8)
+
+        svg.selectAll('.lower_lip')
+            .attr("height", shapes.lower_lip.height * (1 - lip_presser))
+            .attr("width", shapes.lower_lip.width * (1 - (lip_presser / 4)))
+            .attr("y", shapes.lower_lip.y + lip_presser*8 + lower_lip_depressor)
+
     }
 
 });

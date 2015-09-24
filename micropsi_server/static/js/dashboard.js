@@ -94,6 +94,9 @@ $(function(){
         if('action' in dashboard){
             html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
         }
+        if('situation' in dashboard){
+            html += "<tr><th><strong>Situation:</strong></th><th>"+dashboard.situation+"</th></tr>"
+        }
 
         html += "<tr><th><strong>sec/step:</strong></th><th>"+parseFloat(dashboard.stepping_rate).toFixed(3)+"</th></tr>"
 
@@ -108,6 +111,15 @@ $(function(){
             html += "<tr><td>Verified:</td><td>" + (dashboard.concepts.verified.sort().join('<br />') || '--') + "</td></tr>";
             html += "<tr><td>Checking:</td><td>" + (dashboard.concepts.checking.sort().join('<br />') || '--') + "</td></tr>";
             html += "<tr><td>Failed:</td><td>" + (dashboard.concepts.failed.sort().join('<br />') || '--') + "</td></tr>";
+        }
+
+        if(dashboard.automatisms){
+            html += "<tr><th>Automatisms:</th><td>"
+            for(var i = 0; i < dashboard.automatisms.length; i++){
+                var auto = dashboard.automatisms[i]
+                html += auto.name + "(c:"+auto.complexity+", w:"+auto.competence+") <br />"
+            }
+            html += "</td><tr>"
         }
 
         html += "</table>"

@@ -223,6 +223,47 @@ $(function(){
                         .call(xAxis)
                 }
                 svg.append("svg:defs")
+                for(var i =0; i < data.length; i++){
+                    var color = d3.rgb(data[i].color);
+                    var gradient = svg.select("defs")
+                        .append("svg:linearGradient")
+                        .attr("id", "gradient_"+data[i].color)
+                        .attr("x1", "100%")
+                        .attr("y1", "0%")
+                        .attr("x2", "0%")
+                        .attr("y2", "20%")
+                        .attr("spreadMethod", "pad");
+
+                        gradient.append("svg:stop")
+                        .attr("offset", "0%")
+                        .attr("stop-color", color.brighter(2))
+                        .attr("stop-opacity", 1);
+
+                        gradient.append("svg:stop")
+                        .attr("offset", "100%")
+                        .attr("stop-color",  color.darker(2))
+                        .attr("stop-opacity", 1);
+                }
+                var color = d3.rgb('#333');
+                var gradient = svg.select("defs")
+                        .append("svg:linearGradient")
+                        .attr("id", "gradient_background")
+                        .attr("x1", "0%")
+                        .attr("y1", "0%")
+                        .attr("x2", "100%")
+                        .attr("y2", "0%")
+                        .attr("spreadMethod", "pad");
+
+                        gradient.append("svg:stop")
+                        .attr("offset", "0%")
+                        .attr("stop-color", color.brighter(2))
+                        .attr("stop-opacity", 1);
+
+                        gradient.append("svg:stop")
+                        .attr("offset", "100%")
+                        .attr("stop-color",  color.darker(1))
+                        .attr("stop-opacity", 1);
+
             } else {
                 svg = svg.select("g")
             }
@@ -244,33 +285,44 @@ $(function(){
                 .selectAll("text")
                 .style("font-size", "80%");
 
+            if(negative_values){
+                svg.select(".zero.axis")
+                    .call(xAxis)
+                    .selectAll("text")
+                    .style("display", "none")
+                    .selectAll(".ticks")
+                    .attr("dy", -5)
+            }
+
+            var background_bars = svg.selectAll(".background_bar").data(data)
 
             var bars = svg.selectAll('.bar')
                 .data(data)
-            //update
-            bars
-                .attr("fill", "#009")
 
+            background_bars.enter()
+                .append("svg:rect")
+                .attr("class", "background_bar")
+                .style("fill", "url(\#gradient_background)")
+                .attr("width", x.rangeBand())
+                .attr("opacity", (negative_values) ? 0 : 0.8)
+                .attr("y", y(1))
+                .attr("height", height)
             //enter
             bars.enter()
                 .append("svg:rect")
                 .attr("class", "bar")
                 .attr("fill", "#900")
 
-
             //exit
-            bars.exit()
-            .transition()
-            .duration(500)
-            .ease("exp")
-                .attr("height", 0)
-                .remove()
+            bars.exit().remove()
+            background_bars.exit().remove()
 
+            background_bars.transition().duration(0).attr("x", function(d) { return x(d.name); })
             bars
             .transition()
             .duration(500)
             .ease("quad")
-               .style("fill", function(d) { return d.color})
+               .style("fill", function(d){ return "url(\#gradient_"+d.color})
                .attr("x", function(d) { return x(d.name); })
                .attr("width", x.rangeBand())
                .attr("y", function(d) {

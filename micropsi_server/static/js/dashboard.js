@@ -98,7 +98,7 @@ $(function(){
         for(var key in dashboard.urges){
             data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
             if(old_values.urges){
-                old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': old_values.urges[key] - dashboard.urges[key]})
+                old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': Math.round((old_values.urges[key] - dashboard.urges[key]) * 100) /100})
             }
         }
         if(data.length) drawBarChart(data, old_data, '#dashboard_urges')
@@ -426,8 +426,9 @@ $(function(){
                         })
                         .attr("x2", function(d){ return x(d.name) + (x.rangeBand()/2)  })
                         .attr("y2", function(d){
-                            if(d.delta > 0) return y(d.value - d.delta) - 10;
-                            else if(d.delta < 0) return y(d.value - d.delta) + 10;
+                            var level = Math.min(10, Math.abs(y(d.value - d.delta) - y(d.value))) - 1
+                            if(d.delta > 0) return y(d.value - d.delta) - level;
+                            else if(d.delta < 0) return y(d.value - d.delta) + level ;
                             else return y(0)
                         })
                         .attr( "marker-end", function(d){ return "url(\#arrow_"+d.name+")" })

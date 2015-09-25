@@ -72,7 +72,7 @@ $(function(){
                 data.push({'name': key.substr(4).replace('_', ' '), 'value': dashboard.modulators[key], 'color': colors[key]});
             }
         }
-        if(data.length) drawBarChart(data, [], '#dashboard_modulators');
+        if(data.length) drawBarChart(data, [], '#dashboard_modulators', true);
     }
 
     function draw_nodes(dashboard){
@@ -173,7 +173,7 @@ $(function(){
         }
     }
 
-    function drawBarChart(data, old_data, selector){
+    function drawBarChart(data, old_data, selector, negative_values){
 
             var margin = {top: 20, right: 20, bottom: 70, left: 40},
                 width = 500 - margin.left - margin.right,
@@ -215,20 +215,24 @@ $(function(){
                   .selectAll("text")
                     .style("font-size", "80%")
 
+                if(negative_values){
+                    svg.select(".x.axis").attr("class", "x axis noborder")
+                    svg.append("g")
+                        .attr("class", "zero axis")
+                        .attr("transform", "translate(0," + height/2 + ")")
+                        .call(xAxis)
+                }
                 svg.append("svg:defs")
             } else {
                 svg = svg.select("g")
             }
 
-            var ymin = 0;
-            var ymax = 1;
-            for(var i=0; i < data.length; i++){
-                data[i].value = Math.max(0, data[i].value);
-                if(data[i].value < ymin) ymin = data[i].value;
-                else if(data[i].value > ymax) ymax = data[i].value;
-            }
             x.domain(data.map(function(d) { return d.name; }));
-            y.domain([ymin, ymax]);
+
+            if(negative_values)
+                y.domain([-1, 1]);
+            else
+                y.domain([0, 1]);
 
             svg.select(".y.axis")
                 .call(yAxis)
@@ -269,8 +273,20 @@ $(function(){
                .style("fill", function(d) { return d.color})
                .attr("x", function(d) { return x(d.name); })
                .attr("width", x.rangeBand())
-               .attr("y", function(d) { return y(d.value); })
-               .attr("height", function(d) { return height - y(d.value); });
+               .attr("y", function(d) {
+                    if(negative_values) {
+                        return (d.value < 0) ? y(0) : y(d.value)
+                    } else {
+                        return y(d.value);
+                    }
+                })
+               .attr("height", function(d) { 
+                    if(negative_values){
+                        return height/2 - y(Math.abs(d.value))
+                    } else {
+                        return height - y(d.value);
+                    }
+                });
 
            svg.selectAll('g.x.axis g text').each(insertLinebreaks);
 
@@ -675,7 +691,7 @@ $(function(){
         lip_presser += emoexpression["exp_fear"] * 0.5;
         lip_presser += emoexpression["exp_joy"] * 0.2;
 
-        lip_presser = lip_presser
+        lip_presser = Math.min(lip_presser, 1)
         lip_corner_depressor = lip_corner_depressor
 
         svg.selectAll('.corner_l')

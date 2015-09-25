@@ -255,12 +255,14 @@ graphs
   shape-rendering: crispEdges;
 }
 
-
 .line {
   fill: none;
   stroke-width: 1px;
 }
 
+.axis.noborder {
+  stroke-width: 0px !important;
+}
 
 
 .dropdown-menu .sub-menu {

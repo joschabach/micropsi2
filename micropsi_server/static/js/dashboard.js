@@ -30,7 +30,7 @@ $(function(){
 
     container.append(datatable, nodes,  face, urges, modulators, $('<p style="break:both"></p>'));
 
-    var d3graphs = {};
+    var old_values = {}
 
     function getPollParams(){
         return 1
@@ -42,6 +42,7 @@ $(function(){
         draw_nodes(data);
         draw_datatable(data);
         draw_face(data);
+        old_values = data;
     }
 
     register_stepping_function('dashboard', getPollParams, setData);
@@ -71,7 +72,7 @@ $(function(){
                 data.push({'name': key.substr(4).replace('_', ' '), 'value': dashboard.modulators[key], 'color': colors[key]});
             }
         }
-        if(data.length) drawBarChart(data, '#dashboard_modulators');
+        if(data.length) drawBarChart(data, [], '#dashboard_modulators');
     }
 
     function draw_nodes(dashboard){
@@ -95,10 +96,14 @@ $(function(){
             'heal': 'green'
         }
         var data = [];
+        var old_data = [];
         for(var key in dashboard.urges){
             data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
+            if(old_values.urges){
+                old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': old_values.urges[key] - dashboard.urges[key]})
+            }
         }
-        if(data.length) drawBarChart(data, '#dashboard_urges')
+        if(data.length) drawBarChart(data, old_data, '#dashboard_urges')
     }
 
     function draw_datatable(dashboard){
@@ -168,9 +173,8 @@ $(function(){
         }
     }
 
-    function drawBarChart(data, selector){
+    function drawBarChart(data, old_data, selector){
 
-            d3graphs[selector] = {};
             var margin = {top: 20, right: 20, bottom: 70, left: 40},
                 width = 500 - margin.left - margin.right,
                 height = 250 - margin.top - margin.bottom;
@@ -211,6 +215,9 @@ $(function(){
                   .selectAll("text")
                     .style("font-size", "80%")
 
+                svg.append("svg:defs")
+            } else {
+                svg = svg.select("g")
             }
 
             var ymin = 0;
@@ -250,14 +257,14 @@ $(function(){
             //exit
             bars.exit()
             .transition()
-            .duration(300)
+            .duration(500)
             .ease("exp")
                 .attr("height", 0)
                 .remove()
 
             bars
             .transition()
-            .duration(300)
+            .duration(500)
             .ease("quad")
                .style("fill", function(d) { return d.color})
                .attr("x", function(d) { return x(d.name); })
@@ -266,6 +273,99 @@ $(function(){
                .attr("height", function(d) { return height - y(d.value); });
 
            svg.selectAll('g.x.axis g text').each(insertLinebreaks);
+
+           if(old_data){
+                var oldbars = svg.selectAll('.old-bar')
+                    .data(old_data)
+                var lines = svg.selectAll('.arrowline')
+                    .data(old_data)
+                var arrowheads = svg.select("defs")
+                    .selectAll('.arrowhead')
+                    .data(old_data)
+
+                //enter
+                oldbars.enter()
+                    .append("svg:rect")
+                    .attr("class", "old-bar")
+                    .attr("fill", "#000")
+                    .attr("opacity", 0.4)
+                lines.enter()
+                    .append("line")
+                    .attr("class", "arrowline")
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 3)
+                    .attr("opacity", 0.7)
+                arrowheads.enter()
+                    .append("svg:marker")
+                    .attr("viewBox", "0 0 10 10")
+                    .attr("markerUnits", "strokeWidth")
+                    .attr("markerWidth", 5)
+                    .attr("markerHeight", 3)
+                    .attr("class", "arrowhead")
+                    .attr("opacity", 0.7)
+                    .attr("fill", "white")
+                    .append("svg:path")
+                    .attr("d", "M 0 0 L 10 5 L 0 10 z")
+
+                //exit
+                oldbars.exit()
+                    .transition()
+                    .duration(500)
+                    .ease("exp")
+                        .attr("height", 0)
+                        .remove()
+                lines.exit()
+                        .remove()
+
+                oldbars.transition()
+                    .duration(500)
+                    .ease("quad")
+                       .attr("x", function(d) { return x(d.name); })
+                       .attr("width", x.rangeBand())
+                       .attr("y", function(d) {
+                            if(d.delta > 0) return y(d.value);
+                            else if (d.delta < 0) return y(d.value - d.delta)
+                            else return y(d.value - d.delta)
+                        })
+                       .attr("height", function(d) {
+                            if (d.delta == 0) return 0
+                            return height - y(Math.abs(d.delta))
+                        })
+
+                arrowheads.transition()
+                    .duration(function(d){ return Math.abs(d.delta) * 50})
+                    .ease("quad")
+                        .attr("id", function(d){ return "arrow_" + d.name })
+                        .attr("opacity", function(d){
+                            return (d.delta != 0) ? 0.7 : 0;
+                        })
+                        .attr("refX", 0)
+                        .attr("refY", 5)
+                        .attr("orient", "auto")
+                        .attr("fill", function(d){
+                            if (d.delta != 0) return "white"
+                            else return "transparent"
+                        })
+
+                lines.transition()
+                    .duration(function(d){ return Math.abs(d.delta) * 50})
+                    .ease("quad")
+                        .attr("opacity", function(d){
+                            return (d.delta != 0) ? 0.7 : 0;
+                        })
+                        .attr("x1", function(d){ return x(d.name) + (x.rangeBand()/2) })
+                        .attr("y1", function(d) {
+                            if(d.delta != 0) return y(d.value);
+                            else return y(d.value - d.delta)
+                        })
+                        .attr("x2", function(d){ return x(d.name) + (x.rangeBand()/2)  })
+                        .attr("y2", function(d){
+                            if(d.delta > 0) return y(d.value - d.delta) - 10;
+                            else if(d.delta < 0) return y(d.value - d.delta) + 10;
+                            else return y(0)
+                        })
+                        .attr( "marker-end", function(d){ return "url(\#arrow_"+d.name+")" })
+           }
     }
 
     var piecharts = {}

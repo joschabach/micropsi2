@@ -22,13 +22,11 @@ $(function(){
 
     var container = $('#dashboard_container');
 
-    var nodes = $('<div id="dashboard_nodes" class="dashboard-item right"></div>');
-    var datatable = $('<div id="dashboard_datatable" class="dashboard-item right"></div>');
-    var urges = $('<div id="dashboard_urges" class="dashboard-item left"></div>');
-    var modulators = $('<div id="dashboard_modulators" class="dashboard-item left"></div>');
-    var face = $('<div id="dashboard_face" class="dashboard-item right"></div>');
-
-    container.append(datatable, nodes,  face, urges, modulators, $('<p style="break:both"></p>'));
+    var nodes = $('#dashboard_nodes');
+    var datatable = $('#dashboard_datatable');
+    var urges = $('#dashboard_urges');
+    var modulators = $('#dashboard_modulators');
+    var face = $('#dashboard_face');
 
     var old_values = {}
 

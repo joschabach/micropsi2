@@ -21,7 +21,20 @@
         </form>
     </div>
     <div id="dashboard" class="section-margin frontend_section">
-        <div id="dashboard_container"></div>
+        <div id="dashboard_container">
+            <div class="span5">
+                <div id="dashboard_urges" class="dashboard-item"></div>
+                <div id="dashboard_modulators" class="dashboard-item"></div>
+            </div>
+            <div class="span3">
+                <div id="dashboard_face" class="dashboard-item left"></div>
+                <div id="dashboard_nodes" class="dashboard-item left"></div>
+                <p style="clear:both"/>
+            </div>
+            <div class="span4">
+                <div id="dashboard_datatable" class="dashboard-item"></div>
+            </div>
+        </div>
     </div>
 </div>
 

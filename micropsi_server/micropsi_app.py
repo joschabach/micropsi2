@@ -697,7 +697,7 @@ def show_face():
 @micropsi_app.route("/dashboard")
 def show_dashboard():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="dashboard", user_id=user_id, permissions=permissions, token=token, version=VERSION)
+    return template("viewer", mode="dashboard", logging_levels=runtime.get_logging_levels(), user_id=user_id, permissions=permissions, token=token, version=VERSION)
 
 
 #################################################################

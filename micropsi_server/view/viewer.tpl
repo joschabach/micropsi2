@@ -23,7 +23,7 @@
     %include face
 % end
 %if mode == "dashboard":
-    %include dashboard
+    %include dashboard  logging_levels=logging_levels
 % end
 
 %if mode == "all":

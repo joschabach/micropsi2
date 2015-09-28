@@ -533,11 +533,16 @@ table.emoexpression td {
 }
 .dashboard-table {
   margin: 20px;
+  border-style: solid;
+  border-color: #ccc;
+  border-width: 3px;
 }
 .dashboard-table th {
   margin-top: 1em;
   text-align: left;
+  padding: 4px 10px;
 }
 .dashboard-table td {
   padding-left: 1em;
+  padding: 4px 20px;
 }

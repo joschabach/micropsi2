@@ -49,13 +49,9 @@ def test_node_lstm_logic_passthrough(fixed_nodenet):
 
     netapi.link(source, "gen", lstm, "por")
 
-    # 2 steps of 0 until first sampling
     net.step()
-    assert lstm.get_gate("por").activation == 0
-    net.step()
-    assert lstm.get_gate("por").activation == 0
 
-    # 3 steps of first sample
+    # first sample
     s = f(0) * 0 + f(0) * g(x)
     net.step()
     assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
@@ -84,13 +80,9 @@ def test_node_lstm_logic_active_in_gate(fixed_nodenet):
     netapi.link(source, "gen", lstm, "por")
     netapi.link(source, "gen", lstm, "gin")
 
-    # 2 steps of 0 until first sampling
     net.step()
-    assert lstm.get_gate("por").activation == 0
-    net.step()
-    assert lstm.get_gate("por").activation == 0
 
-    # 3 steps of first sample
+    # first sample
     s = f(0) * 0 + f(1) * g(x)
     net.step()
     assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
@@ -121,13 +113,9 @@ def test_node_lstm_logic_active_in_out_gates(fixed_nodenet):
     netapi.link(source, "gen", lstm, "gin")
     netapi.link(source, "gen", lstm, "gou")
 
-    # 2 steps of 0 until first sampling
     net.step()
-    assert lstm.get_gate("por").activation == 0
-    net.step()
-    assert lstm.get_gate("por").activation == 0
 
-    # 3 steps of first sample
+    # first sample
     s = f(0) * 0 + f(1) * g(x)
     net.step()
     assert round(lstm.get_gate("por").activation, 4) == round(f(1) * h(s), 4)
@@ -158,11 +146,7 @@ def test_node_lstm_logic_active_in_out_phi_gates(fixed_nodenet):
     netapi.link(source, "gen", lstm, "gou")
     netapi.link(source, "gen", lstm, "gfg")
 
-    # 2 steps of 0 until first sampling
     net.step()
-    assert lstm.get_gate("por").activation == 0
-    net.step()
-    assert lstm.get_gate("por").activation == 0
 
     # 3 steps of first sample
     s = f(1) * 0 + f(1) * g(x)

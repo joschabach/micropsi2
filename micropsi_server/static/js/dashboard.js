@@ -78,9 +78,9 @@ $(function(){
     function draw_nodes(dashboard){
         var total = parseInt(dashboard['count_nodes'])
         var data = [
-            {'value': dashboard['count_negative_nodes'], 'name': 'failing', 'color': 'red'},
-            {'value': dashboard['count_positive_nodes'], 'name': 'success', 'color': 'green'},
-            {'value': total - dashboard['count_negative_nodes'] - dashboard['count_negative_nodes'], name: 'off', color: 'lightgrey'}
+            {'value': dashboard.count_negative_nodes, 'name': 'failing', 'color': 'red'},
+            {'value': dashboard.count_positive_nodes, 'name': 'success', 'color': 'green'},
+            {'value': (total - dashboard.count_negative_nodes - dashboard.count_negative_nodes || 1), name: 'off', color: 'lightgrey'}
         ];
         var label = total + " Nodes"
         draw_circle_chart(data, '#dashboard_nodes', label);

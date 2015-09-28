@@ -1,14 +1,14 @@
 
 
 <div id="dashboard_viewer" class="section-margin frontend_section collapse in">
-      <div class="sectionbar">
+    <div class="sectionbar">
         <form class="navbar-form">
             <table>
                 <tr>
-                    <td><span data-toggle="collapse" data-target="#monitor, #monitor_controls"><i
+                    <td><span><i
                             class="icon-chevron-right"></i></span></td>
 
-                    <td data-toggle="collapse" data-target="#monitor, #monitor_controls"> Agent Dashboard &nbsp;</td>
+                    <td> Agent Dashboard &nbsp;</td>
                     <td>
                         <div class="btn-group nodenet_list">
                             <a class="btn" href="#">

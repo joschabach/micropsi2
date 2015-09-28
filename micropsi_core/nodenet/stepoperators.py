@@ -111,6 +111,7 @@ class DoernerianEmotionalModulators(StepOperator):
         base_age = netapi.get_modulator("base_age")
         base_age_influence_on_competence = netapi.get_modulator("base_age_influence_on_competence")
         base_unexpectedness_prev = netapi.get_modulator("base_unexpectedness")
+        base_sum_of_urges = netapi.get_modulator("base_sum_of_urges")
 
         emo_competence_prev = netapi.get_modulator("emo_competence")
         emo_sustaining_joy_prev = netapi.get_modulator("emo_sustaining_joy")
@@ -136,6 +137,8 @@ class DoernerianEmotionalModulators(StepOperator):
         pleasure_from_satisfaction = gentle_sigmoid(base_urge_change * -3)
 
         emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
+
+        emo_valence = 0.5 - base_urge_change - base_sum_of_urges  # base_urge_change is inverse
 
         if emo_pleasure != 0:
             if math.copysign(1, emo_pleasure) == math.copysign(1, emo_sustaining_joy_prev):
@@ -176,3 +179,4 @@ class DoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("emo_selection_threshold", emo_selection_threshold)
         nodenet.set_modulator("emo_competence", emo_competence)
         nodenet.set_modulator("emo_sustaining_joy", emo_sustaining_joy)
+        nodenet.set_modulator("emo_valence", emo_valence)

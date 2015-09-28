@@ -27,6 +27,7 @@ $(function(){
     var urges = $('#dashboard_urges');
     var modulators = $('#dashboard_modulators');
     var face = $('#dashboard_face');
+    var valence = $('#dashboard_valence');
 
     var old_values = {}
 
@@ -40,6 +41,7 @@ $(function(){
         draw_nodes(data);
         draw_datatable(data);
         draw_face(data);
+        draw_valence(data);
         old_values = data;
     }
 
@@ -82,6 +84,17 @@ $(function(){
         ];
         var label = total + " Nodes"
         draw_circle_chart(data, '#dashboard_nodes', label);
+    }
+
+    function draw_valence(dashboard){
+        var data = [];
+        var old_data = [];
+        if('emo_valence' in dashboard.modulators){
+            dashboard.modulators.emo_valence = Math.max(-1, Math.min(1, dashboard.modulators.emo_valence))
+            data.push({'name': 'valence', 'value': dashboard.modulators.emo_valence, 'color': 'purple'});
+        }
+        if(data.length)
+            drawBarChart(data, old_data, '#dashboard_valence', true, 100)
     }
 
     function draw_urges(dashboard){
@@ -171,11 +184,12 @@ $(function(){
         }
     }
 
-    function drawBarChart(data, old_data, selector, negative_values){
-
+    function drawBarChart(data, old_data, selector, negative_values, width, height){
             var margin = {top: 20, right: 20, bottom: 70, left: 40},
-                width = 500 - margin.left - margin.right,
-                height = 250 - margin.top - margin.bottom;
+            width = width || 500
+            height = height || 250
+            width = width - margin.left - margin.right,
+            height = height - margin.top - margin.bottom;
 
             var x = d3.scale.ordinal().rangeRoundBands([0, width], .05);
             var y = d3.scale.linear().range([height, 0]);

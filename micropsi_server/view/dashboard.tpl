@@ -27,6 +27,7 @@
                 <div id="dashboard_modulators" class="dashboard-item"></div>
             </div>
             <div class="span3">
+                <div id="dashboard_valence" class="dashboard-item left"></div>
                 <div id="dashboard_face" class="dashboard-item left"></div>
                 <div id="dashboard_nodes" class="dashboard-item left"></div>
                 <p style="clear:both"/>

@@ -116,7 +116,7 @@ STANDARD_NODETYPES = {
         "name": "Activator",
         "slottypes": ["gen"],
         "parameters": ["type"],
-        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp"]},
+        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sampling"]},
         "nodefunction_name": "activator"
     },
     "LSTM": {
@@ -632,6 +632,14 @@ class TheanoNodenet(Nodenet):
             activator_id = node_from_id(activator_uid)
         nodespace_id = nodespace_from_id(nodespace_uid)
         partition.set_nodespace_gatetype_activator(nodespace_id, gate_type, activator_id)
+
+    def set_nodespace_sampling_activator(self, nodespace_uid, activator_uid):
+        partition = self.get_partition(nodespace_uid)
+        activator_id = 0
+        if activator_uid is not None and len(activator_uid) > 0:
+            activator_id = node_from_id(activator_uid)
+        nodespace_id = nodespace_from_id(nodespace_uid)
+        partition.set_nodespace_sampling_activator(nodespace_id, activator_id)
 
     def get_nodespace(self, uid):
         if uid is None:

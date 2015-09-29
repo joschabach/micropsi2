@@ -757,7 +757,7 @@ class TheanoNodenet(Nodenet):
         elif datasource in self.sensormap:
             sensorlist = self.sensormap[datasource]
         for uid in sensorlist:
-            if nodespace is None or self.rootpartition.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
+            if nodespace is None or self.get_partition(uid).allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
                 sensors[uid] = self.get_node(uid)
         return sensors
 
@@ -770,7 +770,7 @@ class TheanoNodenet(Nodenet):
         elif datatarget in self.actuatormap:
             actuatorlist = self.actuatormap[datatarget]
         for uid in actuatorlist:
-            if nodespace is None or self.rootpartition.allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
+            if nodespace is None or self.get_partition(uid).allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
                 actuators[uid] = self.get_node(uid)
         return actuators
 
@@ -1149,23 +1149,26 @@ class TheanoNodenet(Nodenet):
         Sets the sensors for the given data sources to the given values
         """
 
-        a_array = self.rootpartition.a.get_value(borrow=True)
+        for partition in self.partitions.values():
+            a_array = partition.a.get_value(borrow=True)
 
-        for datasource in datasource_to_value_map:
-            value = datasource_to_value_map.get(datasource)
-            sensor_uids = self.sensormap.get(datasource, [])
+            for datasource in datasource_to_value_map:
+                value = datasource_to_value_map.get(datasource)
+                sensor_uids = self.sensormap.get(datasource, [])
 
-            for sensor_uid in sensor_uids:
-                a_array[self.rootpartition.allocated_node_offsets[node_from_id(sensor_uid)] + GEN] = value
+                for sensor_uid in sensor_uids:
+                    if self.get_partition(sensor_uid).pid == partition.pid:
+                        a_array[partition.allocated_node_offsets[node_from_id(sensor_uid)] + GEN] = value
 
-        for datatarget in datatarget_to_value_map:
-            value = datatarget_to_value_map.get(datatarget)
-            actuator_uids = self.actuatormap.get(datatarget, [])
+            for datatarget in datatarget_to_value_map:
+                value = datatarget_to_value_map.get(datatarget)
+                actuator_uids = self.actuatormap.get(datatarget, [])
 
-            for actuator_uid in actuator_uids:
-                a_array[self.rootpartition.allocated_node_offsets[node_from_id(actuator_uid)] + GEN] = value
+                for actuator_uid in actuator_uids:
+                    if self.get_partition(actuator_uid).pid == partition.pid:
+                        a_array[partition.allocated_node_offsets[node_from_id(actuator_uid)] + GEN] = value
 
-        self.rootpartition.a.set_value(a_array, borrow=True)
+            partition.a.set_value(a_array, borrow=True)
 
     def read_actuators(self):
         """
@@ -1174,16 +1177,18 @@ class TheanoNodenet(Nodenet):
 
         actuator_values_to_write = {}
 
-        a_array = self.rootpartition.a.get_value(borrow=True)
+        for partition in self.partitions.values():
+            a_array = partition.a.get_value(borrow=True)
 
-        for datatarget in self.actuatormap:
-            actuator_node_activations = 0
-            for actuator_id in self.actuatormap[datatarget]:
-                actuator_node_activations += a_array[self.rootpartition.allocated_node_offsets[node_from_id(actuator_id)] + GEN]
+            for datatarget in self.actuatormap:
+                actuator_node_activations = 0
+                for actuator_uid in self.actuatormap[datatarget]:
+                    if self.get_partition(actuator_uid).pid == partition.pid:
+                        actuator_node_activations += a_array[partition.allocated_node_offsets[node_from_id(actuator_uid)] + GEN]
 
-            actuator_values_to_write[datatarget] = actuator_node_activations
+                actuator_values_to_write[datatarget] = actuator_node_activations
 
-        self.rootpartition.a.set_value(a_array, borrow=True)
+            partition.a.set_value(a_array, borrow=True)
 
         return actuator_values_to_write
 

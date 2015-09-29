@@ -50,29 +50,33 @@ $(function(){
     $(document).trigger('runner_stepped');
 
     function draw_modulators(dashboard){
-        var colors = {
-            // base_number_of_active_motives: 0
-            // base_number_of_expected_events: 0
-            // base_number_of_unexpected_events: 0
-            // base_sum_importance_of_intentions: 0
-            // base_sum_urgency_of_intentions: 0
-            // base_unexpectedness: 1
-            // base_urge_change: 0
-            emo_activation: 'orange',
-            emo_competence: 'blue',
-            emo_pleasure: 'red',
-            emo_resolution: 'purple',
-            emo_securing_rate: 'brown',
-            emo_selection_threshold: 'gray',
-            emo_sustaining_joy: 'green'
-        }
-        var data = [];
-        for(var key in dashboard.modulators){
-            if(key in colors){
-                data.push({'name': key.substr(4).replace('_', ' '), 'value': dashboard.modulators[key], 'color': colors[key]});
+        if(dashboard.modulators){
+            var colors = {
+                // base_number_of_active_motives: 0
+                // base_number_of_expected_events: 0
+                // base_number_of_unexpected_events: 0
+                // base_sum_importance_of_intentions: 0
+                // base_sum_urgency_of_intentions: 0
+                // base_unexpectedness: 1
+                // base_urge_change: 0
+                emo_activation: 'orange',
+                emo_competence: 'blue',
+                emo_pleasure: 'red',
+                emo_resolution: 'purple',
+                emo_securing_rate: 'brown',
+                emo_selection_threshold: 'gray',
+                emo_sustaining_joy: 'green'
             }
+            var data = [];
+            var sorted = Object.keys(dashboard.modulators);
+            sorted.sort();
+            for(var i = 0; i < sorted.length; i++){
+                if(sorted[i] in colors){
+                    data.push({'name': sorted[i].substr(4).replace('_', ' '), 'value': dashboard.modulators[sorted[i]], 'color': colors[sorted[i]]});
+                }
+            }
+            if(data.length) drawBarChart(data, [], '#dashboard_modulators', true);
         }
-        if(data.length) drawBarChart(data, [], '#dashboard_modulators', true);
     }
 
     function draw_nodes(dashboard){
@@ -106,12 +110,16 @@ $(function(){
             'coldness': 'blue',
             'heal': 'green'
         }
+        var sorted = ["heal", "eat", "warmth", "coldness", "sleep", "Fool"];
         var data = [];
         var old_data = [];
-        for(var key in dashboard.urges){
-            data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
-            if(old_values.urges){
-                old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': Math.round((old_values.urges[key] - dashboard.urges[key]) * 100) /100})
+        for(var i = 0; i < sorted.length; i++){
+            var key = sorted[i];
+            if(dashboard.urges && key in dashboard.urges){
+                data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
+                if(old_values.urges){
+                    old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': Math.round((old_values.urges[key] - dashboard.urges[key]) * 100) /100})
+                }
             }
         }
         if(data.length) drawBarChart(data, old_data, '#dashboard_urges')

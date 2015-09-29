@@ -166,8 +166,6 @@ class World(object):
                 self.agents[uid].update()
         for uid in self.agents.copy():
             if not self.agents[uid].is_alive():
-                self.unregister_nodenet(uid)
-                # TODO: prevent respawn?
                 # remove from living agents for the moment
                 # TODO: unregister?
                 # TODO: respawn?

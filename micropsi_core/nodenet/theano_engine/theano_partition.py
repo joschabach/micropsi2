@@ -1055,6 +1055,25 @@ class TheanoPartition():
                 uid = node_to_id(id, self.pid)
                 self.comment_instances[uid] = self.nodenet.get_node(uid)
 
+        # initialize early
+        self.t.set_value(np.int32(self.nodenet.current_step))
+
+        if self.has_new_usages:
+            self.compile_propagate()
+            self.compile_calculate_nodes()
+            self.has_new_usages = False
+
+        if self.por_ret_dirty:
+            self.rebuild_por_linked()
+            self.rebuild_ret_linked()
+            self.por_ret_dirty = False
+
+        self.__take_native_module_slot_snapshots()
+        if self.has_pipes or self.has_lstms:
+            self.__rebuild_shifted()
+        if self.has_directional_activators or self.__has_sampling_activators:
+            self.__calculate_g_factors()
+
     def grow_number_of_nodespaces(self, growby):
 
         new_NoNS = int(self.NoNS + growby)

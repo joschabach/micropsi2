@@ -500,7 +500,6 @@ class TheanoNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
-
     def get_partition(self, uid):
         if uid is None:
             return self.rootpartition

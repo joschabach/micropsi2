@@ -165,3 +165,68 @@ def test_node_lstm_logic_active_in_out_phi_gates(fixed_nodenet):
     assert round(lstm.get_gate("por").activation, 4) == round(f(1) * h(s), 4)
     net.step()
     assert round(lstm.get_gate("por").activation, 4) == round(f(1) * h(s), 4)
+
+
+def test_node_lstm_logic_sampling_activator(fixed_nodenet):
+    # test for an LSTM node that's not supposed to update itself as long as a sampling activator is present,
+    # but inactive
+    net, netapi, source = prepare(fixed_nodenet)
+    lstm = prepare_lstm(fixed_nodenet)
+
+    x = 1
+
+    activator = netapi.create_node("Activator", None)
+    activator.set_parameter("type", "sampling")
+
+    netapi.link(source, "gen", lstm, "por")
+
+    # first sample with activator 0
+    s = f(0) * 0 + f(0) * g(x)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == 0
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == 0
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == 0
+
+    # 3 steps of second sample with activator 0
+    s = f(0) * s + f(0) * g(x)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == 0
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == 0
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == 0
+
+    netapi.link(source, "gen", activator, "gen")
+
+    net.step()
+
+    # first sample
+    s = f(0) * 0 + f(0) * g(x)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+
+    # 3 steps of second sample
+    s = f(0) * s + f(0) * g(x)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+
+    netapi.unlink(source, "gen", activator, "gen")
+    netapi.unlink(source, "gen", lstm, "por")
+
+    # 3 steps of second sample that should remain unchanged
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)
+    net.step()
+    assert round(lstm.get_gate("por").activation, 4) == round(f(0) * h(s), 4)

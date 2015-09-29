@@ -784,8 +784,16 @@ class DictNodenet(Nodenet):
         data['count_nodes'] = len(node_uids)
         data['count_positive_nodes'] = 0
         data['count_negative_nodes'] = 0
+        data['nodetypes'] = {"NativeModules": 0}
         for uid in node_uids:
             link_uids.extend(self.get_node(uid).get_associated_links())
+            if self._nodes[uid].type in STANDARD_NODETYPES:
+                if self._nodes[uid].type not in data['nodetypes']:
+                    data['nodetypes'][self._nodes[uid].type] = 1
+                else:
+                    data['nodetypes'][self._nodes[uid].type] += 1
+            else:
+                data['nodetypes']['NativeModules'] += 1
             if self._nodes[uid].activation > 0:
                 data['count_positive_nodes'] += 1
             elif self._nodes[uid].activation < 0:

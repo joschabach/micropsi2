@@ -23,7 +23,8 @@ $(function(){
     var container = $('#dashboard_container');
 
     var nodes = $('#dashboard_nodes');
-    var datatable = $('#dashboard_datatable');
+    var datatable_motivation = $('#dashboard_datatable_motivation');
+    var datatable_concepts = $('#dashboard_datatable_concepts');
     var urges = $('#dashboard_urges');
     var modulators = $('#dashboard_modulators');
     var face = $('#dashboard_face');
@@ -80,14 +81,22 @@ $(function(){
     }
 
     function draw_nodes(dashboard){
-        var total = parseInt(dashboard['count_nodes'])
-        var data = [
-            {'value': dashboard.count_negative_nodes, 'name': 'failing', 'color': 'red'},
-            {'value': dashboard.count_positive_nodes, 'name': 'success', 'color': 'green'},
-            {'value': (total - dashboard.count_negative_nodes - dashboard.count_negative_nodes || 1), name: 'off', color: 'lightgrey'}
-        ];
-        var label = total + " Nodes"
-        draw_circle_chart(data, '#dashboard_nodes', label);
+        if('nodetypes' in dashboard){
+            var total = 0;
+            var keys = Object.keys(dashboard.nodetypes)
+            keys.sort();
+            var data = [];
+            for(var i = 0; i < keys.length; i++){
+                total += dashboard.nodetypes[keys[i]]
+                data.push({'value': dashboard.nodetypes[keys[i]], 'name': keys[i]});
+            }
+            if(total == 0){
+                data = [{'value': 1, 'name':'', 'color': 'lightgrey'}]
+            }
+            var label = total + " Nodes"
+            draw_circle_chart(data, '#dashboard_nodes', label, null, null, true);
+
+        }
     }
 
     function draw_valence(dashboard){
@@ -133,6 +142,10 @@ $(function(){
             html += "<tr><td>Weight:</td><td>"+parseFloat(dashboard.motive.weight).toFixed(3)+"</td></tr>"
             html += "<tr><td>Gain:</td><td>"+parseFloat(dashboard.motive.gain).toFixed(3)+"</td></tr>"
         }
+
+        datatable_motivation.html(html);
+        html = '<table class="table-condensed table-striped dashboard-table">';
+
         if('action' in dashboard){
             html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
         }
@@ -164,7 +177,7 @@ $(function(){
         }
 
         html += "</table>"
-        datatable.html(html);
+        datatable_concepts.html(html);
         if(dashboard.reinforcement){
             if (dashboard.reinforcement.result > 0){
                 var color = "#0F0";
@@ -460,75 +473,99 @@ $(function(){
     var piecharts = {}
 
 
-
-    function draw_circle_chart(data, selector, label, height, margin){
+    function draw_circle_chart(data, selector, label, height, margin, legend){
 
         var values = [];
         for(var i = 0; i < data.length; i++){
             values.push(data[i].value);
         }
-        //Width and height
-        var margin = margin || 20;
-        var h = height || 180;
-        var w = h - margin;
 
-        var outerRadius = w / 2;
-        var innerRadius = w / 3;
+        // Store the currently-displayed angles in this._current.
+        // Then, interpolate from this._current to the new angles.
+        function arcTween(a) {
+            var i = d3.interpolate(this._current, a);
+            this._current = i(0);
+            return function(t) {
+                return arc(i(t));
+            };
+        }
+
+        //Width and height
+        margin = margin || 20;
+        height = height || 200;
+        width = height || 200;
+
+        var outerRadius = width / 2;
+        var innerRadius = width / 3;
+        var duration = 500
+        var color = d3.scale.category10()
+
         var arc = d3.svg.arc()
                     .innerRadius(innerRadius)
                     .outerRadius(outerRadius);
 
-
-        function arcTween(a) {
-          var i = d3.interpolate(this._current, a);
-          this._current = i(0);
-          return function(t) {
-            return arc(i(t));
-          };
-        }
+        var donut = d3.layout.pie().sort(null)
 
         var svg = d3.select(selector).select("svg");
-        if(!svg.empty() && piecharts[selector]){
 
-            var text = svg.select("text");
-            var pie = piecharts[selector]['pie']
-            text.text(label)
-            pie.value(function(d, i){return values[i]})
-            path = piecharts[selector]['path'].data(pie); // compute the new angles
-            path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
-            return
+        if(!svg.empty()){
+            var arcs = svg.selectAll(".arc")
+            arcs.data(donut(values)); // recompute angles, rebind data
+            arcs.transition().ease("quad").duration(duration).attrTween("d", arcTween);
+            svg.select("text.chartLabel").text(label);
+
+            if(legend){
+                var sliceLabel = svg.selectAll("text.arcLabel")
+                sliceLabel.data(donut(values));
+                sliceLabel.transition().ease("quad").duration(duration)
+                    .attr("transform", function(d) {return "translate(" + arc.centroid(d) + ")"; })
+                    .style("fill-opacity", function(d) {return d.value==0 ? 1e-6 : 1;});
+            }
+        } else {
+            // init
+            var svg = d3.select(selector).append("svg:svg")
+                .attr("width", width + 2*margin).attr("height", height+2*margin);
+
+            var arc_grp = svg.append("svg:g")
+                .attr("class", "arcGrp")
+                .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+
+            // group for center text
+            var center_group = svg.append("svg:g")
+                .attr("class", "ctrGroup")
+                .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+
+            // center label
+            var pieLabel = center_group.append("svg:text")
+                .attr("dy", ".35em").attr("class", "chartLabel")
+                .attr("text-anchor", "middle")
+                .text(label);
+
+            // draw arc paths
+            var arcs = arc_grp.selectAll("path")
+                .data(donut(values));
+            arcs.enter().append("svg:path")
+                .attr("fill", function(d, i) {return data[i].color || color(i);})
+                .attr("class", "arc")
+                .attr("d", arc)
+                .each(function(d) {this._current = d});
+
+            // draw slice labels
+            if(legend){
+                var label_group = svg.append("svg:g")
+                    .attr("class", "lblGroup")
+                    .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+
+                var sliceLabel = label_group.selectAll("text")
+                    .data(donut(values));
+                sliceLabel.enter().append("svg:text")
+                    .attr("class", "arcLabel")
+                    .attr("transform", function(d) {return "translate(" + arc.centroid(d) + ")"; })
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "10px")
+                    .text(function(d, i) {return data[i].name; });
+            }
         }
-
-        piecharts[selector] = {}
-
-        var pie = d3.layout.pie()
-                    .value(function(d, i){return values[i]});
-
-        piecharts[selector]['pie'] = pie;
-
-        //Create SVG element
-        var svg = d3.select(selector)
-                    .append("svg")
-                    .attr("width", w + margin)
-                    .attr("height", h + margin);
-
-        piecharts[selector]['path'] = svg.datum(values).selectAll("path")
-                      .data(pie)
-                      .enter()
-                      .append("path")
-                      .attr("class", "arc")
-                      .attr("d", arc)
-                      .attr("fill", function(d, i) {
-                        return data[i].color;
-                      })
-                      .each(function(d) { this._current = d; })
-                      .attr("transform", "translate(" + (outerRadius + margin) +"," + (outerRadius + margin) + ")")
-
-        svg.append("text")
-            .text(label)
-            .style("text-anchor", "left")
-            .attr("dx", w/2 - margin/1.5)
-            .attr("dy", h/2 + margin/1.5)
     }
 
     function draw_face(data, selector){

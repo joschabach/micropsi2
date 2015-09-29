@@ -1119,16 +1119,23 @@ class TheanoPartition():
             new_a[0:self.NoE] = self.a.get_value(borrow=True)
             self.a.set_value(new_a, borrow=True)
 
-            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
-            self.a_in.set_value(new_a, borrow=True)
-
             new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
             self.a_shifted.set_value(new_a_shifted, borrow=True)
+
+            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
+            self.a_in.set_value(new_a_in, borrow=True)
+
+            new_a_prev = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+            new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
+            self.a_prev.set_value(new_a_prev, borrow=True)
 
             new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
             new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
             self.g_theta.set_value(new_g_theta, borrow=True)
+
+            new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+            self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
 
             new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
             new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)

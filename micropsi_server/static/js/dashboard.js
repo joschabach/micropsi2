@@ -157,15 +157,17 @@ $(function(){
 
         if(dashboard.concepts){
             var data = [
-                {'value': dashboard.concepts.failed.length, 'name': 'failing', 'color': 'red'},
-                {'value': dashboard.concepts.verified.length, 'name': 'success', 'color': 'green'},
-                {'value': dashboard.concepts.checking.length, 'name': 'checking', 'color': 'lightgrey'},
+                {'value': dashboard.concepts.failed, 'name': 'failing', 'color': 'red'},
+                {'value': dashboard.concepts.verified, 'name': 'success', 'color': 'green'},
+                {'value': dashboard.concepts.checking, 'name': 'checking', 'color': 'lightgrey'},
                 {'value': dashboard.concepts.off, 'name': 'off', 'color': 'darkgrey'}
             ];
             html += "<tr><th>Concepts:</th><th><div id=\"concept_graph\"></div></th></tr>";
-            html += "<tr><td>Verified:</td><td>" + (dashboard.concepts.verified.sort().join('<br />') || '--') + "</td></tr>";
-            html += "<tr><td>Checking:</td><td>" + (dashboard.concepts.checking.sort().join('<br />') || '--') + "</td></tr>";
-            html += "<tr><td>Failed:</td><td>" + (dashboard.concepts.failed.sort().join('<br />') || '--') + "</td></tr>";
+        }
+        if(dashboard.schemas){
+            html += "<tr><td>Verified:</td><td>" + (dashboard.schemas.verified.sort().join('<br />') || '--') + "</td></tr>";
+            html += "<tr><td>Checking:</td><td>" + (dashboard.schemas.checking.sort().join('<br />') || '--') + "</td></tr>";
+            html += "<tr><td>Failed:</td><td>" + (dashboard.schemas.failed.sort().join('<br />') || '--') + "</td></tr>";
         }
 
         if(dashboard.automatisms){

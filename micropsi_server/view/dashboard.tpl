@@ -25,6 +25,9 @@
         <div id="dashboard_container" class="section">
             <div class="span6">
                 <div id="dashboard_urges" class="dashboard-item left"></div><div id="dashboard_valence" class="dashboard-item left"></div>
+                <div id="arrow_motivation" class="arrow arrow_left dashboard-item right"></div>
+                <p style="clear:both">
+                <div id="arrow_modulators" class="arrow arrow_down"></div>
                 <div id="dashboard_modulators" class="dashboard-item left" style="clear:both"></div><div id="dashboard_face" class="dashboard-item left"></div>
             </div>
             <div class="span3">

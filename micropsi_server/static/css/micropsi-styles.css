@@ -546,3 +546,35 @@ table.emoexpression td {
   padding-left: 1em;
   padding: 4px 20px;
 }
+
+.mark_red {
+  background-color: #cc3333;
+}
+.mark_green {
+  background-color: #33cc33;
+}
+
+.arrow.arrow_left {
+  width: 10px;
+  height: 200px;
+  background: url('../img/arrow_left_grey.png');
+}
+.arrow.arrow_left.green {
+  background: url('../img/arrow_left_green.png');
+}
+.arrow.arrow_left.red {
+  background: url('../img/arrow_left_red.png');
+}
+.arrow.arrow_down {
+  margin-left: 150px;
+  width: 200px;
+  height: 10px;
+  background: url('../img/arrow_down_grey.png');
+}
+.arrow.arrow_down.green {
+  background: url('../img/arrow_down_green.png');
+}
+.arrow.arrow_down.red {
+  background: url('../img/arrow_down_red.png');
+}
+

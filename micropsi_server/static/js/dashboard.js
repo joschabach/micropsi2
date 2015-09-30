@@ -36,14 +36,37 @@ $(function(){
         return 1
     }
 
+    // three states:
+    //   'action': Wait for action selection or outcome
+    //   'motivation': Action finished, show influence on urges
+    //   'modulators': Show influence of urge changes on modulators
+    var current_state = null;
+
+    var action_outcome = 0;
+
     function setData(data){
-        draw_urges(data);
-        draw_modulators(data);
-        draw_nodes(data);
-        draw_datatable(data);
-        draw_face(data);
-        draw_valence(data);
-        old_values = data;
+        if(!current_state || current_state == 'action'){
+            draw_nodes(data);
+            draw_datatable(data);
+            $('.arrow').removeClass("green");
+            $('.arrow').removeClass("red");
+        }
+        if(!current_state || current_state == 'motivation'){
+            draw_urges(data);
+            draw_valence(data);
+            if(action_outcome > 0) $('#arrow_motivation').addClass("green");
+            else if(action_outcome < 0) $('#arrow_motivation').addClass("red");
+        }
+        if(!current_state || current_state == 'modulators'){
+            draw_urges(data);
+            draw_modulators(data);
+            draw_face(data);
+            if(action_outcome > 0) $('#arrow_modulators').addClass("green");
+            else if(action_outcome < 0) $('#arrow_modulators').addClass("red");
+        }
+        if(!current_state && data.urges) current_state = 'action'
+        else if(current_state == 'motivation') current_state = 'modulators'
+        else if(current_state == 'modulators') current_state = 'action'
     }
 
     register_stepping_function('dashboard', getPollParams, setData);
@@ -77,6 +100,7 @@ $(function(){
                 }
             }
             if(data.length) drawBarChart(data, [], '#dashboard_modulators', true);
+            old_values.modulators = dashboard.modulators
         }
     }
 
@@ -95,7 +119,6 @@ $(function(){
             }
             var label = total + " Nodes"
             draw_circle_chart(data, '#dashboard_nodes', label, null, null, true);
-
         }
     }
 
@@ -132,6 +155,7 @@ $(function(){
             }
         }
         if(data.length) drawBarChart(data, old_data, '#dashboard_urges')
+        old_values.urges = dashboard.urges
     }
 
     function draw_datatable(dashboard){
@@ -141,14 +165,23 @@ $(function(){
             html += "<tr><th><strong>Motive:</strong></th><th>"+dashboard.motive.motive+"</th></tr>"
             html += "<tr><td>Weight:</td><td>"+parseFloat(dashboard.motive.weight).toFixed(3)+"</td></tr>"
             html += "<tr><td>Gain:</td><td>"+parseFloat(dashboard.motive.gain).toFixed(3)+"</td></tr>"
+            if('action' in dashboard){
+                action_outcome = dashboard.action_outcome;
+                if('action_outcome' in dashboard && dashboard.action_outcome > 0){
+                    html += "<tr class=\"mark_green\"><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
+                    current_state = 'motivation'
+                } else if('action_outcome' in dashboard && dashboard.action_outcome < 0){
+                    html += "<tr class=\"mark_red\"><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
+                    current_state = 'motivation'
+                } else {
+                    html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
+                }
+            }
         }
 
         datatable_motivation.html(html);
         html = '<table class="table-condensed table-striped dashboard-table">';
 
-        if('action' in dashboard){
-            html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
-        }
         if('situation' in dashboard){
             html += "<tr><th><strong>Situation:</strong></th><th>"+dashboard.situation+"</th></tr>"
         }

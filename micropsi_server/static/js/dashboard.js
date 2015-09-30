@@ -514,13 +514,6 @@ $(function(){
             arcs.transition().ease("quad").duration(duration).attrTween("d", arcTween);
             svg.select("text.chartLabel").text(label);
 
-            if(legend){
-                var sliceLabel = svg.selectAll("text.arcLabel")
-                sliceLabel.data(donut(values));
-                sliceLabel.transition().ease("quad").duration(duration)
-                    .attr("transform", function(d) {return "translate(" + arc.centroid(d) + ")"; })
-                    .style("fill-opacity", function(d) {return d.value==0 ? 1e-6 : 1;});
-            }
         } else {
             // init
             var svg = d3.select(selector).append("svg:svg")
@@ -552,18 +545,31 @@ $(function(){
 
             // draw slice labels
             if(legend){
-                var label_group = svg.append("svg:g")
-                    .attr("class", "lblGroup")
-                    .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+                var legend_size = 10;
+                var legend = svg.selectAll('.legend')
+                  .data(color.domain())
+                  .enter()
+                  .append('g')
+                  .attr('class', 'legend')
+                  .attr('transform', function(d, i) {
+                    var horz = width + 2*margin;
+                    var vert = i * legend_size;
+                    return 'translate(' + horz + ',' + vert + ')';
+                  });
+                legend.append('text')
+                  .attr('x', -legend_size -2)
+                  .attr('y', legend_size -2)
+                  .style('font-size', '10px')
+                  .text(function(d, i) { return data[i].name; })
+                  .attr('text-anchor', 'end')
+                legend.append('rect')
+                  .attr('x', -legend_size)
+                  .attr('y', 0)
+                  .attr('width', legend_size)
+                  .attr('height', legend_size)
+                  .style('fill', color)
+                  .style('stroke', color);
 
-                var sliceLabel = label_group.selectAll("text")
-                    .data(donut(values));
-                sliceLabel.enter().append("svg:text")
-                    .attr("class", "arcLabel")
-                    .attr("transform", function(d) {return "translate(" + arc.centroid(d) + ")"; })
-                    .attr("text-anchor", "middle")
-                    .style("font-size", "10px")
-                    .text(function(d, i) {return data[i].name; });
             }
         }
     }

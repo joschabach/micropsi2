@@ -528,7 +528,7 @@ def step_nodenet(nodenet_uid):
     Arguments:
         nodenet_uid: The uid of the nodenet
     """
-    nodenets[nodenet_uid].step()
+    nodenets[nodenet_uid].timed_step()
     nodenets[nodenet_uid].update_monitors()
     if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
         worlds[nodenets[nodenet_uid].world].step()

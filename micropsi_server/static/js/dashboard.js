@@ -46,21 +46,21 @@ $(function(){
 
     function setData(data){
         if(!current_state || current_state == 'action'){
-            draw_nodes(data);
-            draw_datatable(data);
+            drawNodes(data);
+            drawDatatable(data);
             $('.arrow').removeClass("green");
             $('.arrow').removeClass("red");
         }
         if(!current_state || current_state == 'motivation'){
-            draw_urges(data);
-            draw_valence(data);
+            drawUrges(data);
+            drawValence(data);
             if(action_outcome > 0) $('#arrow_motivation').addClass("green");
             else if(action_outcome < 0) $('#arrow_motivation').addClass("red");
         }
         if(!current_state || current_state == 'modulators'){
-            draw_urges(data);
-            draw_modulators(data);
-            draw_face(data);
+            drawUrges(data);
+            drawModulators(data);
+            drawFace(data);
             if(action_outcome > 0) $('#arrow_modulators').addClass("green");
             else if(action_outcome < 0) $('#arrow_modulators').addClass("red");
         }
@@ -73,7 +73,7 @@ $(function(){
 
     $(document).trigger('runner_stepped');
 
-    function draw_modulators(dashboard){
+    function drawModulators(dashboard){
         if(dashboard.modulators){
             var colors = {
                 // base_number_of_active_motives: 0
@@ -104,7 +104,7 @@ $(function(){
         }
     }
 
-    function draw_nodes(dashboard){
+    function drawNodes(dashboard){
         if('nodetypes' in dashboard){
             var total = 0;
             var keys = Object.keys(dashboard.nodetypes)
@@ -118,11 +118,11 @@ $(function(){
                 data = [{'value': 1, 'name':'', 'color': 'lightgrey'}]
             }
             var label = total + " Nodes"
-            draw_circle_chart(data, '#dashboard_nodes', label, null, null, true);
+            drawPieChart(data, '#dashboard_nodes', label, null, null, true);
         }
     }
 
-    function draw_valence(dashboard){
+    function drawValence(dashboard){
         var data = [];
         var old_data = [];
         if('emo_valence' in dashboard.modulators){
@@ -133,7 +133,7 @@ $(function(){
             drawBarChart(data, old_data, '#dashboard_valence', true, 100)
     }
 
-    function draw_urges(dashboard){
+    function drawUrges(dashboard){
         var colors = {
             'Fool': 'purple',
             'eat': 'brown',
@@ -158,7 +158,7 @@ $(function(){
         old_values.urges = dashboard.urges
     }
 
-    function draw_datatable(dashboard){
+    function drawDatatable(dashboard){
         var html = '<table class="table-condensed table-striped dashboard-table">';
 
         if(dashboard.motive){
@@ -222,7 +222,7 @@ $(function(){
             $('.' + dashboard.reinforcement.name.replace(">","")).highlight(color);
         }
         if(dashboard.concepts && dashboard.concepts.total){
-            draw_circle_chart(data, '#concept_graph', dashboard.concepts.total, 80, 5);
+            drawPieChart(data, '#concept_graph', dashboard.concepts.total, 80, 5);
         }
     }
 
@@ -505,10 +505,7 @@ $(function(){
            }
     }
 
-    var piecharts = {}
-
-
-    function draw_circle_chart(data, selector, label, height, margin, legend){
+    function drawPieChart(data, selector, label, height, margin, legend){
 
         var values = [];
         for(var i = 0; i < data.length; i++){
@@ -556,12 +553,12 @@ $(function(){
 
             var arc_grp = svg.append("svg:g")
                 .attr("class", "arcGrp")
-                .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+                .attr("transform", "translate(" + ((width / 2) + margin) + "," + ((height / 2) + margin) + ")");
 
             // group for center text
             var center_group = svg.append("svg:g")
                 .attr("class", "ctrGroup")
-                .attr("transform", "translate(" + (width / 2) + "," + (height / 2) + ")");
+                .attr("transform", "translate(" + ((width / 2) + margin) + "," + ((height / 2) + margin) + ")");
 
             // center label
             var pieLabel = center_group.append("svg:text")
@@ -609,7 +606,7 @@ $(function(){
         }
     }
 
-    function draw_face(data, selector){
+    function drawFace(data, selector){
         var margin = 30;
         var width = 100;
         var height = 100;

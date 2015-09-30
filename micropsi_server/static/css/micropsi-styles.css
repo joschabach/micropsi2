@@ -525,6 +525,12 @@ table.emoexpression td {
   display: none;
 }
 
+p.clear {
+  clear: both;
+  padding:0;
+  margin:0;
+}
+
 .dashboard-item.left {
   float: left;
 }
@@ -578,3 +584,6 @@ table.emoexpression td {
   background: url('../img/arrow_down_red.png');
 }
 
+.dashboard-headline {
+  margin: 10px 0 0 10px;
+}

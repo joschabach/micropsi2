@@ -241,9 +241,9 @@ $(function(){
     }
 
     function drawBarChart(data, old_data, selector, negative_values, width, height){
-            var margin = {top: 20, right: 20, bottom: 70, left: 40},
+            var margin = {top: 20, right: 20, bottom: 40, left: 30},
             width = width || 500
-            height = height || 250
+            height = height || 200
             width = width - margin.left - margin.right,
             height = height - margin.top - margin.bottom;
 

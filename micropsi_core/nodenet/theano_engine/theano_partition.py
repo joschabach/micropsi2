@@ -480,7 +480,7 @@ class TheanoPartition():
         y_phi = T.nnet.sigmoid(net_phi)
         g = (4 * T.nnet.sigmoid(net_c)-2)
         lstm_gen = s * y_phi + g * y_in                                          # gen is next step's s
-        lstm_gen = T.switch(T.eq(T.mod(t, 3), 2), lstm_gen, a_prev)              # only sample every three steps
+        lstm_gen = T.switch(T.eq(T.mod(t, 3), 0), lstm_gen, a_prev)              # only sample every three steps
 
         ### por
         s = slots[:, 6]
@@ -495,19 +495,19 @@ class TheanoPartition():
         s = s * y_phi + g * y_in
         h = (2 * T.nnet.sigmoid(s)-1)                                            # por biases will be ignored
         lstm_por = h * y_out
-        lstm_por = T.switch(T.eq(T.mod(t, 3), 2), lstm_por, a_prev)              # only sample every three steps
+        lstm_por = T.switch(T.eq(T.mod(t, 3), 0), lstm_por, a_prev)              # only sample every three steps
 
         ### gin
         lstm_gin = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
-        lstm_gin = T.switch(T.eq(T.mod(t, 3), 2), lstm_gin, a_prev)
+        lstm_gin = T.switch(T.eq(T.mod(t, 3), 0), lstm_gin, a_prev)
 
         ### gou
         lstm_gou = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
-        lstm_gou = T.switch(T.eq(T.mod(t, 3), 2), lstm_gou, a_prev)
+        lstm_gou = T.switch(T.eq(T.mod(t, 3), 0), lstm_gou, a_prev)
 
         ### gfg
         lstm_gfg = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
-        lstm_gfg = T.switch(T.eq(T.mod(t, 3), 2), lstm_gfg, a_prev)
+        lstm_gfg = T.switch(T.eq(T.mod(t, 3), 0), lstm_gfg, a_prev)
 
         if self.has_lstms:
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)
@@ -565,6 +565,9 @@ class TheanoPartition():
         return theano.function([], None, updates=[(self.a_in, a_in)], accept_inplace=True)
 
     def calculate(self):
+
+        self.t.set_value(np.int32(self.nodenet.current_step))
+
         if self.has_new_usages:
             self.compile_propagate()
             self.compile_calculate_nodes()

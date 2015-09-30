@@ -158,6 +158,7 @@ class World(object):
 
     def step(self):
         """ advance the simluation """
+        self.current_step += 1
         for uid in self.objects:
             self.objects[uid].update()
         for uid in self.agents:
@@ -169,7 +170,6 @@ class World(object):
                 # TODO: unregister?
                 # TODO: respawn?
                 del self.agents[uid]
-        self.current_step += 1
 
     def get_world_view(self, step):
         """ returns a list of world objects, and the current step of the simulation """

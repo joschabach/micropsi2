@@ -1284,10 +1284,16 @@ def reload_native_modules():
             nodenets[uid].is_active = False
     load_user_files(True)
     import importlib
+    import inspect
     custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodefunctions_file):
         loader = importlib.machinery.SourceFileLoader("nodefunctions", custom_nodefunctions_file)
-        loader.load_module()
+        nodefuncs = loader.load_module()
+        for key, obj in inspect.getmembers(nodefuncs):
+            if inspect.ismodule(obj):
+                if obj.__file__.startswith(RESOURCE_PATH):
+                    loader = importlib.machinery.SourceFileLoader(key, obj.__file__)
+                    loader.load_module()
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets

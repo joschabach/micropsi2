@@ -493,10 +493,11 @@ class TheanoNodenet(Nodenet):
             self.worldadapter_instance.snapshot()
 
         with self.netlock:
+            self._step += 1
+
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
-            self._step += 1
 
     def get_partition(self, uid):
         if uid is None:

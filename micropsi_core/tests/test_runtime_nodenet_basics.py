@@ -291,6 +291,33 @@ def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
     assert micropsi.save_nodenet(fixed_nodenet)
 
 
+def test_delete_linked_nodes(fixed_nodenet):
+
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    netapi = nodenet.netapi
+
+    # create all evil (there will never be another dawn)
+    root_of_all_evil = netapi.create_node("Pipe", None)
+    evil_one = netapi.create_node("Pipe", None)
+    evil_two = netapi.create_node("Pipe", None)
+
+    netapi.link_with_reciprocal(root_of_all_evil, evil_one, "subsur")
+    netapi.link_with_reciprocal(root_of_all_evil, evil_two, "subsur")
+
+    for link in evil_one.get_gate("sub").get_links():
+        link.source_node.name  # touch of evil
+        link.target_node.name  # touch of evil
+
+    for link in evil_two.get_gate("sur").get_links():
+        link.source_node.name  # touch of evil
+        link.target_node.name  # touch of evil
+
+    # and the name of the horse was death
+    netapi.delete_node(root_of_all_evil)
+    netapi.delete_node(evil_one)
+    netapi.delete_node(evil_two)
+
+
 def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
 
     with open(nodetype_def, 'w') as fp:

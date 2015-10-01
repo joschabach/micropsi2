@@ -587,6 +587,10 @@ class TheanoNodenet(Nodenet):
         return uid
 
     def delete_node(self, uid):
+
+        node = self.get_node(uid)
+        associated_uids = node.get_associated_node_uids()
+
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
@@ -611,6 +615,10 @@ class TheanoNodenet(Nodenet):
                     del self.actuatormap[actuator]
 
         self.clear_supplements(uid)
+
+        for uid_to_clear in associated_uids:
+            if uid_to_clear in self.proxycache:
+                del self.proxycache[uid_to_clear]
 
     def set_node_gate_parameter(self, uid, gate_type, parameter, value):
         partition = self.get_partition(uid)

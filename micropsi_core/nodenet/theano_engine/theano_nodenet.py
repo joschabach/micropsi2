@@ -1334,10 +1334,19 @@ class TheanoNodenet(Nodenet):
         data['count_positive_nodes'] = 0
         data['count_negative_nodes'] = 0
         data['modulators'] = self.construct_modulators_dict()
+        data['nodetypes'] = {'NativeModules': 0}
         for uid, partition in self.partitions.items():
             node_ids = np.nonzero(partition.allocated_nodes)[0]
             data['count_nodes'] += len(node_ids)
             for id in node_ids:
+                if partition.allocated_nodes[id] <= MAX_STD_NODETYPE:
+                    nodetype = get_string_node_type(partition.allocated_nodes[id])
+                    if nodetype not in data['nodetypes']:
+                        data['nodetypes'][nodetype] = 1
+                    else:
+                        data['nodetypes'][nodetype] += 1
+                else:
+                    data['nodetypes']['NativeModules'] += 1
                 act = float(partition.a.get_value(borrow=True)[partition.allocated_node_offsets[id] + GEN])
                 if act > 0:
                     data['count_positive_nodes'] += 1

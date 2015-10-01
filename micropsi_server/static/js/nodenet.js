@@ -2524,12 +2524,14 @@ function getNodeLinkageContextMenuHTML(node){
     var html = '';
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            if(gateName in inverse_link_map && inverse_link_targets.indexOf(gateName) != -1){
+            if(node.type == "LSTM" && gateName == "por"){
+                html += ('<li><a href="#" data-link-type="lstmpor">Draw lstm por links</a></li>');
+            }
+            else if(gateName in inverse_link_map){
                 var compound = gateName+'/'+inverse_link_map[gateName];
                 html += ('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
-            } else if(node.type == "LSTM" && gateName == "por"){
-                html += ('<li><a href="#" data-link-type="lstmpor">Draw lstm por links</a></li>');
-            } else if(inverse_link_targets.indexOf(gateName) == -1){
+            }
+            else if(inverse_link_targets.indexOf(gateName) == -1){
                 html += ('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
             }
         }

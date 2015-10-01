@@ -2,24 +2,6 @@
 
 $(function(){
 
-    jQuery.fn.highlight = function(color) {
-       $(this).each(function() {
-            var el = $(this);
-            $("<i>")
-                .width(el.parent().width())
-                .height(el.height())
-                .css({
-                    "position": "absolute",
-                    "background-color": color,
-                    "opacity": ".9",
-                    "z-index": 0
-                })
-                .prependTo(el)
-                .fadeOut(1500);
-        });
-    }
-
-
     var container = $('#dashboard_container');
 
     var nodes = $('#dashboard_nodes');
@@ -214,12 +196,8 @@ $(function(){
         html += "</table>"
         datatable_concepts.html(html);
         if(dashboard.reinforcement){
-            if (dashboard.reinforcement.result > 0){
-                var color = "#0F0";
-            } else {
-                var color = "#F00";
-            }
-            $('.' + dashboard.reinforcement.name.replace(">","")).highlight(color);
+            var classname = (dashboard.reinforcement.result > 0) ? 'mark_green' : 'mark_red';
+            $('.' + dashboard.reinforcement.name.replace(">","")).addClass(classname);
         }
         if(dashboard.concepts && dashboard.concepts.total){
             drawPieChart(data, '#concept_graph', dashboard.concepts.total, 80, 5);

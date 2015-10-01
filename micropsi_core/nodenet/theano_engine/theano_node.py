@@ -207,25 +207,28 @@ class TheanoNode(Node):
         if self.type == "Sensor" and parameter == "datasource":
             if self.uid in self._nodenet.inverted_sensor_map:
                 olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
-                if self._id in self._nodenet.sensormap.get(olddatasource, []):
-                    self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
+                if self.uid in self._nodenet.sensormap.get(olddatasource, []):
+                    self._nodenet.sensormap.get(olddatasource, []).remove(self.uid)
 
             connectedsensors = self._nodenet.sensormap.get(value, [])       # then, set the new one
-            connectedsensors.append(self._id)
+            connectedsensors.append(self.uid)
             self._nodenet.sensormap[value] = connectedsensors
             self._nodenet.inverted_sensor_map[self.uid] = value
         elif self.type == "Actor" and parameter == "datatarget":
             if self.uid in self._nodenet.inverted_actuator_map:
                 olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
-                if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
-                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
+                if self.uid in self._nodenet.actuatormap.get(olddatatarget, []):
+                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self.uid)
 
             connectedactuators = self._nodenet.actuatormap.get(value, [])       # then, set the new one
-            connectedactuators.append(self._id)
+            connectedactuators.append(self.uid)
             self._nodenet.actuatormap[value] = connectedactuators
             self._nodenet.inverted_actuator_map[self.uid] = value
         elif self.type == "Activator" and parameter == "type":
-            self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
+            if value != "sampling":
+                self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
+            else:
+                self._nodenet.set_nodespace_sampling_activator(self.parent_nodespace, self.uid)
         elif self.type == "Pipe" and parameter == "expectation":
             g_expect_array = self._partition.g_expect.get_value(borrow=True)
             g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("gen")] = float(value)
@@ -266,6 +269,8 @@ class TheanoNode(Node):
                 activator_type = "cat"
             elif self._id in self._partition.allocated_nodespaces_exp_activators:
                 activator_type = "exp"
+            elif self._id in self._partition.allocated_nodespaces_sampling_activators:
+                activator_type = "sampling"
             parameters['type'] = activator_type
         elif self.type == "Pipe":
             g_expect_array = self._partition.g_expect.get_value(borrow=True)

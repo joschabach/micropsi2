@@ -87,7 +87,7 @@ STANDARD_NODETYPES = {
         "name": "Activator",
         "slottypes": ["gen"],
         "parameters": ["type"],
-        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
+        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref", "sampling"]},
         "nodefunction_name": "activator"
     },
     "LSTM": {

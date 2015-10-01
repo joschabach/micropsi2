@@ -20,7 +20,7 @@ Set up Minecraft connectivity
 
 Set up Theano-based theano_engine
 -----
-* To run micropsi with an optional and experimental node net implementation based on Theano, you need to install Theano
+* To run micropsi with an optional node net implementation based on Theano, you need to install Theano
 * Call 'make' after checkout
 * Call 'source bin/activate'
 * Follow Theano's "bleeding edge install instructions" directions [here](http://deeplearning.net/software/theano/install.html)

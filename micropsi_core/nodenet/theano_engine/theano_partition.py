@@ -64,6 +64,16 @@ class TheanoPartition():
             self.__has_directional_activators = value
 
     @property
+    def has_sampling_activators(self):
+        return self.__has_sampling_activators
+
+    @has_sampling_activators.setter
+    def has_sampling_activators(self, value):
+        if value != self.__has_sampling_activators:
+            self.__has_new_usages = True
+            self.__has_sampling_activators = value
+
+    @property
     def has_gatefunction_absolute(self):
         return self.__has_gatefunction_absolute
 
@@ -196,6 +206,8 @@ class TheanoPartition():
         self.allocated_nodespaces_cat_activators = None
         self.allocated_nodespaces_exp_activators = None
 
+        self.allocated_nodespaces_sampling_activators = None
+
         # directional activators map, index is element id, value is the directional activator's element id
         self.allocated_elements_to_activators = None
 
@@ -208,7 +220,7 @@ class TheanoPartition():
         self.a_in = None         # vector of activations coming in from the outside (other partitions typically)
         self.a_prev = None       # vector of output activations at t-1 (not all gate types maintain this)
 
-        self.g_factor = None     # vector of gate factors, controlled by directional activators
+        self.g_factor = None     # vector of gate factors, controlled by activators, semantics differ by node type
         self.g_threshold = None  # vector of thresholds (gate parameters)
         self.g_amplification = None  # vector of amplification factors
         self.g_min = None        # vector of lower bounds
@@ -242,6 +254,8 @@ class TheanoPartition():
         self.allocated_nodespaces_sur_activators = np.zeros(self.NoNS, dtype=np.int32)
         self.allocated_nodespaces_cat_activators = np.zeros(self.NoNS, dtype=np.int32)
         self.allocated_nodespaces_exp_activators = np.zeros(self.NoNS, dtype=np.int32)
+
+        self.allocated_nodespaces_sampling_activators = np.zeros(self.NoNS, dtype=np.int32)
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
@@ -314,6 +328,7 @@ class TheanoPartition():
         self.__has_pipes = False
         self.__has_lstms = False
         self.__has_directional_activators = False
+        self.__has_sampling_activators = False
         self.__has_gatefunction_absolute = False
         self.__has_gatefunction_sigmoid = False
         self.__has_gatefunction_tanh = False
@@ -446,13 +461,22 @@ class TheanoPartition():
         pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
 
         if self.has_pipes:
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
-            nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
+            if self.has_directional_activators:
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), pipe_por * self.g_factor, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_RET), pipe_ret * self.g_factor, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUB), pipe_sub * self.g_factor, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), pipe_sur * self.g_factor, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_CAT), pipe_cat * self.g_factor, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_EXP), pipe_exp * self.g_factor, nodefunctions)
+            else:
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_GEN), pipe_gen, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), pipe_por, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_RET), pipe_ret, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUB), pipe_sub, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), pipe_sur, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_CAT), pipe_cat, nodefunctions)
+                nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_EXP), pipe_exp, nodefunctions)
             countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_POR), countdown_por, countdown)
             countdown = T.switch(T.eq(self.n_function_selector, NFPG_PIPE_SUR), countdown_sur, countdown)
 
@@ -471,6 +495,10 @@ class TheanoPartition():
         # gfg               gen por gin gou gfg
         #
 
+        sample = T.eq(T.mod(t, 3), 0)
+        if self.has_sampling_activators:
+            sample = sample * T.gt(self.g_factor, 0.99)
+
         ### gen
         s = slots[:, 7]
         net_c = slots[:, 8] + biases[:, 8]
@@ -480,7 +508,7 @@ class TheanoPartition():
         y_phi = T.nnet.sigmoid(net_phi)
         g = (4 * T.nnet.sigmoid(net_c)-2)
         lstm_gen = s * y_phi + g * y_in                                          # gen is next step's s
-        lstm_gen = T.switch(T.eq(T.mod(t, 3), 0), lstm_gen, a_prev)              # only sample every three steps
+        lstm_gen = T.switch(sample, lstm_gen, a_prev)
 
         ### por
         s = slots[:, 6]
@@ -495,19 +523,19 @@ class TheanoPartition():
         s = s * y_phi + g * y_in
         h = (2 * T.nnet.sigmoid(s)-1)                                            # por biases will be ignored
         lstm_por = h * y_out
-        lstm_por = T.switch(T.eq(T.mod(t, 3), 0), lstm_por, a_prev)              # only sample every three steps
+        lstm_por = T.switch(sample, lstm_por, a_prev)
 
         ### gin
         lstm_gin = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
-        lstm_gin = T.switch(T.eq(T.mod(t, 3), 0), lstm_gin, a_prev)
+        lstm_gin = T.switch(sample, lstm_gin, a_prev)
 
         ### gou
         lstm_gou = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
-        lstm_gou = T.switch(T.eq(T.mod(t, 3), 0), lstm_gou, a_prev)
+        lstm_gou = T.switch(sample, lstm_gou, a_prev)
 
         ### gfg
         lstm_gfg = T.nnet.sigmoid(slots[:, 7] + biases[:, 7])
-        lstm_gfg = T.switch(T.eq(T.mod(t, 3), 0), lstm_gfg, a_prev)
+        lstm_gfg = T.switch(sample, lstm_gfg, a_prev)
 
         if self.has_lstms:
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GEN), lstm_gen, nodefunctions)
@@ -517,10 +545,6 @@ class TheanoPartition():
             nodefunctions = T.switch(T.eq(self.n_function_selector, NFPG_LSTM_GFG), lstm_gfg, nodefunctions)
 
         # gate logic
-
-        # multiply with gate factor for the node space
-        if self.has_directional_activators:
-            nodefunctions = nodefunctions * self.g_factor
 
         # apply actual gate functions
         gate_function_output = nodefunctions
@@ -581,7 +605,7 @@ class TheanoPartition():
         self.__take_native_module_slot_snapshots()
         if self.has_pipes or self.has_lstms:
             self.__rebuild_shifted()
-        if self.has_directional_activators:
+        if self.has_directional_activators or self.__has_sampling_activators:
             self.__calculate_g_factors()
         self.calculate_nodes()
         self.__calculate_native_modules()
@@ -724,6 +748,8 @@ class TheanoPartition():
         allocated_nodespaces_cat_activators = self.allocated_nodespaces_cat_activators
         allocated_nodespaces_exp_activators = self.allocated_nodespaces_exp_activators
 
+        allocated_nodespaces_sampling_activators = self.allocated_nodespaces_sampling_activators
+
         w = self.w.get_value(borrow=True)
 
         # if we're sparse, convert to sparse matrix for persistency
@@ -803,6 +829,7 @@ class TheanoPartition():
                  allocated_nodespaces_sur_activators=allocated_nodespaces_sur_activators,
                  allocated_nodespaces_cat_activators=allocated_nodespaces_cat_activators,
                  allocated_nodespaces_exp_activators=allocated_nodespaces_exp_activators,
+                 allocated_nodespaces_sampling_activators=allocated_nodespaces_sampling_activators,
                  inlink_pids=inlinks_pids,
                  inlink_from_lengths=inlink_from_lengths,
                  inlink_to_lengths=inlink_to_lengths,
@@ -896,6 +923,11 @@ class TheanoPartition():
             self.allocated_nodespaces_exp_activators = datafile['allocated_nodespaces_exp_activators']
         else:
             self.logger.warn("no allocated_nodespaces_exp_activators in file, falling back to defaults")
+
+        if 'allocated_nodespaces_sampling_activators' in datafile:
+            self.allocated_nodespaces_sampling_activators = datafile['allocated_nodespaces_sampling_activators']
+        else:
+            self.logger.warn("no allocated_nodespaces_por_activators in file, falling back to defaults")
 
         if 'w_data' in datafile and 'w_indices' in datafile and 'w_indptr' in datafile:
             w = sp.csr_matrix((datafile['w_data'], datafile['w_indices'], datafile['w_indptr']), shape = (self.NoE, self.NoE))
@@ -995,7 +1027,15 @@ class TheanoPartition():
             self.has_new_usages = True
             self.has_pipes = PIPE in self.allocated_nodes
             self.has_lstms = LSTM in self.allocated_nodes
-            self.has_directional_activators = ACTIVATOR in self.allocated_nodes
+            self.has_directional_activators = \
+                np.sum(self.allocated_nodespaces_por_activators) > 0 or \
+                np.sum(self.allocated_nodespaces_ret_activators) > 0 or \
+                np.sum(self.allocated_nodespaces_sub_activators) > 0 or \
+                np.sum(self.allocated_nodespaces_sur_activators) > 0 or \
+                np.sum(self.allocated_nodespaces_cat_activators) > 0 or \
+                np.sum(self.allocated_nodespaces_exp_activators) > 0
+
+            self.has_sampling_activators = np.sum(self.allocated_nodespaces_sampling_activators) > 0
             self.has_gatefunction_absolute = GATE_FUNCTION_ABSOLUTE in g_function_selector
             self.has_gatefunction_sigmoid = GATE_FUNCTION_SIGMOID in g_function_selector
             self.has_gatefunction_tanh = GATE_FUNCTION_TANH in g_function_selector
@@ -1014,6 +1054,25 @@ class TheanoPartition():
             elif self.allocated_nodes[id] == COMMENT:
                 uid = node_to_id(id, self.pid)
                 self.comment_instances[uid] = self.nodenet.get_node(uid)
+
+        # initialize early
+        self.t.set_value(np.int32(self.nodenet.current_step))
+
+        if self.has_new_usages:
+            self.compile_propagate()
+            self.compile_calculate_nodes()
+            self.has_new_usages = False
+
+        if self.por_ret_dirty:
+            self.rebuild_por_linked()
+            self.rebuild_ret_linked()
+            self.por_ret_dirty = False
+
+        self.__take_native_module_slot_snapshots()
+        if self.has_pipes or self.has_lstms:
+            self.__rebuild_shifted()
+        if self.has_directional_activators or self.__has_sampling_activators:
+            self.__calculate_g_factors()
 
     def grow_number_of_nodespaces(self, growby):
 
@@ -1048,6 +1107,10 @@ class TheanoPartition():
             new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
             self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
 
+            new_allocated_nodespaces_sampling_activators = np.zeros(new_NoNS, dtype=np.int32)
+            new_allocated_nodespaces_sampling_activators[0:self.NoNS] = self.allocated_nodespaces_sampling_activators
+            self.allocated_nodespaces_sampling_activators = new_allocated_nodespaces_sampling_activators
+
             self.has_new_usages = True
             self.NoNS = new_NoNS
 
@@ -1075,16 +1138,23 @@ class TheanoPartition():
             new_a[0:self.NoE] = self.a.get_value(borrow=True)
             self.a.set_value(new_a, borrow=True)
 
-            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
-            self.a_in.set_value(new_a, borrow=True)
-
             new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
             self.a_shifted.set_value(new_a_shifted, borrow=True)
+
+            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
+            self.a_in.set_value(new_a_in, borrow=True)
+
+            new_a_prev = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+            new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
+            self.a_prev.set_value(new_a_prev, borrow=True)
 
             new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
             new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
             self.g_theta.set_value(new_g_theta, borrow=True)
+
+            new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+            self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
 
             new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
             new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
@@ -1275,11 +1345,26 @@ class TheanoPartition():
             n_function_selector_array[offset + GOU] = NFPG_LSTM_GOU
             n_function_selector_array[offset + GFG] = NFPG_LSTM_GFG
             self.n_function_selector.set_value(n_function_selector_array, borrow=True)
+
+            self.allocated_elements_to_activators[offset + GEN] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sampling_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + POR] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sampling_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + GIN] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sampling_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + GOU] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sampling_activators[nodespace_id]]
+            self.allocated_elements_to_activators[offset + GFG] = \
+                self.allocated_node_offsets[self.allocated_nodespaces_sampling_activators[nodespace_id]]
+
         elif nodetype == "Activator":
             self.has_directional_activators = True
             activator_type = parameters.get("type")
             if activator_type is not None and len(activator_type) > 0:
-                self.set_nodespace_gatetype_activator(nodespace_id, activator_type, id)
+                if activator_type != "sampling":
+                    self.set_nodespace_gatetype_activator(nodespace_id, activator_type, id)
+                else:
+                    self.set_nodespace_sampling_activator(nodespace_id, id)
 
         if nodetype not in self.nodenet.get_standard_nodetype_definitions():
             node_proxy = self.nodenet.get_node(uid)
@@ -1381,6 +1466,8 @@ class TheanoPartition():
             self.allocated_nodespaces_cat_activators[parent] = 0
         elif self.allocated_nodespaces_exp_activators[parent] == node_id:
             self.allocated_nodespaces_exp_activators[parent] = 0
+        if self.allocated_nodespaces_sampling_activators[parent] == node_id:
+            self.allocated_nodespaces_sampling_activators[parent] = 0
 
     def unlink_node_completely(self, node_id):
         type = self.allocated_nodes[node_id]
@@ -1504,6 +1591,19 @@ class TheanoPartition():
             if self.allocated_nodes[nid] == PIPE:
                 self.allocated_elements_to_activators[self.allocated_node_offsets[nid] +
                                                       get_numerical_gate_type(gate_type)] = self.allocated_node_offsets[activator_id]
+
+    def set_nodespace_sampling_activator(self, nodespace_id, activator_id):
+        self.allocated_nodespaces_sampling_activators[nodespace_id] = activator_id
+        self.has_sampling_activators = True
+
+        nodes_in_nodespace = np.where(self.allocated_node_parents == nodespace_id)[0]
+        for nid in nodes_in_nodespace:
+            if self.allocated_nodes[nid] == LSTM:
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] + GEN] = self.allocated_node_offsets[activator_id]
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] + POR] = self.allocated_node_offsets[activator_id]
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] + GIN] = self.allocated_node_offsets[activator_id]
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] + GOU] = self.allocated_node_offsets[activator_id]
+                self.allocated_elements_to_activators[self.allocated_node_offsets[nid] + GFG] = self.allocated_node_offsets[activator_id]
 
     def set_link_weight(self, source_node_id, gate_type, target_node_id, slot_type, weight=1):
         source_nodetype = None

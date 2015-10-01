@@ -240,8 +240,13 @@ def lstm(netapi, node, **params):
     def g(x):
         return (4.0 / (1.0 + math.exp(-x))) - 2          # (5)
 
+    nodespace = netapi.get_nodespace(node.parent_nodespace)
+    sample_activator = True
+    if nodespace.has_activator("sampling"):
+        sample_activator = nodespace.get_activator_value("sampling") > 0.99
+
     # both por and gen gate functions need to be set to linear
-    if netapi.step % 3 == 0:
+    if netapi.step % 3 == 0 and sample_activator:
 
         s_prev = node.get_slot("gen").activation
         net_c = node.get_slot("por").activation

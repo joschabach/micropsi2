@@ -670,10 +670,8 @@ class TheanoPartition():
         if not self.sparse:
             linkedflags = np.any(slotrows, axis=1)
         else:
-            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
-            max_values = slotrows.max(axis=1).todense()
-            linkedflags = max_values.astype(np.int8, copy=False)
-            linkedflags = np.minimum(linkedflags, 1)
+            linkedflags = np.zeros_like(por_indices)
+            linkedflags[np.nonzero(slotrows)[0]] = 1
 
         n_node_porlinked_array[por_indices - 1] = linkedflags       # gen
         n_node_porlinked_array[por_indices] = linkedflags           # por
@@ -698,10 +696,8 @@ class TheanoPartition():
         if not self.sparse:
             linkedflags = np.any(slotrows, axis=1)
         else:
-            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
-            max_values = slotrows.max(axis=1).todense()
-            linkedflags = max_values.astype(np.int8, copy=False)
-            linkedflags = np.minimum(linkedflags, 1)
+            linkedflags = np.zeros_like(ret_indices)
+            linkedflags[np.nonzero(slotrows)[0]] = 1
 
         n_node_retlinked_array[ret_indices - 2] = linkedflags       # gen
         n_node_retlinked_array[ret_indices - 1] = linkedflags       # por
@@ -1478,6 +1474,21 @@ class TheanoPartition():
         w_matrix[:, offset:offset+number_of_elements_to_clear] = 0
         self.w.set_value(w_matrix, borrow=True)
 
+    def get_associated_elements(self, node_id):
+        type = self.allocated_nodes[node_id]
+        offset = self.allocated_node_offsets[node_id]
+        w_matrix = self.w.get_value(borrow=True)
+        number_of_elements = get_elements_per_type(type, self.nodenet.native_modules)
+        connecting_elements = np.nonzero(w_matrix[offset:offset+number_of_elements, :])[1]
+        connected_elements = np.nonzero(w_matrix[:, offset:offset+number_of_elements])[0]
+        return connecting_elements, connected_elements
+
+    def get_associated_node_ids(self, node_id):
+        connecting_elements, connected_elements = self.get_associated_elements(node_id)
+        connecting_nodes = np.unique(self.allocated_elements_to_nodes[connecting_elements])
+        connected_nodes = np.unique(self.allocated_elements_to_nodes[connected_elements])
+        return np.unique(np.concatenate((connecting_nodes, connected_nodes)))
+
     def create_nodespace(self, parent_id, id=None):
 
         # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent
@@ -1704,7 +1715,7 @@ class TheanoPartition():
         w_matrix = self.w.get_value(borrow=True)
         cols, rows = np.meshgrid(self.nodegroups[nodespace_from_uid][group_from], self.nodegroups[nodespace_to_uid][group_to])
         if self.sparse:
-            return w_matrix[rows,cols].todense()
+            return w_matrix[rows,cols].toarray()
         else:
             return w_matrix[rows,cols]
 

@@ -670,10 +670,8 @@ class TheanoPartition():
         if not self.sparse:
             linkedflags = np.any(slotrows, axis=1)
         else:
-            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
-            max_values = slotrows.max(axis=1).todense()
-            linkedflags = max_values.astype(np.int8, copy=False)
-            linkedflags = np.minimum(linkedflags, 1)
+            linkedflags = np.zeros_like(por_indices)
+            linkedflags[np.nonzero(slotrows)[0]] = 1
 
         n_node_porlinked_array[por_indices - 1] = linkedflags       # gen
         n_node_porlinked_array[por_indices] = linkedflags           # por
@@ -698,10 +696,8 @@ class TheanoPartition():
         if not self.sparse:
             linkedflags = np.any(slotrows, axis=1)
         else:
-            # for some reason, sparse matrices won't do any with an axis parameter, so we need to do this...
-            max_values = slotrows.max(axis=1).todense()
-            linkedflags = max_values.astype(np.int8, copy=False)
-            linkedflags = np.minimum(linkedflags, 1)
+            linkedflags = np.zeros_like(ret_indices)
+            linkedflags[np.nonzero(slotrows)[0]] = 1
 
         n_node_retlinked_array[ret_indices - 2] = linkedflags       # gen
         n_node_retlinked_array[ret_indices - 1] = linkedflags       # por

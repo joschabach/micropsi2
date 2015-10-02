@@ -182,6 +182,8 @@ class TheanoNode(Node):
 
     def unlink_completely(self):
         self._partition.unlink_node_completely(self._id)
+        if self.uid in self._nodenet.proxycache:
+            del self._nodenet.proxycache[self.uid]
 
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
         for gate_name_candidate in self.nodetype.gatetypes:

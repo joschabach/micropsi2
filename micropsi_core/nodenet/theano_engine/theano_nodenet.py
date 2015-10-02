@@ -588,11 +588,10 @@ class TheanoNodenet(Nodenet):
 
     def delete_node(self, uid):
 
-        node = self.get_node(uid)
-        associated_uids = node.get_associated_node_uids()
-
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
+
+        associated_ids = partition.get_associated_node_ids(node_id)
 
         partition.delete_node(node_id)
 
@@ -616,7 +615,8 @@ class TheanoNodenet(Nodenet):
 
         self.clear_supplements(uid)
 
-        for uid_to_clear in associated_uids:
+        for id_to_clear in associated_ids:
+            uid_to_clear = node_to_id(id_to_clear, partition.pid)
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
 

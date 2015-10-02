@@ -58,19 +58,6 @@ class NetEntity(object):
     def parent_nodespace(self):
         return self.__parent_nodespace
 
-    @parent_nodespace.setter
-    def parent_nodespace(self, uid):
-        if uid:
-            nodespace = self.nodenet.get_nodespace(uid)
-            if not nodespace.is_entity_known_as(self.entitytype, self.uid):
-                nodespace._register_entity(self)
-                # tell my old parent that I move out
-                if self.__parent_nodespace is not None:
-                    old_parent = self.nodenet.get_nodespace(self.__parent_nodespace)
-                    if old_parent and old_parent.uid != uid and old_parent.is_entity_known_as(self.entitytype, self.uid):
-                        old_parent._unregister_entity(self.entitytype, self.uid)
-        self.__parent_nodespace = uid
-
     def __init__(self, nodenet, parent_nodespace, position, name="", entitytype="abstract_entities",
                  uid=None, index=None):
         """create a net entity at a certain position and in a given node space"""
@@ -87,6 +74,9 @@ class NetEntity(object):
         self.name = name
         self.position = position
         if parent_nodespace:
-            self.parent_nodespace = parent_nodespace
+            self.__parent_nodespace = parent_nodespace
+            nodespace = self.nodenet.get_nodespace(parent_nodespace)
+            if not nodespace.is_entity_known_as(self.entitytype, self.uid):
+                nodespace._register_entity(self)
         else:
-            self.parent_nodespace = None
+            self.__parent_nodespace = None

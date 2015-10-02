@@ -84,10 +84,6 @@ class TheanoNode(Node):
     def parent_nodespace(self):
         return nodespace_to_id(self._parent_id, self._partition.pid)
 
-    @parent_nodespace.setter
-    def parent_nodespace(self, uid):
-        self._partition.allocated_node_parents[self._id] = nodespace_from_id(uid)
-
     @property
     def activation(self):
         return float(self._partition.a.get_value(borrow=True)[self._partition.allocated_node_offsets[self._id] + GEN])

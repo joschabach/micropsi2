@@ -195,6 +195,10 @@ class TheanoNode(Node):
                         if slot_name is None or slot_name == link_candidate.target_slot.type:
                             self._nodenet.delete_link(self.uid, gate_name_candidate, link_candidate.target_node.uid, link_candidate.target_slot.type)
 
+    def get_associated_node_uids(self):
+        ids = self._partition.get_associated_node_ids(self._id)
+        return [node_to_id(id, self._partition.pid) for id in ids]
+
     def get_parameter(self, parameter):
         return self.clone_parameters().get(parameter, None)
 

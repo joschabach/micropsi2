@@ -1474,6 +1474,21 @@ class TheanoPartition():
         w_matrix[:, offset:offset+number_of_elements_to_clear] = 0
         self.w.set_value(w_matrix, borrow=True)
 
+    def get_associated_elements(self, node_id):
+        type = self.allocated_nodes[node_id]
+        offset = self.allocated_node_offsets[node_id]
+        w_matrix = self.w.get_value(borrow=True)
+        number_of_elements = get_elements_per_type(type, self.nodenet.native_modules)
+        connecting_elements = np.nonzero(w_matrix[offset:offset+number_of_elements, :])[1]
+        connected_elements = np.nonzero(w_matrix[:, offset:offset+number_of_elements])[0]
+        return connecting_elements, connected_elements
+
+    def get_associated_node_ids(self, node_id):
+        connecting_elements, connected_elements = self.get_associated_elements(node_id)
+        connecting_nodes = np.unique(self.allocated_elements_to_nodes[connecting_elements])
+        connected_nodes = np.unique(self.allocated_elements_to_nodes[connected_elements])
+        return np.unique(np.concatenate((connecting_nodes, connected_nodes)))
+
     def create_nodespace(self, parent_id, id=None):
 
         # find a free ID / index in the allocated_nodespaces vector to hold the nodespaces's parent

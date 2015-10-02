@@ -1469,9 +1469,11 @@ class TheanoPartition():
         type = self.allocated_nodes[node_id]
         offset = self.allocated_node_offsets[node_id]
         w_matrix = self.w.get_value(borrow=True)
-        number_of_elements_to_clear = get_elements_per_type(type, self.nodenet.native_modules)
-        w_matrix[offset:offset+number_of_elements_to_clear, :] = 0
-        w_matrix[:, offset:offset+number_of_elements_to_clear] = 0
+        number_of_elements = get_elements_per_type(type, self.nodenet.native_modules)
+        connecting_elements = np.nonzero(w_matrix[offset:offset+number_of_elements, :])[1]
+        connected_elements = np.nonzero(w_matrix[:, offset:offset+number_of_elements])[0]
+        w_matrix[offset:offset+number_of_elements, connecting_elements] = 0
+        w_matrix[connected_elements, offset:offset+number_of_elements] = 0
         self.w.set_value(w_matrix, borrow=True)
 
     def get_associated_elements(self, node_id):

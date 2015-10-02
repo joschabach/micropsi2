@@ -615,6 +615,7 @@ p.clear {
   display: inline-block;
   padding-bottom: 0;
   height: 15px;
+  white-space: nowrap;
 }
 .linkweight-tick {
   display: inline-block;

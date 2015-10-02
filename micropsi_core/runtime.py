@@ -32,6 +32,7 @@ import logging
 
 from .micropsi_logger import MicropsiLogger
 
+
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 RESOURCE_PATH = cfg['paths']['resource_path']

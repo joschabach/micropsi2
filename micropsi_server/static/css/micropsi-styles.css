@@ -531,17 +531,34 @@ p.clear {
   margin:0;
 }
 
-.dashboard-item.left {
+.left {
   float: left;
 }
-.dashboard-item.right{
+.right{
   float:right;
 }
+.dashboard-item {}
+.dashboard-section {
+  margin: 5px;
+  padding: 5px;
+  border: 3px solid #ccc;
+  background: white;
+  min-height: 240px;
+  min-width: 300px;
+}
+.dashboard-section.single{
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+}
+
 .dashboard-table {
   margin: 20px;
-  border-style: solid;
-  border-color: #ccc;
-  border-width: 3px;
+  border: 1px solid #999;
+}
+.dashboard-table.wide {
+  min-width: 400px;
 }
 .dashboard-table th {
   margin-top: 1em;
@@ -551,6 +568,11 @@ p.clear {
 .dashboard-table td {
   padding-left: 1em;
   padding: 4px 20px;
+}
+.dashboard-table td .mini {
+  font-size: 10px;
+  line-height: 10px;
+  display:block;
 }
 
 .mark_red {
@@ -562,28 +584,41 @@ p.clear {
 
 .arrow.arrow_left {
   width: 10px;
-  height: 200px;
+  height: 248px;
+  margin: 5px;
   background: url('../img/arrow_left_grey.png');
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .arrow.arrow_left.green {
-  background: url('../img/arrow_left_green.png');
+  background-image: url('../img/arrow_left_green.png');
 }
 .arrow.arrow_left.red {
-  background: url('../img/arrow_left_red.png');
-}
-.arrow.arrow_down {
-  margin-left: 150px;
-  width: 200px;
-  height: 10px;
-  background: url('../img/arrow_down_grey.png');
-}
-.arrow.arrow_down.green {
-  background: url('../img/arrow_down_green.png');
-}
-.arrow.arrow_down.red {
-  background: url('../img/arrow_down_red.png');
+  background-image: url('../img/arrow_left_red.png');
 }
 
 .dashboard-headline {
   margin: 10px 0 0 10px;
+}
+.dashboard-section p {
+  margin: 10px 0 0 10px;
+}
+
+#dashboard_protocols{
+  max-width: 100%;
+  overflow: auto;
+}
+.linkweight-container {
+  border: 1px solid black;
+  border-left: 0 none;
+  border-right: 0 none;
+  display: inline-block;
+  padding-bottom: 0;
+  height: 15px;
+}
+.linkweight-tick {
+  display: inline-block;
+  width:2px;
+  background-color: black;
+  height: 15px;
 }

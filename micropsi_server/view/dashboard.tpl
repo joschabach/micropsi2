@@ -23,24 +23,36 @@
 
     <div id="dashboard" class="section-margin collapse in frontend_section">
         <div id="dashboard_container" class="section">
-            <div class="span6">
-                <h4 class="dashboard-headline">Urges</h4>
-                <div id="dashboard_urges" class="dashboard-item left"></div><div id="dashboard_valence" class="dashboard-item left"></div>
-                <div id="arrow_motivation" class="arrow arrow_left dashboard-item right"></div>
-                <p class="clear">
-                <div id="arrow_modulators" class="arrow arrow_down"></div>
-                <h4 class="dashboard-headline">Emotional Modulators</h4>
-                <div id="dashboard_modulators" class="dashboard-item left" style="clear:both"></div><div id="dashboard_face" class="dashboard-item left"></div>
-            </div>
-            <div class="span3">
-                <h4 class="dashboard-headline">Motivation</h4>
+            <div>
+                <div class="dashboard-section left">
+                    <h4 class="dashboard-headline">Motivation</h4>
+                    <div id="dashboard_datatable_motivation" class="dashboard-item left"></div>
+                </div>
+                <div id="arrow_motivation" class="arrow arrow_left dashboard-item left"></div>
+                <div class="dashboard-section left">
+                    <h4 class="dashboard-headline">Urges</h4>
+                    <div id="dashboard_urges" class="dashboard-item left"></div><div id="dashboard_valence" class="dashboard-item left"></div>
+                </div>
+                <div id="arrow_motivation" class="arrow arrow_left dashboard-item left"></div>
+                <div class="dashboard-section left">
+                    <h4 class="dashboard-headline">Emotional Modulators</h4>
+                    <div id="dashboard_modulators" class="dashboard-item left" style="clear:both"></div><div id="dashboard_face" class="dashboard-item left"></div>
+                </div>
                 <p class="clear"/>
-                <div id="dashboard_datatable_motivation" class="dashboard-item left"></div>
-                <div id="dashboard_nodes" class="dashboard-nodes left"></div>
             </div>
-            <div class="span3">
-                <h4 class="dashboard-headline">Statistics</h4>
-                <div id="dashboard_datatable_concepts" class="dashboard-item left"></div>
+            <div>
+                <div class="dashboard-section single">
+                    <h4 class="dashboard-headline">Protocols</h4>
+                    <div id="dashboard_protocols"></div>
+                </div>
+            </div>
+            <div>
+                <div class="dashboard-section left">
+                    <h4 class="dashboard-headline">Statistics</h4>
+                    <div id="dashboard_datatable_concepts" class="dashboard-item left"></div>
+                    <div id="dashboard_nodes" class="dashboard-item left"></div>
+                    <p class="clear"/>
+                </div>
             </div>
             <p class="clear"/>
         </div>

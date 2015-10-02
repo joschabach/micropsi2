@@ -11,6 +11,7 @@ $(function(){
     var modulators = $('#dashboard_modulators');
     var face = $('#dashboard_face');
     var valence = $('#dashboard_valence');
+    var protocols = $('#dashboard_protocols');
 
     var old_values = {}
 
@@ -46,6 +47,7 @@ $(function(){
             if(action_outcome > 0) $('#arrow_modulators').addClass("green");
             else if(action_outcome < 0) $('#arrow_modulators').addClass("red");
         }
+        drawProtocols(data);
         if(!current_state && data.urges) current_state = 'action'
         else if(current_state == 'motivation') current_state = 'modulators'
         else if(current_state == 'modulators') current_state = 'action'
@@ -162,7 +164,7 @@ $(function(){
         }
 
         datatable_motivation.html(html);
-        html = '<table class="table-condensed table-striped dashboard-table">';
+        html = '<table class="table-condensed table-striped dashboard-table wide">';
 
         if('situation' in dashboard){
             html += "<tr><th><strong>Situation:</strong></th><th>"+dashboard.situation+"</th></tr>"
@@ -189,7 +191,7 @@ $(function(){
             html += "<tr><th colspan=\"2\">Automatisms:</th></tr>"
             for(var i = 0; i < dashboard.automatisms.length; i++){
                 var auto = dashboard.automatisms[i]
-                html += "<tr><td class=\""+auto.name.replace(">","")+"\">" + auto.name + "</td><td>c:"+auto.complexity+", w:"+parseFloat(auto.competence).toFixed(3)+" </td></tr>"
+                html += "<tr><td class=\""+auto.name.replace(">","")+"\">" + auto.name + "</td><td><span class=\"mini\">complexity:"+auto.complexity+"</span><span class=\"mini\">competence:"+parseFloat(auto.competence).toFixed(3)+"</span></td></tr>"
             }
         }
 
@@ -204,6 +206,19 @@ $(function(){
         }
     }
 
+    function drawProtocols(data){
+        if(data.learning && data.learning.protocols){
+            html = "<p class=\"linkweight-container\">";
+            for(var i = 0; i < data.learning.protocols.length; i++){
+                html += '<span class="linkweight-tick" style="opacity:'+data.learning.protocols[i]+'"></span>'
+            }
+            html += "</p>";
+            protocols.html(html);
+            protocols.show();
+        } else {
+            protocols.hide();
+        }
+    }
 
 
     function insertLinebreaks(d) {
@@ -220,7 +235,7 @@ $(function(){
 
     function drawBarChart(data, old_data, selector, negative_values, width, height){
             var margin = {top: 20, right: 20, bottom: 40, left: 30},
-            width = width || 500
+            width = width || 400
             height = height || 200
             width = width - margin.left - margin.right,
             height = height - margin.top - margin.bottom;

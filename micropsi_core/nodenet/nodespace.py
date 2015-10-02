@@ -146,3 +146,6 @@ class Nodespace(metaclass=ABCMeta):
         "nodespaces" - return node spaces only
         """
         pass  # pragma: no cover
+
+    def __repr__(self):
+        return "<Nodespace \"%s\" (%s)>" % (self.name, self.uid)

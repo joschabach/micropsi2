@@ -1700,7 +1700,7 @@ class TheanoPartition():
         w_matrix = self.w.get_value(borrow=True)
         cols, rows = np.meshgrid(self.nodegroups[nodespace_from_uid][group_from], self.nodegroups[nodespace_to_uid][group_to])
         if self.sparse:
-            return w_matrix[rows,cols].todense()
+            return w_matrix[rows,cols].toarray()
         else:
             return w_matrix[rows,cols]
 

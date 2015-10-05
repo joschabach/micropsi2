@@ -123,6 +123,9 @@ class MinecraftVision(MinecraftGraphLocomotion):
         if 'record_vision' in cfg['minecraft']:
             self.record_file = open(cfg['minecraft']['record_vision'], 'a')
 
+        if cfg['minecraft'].get('debug_vision'):
+            self.visual_field = {}
+
     def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
@@ -214,6 +217,9 @@ class MinecraftVision(MinecraftGraphLocomotion):
                 fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(x_sec, y_sec, 1)  # z_oom = 1
                 self.get_visual_input(fov_x, fov_y, res_x, res_y, self.len_x, self.len_y, loco_label)
 
+                if cfg['minecraft'].get('debug_vision') and fovea_position_changed:
+                    self.plot_visual_field()
+
                 self.check_for_action_feedback()
 
                 # read locomotor values, trigger teleportation in the world, and provide action feedback
@@ -255,6 +261,13 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
             else:
                 self.simulate_visual_input(self.len_x, self.len_y)
+
+    def locomote(self, target_loco_node_uid):
+
+        if cfg['minecraft'].get('debug_vision') and hasattr(self, 'visual_field'):
+            self.visual_field = {}
+
+        super().locomote(target_loco_node_uid)
 
     def check_movement_feedback(self, target_loco_node):
         if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
@@ -429,3 +442,86 @@ class MinecraftVision(MinecraftGraphLocomotion):
         # scale from [-1,+1] to [0.1,0.9] and write values to sensors
         patch_resc = [(1.0 + x) * 0.4 + 0.1 for x in patch_std]
         return patch_resc
+
+    def plot_visual_field(self):
+        """
+        Visualize the entire visual field of the agent at a given position.
+
+        Works only in combination with scanning for now because the plot is
+        generated only if all tiling_x times tiling_y patches are filled with
+        values starting from fov_act__00_00.
+
+        TODO: refactor code such that a plot is always generated right before
+        locomotion with the patches that happened to have been sampled.
+        """
+        import os
+        import numpy as np
+        import matplotlib
+        import matplotlib.pyplot as plt
+        from .structs import block_colors
+
+        # if it's the top-left fovea actor, reset the visual field by emptying the buffer
+        # ( background: this method only works with scanning for now; scanning starts at
+        #   fov_act__00_00; so if that's the current fovea actor, it's time for a new plot )
+        if self.fovea_actor == 'fov_act__00_00':
+            self.visual_field = {}
+
+        # if values for this position in the grid exist already, return
+        if self.fovea_actor in self.visual_field:
+            return
+
+        keys = sorted(list(self.datasources.keys()))
+        activations = [self.datasources[key] for key in keys if key.startswith('fov__')]
+
+        self.visual_field[self.fovea_actor] = activations
+
+        # once every tile has been filled with content, plot the actual image
+        if len(set(self.visual_field.keys())) == (self.tiling_x * self.tiling_y):
+
+            i = 0
+            while True:
+
+                filename_png = os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    "%s_%d.png" % (self.current_loco_node['name'], i))
+                # ??
+                if not os.path.exists(filename_png):
+                    break
+                i += 1
+
+            # sort keys to get them into the correct order, cf. names are given
+            # left to right, top to bottom
+            sorted_keys = list(self.visual_field.keys())
+            sorted_keys.sort()
+
+            # collect values
+            A = np.zeros((len(sorted_keys), len([k for k in self.datasources.keys() if k.startswith('fov__')])))
+            for i, key in enumerate(sorted_keys):
+                A[i, :] = np.array(self.visual_field[key])
+
+            sz = int(np.ceil(np.sqrt(A.shape[1])))
+
+            # plot values
+            fig = plt.figure(figsize=(7.0, 3.0))
+            for i, key in enumerate(sorted_keys):
+
+                ax = plt.subplot(self.tiling_y, self.tiling_x, i + 1)
+                plt.setp(ax.get_xticklabels(), visible=False)
+                plt.setp(ax.get_yticklabels(), visible=False)
+                ax.xaxis.set_ticks_position('none')
+                ax.yaxis.set_ticks_position('none')
+                ax.imshow(A[i, :].reshape((sz, sz)), cmap=matplotlib.cm.gray, vmin=A.min(), vmax=A.max())
+                fig.add_subplot(ax)
+
+            # hide axis spines aka the lines surrounding plots
+            all_axes = fig.get_axes()
+            for ax in all_axes:
+                for sp in ax.spines.values():
+                    sp.set_visible(False)
+
+            # allow for a narrow line to separate plots, otherwise use tight layout
+            plt.subplots_adjust(left=0.0, bottom=0.0, right=1.0, top=1.0, wspace=0.01, hspace=0.00)
+            fig.savefig(filename_png, transparent=True, dpi=300)
+            plt.close()
+
+            self.visual_field = {}

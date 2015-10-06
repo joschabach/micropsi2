@@ -268,7 +268,7 @@ class TheanoPartition():
             w_matrix = np.zeros((self.NoE, self.NoE), dtype=nodenet.scipyfloatX)
             self.w = theano.shared(value=w_matrix.astype(T.config.floatX), name="w", borrow=True)
 
-        self.t = theano.shared(value=np.int32(0), name="t", borrow=False)
+        self.t = theano.shared(value=np.int32(0), name="t")
 
         a_array = np.zeros(self.NoE, dtype=nodenet.numpyfloatX)
         self.a = theano.shared(value=a_array.astype(T.config.floatX), name="a", borrow=True)

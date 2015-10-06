@@ -14,7 +14,8 @@ import warnings
 
 try:
     config = configparser.ConfigParser()
-    config.read_file(open('config.ini'))
+    with open('config.ini') as fp:
+        config.read_file(fp)
 except OSError:
     warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
     raise RuntimeError("config.ini not found")

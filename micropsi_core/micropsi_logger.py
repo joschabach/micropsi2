@@ -78,10 +78,13 @@ class MicropsiLogger():
         )
 
         self.log_to_file = log_to_file
-        self.filehandlers = {}
+        self.filehandler = None
         if log_to_file:
             if os.path.isfile(log_to_file):
                 os.remove(log_to_file)
+            self.filehandler = logging.FileHandler(self.log_to_file, mode='a')
+            formatter = logging.Formatter(self.default_format)
+            self.filehandler.setFormatter(formatter)
 
         self.register_logger("system", self.logging_levels.get(default_logging_levels.get('system', {}), logging.WARNING))
         self.register_logger("world", self.logging_levels.get(default_logging_levels.get('world', {}), logging.WARNING))
@@ -91,24 +94,21 @@ class MicropsiLogger():
         self.loggers[name].setLevel(level)
         self.record_storage[name] = []
         self.handlers[name] = RecordWebStorageHandler(self.record_storage, name)
-        if self.log_to_file:
-            self.filehandlers[name] = logging.FileHandler(self.log_to_file, mode='a')
 
         formatter = logging.Formatter(self.default_format)
         self.handlers[name].setFormatter(formatter)
         logging.getLogger(name).addHandler(self.handlers[name])
-        if name in self.filehandlers:
-            self.filehandlers[name].setFormatter(formatter)
-            logging.getLogger(name).addHandler(self.filehandlers[name])
+        if self.filehandler:
+            logging.getLogger(name).addHandler(self.filehandler)
         self.loggers[name].debug("Logger %s ready" % name)
 
     def unregister_logger(self, name):
         logging.getLogger(name).removeHandler(self.handlers[name])
+        if self.filehandler:
+            logging.getLogger(name).removeHandler(self.filehandler)
         del self.handlers[name]
         del self.record_storage[name]
         del self.loggers[name]
-        if name in self.filehandlers:
-            del self.filehandlers[name]
 
     def clear_logs(self):
         for key in self.record_storage:

@@ -690,7 +690,7 @@ $(function(){
             var imgs = svg.selectAll("image").data([0]);
             imgs.enter()
                 .append("svg:image")
-                .attr("xlink:href", "/static/face/stevehead.png")
+                .attr("xlink:href", "/static/img/stevehead.png")
                 .attr("x", margin)
                 .attr("y", margin)
                 .attr("width", width)

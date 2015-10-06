@@ -688,12 +688,6 @@ def create_worldadapter_selector(world_uid):
         nodenets=nodenets, worlds=worlds)
 
 
-@micropsi_app.route("/face")
-def show_face():
-    user_id, permissions, token = get_request_data()
-    return template("viewer", mode="face", user_id=user_id, permissions=permissions, token=token, version=VERSION)
-
-
 @micropsi_app.route("/dashboard")
 def show_dashboard():
     user_id, permissions, token = get_request_data()

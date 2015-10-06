@@ -1235,6 +1235,12 @@ def foobar(netapi, quatsch=23):
     assert data == 23
 
 
+def test_get_agent_dashboard(app, test_nodenet, node):
+    response = app.get_json('/rpc/get_agent_dashboard(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert data['count_nodes'] == 1
+
+
 def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, node):
     app.set_auth()
     with open(nodetype_def, 'w') as fp:

@@ -22,6 +22,9 @@
 %if mode == "face":
     %include face
 % end
+%if mode == "dashboard":
+    %include dashboard  logging_levels=logging_levels
+% end
 
 %if mode == "all":
     %include nodenet

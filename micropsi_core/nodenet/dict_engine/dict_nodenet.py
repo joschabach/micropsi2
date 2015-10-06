@@ -777,3 +777,64 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+
+    def get_dashboard(self):
+        data = super(DictNodenet, self).get_dashboard()
+        link_uids = []
+        node_uids = self.get_node_uids()
+        data['count_nodes'] = len(node_uids)
+        data['count_positive_nodes'] = 0
+        data['count_negative_nodes'] = 0
+        data['nodetypes'] = {"NativeModules": 0}
+        data['concepts'] = {
+            'checking': 0,
+            'verified': 0,
+            'failed': 0,
+            'off': 0
+        }
+        data['schemas'] = {
+            'checking': [],
+            'verified': [],
+            'failed': [],
+            'off': [],
+            'total': 0
+        }
+        for uid in node_uids:
+            node = self.get_node(uid)
+            link_uids.extend(node.get_associated_links())
+            if node.type in STANDARD_NODETYPES:
+                if node.type not in data['nodetypes']:
+                    data['nodetypes'][node.type] = 1
+                else:
+                    data['nodetypes'][node.type] += 1
+            else:
+                data['nodetypes']['NativeModules'] += 1
+            if node.activation > 0:
+                data['count_positive_nodes'] += 1
+            elif node.activation < 0:
+                data['count_negative_nodes'] += 1
+            if node.type == 'Pipe':
+                if node.get_gate('gen').activation == 0 and node.get_gate('sub').activation > 0 and len(node.get_gate('sub').get_links()):
+                    data['concepts']['checking'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['checking'].append(node.name)
+                        data['schemas']['total'] += 1
+                elif node.get_gate('sub').activation > 0 and node.activation > 0.5:
+                    data['concepts']['verified'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['verified'].append(node.name)
+                        data['schemas']['total'] += 1
+                elif node.activation < 0:
+                    data['concepts']['failed'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['failed'].append(node.name)
+                        data['schemas']['total'] += 1
+                else:
+                    data['concepts']['off'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['off'].append(node.name)
+                        data['schemas']['total'] += 1
+        data['concepts']['total'] = sum(data['concepts'].values())
+        data['modulators'] = self.construct_modulators_dict()
+        data['count_links'] = len(set(link_uids))
+        return data

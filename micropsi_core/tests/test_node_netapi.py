@@ -1053,3 +1053,10 @@ def test_remove_monitor(test_nodenet, node):
     uid = netapi.add_gate_monitor(node, 'gen')
     netapi.remove_monitor(uid)
     assert nodenet.get_monitor(uid) is None
+
+
+def test_set_dashboard_value(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    netapi.set_dashboard_value('foo', 'bar')
+    assert nodenet.dashboard_values['foo'] == 'bar'

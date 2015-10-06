@@ -115,7 +115,7 @@ class MicropsiRunner(threading.Thread):
                         try:
                             if self.profiler:
                                 self.profiler.enable()
-                            nodenet.step()
+                            nodenet.timed_step()
                             if self.profiler:
                                 self.profiler.disable()
                             nodenet.update_monitors()
@@ -146,9 +146,9 @@ class MicropsiRunner(threading.Thread):
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
                         ps.print_stats('nodenet')
-                        logging.getLogger("agent.%s" % uid).debug(s.getvalue())
+                        logging.getLogger("system").debug(s.getvalue())
 
-                    logging.getLogger("agent.%s" % uid).debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0
                     if average_duration < 0.0001:
@@ -330,7 +330,7 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?
     """
@@ -358,6 +358,8 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
             data['world'] = get_world_view(world_uid=nodenet_obj.world, **world)
         if monitors is not None:
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
+        if dashboard is not None:
+            data['dashboard'] = get_agent_dashboard(nodenet_uid)
         return True, data
     else:
         return False, "No such nodenet"
@@ -527,7 +529,7 @@ def step_nodenet(nodenet_uid):
     Arguments:
         nodenet_uid: The uid of the nodenet
     """
-    nodenets[nodenet_uid].step()
+    nodenets[nodenet_uid].timed_step()
     nodenets[nodenet_uid].update_monitors()
     if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
         worlds[nodenets[nodenet_uid].world].step()
@@ -1123,6 +1125,15 @@ def run_recipe(nodenet_uid, name, parameters):
         return True, result
     else:
         return False, "Script not found"
+
+
+def get_agent_dashboard(nodenet_uid):
+    from .emoexpression import calc_emoexpression_parameters
+    net = nodenets[nodenet_uid]
+    with net.netlock:
+        data = net.get_dashboard()
+        data['face'] = calc_emoexpression_parameters(net)
+        return data
 
 
 # --- end of API

@@ -370,6 +370,9 @@ class Node(metaclass=ABCMeta):
             data[gate_name] = self.get_gate(gate_name).clone_sheaves()
         return data
 
+    def __repr__(self):
+        return "<%s \"%s\" (%s)>" % (self.nodetype.name, self.name, self.uid)
+
 
 class Gate(metaclass=ABCMeta):
     """

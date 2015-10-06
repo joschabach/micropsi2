@@ -688,10 +688,10 @@ def create_worldadapter_selector(world_uid):
         nodenets=nodenets, worlds=worlds)
 
 
-@micropsi_app.route("/face")
-def show_face():
+@micropsi_app.route("/dashboard")
+def show_dashboard():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="face", user_id=user_id, permissions=permissions, token=token, version=VERSION)
+    return template("viewer", mode="dashboard", logging_levels=runtime.get_logging_levels(), user_id=user_id, permissions=permissions, token=token, version=VERSION)
 
 
 #################################################################
@@ -738,8 +738,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
-    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, world=world, monitors=monitors)
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("generate_uid")
@@ -1195,6 +1195,11 @@ def run_recipe(nodenet_uid, name, parameters):
 @rpc('get_available_recipes')
 def get_available_recipes():
     return True, runtime.get_available_recipes()
+
+
+@rpc('get_agent_dashboard')
+def get_agent_dashboard(nodenet_uid):
+    return True, runtime.get_agent_dashboard(nodenet_uid)
 
 
 # -----------------------------------------------------------------------------------------------

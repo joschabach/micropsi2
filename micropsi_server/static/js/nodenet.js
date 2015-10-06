@@ -2771,7 +2771,7 @@ function get_datasource_options(worldadapter, value){
     for(var i in sources){
         html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
     }
-    if(sources.indexOf(value) < 0) {
+    if(value && sources.indexOf(value) < 0) {
         html += '<option value="'+value+'"selected="selected">'+value+'</option>';
     }
     html += '</optgroup>';
@@ -2789,7 +2789,7 @@ function get_datatarget_options(worldadapter, value){
     for(var i in targets){
         html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
     }
-    if(targets.indexOf(value) < 0) {
+    if(value && targets.indexOf(value) < 0) {
         html += '<option value="'+value+'"selected="selected">'+value+'</option>';
     }
     html += '</optgroup>';

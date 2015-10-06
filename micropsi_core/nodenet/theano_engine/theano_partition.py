@@ -418,8 +418,7 @@ class TheanoPartition():
         pipe_sub_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 5], 0), 1)      # (if linked, por must be > 0)
         pipe_sub_cond = pipe_sub_cond * T.eq(slots[:, 4], 0)                        # and (gen == 0)
 
-        pipe_sub = T.clip(slots[:, 8], 0, 1)                                        # bubble: start with sur if sur > 0
-        pipe_sub = pipe_sub + slots[:, 7]                                           # add sub
+        pipe_sub = slots[:, 7]                                                      # start with sub
         pipe_sub = pipe_sub + slots[:, 9]                                           # add cat
         pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
 

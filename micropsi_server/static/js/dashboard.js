@@ -59,6 +59,7 @@ $(function(){
 
     function drawModulators(dashboard){
         if(dashboard.modulators){
+            $('[data=modulators]').show();
             var colors = {
                 // base_number_of_active_motives: 0
                 // base_number_of_expected_events: 0
@@ -85,6 +86,8 @@ $(function(){
             }
             if(data.length) drawBarChart(data, [], '#dashboard_modulators', true);
             old_values.modulators = dashboard.modulators
+        } else {
+            $('[data=modulators]').hide();
         }
     }
 
@@ -118,34 +121,40 @@ $(function(){
     }
 
     function drawUrges(dashboard){
-        var colors = {
-            'Fool': 'purple',
-            'eat': 'brown',
-            'sleep': 'grey',
-            'warmth': 'red',
-            'coldness': 'blue',
-            'heal': 'green'
-        }
-        var sorted = ["heal", "eat", "warmth", "coldness", "sleep", "Fool"];
-        var data = [];
-        var old_data = [];
-        for(var i = 0; i < sorted.length; i++){
-            var key = sorted[i];
-            if(dashboard.urges && key in dashboard.urges){
-                data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
-                if(old_values.urges){
-                    old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': Math.round((old_values.urges[key] - dashboard.urges[key]) * 100) /100})
+        if (dashboard.urges){
+            $('[data=urges]').show();
+            var colors = {
+                'Fool': 'purple',
+                'eat': 'brown',
+                'sleep': 'grey',
+                'warmth': 'red',
+                'coldness': 'blue',
+                'heal': 'green'
+            }
+            var sorted = ["heal", "eat", "warmth", "coldness", "sleep", "Fool"];
+            var data = [];
+            var old_data = [];
+            for(var i = 0; i < sorted.length; i++){
+                var key = sorted[i];
+                if(dashboard.urges && key in dashboard.urges){
+                    data.push({'name': key, 'value': dashboard.urges[key], 'color': colors[key]});
+                    if(old_values.urges){
+                        old_data.push({'name': key, 'value': old_values.urges[key], 'color': colors[key], 'delta': Math.round((old_values.urges[key] - dashboard.urges[key]) * 100) /100})
+                    }
                 }
             }
+            if(data.length) drawBarChart(data, old_data, '#dashboard_urges')
+            old_values.urges = dashboard.urges
+        } else {
+            $('[data=modulators]').show();
         }
-        if(data.length) drawBarChart(data, old_data, '#dashboard_urges')
-        old_values.urges = dashboard.urges
     }
 
     function drawDatatable(dashboard){
         var html = '<table class="table-condensed table-striped dashboard-table">';
 
         if(dashboard.motive){
+            $('[data=motivation]').show();
             html += "<tr><th><strong>Motive:</strong></th><th>"+dashboard.motive.motive+"</th></tr>"
             html += "<tr><td>Weight:</td><td>"+parseFloat(dashboard.motive.weight).toFixed(3)+"</td></tr>"
             html += "<tr><td>Gain:</td><td>"+parseFloat(dashboard.motive.gain).toFixed(3)+"</td></tr>"
@@ -161,6 +170,8 @@ $(function(){
                     html += "<tr><th><strong>Action:</strong></th><th>"+dashboard.action+"</th></tr>"
                 }
             }
+        } else {
+            $('[data=motivation]').hide();
         }
 
         datatable_motivation.html(html);
@@ -208,15 +219,15 @@ $(function(){
 
     function drawProtocols(data){
         if(data.learning && data.learning.protocols){
+            $('[data=protocols]').show();
             html = "<p class=\"linkweight-container\">";
             for(var i = 0; i < data.learning.protocols.length; i++){
                 html += '<span class="linkweight-tick" style="opacity:'+data.learning.protocols[i]+'"></span>'
             }
             html += "</p>";
             protocols.html(html);
-            protocols.show();
         } else {
-            protocols.hide();
+            $('[data=protocols]').hide();
         }
     }
 

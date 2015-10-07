@@ -20,7 +20,9 @@
                         <li><a href="#" class="nodenet_revert">Revert</a></li>
                         <li class="divider"></li>
                         <li><a href="#" class="run_recipe">Run a recipe</a></li>
+                        <li class="divider"></li>
                         <li><a href="#" class="reload_native_modules">Reload Native Modules</a></li>
+                        <li><a href="#" class="reload_native_modules reload_revert">Reload &amp; Revert</a></li>
                         <li class="divider"></li>
                         <li><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
                         <li><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>

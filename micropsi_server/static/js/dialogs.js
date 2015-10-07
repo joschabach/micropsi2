@@ -263,6 +263,9 @@ $(function() {
         if(typeof currentNodenet == 'undefined'){
             return dialogs.notification("there is no current nodenet selected");
         }
+        if($(event.target).hasClass("reload_revert")){
+            api.call('revert_nodenet', {nodenet_uid: currentNodenet});
+        }
         $('#loading').show();
         api.call('reload_native_modules', {}, function(){
             dialogs.notification("reload successful");

@@ -201,6 +201,20 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'));
     }
 
+    $('#menu_nodenet').find('a').on('click', function(event){
+        if($(event.target).parent().hasClass("disabled")){
+            event.stopImmediatePropagation();
+            event.preventDefault();
+        }
+    });
+    $('a.dropdown-toggle[href=#menu_nodenet]').on('click', function(event){
+        if(currentNodenet){
+            $('#menu_nodenet').find('[data=nodenet-needed]').removeClass("disabled")
+        } else {
+            $('#menu_nodenet').find('[data=nodenet-needed]').addClass("disabled")
+        }
+    });
+
     $('a.remote_form_dialog').on('click', remote_form);
 
     $('.navbar a.nodenet_new').on('click', function(event){

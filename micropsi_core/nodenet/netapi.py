@@ -527,3 +527,6 @@ class NetAPI(object):
     def set_dashboard_value(self, name, value):
         """Allows the netapi to set values for the statistics and dashboard"""
         self.__nodenet.dashboard_values[name] = value
+
+    def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
+        pass

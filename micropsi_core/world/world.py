@@ -259,14 +259,14 @@ class World(object):
         Returns True, nodenet_uid if successful,
         Returns False, error_message if not successful
         """
-        try:
+        if worldadapter_name in self.supported_worldadapters:
             self.agents[nodenet.uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet.uid, **options)
             nodenet.worldadapter_instance = self.agents[nodenet.uid]
             return True, nodenet.uid
-        except AttributeError:
-            return False, "Worldadapter \"%s\" not found" % worldadapter_name
-        except KeyError:
-            return False, "Incompatible Worldadapter for this World."
+        else:
+            self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
+            return False, "World %s does not support Worldadapter %s" % (self.name, worldadapter_name)
+
 
     def set_object_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         """set attributes of the world object 'uid'; only supplied attributes will be changed.

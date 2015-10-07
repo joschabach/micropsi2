@@ -13,6 +13,7 @@ from micropsi_core.world.worldadapter import WorldAdapter
 from micropsi_core.world.minecraft.spockplugin import MicropsiPlugin
 from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 from micropsi_core.world.minecraft.minecraft_vision import MinecraftVision
+from micropsi_core.world.minecraft.minecraft_histogram_vision import MinecraftHistogramVision
 
 
 class Minecraft(World):
@@ -23,6 +24,7 @@ class Minecraft(World):
         'MinecraftWorldAdapter',
         'MinecraftBraitenberg',
         'MinecraftGraphLocomotion',
+        'MinecraftHistogramVision',
         "MinecraftVision"
     ]
 

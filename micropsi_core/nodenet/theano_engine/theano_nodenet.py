@@ -1286,11 +1286,11 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
-            if partition_from.spid in partition_to.inlinks:
-                inlinks = partition_to.inlinks[partition_from.spid]
-                indices = np.where((inlinks[0].get_value(borrow=True) == partition_from.nodegroups[nodespace_from_uid][group_from]) &
-                                   (inlinks[1].get_value(borrow=True) == partition_to.nodegroups[nodespace_to_uid][group_to]))[0]
-                return inlinks[2].get_value(borrow=True)[indices]
+            inlinks = partition_to.inlinks[partition_from.spid]
+            indices_from = np.where(inlinks[0].get_value(borrow=True) == partition_from.nodegroups[nodespace_from_uid][group_from])[0]
+            indices_to = np.where(inlinks[1].get_value(borrow=True) == partition_to.nodegroups[nodespace_to_uid][group_to])[0]
+            cols, rows = np.meshgrid(indices_from, indices_to)
+            return inlinks[2].get_value(borrow=True)[rows, cols]
         else:
             return partition_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 

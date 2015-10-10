@@ -1189,12 +1189,14 @@ class TheanoNodenet(Nodenet):
             a_array = partition.a.get_value(borrow=True)
 
             for datatarget in self.actuatormap:
+                if datatarget not in actuator_values_to_write:
+                    actuator_values_to_write[datatarget] = 0
                 actuator_node_activations = 0
                 for actuator_uid in self.actuatormap[datatarget]:
                     if self.get_partition(actuator_uid).pid == partition.pid:
                         actuator_node_activations += a_array[partition.allocated_node_offsets[node_from_id(actuator_uid)] + GEN]
 
-                actuator_values_to_write[datatarget] = actuator_node_activations
+                actuator_values_to_write[datatarget] += actuator_node_activations
 
             partition.a.set_value(a_array, borrow=True)
 

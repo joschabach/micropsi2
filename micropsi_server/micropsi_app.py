@@ -306,6 +306,7 @@ def signup():
     return template("signup", version=VERSION,
         title="Create a new user for the %s server" % APPTITLE,
         permissions=usermanager.get_permissions_for_session_token(token),
+        first_user=False,
         cookie_warning=(token is None))
 
 
@@ -316,6 +317,7 @@ def signup_submit():
     userid = params['userid']
     password = params['password']
     role = params.get('permissions')
+    firstuser = not usermanager.users
     (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids=usermanager.users.keys())
     if success:
         # check if permissions in form are consistent with internal permissions
@@ -335,7 +337,7 @@ def signup_submit():
     else:
         # something wrong with the user id, retry
         return template("signup", version=VERSION, userid=userid, password=password, userid_error=result,
-            title="Create a new user for the %s server" % APPTITLE,
+            title="Create a new user for the %s server" % APPTITLE, first_user=firstuser,
             user_id=user_id, permissions=permissions, cookie_warning=(token is None))
 
 

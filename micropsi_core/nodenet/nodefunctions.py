@@ -197,6 +197,8 @@ def pipe(netapi, node=None, sheaf="default", **params):
 
     exp += node.get_slot("sur").get_activation(sheaf)
     exp += node.get_slot("exp").get_activation(sheaf)
+    if abs(node.get_slot("gen").get_activation(sheaf) * node.get_slot("sub").get_activation(sheaf)) > 0.2:               # cut off sur-reports from gen looping before the loop fades away
+        exp += 1
     if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 

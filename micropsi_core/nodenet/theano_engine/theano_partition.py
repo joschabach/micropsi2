@@ -459,6 +459,7 @@ class TheanoPartition():
         ### exp plumbing
         pipe_exp = slots[:, 5]                                                      # start with sur
         pipe_exp = pipe_exp + slots[:, 7]                                           # add exp
+        pipe_exp = pipe_exp + T.gt(slots[:, 1] * slots[:, 4], 0.2)                  # add gen-loop 1
 
         if self.has_pipes:
             if self.has_directional_activators:

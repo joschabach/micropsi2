@@ -1287,8 +1287,8 @@ class TheanoNodenet(Nodenet):
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
             inlinks = partition_to.inlinks[partition_from.spid]
-            indices_from = np.where(inlinks[0].get_value(borrow=True) == partition_from.nodegroups[nodespace_from_uid][group_from])[0]
-            indices_to = np.where(inlinks[1].get_value(borrow=True) == partition_to.nodegroups[nodespace_to_uid][group_to])[0]
+            indices_from = np.searchsorted(inlinks[0].get_value(borrow=True), partition_from.nodegroups[nodespace_from_uid][group_from])
+            indices_to = np.searchsorted(inlinks[1].get_value(borrow=True), partition_to.nodegroups[nodespace_to_uid][group_to])
             cols, rows = np.meshgrid(indices_from, indices_to)
             return inlinks[2].get_value(borrow=True)[rows, cols]
         else:

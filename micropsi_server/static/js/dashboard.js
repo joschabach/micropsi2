@@ -205,6 +205,9 @@ $(function(){
                 html += "<tr><td class=\""+auto.name.replace(">","")+"\">" + auto.name + "</td><td><span class=\"mini\">complexity:"+auto.complexity+"</span><span class=\"mini\">competence:"+parseFloat(auto.competence).toFixed(3)+"</span></td></tr>"
             }
         }
+        if(dashboard.hypotheses){
+            html += "<tr><th>Hypotheses:</th><td>"+dashboard.hypotheses.join("<br />")+"</td></tr>";
+        }
 
         html += "</table>"
         datatable_concepts.html(html);

@@ -264,11 +264,11 @@ def login():
 
 @micropsi_app.post("/login_submit")
 def login_submit():
-    user_id = request.forms.userid
-    password = request.forms.password
-
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    user_id = params['userid']
+    password = params['password']
     # log in new user
-    token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
+    token = usermanager.start_session(user_id, password, params.get("keep_logged_in"))
     if token:
         response.set_cookie("token", token)
         # redirect to start page
@@ -311,10 +311,11 @@ def signup():
 
 @micropsi_app.post("/signup_submit")
 def signup_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
-    userid = request.forms.userid
-    password = request.forms.password
-    role = request.forms.get('permissions')
+    userid = params['userid']
+    password = params['password']
+    role = params.get('permissions')
     (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids=usermanager.users.keys())
     if success:
         # check if permissions in form are consistent with internal permissions
@@ -323,7 +324,7 @@ def signup_submit():
             (role == "Restricted" and "create restricted" in permissions)):
             if usermanager.create_user(userid, password, role, uid=micropsi_core.tools.generate_uid()):
                 # log in new user
-                token = usermanager.start_session(userid, password, request.forms.get("keep_logged_in"))
+                token = usermanager.start_session(userid, password, params.get("keep_logged_in"))
                 response.set_cookie("token", token)
                 # redirect to start page
                 return dict(redirect='/')
@@ -349,10 +350,11 @@ def change_password():
 
 @micropsi_app.post("/change_password_submit")
 def change_password_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
     if token:
-        old_password = request.forms.old_password
-        new_password = request.forms.new_password
+        old_password = params['old_password']
+        new_password = params['new_password']
         if usermanager.test_password(user_id, old_password):
             usermanager.set_user_password(user_id, new_password)
             return dict(msg='New password saved', status="success")
@@ -395,10 +397,11 @@ def create_user():
 
 @micropsi_app.post("/create_user_submit")
 def create_user_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
-    userid = request.forms.userid
-    password = request.forms.password
-    role = request.forms.get('permissions')
+    userid = params['userid']
+    password = params['password']
+    role = params.get('permissions')
     (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids=usermanager.users.keys())
 
     if success:
@@ -436,10 +439,11 @@ def set_password(userid):
 
 @micropsi_app.post("/set_password_submit")
 def set_password_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        userid = request.forms.userid
-        password = request.forms.password
+        userid = params['userid']
+        password = params['password']
         if userid in usermanager.users:
             usermanager.set_user_password(userid, password)
         return dict(status='success', msg="New password saved")
@@ -580,8 +584,9 @@ def edit_nodenet():
 @micropsi_app.route("/nodenet/edit", method="POST")
 def write_nodenet():
     user_id, permissions, token = get_request_data()
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], engine=request.params['nn_engine'], worldadapter=request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -628,9 +633,10 @@ def edit_world_form():
 
 @micropsi_app.route("/world/edit", method="POST")
 def edit_world():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = runtime.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id)
         if result:
             return dict(status="success", msg="World created", world_uid=uid)
         else:

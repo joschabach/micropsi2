@@ -193,9 +193,9 @@ $(function(){
             html += "<tr><th>Concepts:</th><th><div id=\"concept_graph\"></div></th></tr>";
         }
         if(dashboard.schemas){
-            html += "<tr><td>Verified:</td><td>" + (dashboard.schemas.verified.sort().join('<br />') || '--') + "</td></tr>";
-            html += "<tr><td>Checking:</td><td>" + (dashboard.schemas.checking.sort().join('<br />') || '--') + "</td></tr>";
-            html += "<tr><td>Failed:</td><td>" + (dashboard.schemas.failed.sort().join('<br />') || '--') + "</td></tr>";
+            html += "<tr><td>Verified:</td><td>" + (dashboard.schemas.verified || '0') + "</td></tr>";
+            html += "<tr><td>Checking:</td><td>" + (dashboard.schemas.checking || '0') + "</td></tr>";
+            html += "<tr><td>Failed:</td><td>" + (dashboard.schemas.failed || '0') + "</td></tr>";
         }
 
         if(dashboard.automatisms){

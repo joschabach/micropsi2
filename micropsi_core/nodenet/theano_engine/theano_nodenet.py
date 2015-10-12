@@ -1344,10 +1344,10 @@ class TheanoNodenet(Nodenet):
             'off': 0
         }
         data['schemas'] = {
-            'checking': [],
-            'verified': [],
-            'failed': [],
-            'off': [],
+            'checking': 0,
+            'verified': 0,
+            'failed': 0,
+            'off': 0,
             'total': 0
         }
         for uid, partition in self.partitions.items():
@@ -1372,22 +1372,19 @@ class TheanoNodenet(Nodenet):
                     if node.get_gate('gen').activation == 0 and node.get_gate('sub').activation > 0 and len(node.get_gate('sub').get_links()):
                         data['concepts']['checking'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['checking'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['checking'] += 1
                     elif node.get_gate('sub').activation > 0 and node.activation > 0.5:
                         data['concepts']['verified'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['verified'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['verified'] += 1
                     elif node.activation < 0:
                         data['concepts']['failed'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['failed'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['failed'] += 1
                     else:
                         data['concepts']['off'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['off'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['off'] += 1
+        data['schemas']['total'] = sum(data['schemas'].values())
         data['concepts']['total'] = sum(data['concepts'].values())
         return data

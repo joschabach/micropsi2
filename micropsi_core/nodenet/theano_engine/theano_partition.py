@@ -792,7 +792,7 @@ class TheanoPartition():
             inlink_to_lengths[i] = to_length
             inlink_from_elements[from_offset:from_offset+from_length] = from_elements
             inlink_to_elements[to_offset:to_offset+to_length] = to_elements
-            inlink_weights[(from_offset*to_offset):((from_offset+from_length)*(to_offset+to_length))] = np.ravel(weights)
+            inlink_weights[(from_offset*to_offset):(from_offset*to_offset)+((from_offset+from_length)*(to_offset+to_length))] = np.ravel(weights)
             from_offset += from_length
             to_offset += to_length
 

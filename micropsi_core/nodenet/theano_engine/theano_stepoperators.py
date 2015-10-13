@@ -1,11 +1,5 @@
 
-from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
-import theano
-from theano import tensor as T
-from theano import shared
-from theano import function
-from theano.tensor import nnet as N
-import theano.sparse as ST
+from micropsi_core.nodenet.stepoperators import Propagate, Calculate
 import numpy as np
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
@@ -31,6 +25,7 @@ class TheanoPropagate(Propagate):
         # then propagate internally in all partitions
         for partition in nodenet.partitions.values():
             partition.propagate()
+
 
 class TheanoCalculate(Calculate):
     """
@@ -85,19 +80,3 @@ class TheanoCalculate(Calculate):
         for partition in nodenet.partitions.values():
             partition.calculate()
         self.count_success_and_failure(nodenet)
-
-
-class TheanoPORRETDecay(StepOperator):
-    """
-    Implementation of POR/RET link decaying.
-    This is a pure numpy implementation right now, as theano doesn't like setting subtensors with fancy indexing
-    on sparse matrices.
-    """
-
-    @property
-    def priority(self):
-        return 100
-
-    def execute(self, nodenet, nodes, netapi):
-       for partition in nodenet.partitions.values():
-            partition.por_ret_decay()

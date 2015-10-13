@@ -8,7 +8,7 @@ from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
 from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
-from .dict_stepoperators import DictPropagate, DictPORRETDecay, DictCalculate
+from .dict_stepoperators import DictPropagate, DictCalculate
 from .dict_node import DictNode
 from .dict_nodespace import DictNodespace
 import copy
@@ -178,7 +178,7 @@ class DictNodenet(Nodenet):
 
         super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
-        self.stepoperators = [DictPropagate(), DictCalculate(), DictPORRETDecay(), DoernerianEmotionalModulators()]
+        self.stepoperators = [DictPropagate(), DictCalculate(), DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data

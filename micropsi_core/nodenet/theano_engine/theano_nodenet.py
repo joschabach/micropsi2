@@ -157,6 +157,7 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
+
 class TheanoNodenet(Nodenet):
     """
         theano runtime engine implementation
@@ -266,7 +267,6 @@ class TheanoNodenet(Nodenet):
         self.stepoperators = [
             TheanoPropagate(),
             TheanoCalculate(self),
-            TheanoPORRETDecay(),
             DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 

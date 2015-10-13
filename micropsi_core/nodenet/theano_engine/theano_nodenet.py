@@ -718,8 +718,52 @@ class TheanoNodenet(Nodenet):
             id_to_pass = nodespace_from_id(uid)
 
         if new_partition and parent_id != 0:
+
+            initial_number_of_nodespaces = 10
+            if "initial_number_of_nodespaces" in options:
+                initial_number_of_nodespaces = int(options["initial_number_of_nodespaces"])
+
+            average_elements_per_node_assumption = 4
+            if "average_elements_per_node_assumption" in options:
+                average_elements_per_node_assumption = int(options["average_elements_per_node_assumption"])
+            else:
+                configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
+                try:
+                    average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
+                except:
+                    self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+
+            initial_number_of_nodes = 2000
+            if "initial_number_of_nodes" in options:
+                initial_number_of_nodes = int(options["initial_number_of_nodes"])
+            else:
+                configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
+                try:
+                    initial_number_of_nodes = int(configured_initial_number_of_nodes)
+                except:
+                    self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+
+            sparse = True
+            if "sparse" in options:
+                sparse = options["sparse"] == "True"
+            else:
+                configuredsparse = settings['theano']['sparse_weight_matrix']
+                if configuredsparse == "True":
+                    sparse = True
+                elif configuredsparse == "False":
+                    sparse = False
+                else:
+                    self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+                    sparse = True
+
             self.last_allocated_partition += 1
-            spid = self.create_partition(self.last_allocated_partition, parent_uid)
+            spid = self.create_partition(
+                self.last_allocated_partition,
+                parent_uid,
+                sparse=sparse,
+                initial_number_of_nodes=initial_number_of_nodes,
+                average_elements_per_node_assumption=average_elements_per_node_assumption,
+                initial_number_of_nodespaces=initial_number_of_nodespaces)
             partition = self.partitions[spid]
             id = partition.create_nodespace(0, id_to_pass)
             uid = nodespace_to_id(id, partition.pid)

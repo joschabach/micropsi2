@@ -199,7 +199,7 @@ class TheanoNode(Node):
 
         # find this node in links coming in from other partitions to this node's partition
         for partition_from_spid, inlinks in self._partition.inlinks.items():
-            for numeric_slot in range(0, get_slots_per_type(self._numerictype)):
+            for numeric_slot in range(0, get_slots_per_type(self._numerictype, self._nodenet.native_modules)):
                 element = self._partition.allocated_node_offsets[self._id] + numeric_slot
                 from_elements = inlinks[0].get_value(borrow=True)
                 to_elements = inlinks[1].get_value(borrow=True)
@@ -216,7 +216,7 @@ class TheanoNode(Node):
         # find this node in links going out to other partitions
         for partition_to_spid, to_partition in self._nodenet.partitions.items():
             if self._partition.spid in to_partition.inlinks:
-                for numeric_gate in range(0, get_gates_per_type(self._numerictype)):
+                for numeric_gate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
                     element = self._partition.allocated_node_offsets[self._id] + numeric_gate
                     inlinks = to_partition.inlinks[self._partition.spid]
                     from_elements = inlinks[0].get_value(borrow=True)

@@ -593,6 +593,42 @@ class TheanoNodenet(Nodenet):
 
         associated_ids = partition.get_associated_node_ids(node_id)
 
+        nodetype = partition.allocated_nodes[node_id]
+
+        associated_uids = []
+
+        for partition_from_spid, inlinks in partition.inlinks.items():
+            for numeric_slot in range(0, get_slots_per_type(nodetype, self.native_modules)):
+                element = partition.allocated_node_offsets[node_id] + numeric_slot
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
+                if element in to_elements:
+                    from_partition = self.partitions[partition_from_spid]
+                    element_index = np.where(to_elements == element)[0][0]
+                    slotrow = weights[element_index]
+                    links_indices = np.nonzero(slotrow)[0]
+                    for link_index in links_indices:
+                        source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                        associated_uids.append(node_to_id(source_id, from_partition.pid))
+
+        # find this node in links going out to other partitions
+        for partition_to_spid, to_partition in self.partitions.items():
+            if partition.spid in to_partition.inlinks:
+                for numeric_gate in range(0, get_gates_per_type(nodetype, self.native_modules)):
+                    element = partition.allocated_node_offsets[node_id] + numeric_gate
+                    inlinks = to_partition.inlinks[partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
+                    if element in from_elements:
+                        element_index = np.where(from_elements == element)[0][0]
+                        gatecolumn = weights[:, element_index]
+                        links_indices = np.nonzero(gatecolumn)[0]
+                        for link_index in links_indices:
+                            target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                            associated_uids.append(node_to_id(target_id, to_partition.pid))
+
         partition.delete_node(node_id)
 
         # remove sensor association if there should be one
@@ -616,7 +652,9 @@ class TheanoNodenet(Nodenet):
         self.clear_supplements(uid)
 
         for id_to_clear in associated_ids:
-            uid_to_clear = node_to_id(id_to_clear, partition.pid)
+            associated_uids.append(node_to_id(id_to_clear, partition.pid))
+
+        for uid_to_clear in associated_uids:
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
 

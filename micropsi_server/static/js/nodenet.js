@@ -1067,6 +1067,10 @@ function renderLink(link, force) {
     var sourceNode = nodes[link.sourceNodeUid];
     var targetNode = nodes[link.targetNodeUid];
 
+    if(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode)){
+        return;
+    }
+
     var linkStart = calculateLinkStart(sourceNode, targetNode, link.gateName);
     var linkEnd = calculateLinkEnd(sourceNode, targetNode, link.slotName, link.gateName);
 

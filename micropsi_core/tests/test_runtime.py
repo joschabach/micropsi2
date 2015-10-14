@@ -44,7 +44,7 @@ def test_nodenet_specific_loggers():
     res, uid2 = micropsi.new_nodenet("test2")
     assert "agent.%s" % uid1 in logging.Logger.manager.loggerDict
     assert "agent.%s" % uid2 in logging.Logger.manager.loggerDict
-    logging.getLogger("agent.%s" % uid1).info("hello!")
+    logging.getLogger("agent.%s" % uid1).warning("hello!")
     res = micropsi.get_logger_messages("agent.%s" % uid1)
     item = res['logs'][-1]
     assert item['msg'] == "hello!"

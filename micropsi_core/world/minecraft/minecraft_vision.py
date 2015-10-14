@@ -101,13 +101,13 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
 
             else:
                 super().update_data_sources_and_targets()
-                # handle fovea actors and sensors: action feedback, relay to sensors, default actor
+                # handle fovea actuators and sensors: action feedback, relay to sensors, default actuator
                 active_fovea_actor = None
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
                         actor_name = "fov_act__%02d_%02d" % (y, x)
                         sensor_name = "fov_pos__%02d_%02d" % (y, x)
-                        # relay activation to fovea sensor nodes
+                        # relay activation of fovea actuators to fovea sensor nodes
                         self.datasources[sensor_name] = self.datatargets[actor_name]
                         # provide action feedback for fovea actor nodes
                         if self.datatargets[actor_name] > 0.:
@@ -115,10 +115,11 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
                             active_fovea_actor = actor_name
 
                 # if there's no active_fovea_actor use the last fovea position as default
-                # write activation to data source but not data target; idea: data target means action was successful
                 if active_fovea_actor is None:
                     active_fovea_actor = self.fovea_actor
-                    self.datasources[self.fovea_actor.replace("act", "pos")] = 1.
+                    self.datasources[active_fovea_actor.replace("act", "pos")] = 1.
+                    self.datatarget_feedback[active_fovea_actor] = 1.
+
                 # determine if fovea position changed
                 fovea_position_changed = self.fovea_actor != active_fovea_actor
                 # store the currently active fovea actor node name for the next round

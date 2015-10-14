@@ -67,8 +67,5 @@ class TheanoNetAPI(NetAPI):
             cols, rows = np.meshgrid(por_cols, por_rows)
             w_update = w[rows, cols]
             w_update *= (1 - porretdecay)
-            if self.__nodenet.current_step % 1000 == 0:
-                nullify_grid = np.nonzero(w_update < porretdecay ** 2)
-                w_update[nullify_grid] = 0
             w[rows, cols] = w_update
             partition.w.set_value(w, borrow=True)

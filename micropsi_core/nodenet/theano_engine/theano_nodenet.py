@@ -591,7 +591,7 @@ class TheanoNodenet(Nodenet):
         partition = self.get_partition(uid)
         node_id = node_from_id(uid)
 
-        associated_ids = node.get_associated_node_ids(node_id)
+        associated_ids = partition.get_associated_node_ids(node_id)
 
         nodetype = partition.allocated_nodes[node_id]
 

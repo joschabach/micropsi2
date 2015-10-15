@@ -597,7 +597,8 @@ class TheanoNodenet(Nodenet):
 
         associated_uids = []
 
-        for partition_from_spid, inlinks in partition.inlinks.items():
+        # find this node in links coming in from other partitions, and nullify the inter-partition-weight matrix
+        for partition_from_spid, inlinks in partition.inlinks.copy().items():
             for numeric_slot in range(0, get_slots_per_type(nodetype, self.native_modules)):
                 element = partition.allocated_node_offsets[node_id] + numeric_slot
                 from_elements = inlinks[0].get_value(borrow=True)
@@ -611,8 +612,24 @@ class TheanoNodenet(Nodenet):
                     for link_index in links_indices:
                         source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
                         associated_uids.append(node_to_id(source_id, from_partition.pid))
+                    # set all weights for this element to 0
+                    new_weights = np.delete(weights, element_index, 0)
+                    if len(new_weights) == 0:
+                        # if this was the last link, remove whole inlinks information for this partition pair
+                        del partition.inlinks[partition_from_spid]
+                        break
+                    # find empty columns (elements linking only to this element)
+                    zero_columns = np.where(~new_weights.any(axis=0))[0]
+                    # remove empty columns from weight matrix:
+                    new_weights = np.delete(new_weights, zero_columns, 1)
+                    # save new weight matrix
+                    partition.inlinks[partition_from_spid][2].set_value(new_weights)
+                    # remove this element
+                    partition.inlinks[partition_from_spid][1].set_value(np.delete(to_elements, element_index))
+                    # remove from_elements
+                    partition.inlinks[partition_from_spid][0].set_value(np.delete(from_elements, zero_columns))
 
-        # find this node in links going out to other partitions
+        # find this node in links going out to other partitions, and nullify the inter-partition-weight matrix
         for partition_to_spid, to_partition in self.partitions.items():
             if partition.spid in to_partition.inlinks:
                 for numeric_gate in range(0, get_gates_per_type(nodetype, self.native_modules)):
@@ -628,6 +645,22 @@ class TheanoNodenet(Nodenet):
                         for link_index in links_indices:
                             target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
                             associated_uids.append(node_to_id(target_id, to_partition.pid))
+                        # set all weights for this element to 0
+                        new_weights = np.delete(weights, element_index, 1)
+                        if len(new_weights) == 0:
+                            # if this was the last link, remove whole inlinks information for target partition
+                            del to_partition.inlinks[partition.spid]
+                            break
+                        # find empty rows (elements linked only by this node)
+                        zero_rows = np.where(~new_weights.any(axis=1))[0]
+                        # remove empty rows from weight matrix
+                        new_weights = np.delete(new_weights, zero_rows, 0)
+                        # save new weights
+                        to_partition.inlinks[partition.spid][2].set_value(new_weights)
+                        # remove this element
+                        to_partition.inlinks[partition.spid][0].set_value(np.delete(from_elements, element_index))
+                        # remove to_elements
+                        to_partition.inlinks[partition.spid][1].set_value(np.delete(to_elements, zero_rows))
 
         partition.delete_node(node_id)
 

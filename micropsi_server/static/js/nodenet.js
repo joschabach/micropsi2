@@ -2950,6 +2950,9 @@ function deleteNodeHandler(nodeUid) {
             success=function(data){
                 dialogs.notification('node deleted', 'success');
                 getNodespaceList();
+                if(method == "delete_nodespace"){
+                    refreshNodespace(currentNodeSpace, -1);
+                }
             }
         );
     }

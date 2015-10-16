@@ -33,7 +33,6 @@ user_token = usermanager.start_session('Pytest User', 'test', True)
 # reset logging levels
 logging.getLogger('system').setLevel(logging.WARNING)
 logging.getLogger('world').setLevel(logging.WARNING)
-logging.getLogger('agent').setLevel(logging.WARNING)
 
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
@@ -53,7 +52,7 @@ except:
 def set_logging_levels():
     logging.getLogger('system').setLevel(logging.WARNING)
     logging.getLogger('world').setLevel(logging.WARNING)
-    logging.getLogger('agent').setLevel(logging.WARNING)
+    micropsi.cfg['logging']['level_agent'] = 'WARNING'
 
 
 def pytest_addoption(parser):

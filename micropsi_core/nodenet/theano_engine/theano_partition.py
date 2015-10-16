@@ -1005,14 +1005,13 @@ class TheanoPartition():
 
             inlink_from_offset = 0
             inlink_to_offset = 0
+            weight_offset = 0
+
             for i, pid in enumerate(inlink_pids):
 
                 inlink_from_elements = datafile['inlink_from_elements'][inlink_from_offset:inlink_from_offset+inlink_from_lengths[i]]
                 inlink_to_elements = datafile['inlink_to_elements'][inlink_to_offset:inlink_to_offset+inlink_to_lengths[i]]
-                inlink_weights = datafile['inlink_weights'][inlink_from_offset*inlink_to_offset:inlink_from_offset*inlink_to_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
-
-                inlink_from_offset += inlink_from_lengths[i]
-                inlink_to_offset += inlink_to_lengths[i]
+                inlink_weights = datafile['inlink_weights'][weight_offset:weight_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
 
                 self.set_inlink_weights(
                     "%03i" % pid,
@@ -1020,6 +1019,10 @@ class TheanoPartition():
                     inlink_to_elements.astype(np.int32),
                     np.reshape(inlink_weights, (inlink_to_lengths[i], inlink_from_lengths[i]))
                 )
+
+                weight_offset += inlink_from_lengths[i]*inlink_to_lengths[i]
+                inlink_from_offset += inlink_from_lengths[i]
+                inlink_to_offset += inlink_to_lengths[i]
         else:
             self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
 

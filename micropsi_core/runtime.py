@@ -275,7 +275,7 @@ def load_nodenet(nodenet_uid):
 
             engine = data.get('engine', 'dict_engine')
 
-            logger.register_logger("agent.%s" % nodenet_uid, logging.getLogger('agent').getEffectiveLevel())
+            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet

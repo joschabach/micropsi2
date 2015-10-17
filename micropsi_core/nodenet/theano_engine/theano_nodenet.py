@@ -379,12 +379,16 @@ class TheanoNodenet(Nodenet):
         # instantiate partitions
         partitions_to_instantiate = nodenet_data.get('partition_parents', {})
         largest_pid = 0
-        # todo: use actual numbers
         for partition_spid, parent_uid in partitions_to_instantiate.items():
             pid = int(partition_spid)
             if pid > largest_pid:
                 largest_pid = pid
-            self.create_partition(pid, parent_uid, True, 2000, 5, 10)
+            self.create_partition(pid,
+                                  parent_uid,
+                                  True,
+                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2),
+                                  7,
+                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2))
         self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized

@@ -379,11 +379,12 @@ class TheanoNodenet(Nodenet):
         # instantiate partitions
         partitions_to_instantiate = nodenet_data.get('partition_parents', {})
         largest_pid = 0
+        # todo: use actual numbers
         for partition_spid, parent_uid in partitions_to_instantiate.items():
             pid = int(partition_spid)
             if pid > largest_pid:
                 largest_pid = pid
-            self.create_partition(pid, parent_uid)
+            self.create_partition(pid, parent_uid, True, 2000, 5, 10)
         self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
@@ -669,12 +670,18 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
-    def create_partition(self, pid, parent_uid):
+    def create_partition(self, pid, parent_uid, sparse, initial_number_of_nodes, average_elements_per_node_assumption, initial_number_of_nodespaces):
+
         if parent_uid is None:
             parent_uid = self.get_nodespace(None).uid
         if pid > 999:
             raise NotImplementedError("Only partition IDs < 1000 are supported right now")
-        partition = TheanoPartition(self, pid)
+        partition = TheanoPartition(self,
+                                    pid,
+                                    sparse=sparse,
+                                    initial_number_of_nodes=initial_number_of_nodes,
+                                    average_elements_per_node_assumption=average_elements_per_node_assumption,
+                                    initial_number_of_nodespaces=initial_number_of_nodespaces)
         self.partitions[partition.spid] = partition
         if parent_uid not in self.partitionmap:
             self.partitionmap[parent_uid] = []

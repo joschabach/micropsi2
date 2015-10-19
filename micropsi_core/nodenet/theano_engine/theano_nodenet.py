@@ -383,7 +383,12 @@ class TheanoNodenet(Nodenet):
             pid = int(partition_spid)
             if pid > largest_pid:
                 largest_pid = pid
-            self.create_partition(pid, parent_uid)
+            self.create_partition(pid,
+                                  parent_uid,
+                                  True,
+                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2),
+                                  7,
+                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2))
         self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
@@ -669,12 +674,18 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
-    def create_partition(self, pid, parent_uid):
+    def create_partition(self, pid, parent_uid, sparse, initial_number_of_nodes, average_elements_per_node_assumption, initial_number_of_nodespaces):
+
         if parent_uid is None:
             parent_uid = self.get_nodespace(None).uid
         if pid > 999:
             raise NotImplementedError("Only partition IDs < 1000 are supported right now")
-        partition = TheanoPartition(self, pid)
+        partition = TheanoPartition(self,
+                                    pid,
+                                    sparse=sparse,
+                                    initial_number_of_nodes=initial_number_of_nodes,
+                                    average_elements_per_node_assumption=average_elements_per_node_assumption,
+                                    initial_number_of_nodespaces=initial_number_of_nodespaces)
         self.partitions[partition.spid] = partition
         if parent_uid not in self.partitionmap:
             self.partitionmap[parent_uid] = []
@@ -718,8 +729,52 @@ class TheanoNodenet(Nodenet):
             id_to_pass = nodespace_from_id(uid)
 
         if new_partition and parent_id != 0:
+
+            initial_number_of_nodespaces = 10
+            if "initial_number_of_nodespaces" in options:
+                initial_number_of_nodespaces = int(options["initial_number_of_nodespaces"])
+
+            average_elements_per_node_assumption = 4
+            if "average_elements_per_node_assumption" in options:
+                average_elements_per_node_assumption = int(options["average_elements_per_node_assumption"])
+            else:
+                configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
+                try:
+                    average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
+                except:
+                    self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+
+            initial_number_of_nodes = 2000
+            if "initial_number_of_nodes" in options:
+                initial_number_of_nodes = int(options["initial_number_of_nodes"])
+            else:
+                configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
+                try:
+                    initial_number_of_nodes = int(configured_initial_number_of_nodes)
+                except:
+                    self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+
+            sparse = True
+            if "sparse" in options:
+                sparse = options["sparse"] == "True"
+            else:
+                configuredsparse = settings['theano']['sparse_weight_matrix']
+                if configuredsparse == "True":
+                    sparse = True
+                elif configuredsparse == "False":
+                    sparse = False
+                else:
+                    self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+                    sparse = True
+
             self.last_allocated_partition += 1
-            spid = self.create_partition(self.last_allocated_partition, parent_uid)
+            spid = self.create_partition(
+                self.last_allocated_partition,
+                parent_uid,
+                sparse=sparse,
+                initial_number_of_nodes=initial_number_of_nodes,
+                average_elements_per_node_assumption=average_elements_per_node_assumption,
+                initial_number_of_nodespaces=initial_number_of_nodespaces)
             partition = self.partitions[spid]
             id = partition.create_nodespace(0, id_to_pass)
             uid = nodespace_to_id(id, partition.pid)

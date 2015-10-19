@@ -1481,7 +1481,7 @@ class TheanoPartition():
                         break
 
             if id < 1:
-                growby = self.NoNS // 2
+                growby = self.NoNS // 2 or 1
                 self.logger.info("All %d nodespace IDs in use in partition %i, growing nodespace ID vector by %d elements" % (self.NoNS, self.pid, growby))
                 id = self.NoNS
                 self.grow_number_of_nodespaces(growby)

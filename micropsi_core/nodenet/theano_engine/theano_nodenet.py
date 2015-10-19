@@ -756,7 +756,7 @@ class TheanoNodenet(Nodenet):
 
             sparse = True
             if "sparse" in options:
-                sparse = options["sparse"] == "True"
+                sparse = options["sparse"]
             else:
                 configuredsparse = settings['theano']['sparse_weight_matrix']
                 if configuredsparse == "True":

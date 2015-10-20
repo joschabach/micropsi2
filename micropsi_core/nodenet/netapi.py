@@ -1,4 +1,6 @@
 
+from .vizapi import VizAPI
+
 
 class NetAPI(object):
     """
@@ -17,12 +19,17 @@ class NetAPI(object):
     def worldadapter(self):
         return self.__nodenet.worldadapter_instance
 
-    def __init__(self, nodenet):
-        self.__nodenet = nodenet
-
     @property
     def logger(self):
         return self.__nodenet.logger
+
+    @property
+    def vizapi(self):
+        return self.__vizapi
+
+    def __init__(self, nodenet):
+        self.__nodenet = nodenet
+        self.__vizapi = VizAPI(nodenet, self)
 
     def get_nodespace(self, uid):
         """

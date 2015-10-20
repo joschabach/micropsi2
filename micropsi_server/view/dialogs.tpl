@@ -135,6 +135,18 @@
     </div>
 </div>
 
+<div id="recipe_result" class="modal hide">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>Result</h3>
+    </div>
+    <div class="modal-body">
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
+    </div>
+</div>
+
 <div class="modal hide" id="run_nodenet_dialog">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">×</button>

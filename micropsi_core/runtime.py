@@ -1114,7 +1114,10 @@ def run_recipe(nodenet_uid, name, parameters):
         if cfg['micropsi2'].get('profile_runner'):
             profiler = cProfile.Profile()
             profiler.enable()
-        result = func(netapi, **params)
+        result = {'reload': True}
+        ret = func(netapi, **params)
+        if ret:
+            result.update(ret)
         if cfg['micropsi2'].get('profile_runner'):
             profiler.disable()
             s = io.StringIO()

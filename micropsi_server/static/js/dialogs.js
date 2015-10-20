@@ -559,7 +559,28 @@ $(function() {
             'name': recipe_name_input.val(),
             'parameters': parameters,
         }, function(data){
-            window.location.reload();
+            $('#recipe_modal').modal('hide');
+            $('#loading').hide();
+            var reload = data.reload;
+            if(!reload) {
+                $(document).trigger('runner_stepped');
+            }
+            delete data.reload;
+            if(data){
+                html = '<dl>';
+                for(var key in data){
+                    html += "<dt>"+key+":</dt><dd>"+JSON.stringify(data[key])+"</dd>";
+                }
+                html += '</dl>';
+                $('#recipe_result .modal-body').html(html);
+                $('#recipe_result').modal('show');
+                $('#recipe_result button').off();
+                if(reload){
+                    $('#recipe_result button').on('click', function(){
+                        window.location.reload();
+                    });
+                }
+            }
         }, function(data){
             $('#recipe_modal button').removeAttr('disabled');
             api.defaultErrorCallback(data);

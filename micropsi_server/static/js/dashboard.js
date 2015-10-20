@@ -193,9 +193,9 @@ $(function(){
             html += "<tr><th>Concepts:</th><th><div id=\"concept_graph\"></div></th></tr>";
         }
         if(dashboard.schemas){
-            html += "<tr><td>Verified:</td><td>" + (dashboard.schemas.verified.sort().join('<br />') || '--') + "</td></tr>";
-            html += "<tr><td>Checking:</td><td>" + (dashboard.schemas.checking.sort().join('<br />') || '--') + "</td></tr>";
-            html += "<tr><td>Failed:</td><td>" + (dashboard.schemas.failed.sort().join('<br />') || '--') + "</td></tr>";
+            html += "<tr><td>Verified:</td><td>" + (dashboard.schemas.verified || '0') + "</td></tr>";
+            html += "<tr><td>Checking:</td><td>" + (dashboard.schemas.checking || '0') + "</td></tr>";
+            html += "<tr><td>Failed:</td><td>" + (dashboard.schemas.failed || '0') + "</td></tr>";
         }
 
         if(dashboard.automatisms){
@@ -204,6 +204,9 @@ $(function(){
                 var auto = dashboard.automatisms[i]
                 html += "<tr><td class=\""+auto.name.replace(">","")+"\">" + auto.name + "</td><td><span class=\"mini\">complexity:"+auto.complexity+"</span><span class=\"mini\">competence:"+parseFloat(auto.competence).toFixed(3)+"</span></td></tr>"
             }
+        }
+        if(dashboard.hypotheses){
+            html += "<tr><th>Hypotheses:</th><td>"+dashboard.hypotheses.join("<br />")+"</td></tr>";
         }
 
         html += "</table>"

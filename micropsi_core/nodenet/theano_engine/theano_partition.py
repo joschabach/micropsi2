@@ -390,8 +390,7 @@ class TheanoPartition():
         pipe_sub_cond = T.switch(T.eq(por_linked, 1), T.gt(slots[:, 5], 0), 1)      # (if linked, por must be > 0)
         pipe_sub_cond = pipe_sub_cond * T.eq(slots[:, 4], 0)                        # and (gen == 0)
 
-        pipe_sub = T.clip(slots[:, 8], 0, 1)                                        # bubble: start with sur if sur > 0
-        pipe_sub = pipe_sub + slots[:, 7]                                           # add sub
+        pipe_sub = slots[:, 7]                                                      # start with sub
         pipe_sub = pipe_sub + slots[:, 9]                                           # add cat
         pipe_sub = pipe_sub * pipe_sub_cond                                         # apply conditions
 
@@ -583,28 +582,6 @@ class TheanoPartition():
         self.calculate_nodes()
         self.__calculate_native_modules()
 
-    def por_ret_decay(self):
-
-        #    por_cols = T.lvector("por_cols")
-        #    por_rows = T.lvector("por_rows")
-        #    new_w = T.set_subtensor(nodenet.w[por_rows, por_cols], nodenet.w[por_rows, por_cols] - 0.0001)
-        #    self.decay = theano.function([por_cols, por_rows], None, updates={nodenet.w: new_w}, accept_inplace=True)
-
-        porretdecay = self.nodenet.get_modulator('por_ret_decay')
-        if self.has_pipes and porretdecay != 0:
-            n_function_selector = self.n_function_selector.get_value(borrow=True)
-            w = self.w.get_value(borrow=True)
-            por_cols = np.where(n_function_selector == NFPG_PIPE_POR)[0]
-            por_rows = np.nonzero(w[:, por_cols] > 0.)[0]
-            cols, rows = np.meshgrid(por_cols, por_rows)
-            w_update = w[rows, cols]
-            w_update *= (1 - porretdecay)
-            if self.nodenet.current_step % 1000 == 0:
-                nullify_grid = np.nonzero(w_update < porretdecay**2)
-                w_update[nullify_grid] = 0
-            w[rows, cols] = w_update
-            self.w.set_value(w, borrow=True)
-
     def __take_native_module_slot_snapshots(self):
         for uid, instance in self.native_module_instances.items():
             instance.take_slot_activation_snapshot()
@@ -742,15 +719,17 @@ class TheanoPartition():
 
         inlink_from_element_count = 0
         inlink_to_element_count = 0
+        weight_count = 0
         for spid, inlinks in self.inlinks.items():
             inlink_from_element_count += len(inlinks[0].get_value(borrow=True))
             inlink_to_element_count += len(inlinks[1].get_value(borrow=True))
+            weight_count += len(inlinks[0].get_value(borrow=True)) * len(inlinks[1].get_value(borrow=True))
         inlinks_pids = np.zeros(len(self.inlinks), dtype=np.int16)
         inlink_from_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
         inlink_to_lengths = np.zeros(len(self.inlinks), dtype=np.int32)
         inlink_from_elements = np.zeros(inlink_from_element_count, dtype=np.int32)
         inlink_to_elements = np.zeros(inlink_to_element_count, dtype=np.int32)
-        inlink_weights = np.zeros(inlink_from_element_count*inlink_to_element_count, dtype=self.nodenet.numpyfloatX)
+        inlink_weights = np.zeros(weight_count, dtype=self.nodenet.numpyfloatX)
 
         from_offset = 0
         to_offset = 0
@@ -765,7 +744,7 @@ class TheanoPartition():
             inlink_to_lengths[i] = to_length
             inlink_from_elements[from_offset:from_offset+from_length] = from_elements
             inlink_to_elements[to_offset:to_offset+to_length] = to_elements
-            inlink_weights[(from_offset*to_offset):((from_offset+from_length)*(to_offset+to_length))] = np.ravel(weights)
+            inlink_weights[(from_offset*to_offset):(from_offset*to_offset)+(from_length*to_length)] = np.ravel(weights)
             from_offset += from_length
             to_offset += to_length
 
@@ -973,17 +952,27 @@ class TheanoPartition():
             inlink_pids = datafile['inlink_pids']
             inlink_from_lengths = datafile['inlink_from_lengths']
             inlink_to_lengths = datafile['inlink_to_lengths']
-            inlink_from_elements = np.split(datafile['inlink_from_elements'], inlink_from_lengths)
-            inlink_to_elements = np.split(datafile['inlink_to_elements'], inlink_to_lengths)
-            inlink_weights = np.split(datafile['inlink_weights'], inlink_from_lengths*inlink_to_lengths)
+
+            inlink_from_offset = 0
+            inlink_to_offset = 0
+            weight_offset = 0
 
             for i, pid in enumerate(inlink_pids):
+
+                inlink_from_elements = datafile['inlink_from_elements'][inlink_from_offset:inlink_from_offset+inlink_from_lengths[i]]
+                inlink_to_elements = datafile['inlink_to_elements'][inlink_to_offset:inlink_to_offset+inlink_to_lengths[i]]
+                inlink_weights = datafile['inlink_weights'][weight_offset:weight_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
+
                 self.set_inlink_weights(
                     "%03i" % pid,
-                    inlink_from_elements[i].astype(np.int32),
-                    inlink_to_elements[i].astype(np.int32),
-                    np.reshape(inlink_weights[i], (inlink_to_lengths[i], inlink_from_lengths[i]))
+                    inlink_from_elements.astype(np.int32),
+                    inlink_to_elements.astype(np.int32),
+                    np.reshape(inlink_weights, (inlink_to_lengths[i], inlink_from_lengths[i]))
                 )
+
+                weight_offset += inlink_from_lengths[i]*inlink_to_lengths[i]
+                inlink_from_offset += inlink_from_lengths[i]
+                inlink_to_offset += inlink_to_lengths[i]
         else:
             self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
 

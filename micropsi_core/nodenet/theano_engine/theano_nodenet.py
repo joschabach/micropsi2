@@ -157,6 +157,7 @@ STANDARD_NODETYPES = {
 
 NODENET_VERSION = 1
 
+
 class TheanoNodenet(Nodenet):
     """
         theano runtime engine implementation
@@ -266,7 +267,6 @@ class TheanoNodenet(Nodenet):
         self.stepoperators = [
             TheanoPropagate(),
             TheanoCalculate(self),
-            TheanoPORRETDecay(),
             DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
@@ -598,6 +598,75 @@ class TheanoNodenet(Nodenet):
 
         associated_ids = partition.get_associated_node_ids(node_id)
 
+        nodetype = partition.allocated_nodes[node_id]
+
+        associated_uids = []
+
+        # find this node in links coming in from other partitions, and nullify the inter-partition-weight matrix
+        for partition_from_spid, inlinks in partition.inlinks.copy().items():
+            for numeric_slot in range(0, get_slots_per_type(nodetype, self.native_modules)):
+                element = partition.allocated_node_offsets[node_id] + numeric_slot
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
+                if element in to_elements:
+                    from_partition = self.partitions[partition_from_spid]
+                    element_index = np.where(to_elements == element)[0][0]
+                    slotrow = weights[element_index]
+                    links_indices = np.nonzero(slotrow)[0]
+                    for link_index in links_indices:
+                        source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                        associated_uids.append(node_to_id(source_id, from_partition.pid))
+                    # set all weights for this element to 0
+                    new_weights = np.delete(weights, element_index, 0)
+                    if len(new_weights) == 0:
+                        # if this was the last link, remove whole inlinks information for this partition pair
+                        del partition.inlinks[partition_from_spid]
+                        break
+                    # find empty columns (elements linking only to this element)
+                    zero_columns = np.where(~new_weights.any(axis=0))[0]
+                    # remove empty columns from weight matrix:
+                    new_weights = np.delete(new_weights, zero_columns, 1)
+                    # save new weight matrix
+                    partition.inlinks[partition_from_spid][2].set_value(new_weights)
+                    # remove this element
+                    partition.inlinks[partition_from_spid][1].set_value(np.delete(to_elements, element_index))
+                    # remove from_elements
+                    partition.inlinks[partition_from_spid][0].set_value(np.delete(from_elements, zero_columns))
+
+        # find this node in links going out to other partitions, and nullify the inter-partition-weight matrix
+        for partition_to_spid, to_partition in self.partitions.items():
+            if partition.spid in to_partition.inlinks:
+                for numeric_gate in range(0, get_gates_per_type(nodetype, self.native_modules)):
+                    element = partition.allocated_node_offsets[node_id] + numeric_gate
+                    inlinks = to_partition.inlinks[partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
+                    if element in from_elements:
+                        element_index = np.where(from_elements == element)[0][0]
+                        gatecolumn = weights[:, element_index]
+                        links_indices = np.nonzero(gatecolumn)[0]
+                        for link_index in links_indices:
+                            target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                            associated_uids.append(node_to_id(target_id, to_partition.pid))
+                        # set all weights for this element to 0
+                        new_weights = np.delete(weights, element_index, 1)
+                        if len(new_weights) == 0:
+                            # if this was the last link, remove whole inlinks information for target partition
+                            del to_partition.inlinks[partition.spid]
+                            break
+                        # find empty rows (elements linked only by this node)
+                        zero_rows = np.where(~new_weights.any(axis=1))[0]
+                        # remove empty rows from weight matrix
+                        new_weights = np.delete(new_weights, zero_rows, 0)
+                        # save new weights
+                        to_partition.inlinks[partition.spid][2].set_value(new_weights)
+                        # remove this element
+                        to_partition.inlinks[partition.spid][0].set_value(np.delete(from_elements, element_index))
+                        # remove to_elements
+                        to_partition.inlinks[partition.spid][1].set_value(np.delete(to_elements, zero_rows))
+
         partition.delete_node(node_id)
 
         # remove sensor association if there should be one
@@ -621,7 +690,9 @@ class TheanoNodenet(Nodenet):
         self.clear_supplements(uid)
 
         for id_to_clear in associated_ids:
-            uid_to_clear = node_to_id(id_to_clear, partition.pid)
+            associated_uids.append(node_to_id(id_to_clear, partition.pid))
+
+        for uid_to_clear in associated_uids:
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
 
@@ -1341,11 +1412,11 @@ class TheanoNodenet(Nodenet):
             if nodespace_to_uid not in partition_to.nodegroups or group_to not in partition_to.nodegroups[nodespace_to_uid]:
                 raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
 
-            if partition_from.spid in partition_to.inlinks:
-                inlinks = partition_to.inlinks[partition_from.spid]
-                indices = np.where((inlinks[0].get_value(borrow=True) == partition_from.nodegroups[nodespace_from_uid][group_from]) &
-                                   (inlinks[1].get_value(borrow=True) == partition_to.nodegroups[nodespace_to_uid][group_to]))[0]
-                return inlinks[2].get_value(borrow=True)[indices]
+            inlinks = partition_to.inlinks[partition_from.spid]
+            indices_from = np.searchsorted(inlinks[0].get_value(borrow=True), partition_from.nodegroups[nodespace_from_uid][group_from])
+            indices_to = np.searchsorted(inlinks[1].get_value(borrow=True), partition_to.nodegroups[nodespace_to_uid][group_to])
+            cols, rows = np.meshgrid(indices_from, indices_to)
+            return inlinks[2].get_value(borrow=True)[rows, cols]
         else:
             return partition_from.get_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to)
 
@@ -1399,10 +1470,10 @@ class TheanoNodenet(Nodenet):
             'off': 0
         }
         data['schemas'] = {
-            'checking': [],
-            'verified': [],
-            'failed': [],
-            'off': [],
+            'checking': 0,
+            'verified': 0,
+            'failed': 0,
+            'off': 0,
             'total': 0
         }
         for uid, partition in self.partitions.items():
@@ -1427,22 +1498,19 @@ class TheanoNodenet(Nodenet):
                     if node.get_gate('gen').activation == 0 and node.get_gate('sub').activation > 0 and len(node.get_gate('sub').get_links()):
                         data['concepts']['checking'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['checking'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['checking'] += 1
                     elif node.get_gate('sub').activation > 0 and node.activation > 0.5:
                         data['concepts']['verified'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['verified'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['verified'] += 1
                     elif node.activation < 0:
                         data['concepts']['failed'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['failed'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['failed'] += 1
                     else:
                         data['concepts']['off'] += 1
                         if node.get_gate('sur').get_links() == []:
-                            data['schemas']['off'].append(node.name)
-                            data['schemas']['total'] += 1
+                            data['schemas']['off'] += 1
+        data['schemas']['total'] = sum(data['schemas'].values())
         data['concepts']['total'] = sum(data['concepts'].values())
         return data

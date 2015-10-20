@@ -139,7 +139,6 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if node.get_slot("por").get_activation(sheaf) == 0 and not node.get_slot("por").empty:
         gen = gen_sur_exp
 
-    sub += max(node.get_slot("sur").get_activation(sheaf), 0)
     sub += node.get_slot("sub").get_activation(sheaf)
     sub += node.get_slot("cat").get_activation(sheaf)
     sub *= max(node.get_slot("por").get_activation(sheaf), 0) if not node.get_slot("por").empty else 1

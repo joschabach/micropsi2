@@ -528,5 +528,17 @@ class NetAPI(object):
         """Allows the netapi to set values for the statistics and dashboard"""
         self.__nodenet.dashboard_values[name] = value
 
+    def decay_por_links(self, nodespace_uid):
+        """ Decayes all por-links in the given nodespace """
+        decay_factor = self.__nodenet.get_modulator('base_porret_decay_factor')
+        nodes = self.get_nodes(nodespace=nodespace_uid, nodetype="Pipe")
+        for uid, node in nodes.items():
+            porgate = node.get_gate('por')
+            pordecay = (1 - self.__nodenet.get_modulator('por_ret_decay'))
+            if decay_factor and pordecay is not None and pordecay > 0:
+                for link in porgate.get_links():
+                    if link.weight > 0:
+                        link._set_weight(max(link.weight * pordecay, 0))
+
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass

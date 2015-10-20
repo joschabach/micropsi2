@@ -194,8 +194,43 @@ class TheanoNode(Node):
                             self._nodenet.delete_link(self.uid, gate_name_candidate, link_candidate.target_node.uid, link_candidate.target_slot.type)
 
     def get_associated_node_uids(self):
-        ids = self._partition.get_associated_node_ids(self._id)
-        return [node_to_id(id, self._partition.pid) for id in ids]
+        numeric_ids_in_same_partition = self._partition.get_associated_node_ids(self._id)
+        ids = [node_to_id(id, self._partition.pid) for id in numeric_ids_in_same_partition]
+
+        # find this node in links coming in from other partitions to this node's partition
+        for partition_from_spid, inlinks in self._partition.inlinks.items():
+            for numeric_slot in range(0, get_slots_per_type(self._numerictype, self._nodenet.native_modules)):
+                element = self._partition.allocated_node_offsets[self._id] + numeric_slot
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
+                if element in to_elements:
+                    from_partition = self._nodenet.partitions[partition_from_spid]
+                    element_index = np.where(to_elements == element)[0][0]
+                    slotrow = weights[element_index]
+                    links_indices = np.nonzero(slotrow)[0]
+                    for link_index in links_indices:
+                        source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                        ids.append(node_to_id(source_id, from_partition.pid))
+
+        # find this node in links going out to other partitions
+        for partition_to_spid, to_partition in self._nodenet.partitions.items():
+            if self._partition.spid in to_partition.inlinks:
+                for numeric_gate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
+                    element = self._partition.allocated_node_offsets[self._id] + numeric_gate
+                    inlinks = to_partition.inlinks[self._partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
+                    if element in from_elements:
+                        element_index = np.where(from_elements == element)[0][0]
+                        gatecolumn = weights[:, element_index]
+                        links_indices = np.nonzero(gatecolumn)[0]
+                        for link_index in links_indices:
+                            target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                            ids.append(node_to_id(target_id, to_partition.pid))
+
+        return ids
 
     def get_parameter(self, parameter):
         return self.clone_parameters().get(parameter, None)

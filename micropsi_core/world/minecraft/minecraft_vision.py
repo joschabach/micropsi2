@@ -1,26 +1,9 @@
-from micropsi_core.world.worldadapter import WorldAdapter
-from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
 from configuration import config as cfg
-import random
-import logging
-from functools import partial
+from .minecraft_graph_locomotion import MinecraftGraphLocomotion
+from .minecraft_projection_mixin import MinecraftProjectionMixin
 
 
-class MinecraftVision(MinecraftGraphLocomotion):
-
-    # see init() for further supported datasources
-    supported_datasources = ['current_location_index']
-
-    # see init() for further supported datatargets
-    supported_datatargets = [
-        'take_exit_one',
-        'take_exit_two',
-        'take_exit_three',
-        'pitch',
-        'yaw'
-    ]
-
-    actions = ['take_exit_one', 'take_exit_two', 'take_exit_three']
+class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
 
     logger = None
 
@@ -54,32 +37,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
     def __init__(self, world, uid=None, **data):
 
-        WorldAdapter.__init__(self, world, uid, **data)
+        super().__init__(world, uid, **data)
 
-        self.datatarget_feedback = {
-            'take_exit_one': 0,
-            'take_exit_two': 0,
-            'take_exit_three': 0
-        }
-
-        # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
-        self.datatarget_history = {
-            'take_exit_one': 0,
-            'take_exit_two': 0,
-            'take_exit_three': 0
-        }
-
-        # a collection of conditions to check on every update(..), eg., for action feedback
-        self.waiting_list = []
-
-        self.target_loco_node_uid = None
-        self.current_loco_node = None
         # don't use fov_act_00_00 because it complicates debug plots
         self.fovea_actor = "fov_act__01_03"
-
-        self.spockplugin = self.world.spockplugin
-        self.waiting_for_spock = True
-        self.logger = logging.getLogger("agent.%s" % self.uid)
 
         # add datasources for fovea sensors aka fov__*_*
         for i in range(self.len_x):
@@ -131,46 +92,15 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
         # first thing when spock initialization is done, determine current loco node
         if self.waiting_for_spock:
-            # by substitution: spock init is considered done, when its client has a position unlike
-            # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
-            if not self.simulated_vision:
-                if self.spockplugin.clientinfo.position['y'] != 0. \
-                        and self.spockplugin.clientinfo.position['x'] != 0:
-                    self.waiting_for_spock = False
-                    x = int(self.spockplugin.clientinfo.position['x'])
-                    y = int(self.spockplugin.clientinfo.position['y'])
-                    z = int(self.spockplugin.clientinfo.position['z'])
-                    for k, v in self.loco_nodes.items():
-                        if abs(x - v['x']) <= self.tp_tolerance \
-                           and abs(y - v['y']) <= self.tp_tolerance \
-                           and abs(z - v['z']) <= self.tp_tolerance:
-                            self.current_loco_node = self.loco_nodes[k]
+            super().update_data_sources_and_targets()
 
-                    if self.current_loco_node is None:
-                        # bot is outside our graph, teleport to a random graph location to get started.
-                        target = random.choice(list(self.loco_nodes.keys()))
-                        self.locomote(target)
-                    # self.locomote(self.village_uid)  # DEBUG
-            else:
-                self.waiting_for_spock = False
         else:
 
-            # reset self.datatarget_feedback
-            for k in self.datatarget_feedback.keys():
-                # reset actions only if not requested anymore
-                if k in self.actions:
-                    if self.datatargets[k] == 0:
-                        self.datatarget_feedback[k] = 0.
-                else:
-                    self.datatarget_feedback[k] = 0.
+            if self.simulated_vision:
+                self.simulate_visual_input(self.len_x, self.len_y)
 
-            if not self.simulated_vision:
-
-                self.datasources['current_location_index'] = self.loco_nodes_indexes.index(self.current_loco_node['name'])
-
-                if not self.spockplugin.is_connected():
-                    return
-
+            else:
+                super().update_data_sources_and_targets()
                 # handle fovea actuators and sensors: action feedback, relay to sensors, default actuator
                 active_fovea_actor = None
                 for x in range(self.tiling_x):
@@ -183,6 +113,7 @@ class MinecraftVision(MinecraftGraphLocomotion):
                         if self.datatargets[actor_name] > 0.:
                             self.datatarget_feedback[actor_name] = 1.
                             active_fovea_actor = actor_name
+
                 # if there's no active_fovea_actor use the last fovea position as default
                 if active_fovea_actor is None:
                     active_fovea_actor = self.fovea_actor
@@ -221,61 +152,12 @@ class MinecraftVision(MinecraftGraphLocomotion):
                 if cfg['minecraft'].get('debug_vision') and fovea_position_changed:
                     self.plot_visual_field()
 
-                self.check_for_action_feedback()
-
-                # read locomotor values, trigger teleportation in the world, and provide action feedback
-                # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-                if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
-                    # if the current node on the transition graph has the selected exit
-                    if self.current_loco_node['exit_one_uid'] is not None:
-                        self.register_action(
-                            'take_exit_one',
-                            partial(self.locomote, self.current_loco_node['exit_one_uid']),
-                            partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
-                        )
-                    else:
-                        self.datatarget_feedback['take_exit_one'] = -1.
-
-                if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
-                    if self.current_loco_node['exit_two_uid'] is not None:
-                        self.register_action(
-                            'take_exit_two',
-                            partial(self.locomote, self.current_loco_node['exit_two_uid']),
-                            partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
-                        )
-                    else:
-                        self.datatarget_feedback['take_exit_two'] = -1.
-
-                if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
-                    if self.current_loco_node['exit_three_uid'] is not None:
-                        self.register_action(
-                            'take_exit_three',
-                            partial(self.locomote, self.current_loco_node['exit_three_uid']),
-                            partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
-                        )
-                    else:
-                        self.datatarget_feedback['take_exit_three'] = -1.
-
-                # update datatarget history
-                for k in self.datatarget_history.keys():
-                    self.datatarget_history[k] = self.datatargets[k]
-
-            else:
-                self.simulate_visual_input(self.len_x, self.len_y)
-
     def locomote(self, target_loco_node_uid):
 
         if cfg['minecraft'].get('debug_vision') and hasattr(self, 'visual_field'):
             self.visual_field = {}
 
         super().locomote(target_loco_node_uid)
-
-    def check_movement_feedback(self, target_loco_node):
-        if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
-           and abs(self.loco_nodes[target_loco_node]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= self.tp_tolerance \
-           and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance:
-            return True
-        return False
 
     def translate_xyz_to_vision_params(self, x_sec, y_sec, z_oom):
         """
@@ -526,3 +408,11 @@ class MinecraftVision(MinecraftGraphLocomotion):
             plt.close()
 
             self.visual_field = {}
+
+    def frange(self, start, end, step):
+        """
+        Range for floats.
+        """
+        while start < end:
+            yield start
+            start += step

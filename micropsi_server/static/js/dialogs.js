@@ -552,7 +552,7 @@ $(function() {
                 parameters[data[i].name] = data[i].value
             }
         }
-        $('#recipe_modal button').attr('disabled', 'disabled');
+        $('#recipe_modal button').prop('disabled', true);
         $('#loading').show();
         api.call('run_recipe', {
             'nodenet_uid': currentNodenet,
@@ -567,18 +567,34 @@ $(function() {
             }
             delete data.reload;
             if(data){
-                html = '<dl>';
-                for(var key in data){
-                    html += "<dt>"+key+":</dt><dd>"+JSON.stringify(data[key])+"</dd>";
+                html = '';
+                if(data.content_type && data.content_type.indexOf("image") > -1){
+                    html += '<p><img src="'+data.content_type+','+data.data+'" /></p>';
+                    delete data.content_type
+                    delete data.data
                 }
-                html += '</dl>';
-                $('#recipe_result .modal-body').html(html);
-                $('#recipe_result').modal('show');
-                $('#recipe_result button').off();
-                if(reload){
-                    $('#recipe_result button').on('click', function(){
+                if(Object.keys(data).length){
+                    html += '<dl>';
+                    for(var key in data){
+                        html += '<dt>'+key+':</dt><dd>'+JSON.stringify(data[key])+'</dd>';
+                    }
+                    html += '</dl>';
+                }
+                if(html){
+                    $('#recipe_result .modal-body').html(html);
+                    $('#recipe_result').modal('show');
+                    $('#recipe_result button').off();
+                    if(reload){
+                        $('#recipe_result button').on('click', function(){
+                            window.location.reload();
+                        });
+                    }
+                } else {
+                    if(reload){
                         window.location.reload();
-                    });
+                    } else {
+                        dialogs.notification("Recipe ran successful", 'success');
+                    }
                 }
             }
         }, function(data){
@@ -592,6 +608,7 @@ $(function() {
     $('#recipe_modal form').on('submit', run_recipe);
     $('.run_recipe').on('click', function(event){
         $('#recipe_modal').modal('show');
+        $('#recipe_modal button').prop('disabled', false);
         api.call('get_available_recipes', {}, function(data){
             recipes = data;
             var options = '';

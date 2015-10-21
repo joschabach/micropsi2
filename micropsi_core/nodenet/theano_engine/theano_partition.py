@@ -884,6 +884,7 @@ class TheanoPartition():
                 w = w.todense()
             self.w = theano.shared(value=w.astype(T.config.floatX), name="w", borrow=False)
             self.a = theano.shared(value=datafile['a'].astype(T.config.floatX), name="a", borrow=False)
+            self.a_in = theano.shared(value=np.zeros_like(datafile['a']).astype(T.config.floatX), name="a_in", borrow=False)
         else:
             self.logger.warn("no w_data, w_indices or w_indptr in file, falling back to defaults")
 

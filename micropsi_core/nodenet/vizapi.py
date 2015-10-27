@@ -11,22 +11,28 @@ import base64
 
 class NodenetPlot(object):
     """ A NodenetPlot object represents an image, that can hold various plots
-    in a grid-layout. You specify the size, and the number of rows and cols of the layout
-    in the constructor.
+    in a grid-layout. You can specify the size of the image, and the layout in
+    rows and cols.
     Then, you can add plots to the image, which will be filled into the gridlayout line by line.
     If the image is complete, you can either retrieve a base64-encoded string-representation of the
-    image, that can be delivered to the client, or save the generated image to a file"""
+    image, that can be delivered to the client, or save the generated image to a file
+    e.g.:
+    >>> image = NodenetPlot(cols=2)
+    >>> image.add_activation_plot(netapi.get_activations(ns1, group1))
+    >>> image.add_linkweights_plot(netapi.get_link_weights(ns1, group1, ns2, group2))
+    >>> image.save_to_file('/tmp/plot.png')
+    """
 
     def __init__(self, plotsize=(6.0, 6.0), rows=1, cols=1, wspace=0.1, hspace=0.1):
         """ Creates a new empty figure.
         The figure can contain a variable number of plots, that are specified via
         the rows and cols parameters.
         Parameters:
-            plotsize - A tuple indicating the (x, y) size of the Image
-            rows - the number of rows of plots
-            cols - the number of cols of plots
-            wspace - vertical spacing between plots
-            hspace - horizontal spacing between plots
+            plotsize - A tuple indicating the (x, y) size of the Image, defaults to (6, 6)
+            rows - the number of rows of plots, defaults to 1
+            cols - the number of cols of plots, defaults to 1
+            wspace - vertical spacing between plots, defaults to 0.1
+            hspace - horizontal spacing between plots, defaults to 0.1
         """
         plt.close()  # attempt to close old instance
         self.figure = plt.figure(figsize=plotsize)

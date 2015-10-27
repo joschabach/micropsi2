@@ -30,7 +30,6 @@ class NetAPI(object):
     def __init__(self, nodenet):
         self.__nodenet = nodenet
         self.__vizapi = vizapi
-        self.__vizapi.netapi = self
 
     def get_nodespace(self, uid):
         """

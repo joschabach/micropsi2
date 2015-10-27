@@ -8,8 +8,6 @@ import matplotlib.gridspec as gridspec
 from io import BytesIO
 import base64
 
-netapi = None  # the netapi itself will fill this parameter
-
 
 class NodenetPlot(object):
     """ A NodenetPlot object represents an image, that can hold various plots
@@ -30,55 +28,94 @@ class NodenetPlot(object):
             wspace - vertical spacing between plots
             hspace - horizontal spacing between plots
         """
+        plt.close()  # attempt to close old instance
         self.figure = plt.figure(figsize=plotsize)
         self.plotindex = 0
         self.rows = rows
         self.cols = cols
         self.grid = gridspec.GridSpec(rows, cols, wspace=wspace, hspace=hspace)
 
-    def add_activation_plot(self, nodespace, groupname):
-        """ Adds a plot of node-activations to the figure
+    def add_activation_plot(self, activations, rows=-1, cols=-1, vmin=0, vmax=1):
+        """ Adds a plot of node-activations to the figure.
+        Per default, the plot will attempt to render the activations into a square image
+        If you have non-quadratic data, you have to give numbers for rows and cols so that the
+        numbers can be reshaped accordingly
         Parameters:
-            nodespace - the uid of the nodespace where the group of nodes resides
-            groupname - the name of the group of nodes
+            activations - array of activations
+            rows - number of rows, defaults to sqrt()
+            cols - number of cols, defaults to sqrt()
+            vmin - minimal value, defaults to 0
+            vmax - maximal value, defaults to 1
         """
-        activations = netapi.get_activations(nodespace, groupname)
-        act = np.array(activations)
-        sz = int(np.ceil(np.sqrt(act.shape[0])))
-        _A = act.reshape((sz, sz))
+        data = np.array(activations)
+        if rows > 0 or cols > 0:
+            matrix = data.reshape((rows, cols))
+        else:
+            sz = int(np.ceil(np.sqrt(data.shape[0])))
+            matrix = data.reshape((sz, sz))
+        self.add_2d_matrix_plot(matrix, vmin=vmin, vmax=vmax)
+
+    def add_linkweights_plot(self, linkweights, wspace=0.1, hspace=0.1, rows_outer=0, cols_outer=0, rows_inner=0, cols_inner=0):
+        """ Adds a plot of linkweights to the figure.
+        Parameters:
+            linkweights - output of netapi.get_link_weights
+            wspace - vertical spacing, defaults to 0.1
+            hspace - horizontal spacing, defaults to 0.1
+            rows_outer - number of rows of linkweight-plots, defaults to sqrt()
+            cols_outer - number of cols of linkweight-plots, defaults to sqrt()
+            rows_inner - number of pixel-rows per linkweight-plot, defaults to sqrt()
+            cols_inner - number of pixel-cols per linkweight-plot, defaults to sqrt()
+        """
+        data = np.array(linkweights)
+        (r, c) = data.shape
+        outer_sqrt = int(np.ceil(np.sqrt(r)))
+        inner_sqrt = int(np.ceil(np.sqrt(c)))
+        matrix = data.reshape((
+            rows_outer or outer_sqrt,
+            cols_outer or outer_sqrt,
+            rows_inner or inner_sqrt,
+            cols_inner or inner_sqrt
+        ))
+        self.add_4d_matrix_plot(matrix, wspace=wspace, hspace=hspace)
+
+    def add_2d_matrix_plot(self, matrix, vmin=0, vmax=1):
+        """ General plotter function to add a two-dimensional plot. The shape
+        of the passed matrix determins the layout in rows and cols of the
+        plot
+        Parameters:
+            data - 2-dimensional numpy matrix
+            vmin - minimal value
+            vmax - maximal value
+        """
         ax = plt.Subplot(self.figure, self.grid[self.plotindex])
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.imshow(_A, cmap=matplotlib.cm.gray, vmin=0.0, vmax=1.0)
+        ax.imshow(matrix, cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax)
         self.figure.add_subplot(ax)
         self.plotindex += 1
 
-    def add_linkweights_plot(self, from_nodespace, from_group, to_nodespace, to_group, wspace=0.1, hspace=0.1):
-        """ Adds a plot of linkweights to the figure.
+    def add_4d_matrix_plot(self, data, wspace=0, hspace=0, vmin=0, vmax=1):
+        """ General plotter function to add a grid of several two-dimensional plots
+        The shape of the passed matrix determins the layout in rows and cols of the
+        plot
         Parameters:
-            from_nodespace - nodespace uid of from_group
-            from_group - the name of the group where the links originate
-            to_nodespace - nodespace uid of to_group
-            to_group - the name of the group where the links terminate
-            wspace - vertical spacing between the tiles
-            hspace - horizontal spacing between the tiles
+            data - 4-dimensional numpy matrix
+            wspace - vertical spacing
+            hspace - horizontal spacing
+            vmin - minimal value
+            vmax - maximal value
         """
-        values = netapi.get_link_weights(from_nodespace, from_group, to_nodespace, to_group)
-        _A = np.array(values)
         # compute rows & cols
-        (row, col) = _A.shape
-        sz = int(np.ceil(np.sqrt(row)))
-        n = int(np.ceil(np.sqrt(col)))
-        m = int(np.ceil(col / n))
-        grid = gridspec.GridSpecFromSubplotSpec(sz, sz, subplot_spec=self.grid[self.plotindex], wspace=wspace, hspace=hspace)
+        (row, col, inner_row, inner_col) = data.shape
+        grid = gridspec.GridSpecFromSubplotSpec(row, col, subplot_spec=self.grid[self.plotindex], wspace=wspace, hspace=hspace)
         for r in range(row):
-            ax = plt.Subplot(self.figure, grid[r])
-            ax.set_xticks([])
-            ax.set_yticks([])
-            # clim = np.max(np.abs(A[r, :]))  # np.max(np.abs(A)
-            # plt.imshow(A[r, :].reshape((n, n)) / clim, cmap=matplotlib.cm.gray)
-            ax.imshow(_A[r, :].reshape((m, n)), cmap=matplotlib.cm.gray)  # , vmin=-1.0, vmax=1.0)
-            self.figure.add_subplot(ax)
+            row_data = data[r, :]
+            for c in range(col):
+                ax = plt.Subplot(self.figure, grid[(r * col + c)])
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.imshow(row_data[c, :], cmap=matplotlib.cm.gray, vmin=vmin, vmax=vmax)
+                self.figure.add_subplot(ax)
         self.plotindex += 1
 
     def save_to_file(self, filename):
@@ -92,4 +129,3 @@ class NodenetPlot(object):
         bio = BytesIO()
         self.figure.savefig(bio, format="png")
         return base64.encodebytes(bio.getvalue()).decode("utf-8")
-

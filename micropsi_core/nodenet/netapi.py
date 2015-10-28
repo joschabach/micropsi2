@@ -25,11 +25,10 @@ class NetAPI(object):
 
     @property
     def vizapi(self):
-        return self.__vizapi
+        return vizapi
 
     def __init__(self, nodenet):
         self.__nodenet = nodenet
-        self.__vizapi = vizapi
 
     def get_nodespace(self, uid):
         """

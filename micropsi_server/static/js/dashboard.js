@@ -241,7 +241,10 @@ $(function(){
 
     function drawPerspective(data){
         if(data.agent_view){
+            $('[data=perspective]').show();
             perspective.html('<img src="'+data.agent_view.content_type+','+data.agent_view.data+'" />')
+        } else {
+            $('[data=perspective]').hide();
         }
     }
 

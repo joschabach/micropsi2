@@ -124,14 +124,23 @@ class NodenetPlot(object):
                 self.figure.add_subplot(ax)
         self.plotindex += 1
 
-    def save_to_file(self, filename):
-        """ saves the generated figure to the given file"""
+    def save_to_file(self, filename, format="png", **params):
+        """ saves the generated figure to the given file
+        Parameters:
+            filename - the target filename. expects absolute paths, or saves to toolkit-root
+            format - the file-format. defaults to png
+            takes additional keyword-arguments for savefig, see http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.savefig
+        """
         filepath = os.path.abspath(filename)
-        self.figure.savefig(filepath, format="png")
+        self.figure.savefig(filepath, format=format, **params)
         return filepath
 
-    def to_base64(self):
-        """ returns the base64 encoded bytestring of the generated figure"""
+    def to_base64(self, format="png", **params):
+        """ returns the base64 encoded bytestring of the generated figure
+        Parameters:
+            format - the file-format. defaults to png
+            takes additional keyword-arguments for savefig, see http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.savefig
+        """
         bio = BytesIO()
-        self.figure.savefig(bio, format="png")
+        self.figure.savefig(bio, format=format, **params)
         return base64.encodebytes(bio.getvalue()).decode("utf-8")

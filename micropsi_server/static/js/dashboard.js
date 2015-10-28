@@ -13,6 +13,8 @@ $(function(){
     var valence = $('#dashboard_valence');
     var protocols = $('#dashboard_protocols');
 
+    var perspective = $('#perspective');
+
     var old_values = {}
 
     function getPollParams(){
@@ -48,9 +50,12 @@ $(function(){
             else if(action_outcome < 0) $('#arrow_modulators').addClass("red");
         }
         drawProtocols(data);
+        drawPerspective(data);
+
         if(!current_state && data.urges) current_state = 'action'
         else if(current_state == 'motivation') current_state = 'modulators'
         else if(current_state == 'modulators') current_state = 'action'
+
     }
 
     register_stepping_function('dashboard', getPollParams, setData);
@@ -234,6 +239,11 @@ $(function(){
         }
     }
 
+    function drawPerspective(data){
+        if(data.agent_view){
+            perspective.html('<img src="'+data.agent_view.content_type+','+data.agent_view.data+'" />')
+        }
+    }
 
     function insertLinebreaks(d) {
         var el = d3.select(this);

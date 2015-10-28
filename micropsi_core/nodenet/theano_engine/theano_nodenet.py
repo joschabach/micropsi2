@@ -234,7 +234,36 @@ class TheanoNodenet(Nodenet):
 
         self.partitions = {}
         self.last_allocated_partition = 0
-        rootpartition = TheanoPartition(self, self.last_allocated_partition)
+
+        average_elements_per_node_assumption = 6
+        configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
+        try:
+            average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
+        except:
+            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+
+        initial_number_of_nodes = 2000
+        configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
+        try:
+            initial_number_of_nodes = int(configured_initial_number_of_nodes)
+        except:
+            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+
+        sparse = True
+        configuredsparse = settings['theano']['sparse_weight_matrix']
+        if configuredsparse == "True":
+            sparse = True
+        elif configuredsparse == "False":
+            sparse = False
+        else:
+            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            sparse = True
+
+        rootpartition = TheanoPartition(self,
+                                        self.last_allocated_partition,
+                                        sparse=sparse,
+                                        initial_number_of_nodes=initial_number_of_nodes,
+                                        average_elements_per_node_assumption=average_elements_per_node_assumption)
         self.partitions[rootpartition.spid] = rootpartition
         self.rootpartition = rootpartition
         self.partitionmap = {}

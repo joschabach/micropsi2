@@ -273,7 +273,7 @@ def test_get_recipes(fixed_nodenet, resourcepath, recipes_def):
     with open(recipes_def, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
-    return count
+    return {'count':count}
 """)
     micropsi.reload_native_modules()
     recipes = micropsi.get_available_recipes()
@@ -287,12 +287,12 @@ def test_run_recipe(fixed_nodenet, resourcepath, recipes_def):
     with open(recipes_def, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
-    return count
+    return {'count':count}
 """)
     micropsi.reload_native_modules()
     state, result = micropsi.run_recipe(fixed_nodenet, 'testfoo', {'count': 42})
     assert state
-    assert result == 42
+    assert result['count'] == 42
 
 
 def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):

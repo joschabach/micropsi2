@@ -1205,7 +1205,7 @@ def test_get_recipes(app, test_nodenet, recipes_def):
     with open(recipes_def, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
-    return quatsch
+    return {'quatsch': quatsch}
 """)
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.get_json('/rpc/get_available_recipes()')
@@ -1221,7 +1221,7 @@ def test_run_recipes(app, test_nodenet, recipes_def):
     with open(recipes_def, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
-    return quatsch
+    return {'quatsch': quatsch}
 """)
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/run_recipe', {
@@ -1232,7 +1232,7 @@ def foobar(netapi, quatsch=23):
         }
     })
     data = response.json_body['data']
-    assert data == 23
+    assert data['quatsch'] == 23
 
 
 def test_get_agent_dashboard(app, test_nodenet, node):

@@ -53,6 +53,11 @@
                     <div id="dashboard_nodes" class="dashboard-item left"></div>
                     <p class="clear"/>
                 </div>
+                <div class="dashboard-section left"  data="perspective">
+                    <h4 class="dashboard-headline">Last Agent Perspective:</h4>
+                    <div id="perspective" class="dashboard-item left"></div>
+                    <p class="clear" />
+                </div>
             </div>
             <p class="clear"/>
         </div>

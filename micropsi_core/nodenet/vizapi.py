@@ -41,7 +41,7 @@ class NodenetPlot(object):
         self.cols = cols
         self.grid = gridspec.GridSpec(rows, cols, wspace=wspace, hspace=hspace)
 
-    def add_activation_plot(self, activations, rows=-1, cols=-1, vmin=0, vmax=1):
+    def add_activation_plot(self, activations, rows=-1, cols=-1, vmin=None, vmax=None):
         """ Adds a plot of node-activations to the figure.
         Per default, the plot will attempt to render the activations into a square image
         If you have non-quadratic data, you have to give numbers for rows and cols so that the
@@ -59,6 +59,7 @@ class NodenetPlot(object):
         else:
             sz = int(np.ceil(np.sqrt(data.shape[0])))
             matrix = data.reshape((sz, sz))
+
         self.add_2d_matrix_plot(matrix, vmin=vmin, vmax=vmax)
 
     def add_linkweights_plot(self, linkweights, wspace=0.1, hspace=0.1, rows_outer=0, cols_outer=0, rows_inner=0, cols_inner=0):
@@ -84,7 +85,7 @@ class NodenetPlot(object):
         ))
         self.add_4d_matrix_plot(matrix, wspace=wspace, hspace=hspace)
 
-    def add_2d_matrix_plot(self, matrix, vmin=0, vmax=1):
+    def add_2d_matrix_plot(self, matrix, vmin=None, vmax=None):
         """ General plotter function to add a two-dimensional plot. The shape
         of the passed matrix determins the layout in rows and cols of the
         plot
@@ -100,7 +101,7 @@ class NodenetPlot(object):
         self.figure.add_subplot(ax)
         self.plotindex += 1
 
-    def add_4d_matrix_plot(self, data, wspace=0, hspace=0, vmin=0, vmax=1):
+    def add_4d_matrix_plot(self, data, wspace=0, hspace=0, vmin=None, vmax=None):
         """ General plotter function to add a grid of several two-dimensional plots
         The shape of the passed matrix determins the layout in rows and cols of the
         plot

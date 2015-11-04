@@ -576,7 +576,12 @@ $(function() {
                 if(Object.keys(data).length){
                     html += '<dl>';
                     for(var key in data){
-                        html += '<dt>'+key+':</dt><dd>'+JSON.stringify(data[key])+'</dd>';
+                        html += '<dt>'+key+':</dt>';
+                        if(typeof data[key] == 'string'){
+                            html += '<dd>'+data[key]+'</dd>';
+                        } else {
+                            html += '<dd>'+JSON.stringify(data[key])+'</dd>';
+                        }
                     }
                     html += '</dl>';
                 }

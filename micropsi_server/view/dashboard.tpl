@@ -41,21 +41,24 @@
                 <p class="clear"/>
             </div>
             <div>
-                <div class="dashboard-section single" data="protocols">
-                    <h4 class="dashboard-headline">Protocols</h4>
-                    <div id="dashboard_protocols"></div>
-                </div>
-            </div>
-            <div>
                 <div class="dashboard-section left">
                     <h4 class="dashboard-headline">Statistics</h4>
                     <div id="dashboard_datatable_concepts" class="dashboard-item left"></div>
                     <div id="dashboard_nodes" class="dashboard-item left"></div>
                     <p class="clear"/>
                 </div>
-                <div class="dashboard-section left"  data="perspective">
-                    <h4 class="dashboard-headline">Last Agent Perspective:</h4>
+            </div>
+            <div>
+                <div class="dashboard-section single" data="protocols">
+                    <h4 class="dashboard-headline">Protocols</h4>
+                    <div id="dashboard_protocols"></div>
+                </div>
+            </div>
+            <div>
+                <div class="dashboard-section"  data="perspective" style="clear:both">
+                    <h4 class="dashboard-headline">Vision</h4>
                     <div id="perspective" class="dashboard-item left"></div>
+                    <div id="hypo" class="dashboard-item left"></div>
                     <p class="clear" />
                 </div>
             </div>

@@ -14,6 +14,7 @@ $(function(){
     var protocols = $('#dashboard_protocols');
 
     var perspective = $('#perspective');
+    var hypo = $('#hypo');
 
     var old_values = {}
 
@@ -240,9 +241,18 @@ $(function(){
     }
 
     function drawPerspective(data){
-        if(data.agent_view){
+        if(data.agent_view || data.hypo_view){
             $('[data=perspective]').show();
-            perspective.html('<img src="'+data.agent_view.content_type+','+data.agent_view.data+'" />')
+            var agent_view = '';
+            var hypo_view = '';
+            if(data.agent_view){
+                agent_view = '<p>Perspective:</p><img src="'+data.agent_view.content_type+','+data.agent_view.data+'" />';
+            }
+            if(data.hypo_view){
+                hypo_view = '<p>Hypothesis:</p><img src="'+data.hypo_view.content_type+','+data.hypo_view.data+'" />';
+            }
+            perspective.html(agent_view);
+            hypo.html(hypo_view);
         } else {
             $('[data=perspective]').hide();
         }

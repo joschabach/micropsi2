@@ -278,7 +278,12 @@ $(function() {
             return dialogs.notification("there is no current nodenet selected");
         }
         if($(event.target).hasClass("reload_revert")){
-            api.call('revert_nodenet', {nodenet_uid: currentNodenet});
+            api.call('reload_native_modules', {}, function(){
+                api.call('revert_nodenet', {nodenet_uid: currentNodenet}, function(){
+                    window.location.reload();
+                });
+            });
+            return
         }
         $('#loading').show();
         api.call('reload_native_modules', {}, function(){

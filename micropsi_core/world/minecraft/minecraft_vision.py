@@ -388,7 +388,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
             (r, c) = A.shape
             image = vizapi.NodenetPlot(plotsize=(7, 3))
             A = A.reshape(3, 7, int(np.sqrt(c)), int(np.sqrt(c)))
-            image.add_4d_matrix_plot(A, hspace=0, wspace=0)
+            image.add_4d_matrix_plot(A, hspace=0, wspace=0, vmin=A.min(), vmax=A.max())
 
             image.save_to_file(filename_png, transparent=True, dpi=300)
 

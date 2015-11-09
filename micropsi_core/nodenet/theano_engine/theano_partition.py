@@ -733,6 +733,7 @@ class TheanoPartition():
 
         from_offset = 0
         to_offset = 0
+        weight_offset = 0
         for i, spid in enumerate(self.inlinks.keys()):
             inlinks_pids[i] = int(spid)
             from_elements = self.inlinks[spid][0].get_value(borrow=True)
@@ -744,7 +745,8 @@ class TheanoPartition():
             inlink_to_lengths[i] = to_length
             inlink_from_elements[from_offset:from_offset+from_length] = from_elements
             inlink_to_elements[to_offset:to_offset+to_length] = to_elements
-            inlink_weights[(from_offset*to_offset):(from_offset*to_offset)+(from_length*to_length)] = np.ravel(weights)
+            inlink_weights[weight_offset:weight_offset+(from_length*to_length)] = np.ravel(weights)
+            weight_offset += from_length * to_length
             from_offset += from_length
             to_offset += to_length
 

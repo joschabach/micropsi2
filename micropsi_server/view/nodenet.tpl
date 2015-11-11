@@ -228,6 +228,13 @@
                         </td>
                     </tr>
                     <tr class="node">
+                        <td> &nbsp;</td>
+                        <td>
+                            <button type="submit" class="btn btn-primary">Apply</button>
+                        </td>
+                    </tr>
+
+                    <tr class="node">
                         <td><label>in links</label></td>
                         <td><table id="node_slots" class="table-striped table-condensed">
                             </table>
@@ -240,9 +247,6 @@
                         </td>
                     </tr>
                 </table>
-                <div class="controls">
-                    <button type="submit" class="btn btn-primary">Apply</button>
-                </div>
             </form>
 
         </div>

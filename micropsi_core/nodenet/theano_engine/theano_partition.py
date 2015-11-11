@@ -1004,7 +1004,6 @@ class TheanoPartition():
         datafile = None
         if os.path.isfile(datafilename):
             try:
-                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
                 datafile = np.load(datafilename)
             except ValueError:
                 self.logger.warn("Could not read nodenet data from file %s" % datafile)

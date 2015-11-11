@@ -90,16 +90,13 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
         """called on every world simulation step to advance the life of the agent"""
 
         # first thing when spock initialization is done, determine current loco node
-        if self.waiting_for_spock:
-            super().update_data_sources_and_targets()
+        if self.simulated_vision:
+            self.simulate_visual_input(self.len_x, self.len_y)
 
         else:
+            super().update_data_sources_and_targets()
 
-            if self.simulated_vision:
-                self.simulate_visual_input(self.len_x, self.len_y)
-
-            else:
-                super().update_data_sources_and_targets()
+            if not self.waiting_for_spock:
                 # handle fovea actuators and sensors: action feedback, relay to sensors, default actuator
                 active_fovea_actor = None
                 for x in range(self.tiling_x):

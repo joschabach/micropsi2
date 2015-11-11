@@ -623,3 +623,7 @@ p.clear {
   background-color: black;
   height: 15px;
 }
+
+.docstring {
+  white-space: pre-line;
+}

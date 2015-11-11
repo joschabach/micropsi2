@@ -1895,11 +1895,7 @@ function onMouseDown(event) {
                 }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
-                    if(nodes[nodeUid].type == "Native"){
-                        showNativeModuleForm(nodeUid);
-                    } else {
-                        showNodeForm(nodeUid);
-                    }
+                    showNodeForm(nodeUid);
                 }
                 // check for slots and gates
                 var i;
@@ -2362,8 +2358,6 @@ function initializeMenus() {
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
     $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
-    $('#edit_native_modal .btn-primary').on('click', createNativeModuleHandler);
-    $('#edit_native_modal form').on('submit', createNativeModuleHandler);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -2628,21 +2622,16 @@ function handleContextMenu(event) {
             if(autoalign){
                 autoalignmentHandler();
             } else if(type) {
-                if (type == "Native"){
-                    createNativeModuleHandler();
+                if(nodenet_data.snap_to_grid){
+                    var xpos = Math.round(clickPosition.x / 10) * 10;
+                    var ypos = Math.round(clickPosition.y / 10) * 10;
+                } else {
+                    var xpos = clickPosition.x;
+                    var ypos = clickPosition.y;
                 }
-                else {
-                    if(nodenet_data.snap_to_grid){
-                        var xpos = Math.round(clickPosition.x / 10) * 10;
-                        var ypos = Math.round(clickPosition.y / 10) * 10;
-                    } else {
-                        var xpos = clickPosition.x;
-                        var ypos = clickPosition.y;
-                    }
-                    createNodeHandler(xpos/viewProperties.zoomFactor,
-                        ypos/viewProperties.zoomFactor,
-                        "", type, null, callback);
-                }
+                createNodeHandler(xpos/viewProperties.zoomFactor,
+                    ypos/viewProperties.zoomFactor,
+                    "", type, null, callback);
             } else{
                 return false;
             }
@@ -2853,31 +2842,6 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             getNodespaceList();
         }
     );
-}
-
-
-function createNativeModuleHandler(event){
-    var modal = $("#edit_native_modal");
-    if(event){
-        event.preventDefault();
-        createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                        clickPosition.y/viewProperties.zoomFactor,
-                        $('#native_module_name').val(),
-                        $('#native_module_type').val(),
-                        {}, null);
-        modal.modal("hide");
-    } else {
-        var html = '';
-        for(var idx in sorted_nodetypes){
-            if(sorted_nodetypes[idx] in native_modules){
-                html += '<option>'+ sorted_nodetypes[idx] +'</option>';
-            }
-        }
-        $('[data-native-module-type]', modal).html(html);
-        $('#native_module_name').val('');
-        modal.modal("show");
-        $('[data-native-module-type]', modal).focus();
-    }
 }
 
 function generateFragment(){
@@ -3594,7 +3558,6 @@ function initializeSidebarForms(){
     $('#edit_gate_form').submit(handleEditGate);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#edit_nodespace_form').submit(handleEditNodespace);
-    $('#native_module_form').submit(createNativeModuleHandler);
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
@@ -3740,13 +3703,6 @@ function getNodeParameterHTML(parameters, parameter_values){
     return html;
 }
 
-function showNativeModuleForm(nodeUid){
-    $('#nodenet_forms .form-horizontal').hide();
-    var form = $('#native_module_form');
-    $('#nodenet_forms').append(form);
-    form.show();
-    //setNativeModuleFormValues(form, nodeUid);
-}
 
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();

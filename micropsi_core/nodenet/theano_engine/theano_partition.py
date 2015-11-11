@@ -787,7 +787,7 @@ class TheanoPartition():
                  inlink_to_elements=inlink_to_elements,
                  inlink_weights=inlink_weights)
 
-    def load(self, datafilename, nodes_data):
+    def load_data(self, datafilename, nodes_data):
         """Load the node net from a file"""
         # try to access file
 
@@ -945,42 +945,7 @@ class TheanoPartition():
         else:
             self.logger.warn("no n_function_selector in file, falling back to defaults")
 
-        if 'inlink_pids' in datafile and \
-            'inlink_from_lengths' in datafile and \
-            'inlink_to_lengths' in datafile and \
-            'inlink_from_elements' in datafile and \
-            'inlink_to_elements' in datafile and \
-            'inlink_weights' in datafile:
-
-            inlink_pids = datafile['inlink_pids']
-            inlink_from_lengths = datafile['inlink_from_lengths']
-            inlink_to_lengths = datafile['inlink_to_lengths']
-
-            inlink_from_offset = 0
-            inlink_to_offset = 0
-            weight_offset = 0
-
-            for i, pid in enumerate(inlink_pids):
-
-                inlink_from_elements = datafile['inlink_from_elements'][inlink_from_offset:inlink_from_offset+inlink_from_lengths[i]]
-                inlink_to_elements = datafile['inlink_to_elements'][inlink_to_offset:inlink_to_offset+inlink_to_lengths[i]]
-                inlink_weights = datafile['inlink_weights'][weight_offset:weight_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
-
-                self.set_inlink_weights(
-                    "%03i" % pid,
-                    inlink_from_elements.astype(np.int32),
-                    inlink_to_elements.astype(np.int32),
-                    np.reshape(inlink_weights, (inlink_to_lengths[i], inlink_from_lengths[i]))
-                )
-
-                weight_offset += inlink_from_lengths[i]*inlink_to_lengths[i]
-                inlink_from_offset += inlink_from_lengths[i]
-                inlink_to_offset += inlink_to_lengths[i]
-        else:
-            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
-
         # reconstruct other states
-
         self.por_ret_dirty = True
 
         if 'g_function_selector' in datafile:
@@ -1034,6 +999,56 @@ class TheanoPartition():
             self.__rebuild_shifted()
         if self.has_directional_activators or self.__has_sampling_activators:
             self.__calculate_g_factors()
+
+    def load_inlinks(self, datafilename):
+        datafile = None
+        if os.path.isfile(datafilename):
+            try:
+                self.logger.info("Loading nodenet %s partition %i bulk data from file %s" % (self.nodenet.name, self.pid, datafilename))
+                datafile = np.load(datafilename)
+            except ValueError:
+                self.logger.warn("Could not read nodenet data from file %s" % datafile)
+                return False
+            except IOError:
+                self.logger.warn("Could not open nodenet file %s" % datafile)
+                return False
+
+        if not datafile:
+            return
+
+        if 'inlink_pids' in datafile and \
+            'inlink_from_lengths' in datafile and \
+            'inlink_to_lengths' in datafile and \
+            'inlink_from_elements' in datafile and \
+            'inlink_to_elements' in datafile and \
+            'inlink_weights' in datafile:
+
+            inlink_pids = datafile['inlink_pids']
+            inlink_from_lengths = datafile['inlink_from_lengths']
+            inlink_to_lengths = datafile['inlink_to_lengths']
+
+            inlink_from_offset = 0
+            inlink_to_offset = 0
+            weight_offset = 0
+
+            for i, pid in enumerate(inlink_pids):
+
+                inlink_from_elements = datafile['inlink_from_elements'][inlink_from_offset:inlink_from_offset+inlink_from_lengths[i]]
+                inlink_to_elements = datafile['inlink_to_elements'][inlink_to_offset:inlink_to_offset+inlink_to_lengths[i]]
+                inlink_weights = datafile['inlink_weights'][weight_offset:weight_offset+(inlink_from_lengths[i]*inlink_to_lengths[i])]
+
+                self.set_inlink_weights(
+                    "%03i" % pid,
+                    inlink_from_elements.astype(np.int32),
+                    inlink_to_elements.astype(np.int32),
+                    np.reshape(inlink_weights, (inlink_to_lengths[i], inlink_from_lengths[i]))
+                )
+
+                weight_offset += inlink_from_lengths[i]*inlink_to_lengths[i]
+                inlink_from_offset += inlink_from_lengths[i]
+                inlink_to_offset += inlink_to_lengths[i]
+        else:
+            self.logger.warn("no or incomplete inlink information in file, no inter-partition links will be loaded")
 
     def grow_number_of_nodespaces(self, growby):
 

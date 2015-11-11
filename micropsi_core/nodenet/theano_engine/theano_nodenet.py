@@ -347,7 +347,11 @@ class TheanoNodenet(Nodenet):
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load(datafilename, nodes_data)
+                partition.load_data(datafilename, nodes_data)
+
+            for partition in self.partitions.values():
+                datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
+                partition.load_inlinks(datafilename)
 
             # reloading native modules ensures the types in allocated_nodes are up to date
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes

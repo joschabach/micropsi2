@@ -1,5 +1,8 @@
 
-from . import vizapi
+try:
+    from . import vizapi
+except ImportError:
+    vizapi = None
 
 
 class NetAPI(object):

@@ -695,7 +695,8 @@ function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
-        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
+            !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid] ||
+            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].sheaves[currentSheaf].activation) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();

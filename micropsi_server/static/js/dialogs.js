@@ -658,7 +658,7 @@ unregister_stepping_function = function(type){
     delete listeners[type];
 }
 
-
+busy = false;
 fetch_stepping_info = function(){
     params = {
         nodenet_uid: currentNodenet
@@ -666,7 +666,9 @@ fetch_stepping_info = function(){
     for (key in listeners){
         params[key] = listeners[key].input()
     }
+    busy = true;
     api.call('get_current_state', params, success=function(data){
+        busy = false;
         var start = new Date().getTime();
         for(key in listeners){
             if(data[key]){
@@ -698,7 +700,7 @@ fetch_stepping_info = function(){
         }
 
         var end = new Date().getTime();
-        if(data.simulation_running){
+        if(data.simulation_running && !busy){
             if(runner_properties.timestep - (end - start) > 0){
                 window.setTimeout(fetch_stepping_info, runner_properties.timestep - (end - start));
             } else {

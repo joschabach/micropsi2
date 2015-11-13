@@ -69,6 +69,17 @@
                 </li>
                 %end
                 %end
+                <li class="dropdown" id="menu_config">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_view">View
+                        <b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/">Default</a></li>
+                        <li><a href="/nodenet">Nodenet</a></li>
+                        <li><a href="/monitors">Monitors</a></li>
+                        <li><a href="/world">World</a></li>
+                        <li><a href="/dashboard">Dashboard</a></li>
+                    </ul>
+                </li>
                 <li class="dropdown" id="menu_help">
                     <a href="/about">About</a>
                 </li>

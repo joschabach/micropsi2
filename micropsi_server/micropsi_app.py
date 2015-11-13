@@ -231,16 +231,6 @@ def about():
     return template("about", version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@micropsi_app.route("/docs")
-def documentation():
-    return template("documentation", version=VERSION)
-
-
-@micropsi_app.route("/contact")
-def contact():
-    return template("contact", version=VERSION)
-
-
 @micropsi_app.route("/logout")
 def logout():
     user_id, permissions, token = get_request_data()

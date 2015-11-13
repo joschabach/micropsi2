@@ -70,14 +70,7 @@
                 %end
                 %end
                 <li class="dropdown" id="menu_help">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_help">Help
-                        <b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="/about">About</a></li>
-                        <li><a href="/docs">Documentation</a></li>
-                        <li class="divider"></li>
-                        <li><a href="/contact">Contact</a></li>
-                    </ul>
+                    <a href="/about">About</a>
                 </li>
             </ul>
             %if defined('user_id'):

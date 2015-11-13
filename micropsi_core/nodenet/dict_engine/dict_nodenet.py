@@ -323,7 +323,7 @@ class DictNodenet(Nodenet):
         if type in self._nodetypes:
             return self._nodetypes[type]
         else:
-            return self._native_modules.get(type)
+            return self._native_modules[type]
 
     def get_nodespace_data(self, nodespace, include_links):
         data = {

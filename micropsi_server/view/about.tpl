@@ -20,9 +20,13 @@
         <h3>License</h3>
         MicroPsi 2 is under MIT license.
     </div>
-    <div class="row-fluid">
-        <a class="btn btn-large" href="/">Back</a>
-    </div>
+
+    <h2>Contact</h2>
+    <ul>
+        <li><a href="http://micropsi.com">micropsi.com</a></li>
+        <li><a href="http://micropsi-industries.com">micropsi-industries.com</a></li>
+        <li>#micropsi on freenode</li>
+    </ul>
 </div>
 
 

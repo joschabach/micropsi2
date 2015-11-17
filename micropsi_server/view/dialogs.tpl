@@ -98,6 +98,7 @@
                 <input type="hidden" name="monitor_type" id="monitor_type"/>
                 <input type="hidden" name="monitor_node_uid_input" id="monitor_node_uid_input"/>
             </fieldset>
+            <input type="submit" style="display:none"/>
         </form>
     </div>
     <div class="modal-footer">
@@ -112,7 +113,8 @@
         <h3>Run Recipe</h3>
     </div>
     <div class="modal-body">
-        <p>You can place a python file with useful functions called "recipes.py" in your resource directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
+        <p class="default_explanation">You can place a python file with useful functions called "recipes.py" in your resource directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
+        <p class="docstring"></p>
         <form class="form-horizontal">
             <fieldset>
                 <div class="control-group">
@@ -130,6 +132,18 @@
     <div class="modal-footer">
         <button class="btn" data-dismiss="modal">Close</button>
         <button class="btn btn-primary">Run</button>
+    </div>
+</div>
+
+<div id="recipe_result" class="modal hide">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">×</button>
+      <h3>Result</h3>
+    </div>
+    <div class="modal-body">
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
     </div>
 </div>
 
@@ -160,6 +174,7 @@
             </fieldset>
             <fieldset class="recipe_param_container">
             </fieldset>
+            <input type="submit" style="display:none"/>
         </form>
     </div>
     <div class="modal-footer">

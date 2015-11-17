@@ -71,24 +71,3 @@ class DictCalculate(Calculate):
     def calculate_node_functions(self, nodes):
         for uid, node in nodes.copy().items():
             node.node_function()
-
-
-class DictPORRETDecay(StepOperator):
-    """
-    Implementation of POR/RET link decaying
-    """
-
-    @property
-    def priority(self):
-        return 100
-
-    def execute(self, nodenet, nodes, netapi):
-        decay_factor = nodenet.get_modulator('base_porret_decay_factor')
-        for uid, node in nodes.items():
-            if node.type in ['Concept', 'Script', 'Pipe']:
-                porgate = node.get_gate('por')
-                pordecay = (1 - nodenet.get_modulator('por_ret_decay'))
-                if decay_factor and pordecay is not None and pordecay > 0:
-                    for link in porgate.get_links():
-                        if link.weight > 0:
-                            link._set_weight(max(link.weight * pordecay, 0))

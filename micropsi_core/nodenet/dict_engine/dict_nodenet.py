@@ -3,13 +3,12 @@ __author__ = 'rvuine'
 import json
 import os
 
-import warnings
 import micropsi_core
 from micropsi_core.nodenet import monitor
 from micropsi_core.nodenet.node import Nodetype
-from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION, NodenetLockException
+from micropsi_core.nodenet.nodenet import Nodenet, NODENET_VERSION
 from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators
-from .dict_stepoperators import DictPropagate, DictPORRETDecay, DictCalculate
+from .dict_stepoperators import DictPropagate, DictCalculate
 from .dict_node import DictNode
 from .dict_nodespace import DictNodespace
 import copy
@@ -88,10 +87,45 @@ STANDARD_NODETYPES = {
         "name": "Activator",
         "slottypes": ["gen"],
         "parameters": ["type"],
-        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref"]},
+        "parameter_values": {"type": ["por", "ret", "sub", "sur", "cat", "exp", "sym", "ref", "sampling"]},
         "nodefunction_name": "activator"
+    },
+    "LSTM": {
+        "name": "LSTM",
+        "slottypes": ["gen", "por", "gin", "gou", "gfg"],
+        "gatetypes": ["gen", "por", "gin", "gou", "gfg"],
+        "nodefunction_name": "lstm",
+        "symbol": "◷",
+        "gate_defaults": {
+            "gen": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "por": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gin": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gou": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            },
+            "gfg": {
+                "minimum": -1000,
+                "maximum": 1000,
+                "threshold": -1000
+            }
+        }
     }
 }
+
 
 class DictNodenet(Nodenet):
     """Main data structure for MicroPsi agents,
@@ -120,7 +154,7 @@ class DictNodenet(Nodenet):
         data['links'] = self.construct_links_dict()
         data['nodes'] = self.construct_nodes_dict()
         data['nodespaces'] = self.construct_nodespaces_dict("Root")
-        data['version'] = self.__version
+        data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
 
@@ -130,7 +164,7 @@ class DictNodenet(Nodenet):
 
     @property
     def current_step(self):
-        return self.__step
+        return self._step
 
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
         """Create a new MicroPsi agent.
@@ -144,29 +178,26 @@ class DictNodenet(Nodenet):
 
         super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid)
 
-        self.stepoperators = [DictPropagate(), DictCalculate(), DictPORRETDecay(), DoernerianEmotionalModulators()]
+        self.stepoperators = [DictPropagate(), DictCalculate(), DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)
 
-        self.__version = NODENET_VERSION  # used to check compatibility of the node net data
-        self.__step = 0
-        self.__modulators = {
+        self._version = NODENET_VERSION  # used to check compatibility of the node net data
+        self._step = 0
+        self._modulators = {
             'por_ret_decay': 0.
         }
 
-        if world and worldadapter:
-            self.worldadapter = worldadapter
+        self._nodes = {}
+        self._nodespaces = {}
+        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
-        self.__nodes = {}
-        self.__nodespaces = {}
-        self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
-
-        self.__nodetypes = {}
+        self._nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
-            self.__nodetypes[type] = Nodetype(nodenet=self, **data)
+            self._nodetypes[type] = Nodetype(nodenet=self, **data)
 
-        self.__native_modules = {}
+        self._native_modules = {}
         for type, data in native_modules.items():
-            self.__native_modules[type] = Nodetype(nodenet=self, **data)
+            self._native_modules[type] = Nodetype(nodenet=self, **data)
 
         self.nodegroups = {}
 
@@ -193,12 +224,13 @@ class DictNodenet(Nodenet):
                     with open(filename) as file:
                         initfrom.update(json.load(file))
                 except ValueError:
-                    warnings.warn("Could not read nodenet data")
+                    self.logger.warn("Could not read nodenet data")
                     return False
                 except IOError:
-                    warnings.warn("Could not open nodenet file")
+                    self.logger.warn("Could not open nodenet file")
+                    return False
 
-            if self.__version == NODENET_VERSION:
+            if self._version == NODENET_VERSION:
                 self.initialize_nodenet(initfrom)
                 return True
             else:
@@ -210,19 +242,19 @@ class DictNodenet(Nodenet):
     def reload_native_modules(self, native_modules):
         """ reloads the native-module definition, and their nodefunctions
         and afterwards reinstantiates the nodenet."""
-        self.__native_modules = {}
+        self._native_modules = {}
         for key in native_modules:
-            self.__native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
+            self._native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
         saved = self.data
         self.clear()
         self.merge_data(saved, keep_uids=True)
 
     def initialize_nodespace(self, id, data):
-        if id not in self.__nodespaces:
+        if id not in self._nodespaces:
             # move up the nodespace tree until we find an existing parent or hit root
-            while id != 'Root' and data[id].get('parent_nodespace') not in self.__nodespaces:
+            while id != 'Root' and data[id].get('parent_nodespace') not in self._nodespaces:
                 self.initialize_nodespace(data[id]['parent_nodespace'], data)
-            self.__nodespaces[id] = DictNodespace(self,
+            self._nodespaces[id] = DictNodespace(self,
                 data[id].get('parent_nodespace'),
                 data[id].get('position'),
                 name=data[id].get('name', 'Root'),
@@ -236,11 +268,14 @@ class DictNodenet(Nodenet):
         computation of the node net
         """
 
-        self.__modulators = initfrom.get("modulators", {})
+        self._modulators = initfrom.get("modulators", {})
+
+        if initfrom.get('runner_condition'):
+            self.set_runner_condition(initfrom['runner_condition'])
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
-        self.__nodespaces = {}
-        self.__nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
+        self._nodespaces = {}
+        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
@@ -285,14 +320,12 @@ class DictNodenet(Nodenet):
 
     def get_nodetype(self, type):
         """ Returns the nodetpype instance for the given nodetype or native_module or None if not found"""
-        if type in self.__nodetypes:
-            return self.__nodetypes[type]
+        if type in self._nodetypes:
+            return self._nodetypes[type]
         else:
-            return self.__native_modules.get(type)
+            return self._native_modules[type]
 
     def get_nodespace_data(self, nodespace, include_links):
-        world_uid = self.world.uid if self.world is not None else None
-
         data = {
             'links': {},
             'nodes': {},
@@ -301,16 +334,13 @@ class DictNodenet(Nodenet):
             'is_active': self.is_active,
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
-            'world': world_uid,
+            'world': self.world,
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
-        if self.user_prompt is not None:
-            data['user_prompt'] = self.user_prompt.copy()
-            self.user_prompt = None
         links = []
         followupnodes = []
-        for uid in self.__nodes:
+        for uid in self._nodes:
             if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                 node = self.get_node(uid)
                 data['nodes'][uid] = node.data
@@ -330,40 +360,40 @@ class DictNodenet(Nodenet):
         return data
 
     def delete_node(self, node_uid):
-        if node_uid in self.__nodespaces:
-            affected_entity_ids = self.__nodespaces[node_uid].get_known_ids()
+        if node_uid in self._nodespaces:
+            affected_entity_ids = self._nodespaces[node_uid].get_known_ids()
             for uid in affected_entity_ids:
                 self.delete_node(uid)
-            parent_nodespace = self.__nodespaces.get(self.__nodespaces[node_uid].parent_nodespace)
+            parent_nodespace = self._nodespaces.get(self._nodespaces[node_uid].parent_nodespace)
             if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
                 parent_nodespace._unregister_entity('nodespaces', node_uid)
-            del self.__nodespaces[node_uid]
+            del self._nodespaces[node_uid]
         else:
-            node = self.__nodes[node_uid]
+            node = self._nodes[node_uid]
             node.unlink_completely()
-            parent_nodespace = self.__nodespaces.get(self.__nodes[node_uid].parent_nodespace)
+            parent_nodespace = self._nodespaces.get(self._nodes[node_uid].parent_nodespace)
             parent_nodespace._unregister_entity('nodes', node_uid)
-            if self.__nodes[node_uid].type == "Activator":
-                parent_nodespace.unset_activator_value(self.__nodes[node_uid].get_parameter('type'))
-            del self.__nodes[node_uid]
+            if self._nodes[node_uid].type == "Activator":
+                parent_nodespace.unset_activator_value(self._nodes[node_uid].get_parameter('type'))
+            del self._nodes[node_uid]
 
     def delete_nodespace(self, uid):
         self.delete_node(uid)
 
     def clear(self):
         super(DictNodenet, self).clear()
-        self.__nodes = {}
+        self._nodes = {}
 
         self.max_coords = {'x': 0, 'y': 0}
 
-        self.__nodespaces = {}
+        self._nodespaces = {}
         DictNodespace(self, None, (0, 0), "Root", "Root")
 
     def _register_node(self, node):
-        self.__nodes[node.uid] = node
+        self._nodes[node.uid] = node
 
     def _register_nodespace(self, nodespace):
-        self.__nodespaces[nodespace.uid] = nodespace
+        self._nodespaces[nodespace.uid] = nodespace
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -374,6 +404,7 @@ class DictNodenet(Nodenet):
             self.initialize_nodespace(nodespace, nodenet_data['nodespaces'])
 
         uidmap = {}
+        invalid_nodes = []
 
         # merge in nodes
         for uid in nodenet_data.get('nodes', {}):
@@ -384,14 +415,21 @@ class DictNodenet(Nodenet):
                 newuid = uid
             data['uid'] = newuid
             uidmap[uid] = newuid
-            if data['type'] in self.__nodetypes or data['type'] in self.__native_modules:
-                self.__nodes[newuid] = DictNode(self, **data)
-            else:
-                warnings.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+            if data['type'] not in self._nodetypes and data['type'] not in self._native_modules:
+                self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
+                data['parameters'] = {
+                    'comment': 'There was a %s node here' % data['type']
+                }
+                data['type'] = 'Comment'
+                data.pop('gate_parameters', '')
+                invalid_nodes.append(uid)
+            self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links
         for linkid in nodenet_data.get('links', {}):
             data = nodenet_data['links'][linkid]
+            if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
+                continue
             self.create_link(
                 uidmap[data['source_node_uid']],
                 data['source_gate_name'],
@@ -408,27 +446,26 @@ class DictNodenet(Nodenet):
                     data['node_uid'] = uidmap[old_node_uid]
             if 'classname' in data:
                 if hasattr(monitor, data['classname']):
-                    getattr(monitor, data['classname'])(self, **data)
+                    mon = getattr(monitor, data['classname'])(self, **data)
+                    self._monitors[mon.uid] = mon
                 else:
                     self.logger.warn('unknown classname for monitor: %s (uid:%s) ' % (data['classname'], monitorid))
             else:
                 # Compatibility mode
-                monitor.NodeMonitor(self, name=data['node_name'], **data)
+                mon = monitor.NodeMonitor(self, name=data['node_name'], **data)
+                self._monitors[mon.uid] = mon
 
     def step(self):
         """perform a simulation step"""
-        self.user_prompt = None
-        if self.world is not None and self.world.agents is not None and self.uid in self.world.agents:
-            self.world.agents[self.uid].snapshot()      # world adapter snapshot
-                                                        # TODO: Not really sure why we don't just know our world adapter,
-                                                        # but instead the world object itself
+        if self.worldadapter_instance:
+            self.worldadapter_instance.snapshot()
 
         with self.netlock:
 
-            for operator in self.stepoperators:
-                operator.execute(self, self.__nodes.copy(), self.netapi)
+            self._step += 1
 
-            self.__step += 1
+            for operator in self.stepoperators:
+                operator.execute(self, self._nodes.copy(), self.netapi)
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
@@ -448,12 +485,12 @@ class DictNodenet(Nodenet):
         return nodespace.uid
 
     def get_node(self, uid):
-        return self.__nodes[uid]
+        return self._nodes[uid]
 
     def get_nodespace(self, uid):
         if uid is None:
             uid = "Root"
-        return self.__nodespaces[uid]
+        return self._nodespaces[uid]
 
     def get_node_uids(self, group_nodespace_uid=None, group=None):
         if group is not None:
@@ -461,54 +498,54 @@ class DictNodenet(Nodenet):
                 group_nodespace_uid = self.get_nodespace(None).uid
             return [n.uid for n in self.nodegroups[group_nodespace_uid][group][0]]
         else:
-            return list(self.__nodes.keys())
+            return list(self._nodes.keys())
 
     def get_nodespace_uids(self):
-        return list(self.__nodespaces.keys())
+        return list(self._nodespaces.keys())
 
     def is_node(self, uid):
-        return uid in self.__nodes
+        return uid in self._nodes
 
     def is_nodespace(self, uid):
-        return uid in self.__nodespaces
+        return uid in self._nodespaces
 
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
+        nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')
         nativemodules = {}
         for uid in nodes:
-            if self.__nodes[uid].type not in STANDARD_NODETYPES:
-                nativemodules.update({uid: self.__nodes[uid]})
+            if self._nodes[uid].type not in STANDARD_NODETYPES:
+                nativemodules.update({uid: self._nodes[uid]})
         return nativemodules
 
     def get_activators(self, nodespace=None, type=None):
         """Returns a dict of activator nodes. OPtionally filtered by the given nodespace and the given type"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
+        nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')
         activators = {}
         for uid in nodes:
-            if self.__nodes[uid].type == 'Activator':
-                if type is None or type == self.__nodes[uid].get_parameter('type'):
-                    activators.update({uid: self.__nodes[uid]})
+            if self._nodes[uid].type == 'Activator':
+                if type is None or type == self._nodes[uid].get_parameter('type'):
+                    activators.update({uid: self._nodes[uid]})
         return activators
 
     def get_sensors(self, nodespace=None, datasource=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
+        nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')
         sensors = {}
         for uid in nodes:
-            if self.__nodes[uid].type == 'Sensor':
-                if datasource is None or self.__nodes[uid].get_parameter('datasource') == datasource:
-                    sensors[uid] = self.__nodes[uid]
+            if self._nodes[uid].type == 'Sensor':
+                if datasource is None or self._nodes[uid].get_parameter('datasource') == datasource:
+                    sensors[uid] = self._nodes[uid]
         return sensors
 
     def get_actors(self, nodespace=None, datatarget=None):
         """Returns a dict of all sensor nodes. Optionally filtered by the given nodespace"""
-        nodes = self.__nodes if nodespace is None else self.__nodespaces[nodespace].get_known_ids('nodes')
+        nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')
         actors = {}
         for uid in nodes:
-            if self.__nodes[uid].type == 'Actor':
-                if datatarget is None or self.__nodes[uid].get_parameter('datatarget') == datatarget:
-                    actors[uid] = self.__nodes[uid]
+            if self._nodes[uid].type == 'Actor':
+                if datatarget is None or self._nodes[uid].get_parameter('datatarget') == datatarget:
+                    actors[uid] = self._nodes[uid]
         return actors
 
     def set_link_weight(self, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
@@ -560,25 +597,25 @@ class DictNodenet(Nodenet):
         """
         Returns the numeric value of the given global modulator
         """
-        return self.__modulators.get(modulator, 1)
+        return self._modulators.get(modulator, 1)
 
     def change_modulator(self, modulator, diff):
         """
         Changes the value of the given global modulator by the value of diff
         """
-        self.__modulators[modulator] = self.__modulators.get(modulator, 0) + diff
+        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
 
     def construct_modulators_dict(self):
         """
         Returns a new dict containing all modulators
         """
-        return self.__modulators.copy()
+        return self._modulators.copy()
 
     def set_modulator(self, modulator, value):
         """
         Changes the value of the given global modulator to the given value
         """
-        self.__modulators[modulator] = value
+        self._modulators[modulator] = value
 
     def get_standard_nodetype_definitions(self):
         """
@@ -586,19 +623,22 @@ class DictNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
         if nodespace_uid not in self.nodegroups:
             self.nodegroups[nodespace_uid] = {}
 
+        if group_name is None:
+            group_name = node_name_prefix
+
         nodes = self.netapi.get_nodes(nodespace_uid, node_name_prefix)
         if sortby == 'id':
             nodes = sorted(nodes, key=lambda node: node.uid)
         elif sortby == 'name':
             nodes = sorted(nodes, key=lambda node: node.name)
-        self.nodegroups[nodespace_uid][node_name_prefix] = (nodes, gatetype)
+        self.nodegroups[nodespace_uid][group_name] = (nodes, gatetype)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gatetype="gen", sortby='id'):
         if nodespace_uid is None:
@@ -736,3 +776,61 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+
+    def get_dashboard(self):
+        data = super(DictNodenet, self).get_dashboard()
+        link_uids = []
+        node_uids = self.get_node_uids()
+        data['count_nodes'] = len(node_uids)
+        data['count_positive_nodes'] = 0
+        data['count_negative_nodes'] = 0
+        data['nodetypes'] = {"NativeModules": 0}
+        data['concepts'] = {
+            'checking': 0,
+            'verified': 0,
+            'failed': 0,
+            'off': 0
+        }
+        data['schemas'] = {
+            'checking': 0,
+            'verified': 0,
+            'failed': 0,
+            'off': 0,
+            'total': 0
+        }
+        for uid in node_uids:
+            node = self.get_node(uid)
+            link_uids.extend(node.get_associated_links())
+            if node.type in STANDARD_NODETYPES:
+                if node.type not in data['nodetypes']:
+                    data['nodetypes'][node.type] = 1
+                else:
+                    data['nodetypes'][node.type] += 1
+            else:
+                data['nodetypes']['NativeModules'] += 1
+            if node.activation > 0:
+                data['count_positive_nodes'] += 1
+            elif node.activation < 0:
+                data['count_negative_nodes'] += 1
+            if node.type == 'Pipe':
+                if node.get_gate('gen').activation == 0 and node.get_gate('sub').activation > 0 and len(node.get_gate('sub').get_links()):
+                    data['concepts']['checking'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['checking'] += 1
+                elif node.get_gate('sub').activation > 0 and node.activation > 0.5:
+                    data['concepts']['verified'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['verified'] += 1
+                elif node.activation < 0:
+                    data['concepts']['failed'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['failed'] += 1
+                else:
+                    data['concepts']['off'] += 1
+                    if node.get_gate('sur').get_links() == []:
+                        data['schemas']['off'] += 1
+        data['concepts']['total'] = sum(data['concepts'].values())
+        data['schemas']['total'] = sum(data['schemas'].values())
+        data['modulators'] = self.construct_modulators_dict()
+        data['count_links'] = len(set(link_uids))
+        return data

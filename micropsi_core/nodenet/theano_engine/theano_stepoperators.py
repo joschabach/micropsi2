@@ -1,11 +1,5 @@
 
-from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
-import theano
-from theano import tensor as T
-from theano import shared
-from theano import function
-from theano.tensor import nnet as N
-import theano.sparse as ST
+from micropsi_core.nodenet.stepoperators import Propagate, Calculate
 import numpy as np
 from micropsi_core.nodenet.theano_engine.theano_node import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
@@ -32,6 +26,7 @@ class TheanoPropagate(Propagate):
         for partition in nodenet.partitions.values():
             partition.propagate()
 
+
 class TheanoCalculate(Calculate):
     """
         theano implementation of the Calculate operator.
@@ -42,30 +37,30 @@ class TheanoCalculate(Calculate):
 
     def __init__(self, nodenet):
         self.calculate = None
-        self.world = None
+        self.worldadapter = None
         self.nodenet = nodenet
 
     def read_sensors_and_actuator_feedback(self):
-        if self.world is None:
+        if self.worldadapter is None:
             return
 
         datasource_to_value_map = {}
-        for datasource in self.world.get_available_datasources(self.nodenet.uid):
-            datasource_to_value_map[datasource] = self.world.get_datasource(self.nodenet.uid, datasource)
+        for datasource in self.worldadapter.get_available_datasources():
+            datasource_to_value_map[datasource] = self.worldadapter.get_datasource(datasource)
 
         datatarget_to_value_map = {}
-        for datatarget in self.world.get_available_datatargets(self.nodenet.uid):
-            datatarget_to_value_map[datatarget] = self.world.get_datatarget_feedback(self.nodenet.uid, datatarget)
+        for datatarget in self.worldadapter.get_available_datatargets():
+            datatarget_to_value_map[datatarget] = self.worldadapter.get_datatarget_feedback(datatarget)
 
         self.nodenet.set_sensors_and_actuator_feedback_to_values(datasource_to_value_map, datatarget_to_value_map)
 
     def write_actuators(self):
-        if self.world is None:
+        if self.worldadapter is None:
             return
 
         values_to_write = self.nodenet.read_actuators()
         for datatarget in values_to_write:
-            self.world.add_to_datatarget(self.nodenet.uid, datatarget, values_to_write[datatarget])
+            self.worldadapter.add_to_datatarget(datatarget, values_to_write[datatarget])
 
     def count_success_and_failure(self, nodenet):
         nays = 0
@@ -78,26 +73,10 @@ class TheanoCalculate(Calculate):
         nodenet.set_modulator('base_number_of_unexpected_events', nays)
 
     def execute(self, nodenet, nodes, netapi):
-        self.world = nodenet.world
+        self.worldadapter = nodenet.worldadapter_instance
 
         self.write_actuators()
         self.read_sensors_and_actuator_feedback()
         for partition in nodenet.partitions.values():
             partition.calculate()
         self.count_success_and_failure(nodenet)
-
-
-class TheanoPORRETDecay(StepOperator):
-    """
-    Implementation of POR/RET link decaying.
-    This is a pure numpy implementation right now, as theano doesn't like setting subtensors with fancy indexing
-    on sparse matrices.
-    """
-
-    @property
-    def priority(self):
-        return 100
-
-    def execute(self, nodenet, nodes, netapi):
-       for partition in nodenet.partitions.values():
-            partition.por_ret_decay()

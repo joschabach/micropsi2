@@ -117,9 +117,10 @@ def new_world(world_name, world_type, owner="", uid=None):
 
 def delete_world(world_uid):
     """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
-    for uid in micropsi_core.runtime.nodenets:
-        if micropsi_core.runtime.nodenets[uid].world and micropsi_core.runtime.nodenets[uid].world.uid == world_uid:
-            micropsi_core.runtime.nodenets[uid].world = None
+    world = micropsi_core.runtime.worlds[world_uid]
+    for uid in world.agents:
+        world.unregister_agent(micropsi_core.runtime.nodenets[uid])
+        nodenets[uid].world = None
     del micropsi_core.runtime.worlds[world_uid]
     os.remove(micropsi_core.runtime.world_data[world_uid].filename)
     del micropsi_core.runtime.world_data[world_uid]

@@ -1,29 +1,9 @@
-from micropsi_core.world.worldadapter import WorldAdapter
-from micropsi_core.world.minecraft.minecraft_graph_locomotion import MinecraftGraphLocomotion
-from micropsi_core import tools
 from configuration import config as cfg
-import random
-import logging
-import time
-from functools import partial
-from math import sqrt, radians, cos, sin, tan
+from .minecraft_graph_locomotion import MinecraftGraphLocomotion
+from .minecraft_projection_mixin import MinecraftProjectionMixin
 
 
-class MinecraftVision(MinecraftGraphLocomotion):
-
-    # see init() for further supported datasources
-    supported_datasources = ['current_location_index']
-
-    # see init() for further supported datatargets
-    supported_datatargets = [
-        'take_exit_one',
-        'take_exit_two',
-        'take_exit_three',
-        'pitch',
-        'yaw'
-    ]
-
-    actions = ['take_exit_one', 'take_exit_two', 'take_exit_three']
+class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
 
     logger = None
 
@@ -57,31 +37,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
 
     def __init__(self, world, uid=None, **data):
 
-        WorldAdapter.__init__(self, world, uid, **data)
+        super().__init__(world, uid, **data)
 
-        self.datatarget_feedback = {
-            'take_exit_one': 0,
-            'take_exit_two': 0,
-            'take_exit_three': 0
-        }
-
-        # prevent instabilities in datatargets: treat a continuous ( /unintermittent ) signal as a single trigger
-        self.datatarget_history = {
-            'take_exit_one': 0,
-            'take_exit_two': 0,
-            'take_exit_three': 0
-        }
-
-        # a collection of conditions to check on every update(..), eg., for action feedback
-        self.waiting_list = []
-
-        self.target_loco_node_uid = None
-        self.current_loco_node = None
-        self.active_fovea_actor = None
-
-        self.spockplugin = self.world.spockplugin
-        self.waiting_for_spock = True
-        self.logger = logging.getLogger("world")
+        # don't use fov_act_00_00 because it complicates debug plots
+        self.fovea_actor = "fov_act__01_03"
 
         # add datasources for fovea sensors aka fov__*_*
         for i in range(self.len_x):
@@ -93,14 +52,14 @@ class MinecraftVision(MinecraftGraphLocomotion):
         # add datasources for fovea position sensors aka fov_pos__*_*
         for x in range(self.tiling_x):
             for y in range(self.tiling_y):
-                name = "fov_pos__%02d_%02d" % (x, y)
+                name = "fov_pos__%02d_%02d" % (y, x)
                 self.datasources[name] = 0.
                 self.supported_datasources.append(name)
 
         # add fovea actors to datatargets, datatarget_feedback, datatarget_history, and actions
         for x in range(self.tiling_x):
             for y in range(self.tiling_y):
-                name = "fov_act__%02d_%02d" % (x, y)
+                name = "fov_act__%02d_%02d" % (y, x)
                 self.datatargets[name] = 0.
                 self.datatarget_feedback[name] = 0.
                 self.datatarget_history[name] = 0.
@@ -125,66 +84,42 @@ class MinecraftVision(MinecraftGraphLocomotion):
         if 'record_vision' in cfg['minecraft']:
             self.record_file = open(cfg['minecraft']['record_vision'], 'a')
 
+        self.visual_field = {}
+
     def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""
 
         # first thing when spock initialization is done, determine current loco node
-        if self.waiting_for_spock:
-            # by substitution: spock init is considered done, when its client has a position unlike
-            # {'on_ground': False, 'pitch': 0, 'x': 0, 'y': 0, 'yaw': 0, 'stance': 0, 'z': 0}:
-            if not self.simulated_vision:
-                if self.spockplugin.clientinfo.position['y'] != 0. \
-                        and self.spockplugin.clientinfo.position['x'] != 0:
-                    self.waiting_for_spock = False
-                    x = int(self.spockplugin.clientinfo.position['x'])
-                    y = int(self.spockplugin.clientinfo.position['y'])
-                    z = int(self.spockplugin.clientinfo.position['z'])
-                    for k, v in self.loco_nodes.items():
-                        if abs(x - v['x']) <= self.tp_tolerance \
-                           and abs(y - v['y']) <= self.tp_tolerance \
-                           and abs(z - v['z']) <= self.tp_tolerance:
-                            self.current_loco_node = self.loco_nodes[k]
+        if self.simulated_vision:
+            self.simulate_visual_input(self.len_x, self.len_y)
 
-                    if self.current_loco_node is None:
-                        # bot is outside our graph, teleport to a random graph location to get started.
-                        target = random.choice(list(self.loco_nodes.keys()))
-                        self.locomote(target)
-                    # self.locomote(self.village_uid)
-            else:
-                self.waiting_for_spock = False
         else:
+            super().update_data_sources_and_targets()
 
-            # reset self.datatarget_feedback
-            for k in self.datatarget_feedback.keys():
-                # reset actions only if not requested anymore
-                if k in self.actions:
-                    if self.datatargets[k] == 0:
-                        self.datatarget_feedback[k] = 0.
-                else:
-                    self.datatarget_feedback[k] = 0.
-
-            if not self.simulated_vision:
-
-                self.datasources['current_location_index'] = self.loco_nodes_indexes.index(self.current_loco_node['name'])
-
-                if not self.spockplugin.is_connected():
-                    return
-
-                # route activation of fovea actors /datatargets to fovea position sensors
-                self.active_fovea_actor = "fov_act__00_00"  # snap back to (0,0)
-                has_non_zero = False
+            if not self.waiting_for_spock:
+                # handle fovea actuators and sensors: action feedback, relay to sensors, default actuator
+                active_fovea_actor = None
                 for x in range(self.tiling_x):
                     for y in range(self.tiling_y):
-                        actor_name = "fov_act__%02d_%02d" % (x, y)
-                        sensor_name = "fov_pos__%02d_%02d" % (x, y)
+                        actor_name = "fov_act__%02d_%02d" % (y, x)
+                        sensor_name = "fov_pos__%02d_%02d" % (y, x)
+                        # relay activation of fovea actuators to fovea sensor nodes
                         self.datasources[sensor_name] = self.datatargets[actor_name]
+                        # provide action feedback for fovea actor nodes
                         if self.datatargets[actor_name] > 0.:
-                            # provide action feedback for fovea actor
                             self.datatarget_feedback[actor_name] = 1.
-                            self.active_fovea_actor = actor_name
-                            has_non_zero = True
-                if not has_non_zero:
-                    self.datasources["fov_pos__00_00"] = 1.
+                            active_fovea_actor = actor_name
+
+                # if there's no active_fovea_actor use the last fovea position as default
+                if active_fovea_actor is None:
+                    active_fovea_actor = self.fovea_actor
+                    self.datasources[active_fovea_actor.replace("act", "pos")] = 1.
+                    self.datatarget_feedback[active_fovea_actor] = 1.
+
+                # determine if fovea position changed
+                fovea_position_changed = self.fovea_actor != active_fovea_actor
+                # store the currently active fovea actor node name for the next round
+                self.fovea_actor = active_fovea_actor
 
                 # change pitch and yaw every x world steps to increase sensory variation
                 # < ensures some stability to enable learning in the autoencoder
@@ -192,69 +127,34 @@ class MinecraftVision(MinecraftGraphLocomotion):
                     # for patches pitch = 10 and yaw = random.randint(-10,10) were used
                     # for visual field pitch = randint(0, 30) and yaw = randint(1, 360) were used
                     self.spockplugin.clientinfo.position['pitch'] = 10
-                    self.spockplugin.clientinfo.position['yaw'] = random.randint(1, 360)
+                    self.spockplugin.clientinfo.position['yaw'] = 180  # random.randint(1, 360)
                     self.datatargets['pitch'] = self.spockplugin.clientinfo.position['pitch']
                     self.datatargets['yaw'] = self.spockplugin.clientinfo.position['yaw']
                     # Note: datatargets carry spikes not continuous signals, ie. pitch & yaw will be 0 in the next step
                     self.datatarget_feedback['pitch'] = 1.0
                     self.datatarget_feedback['yaw'] = 1.0
 
+                # TODO: recompute visual input only if self.world.current_step % self.num_steps_to_keep_vision_stable == 0
+                # else re-write previous sensor values to datasources
+
                 # sample all the time
                 loco_label = self.current_loco_node['name']  # because python uses call-by-object
                 # get indices of section currently viewed, i.e. the respective active fovea actor
-                x_sec, y_sec = [int(val) for val in self.active_fovea_actor.split('_')[-2:]]
+                y_sec, x_sec = [int(val) for val in self.fovea_actor.split('_')[-2:]]
                 # translate x_sec, y_sec, and z_oom to fov_x, fov_y, res_x, res_y
                 fov_x, fov_y, res_x, res_y = self.translate_xyz_to_vision_params(x_sec, y_sec, 1)  # z_oom = 1
                 self.get_visual_input(fov_x, fov_y, res_x, res_y, self.len_x, self.len_y, loco_label)
 
-                self.check_for_action_feedback()
+                self.collect_visual_data()
+                if cfg['minecraft'].get('debug_vision') and fovea_position_changed:
+                    self.plot_visual_field()
 
-                # read locomotor values, trigger teleportation in the world, and provide action feedback
-                # don't trigger another teleportation if the datatargets was on continuously, cf. pipe logic
-                if self.datatargets['take_exit_one'] >= 1 and not self.datatarget_history['take_exit_one'] >= 1:
-                    # if the current node on the transition graph has the selected exit
-                    if self.current_loco_node['exit_one_uid'] is not None:
-                        self.register_action(
-                            'take_exit_one',
-                            partial(self.locomote, self.current_loco_node['exit_one_uid']),
-                            partial(self.check_movement_feedback, self.current_loco_node['exit_one_uid'])
-                        )
-                    else:
-                        self.datatarget_feedback['take_exit_one'] = -1.
+    def locomote(self, target_loco_node_uid):
 
-                if self.datatargets['take_exit_two'] >= 1 and not self.datatarget_history['take_exit_two'] >= 1:
-                    if self.current_loco_node['exit_two_uid'] is not None:
-                        self.register_action(
-                            'take_exit_two',
-                            partial(self.locomote, self.current_loco_node['exit_two_uid']),
-                            partial(self.check_movement_feedback, self.current_loco_node['exit_two_uid'])
-                        )
-                    else:
-                        self.datatarget_feedback['take_exit_two'] = -1.
+        if cfg['minecraft'].get('debug_vision') and hasattr(self, 'visual_field'):
+            self.visual_field = {}
 
-                if self.datatargets['take_exit_three'] >= 1 and not self.datatarget_history['take_exit_three'] >= 1:
-                    if self.current_loco_node['exit_three_uid'] is not None:
-                        self.register_action(
-                            'take_exit_three',
-                            partial(self.locomote, self.current_loco_node['exit_three_uid']),
-                            partial(self.check_movement_feedback, self.current_loco_node['exit_three_uid'])
-                        )
-                    else:
-                        self.datatarget_feedback['take_exit_three'] = -1.
-
-                # update datatarget history
-                for k in self.datatarget_history.keys():
-                    self.datatarget_history[k] = self.datatargets[k]
-
-            else:
-                self.simulate_visual_input(self.len_x, self.len_y)
-
-    def check_movement_feedback(self, target_loco_node):
-        if abs(self.loco_nodes[target_loco_node]['x'] - int(self.spockplugin.clientinfo.position['x'])) <= self.tp_tolerance \
-           and abs(self.loco_nodes[target_loco_node]['y'] - int(self.spockplugin.clientinfo.position['y'])) <= self.tp_tolerance \
-           and abs(self.loco_nodes[target_loco_node]['z'] - int(self.spockplugin.clientinfo.position['z'])) <= self.tp_tolerance:
-            return True
-        return False
+        super().locomote(target_loco_node_uid)
 
     def translate_xyz_to_vision_params(self, x_sec, y_sec, z_oom):
         """
@@ -264,8 +164,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
         x_sec, y_sec, and z_oom. These need to be translated to the parameters which
         determine where to compute the visual input. This translation happens here.
         """
-        fov_x = ((1. / (4 * 2)) * x_sec)  # / 4
-        fov_y = ((1. / (2 * 2)) * y_sec)  # / 2
+        # add a buffer to self.tiling_x/y because the rays peak out of their
+        # assigned image plane sections #TODO validate the magic number 2
+        fov_x = (1.0 / (self.tiling_x + 2)) * x_sec
+        fov_y = (1.0 / (self.tiling_y + 2)) * y_sec
 
         res_x = (self.len_x * (4 ** z_oom)) / self.im_width
         res_y = (self.len_y * (2 ** z_oom)) / self.im_height
@@ -333,8 +235,23 @@ class MinecraftVision(MinecraftGraphLocomotion):
         #     homogeneous_patch = True
         #     norm_sensor_values = [0.0] * len_x * len_y
 
-        # else:  # else normalize the sensor values
-        norm_sensor_values = self.normalize_sensor_values(sensor_values)
+        # preprocess sensor values
+        # # BINARIZE
+        # # convert block types into binary values: map air and emptiness to black (0), everything else to white (1)
+        # sensor_values_ = [0.0 if v <= 0 else 1.0 for v in sensor_values]
+        # GRAY-SCALE VALUES
+        from .structs import block_colors
+        # fetch RGB value, convert it to gray-scale value in YUV space
+        sensor_values_ = []
+        for bt in sensor_values:
+            red, green, blue = block_colors[str(bt)]
+            red, green, blue = red / 255., green / 255., blue / 255.  # normalize to [0, 1]
+            # RGB to Y transform
+            y = 0.299 * red + 0.587 * green + 0.114 * blue  # digital CCIR601
+            sensor_values_.append(y)
+
+        # normalize the sensor values
+        norm_sensor_values = self.normalize_sensor_values(sensor_values_)
 
         # write new sensor values to datasources
         self.write_visual_input_to_datasources(norm_sensor_values, len_x, len_y)
@@ -386,13 +303,10 @@ class MinecraftVision(MinecraftGraphLocomotion):
         Normalize sensor values to zero mean and 3 standard deviation.
         TODO: make doc correct and precise.
         """
-        # convert block types into binary values: map air and emptiness to black (0), everything else to white (1)
-        patch_ = [0.0 if v <= 0 else 1.0 for v in patch]
-
         # normalize block type values
         # subtract the sample mean from each of its pixels
-        mean = float(sum(patch_)) / len(patch_)
-        patch_avg = [x - mean for x in patch_]  # TODO: throws error in ipython - why not here !?
+        mean = float(sum(patch)) / len(patch)
+        patch_avg = [x - mean for x in patch]  # TODO: throws error in ipython - why not here !?
 
         # truncate to +/- 3 standard deviations and scale to -1 and +1
 
@@ -408,3 +322,77 @@ class MinecraftVision(MinecraftGraphLocomotion):
         # scale from [-1,+1] to [0.1,0.9] and write values to sensors
         patch_resc = [(1.0 + x) * 0.4 + 0.1 for x in patch_std]
         return patch_resc
+
+    def collect_visual_data(self):
+        """ Collect the visual data for the current fovea position
+        Resets the data if fovea-position is at 0/0
+        """
+        # if it's the top-left fovea actor, reset the visual field by emptying the buffer
+        # ( background: this method only works with scanning for now; scanning starts at
+        #   fov_act__00_00; so if that's the current fovea actor, it's time for a new plot )
+        if self.fovea_actor == 'fov_act__00_00':
+            self.visual_field = {}
+
+        # if values for this position in the grid exist already, return
+        if self.fovea_actor in self.visual_field:
+            return
+
+        keys = sorted(list(self.datasources.keys()))
+        activations = [self.datasources[key] for key in keys if key.startswith('fov__')]
+
+        self.visual_field[self.fovea_actor] = activations
+
+    def plot_visual_field(self):
+        """
+        Visualize the entire visual field of the agent at a given position.
+
+        Works only in combination with scanning for now because the plot is
+        generated only if all tiling_x times tiling_y patches are filled with
+        values starting from fov_act__00_00.
+
+        TODO: refactor code such that a plot is always generated right before
+        locomotion with the patches that happened to have been sampled.
+        """
+
+        from micropsi_core.nodenet import vizapi
+        import os
+        import numpy as np
+
+        # once every tile has been filled with content, plot the actual image
+        if len(set(self.visual_field.keys())) == (self.tiling_x * self.tiling_y):
+
+            i = 0
+            while True:
+
+                filename_png = os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    "%s_%d.png" % (self.current_loco_node['name'], i))
+                # ??
+                if not os.path.exists(filename_png):
+                    break
+                i += 1
+
+            # sort keys to get them into the correct order, cf. names are given
+            # left to right, top to bottom
+            sorted_keys = list(self.visual_field.keys())
+            sorted_keys.sort()
+
+            # collect values
+            A = np.zeros((len(sorted_keys), len([k for k in self.datasources.keys() if k.startswith('fov__')])))
+            for i, key in enumerate(sorted_keys):
+                A[i, :] = np.array(self.visual_field[key])
+
+            (r, c) = A.shape
+            image = vizapi.NodenetPlot(plotsize=(7, 3))
+            A = A.reshape(3, 7, int(np.sqrt(c)), int(np.sqrt(c)))
+            image.add_4d_matrix_plot(A, hspace=0, wspace=0, vmin=A.min(), vmax=A.max())
+
+            image.save_to_file(filename_png, transparent=True, dpi=300)
+
+    def frange(self, start, end, step):
+        """
+        Range for floats.
+        """
+        while start < end:
+            yield start
+            start += step

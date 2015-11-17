@@ -14,12 +14,13 @@ import warnings
 
 try:
     config = configparser.ConfigParser()
-    config.read_file(open('config.ini'))
+    with open('config.ini') as fp:
+        config.read_file(fp)
 except OSError:
     warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
     raise RuntimeError("config.ini not found")
 
-config['micropsi2']['version'] = "0.5-alpha3"
+config['micropsi2']['version'] = "0.6-alpha4"
 config['micropsi2']['apptitle'] = "MicroPsi"
 
 homedir = config['micropsi2']['data_directory'].startswith('~')
@@ -28,6 +29,14 @@ if homedir:
     data_path = os.path.expanduser(config['micropsi2']['data_directory'])
 else:
     data_path = config['micropsi2']['data_directory']
+
+if 'logging' not in config:
+    config['logging'] = {}
+
+for level in ['level_agent', 'level_system', 'level_world']:
+    if level not in config['logging']:
+        warnings.warn('logging level for %s not set in config.ini - defaulting to WARNING' % level)
+        config['logging'][level] = 'WARNING'
 
 config.add_section('paths')
 config['paths']['resource_path'] = os.path.join(os.path.dirname(__file__), data_path)

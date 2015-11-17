@@ -48,14 +48,14 @@ def prepare(fixed_nodenet):
 def add_dummyworld(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     if nodenet.world:
-        nodenet.world.unregister_nodenet(nodenet.uid)
+        micropsi.worlds[nodenet.world].unregister_nodenet(nodenet)
 
     worlduid = micropsi.new_world("DummyWorld", "DummyWorld", "DummyOwner")[1]
 
-    nodenet.world = micropsi.worlds[worlduid]
+    nodenet.world = worlduid
     nodenet.worldadapter = "DummyWorldAdapter"
-    nodenet.world.register_nodenet("DummyWorldAdapter", nodenet)
-    return nodenet.world
+    micropsi.worlds[worlduid].register_nodenet("DummyWorldAdapter", nodenet)
+    return micropsi.worlds[worlduid]
 
 
 def test_node_logic_loop(fixed_nodenet):

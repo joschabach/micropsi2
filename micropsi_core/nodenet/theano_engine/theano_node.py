@@ -84,10 +84,6 @@ class TheanoNode(Node):
     def parent_nodespace(self):
         return nodespace_to_id(self._parent_id, self._partition.pid)
 
-    @parent_nodespace.setter
-    def parent_nodespace(self, uid):
-        self._partition.allocated_node_parents[self._id] = nodespace_from_id(uid)
-
     @property
     def activation(self):
         return float(self._partition.a.get_value(borrow=True)[self._partition.allocated_node_offsets[self._id] + GEN])
@@ -186,6 +182,8 @@ class TheanoNode(Node):
 
     def unlink_completely(self):
         self._partition.unlink_node_completely(self._id)
+        if self.uid in self._nodenet.proxycache:
+            del self._nodenet.proxycache[self.uid]
 
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
         for gate_name_candidate in self.nodetype.gatetypes:
@@ -194,6 +192,45 @@ class TheanoNode(Node):
                     if target_node_uid is None or target_node_uid == link_candidate.target_node.uid:
                         if slot_name is None or slot_name == link_candidate.target_slot.type:
                             self._nodenet.delete_link(self.uid, gate_name_candidate, link_candidate.target_node.uid, link_candidate.target_slot.type)
+
+    def get_associated_node_uids(self):
+        numeric_ids_in_same_partition = self._partition.get_associated_node_ids(self._id)
+        ids = [node_to_id(id, self._partition.pid) for id in numeric_ids_in_same_partition]
+
+        # find this node in links coming in from other partitions to this node's partition
+        for partition_from_spid, inlinks in self._partition.inlinks.items():
+            for numeric_slot in range(0, get_slots_per_type(self._numerictype, self._nodenet.native_modules)):
+                element = self._partition.allocated_node_offsets[self._id] + numeric_slot
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                weights = inlinks[2].get_value(borrow=True)
+                if element in to_elements:
+                    from_partition = self._nodenet.partitions[partition_from_spid]
+                    element_index = np.where(to_elements == element)[0][0]
+                    slotrow = weights[element_index]
+                    links_indices = np.nonzero(slotrow)[0]
+                    for link_index in links_indices:
+                        source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                        ids.append(node_to_id(source_id, from_partition.pid))
+
+        # find this node in links going out to other partitions
+        for partition_to_spid, to_partition in self._nodenet.partitions.items():
+            if self._partition.spid in to_partition.inlinks:
+                for numeric_gate in range(0, get_gates_per_type(self._numerictype, self._nodenet.native_modules)):
+                    element = self._partition.allocated_node_offsets[self._id] + numeric_gate
+                    inlinks = to_partition.inlinks[self._partition.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    weights = inlinks[2].get_value(borrow=True)
+                    if element in from_elements:
+                        element_index = np.where(from_elements == element)[0][0]
+                        gatecolumn = weights[:, element_index]
+                        links_indices = np.nonzero(gatecolumn)[0]
+                        for link_index in links_indices:
+                            target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                            ids.append(node_to_id(target_id, to_partition.pid))
+
+        return ids
 
     def get_parameter(self, parameter):
         return self.clone_parameters().get(parameter, None)
@@ -207,27 +244,31 @@ class TheanoNode(Node):
         if self.type == "Sensor" and parameter == "datasource":
             if self.uid in self._nodenet.inverted_sensor_map:
                 olddatasource = self._nodenet.inverted_sensor_map[self.uid]     # first, clear old data source association
-                if self._id in self._nodenet.sensormap.get(olddatasource, []):
-                    self._nodenet.sensormap.get(olddatasource, []).remove(self._id)
+                if self.uid in self._nodenet.sensormap.get(olddatasource, []):
+                    self._nodenet.sensormap.get(olddatasource, []).remove(self.uid)
 
             connectedsensors = self._nodenet.sensormap.get(value, [])       # then, set the new one
-            connectedsensors.append(self._id)
+            connectedsensors.append(self.uid)
             self._nodenet.sensormap[value] = connectedsensors
             self._nodenet.inverted_sensor_map[self.uid] = value
         elif self.type == "Actor" and parameter == "datatarget":
             if self.uid in self._nodenet.inverted_actuator_map:
                 olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
-                if self._id in self._nodenet.actuatormap.get(olddatatarget, []):
-                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self._id)
+                if self.uid in self._nodenet.actuatormap.get(olddatatarget, []):
+                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self.uid)
 
             connectedactuators = self._nodenet.actuatormap.get(value, [])       # then, set the new one
-            connectedactuators.append(self._id)
+            connectedactuators.append(self.uid)
             self._nodenet.actuatormap[value] = connectedactuators
             self._nodenet.inverted_actuator_map[self.uid] = value
         elif self.type == "Activator" and parameter == "type":
-            self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
+            if value != "sampling":
+                self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
+            else:
+                self._nodenet.set_nodespace_sampling_activator(self.parent_nodespace, self.uid)
         elif self.type == "Pipe" and parameter == "expectation":
             g_expect_array = self._partition.g_expect.get_value(borrow=True)
+            g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("gen")] = float(value)
             g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("sur")] = float(value)
             g_expect_array[self._partition.allocated_node_offsets[self._id] + get_numerical_gate_type("por")] = float(value)
             self._partition.g_expect.set_value(g_expect_array, borrow=True)
@@ -265,6 +306,8 @@ class TheanoNode(Node):
                 activator_type = "cat"
             elif self._id in self._partition.allocated_nodespaces_exp_activators:
                 activator_type = "exp"
+            elif self._id in self._partition.allocated_nodespaces_sampling_activators:
+                activator_type = "sampling"
             parameters['type'] = activator_type
         elif self.type == "Pipe":
             g_expect_array = self._partition.g_expect.get_value(borrow=True)
@@ -312,8 +355,10 @@ class TheanoNode(Node):
             self.nodetype.nodefunction(netapi=self._nodenet.netapi, node=self, sheaf="default", **self.clone_parameters())
         except Exception:
             self._nodenet.is_active = False
-            # self.activation = -1
-            raise
+            if self.nodetype is not None and self.nodetype.nodefunction is None:
+                self.logger.warn("No nodefunction found for nodetype %s. Node function definition is: %s" % (self.nodetype.name, self.nodetype.nodefunction_definition))
+            else:
+                raise
 
 
 class TheanoGate(Gate):

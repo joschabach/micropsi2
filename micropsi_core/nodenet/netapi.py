@@ -1,4 +1,9 @@
 
+try:
+    from . import vizapi
+except ImportError:
+    vizapi = None
+
 
 class NetAPI(object):
     """
@@ -14,15 +19,19 @@ class NetAPI(object):
         return self.__nodenet.current_step
 
     @property
-    def world(self):
-        return self.__nodenet.world
-
-    def __init__(self, nodenet):
-        self.__nodenet = nodenet
+    def worldadapter(self):
+        return self.__nodenet.worldadapter_instance
 
     @property
     def logger(self):
         return self.__nodenet.logger
+
+    @property
+    def vizapi(self):
+        return vizapi
+
+    def __init__(self, nodenet):
+        self.__nodenet = nodenet
 
     def get_nodespace(self, uid):
         """
@@ -230,7 +239,7 @@ class NetAPI(object):
         Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
         a new actor will be created, otherwise the first actor found will be used
         """
-        if datatarget not in self.world.get_available_datatargets(self.__nodenet.uid):
+        if datatarget not in self.worldadapter.get_available_datatargets():
             raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
@@ -241,14 +250,14 @@ class NetAPI(object):
             actor.set_parameter('datatarget', datatarget)
 
         self.link(node, gate, actor, 'gen', weight, certainty)
-        #self.link(actor, 'gen', node, slot)
+        # self.link(actor, 'gen', node, slot)
 
     def link_sensor(self, node, datasource, slot='sur'):
         """
         Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
         a new sensor will be created, otherwise the first sensor found will be used
         """
-        if datasource not in self.world.get_available_datasources(self.__nodenet.uid):
+        if datasource not in self.worldadapter.get_available_datasources():
             raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
@@ -266,10 +275,10 @@ class NetAPI(object):
         exists in the given nodespace.
         """
         all_actors = []
-        if self.world is None:
+        if self.worldadapter is None:
             return all_actors
 
-        datatargets = self.world.get_available_datatargets(self.__nodenet.uid)
+        datatargets = self.worldadapter.get_available_datatargets()
         datatargets = sorted(datatargets)
 
         for datatarget in datatargets:
@@ -290,10 +299,10 @@ class NetAPI(object):
         exists in the given nodespace.
         """
         all_sensors = []
-        if self.world is None:
+        if self.worldadapter is None:
             return all_sensors
 
-        datasources = self.world.get_available_datasources(self.__nodenet.uid)
+        datasources = self.worldadapter.get_available_datasources()
         datasources = sorted(datasources)
 
         for datasource in datasources:
@@ -342,7 +351,7 @@ class NetAPI(object):
         Parameters:
             node: the node object that emits this message
             msg: a string to display to the user
-            options: an array of objects representing the variables to set by the user. Needs key, label. Optional: array or object of values
+            options: an array of objects representing the variables to set by the user. Needs key, label. Optional: type (textarea or text), values: an array or object of possible values
 
         example usage:
             options = [{
@@ -352,6 +361,7 @@ class NetAPI(object):
             }, {
                 'key': 'wait':
                 'label': 'How long should I wait until I go there?',
+                'type': 'textarea'
             }]
             netapi.ask_user_for_parameter(node, "Please decide what to do next", options)
         """
@@ -411,13 +421,14 @@ class NetAPI(object):
             mapping[node] = self.get_node(uidmap[node.uid])
         return mapping
 
-    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='id'):
+    def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gate="gen", sortby='id', group_name=None):
         """
         Will group the given set of nodes.
         Groups can be used in bulk operations.
         Grouped nodes will have stable sorting accross all bulk operations.
+        If no group name is given, the node_name_prefix will be used as group name.
         """
-        self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby)
+        self.__nodenet.group_nodes_by_names(nodespace_uid, node_name_prefix, gatetype=gate, sortby=sortby, group_name=group_name)
 
     def group_nodes_by_ids(self, nodespace_uid, node_uids, group_name, gate="gen", sortby='id'):
         """
@@ -483,3 +494,60 @@ class NetAPI(object):
         Returns the uids of the nodes in the given group
         """
         return self.__nodenet.get_node_uids(nodespace_uid, group)
+
+    def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
+        """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
+        value in every simulation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
+
+    def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
+        """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
+        value in every simulation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
+
+    def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
+        """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
+        The monitor will collect respective value in every simulation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
+
+    def add_modulator_monitor(self, modulator, name, color=None):
+        """Adds a continuous monitor to a global modulator.
+        The monitor will collect respective value in every simulation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_modulator_monitor(modulator, name, color=color)
+
+    def add_custom_monitor(self, function, name, color=None):
+        """Adds a continuous monitor, that evaluates the given python-code and collects the
+        return-value for every simulation step.
+        Returns the uid of the new monitor."""
+        return self.__nodenet.add_custom_monitor(function, name, color=color)
+
+    def get_monitor(self, uid):
+        """Returns the monitor with the given uid"""
+        return self.__nodenet.get_monitor(uid)
+
+    def remove_monitor(self, uid):
+        """Removes the monitor with the given uid"""
+        return self.__nodenet.remove_monitor(uid)
+
+    def set_dashboard_value(self, name, value):
+        """Allows the netapi to set values for the statistics and dashboard"""
+        self.__nodenet.dashboard_values[name] = value
+
+    def decay_por_links(self, nodespace_uid):
+        """ Decayes all por-links in the given nodespace """
+        decay_factor = self.__nodenet.get_modulator('base_porret_decay_factor')
+        nodes = self.get_nodes(nodespace=nodespace_uid, nodetype="Pipe")
+        pordecay = (1 - self.__nodenet.get_modulator('por_ret_decay'))
+        if decay_factor and pordecay is not None and pordecay > 0:
+            for node in nodes:
+                porgate = node.get_gate('por')
+                for link in porgate.get_links():
+                    if link.weight > 0:
+                        link._set_weight(max(link.weight * pordecay, 0))
+
+    def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
+        pass

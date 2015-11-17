@@ -1,4 +1,14 @@
 
+0.6-alpha4 (2015-11-17)
+==========
+
+ * Made the theano engine the non-experimental default
+ * Made partitions configurable
+ * Introduced LSTMS
+ * Introduced Vizualization-API
+ * Introduced dashboard
+
+
 0.5-alpha3 (2015-07-16)
 ==========
 

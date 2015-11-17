@@ -98,14 +98,6 @@ class Nodespace(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @parent_nodespace.setter
-    @abstractmethod
-    def parent_nodespace(self, uid):
-        """
-        Sets this nodespace's parent nodespace by UID, effectively moving from its old parent space to the new one
-        """
-        pass  # pragma: no cover
-
     @abstractmethod
     def get_activator_value(self, type):
         """
@@ -155,3 +147,5 @@ class Nodespace(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def __repr__(self):
+        return "<Nodespace \"%s\" (%s)>" % (self.name, self.uid)

@@ -13,10 +13,8 @@ default Nodetypes
 
 from abc import ABCMeta, abstractmethod
 
-import warnings
 import micropsi_core.tools
 from .link import Link
-import logging
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -132,12 +130,12 @@ class Node(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    #@property
-    #@abstractmethod
-    #def activations(self):
-    #    """
-    #    This node's activation properties (dict of all sheaves) as calculated once per step by its node function
-    #    """
+    # @property
+    # @abstractmethod
+    # def activations(self):
+    #     """
+    #     This node's activation properties (dict of all sheaves) as calculated once per step by its node function
+    #     """
 
     @property
     @abstractmethod
@@ -161,21 +159,22 @@ class Node(metaclass=ABCMeta):
         """
         The node's type (as a string)
         """
-        return self.__nodetype_name
+        return self._nodetype_name
 
     @property
     def nodetype(self):
         """
         The Nodetype instance for this node
         """
-        return self.__nodetype
+        return self._nodetype
 
     def __init__(self, nodetype_name, nodetype):
         """
         Constructor needs the string name of this node's type, and a Nodetype instance
         """
-        self.__nodetype_name = nodetype_name
-        self.__nodetype = nodetype
+        self._nodetype_name = nodetype_name
+        self._nodetype = nodetype
+        self.logger = nodetype.logger
 
     @abstractmethod
     def get_gate(self, type):
@@ -370,6 +369,9 @@ class Node(metaclass=ABCMeta):
         for gate_name in self.get_gate_types():
             data[gate_name] = self.get_gate(gate_name).clone_sheaves()
         return data
+
+    def __repr__(self):
+        return "<%s \"%s\" (%s)>" % (self.nodetype.name, self.name, self.uid)
 
 
 class Gate(metaclass=ABCMeta):
@@ -584,7 +586,7 @@ class Nodetype(object):
             self.nodefunction = micropsi_core.tools.create_function(nodefunction_definition,
                 parameters="nodenet, node, " + args)
         except SyntaxError as err:
-            warnings.warn("Syntax error while compiling node function: %s", str(err))
+            self.logger.warn("Syntax error while compiling node function: %s", str(err))
             raise err
 
     @property
@@ -603,7 +605,7 @@ class Nodetype(object):
                 self.nodefunction = getattr(custom_nodefunctions, nodefunction_name)
 
         except (ImportError, AttributeError) as err:
-            warnings.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
+            self.logger.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
@@ -626,6 +628,8 @@ class Nodetype(object):
         self.name = name
         self.slottypes = slottypes or {}
         self.gatetypes = gatetypes or {}
+
+        self.logger = nodenet.logger
 
         self.gate_defaults = {}
         for g in self.gatetypes:

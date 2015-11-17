@@ -30,6 +30,8 @@ class MicropsiPlugin(object):
             self.update_inventory
         )
 
+        self.worldadapter = None
+
         # make references between micropsi world and MicropsiPlugin
         self.micropsi_world = settings['micropsi_world']
         self.micropsi_world.spockplugin = self
@@ -119,7 +121,7 @@ class MicropsiPlugin(object):
 
     def eat(self):
         """ Attempts to eat the held item. Assumes held item implements eatable """
-        logging.getLogger('world').debug('eating a bread')
+        self.worldadapter.logger.debug('eating a bread')
         data = {
             'location': self.get_int_coordinates(),
             'direction': -1,
@@ -139,8 +141,13 @@ class MicropsiPlugin(object):
         self.net.push(Packet(ident='PLAY>Chat Message', data={'message': message}))
 
     def update_inventory(self, event, packet):
+        # 0     = crafting output
+        # 1-4   = crafting ingredients
+        # 5-8   = wearables from helm to boot
+        # 9-35  = inventory by rows
+        # 36-44 = quickslots
         self.inventory = packet.data['slots']
-        self.quickslots = packet.data['slots'][36:9]
+        self.quickslots = packet.data['slots'][36:45]
 
     def count_inventory_item(self, item):
         count = 0
@@ -151,7 +158,7 @@ class MicropsiPlugin(object):
 
     def change_held_item(self, target_slot):
         """ Changes the held item to a quick inventory slot """
-        self.net.push(Packet(ident='PLAY>Held Item Change', data={'Slot': target_slot}))
+        self.net.push(Packet(ident='PLAY>Held Item Change', data={'slot': target_slot}))
 
     def move(self, position=None):
         if not (self.net.connected and self.net.proto_state == mcdata.PLAY_STATE):

@@ -39,10 +39,10 @@
                     <label class="control-label" for="nn_engine">Engine</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_engine" name="nn_engine">
-                            <option value="dict_engine">dict_engine</option>
                             %if theano_available:
-                            <option value="theano_engine">theano_engine (experimental)</option>
+                            <option value="theano_engine">theano_engine</option>
                             %end
+                            <option value="dict_engine">dict_engine</option>
                         </select>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
                             <option value="">None</option>
                             % for uid in worlds:
                                 % if worlds[uid].owner == user_id:
-                                    % if defined("nodenet") and uid == nodenet.world.uid:
+                                    % if defined("nodenet") and uid == nodenet.world:
                             <option value="{{uid}}" selected="selected">{{worlds[uid].name}}</option>
                                     %else:
                             <option value="{{uid}}">{{worlds[uid].name}}</option>
@@ -89,7 +89,7 @@
                             %end
                             % for uid in worlds:
                                 % if worlds[uid].owner != user_id:
-                                    % if defined ("nodenet") and defined ("nodenet.world.uid") and uid == nodenet.world.uid:
+                                    % if defined ("nodenet") and defined ("nodenet.world") and uid == nodenet.world:
                             <option value="{{uid}}" selected="selected">{{worlds[uid].name}}</option>
                                     %else:
                             <option value="{{uid}}">{{worlds[uid].name}}</option>
@@ -104,10 +104,10 @@
                     <label class="control-label" for="nn_worldadapter">World adapter</label>
                     <div class="controls">
                         <select class="input-xlarge" id="nn_worldadapter" name="nn_worldadapter">
-                            % if not defined("nodenet") or not defined ("nodenet.world.uid") or not nodenet.world.uid in worlds:
+                            % if not defined("nodenet") or not defined ("nodenet.world") or not nodenet.world in worlds:
                             <option value="">None</option>
                             % else:
-                                %for worldadapter in worlds[nodenet.world.uid].worldadapters:
+                                %for worldadapter in worlds[nodenet.world].worldadapters:
                                     <!-- TODO -->
                                     <option>{{worldadapter}}</option>
                                 %end

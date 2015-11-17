@@ -25,15 +25,15 @@ def prepare(fixed_nodenet):
 def add_dummyworld(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     if nodenet.world:
-        nodenet.world.unregister_nodenet(nodenet.uid)
+        nodenet.world.unregister_nodenet(nodenet)
 
     worlduid = micropsi.new_world("DummyWorld", "DummyWorld", "DummyOwner")[1]
 
-    nodenet.world = micropsi.worlds[worlduid]
+    nodenet.world = worlduid
     nodenet.worldadapter = "DummyWorldAdapter"
 
-    nodenet.world.register_nodenet("DummyWorldAdapter", nodenet)
-    return nodenet.world
+    micropsi.worlds[worlduid].register_nodenet("DummyWorldAdapter", nodenet)
+    return micropsi.worlds[worlduid]
 
 
 def test_node_netapi_create_register_node(fixed_nodenet):
@@ -771,6 +771,8 @@ def test_copy_nodes(fixed_nodenet):
     nodespace = netapi.create_nodespace(None, name='copy')
     a1 = netapi.get_node('n0001')
     a2 = netapi.get_node('n0002')
+    a1.set_parameter('expecation', 0.6)
+    a1.set_gate_parameter('gen', 'amplification', 0.27)
     mapping = netapi.copy_nodes([a1, a2], nodespace.uid)
     assert a1 in mapping
     assert a2 in mapping
@@ -993,3 +995,68 @@ def test_get_node_ids(fixed_nodenet):
     assert seppen_ids[0] == sepp1.uid
     assert seppen_ids[1] == sepp2.uid
     assert seppen_ids[2] == sepp3.uid
+
+
+def test_add_gate_monitor(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    uid = netapi.add_gate_monitor(node, 'gen', name='sepp', color='#987654')
+    assert nodenet.get_monitor(uid).name == 'sepp'
+    assert nodenet.get_monitor(uid).type == 'gate'
+    assert nodenet.get_monitor(uid).color == '#987654'
+
+
+@pytest.mark.engine("dict_engine")
+def test_add_slot_monitor(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    uid = netapi.add_slot_monitor(node, 'gen')
+    assert nodenet.get_monitor(uid).type == 'slot'
+
+
+def test_add_link_monitor(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    uid = netapi.add_link_monitor(node, 'gen', node, 'gen', name='sepplink')
+    assert nodenet.get_monitor(uid).name == 'sepplink'
+    assert nodenet.get_monitor(uid).property == 'weight'
+
+
+def test_add_modulator_monitor(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodenet.step()
+    uid = netapi.add_modulator_monitor('base_age', 'age')
+    assert nodenet.get_monitor(uid).modulator == 'base_age'
+    assert nodenet.get_monitor(uid).name == 'age'
+
+
+def test_add_custom_monitor(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    function = "return len(netapi.get_nodes())"
+    uid = netapi.add_custom_monitor(function, 'number_of_nodes', color=None)
+    assert nodenet.get_monitor(uid).name == 'number_of_nodes'
+    assert nodenet.get_monitor(uid).function == function
+
+
+def test_get_monitor(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    uid = netapi.add_gate_monitor(node, 'gen')
+    assert nodenet.get_monitor(uid) == netapi.get_monitor(uid)
+
+
+def test_remove_monitor(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    uid = netapi.add_gate_monitor(node, 'gen')
+    netapi.remove_monitor(uid)
+    assert nodenet.get_monitor(uid) is None
+
+
+def test_set_dashboard_value(test_nodenet, node):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    netapi.set_dashboard_value('foo', 'bar')
+    assert nodenet.dashboard_values['foo'] == 'bar'

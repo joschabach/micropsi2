@@ -233,7 +233,9 @@ def test_get_current_state(app, test_nodenet, test_world, node):
         },
         'monitors': {
             'logger': ['system', 'world', 'nodenet'],
-            'after': 0
+            'after': 0,
+            'monitor_from': 2,
+            'monitor_count': 2
         },
         'world': {
             'step': -1
@@ -252,7 +254,7 @@ def test_get_current_state(app, test_nodenet, test_world, node):
 
     assert 'servertime' in data['monitors']['logs']
     assert 'logs' in data['monitors']['logs']
-    assert len(data['monitors']['monitors'][monitor_uid]['values']) == data['nodenet']['current_step']
+    assert len(data['monitors']['monitors'][monitor_uid]['values']) == 2
 
     assert test_nodenet in data['world']['agents']
     assert data['world']['current_step'] > 0
@@ -598,6 +600,7 @@ def test_add_gate_monitor(app, test_nodenet, node):
     assert response.json_body['data']['values'] == {}
 
 
+@pytest.mark.engine("dict_engine")
 def test_add_slot_monitor(app, test_nodenet, node):
     response = app.post_json('/rpc/add_slot_monitor', params={
         'nodenet_uid': test_nodenet,
@@ -659,10 +662,10 @@ def test_add_custom_monitor(app, test_nodenet):
 
 
 def test_remove_monitor(app, test_nodenet, node):
-    response = app.post_json('/rpc/add_slot_monitor', params={
+    response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
-        'slot': 'gen'
+        'gate': 'gen'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/remove_monitor', params={
@@ -677,10 +680,10 @@ def test_remove_monitor(app, test_nodenet, node):
 
 
 def test_clear_monitor(app, test_nodenet, node):
-    response = app.post_json('/rpc/add_slot_monitor', params={
+    response = app.post_json('/rpc/add_gate_monitor', params={
         'nodenet_uid': test_nodenet,
         'node_uid': node,
-        'slot': 'gen'
+        'gate': 'gen'
     })
     uid = response.json_body['data']
     response = app.post_json('/rpc/clear_monitor', params={
@@ -699,7 +702,9 @@ def test_get_monitor_data(app, test_nodenet, node):
     uid = response.json_body['data']
     response = app.post_json('/rpc/get_monitor_data', params={
         'nodenet_uid': test_nodenet,
-        'step': 0
+        'step': 0,
+        'monitor_from': 3,
+        'monitor_count': 20
     })
     assert_success(response)
     assert uid in response.json_body['data']['monitors']
@@ -1122,15 +1127,15 @@ def test_user_prompt_response(app, test_nodenet, nodetype_def, nodefunc_def):
 
 def test_set_logging_levels(app):
     response = app.post_json('/rpc/set_logging_levels', params={
-        'system': 'INFO',
-        'world': 'DEBUG',
-        'nodenet': 'CRITICAL'
+        'logging_levels': {
+            'system': 'INFO',
+            'world': 'DEBUG',
+        }
     })
     assert_success(response)
     import logging
-    assert logging.getLogger('nodenet').getEffectiveLevel() == 50
-    assert logging.getLogger('world').getEffectiveLevel() == 10
-    assert logging.getLogger('system').getEffectiveLevel() == 20
+    assert logging.getLogger('world').getEffectiveLevel() == logging.DEBUG
+    assert logging.getLogger('system').getEffectiveLevel() == logging.INFO
 
 
 def test_get_logger_messages(app, test_nodenet):
@@ -1140,8 +1145,20 @@ def test_get_logger_messages(app, test_nodenet):
     assert response.json_body['data']['logs'] == []
 
 
+def test_get_nodenet_logger_messages(app, test_nodenet):
+    import logging
+    logging.getLogger('agent.%s' % test_nodenet).warning('asdf')
+    logging.getLogger('system').warning('foobar')
+    response = app.get_json('/rpc/get_logger_messages(logger=["system", "agent.%s"])' % test_nodenet)
+    assert 'servertime' in response.json_body['data']
+    netlog = response.json_body['data']['logs'][-2]
+    syslog = response.json_body['data']['logs'][-1]
+    assert netlog['step'] == 0
+    assert syslog['step'] is None
+
+
 def test_get_monitoring_info(app, test_nodenet):
-    response = app.get_json('/rpc/get_monitoring_info(nodenet_uid="%s",logger=["system,world"])' % test_nodenet)
+    response = app.get_json('/rpc/get_monitoring_info(nodenet_uid="%s",logger=["system,world"],monitor_from=3,monitor_count=10)' % test_nodenet)
     assert_success(response)
     assert 'logs' in response.json_body['data']
     assert 'current_step' in response.json_body['data']
@@ -1188,7 +1205,7 @@ def test_get_recipes(app, test_nodenet, recipes_def):
     with open(recipes_def, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
-    return quatsch
+    return {'quatsch': quatsch}
 """)
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.get_json('/rpc/get_available_recipes()')
@@ -1204,7 +1221,7 @@ def test_run_recipes(app, test_nodenet, recipes_def):
     with open(recipes_def, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
-    return quatsch
+    return {'quatsch': quatsch}
 """)
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/run_recipe', {
@@ -1215,7 +1232,13 @@ def foobar(netapi, quatsch=23):
         }
     })
     data = response.json_body['data']
-    assert data == 23
+    assert data['quatsch'] == 23
+
+
+def test_get_agent_dashboard(app, test_nodenet, node):
+    response = app.get_json('/rpc/get_agent_dashboard(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert data['count_nodes'] == 1
 
 
 def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, node):

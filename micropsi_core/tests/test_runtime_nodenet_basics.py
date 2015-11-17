@@ -74,7 +74,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
         "foobar",
         options
     )
-    data = micropsi.get_nodenet_data(fixed_nodenet, 'Root')
+    result, data = micropsi.get_current_state(fixed_nodenet, nodenet={'nodespace': 'Root'})
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
     assert data['user_prompt']['node']['uid'] == uid
@@ -289,6 +289,33 @@ def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test", parameters={"linktype": "catexp", "threshold": "", "protocol_mode": "all_active"})
     # nativemodule = micropsi.nodenets[fixed_nodenet].get_node(uid)
     assert micropsi.save_nodenet(fixed_nodenet)
+
+
+def test_delete_linked_nodes(fixed_nodenet):
+
+    nodenet = micropsi.get_nodenet(fixed_nodenet)
+    netapi = nodenet.netapi
+
+    # create all evil (there will never be another dawn)
+    root_of_all_evil = netapi.create_node("Pipe", None)
+    evil_one = netapi.create_node("Pipe", None)
+    evil_two = netapi.create_node("Pipe", None)
+
+    netapi.link_with_reciprocal(root_of_all_evil, evil_one, "subsur")
+    netapi.link_with_reciprocal(root_of_all_evil, evil_two, "subsur")
+
+    for link in evil_one.get_gate("sub").get_links():
+        link.source_node.name  # touch of evil
+        link.target_node.name  # touch of evil
+
+    for link in evil_two.get_gate("sur").get_links():
+        link.source_node.name  # touch of evil
+        link.target_node.name  # touch of evil
+
+    # and the name of the horse was death
+    netapi.delete_node(root_of_all_evil)
+    netapi.delete_node(evil_one)
+    netapi.delete_node(evil_two)
 
 
 def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):

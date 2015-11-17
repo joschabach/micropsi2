@@ -67,10 +67,6 @@ class TheanoNodespace(Nodespace):
         else:
             return nodespace_to_id(parent_nodespace_id, self._partition.pid)
 
-    @parent_nodespace.setter
-    def parent_nodespace(self, uid):
-        self._partition.allocated_nodespaces[self._id] = nodespace_from_id(uid)
-
     def __init__(self, nodenet, partition, uid):
         self.__activators = {}
         self._nodenet = nodenet

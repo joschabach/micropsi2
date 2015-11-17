@@ -231,16 +231,6 @@ def about():
     return template("about", version=VERSION, user_id=user_id, permissions=permissions)
 
 
-@micropsi_app.route("/docs")
-def documentation():
-    return template("documentation", version=VERSION)
-
-
-@micropsi_app.route("/contact")
-def contact():
-    return template("contact", version=VERSION)
-
-
 @micropsi_app.route("/logout")
 def logout():
     user_id, permissions, token = get_request_data()
@@ -264,11 +254,11 @@ def login():
 
 @micropsi_app.post("/login_submit")
 def login_submit():
-    user_id = request.forms.userid
-    password = request.forms.password
-
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    user_id = params['userid']
+    password = params['password']
     # log in new user
-    token = usermanager.start_session(user_id, password, request.forms.get("keep_logged_in"))
+    token = usermanager.start_session(user_id, password, params.get("keep_logged_in"))
     if token:
         response.set_cookie("token", token)
         # redirect to start page
@@ -306,15 +296,18 @@ def signup():
     return template("signup", version=VERSION,
         title="Create a new user for the %s server" % APPTITLE,
         permissions=usermanager.get_permissions_for_session_token(token),
+        first_user=False,
         cookie_warning=(token is None))
 
 
 @micropsi_app.post("/signup_submit")
 def signup_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
-    userid = request.forms.userid
-    password = request.forms.password
-    role = request.forms.get('permissions')
+    userid = params['userid']
+    password = params['password']
+    role = params.get('permissions')
+    firstuser = not usermanager.users
     (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids=usermanager.users.keys())
     if success:
         # check if permissions in form are consistent with internal permissions
@@ -323,7 +316,7 @@ def signup_submit():
             (role == "Restricted" and "create restricted" in permissions)):
             if usermanager.create_user(userid, password, role, uid=micropsi_core.tools.generate_uid()):
                 # log in new user
-                token = usermanager.start_session(userid, password, request.forms.get("keep_logged_in"))
+                token = usermanager.start_session(userid, password, params.get("keep_logged_in"))
                 response.set_cookie("token", token)
                 # redirect to start page
                 return dict(redirect='/')
@@ -334,7 +327,7 @@ def signup_submit():
     else:
         # something wrong with the user id, retry
         return template("signup", version=VERSION, userid=userid, password=password, userid_error=result,
-            title="Create a new user for the %s server" % APPTITLE,
+            title="Create a new user for the %s server" % APPTITLE, first_user=firstuser,
             user_id=user_id, permissions=permissions, cookie_warning=(token is None))
 
 
@@ -349,10 +342,11 @@ def change_password():
 
 @micropsi_app.post("/change_password_submit")
 def change_password_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
     if token:
-        old_password = request.forms.old_password
-        new_password = request.forms.new_password
+        old_password = params['old_password']
+        new_password = params['new_password']
         if usermanager.test_password(user_id, old_password):
             usermanager.set_user_password(user_id, new_password)
             return dict(msg='New password saved', status="success")
@@ -395,10 +389,11 @@ def create_user():
 
 @micropsi_app.post("/create_user_submit")
 def create_user_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
-    userid = request.forms.userid
-    password = request.forms.password
-    role = request.forms.get('permissions')
+    userid = params['userid']
+    password = params['password']
+    role = params.get('permissions')
     (success, result) = micropsi_core.tools.check_for_url_proof_id(userid, existing_ids=usermanager.users.keys())
 
     if success:
@@ -436,10 +431,11 @@ def set_password(userid):
 
 @micropsi_app.post("/set_password_submit")
 def set_password_submit():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
     if "manage users" in permissions:
-        userid = request.forms.userid
-        password = request.forms.password
+        userid = params['userid']
+        password = params['password']
         if userid in usermanager.users:
             usermanager.set_user_password(userid, password)
         return dict(status='success', msg="New password saved")
@@ -580,8 +576,9 @@ def edit_nodenet():
 @micropsi_app.route("/nodenet/edit", method="POST")
 def write_nodenet():
     user_id, permissions, token = get_request_data()
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(request.params['nn_name'], engine=request.params['nn_engine'], worldadapter=request.params['nn_worldadapter'], template=request.params.get('nn_template'), owner=user_id, world_uid=request.params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -628,9 +625,10 @@ def edit_world_form():
 
 @micropsi_app.route("/world/edit", method="POST")
 def edit_world():
+    params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = runtime.new_world(request.params['world_name'], request.params['world_type'], user_id)
+        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id)
         if result:
             return dict(status="success", msg="World created", world_uid=uid)
         else:
@@ -688,10 +686,10 @@ def create_worldadapter_selector(world_uid):
         nodenets=nodenets, worlds=worlds)
 
 
-@micropsi_app.route("/face")
-def show_face():
+@micropsi_app.route("/dashboard")
+def show_dashboard():
     user_id, permissions, token = get_request_data()
-    return template("viewer", mode="face", user_id=user_id, permissions=permissions, token=token, version=VERSION)
+    return template("viewer", mode="dashboard", logging_levels=runtime.get_logging_levels(), user_id=user_id, permissions=permissions, token=token, version=VERSION)
 
 
 #################################################################
@@ -738,26 +736,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None):
-    data = {}
-    nodenet_obj = runtime.get_nodenet(nodenet_uid)
-    if nodenet_obj is not None:
-        if nodenet_uid in runtime.MicropsiRunner.conditions:
-            data['simulation_condition'] = runtime.MicropsiRunner.conditions[nodenet_uid]
-            if 'monitor' in data['simulation_condition']:
-                data['simulation_condition']['monitor']['color'] = nodenet_obj.get_monitor(data['simulation_condition']['monitor']['uid']).color
-        data['simulation_running'] = nodenet_obj.is_active
-        data['current_nodenet_step'] = nodenet_obj.current_step
-        data['current_world_step'] = nodenet_obj.world.current_step if nodenet_obj.world else 0
-        if nodenet is not None:
-            data['nodenet'] = runtime.get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
-        if world is not None and nodenet_obj.world:
-            data['world'] = runtime.get_world_view(world_uid=nodenet_obj.world.uid, **world)
-        if monitors is not None:
-            data['monitors'] = runtime.get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
-        return True, data
-    else:
-        return False, "No such nodenet"
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("generate_uid")
@@ -1024,8 +1004,8 @@ def export_monitor_data(nodenet_uid, monitor_uid=None):
 
 
 @rpc("get_monitor_data")
-def get_monitor_data(nodenet_uid, step):
-    return True, runtime.get_monitor_data(nodenet_uid, step)
+def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
+    return True, runtime.get_monitor_data(nodenet_uid, step, monitor_from, monitor_count)
 
 
 # Nodenet
@@ -1187,8 +1167,8 @@ def get_emoexpression_parameters(nodenet_uid):
 
 
 @rpc("set_logging_levels")
-def set_logging_levels(system=None, world=None, nodenet=None):
-    runtime.set_logging_levels(system, world, nodenet)
+def set_logging_levels(logging_levels):
+    runtime.set_logging_levels(logging_levels)
     return True
 
 
@@ -1198,8 +1178,8 @@ def get_logger_messages(logger=[], after=0):
 
 
 @rpc("get_monitoring_info")
-def get_monitoring_info(nodenet_uid, logger=[], after=0):
-    data = runtime.get_monitoring_info(nodenet_uid, logger, after)
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
+    data = runtime.get_monitoring_info(nodenet_uid, logger, after, monitor_from, monitor_count)
     return True, data
 
 
@@ -1213,6 +1193,11 @@ def run_recipe(nodenet_uid, name, parameters):
 @rpc('get_available_recipes')
 def get_available_recipes():
     return True, runtime.get_available_recipes()
+
+
+@rpc('get_agent_dashboard')
+def get_agent_dashboard(nodenet_uid):
+    return True, runtime.get_agent_dashboard(nodenet_uid)
 
 
 # -----------------------------------------------------------------------------------------------

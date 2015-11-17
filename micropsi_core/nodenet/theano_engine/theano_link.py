@@ -5,6 +5,7 @@ from micropsi_core.nodenet.link import Link
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
 import numpy as np
 
+
 class TheanoLink(Link):
     """
         theano link proxy class

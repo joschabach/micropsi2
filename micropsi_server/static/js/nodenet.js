@@ -409,9 +409,6 @@ function setNodespaceData(data, changed){
         if(changed){
             updateNodespaceForm();
         }
-        if(data.user_prompt){
-            promptUser(data.user_prompt);
-        }
     }
     updateViewSize();
     drawGridLines(view.element);
@@ -698,7 +695,8 @@ function redrawLink(link, forceRedraw){
     var oldLink = links[link.uid];
     if (forceRedraw || !oldLink || !(link.uid in linkLayer.children) || oldLink.weight != link.weight ||
         oldLink.certainty != link.certainty ||
-        nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
+            !nodes[oldLink.sourceNodeUid] || !nodes[link.sourceNodeUid] ||
+            nodes[oldLink.sourceNodeUid].gates[oldLink.gateName].sheaves[currentSheaf].activation !=
             nodes[link.sourceNodeUid].gates[link.gateName].sheaves[currentSheaf].activation) {
         if(link.uid in linkLayer.children){
             linkLayer.children[link.uid].remove();
@@ -1070,6 +1068,10 @@ function renderLink(link, force) {
     var sourceNode = nodes[link.sourceNodeUid];
     var targetNode = nodes[link.targetNodeUid];
 
+    if(isOutsideNodespace(sourceNode) && isOutsideNodespace(targetNode)){
+        return;
+    }
+
     var linkStart = calculateLinkStart(sourceNode, targetNode, link.gateName);
     var linkEnd = calculateLinkEnd(sourceNode, targetNode, link.slotName, link.gateName);
 
@@ -1316,6 +1318,7 @@ function createCompactNodeShape(node) {
             shape.cubicCurveTo(new Point(bounds.x + bounds.width * 0.65, bounds.y-bounds.height * 0.2), new Point(bounds.right, bounds.y-bounds.height * 0.2), bounds.bottomRight);
             shape.closePath();
             break;
+        case "LSTM": // draw circle
         case "Concept": // draw circle
         case "Pipe": // draw circle
         case "Script": // draw circle
@@ -1893,11 +1896,7 @@ function onMouseDown(event) {
                 }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
-                    if(nodes[nodeUid].type == "Native"){
-                        showNativeModuleForm(nodeUid);
-                    } else {
-                        showNodeForm(nodeUid);
-                    }
+                    showNodeForm(nodeUid);
                 }
                 // check for slots and gates
                 var i;
@@ -2360,8 +2359,6 @@ function initializeMenus() {
     $('#select_datasource_modal form').on('submit', handleSelectDatasourceModal);
     $("#select_datatarget_modal .btn-primary").on('click', handleSelectDatatargetModal);
     $('#select_datatarget_modal form').on('submit', handleSelectDatatargetModal);
-    $('#edit_native_modal .btn-primary').on('click', createNativeModuleHandler);
-    $('#edit_native_modal form').on('submit', createNativeModuleHandler);
     $("#edit_link_modal .btn-primary").on('click', handleEditLink);
     $("#edit_link_modal form").on('submit', handleEditLink);
     $("#nodenet").on('dblclick', onDoubleClick);
@@ -2434,35 +2431,6 @@ function initializeDialogs(){
     $('#datasource_select').on('change', function(){
         $("#select_datasource_modal .btn-primary").focus();
     });
-    $('#nodenet_user_prompt .btn-primary').on('click', function(event){
-        event.preventDefault();
-        var form = $('#nodenet_user_prompt form');
-        values = {};
-        var startnet = false;
-        var fields = form.serializeArray();
-        for(var idx in fields){
-            if(fields[idx].name == 'run_nodenet'){
-                startnet = true;
-            } else {
-                values[fields[idx].name] = fields[idx].value;
-            }
-        }
-        api.call('user_prompt_response', {
-            nodenet_uid: currentNodenet,
-            node_uid: $('#user_prompt_node_uid').val(),
-            values: values,
-            resume_nodenet: startnet
-        }, function(data){
-            currentSimulationStep -= 1;
-            if(startnet){
-                $(document).trigger("runner_started");
-            } else {
-                refreshNodespace();
-            }
-        });
-        $('#nodenet_user_prompt').modal('hide');
-    });
-
     $('#paste_mode_selection_modal .btn-primary').on('click', function(event){
         event.preventDefault();
         var form = $('#paste_mode_selection_modal form');
@@ -2555,10 +2523,14 @@ function getNodeLinkageContextMenuHTML(node){
     var html = '';
     if (node.gateIndexes.length) {
         for (var gateName in node.gates) {
-            if(gateName in inverse_link_map){
+            if(node.type == "LSTM" && gateName == "por"){
+                html += ('<li><a href="#" data-link-type="lstmpor">Draw lstm por links</a></li>');
+            }
+            else if(gateName in inverse_link_map){
                 var compound = gateName+'/'+inverse_link_map[gateName];
                 html += ('<li><a data-link-type="'+compound+'">Draw '+compound+' link</a></li>');
-            } else if(inverse_link_targets.indexOf(gateName) == -1){
+            }
+            else if(inverse_link_targets.indexOf(gateName) == -1){
                 html += ('<li><a href="#" data-link-type="'+gateName+'">Draw '+gateName+' link</a></li>');
             }
         }
@@ -2651,21 +2623,16 @@ function handleContextMenu(event) {
             if(autoalign){
                 autoalignmentHandler();
             } else if(type) {
-                if (type == "Native"){
-                    createNativeModuleHandler();
+                if(nodenet_data.snap_to_grid){
+                    var xpos = Math.round(clickPosition.x / 10) * 10;
+                    var ypos = Math.round(clickPosition.y / 10) * 10;
+                } else {
+                    var xpos = clickPosition.x;
+                    var ypos = clickPosition.y;
                 }
-                else {
-                    if(nodenet_data.snap_to_grid){
-                        var xpos = Math.round(clickPosition.x / 10) * 10;
-                        var ypos = Math.round(clickPosition.y / 10) * 10;
-                    } else {
-                        var xpos = clickPosition.x;
-                        var ypos = clickPosition.y;
-                    }
-                    createNodeHandler(xpos/viewProperties.zoomFactor,
-                        ypos/viewProperties.zoomFactor,
-                        "", type, null, callback);
-                }
+                createNodeHandler(xpos/viewProperties.zoomFactor,
+                    ypos/viewProperties.zoomFactor,
+                    "", type, null, callback);
             } else{
                 return false;
             }
@@ -2798,7 +2765,7 @@ function get_datasource_options(worldadapter, value){
     for(var i in sources){
         html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
     }
-    if(sources.indexOf(value) < 0) {
+    if(value && sources.indexOf(value) < 0) {
         html += '<option value="'+value+'"selected="selected">'+value+'</option>';
     }
     html += '</optgroup>';
@@ -2816,7 +2783,7 @@ function get_datatarget_options(worldadapter, value){
     for(var i in targets){
         html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
     }
-    if(targets.indexOf(value) < 0) {
+    if(value && targets.indexOf(value) < 0) {
         html += '<option value="'+value+'"selected="selected">'+value+'</option>';
     }
     html += '</optgroup>';
@@ -2850,7 +2817,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             if(nodetypes[type].parameter_defaults){
                 def = nodetypes[type].parameter_defaults[param] || '';
             }
-            params[param] = parameters[param] || def;
+            parameters[param] = parameters[param] || def;
         }
     }
     var method = "";
@@ -2868,7 +2835,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     }
     api.call(method, params,
         success=function(uid){
-            addNode(new Node(uid, x, y, currentNodeSpace, '', type, null, null, parameters));
+            addNode(new Node(uid, x, y, currentNodeSpace, name || '', type, null, null, parameters));
             view.draw();
             selectNode(uid);
             if(callback) callback(uid);
@@ -2876,30 +2843,6 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
             getNodespaceList();
         }
     );
-}
-
-
-function createNativeModuleHandler(event){
-    var modal = $("#edit_native_modal");
-    if(event){
-        event.preventDefault();
-        createNodeHandler(clickPosition.x/viewProperties.zoomFactor,
-                        clickPosition.y/viewProperties.zoomFactor,
-                        $('#native_module_name').val(),
-                        $('#native_module_type').val(),
-                        {}, null);
-        modal.modal("hide");
-    } else {
-        var html = '';
-        for(var idx in sorted_nodetypes){
-            if(sorted_nodetypes[idx] in native_modules){
-                html += '<option>'+ sorted_nodetypes[idx] +'</option>';
-            }
-        }
-        $('[data-native-module-type]', modal).html(html);
-        $('#native_module_name').val('');
-        modal.modal("show");
-    }
 }
 
 function generateFragment(){
@@ -2976,6 +2919,9 @@ function deleteNodeHandler(nodeUid) {
             success=function(data){
                 dialogs.notification('node deleted', 'success');
                 getNodespaceList();
+                if(method == "delete_nodespace"){
+                    refreshNodespace(currentNodeSpace, -1);
+                }
             }
         );
     }
@@ -3163,6 +3109,14 @@ function finalizeLinkHandler(nodeUid, slotIndex) {
             var newlinks = [];
 
             switch (linkCreationStart[i].creationType) {
+                case "lstmpor":
+                    if (targetNode.type == "LSTM"){
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "por", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gin", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gou", 1, 1));
+                        newlinks.push(createLinkIfNotExists(sourceNode, "por", targetNode, "gfg", 1, 1));
+                    }
+                    break;
                 case "por/ret":
                     // the por link
                     if (targetSlots > 2) {
@@ -3605,7 +3559,6 @@ function initializeSidebarForms(){
     $('#edit_gate_form').submit(handleEditGate);
     $('#edit_nodenet_form').submit(handleEditNodenet);
     $('#edit_nodespace_form').submit(handleEditNodespace);
-    $('#native_module_form').submit(createNativeModuleHandler);
     $('#native_add_param').click(function(){
         $('#native_parameters').append('<tr><td><input name="param_name" type="text" class="inplace"/></td><td><input name="param_value" type="text"  class="inplace" /></td></tr>');
     });
@@ -3751,13 +3704,6 @@ function getNodeParameterHTML(parameters, parameter_values){
     return html;
 }
 
-function showNativeModuleForm(nodeUid){
-    $('#nodenet_forms .form-horizontal').hide();
-    var form = $('#native_module_form');
-    $('#nodenet_forms').append(form);
-    form.show();
-    //setNativeModuleFormValues(form, nodeUid);
-}
 
 function showDefaultForm(){
     $('#nodenet_forms .form-horizontal').hide();
@@ -3830,39 +3776,6 @@ function registerResizeHandler(){
         $(window).unbind("mousemove");
     });
 }
-
-function promptUser(data){
-    var html = '';
-    html += '<p>Nodenet interrupted by Node ' + (data.node.name || data.node.uid) +' with message:</p>';
-    html += "<p>" + data.msg +"</p>";
-    html += '<form class="well form-horizontal">';
-    if (data.options){
-        for(var idx in data.options){
-            var item = data.options[idx];
-            html += '<div class="control-group"><label class="control-label">' + item.label + '</label>';
-            if(item.values && typeof item.values == 'object'){
-                html += '<div class="controls"><select name="'+item.key+'">';
-                for(var val in item.values){
-                    if(item.values instanceof Array){
-                        html += '<option>'+item.values[val]+'</option>';
-                    } else {
-                        html += '<option value="'+val+'">'+item.values[val]+'</option>';
-                    }
-                }
-                html += '</select></div></div>';
-            } else {
-                html += '<div class="controls"><input name="'+item.key+'" value="'+(item.values || '')+'" /></div></div>';
-            }
-        }
-    }
-    html += '<div class="control-group"><label class="control-label">Continue running nodenet?</label>';
-    html += '<div class="controls"><input type="checkbox" name="run_nodenet"/></div></div>';
-    html += '<input class="hidden" id="user_prompt_node_uid" value="'+data.node.uid+'" />';
-    html += '</form>';
-    $('#nodenet_user_prompt .modal-body').html(html);
-    $('#nodenet_user_prompt').modal("show");
-}
-
 
 // hack. credits: http://stackoverflow.com/a/19743610
 // this is a workaround, until paper.js supports AreaText

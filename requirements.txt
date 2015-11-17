@@ -1,14 +1,18 @@
 CherryPy==3.6.0
+Theano==0.7.0
 WebOb==1.4
 WebTest==2.0.16
 beautifulsoup4==4.3.2
 cov-core==1.14.0
 coverage==3.7.1
+matplotlib==1.4.3
 mock==1.0.1
+numpy==1.9.2
 py==1.4.26
 pycrypto==2.6.1
 pytest==2.6.4
 pytest-cov==1.8.1
+scipy==0.15.1
 six==1.8.0
 -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev
 waitress==0.8.9

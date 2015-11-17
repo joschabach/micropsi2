@@ -23,7 +23,6 @@ import os
 import sys
 from micropsi_core import tools
 import json
-import warnings
 import threading
 from datetime import datetime, timedelta
 import time
@@ -32,6 +31,7 @@ import signal
 import logging
 
 from .micropsi_logger import MicropsiLogger
+
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
@@ -50,8 +50,7 @@ signal_handler_registry = []
 
 logger = MicropsiLogger({
     'system': cfg['logging']['level_system'],
-    'world': cfg['logging']['level_world'],
-    'nodenet': cfg['logging']['level_nodenet']
+    'world': cfg['logging']['level_world']
 }, cfg['logging'].get('logfile'))
 
 nodenet_lock = threading.Lock()
@@ -79,7 +78,6 @@ class MicropsiRunner(threading.Thread):
     number_of_samples = 0
     total_steps = 0
     granularity = 10
-    conditions = {}
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -91,20 +89,6 @@ class MicropsiRunner(threading.Thread):
         self.paused = True
         self.state = threading.Condition()
         self.start()
-
-    def check_conditions(self, nodenet_uid):
-        if nodenet_uid in MicropsiRunner.conditions:
-            conditions = MicropsiRunner.conditions[nodenet_uid]
-            net = nodenets[nodenet_uid]
-            if 'step' in conditions and net.current_step >= conditions['step']:
-                if 'step_amount' in conditions:
-                    conditions['step'] = net.current_step + conditions['step_amount']
-                return False
-            if 'monitor' in conditions and net.current_step > 0:
-                monitor = net.get_monitor(conditions['monitor']['uid'])
-                if net.current_step in monitor.values and round(monitor.values[net.current_step], 4) == round(conditions['monitor']['value'], 4):
-                    return False
-        return True
 
     def run(self):
         while runner['running']:
@@ -124,14 +108,14 @@ class MicropsiRunner(threading.Thread):
                 if uid in nodenets:
                     nodenet = nodenets[uid]
                     if nodenet.is_active:
-                        if not self.check_conditions(uid):
+                        if nodenet.check_stop_runner_condition():
                             nodenet.is_active = False
                             continue
                         log = True
                         try:
                             if self.profiler:
                                 self.profiler.enable()
-                            nodenet.step()
+                            nodenet.timed_step()
                             if self.profiler:
                                 self.profiler.disable()
                             nodenet.update_monitors()
@@ -139,15 +123,15 @@ class MicropsiRunner(threading.Thread):
                             if self.profiler:
                                 self.profiler.disable()
                             nodenet.is_active = False
-                            logging.getLogger("nodenet").error("Exception in NodenetRunner:", exc_info=1)
+                            logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
                             MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
-                                nodenet.world.step()
+                                worlds[nodenet.world].step()
                             except:
                                 nodenet.is_active = False
                                 logging.getLogger("world").error("Exception in WorldRunner:", exc_info=1)
-                                MicropsiRunner.last_world_exception[nodenets[uid].world.uid] = sys.exc_info()
+                                MicropsiRunner.last_world_exception[nodenets[uid].world] = sys.exc_info()
 
             elapsed = datetime.now() - start
             if log:
@@ -162,9 +146,9 @@ class MicropsiRunner(threading.Thread):
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
                         ps.print_stats('nodenet')
-                        logging.getLogger("nodenet").debug(s.getvalue())
+                        logging.getLogger("system").debug(s.getvalue())
 
-                    logging.getLogger("nodenet").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
+                    logging.getLogger("system").debug("Step %d: Avg. %.8f sec" % (self.total_steps, average_duration))
                     self.sum_of_durations = 0
                     self.number_of_samples = 0
                     if average_duration < 0.0001:
@@ -208,13 +192,12 @@ def _get_world_uid_for_nodenet_uid(nodenet_uid):
 
 
 # loggers
-def set_logging_levels(system=None, world=None, nodenet=None):
-    if system is not None and system in logger.logging_levels:
-        logger.set_logging_level('system', system)
-    if world is not None and world in logger.logging_levels:
-        logger.set_logging_level('world', world)
-    if nodenet is not None and nodenet in logger.logging_levels:
-        logger.set_logging_level('nodenet', nodenet)
+def set_logging_levels(logging_levels):
+    for key in logging_levels:
+        if key == 'agent':
+            cfg['logging']['level_agent'] = logging_levels[key]
+        else:
+            logger.set_logging_level(key, logging_levels[key])
     return True
 
 
@@ -226,27 +209,18 @@ def get_logger_messages(loggers=[], after=0):
     return logger.get_logs(loggers, after)
 
 
-def get_monitoring_info(nodenet_uid, logger=[], after=0):
+def get_monitoring_info(nodenet_uid, logger=[], after=0, monitor_from=0, monitor_count=-1):
     """ Returns log-messages and monitor-data for the given nodenet."""
-    data = get_monitor_data(nodenet_uid, 0)
+    data = get_monitor_data(nodenet_uid, 0, monitor_from, monitor_count)
     data['logs'] = get_logger_messages(logger, after)
     return data
 
 
-def get_logging_levels():
-    inverse_map = {
-        50: 'CRITICAL',
-        40: 'ERROR',
-        30: 'WARNING',
-        20: 'INFO',
-        10: 'DEBUG',
-        0: 'NOTSET'
-    }
-    levels = {
-        'system': inverse_map[logging.getLogger('system').getEffectiveLevel()],
-        'world': inverse_map[logging.getLogger('world').getEffectiveLevel()],
-        'nodenet': inverse_map[logging.getLogger('nodenet').getEffectiveLevel()],
-    }
+def get_logging_levels(nodenet_uid=None):
+    levels = {}
+    for key in logging.Logger.manager.loggerDict:
+        levels[key] = logging.getLevelName(logging.getLogger(key).getEffectiveLevel())
+    levels['agent'] = cfg['logging']['level_agent']
     return levels
 
 
@@ -286,7 +260,7 @@ def load_nodenet(nodenet_uid):
 
     """
     if nodenet_uid in nodenet_data:
-        world = worldadapter = None
+        world_uid = worldadapter = None
 
         nodenet_lock.acquire()
         if nodenet_uid not in nodenets:
@@ -294,22 +268,26 @@ def load_nodenet(nodenet_uid):
 
             if data.world:
                 if data.world in worlds:
-                    world = worlds.get(data.world)
+                    world_uid = data.world
                     worldadapter = data.get('worldadapter')
+                else:
+                    logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
 
             engine = data.get('engine', 'dict_engine')
+
+            logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
                 nodenets[nodenet_uid] = DictNodenet(
                     name=data.name, worldadapter=worldadapter,
-                    world=world, owner=data.owner, uid=data.uid,
+                    world=world_uid, owner=data.owner, uid=data.uid,
                     native_modules=filter_native_modules(engine))
             elif engine == 'theano_engine':
                 from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
                 nodenets[nodenet_uid] = TheanoNodenet(
                     name=data.name, worldadapter=worldadapter,
-                    world=world, owner=data.owner, uid=data.uid,
+                    world=world_uid, owner=data.owner, uid=data.uid,
                     native_modules=filter_native_modules(engine))
             # Add additional engine types here
             else:
@@ -323,10 +301,10 @@ def load_nodenet(nodenet_uid):
             else:
                 nodenets[nodenet_uid].settings = {}
         else:
-            world = nodenets[nodenet_uid].world or None
+            world_uid = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
-        if world:
-            world.register_nodenet(worldadapter, nodenets[nodenet_uid])
+        if world_uid:
+            worlds[world_uid].register_nodenet(worldadapter, nodenets[nodenet_uid])
 
         nodenet_lock.release()
         return True, nodenet_uid
@@ -352,6 +330,41 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
+def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
+    """ returns the current state of the nodenet
+    TODO: maybe merge with above get_nodenet_data?
+    """
+    data = {}
+    nodenet_obj = get_nodenet(nodenet_uid)
+    if nodenet_obj is not None:
+        condition = nodenet_obj.get_runner_condition()
+        if condition:
+            data['simulation_condition'] = condition
+            if 'monitor' in condition:
+                monitor = nodenet_obj.get_monitor(condition['monitor']['uid'])
+                if monitor:
+                    data['simulation_condition']['monitor']['color'] = monitor.color
+                else:
+                    del data['simulation_condition']['monitor']
+        data['simulation_running'] = nodenet_obj.is_active
+        data['current_nodenet_step'] = nodenet_obj.current_step
+        data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
+        if nodenet is not None:
+            data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+        if nodenet_obj.user_prompt:
+            data['user_prompt'] = nodenet_obj.user_prompt
+            nodenet_obj.user_prompt = None
+        if world is not None and nodenet_obj.world:
+            data['world'] = get_world_view(world_uid=nodenet_obj.world, **world)
+        if monitors is not None:
+            data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
+        if dashboard is not None:
+            data['dashboard'] = get_agent_dashboard(nodenet_uid)
+        return True, data
+    else:
+        return False, "No such nodenet"
+
+
 def unload_nodenet(nodenet_uid):
     """ Unload the nodenet.
         Deletes the instance of this nodenet without deleting it from the storage
@@ -359,11 +372,13 @@ def unload_nodenet(nodenet_uid):
         Arguments:
             nodenet_uid
     """
-    if not nodenet_uid in nodenets:
+    if nodenet_uid not in nodenets:
         return False
-    if nodenets[nodenet_uid].world:
-        nodenets[nodenet_uid].world.unregister_nodenet(nodenet_uid)
+    nodenet = nodenets[nodenet_uid]
+    if nodenet.world:
+        worlds[nodenet.world].unregister_nodenet(nodenet)
     del nodenets[nodenet_uid]
+    logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
 
 
@@ -426,14 +441,14 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = nodenets[nodenet_uid]
-    if nodenet.world and nodenet.world.uid != world_uid:
-        nodenet.world.unregister_nodenet(nodenet_uid)
+    if nodenet.world and nodenet.world != world_uid:
+        worlds[nodenet.world].unregister_nodenet(nodenet)
         nodenet.world = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
     if world_uid is not None and worldadapter is not None:
         assert worldadapter in worlds[world_uid].supported_worldadapters
-        nodenet.world = worlds[world_uid]
+        nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
         worlds[world_uid].register_nodenet(worldadapter, nodenet)
     if nodenet_name:
@@ -467,17 +482,19 @@ def set_runner_properties(timestep, factor):
 
 def set_runner_condition(nodenet_uid, monitor=None, steps=None):
     """ registers a condition that stops the runner if it is fulfilled"""
-    MicropsiRunner.conditions[nodenet_uid] = {}
+    condition = {}
     if monitor is not None:
-        MicropsiRunner.conditions[nodenet_uid]['monitor'] = monitor
+        condition['monitor'] = monitor
     if steps is not None:
-        MicropsiRunner.conditions[nodenet_uid]['step'] = nodenets[nodenet_uid].current_step + steps
-        MicropsiRunner.conditions[nodenet_uid]['step_amount'] = steps
-    return True, MicropsiRunner.conditions[nodenet_uid]
+        condition['step'] = nodenets[nodenet_uid].current_step + steps
+        condition['step_amount'] = steps
+    if condition:
+        nodenets[nodenet_uid].set_runner_condition(condition)
+    return True, condition
 
 
 def remove_runner_condition(nodenet_uid):
-    MicropsiRunner.conditions[nodenet_uid] = {}
+    nodenets[nodenet_uid].unset_runner_condition()
     return True
 
 
@@ -512,10 +529,10 @@ def step_nodenet(nodenet_uid):
     Arguments:
         nodenet_uid: The uid of the nodenet
     """
-    nodenets[nodenet_uid].step()
+    nodenets[nodenet_uid].timed_step()
     nodenets[nodenet_uid].update_monitors()
     if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
-        nodenets[nodenet_uid].world.step()
+        worlds[nodenets[nodenet_uid].world].step()
     return nodenets[nodenet_uid].current_step
 
 
@@ -980,14 +997,16 @@ def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
 
 def get_available_datasources(nodenet_uid):
     """Returns a list of available datasource types for the given nodenet."""
-    world_uid = nodenets[nodenet_uid].world.uid
-    return worlds[world_uid].get_available_datasources(nodenet_uid)
+    if nodenets[nodenet_uid].worldadapter_instance:
+        return nodenets[nodenet_uid].worldadapter_instance.get_available_datasources()
+    return []
 
 
 def get_available_datatargets(nodenet_uid):
     """Returns a list of available datatarget types for the given nodenet."""
-    world_uid = nodenets[nodenet_uid].world.uid
-    return worlds[world_uid].get_available_datatargets(nodenet_uid)
+    if nodenets[nodenet_uid].worldadapter_instance:
+        return nodenets[nodenet_uid].worldadapter_instance.get_available_datatargets()
+    return []
 
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
@@ -1024,7 +1043,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
     uid = None
     if success:                                                       # todo: check whether clients need these uids
-        uid = source_node_uid+":"+gate_type+":"+slot_type+":"+target_node_uid
+        uid = "%s:%s:%s:%s" % (source_node_uid, gate_type, slot_type, target_node_uid)
     return success, uid
 
 
@@ -1051,7 +1070,6 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     return {'links': links, 'nodes': nodes}
 
 
-
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
     nodenet = nodenets[nodenet_uid]
@@ -1068,6 +1086,7 @@ def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
     for key, value in values.items():
         nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
     nodenets[nodenet_uid].is_active = resume_nodenet
+    nodenets[nodenet_uid].user_prompt = None
 
 
 def get_available_recipes():
@@ -1077,7 +1096,8 @@ def get_available_recipes():
         if not name.startswith('_'):
             recipes[name] = {
                 'name': name,
-                'parameters': data['parameters']
+                'parameters': data['parameters'],
+                'docstring': data['docstring']
             }
     return recipes
 
@@ -1094,17 +1114,29 @@ def run_recipe(nodenet_uid, name, parameters):
         if cfg['micropsi2'].get('profile_runner'):
             profiler = cProfile.Profile()
             profiler.enable()
-        result = func(netapi, **params)
+        result = {'reload': True}
+        ret = func(netapi, **params)
+        if ret:
+            result.update(ret)
         if cfg['micropsi2'].get('profile_runner'):
             profiler.disable()
             s = io.StringIO()
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
             ps.print_stats('nodenet')
-            logging.getLogger("nodenet").debug(s.getvalue())
+            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
         return True, result
     else:
         return False, "Script not found"
+
+
+def get_agent_dashboard(nodenet_uid):
+    from .emoexpression import calc_emoexpression_parameters
+    net = nodenets[nodenet_uid]
+    with net.netlock:
+        data = net.get_dashboard()
+        data['face'] = calc_emoexpression_parameters(net)
+        return data
 
 
 # --- end of API
@@ -1134,9 +1166,9 @@ def crawl_definition_files(path, type="definition"):
                         data = parse_definition(json.load(file), filename)
                         result[data.uid] = data
                 except ValueError:
-                    warnings.warn("Invalid %s data in file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warn("Invalid %s data in file '%s'" % (type, definition_file_name))
                 except IOError:
-                    warnings.warn("Could not open %s data file '%s'" % (type, definition_file_name))
+                    logging.getLogger('system').warn("Could not open %s data file '%s'" % (type, definition_file_name))
     return result
 
 
@@ -1184,9 +1216,9 @@ def init_worlds(world_data):
             except TypeError:
                 worlds[uid] = world.World(**world_data[uid])
             except AttributeError as err:
-                warnings.warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
+                logging.getLogger('system').warn("Unknown world_type: %s (%s)" % (world_data[uid].world_type, str(err)))
             except:
-                warnings.warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
+                logging.getLogger('system').warn("Can not instantiate World \"%s\": %s" % (world_data[uid].name, str(sys.exc_info()[1])))
         else:
             worlds[uid] = world.World(**world_data[uid])
     return worlds
@@ -1203,7 +1235,7 @@ def load_user_files(do_reload=False):
             with open(custom_nodetype_file) as fp:
                 native_modules = json.load(fp)
         except ValueError:
-            warnings.warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+            logging.getLogger('system').warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
 
     sys.path.append(RESOURCE_PATH)
     parse_recipe_file()
@@ -1242,7 +1274,8 @@ def parse_recipe_file():
         custom_recipes[name] = {
             'name': name,
             'parameters': params,
-            'function': func
+            'function': func,
+            'docstring': inspect.getdoc(func)
         }
 
 
@@ -1255,10 +1288,16 @@ def reload_native_modules():
             nodenets[uid].is_active = False
     load_user_files(True)
     import importlib
+    import inspect
     custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
     if os.path.isfile(custom_nodefunctions_file):
         loader = importlib.machinery.SourceFileLoader("nodefunctions", custom_nodefunctions_file)
-        loader.load_module()
+        nodefuncs = loader.load_module()
+        for key, obj in inspect.getmembers(nodefuncs):
+            if inspect.ismodule(obj):
+                if obj.__file__.startswith(RESOURCE_PATH):
+                    loader = importlib.machinery.SourceFileLoader(key, obj.__file__)
+                    loader.load_module()
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets

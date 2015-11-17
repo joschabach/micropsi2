@@ -111,14 +111,15 @@ class DoernerianEmotionalModulators(StepOperator):
         base_age = netapi.get_modulator("base_age")
         base_age_influence_on_competence = netapi.get_modulator("base_age_influence_on_competence")
         base_unexpectedness_prev = netapi.get_modulator("base_unexpectedness")
+        base_sum_of_urges = netapi.get_modulator("base_sum_of_urges")
 
         emo_competence_prev = netapi.get_modulator("emo_competence")
         emo_sustaining_joy_prev = netapi.get_modulator("emo_sustaining_joy")
 
         base_age += 1
 
-        emo_activation = ((base_sum_importance_of_intentions + base_sum_urgency_of_intentions) /
-                          ((base_number_of_active_motives * 2) + 1))
+        emo_activation = max(0, ((base_sum_importance_of_intentions + base_sum_urgency_of_intentions) /
+                          ((base_number_of_active_motives * 2) + 1)) + base_urge_change)
 
         base_unexpectedness = max(min(base_unexpectedness_prev + gentle_sigmoid((base_number_of_unexpected_events - base_number_of_expected_events) / 10), 1), 0)
         fear = 0                    # todo: understand the formula in Principles 185
@@ -133,9 +134,11 @@ class DoernerianEmotionalModulators(StepOperator):
         emo_selection_threshold = emo_activation
 
         pleasure_from_expectation = gentle_sigmoid((base_number_of_expected_events - base_number_of_unexpected_events) / 10)
-        pleasure_from_satisfaction = gentle_sigmoid(base_urge_change * 3)
+        pleasure_from_satisfaction = gentle_sigmoid(base_urge_change * -3)
 
         emo_pleasure = pleasure_from_expectation + pleasure_from_satisfaction        # ignoring fear and hope for now
+
+        emo_valence = 0.5 - base_urge_change - base_sum_of_urges  # base_urge_change is inverse
 
         if emo_pleasure != 0:
             if math.copysign(1, emo_pleasure) == math.copysign(1, emo_sustaining_joy_prev):
@@ -153,9 +156,9 @@ class DoernerianEmotionalModulators(StepOperator):
 
         pleasurefactor = 1 if emo_pleasure >= 0 else -1
         divisorbaseline = 1 if emo_pleasure >= 0 else 2
-        youthful_exuberance_term = 1 #base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
+        youthful_exuberance_term = 1  # base_age_influence_on_competence * (1 + (1 / math.sqrt(2 * base_age)))
         emo_competence = (((emo_competence_prev) + (emo_pleasure * youthful_exuberance_term)) /
-                          (divisorbaseline + (pleasurefactor * emo_competence_prev*COMPETENCE_DECAY_FACTOR)))
+                          (divisorbaseline + (pleasurefactor * emo_competence_prev * COMPETENCE_DECAY_FACTOR)))
         emo_competence = max(min(emo_competence, 0.99), 0.01)
 
         # setting technical parameters
@@ -176,3 +179,4 @@ class DoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("emo_selection_threshold", emo_selection_threshold)
         nodenet.set_modulator("emo_competence", emo_competence)
         nodenet.set_modulator("emo_sustaining_joy", emo_sustaining_joy)
+        nodenet.set_modulator("emo_valence", emo_valence)

@@ -7,8 +7,6 @@ Runtime API functionality for creating and maintaining activation monitors
 __author__ = 'dominik'
 __date__ = '11.12.12'
 
-from micropsi_core.nodenet import monitor
-
 import micropsi_core
 
 
@@ -17,8 +15,7 @@ def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=N
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid, 'gate', gate, sheaf=sheaf, name=name, color=color)
-    return mon.uid
+    return nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
 
 
 def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=None):
@@ -26,8 +23,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=N
     value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.NodeMonitor(nodenet, node_uid, 'slot', slot, sheaf=sheaf, name=name, color=color)
-    return mon.uid
+    return nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
 
 
 def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
@@ -35,8 +31,7 @@ def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, s
     The monitor will collect respective value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.LinkMonitor(nodenet, source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
-    return mon.uid
+    return nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
 
 
 def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
@@ -44,8 +39,7 @@ def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
     The monitor will collect respective value in every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.ModulatorMonitor(nodenet, modulator, property=property, name=name, color=color)
-    return mon.uid
+    return nodenet.add_modulator_monitor(modulator, name, color=color)
 
 
 def add_custom_monitor(nodenet_uid, function, name, color=None):
@@ -53,13 +47,12 @@ def add_custom_monitor(nodenet_uid, function, name, color=None):
     return-value for every simulation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
-    mon = monitor.CustomMonitor(nodenet, function=function, name=name, color=color)
-    return mon.uid
+    return nodenet.add_custom_monitor(function, name, color=color)
 
 
 def remove_monitor(nodenet_uid, monitor_uid):
     """Deletes an activation monitor."""
-    micropsi_core.runtime.nodenets[nodenet_uid]._unregister_monitor(monitor_uid)
+    micropsi_core.runtime.nodenets[nodenet_uid].remove_monitor(monitor_uid)
     return True
 
 
@@ -69,15 +62,40 @@ def clear_monitor(nodenet_uid, monitor_uid):
     return True
 
 
-def export_monitor_data(nodenet_uid, monitor_uid=None):
+def export_monitor_data(nodenet_uid, monitor_uid=None, monitor_from=0, monitor_count=-1):
     """Returns a string with all currently stored monitor data for the given nodenet."""
+    nodenet = micropsi_core.runtime.nodenets[nodenet_uid]
+    if monitor_from == 0 and monitor_count > 0:
+        monitor_count = min(nodenet.current_step + 1, monitor_count)
+        monitor_from = max(0, nodenet.current_step + 1 - monitor_count)
+    if monitor_from > 0:
+        if monitor_count < 1:
+            monitor_count = (nodenet.current_step + 1 - monitor_from)
+        elif monitor_from + monitor_count > nodenet.current_step:
+            monitor_from = max(nodenet.current_step + 1 - monitor_count, 0)
     if monitor_uid is not None:
-        return micropsi_core.runtime.nodenets[nodenet_uid].construct_monitors_dict()[monitor_uid]
+        data = nodenet.construct_monitors_dict()[monitor_uid]
+        if monitor_from > 0 or monitor_count > 0:
+            values = {}
+            i = monitor_from
+            while i < monitor_count + monitor_from:
+                values[i] = data['values'].get(i)
+                i += 1
+            data['values'] = values
     else:
-        return micropsi_core.runtime.nodenets[nodenet_uid].construct_monitors_dict()
+        data = nodenet.construct_monitors_dict()
+        if monitor_from > 0 or monitor_count > 0:
+            for uid in data:
+                values = {}
+                i = monitor_from
+                while i < monitor_count + monitor_from:
+                    values[i] = data[uid]['values'].get(i)
+                    i += 1
+                data[uid]['values'] = values
+    return data
 
 
-def get_monitor_data(nodenet_uid, step=0):
+def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     """Returns monitor and nodenet data for drawing monitor plots for the current step,
     if the current step is newer than the supplied simulation step."""
     data = {
@@ -87,5 +105,5 @@ def get_monitor_data(nodenet_uid, step=0):
     if step > data['current_step']:
         return data
     else:
-        data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid)
+        data['monitors'] = micropsi_core.runtime.export_monitor_data(nodenet_uid, None, monitor_from=monitor_from, monitor_count=monitor_count)
         return data

@@ -15,16 +15,18 @@
                     <ul class="dropdown-menu">
                         <li><a href="/nodenet/edit" class="nodenet_new">New...</a></li>
                         <li class="divider"></li>
-                        <li><a href="#" class="nodenet_delete">Delete</a></li>
-                        <li><a href="#" class="nodenet_save">Save</a></li>
-                        <li><a href="#" class="nodenet_revert">Revert</a></li>
+                        <li  data="nodenet-needed"><a href="#" class="nodenet_delete">Delete</a></li>
+                        <li  data="nodenet-needed"><a href="#" class="nodenet_save">Save</a></li>
+                        <li  data="nodenet-needed"><a href="#" class="nodenet_revert">Revert</a></li>
                         <li class="divider"></li>
-                        <li><a href="#" class="run_recipe">Run a recipe</a></li>
+                        <li  data="nodenet-needed"><a href="#" class="run_recipe">Run a recipe</a></li>
+                        <li class="divider"></li>
                         <li><a href="#" class="reload_native_modules">Reload Native Modules</a></li>
+                        <li  data="nodenet-needed"><a href="#" class="reload_native_modules reload_revert">Reload &amp; Revert</a></li>
                         <li class="divider"></li>
-                        <li><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
-                        <li><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
-                        <li><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
+                        <li  data="nodenet-needed"><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
+                        <li  data="nodenet-needed"><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
+                        <li  data="nodenet-needed"><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
                         %if "manage nodenets" in permissions:
                         <li class="divider"></li>
                         <li><a href="/nodenet_mgt">Show nodenet console...</a></li>
@@ -67,15 +69,19 @@
                 </li>
                 %end
                 %end
-                <li class="dropdown" id="menu_help">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_help">Help
+                <li class="dropdown" id="menu_config">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#menu_view">View
                         <b class="caret"></b></a>
                     <ul class="dropdown-menu">
-                        <li><a href="/about">About</a></li>
-                        <li><a href="/docs">Documentation</a></li>
-                        <li class="divider"></li>
-                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/">Default</a></li>
+                        <li><a href="/nodenet">Nodenet</a></li>
+                        <li><a href="/monitors">Monitors</a></li>
+                        <li><a href="/world">World</a></li>
+                        <li><a href="/dashboard">Dashboard</a></li>
                     </ul>
+                </li>
+                <li class="dropdown" id="menu_help">
+                    <a href="/about">About</a>
                 </li>
             </ul>
             %if defined('user_id'):

@@ -4,8 +4,8 @@
 
  * Made the theano engine the non-experimental default
  * Made partitions configurable
- * Introduced LSTMS
- * Introduced Vizualization-API
+ * Introduced LSTMs
+ * Introduced Visualization API
  * Introduced dashboard
 
 

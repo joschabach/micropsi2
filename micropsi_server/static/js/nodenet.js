@@ -2460,16 +2460,12 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
-            if(Object.keys(native_modules).length > 8 ){
-                html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
-            } else {
-                html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
-                html += '<ul class="sub-menu dropdown-menu">';
-                for(var idx in sorted_native_modules){
-                    html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
-                }
-                html += '</ul></li>';
+            html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+            html += '<ul class="sub-menu dropdown-menu">';
+            for(var idx in sorted_native_modules){
+                html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
             }
+            html += '</ul></li>';
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         html += '<li class="divider"></li><li data-paste-nodes';

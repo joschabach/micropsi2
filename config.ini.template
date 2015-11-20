@@ -25,6 +25,11 @@ host = localhost
 # check here for a list of other supported servers: http://bottlepy.org/docs/0.12/deployment.html#switching-the-server-backend
 server = wsgiref
 
+# single_agent_mode means that only one nodenet can be loaded at a time.
+# if you use the minecraft connection, this is recommended
+# if you want several parallel agents, comment this line
+single_agent_mode = 1
+
 [minecraft]
 
 # use your minecraft.net username with password, respective

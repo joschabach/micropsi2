@@ -263,6 +263,13 @@ def load_nodenet(nodenet_uid):
         world_uid = worldadapter = None
 
         nodenet_lock.acquire()
+
+        if cfg['micropsi2'].get('single_agent_mode'):
+            # unload all other nodenets if single_agent_mode is selected
+            for uid in list(nodenets.keys()):
+                if uid != nodenet_uid:
+                    unload_nodenet(uid)
+
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 

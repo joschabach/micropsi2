@@ -319,7 +319,8 @@ def test_delete_linked_nodes(fixed_nodenet):
 
 
 def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
-
+    mode = micropsi.cfg['micropsi2'].get('single_agent_mode')
+    micropsi.cfg['micropsi2'].update({'single_agent_mode': ''})
     with open(nodetype_def, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
@@ -366,3 +367,5 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
     assert round(register2.get_slot('gen').get_links()[0].weight, 2) == 0.9
     assert register2.get_slot('gen').get_links()[0].source_node.name == 'Source2'
     assert n2.get_node(register2.uid).name == "Register2"
+
+    micropsi.cfg['micropsi2'].update({'single_agent_mode': mode})

@@ -147,6 +147,8 @@ def test_nodenet(request, test_world, engine):
     if nn_uid not in nodenets:
         success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
         micropsi.save_nodenet(nn_uid)
+    if nn_uid not in micropsi.nodenets:
+        micropsi.load_nodenet(nn_uid)
     return nn_uid
 
 

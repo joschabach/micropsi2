@@ -40,8 +40,6 @@ def test_get_logger_messages():
 
 
 def test_nodenet_specific_loggers():
-    mode = micropsi.cfg['micropsi2'].get('single_agent_mode')
-    micropsi.cfg['micropsi2'].update({'single_agent_mode': ''})
     res, uid1 = micropsi.new_nodenet("test1")
     res, uid2 = micropsi.new_nodenet("test2")
     assert "agent.%s" % uid1 in logging.Logger.manager.loggerDict
@@ -51,6 +49,14 @@ def test_nodenet_specific_loggers():
     item = res['logs'][-1]
     assert item['msg'] == "hello!"
     assert item['step'] == 0
+
+
+def test_single_agent_mode():
+    mode = micropsi.cfg['micropsi2'].get('single_agent_mode')
+    micropsi.cfg['micropsi2'].update({'single_agent_mode': '1'})
+    res, uid1 = micropsi.new_nodenet("test1")
+    res, uid2 = micropsi.new_nodenet("test2")
+    assert uid1 not in micropsi.nodenets
     micropsi.cfg['micropsi2'].update({'single_agent_mode': mode})
 
 

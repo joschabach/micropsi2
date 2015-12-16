@@ -28,13 +28,14 @@ def test_select_nodenet(app, test_nodenet):
     assert data == test_nodenet
 
 
-def test_load_nodenet(app, test_nodenet):
+def test_load_nodenet(app, test_nodenet, node):
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     data = response.json_body['data']
     assert 'nodetypes' in data
     assert 'nodes' in data
-    assert 'links' in data
+    assert 'links' not in data
+    assert len(data['nodes'][node]['links']['gen'].keys()) == 1  # genloop
     assert data['uid'] == test_nodenet
 
 
@@ -1317,15 +1318,17 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['nodes'][node]['parameters']['wait'] == 10
     assert data['nodes'][node]['position'] == [10, 10]
     assert data['nodes'][node]['type'] == "Pipe"
-    assert data['nodes'][node] == node_data
+
+    assert node_data['parameters']['expectation'] == 1
+    assert node_data['parameters']['wait'] == 10
+    assert node_data['position'] == [10, 10]
+    assert node_data['type'] == "Pipe"
+    assert 'links' not in node_data
 
     # Links
-    for link in data['links'].values():
+    for link in data['nodes'][node]['links']['gen'].values():
         assert link['weight'] == 1
-        assert link['certainty'] == 1
-        assert link['source_node_uid'] == node
         assert link['target_node_uid'] == node
-        assert link['source_gate_name'] == 'gen'
         assert link['target_slot_name'] == 'gen'
 
     # Nodespaces

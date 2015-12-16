@@ -36,7 +36,6 @@ def test_add_node(test_nodenet):
 
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace.get("nodes", [])) == 0
-    assert len(nodespace.get("links", [])) == 0
     res, uid = micropsi.add_node(test_nodenet, "Pipe", (200, 250), None, state=None, name="A")
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 1
@@ -79,26 +78,18 @@ def test_add_link(test_nodenet):
 
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 4
-    assert len(nodespace["links"]) == 2
-    link1 = None
-    link2 = None
-    for uid, data in nodespace["links"].items():
-        if data['source_node_uid'] == nodes['a']:
-            link1 = data
-        else:
-            link2 = data
 
-    assert link1["weight"] == 1
-    # assert link1["certainty"] == 0.1
-    assert link1["source_node_uid"] == nodes['a']
-    assert link1["target_node_uid"] == nodes['b']
-    assert link1["source_gate_name"] == "por"
-    assert link1["target_slot_name"] == "gen"
+    link_a_b = list(nodespace["nodes"][nodes['a']]['links']['por'].values())[0]
+    assert link_a_b['target_node_uid'] == nodes['b']
+    assert link_a_b['target_slot_name'] == 'gen'
+    assert link_a_b['weight'] == 1
 
-    assert link2["source_node_uid"] == nodes['c']
-    assert link2["target_node_uid"] == nodes['b']
-    assert link2["source_gate_name"] == "ret"
-    assert link2["target_slot_name"] == "gen"
+    link_c_b = list(nodespace['nodes'][nodes['c']]['links']['ret'].values())[0]
+    assert link_c_b["target_node_uid"] == nodes['b']
+    assert link_c_b["target_slot_name"] == "gen"
+
+    assert nodespace['nodes'][nodes['b']]['links'] == {}
+    assert nodespace['nodes'][nodes['s']]['links'] == {}
 
 
 def test_delete_link(test_nodenet):
@@ -107,7 +98,7 @@ def test_delete_link(test_nodenet):
     assert success
     micropsi.delete_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen")
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
-    assert len(nodespace["links"]) == 0
+    assert nodespace['nodes'][nodes['a']]['links'] == {}
 
 
 def test_save_nodenet(test_nodenet):
@@ -185,8 +176,21 @@ def test_non_standard_gate_defaults(fixed_nodenet):
     assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
     assert node.data['gate_parameters'] == {'gen': {'maximum': 0.5}}
     assert nodenet.data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
-    data = micropsi.get_nodenet_data(fixed_nodenet, None, step=-1, include_links=False)
+    data = micropsi.get_nodenet_data(fixed_nodenet, None, step=-1)
     assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
+
+
+def test_ignore_links(test_nodenet):
+    nodes = prepare_nodenet(test_nodenet)
+    micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5, 1)
+
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    assert len(nodespace["nodes"]) == 4
+    assert 'links' not in nodespace
+
+    assert len(nodespace["nodes"][nodes['a']]['links']['por'].values()) == 1
+    nodespace = micropsi.get_nodenet_data(test_nodenet, None, include_links=False)
+    assert 'links' not in nodespace["nodes"][nodes['a']]
 
 
 def test_remove_and_reload_native_module(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):

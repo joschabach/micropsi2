@@ -375,6 +375,13 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def get_activation_data(self, nodespace_uid=None, rounded=1):
+        """
+        Returns a dict of uids to lists of activation values.
+        Callers need to know the types of nodes that these activations belong to.
+        """
+        pass  # pragma: no cover
+
     @abstractmethod
     def merge_data(self, nodenet_data, keep_uids=False):
         """
@@ -387,7 +394,6 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_modulator(self, modulator):
         """
-
         Returns the numeric value of the given global modulator
         """
         pass  # pragma: no cover

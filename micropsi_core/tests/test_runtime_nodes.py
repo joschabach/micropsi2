@@ -45,6 +45,12 @@ def test_add_node(test_nodenet):
     assert node1["position"] == (200, 250)
 
 
+def test_get_nodenet_activation_data(test_nodenet):
+    micropsi.load_nodenet(test_nodenet)
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, "Root")
+    assert activation_data["activations"]["A"] == []
+
+
 def test_get_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)

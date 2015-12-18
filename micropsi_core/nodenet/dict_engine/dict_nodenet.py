@@ -359,6 +359,20 @@ class DictNodenet(Nodenet):
                     data['nodes'][uid] = self.get_node(uid).data
         return data
 
+    def get_activation_data(self, nodespace_uid=None, rounded=1):
+        activations = {}
+        if nodespace_uid is None:
+            node_ids = self._nodes.keys()
+        else:
+            node_ids = self.get_nodespace(nodespace_uid).get_known_entities("nodes")
+
+        for uid in node_ids:
+            if rounded is None:
+                activations[uid] = self.get_node(uid).construct_gates_dict().values()
+            else:
+                activations[uid] = [round(activation, rounded) for activation in self.get_node(uid).construct_gates_dict().values()]
+        return activations
+
     def delete_node(self, node_uid):
         if node_uid in self._nodespaces:
             affected_entity_ids = self._nodespaces[node_uid].get_known_ids()

@@ -1086,6 +1086,29 @@ class TheanoNodenet(Nodenet):
 
         return data
 
+    def get_activation_data(self, nodespace_uid=None, rounded=1):
+        activations = {}
+        if nodespace_uid is None:
+            for partition in self.partitions.values():
+                ids = np.nonzero(partition.allocated_nodes)
+                for id in ids:
+                    elements =  get_elements_per_type(partition.allocated_nodes[id])
+                    if rounded is None:
+                        activations[node_to_id(id, partition.pid)] = partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements]
+                    else:
+                        activations[node_to_id(id, partition.pid)] = np.round(partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements], rounded)
+        else:
+            partition = self.get_nodespace(nodespace_uid).partition
+            nodespace_id = nodespace_from_id(nodespace_uid)
+            ids = np.where(partition.allocated_node_parents == nodespace_id)
+            for id in ids:
+                elements =  get_elements_per_type(partition.allocated_nodes[id])
+                if rounded is None:
+                    activations[node_to_id(id, partition.pid)] = partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements]
+                else:
+                    activations[node_to_id(id, partition.pid)] = np.round(partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements], rounded)
+        return activations
+
     def get_modulator(self, modulator):
         return self._modulators.get(modulator, 1)
 

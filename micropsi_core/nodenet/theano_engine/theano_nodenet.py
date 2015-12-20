@@ -1090,23 +1090,25 @@ class TheanoNodenet(Nodenet):
         activations = {}
         if nodespace_uid is None:
             for partition in self.partitions.values():
-                ids = np.nonzero(partition.allocated_nodes)
+                ids = np.nonzero(partition.allocated_nodes)[0]
                 for id in ids:
-                    elements =  get_elements_per_type(partition.allocated_nodes[id])
+                    elements = get_elements_per_type(partition.allocated_nodes[id])
+                    offset = partition.allocated_node_offsets[id]
                     if rounded is None:
-                        activations[node_to_id(id, partition.pid)] = partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements]
+                        activations[node_to_id(id, partition.pid)] = partition.a.get_value()[offset:offset+elements]
                     else:
-                        activations[node_to_id(id, partition.pid)] = np.round(partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements], rounded)
+                        activations[node_to_id(id, partition.pid)] = np.round(partition.a.get_value()[offset:offset+elements], rounded)
         else:
             partition = self.get_nodespace(nodespace_uid).partition
             nodespace_id = nodespace_from_id(nodespace_uid)
             ids = np.where(partition.allocated_node_parents == nodespace_id)
             for id in ids:
-                elements =  get_elements_per_type(partition.allocated_nodes[id])
+                elements = get_elements_per_type(partition.allocated_nodes[id])
+                offset = partition.allocated_node_offsets[id]
                 if rounded is None:
-                    activations[node_to_id(id, partition.pid)] = partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements]
+                    activations[node_to_id(id, partition.pid)] = partition.a.get_value()[offset:offset+elements]
                 else:
-                    activations[node_to_id(id, partition.pid)] = np.round(partition.a[partition.allocated_node_offsets:partition.allocated_node_offsets+elements], rounded)
+                    activations[node_to_id(id, partition.pid)] = np.round(partition.a.get_value()[offset:offset+elements], rounded)
         return activations
 
     def get_modulator(self, modulator):

@@ -46,9 +46,9 @@ def test_add_node(test_nodenet):
 
 
 def test_get_nodenet_activation_data(test_nodenet):
-    micropsi.load_nodenet(test_nodenet)
-    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, "Root")
-    assert activation_data["activations"]["A"] == []
+    prepare_nodenet(test_nodenet)
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, None)
+    assert activation_data["activations"]["n0001"][0] == 0
 
 
 def test_get_nodespace(test_nodenet):

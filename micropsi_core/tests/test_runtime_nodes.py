@@ -57,6 +57,12 @@ def test_get_nodenet_activation_data(test_nodenet):
     assert activation_data["activations"][uid][5] == 0
     assert activation_data["activations"][uid][6] == 0
 
+    micropsi.set_node_activation(test_nodenet, nodes['a'], 0.34556865)
+
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, None)
+    assert abs(activation_data["activations"][uid][0] - 0.3) < 0.00001
+
+
 def test_get_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)

@@ -1021,6 +1021,11 @@ def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
     return True, runtime.get_nodenet_data(nodenet_uid, nodespace, step, include_links)
 
 
+@rpc("get_nodespace_activations")
+def get_nodespace_activations(nodenet_uid, nodespace, last_call_step=-1):
+    return True, runtime.get_nodenet_activation_data(nodenet_uid, last_call_step, nodespace)
+
+
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
     return True, runtime.get_node(nodenet_uid, node_uid)

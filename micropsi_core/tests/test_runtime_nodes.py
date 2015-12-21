@@ -46,10 +46,16 @@ def test_add_node(test_nodenet):
 
 
 def test_get_nodenet_activation_data(test_nodenet):
-    prepare_nodenet(test_nodenet)
+    nodes = prepare_nodenet(test_nodenet)
+    uid = nodes['a']
     activation_data = micropsi.get_nodenet_activation_data(test_nodenet, None)
-    assert activation_data["activations"]["n0001"][0] == 0
-
+    assert activation_data["activations"][uid][0] == 0
+    assert activation_data["activations"][uid][1] == 0
+    assert activation_data["activations"][uid][2] == 0
+    assert activation_data["activations"][uid][3] == 0
+    assert activation_data["activations"][uid][4] == 0
+    assert activation_data["activations"][uid][5] == 0
+    assert activation_data["activations"][uid][6] == 0
 
 def test_get_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)

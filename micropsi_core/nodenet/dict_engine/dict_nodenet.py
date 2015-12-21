@@ -368,9 +368,9 @@ class DictNodenet(Nodenet):
 
         for uid in node_ids:
             if rounded is None:
-                activations[uid] = self.get_node(uid).construct_gates_dict().values()
+                activations[uid] = [sheaves['default']['activation'] for sheaves in self.get_node(uid).construct_gates_dict().values()]
             else:
-                activations[uid] = [round(activation, rounded) for activation in self.get_node(uid).construct_gates_dict().values()]
+                activations[uid] = [round(sheaves['default']['activation'], rounded) for sheaves in self.get_node(uid).construct_gates_dict().values()]
         return activations
 
     def delete_node(self, node_uid):

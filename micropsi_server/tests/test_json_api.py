@@ -786,12 +786,10 @@ def test_clone_nodes(app, test_nodenet, node):
         'offset': [23, 23]
     })
     assert_success(response)
-    node = response.json_body['data']['nodes'][0]
-    link = response.json_body['data']['links'][0]
+    node = list(response.json_body['data'].values())[0]
     assert node['name'] == 'N1_copy'
     assert node['position'] == [33, 33]
-    assert link['source_node_uid'] == node['uid']
-    assert link['target_node_uid'] == node['uid']
+    assert list(node['links']['gen'].values())[0]['target_node_uid'] == node['uid']
 
 
 def test_set_node_position(app, test_nodenet, node):

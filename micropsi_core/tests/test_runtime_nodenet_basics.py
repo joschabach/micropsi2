@@ -120,13 +120,11 @@ def test_clone_nodes_nolinks(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'none', offset=[10, 20])
     assert success
-    if result['nodes'][0]['name'] == 'A1_copy':
-        a1_copy = result['nodes'][0]
-        a2_copy = result['nodes'][1]
-    else:
-        a1_copy = result['nodes'][1]
-        a2_copy = result['nodes'][0]
-
+    for n in result.values():
+        if n['name'] == 'A1_copy':
+            a1_copy = n
+        elif n['name'] == 'A2_copy':
+            a2_copy = n
     assert nodenet.is_node(a1_copy['uid'])
     assert a1_copy['uid'] != 'n0001'
     assert a1_copy['type'] == nodenet.get_node('n0001').type
@@ -136,82 +134,57 @@ def test_clone_nodes_nolinks(fixed_nodenet):
     assert nodenet.is_node(a2_copy['uid'])
     assert a2_copy['name'] == nodenet.get_node('n0002').name + '_copy'
     assert a2_copy['uid'] != 'n0002'
-    assert len(result['nodes']) == 2
-    assert len(result['links']) == 0
+    assert len(result.keys()) == 2
+    assert a1_copy['links'] == {}
+    assert a2_copy['links'] == {}
 
 
 def test_clone_nodes_all_links(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'all')
     assert success
-    assert len(result['nodes']) == 2
-    assert len(result['links']) == 2
+    assert len(result.keys()) == 2
+    for n in result.values():
+        if n['name'] == 'A1_copy':
+            a1_copy = n
+        elif n['name'] == 'A2_copy':
+            a2_copy = n
 
-    if result['nodes'][0]['name'] == 'A1_copy':
-        a1_copy = result['nodes'][0]
-        a2_copy = result['nodes'][1]
-    else:
-        a1_copy = result['nodes'][1]
-        a2_copy = result['nodes'][0]
+    # assert the link between a1-copy and a2-copy exists
+    a1link = list(a1_copy['links']['por'].values())[0]
+    assert a1link['target_node_uid'] == a2_copy['uid']
 
-    sensor = nodenet.get_node('n0005')
-    a1_copy = nodenet.get_node(a1_copy['uid'])
-    a2_copy = nodenet.get_node(a2_copy['uid'])
-    l1_uid = list(a1_copy.get_gate('por').get_links())[0].uid
-    l2_uid = list(a1_copy.get_slot('gen').get_links())[0].uid
-
-    links = a1_copy.get_associated_links()
-    link = None
-    for candidate in links:
-        if candidate.source_node.uid == a1_copy.uid and \
-                candidate.target_node.uid == a2_copy.uid and \
-                candidate.source_gate.type == 'por' and \
-                candidate.target_slot.type == 'gen':
-            link = candidate
-    assert link is not None
-
-    assert l1_uid in [l['uid'] for l in result['links']]
-
-    links = sensor.get_associated_links()
-    link = None
-    for candidate in links:
-        if candidate.source_node.uid == sensor.uid and \
-                candidate.target_node.uid == a1_copy.uid and \
-                candidate.source_gate.type == 'gen' and \
-                candidate.target_slot.type == 'gen':
-            link = candidate
-    assert link is not None
-
-    assert l2_uid in [l['uid'] for l in result['links']]
+    # assert the link between sensor and the a1-copy exists
+    sensor = nodenet.get_node('n0005').get_data()
+    candidate = None
+    for link in sensor['links']['gen'].values():
+        if link['target_node_uid'] == a1_copy['uid']:
+            candidate = link
+    assert candidate['target_slot_name'] == 'gen'
 
 
 def test_clone_nodes_internal_links(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'internal')
     assert success
-    assert len(result['nodes']) == 2
-    assert len(result['links']) == 1
+    assert len(result.keys()) == 2
+    for n in result.values():
+        if n['name'] == 'A1_copy':
+            a1_copy = n
+        elif n['name'] == 'A2_copy':
+            a2_copy = n
 
-    if result['nodes'][0]['name'] == 'A1_copy':
-        a1_copy = result['nodes'][0]
-        a2_copy = result['nodes'][1]
-    else:
-        a1_copy = result['nodes'][1]
-        a2_copy = result['nodes'][0]
+    # assert the link between a1-copy and a2-copy exists
+    a1link = list(a1_copy['links']['por'].values())[0]
+    assert a1link['target_node_uid'] == a2_copy['uid']
 
-    a1_copy = nodenet.get_node(a1_copy['uid'])
-    a2_copy = nodenet.get_node(a2_copy['uid'])
-    l1_uid = result['links'][0]['uid']
-
-    links = a1_copy.get_associated_links()
-    link = None
-    for candidate in links:
-        if candidate.source_node.uid == a1_copy.uid and \
-                candidate.target_node.uid == a2_copy.uid and \
-                candidate.source_gate.type == 'por' and \
-                candidate.target_slot.type == 'gen':
-            link = candidate
-    assert link is not None
+    # assert the link between sensor and the a1-copy does not exist
+    sensor = nodenet.get_node('n0005').get_data()
+    candidate = None
+    for link in sensor['links']['gen'].values():
+        if link['target_node_uid'] == a1_copy['uid']:
+            candidate = link
+    assert candidate is None
 
 
 def test_clone_nodes_to_new_nodespace(fixed_nodenet):
@@ -222,15 +195,12 @@ def test_clone_nodes_to_new_nodespace(fixed_nodenet):
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'internal', nodespace=testspace_uid)
 
     assert success
-    assert len(result['nodes']) == 2
-    assert len(result['links']) == 1
-
-    if result['nodes'][0]['name'] == 'A1_copy':
-        a1_copy = result['nodes'][0]
-        a2_copy = result['nodes'][1]
-    else:
-        a1_copy = result['nodes'][1]
-        a2_copy = result['nodes'][0]
+    assert len(result.keys()) == 2
+    for n in result.values():
+        if n['name'] == 'A1_copy':
+            a1_copy = n
+        elif n['name'] == 'A2_copy':
+            a2_copy = n
 
     a1_copy = nodenet.get_node(a1_copy['uid'])
     a2_copy = nodenet.get_node(a2_copy['uid'])
@@ -244,7 +214,7 @@ def test_clone_nodes_copies_gate_params(fixed_nodenet):
     micropsi.set_gate_parameters(fixed_nodenet, 'n0001', 'gen', {'maximum': 0.1})
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001'], 'internal')
     assert success
-    copy = nodenet.get_node(result['nodes'][0]['uid'])
+    copy = nodenet.get_node(list(result.keys())[0])
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
 

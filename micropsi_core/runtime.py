@@ -704,7 +704,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     """
 
     nodenet = get_nodenet(nodenet_uid)
-    result = {'nodes': [], 'links': []}
+    result = {}
     copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
     copylinks = {}
     uidmap = {}
@@ -724,32 +724,24 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         uid = nodenet.create_node(n.type, target_nodespace, (n.position[0] + offset[0], n.position[1] + offset[1]), name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
         if uid:
             uidmap[n.uid] = uid
-            result['nodes'].append(nodenet.get_node(uid).data)
         else:
             logger.warning('Could not clone node: ' + uid)
 
     for uid, l in copylinks.items():
         source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
         target_uid = uidmap.get(l.target_node.uid, l.target_node.uid)
-        success = nodenet.create_link(
+        nodenet.create_link(
             source_uid,
             l.source_gate.type,
             target_uid,
             l.target_slot.type,
             l.weight,
             l.certainty)
-        if success:
-            links = nodenet.get_node(source_uid).get_gate(l.source_gate.type).get_links()
-            link = None
-            for candidate in links:
-                if candidate.target_slot.type == l.target_slot.type and candidate.target_node.uid == target_uid:
-                    link = candidate
-                    break
-            result['links'].append(link.data)
-        else:
-            logger.warning('Could not duplicate link: ' + uid)
 
-    if len(result['nodes']) or len(nodes) == 0:
+    for uid in uidmap.values():
+        result[uid] = nodenet.get_node(uid).get_data(include_links=True)
+
+    if len(result.keys()) or len(nodes) == 0:
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."

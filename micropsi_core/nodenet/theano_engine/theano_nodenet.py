@@ -6,6 +6,7 @@ Nodenet definition
 import json
 import os
 import copy
+import math
 
 import theano
 from theano import tensor as T
@@ -1087,6 +1088,8 @@ class TheanoNodenet(Nodenet):
         return data
 
     def get_activation_data(self, nodespace_uid=None, rounded=1):
+        if rounded is not None:
+            mult = math.pow(10, rounded)
         activations = {}
         if nodespace_uid is None:
             for partition in self.partitions.values():
@@ -1097,7 +1100,7 @@ class TheanoNodenet(Nodenet):
                     if rounded is None:
                         activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
                     else:
-                        activations[node_to_id(id, partition.pid)] = [n.item() for n in np.round(partition.a.get_value()[offset:offset+elements], rounded)]
+                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
         else:
             partition = self.get_nodespace(nodespace_uid).partition
             nodespace_id = nodespace_from_id(nodespace_uid)
@@ -1108,7 +1111,7 @@ class TheanoNodenet(Nodenet):
                 if rounded is None:
                     activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
                 else:
-                    activations[node_to_id(id, partition.pid)] = np.round(partition.a.get_value()[offset:offset+elements], rounded).item()
+                    activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
         return activations
 
     def get_modulator(self, modulator):

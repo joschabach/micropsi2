@@ -155,7 +155,7 @@ def test_create_nodenet_from_template(test_nodenet, node, engine):
     data = micropsi.get_nodenet_data(uid, None)
     for uid, n in data['nodes'].items():
         if n['name'] == node1.name:
-            assert len(n['links']['gen'].keys()) == 2
+            assert len(n['links']['gen']) == 2
         else:
             assert n['name'] == node2.name
     micropsi.cfg['micropsi2'].update({'single_agent_mode': mode})

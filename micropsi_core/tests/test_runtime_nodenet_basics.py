@@ -151,13 +151,13 @@ def test_clone_nodes_all_links(fixed_nodenet):
             a2_copy = n
 
     # assert the link between a1-copy and a2-copy exists
-    a1link = list(a1_copy['links']['por'].values())[0]
+    a1link = a1_copy['links']['por'][0]
     assert a1link['target_node_uid'] == a2_copy['uid']
 
     # assert the link between sensor and the a1-copy exists
     sensor = nodenet.get_node('n0005').get_data()
     candidate = None
-    for link in sensor['links']['gen'].values():
+    for link in sensor['links']['gen']:
         if link['target_node_uid'] == a1_copy['uid']:
             candidate = link
     assert candidate['target_slot_name'] == 'gen'
@@ -175,13 +175,13 @@ def test_clone_nodes_internal_links(fixed_nodenet):
             a2_copy = n
 
     # assert the link between a1-copy and a2-copy exists
-    a1link = list(a1_copy['links']['por'].values())[0]
+    a1link = a1_copy['links']['por'][0]
     assert a1link['target_node_uid'] == a2_copy['uid']
 
     # assert the link between sensor and the a1-copy does not exist
     sensor = nodenet.get_node('n0005').get_data()
     candidate = None
-    for link in sensor['links']['gen'].values():
+    for link in sensor['links']['gen']:
         if link['target_node_uid'] == a1_copy['uid']:
             candidate = link
     assert candidate is None

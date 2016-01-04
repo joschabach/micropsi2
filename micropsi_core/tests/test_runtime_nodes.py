@@ -79,12 +79,12 @@ def test_add_link(test_nodenet):
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 4
 
-    link_a_b = list(nodespace["nodes"][nodes['a']]['links']['por'].values())[0]
+    link_a_b = nodespace["nodes"][nodes['a']]['links']['por'][0]
     assert link_a_b['target_node_uid'] == nodes['b']
     assert link_a_b['target_slot_name'] == 'gen'
     assert link_a_b['weight'] == 1
 
-    link_c_b = list(nodespace['nodes'][nodes['c']]['links']['ret'].values())[0]
+    link_c_b = nodespace['nodes'][nodes['c']]['links']['ret'][0]
     assert link_c_b["target_node_uid"] == nodes['b']
     assert link_c_b["target_slot_name"] == "gen"
 
@@ -188,7 +188,7 @@ def test_ignore_links(test_nodenet):
     assert len(nodespace["nodes"]) == 4
     assert 'links' not in nodespace
 
-    assert len(nodespace["nodes"][nodes['a']]['links']['por'].values()) == 1
+    assert len(nodespace["nodes"][nodes['a']]['links']['por']) == 1
     nodespace = micropsi.get_nodenet_data(test_nodenet, None, include_links=False)
     assert 'links' not in nodespace["nodes"][nodes['a']]
 

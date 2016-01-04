@@ -35,7 +35,7 @@ def test_load_nodenet(app, test_nodenet, node):
     assert 'nodetypes' in data
     assert 'nodes' in data
     assert 'links' not in data
-    assert len(data['nodes'][node]['links']['gen'].keys()) == 1  # genloop
+    assert len(data['nodes'][node]['links']['gen']) == 1  # genloop
     assert data['uid'] == test_nodenet
 
 
@@ -789,7 +789,7 @@ def test_clone_nodes(app, test_nodenet, node):
     node = list(response.json_body['data'].values())[0]
     assert node['name'] == 'N1_copy'
     assert node['position'] == [33, 33]
-    assert list(node['links']['gen'].values())[0]['target_node_uid'] == node['uid']
+    assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 
 
 def test_set_node_position(app, test_nodenet, node):
@@ -1019,7 +1019,8 @@ def test_add_link(app, test_nodenet, node):
     assert uid is not None
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
-    assert uid in data['nodes'][node]['links']['sub']
+    assert data['nodes'][node]['links']['sub'][0]['target_node_uid'] == node
+    assert round(data['nodes'][node]['links']['sub'][0]['weight'], 3) == 0.7
 
 
 def test_set_link_weight(app, test_nodenet, node):
@@ -1035,8 +1036,7 @@ def test_set_link_weight(app, test_nodenet, node):
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
-    for link in data['nodes'][node]['links']['gen'].values():
-        assert float("%.3f" % link['weight']) == 0.345
+    assert float("%.3f" % data['nodes'][node]['links']['gen'][0]['weight']) == 0.345
 
 
 def test_get_links_for_nodes(app, test_nodenet, node):
@@ -1325,7 +1325,7 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert node_data['type'] == "Pipe"
 
     # Links
-    for link in data['nodes'][node]['links']['gen'].values():
+    for link in data['nodes'][node]['links']['gen']:
         assert link['weight'] == 1
         assert link['target_node_uid'] == node
         assert link['target_slot_name'] == 'gen'

@@ -371,8 +371,9 @@ function setNodespaceData(data, changed){
                 addNode(item);
             }
             for(gate in data.nodes[uid].links){
-                for(luid in data.nodes[uid].links[gate]){
-                    links_data[luid] = data.nodes[uid].links[gate][luid]
+                for(var i = 0; i < data.nodes[uid].links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + data.nodes[uid].links[gate][i]['target_slot_name'] + ":" + data.nodes[uid].links[gate][i]['target_node_uid']
+                    links_data[luid] = data.nodes[uid].links[gate][i]
                     links_data[luid].source_node_uid = uid
                     links_data[luid].source_gate_name = gate
                 }

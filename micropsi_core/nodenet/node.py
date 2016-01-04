@@ -182,7 +182,7 @@ class Node(metaclass=ABCMeta):
         for key in self.get_gate_types():
             gatelinks = self.get_gate(key).get_links()
             if gatelinks:
-                links[key] = dict((l.uid, l.get_data()) for l in gatelinks)
+                links[key] = [l.get_data() for l in gatelinks]
         return links
 
     @abstractmethod

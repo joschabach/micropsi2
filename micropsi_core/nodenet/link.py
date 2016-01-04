@@ -4,7 +4,6 @@
 Link definition
 """
 
-import micropsi_core.tools
 from abc import ABCMeta, abstractmethod
 
 __author__ = 'joscha'

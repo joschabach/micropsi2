@@ -171,18 +171,6 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    @property
-    def data(self):
-        data = super(TheanoNodenet, self).data
-        data['links'] = self.construct_links_dict()
-        data['nodes'] = self.construct_nodes_dict()
-        # for uid in data['nodes']:
-        #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
-        data['nodespaces'] = self.construct_nodespaces_dict(None)
-        data['version'] = self._version
-        data['modulators'] = self.construct_modulators_dict()
-        return data
-
     def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
@@ -291,6 +279,23 @@ class TheanoNodenet(Nodenet):
         self.create_nodespace(None, None, "Root", nodespace_to_id(1, rootpartition.pid))
 
         self.initialize_nodenet({})
+
+    def get_data(self, complete=False, include_links=True):
+        data = super().get_data(complete=complete, include_links=include_links)
+        data['nodes'] = self.construct_nodes_dict(complete=complete, include_links=include_links)
+        # for uid in data['nodes']:
+        #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
+        data['nodespaces'] = self.construct_nodespaces_dict(None)
+        data['version'] = self._version
+        data['modulators'] = self.construct_modulators_dict()
+        if complete and include_links:
+            data['links'] = self.construct_links_dict()
+        return data
+
+    def export_json(self):
+        data = self.get_data(complete=True, include_links=False)
+        data['links'] = self.construct_links_dict(complete=True)
+        return data
 
     def initialize_stepoperators(self):
         self.stepoperators = [
@@ -1015,7 +1020,7 @@ class TheanoNodenet(Nodenet):
                 if number_of_elements != new_numer_of_elements:
                     self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
                                     (instance.type, number_of_elements, new_numer_of_elements, uid))
-                    instances_to_recreate[uid] = instance.data
+                    instances_to_recreate[uid] = instance.get_data(complete=True, include_links=False)
 
             # actually remove the instances
             for uid in instances_to_delete.keys():
@@ -1063,18 +1068,15 @@ class TheanoNodenet(Nodenet):
                 instance = self.get_node(node_to_id(id, partition.pid))
                 partition.allocated_nodes[id] = get_numerical_node_type(instance.type, self.native_modules)
 
-    def get_nodespace_data(self, nodespace_uid, include_links):
+    def get_nodespace_data(self, nodespace_uid, include_links=True):
         partition = self.get_partition(nodespace_uid)
         data = {
-            'links': {},
-            'nodes': self.construct_nodes_dict(nodespace_uid, 1000),
+            'nodes': self.construct_nodes_dict(nodespace_uid, 1000, include_links=include_links),
             'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'monitors': self.construct_monitors_dict(),
             'modulators': self.construct_modulators_dict()
         }
         if include_links:
-            data['links'] = self.construct_links_dict(nodespace_uid)
-
             followupnodes = []
             for uid in data['nodes']:
                 followupnodes.extend(self.get_node(uid).get_associated_node_uids())
@@ -1082,7 +1084,7 @@ class TheanoNodenet(Nodenet):
             for uid in followupnodes:
                 followup_partition = self.get_partition(uid)
                 if followup_partition.pid != partition.pid or (partition.allocated_node_parents[node_from_id(uid)] != nodespace_from_id(nodespace_uid)):
-                    data['nodes'][uid] = self.get_node(uid).data
+                    data['nodes'][uid] = self.get_node(uid).get_data(complete=False, include_links=include_links)
 
         return data
 
@@ -1101,7 +1103,7 @@ class TheanoNodenet(Nodenet):
         else:
             return self.native_modules.get(type)
 
-    def construct_links_dict(self, nodespace_uid=None):
+    def construct_links_dict(self, nodespace_uid=None, complete=False):
         data = {}
 
         for partition in self.partitions.values():
@@ -1133,14 +1135,17 @@ class TheanoNodenet(Nodenet):
 
                         linkuid = "%s:%s:%s:%s" % (node_to_id(node_id, partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))
                         linkdata = {
-                            "uid": linkuid,
                             "weight": weight,
                             "certainty": 1,
-                            "source_gate_name": source_gate_type,
-                            "source_node_uid": node_to_id(node_id, partition.pid),
                             "target_slot_name": target_slot_type,
                             "target_node_uid": node_to_id(target_id, partition.pid)
                         }
+                        if complete:
+                            linkdata.update({
+                                "uid": linkuid,
+                                "source_gate_name": source_gate_type,
+                                "source_node_uid": node_to_id(node_id, partition.pid)
+                            })
                         data[linkuid] = linkdata
 
                 target_type = partition.allocated_nodes[node_id]
@@ -1163,14 +1168,17 @@ class TheanoNodenet(Nodenet):
 
                         linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(node_id, partition.pid))
                         linkdata = {
-                            "uid": linkuid,
                             "weight": weight,
                             "certainty": 1,
-                            "source_gate_name": source_gate_type,
-                            "source_node_uid": node_to_id(source_id, partition.pid),
                             "target_slot_name": target_slot_type,
                             "target_node_uid": node_to_id(node_id, partition.pid)
                         }
+                        if complete:
+                            linkdata.update({
+                                "uid": linkuid,
+                                "source_gate_name": source_gate_type,
+                                "source_node_uid": node_to_id(source_id, partition.pid)
+                            })
                         data[linkuid] = linkdata
 
             # find links coming in from other partitions
@@ -1195,14 +1203,17 @@ class TheanoNodenet(Nodenet):
 
                         linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, from_partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, partition.pid))
                         linkdata = {
-                            "uid": linkuid,
                             "weight": float(weights[link_index, i]),
                             "certainty": 1,
-                            "source_gate_name": source_gate_type,
-                            "source_node_uid": node_to_id(source_id, from_partition.pid),
                             "target_slot_name": target_slot_type,
                             "target_node_uid": node_to_id(target_id, partition.pid)
                         }
+                        if complete:
+                            linkdata.update({
+                                "uid": linkuid,
+                                "source_gate_name": source_gate_type,
+                                "source_node_uid": node_to_id(source_id, from_partition.pid)
+                            })
                         data[linkuid] = linkdata
 
             # find links going out to other partitions
@@ -1228,14 +1239,17 @@ class TheanoNodenet(Nodenet):
 
                             linkuid = "%s:%s:%s:%s" % (node_to_id(source_id, partition.pid), source_gate_type, target_slot_type, node_to_id(target_id, to_partition.pid))
                             linkdata = {
-                                "uid": linkuid,
                                 "weight": float(weights[i, link_index]),
                                 "certainty": 1,
-                                "source_gate_name": source_gate_type,
-                                "source_node_uid": node_to_id(source_id, partition.pid),
                                 "target_slot_name": target_slot_type,
                                 "target_node_uid": node_to_id(target_id, to_partition.pid)
                             }
+                            if complete:
+                                linkdata.update({
+                                    "uid": linkuid,
+                                    "source_gate_name": source_gate_type,
+                                    "source_node_uid": node_to_id(source_id, partition.pid)
+                                })
                             data[linkuid] = linkdata
 
         return data
@@ -1248,10 +1262,10 @@ class TheanoNodenet(Nodenet):
             for node_id in nodeids:
                 i += 1
                 node_uid = node_to_id(node_id, partition.pid)
-                data[node_uid] = self.get_node(node_uid).data
+                data[node_uid] = self.get_node(node_uid).get_data(complete=True)
         return data
 
-    def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1):
+    def construct_nodes_dict(self, nodespace_uid=None, max_nodes=-1, complete=False, include_links=True):
         data = {}
         i = 0
         for partition in self.partitions.values():
@@ -1267,7 +1281,7 @@ class TheanoNodenet(Nodenet):
             for node_id in nodeids:
                 i += 1
                 node_uid = node_to_id(node_id, partition.pid)
-                data[node_uid] = self.get_node(node_uid).data
+                data[node_uid] = self.get_node(node_uid).get_data(complete=complete, include_links=include_links)
                 if max_nodes > 0 and i > max_nodes:
                     break
         return data

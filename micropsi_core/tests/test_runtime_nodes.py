@@ -120,9 +120,9 @@ def test_save_nodenet(test_nodenet):
 
 
 def test_reload_native_modules(fixed_nodenet):
-    data_before = micropsi.nodenets[fixed_nodenet].data
+    data_before = micropsi.nodenets[fixed_nodenet].get_data()
     micropsi.reload_native_modules()
-    data_after = micropsi.nodenets[fixed_nodenet].data
+    data_after = micropsi.nodenets[fixed_nodenet].get_data()
     assert data_before == data_after
 
 
@@ -174,8 +174,8 @@ def test_non_standard_gate_defaults(fixed_nodenet):
     genparams = {'maximum': 0.5}
     micropsi.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
     assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
-    assert node.data['gate_parameters'] == {'gen': {'maximum': 0.5}}
-    assert nodenet.data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
+    assert node.get_data()['gate_parameters'] == {'gen': {'maximum': 0.5}}
+    assert nodenet.get_data()['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
     data = micropsi.get_nodenet_data(fixed_nodenet, None, step=-1)
     assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
 

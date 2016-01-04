@@ -51,30 +51,6 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @property
-    @abstractmethod
-    def data(self):
-        """
-        Returns a dict representing the whole node net.
-        Concrete implementations may call this (super) method and then add the following fields if they want to
-        use JSON persistency:
-
-        links
-        nodes
-        nodespaces
-        version
-        """
-        data = self.metadata
-        data.update({
-            'links': {},
-            'nodes': {},
-            'max_coords': self.max_coords,
-            'nodespaces': {},
-            'monitors': self.construct_monitors_dict(),
-            'modulators': {},
-        })
-        return data
-
-    @property
     def metadata(self):
         """
         Returns a dict representing the node net meta data (a subset of .data).
@@ -190,6 +166,27 @@ class Nodenet(metaclass=ABCMeta):
 
         self.stepping_rate = []
         self.dashboard_values = {}
+
+    def get_data(self, complete=False, include_links=True):
+        """
+        Returns a dict representing the whole node net.
+        Concrete implementations may call this (super) method and then add the following fields if they want to
+        use JSON persistency:
+
+        links
+        nodes
+        nodespaces
+        version
+        """
+        data = self.metadata
+        data.update({
+            'nodes': {},
+            'max_coords': self.max_coords,
+            'nodespaces': {},
+            'monitors': self.construct_monitors_dict(),
+            'modulators': {},
+        })
+        return data
 
     @abstractmethod
     def save(self, filename):

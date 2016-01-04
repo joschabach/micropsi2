@@ -296,6 +296,7 @@ def test_export_nodenet(app, test_nodenet, node):
     data = json.loads(response.json_body['data'])
     assert data['name'] == 'Testnet'
     assert data['nodes'][node]['type'] == 'Pipe'
+    assert 'links' in data
 
 
 def test_import_nodenet(app, test_nodenet, node):
@@ -1018,9 +1019,9 @@ def test_add_link(app, test_nodenet, node):
     assert_success(response)
     uid = response.json_body['data']
     assert uid is not None
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    assert uid in data['links']
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert uid in data['nodes'][node]['links']['sub']
 
 
 def test_set_link_weight(app, test_nodenet, node):
@@ -1034,9 +1035,9 @@ def test_set_link_weight(app, test_nodenet, node):
         'weight': 0.345
     })
     assert_success(response)
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    for link in data['links'].values():
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    for link in data['nodes'][node]['links']['gen'].values():
         assert float("%.3f" % link['weight']) == 0.345
 
 
@@ -1060,9 +1061,9 @@ def test_delete_link(app, test_nodenet, node):
         'slot_type': "gen"
     })
     assert_success(response)
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    data['links'] == {}
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    data['nodes'][node]['links'] == {}
 
 
 def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
@@ -1318,12 +1319,12 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['nodes'][node]['parameters']['wait'] == 10
     assert data['nodes'][node]['position'] == [10, 10]
     assert data['nodes'][node]['type'] == "Pipe"
+    assert 'links' not in data
 
     assert node_data['parameters']['expectation'] == 1
     assert node_data['parameters']['wait'] == 10
     assert node_data['position'] == [10, 10]
     assert node_data['type'] == "Pipe"
-    assert 'links' not in node_data
 
     # Links
     for link in data['nodes'][node]['links']['gen'].values():

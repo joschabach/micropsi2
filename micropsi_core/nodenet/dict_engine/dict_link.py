@@ -21,19 +21,6 @@ class DictLink(Link):
     """
 
     @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "weight": self.weight,
-            "certainty": self.certainty,
-            "source_gate_name": self.source_gate.type,
-            "source_node_uid": self.source_node.uid,
-            "target_slot_name": self.target_slot.type,
-            "target_node_uid": self.target_node.uid,
-        }
-        return data
-
-    @property
     def uid(self):
         return self.source_node.uid + ":" + self.source_gate.type + ":" + self.target_slot.type + ":" + self.target_node.uid
 

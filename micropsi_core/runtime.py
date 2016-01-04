@@ -423,7 +423,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
 
     if template is not None and template in nodenet_data:
         load_nodenet(template)
-        data_to_merge = nodenets[template].data
+        data_to_merge = nodenets[template].export_json()
         data_to_merge.update(data)
         nodenets[uid].merge_data(data_to_merge)
 
@@ -563,7 +563,7 @@ def export_nodenet(nodenet_uid):
 
     Returns a string that contains the nodenet state in JSON format.
     """
-    return json.dumps(nodenets[nodenet_uid].data, sort_keys=True, indent=4)
+    return json.dumps(nodenets[nodenet_uid].export_json(), sort_keys=True, indent=4)
 
 
 def import_nodenet(string, owner=None):
@@ -632,12 +632,11 @@ def get_nodespace_list(nodenet_uid):
     return data
 
 
-def get_node(nodenet_uid, node_uid):
+def get_node(nodenet_uid, node_uid, include_links=True):
     """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
     structured as follows:
 
     {
-        "index" (int): index for auto-alignment,
         "uid" (str): unique identifier,
         "state" (dict): a dictionary of node states and their values,
         "type" (string): the type of this node,
@@ -652,7 +651,7 @@ def get_node(nodenet_uid, node_uid):
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    return nodenets[nodenet_uid].get_node(node_uid).data
+    return nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
@@ -1069,11 +1068,11 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     for node in source_nodes:
         nodelinks = node.get_associated_links()
         for l in nodelinks:
-            links[l.uid] = l.data
+            links[l.uid] = l.get_data(complete=True)
             if l.source_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.source_node.uid] = l.source_node.data
+                nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
             if l.target_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.target_node.uid] = l.target_node.data
+                nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
     return {'links': links, 'nodes': nodes}
 
 

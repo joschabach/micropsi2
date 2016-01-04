@@ -29,26 +29,6 @@ class Node(metaclass=ABCMeta):
     """
 
     @property
-    def data(self):
-
-        data = {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-            "type": self.type,
-            "parameters": self.clone_parameters(),
-            "state": self.clone_state(),
-            "gate_parameters": self.clone_non_default_gate_parameters(),
-            "sheaves": self.clone_sheaves(),
-            "activation": self.activation,
-            "gate_activations": self.construct_gates_dict(),
-            "gate_functions": self.get_gatefunction_names()
-        }
-        return data
-
-    @property
     @abstractmethod
     def uid(self):
         """
@@ -175,6 +155,35 @@ class Node(metaclass=ABCMeta):
         self._nodetype_name = nodetype_name
         self._nodetype = nodetype
         self.logger = nodetype.logger
+
+    def get_data(self, complete=False, include_links=True):
+        data = {
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
+            "type": self.type,
+            "parameters": self.clone_parameters(),
+            "state": self.clone_state(),
+            "gate_parameters": self.clone_non_default_gate_parameters(),
+            "sheaves": self.clone_sheaves(),
+            "activation": self.activation,
+            "gate_activations": self.construct_gates_dict(),
+            "gate_functions": self.get_gatefunction_names()
+        }
+        data["uid"] = self.uid
+        if complete:
+            data['index'] = self.index
+        if include_links:
+            data['links'] = self.construct_links_dict()
+        return data
+
+    def construct_links_dict(self):
+        links = {}
+        for key in self.get_gate_types():
+            gatelinks = self.get_gate(key).get_links()
+            if gatelinks:
+                links[key] = dict((l.uid, l.get_data()) for l in gatelinks)
+        return links
 
     @abstractmethod
     def get_gate(self, type):

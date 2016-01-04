@@ -149,16 +149,6 @@ class DictNodenet(Nodenet):
     """
 
     @property
-    def data(self):
-        data = super(DictNodenet, self).data
-        data['links'] = self.construct_links_dict()
-        data['nodes'] = self.construct_nodes_dict()
-        data['nodespaces'] = self.construct_nodespaces_dict("Root")
-        data['version'] = self._version
-        data['modulators'] = self.construct_modulators_dict()
-        return data
-
-    @property
     def engine(self):
         return "dict_engine"
 
@@ -203,10 +193,23 @@ class DictNodenet(Nodenet):
 
         self.initialize_nodenet({})
 
+    def get_data(self, **params):
+        data = super().get_data(**params)
+        data['nodes'] = self.construct_nodes_dict(**params)
+        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['version'] = self._version
+        data['modulators'] = self.construct_modulators_dict()
+        return data
+
+    def export_json(self):
+        data = self.get_data(complete=True, include_links=False)
+        data['links'] = self.construct_links_dict(complete=True)
+        return data
+
     def save(self, filename):
         # dict_engine saves metadata and data into the same json file, so just dump .data
         with open(filename, 'w+') as fp:
-            fp.write(json.dumps(self.data, sort_keys=True, indent=4))
+            fp.write(json.dumps(self.export_json(), sort_keys=True, indent=4))
         if os.path.getsize(filename) < 100:
             # kind of hacky, but we don't really know what was going on
             raise RuntimeError("Error writing nodenet file")
@@ -245,7 +248,7 @@ class DictNodenet(Nodenet):
         self._native_modules = {}
         for key in native_modules:
             self._native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-        saved = self.data
+        saved = self.export_json()
         self.clear()
         self.merge_data(saved, keep_uids=True)
 
@@ -281,20 +284,20 @@ class DictNodenet(Nodenet):
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
 
-    def construct_links_dict(self):
+    def construct_links_dict(self, **params):
         data = {}
         for node_uid in self.get_node_uids():
             links = self.get_node(node_uid).get_associated_links()
             for link in links:
-                data[link.uid] = link.data
+                data[link.uid] = link.get_data(**params)
         return data
 
-    def construct_nodes_dict(self, max_nodes=-1):
+    def construct_nodes_dict(self, max_nodes=-1, **params):
         data = {}
         i = 0
         for node_uid in self.get_node_uids():
             i += 1
-            data[node_uid] = self.get_node(node_uid).data
+            data[node_uid] = self.get_node(node_uid).get_data(**params)
             if max_nodes > 0 and i > max_nodes:
                 break
         return data
@@ -327,7 +330,6 @@ class DictNodenet(Nodenet):
 
     def get_nodespace_data(self, nodespace, include_links):
         data = {
-            'links': {},
             'nodes': {},
             'name': self.name,
             'max_coords': {'x': 0, 'y': 0},
@@ -338,25 +340,21 @@ class DictNodenet(Nodenet):
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
-        links = []
         followupnodes = []
         for uid in self._nodes:
             if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                 node = self.get_node(uid)
-                data['nodes'][uid] = node.data
+                data['nodes'][uid] = node.get_data(include_links=include_links)
                 if node.position[0] > data['max_coords']['x']:
                     data['max_coords']['x'] = node.position[0]
                 if node.position[1] > data['max_coords']['y']:
                     data['max_coords']['y'] = node.position[1]
                 if include_links:
-                    links.extend(self.get_node(uid).get_associated_links())
                     followupnodes.extend(self.get_node(uid).get_associated_node_uids())
         if include_links:
-            for link in links:
-                data['links'][link.uid] = link.data
             for uid in followupnodes:
                 if uid not in data['nodes']:
-                    data['nodes'][uid] = self.get_node(uid).data
+                    data['nodes'][uid] = self.get_node(uid).data(include_links=include_links)
         return data
 
     def delete_node(self, node_uid):

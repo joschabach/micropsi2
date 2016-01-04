@@ -38,14 +38,14 @@ def test_new_nodenet(test_nodenet, resourcepath, engine):
 
 def test_nodenet_data_gate_parameters(fixed_nodenet):
     from micropsi_core.nodenet.node import Nodetype
-    data = micropsi.nodenets[fixed_nodenet].data
+    data = micropsi.nodenets[fixed_nodenet].get_data()
     assert data['nodes']['n0005']['gate_parameters'] == {}
     micropsi.set_gate_parameters(fixed_nodenet, 'n0005', 'gen', {'threshold': 1})
-    data = micropsi.nodenets[fixed_nodenet].data
+    data = micropsi.nodenets[fixed_nodenet].get_data()
     assert data['nodes']['n0005']['gate_parameters'] == {'gen': {'threshold': 1}}
     defaults = Nodetype.GATE_DEFAULTS.copy()
     defaults.update({'threshold': 1})
-    data = micropsi.nodenets[fixed_nodenet].get_node('n0005').data['gate_parameters']
+    data = micropsi.nodenets[fixed_nodenet].get_node('n0005').get_data()['gate_parameters']
     assert data == {'gen': {'threshold': 1}}
 
 
@@ -105,22 +105,15 @@ def test_nodespace_removal(fixed_nodenet):
     micropsi.delete_nodespace(fixed_nodenet, uid)
     # assert that the nodespace is gone
     assert not micropsi.nodenets[fixed_nodenet].is_nodespace(uid)
-    assert uid not in micropsi.nodenets[fixed_nodenet].data['nodespaces']
+    assert uid not in micropsi.nodenets[fixed_nodenet].get_data()['nodespaces']
     # assert that the nodes it contained are gone
     assert not micropsi.nodenets[fixed_nodenet].is_node(n1_uid)
-    assert n1_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
+    assert n1_uid not in micropsi.nodenets[fixed_nodenet].get_data()['nodes']
     assert not micropsi.nodenets[fixed_nodenet].is_node(n2_uid)
-    assert n2_uid not in micropsi.nodenets[fixed_nodenet].data['nodes']
-    # assert that the links between the deleted nodes are gone
-    linked_node_uids = []
-    for uid, link in micropsi.nodenets[fixed_nodenet].data['links'].items():
-        linked_node_uids.append(link['source_node_uid'])
-        linked_node_uids.append(link['target_node_uid'])
-    assert n1_uid not in linked_node_uids
-    assert n2_uid not in linked_node_uids
+    assert n2_uid not in micropsi.nodenets[fixed_nodenet].get_data()['nodes']
     # assert that sub-nodespaces are gone as well
     assert not micropsi.nodenets[fixed_nodenet].is_nodespace(sub_uid)
-    assert sub_uid not in micropsi.nodenets[fixed_nodenet].data['nodespaces']
+    assert sub_uid not in micropsi.nodenets[fixed_nodenet].get_data()['nodespaces']
 
 
 def test_clone_nodes_nolinks(fixed_nodenet):

@@ -420,11 +420,11 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
-
     if template is not None and template in nodenet_data:
         load_nodenet(template)
         data_to_merge = nodenets[template].export_json()
         data_to_merge.update(data)
+        load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
 
     nodenets[uid].save(filename)

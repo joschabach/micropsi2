@@ -2,6 +2,7 @@ __author__ = 'rvuine'
 
 from micropsi_core.nodenet.netapi import NetAPI
 
+
 class TheanoNetAPI(NetAPI):
     """
     Theano / numpy extension of the NetAPI, giving native modules access to bulk operations and efficient

@@ -11,10 +11,9 @@ default Nodetypes
 
 """
 
-import logging
 import copy
 
-from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
+from micropsi_core.nodenet.node import Node, Gate, Slot
 from .dict_link import DictLink
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
 import micropsi_core.nodenet.gatefunctions as gatefunctions

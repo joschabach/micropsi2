@@ -14,7 +14,6 @@ default Nodetypes
 from abc import ABCMeta, abstractmethod
 
 import micropsi_core.tools
-from .link import Link
 
 __author__ = 'joscha'
 __date__ = '09.05.12'

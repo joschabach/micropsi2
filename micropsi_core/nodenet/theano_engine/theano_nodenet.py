@@ -7,10 +7,8 @@ import json
 import os
 import copy
 
-import theano
 from theano import tensor as T
 import numpy as np
-import scipy.sparse as sp
 import scipy
 
 from micropsi_core.nodenet import monitor

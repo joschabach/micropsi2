@@ -1052,7 +1052,8 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):
-    """ Returns a dict of links connected to the given nodes """
+    """ Returns a list of links connected to the given nodes,
+    and their connected nodes, if they are not in the same nodespace"""
     nodenet = nodenets[nodenet_uid]
     source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
@@ -1065,7 +1066,7 @@ def get_links_for_nodes(nodenet_uid, node_uids):
                 nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
             if l.target_node.parent_nodespace != node.parent_nodespace:
                 nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
-    return {'links': links, 'nodes': nodes}
+    return {'links': list(links.values()), 'nodes': nodes}
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):

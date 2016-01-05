@@ -136,7 +136,7 @@ def test_get_links_for_nodes(test_nodenet, node):
     api.link(node, 'gen', pipe1, 'gen')
     api.link(pipe2, 'sub', node, 'sub')
     data = micropsi.get_links_for_nodes(test_nodenet, [node.uid])
-    assert len(data['links'].values()) == 3  # node has a genloop
+    assert len(data['links']) == 3  # node has a genloop
     assert len(data['nodes'].values()) == 2
     assert pipe1.uid in data['nodes']
     assert pipe2.uid in data['nodes']

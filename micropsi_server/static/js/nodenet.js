@@ -2346,7 +2346,12 @@ function loadLinksForSelection(callback){
                     for(var uid in data.nodes){
                         addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
                     }
-                    addLinks(data.links);
+                    var linkdict = {};
+                    for(var i = 0; i < data.links.length; i++){
+                        luid = data.links[i]['source_node_uid'] + ":" + data.links[i]['source_gate_name'] + ":" + data.links[i]['target_slot_name'] + ":" + data.links[i]['target_node_uid'];
+                        linkdict[luid] = data.links[i];
+                    }
+                    addLinks(linkdict);
                     if(uids.length == 1 && uids[0] in selection && clickType != "gate"){
                         showNodeForm(uids[0]);
                     }

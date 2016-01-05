@@ -337,7 +337,7 @@ class NetAPI(object):
             msg: a string to display to the user
         """
         self.__nodenet.user_prompt = {
-            'node': node.data,
+            'node': node.get_data(include_links=False),
             'msg': msg,
             'options': None
         }

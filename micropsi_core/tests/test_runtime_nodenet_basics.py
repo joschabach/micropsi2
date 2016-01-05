@@ -96,6 +96,16 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
     nodefunctions.concept = tmp
 
 
+def test_user_notification(test_nodenet, node):
+    api = micropsi.nodenets[test_nodenet].netapi
+    node_obj = api.get_node(node)
+    api.notify_user(node_obj, "Hello there")
+    result, data = micropsi.get_current_state(test_nodenet, nodenet={'nodespace': 'Root'})
+    assert 'user_prompt' in data
+    assert data['user_prompt']['node']['uid'] == node
+    assert data['user_prompt']['msg'] == "Hello there"
+
+
 def test_nodespace_removal(fixed_nodenet):
     res, uid = micropsi.add_nodespace(fixed_nodenet, [100, 100], nodespace=None, name="testspace")
     res, n1_uid = micropsi.add_node(fixed_nodenet, 'Register', [100, 100], nodespace=uid, name="sub1")

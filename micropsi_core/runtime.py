@@ -273,7 +273,7 @@ def load_nodenet(nodenet_uid):
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 
-            if data.world:
+            if hasattr(data, 'world') and data.world:
                 if data.world in worlds:
                     world_uid = data.world
                     worldadapter = data.get('worldadapter')

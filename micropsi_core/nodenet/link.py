@@ -78,7 +78,6 @@ class Link(metaclass=ABCMeta):
         }
         if complete:
             data.update({
-                "uid": self.uid,
                 "source_gate_name": self.source_gate.type,
                 "source_node_uid": self.source_node.uid,
             })

@@ -203,7 +203,7 @@ class DictNodenet(Nodenet):
 
     def export_json(self):
         data = self.get_data(complete=True, include_links=False)
-        data['links'] = self.construct_links_dict(complete=True)
+        data['links'] = self.construct_links_list()
         return data
 
     def save(self, filename):
@@ -284,12 +284,12 @@ class DictNodenet(Nodenet):
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
 
-    def construct_links_dict(self, **params):
-        data = {}
+    def construct_links_list(self):
+        data = []
         for node_uid in self.get_node_uids():
-            links = self.get_node(node_uid).get_associated_links()
-            for link in links:
-                data[link.uid] = link.get_data(**params)
+            node = self.get_node(node_uid)
+            for g in node.get_gate_types():
+                data.extend([l.get_data(complete=True) for l in node.get_gate(g).get_links()])
         return data
 
     def construct_nodes_dict(self, max_nodes=-1, **params):
@@ -424,17 +424,31 @@ class DictNodenet(Nodenet):
             self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links
-        for linkid in nodenet_data.get('links', {}):
-            data = nodenet_data['links'][linkid]
-            if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
-                continue
-            self.create_link(
-                uidmap[data['source_node_uid']],
-                data['source_gate_name'],
-                uidmap[data['target_node_uid']],
-                data['target_slot_name'],
-                data['weight']
-            )
+        links = nodenet_data.get('links')
+        if links and isinstance(links, list):
+            for link in links:
+                if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
+                    continue
+                self.create_link(
+                    uidmap[link['source_node_uid']],
+                    link['source_gate_name'],
+                    uidmap[link['target_node_uid']],
+                    link['target_slot_name'],
+                    link['weight']
+                )
+        elif isinstance(links, dict):
+            # compatibility
+            for linkid in nodenet_data.get('links', {}):
+                data = nodenet_data['links'][linkid]
+                if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
+                    continue
+                self.create_link(
+                    uidmap[data['source_node_uid']],
+                    data['source_gate_name'],
+                    uidmap[data['target_node_uid']],
+                    data['target_slot_name'],
+                    data['weight']
+                )
 
         for monitorid in nodenet_data.get('monitors', {}):
             data = nodenet_data['monitors'][monitorid]

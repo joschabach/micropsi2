@@ -120,10 +120,15 @@ def test_save_nodenet(test_nodenet):
 
 
 def test_reload_native_modules(fixed_nodenet):
-    data_before = micropsi.nodenets[fixed_nodenet].get_data()
+    def hashlink(l):
+        return "%s:%s:%s:%s" % (l['source_node_uid'], l['source_gate_name'], l['target_node_uid'], l['target_slot_name'])
+    data_before = micropsi.nodenets[fixed_nodenet].export_json()
+    links_before = set([hashlink(l) for l in data_before.pop('links')])
     micropsi.reload_native_modules()
-    data_after = micropsi.nodenets[fixed_nodenet].get_data()
+    data_after = micropsi.nodenets[fixed_nodenet].export_json()
+    links_after = set([hashlink(l) for l in data_after.pop('links')])
     assert data_before == data_after
+    assert links_before == links_after
 
 
 @pytest.mark.engine("dict_engine")

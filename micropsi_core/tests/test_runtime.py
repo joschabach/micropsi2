@@ -159,3 +159,9 @@ def test_create_nodenet_from_template(test_nodenet, node, engine):
         else:
             assert n['name'] == node2.name
     micropsi.cfg['micropsi2'].update({'single_agent_mode': mode})
+
+
+def test_export_json_does_not_send_duplicate_links(fixed_nodenet):
+    import json
+    result = json.loads(micropsi.export_nodenet(fixed_nodenet))
+    assert len(result['links']) == 4

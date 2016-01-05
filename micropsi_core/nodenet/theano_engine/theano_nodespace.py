@@ -11,17 +11,6 @@ class TheanoNodespace(Nodespace):
     """
 
     @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "index": 0,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace
-        }
-        return data
-
-    @property
     def uid(self):
         return nodespace_to_id(self._id, self._partition.pid)
 

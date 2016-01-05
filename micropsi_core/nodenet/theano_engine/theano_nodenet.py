@@ -1239,12 +1239,12 @@ class TheanoNodenet(Nodenet):
                         is_in_hierarchy = True
 
                 if is_in_hierarchy:
-                    data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).data
+                    data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).get_data()
 
         if nodespace_uid in self.partitionmap:
             for partition in self.partitionmap[nodespace_uid]:
                 partition_root_uid = partition.rootnodespace_uid
-                data[partition_root_uid] = self.get_nodespace(partition_root_uid).data
+                data[partition_root_uid] = self.get_nodespace(partition_root_uid).get_data()
 
         return data
 

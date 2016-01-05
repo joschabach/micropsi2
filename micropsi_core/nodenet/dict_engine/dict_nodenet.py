@@ -207,7 +207,7 @@ class DictNodenet(Nodenet):
         return data
 
     def save(self, filename):
-        # dict_engine saves metadata and data into the same json file, so just dump .data
+        # dict_engine saves everything to json, just dump the json export
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(self.export_json(), sort_keys=True, indent=4))
         if os.path.getsize(filename) < 100:
@@ -318,7 +318,7 @@ class DictNodenet(Nodenet):
                     is_in_hierarchy = True
 
             if is_in_hierarchy:
-                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
+                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).get_data()
         return data
 
     def get_nodetype(self, type):
@@ -354,7 +354,7 @@ class DictNodenet(Nodenet):
         if include_links:
             for uid in followupnodes:
                 if uid not in data['nodes']:
-                    data['nodes'][uid] = self.get_node(uid).data(include_links=include_links)
+                    data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
         return data
 
     def delete_node(self, node_uid):

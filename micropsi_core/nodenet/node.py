@@ -565,16 +565,6 @@ class Nodetype(object):
     }
 
     @property
-    def data(self):
-        data = {
-            "name": self.name,
-            "slottypes": self.slottypes,
-            "gatetypes": self.gatetypes,
-            "parameters": self.parameters
-        }
-        return data
-
-    @property
     def parameters(self):
         return self._parameters
 
@@ -661,3 +651,11 @@ class Nodetype(object):
             self.nodefunction_name = nodefunction_name
         else:
             self.nodefunction = None
+
+    def get_data(self):
+        return {
+            "name": self.name,
+            "slottypes": self.slottypes,
+            "gatetypes": self.gatetypes,
+            "parameters": self.parameters
+        }

@@ -53,7 +53,7 @@ class Nodenet(metaclass=ABCMeta):
     @property
     def metadata(self):
         """
-        Returns a dict representing the node net meta data (a subset of .data).
+        Returns a dict representing the node net meta data.
         """
         data = {
             'uid': self.uid,
@@ -360,8 +360,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_nodespace_data(self, nodespace_uid, include_links):
         """
-        Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
-        nodespace.
+        Returns a data dict of the nodenet state for the given nodespace.
 
         Implementations are expected to fill the following keys:
         'nodes' - map of nodes it the given rectangle
@@ -375,7 +374,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def merge_data(self, nodenet_data, keep_uids=False):
         """
-        Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
+        Merges the data in nodenet_data into this nodenet.
         If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,
         so only tests should use keep_uids=True
         """
@@ -548,7 +547,7 @@ class Nodenet(metaclass=ABCMeta):
     def construct_monitors_dict(self):
         data = {}
         for monitor_uid in self._monitors:
-            data[monitor_uid] = self._monitors[monitor_uid].data
+            data[monitor_uid] = self._monitors[monitor_uid].get_data()
         return data
 
     def remove_monitor(self, monitor_uid):

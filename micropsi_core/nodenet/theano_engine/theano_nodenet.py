@@ -464,31 +464,20 @@ class TheanoNodenet(Nodenet):
                     node_proxy.set_state(key, value)
 
         # merge in links
-        links = nodenet_data.get('links')
-        if links and isinstance(links, list):
-            for link in links:
-                if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
-                    continue
-                self.create_link(
-                    uidmap[link['source_node_uid']],
-                    link['source_gate_name'],
-                    uidmap[link['target_node_uid']],
-                    link['target_slot_name'],
-                    link['weight']
-                )
-        elif isinstance(links, dict):
+        links = nodenet_data.get('links', [])
+        if isinstance(links, dict):
             # compatibility
-            for linkid in nodenet_data.get('links', {}):
-                data = nodenet_data['links'][linkid]
-                if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
-                    continue
-                self.create_link(
-                    uidmap[data['source_node_uid']],
-                    data['source_gate_name'],
-                    uidmap[data['target_node_uid']],
-                    data['target_slot_name'],
-                    data['weight']
-                )
+            links = links.values()
+        for link in links:
+            if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
+                continue
+            self.create_link(
+                uidmap[link['source_node_uid']],
+                link['source_gate_name'],
+                uidmap[link['target_node_uid']],
+                link['target_slot_name'],
+                link['weight']
+            )
 
         for monitorid in nodenet_data.get('monitors', {}):
             data = nodenet_data['monitors'][monitorid]

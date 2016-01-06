@@ -502,7 +502,7 @@ def test_node_netapi_link(fixed_nodenet):
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
-            if otherside_link.uid == link.uid:
+            if otherside_link.signature == link.signature:
                 found = True
         assert found
 
@@ -535,7 +535,7 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
-            if otherside_link.uid == link.uid:
+            if otherside_link.signature == link.signature:
                 found = True
         assert found
 

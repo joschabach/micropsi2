@@ -713,11 +713,11 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
             for g in n.get_gate_types():
                 for link in n.get_gate(g).get_links():
                     if clonemode == 'all' or link.target_node.uid in copynodes:
-                        copylinks[link.uid] = link
+                        copylinks[link.signature] = link
             if clonemode == 'all':
                 for s in n.get_slot_types():
                     for link in n.get_slot(s).get_links():
-                        copylinks[link.uid] = link
+                        copylinks[link.signature] = link
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
@@ -1061,7 +1061,7 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     for node in source_nodes:
         nodelinks = node.get_associated_links()
         for l in nodelinks:
-            links[l.uid] = l.get_data(complete=True)
+            links[l.signature] = l.get_data(complete=True)
             if l.source_node.parent_nodespace != node.parent_nodespace:
                 nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
             if l.target_node.parent_nodespace != node.parent_nodespace:

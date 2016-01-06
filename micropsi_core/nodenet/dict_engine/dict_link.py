@@ -21,10 +21,6 @@ class DictLink(Link):
     """
 
     @property
-    def uid(self):
-        return self.source_node.uid + ":" + self.source_gate.type + ":" + self.target_slot.type + ":" + self.target_node.uid
-
-    @property
     def weight(self):
         return self.__weight
 

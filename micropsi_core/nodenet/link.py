@@ -16,7 +16,7 @@ class Link(metaclass=ABCMeta):
     """
 
     @property
-    def uid(self):
+    def signature(self):
         return self.source_node.uid + ":" + self.source_gate.type + ":" + self.target_slot.type + ":" + self.target_node.uid
 
     @property

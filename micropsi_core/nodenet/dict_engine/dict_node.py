@@ -11,10 +11,9 @@ default Nodetypes
 
 """
 
-import logging
 import copy
 
-from micropsi_core.nodenet.node import Node, Gate, Nodetype, Slot
+from micropsi_core.nodenet.node import Node, Gate, Slot
 from .dict_link import DictLink
 from micropsi_core.nodenet.dict_engine.dict_netentity import NetEntity
 import micropsi_core.nodenet.gatefunctions as gatefunctions
@@ -439,10 +438,10 @@ class DictGate(Gate):
         return self.parameters[parameter_name]
 
     def _register_outgoing(self, link):
-        self.__outgoing[link.uid] = link
+        self.__outgoing[link.signature] = link
 
     def _unregister_outgoing(self, link):
-        del self.__outgoing[link.uid]
+        del self.__outgoing[link.signature]
 
     def clone_sheaves(self):
         return self.sheaves.copy()
@@ -555,7 +554,7 @@ class DictSlot(Slot):
         return list(self.__incoming.values())
 
     def _register_incoming(self, link):
-        self.__incoming[link.uid] = link
+        self.__incoming[link.signature] = link
 
     def _unregister_incoming(self, link):
-        del self.__incoming[link.uid]
+        del self.__incoming[link.signature]

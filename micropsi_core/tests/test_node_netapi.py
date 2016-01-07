@@ -51,13 +51,14 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert len(node.get_gate('gen').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
-    assert node.data['uid'] == node.uid
-    assert node.data['name'] == node.name
-    assert node.data['type'] == node.type
+    data = node.get_data()
+    assert data['uid'] == node.uid
+    assert data['name'] == node.name
+    assert data['type'] == node.type
 
     node = netapi.create_node("Register", None)
-    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    #assert node.data['name'] == node.name
+    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    # assert data['name'] == node.name
 
 
 def test_node_netapi_create_pipe_node(fixed_nodenet):
@@ -86,17 +87,18 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
     assert len(node.get_gate('exp').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
-    assert node.data['uid'] == node.uid
+    data = node.get_data()
+    assert data['uid'] == node.uid
     for key in node.get_gate_types():
-        assert key not in node.data['gate_parameters']
+        assert key not in data['gate_parameters']
         for parameter, value in node.nodetype.gate_defaults[key].items():
             assert node.get_gate(key).get_parameter(parameter) == value
-    assert node.data['name'] == node.name
-    assert node.data['type'] == node.type
+    assert data['name'] == node.name
+    assert data['type'] == node.type
 
     node = netapi.create_node("Pipe", None)
-    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    #assert node.data['name'] == node.name
+    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    # assert data['name'] == node.name
 
 
 @pytest.mark.engine("dict_engine")
@@ -130,13 +132,14 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert len(node.get_gate('ref').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
-    assert node.data['uid'] == node.uid
-    assert node.data['name'] == node.name
-    assert node.data['type'] == node.type
+    data = node.get_data()
+    assert data['uid'] == node.uid
+    assert data['name'] == node.name
+    assert data['type'] == node.type
 
     node = netapi.create_node("Pipe", None)
-    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    #assert node.data['name'] == node.name
+    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    # assert data['name'] == node.name
 
 
 def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
@@ -146,7 +149,7 @@ def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
     node = netapi.create_node("Register", nodespace.uid, "TestName")
 
     assert node.parent_nodespace == nodespace.uid
-    assert node.data['parent_nodespace'] == nodespace.uid
+    assert node.get_data()['parent_nodespace'] == nodespace.uid
 
 
 def test_node_netapi_get_nodespace_one(fixed_nodenet):
@@ -181,7 +184,7 @@ def test_node_netapi_get_node(fixed_nodenet):
     queried_node = netapi.get_node(node.uid)
     assert queried_node.uid == node.uid
     assert queried_node.name == node.name
-    assert queried_node.data == node.data
+    assert queried_node.get_data() == node.get_data()
     assert queried_node.type == node.type
 
 
@@ -499,15 +502,17 @@ def test_node_netapi_link(fixed_nodenet):
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
-            if otherside_link.uid == link.uid:
+            if otherside_link.signature == link.signature:
                 found = True
         assert found
 
         # frontend/persistency-facing
-        assert link.data['weight'] == link.weight
-        assert link.data['uid'] == link.uid
-        assert link.data['source_node_uid'] == node2.uid
-        assert link.data['target_node_uid'] == node1.uid
+        assert link.get_data()['weight'] == link.weight
+        assert link.get_data()['target_node_uid'] == node1.uid
+        assert link.get_data()['target_slot_name'] == 'gen'
+        # frontend/persistency-facing
+        assert link.get_data(complete=True)['source_node_uid'] == node2.uid
+        assert link.get_data(complete=True)['source_gate_name'] == 'gen'
 
 
 def test_node_netapi_link_change_weight(fixed_nodenet):
@@ -530,15 +535,14 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
-            if otherside_link.uid == link.uid:
+            if otherside_link.signature == link.signature:
                 found = True
         assert found
 
         # frontend/persistency-facing
-        assert link.data['weight'] == link.weight
-        assert link.data['uid'] == link.uid
-        assert link.data['source_node_uid'] == node2.uid
-        assert link.data['target_node_uid'] == node1.uid
+        assert link.get_data()['weight'] == link.weight
+        assert link.get_data()['target_node_uid'] == node1.uid
+        assert link.get_data()['target_slot_name'] == 'gen'
 
 
 def test_node_netapi_link_with_reciprocal(fixed_nodenet):

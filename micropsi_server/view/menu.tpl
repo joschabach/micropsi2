@@ -25,7 +25,7 @@
                         <li  data="nodenet-needed"><a href="#" class="reload_native_modules reload_revert">Reload &amp; Revert</a></li>
                         <li class="divider"></li>
                         <li  data="nodenet-needed"><a href="/nodenet/export" class="nodenet_export">Export to file...</a></li>
-                        <li  data="nodenet-needed"><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
+                        <li><a href="/nodenet/import" class="nodenet_import">Import file...</a></li>
                         <li  data="nodenet-needed"><a href="/nodenet/merge" class="nodenet_merge">Merge file...</a></li>
                         %if "manage nodenets" in permissions:
                         <li class="divider"></li>

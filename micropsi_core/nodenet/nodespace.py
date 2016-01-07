@@ -22,17 +22,6 @@ class Nodespace(metaclass=ABCMeta):
     """
 
     @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-        }
-        return data
-
-    @property
     @abstractmethod
     def uid(self):
         """
@@ -97,6 +86,18 @@ class Nodespace(metaclass=ABCMeta):
         The UID of this node's parent nodespace
         """
         pass  # pragma: no cover
+
+    def get_data(self):
+        """
+        Returns the json representation of this nodespace
+        """
+        return {
+            "uid": self.uid,
+            "index": self.index,
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
+        }
 
     @abstractmethod
     def get_activator_value(self, type):

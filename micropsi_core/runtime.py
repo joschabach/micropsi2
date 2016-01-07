@@ -273,7 +273,7 @@ def load_nodenet(nodenet_uid):
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 
-            if data.world:
+            if hasattr(data, 'world') and data.world:
                 if data.world in worlds:
                     world_uid = data.world
                     worldadapter = data.get('worldadapter')
@@ -428,11 +428,11 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
-
     if template is not None and template in nodenet_data:
         load_nodenet(template)
-        data_to_merge = nodenets[template].data
+        data_to_merge = nodenets[template].export_json()
         data_to_merge.update(data)
+        load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
 
     nodenets[uid].save(filename)
@@ -571,7 +571,7 @@ def export_nodenet(nodenet_uid):
 
     Returns a string that contains the nodenet state in JSON format.
     """
-    return json.dumps(nodenets[nodenet_uid].data, sort_keys=True, indent=4)
+    return json.dumps(nodenets[nodenet_uid].export_json(), sort_keys=True, indent=4)
 
 
 def import_nodenet(string, owner=None):
@@ -640,12 +640,11 @@ def get_nodespace_list(nodenet_uid):
     return data
 
 
-def get_node(nodenet_uid, node_uid):
+def get_node(nodenet_uid, node_uid, include_links=True):
     """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
     structured as follows:
 
     {
-        "index" (int): index for auto-alignment,
         "uid" (str): unique identifier,
         "state" (dict): a dictionary of node states and their values,
         "type" (string): the type of this node,
@@ -660,7 +659,7 @@ def get_node(nodenet_uid, node_uid):
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    return nodenets[nodenet_uid].get_node(node_uid).data
+    return nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
@@ -713,7 +712,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     """
 
     nodenet = get_nodenet(nodenet_uid)
-    result = {'nodes': [], 'links': []}
+    result = {}
     copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
     copylinks = {}
     uidmap = {}
@@ -722,43 +721,35 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
             for g in n.get_gate_types():
                 for link in n.get_gate(g).get_links():
                     if clonemode == 'all' or link.target_node.uid in copynodes:
-                        copylinks[link.uid] = link
+                        copylinks[link.signature] = link
             if clonemode == 'all':
                 for s in n.get_slot_types():
                     for link in n.get_slot(s).get_links():
-                        copylinks[link.uid] = link
+                        copylinks[link.signature] = link
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
         uid = nodenet.create_node(n.type, target_nodespace, (n.position[0] + offset[0], n.position[1] + offset[1]), name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
         if uid:
             uidmap[n.uid] = uid
-            result['nodes'].append(nodenet.get_node(uid).data)
         else:
             logger.warning('Could not clone node: ' + uid)
 
     for uid, l in copylinks.items():
         source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
         target_uid = uidmap.get(l.target_node.uid, l.target_node.uid)
-        success = nodenet.create_link(
+        nodenet.create_link(
             source_uid,
             l.source_gate.type,
             target_uid,
             l.target_slot.type,
             l.weight,
             l.certainty)
-        if success:
-            links = nodenet.get_node(source_uid).get_gate(l.source_gate.type).get_links()
-            link = None
-            for candidate in links:
-                if candidate.target_slot.type == l.target_slot.type and candidate.target_node.uid == target_uid:
-                    link = candidate
-                    break
-            result['links'].append(link.data)
-        else:
-            logger.warning('Could not duplicate link: ' + uid)
 
-    if len(result['nodes']) or len(nodes) == 0:
+    for uid in uidmap.values():
+        result[uid] = nodenet.get_node(uid).get_data(include_links=True)
+
+    if len(result.keys()) or len(nodes) == 0:
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."
@@ -1069,7 +1060,8 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):
-    """ Returns a dict of links connected to the given nodes """
+    """ Returns a list of links connected to the given nodes,
+    and their connected nodes, if they are not in the same nodespace"""
     nodenet = nodenets[nodenet_uid]
     source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
@@ -1077,12 +1069,12 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     for node in source_nodes:
         nodelinks = node.get_associated_links()
         for l in nodelinks:
-            links[l.uid] = l.data
+            links[l.signature] = l.get_data(complete=True)
             if l.source_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.source_node.uid] = l.source_node.data
+                nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
             if l.target_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.target_node.uid] = l.target_node.data
-    return {'links': links, 'nodes': nodes}
+                nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
+    return {'links': list(links.values()), 'nodes': nodes}
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):

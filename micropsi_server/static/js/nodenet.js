@@ -357,6 +357,7 @@ function setNodespaceData(data, changed){
                 if (uid in selection) delete selection[uid];
             }
         }
+        var links_data = {}
         for(uid in data.nodes){
             item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions);
             if(uid in nodes){
@@ -368,6 +369,14 @@ function setNodespaceData(data, changed){
                 }
             } else{
                 addNode(item);
+            }
+            for(gate in data.nodes[uid].links){
+                for(var i = 0; i < data.nodes[uid].links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + data.nodes[uid].links[gate][i]['target_slot_name'] + ":" + data.nodes[uid].links[gate][i]['target_node_uid']
+                    links_data[luid] = data.nodes[uid].links[gate][i]
+                    links_data[luid].source_node_uid = uid
+                    links_data[luid].source_gate_name = gate
+                }
             }
         }
         for(uid in data.nodespaces){
@@ -394,11 +403,11 @@ function setNodespaceData(data, changed){
             });
         } else {
             for(var uid in links) {
-                if(!(uid in data.links)) {
+                if(!(uid in links_data)) {
                     removeLink(links[uid]);
                 }
             }
-            addLinks(data.links);
+            addLinks(links_data);
         }
 
         updateModulators(data.modulators);
@@ -2337,7 +2346,12 @@ function loadLinksForSelection(callback){
                     for(var uid in data.nodes){
                         addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
                     }
-                    addLinks(data.links);
+                    var linkdict = {};
+                    for(var i = 0; i < data.links.length; i++){
+                        luid = data.links[i]['source_node_uid'] + ":" + data.links[i]['source_gate_name'] + ":" + data.links[i]['target_slot_name'] + ":" + data.links[i]['target_node_uid'];
+                        linkdict[luid] = data.links[i];
+                    }
+                    addLinks(linkdict);
                     if(uids.length == 1 && uids[0] in selection && clickType != "gate"){
                         showNodeForm(uids[0]);
                     }

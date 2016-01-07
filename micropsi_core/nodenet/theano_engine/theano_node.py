@@ -4,7 +4,6 @@ from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
-from micropsi_core.nodenet.theano_engine import theano_nodespace as nodespace
 import numpy as np
 
 

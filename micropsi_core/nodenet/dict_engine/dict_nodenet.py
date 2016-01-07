@@ -191,6 +191,8 @@ class DictNodenet(Nodenet):
 
         self.nodegroups = {}
 
+        self.deleted_items = {}
+
         self.initialize_nodenet({})
 
     def get_data(self, **params):
@@ -381,6 +383,7 @@ class DictNodenet(Nodenet):
             if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
                 parent_nodespace._unregister_entity('nodespaces', node_uid)
             del self._nodespaces[node_uid]
+            self._track_deletion('nodespaces', node_uid)
         else:
             node = self._nodes[node_uid]
             node.unlink_completely()
@@ -389,6 +392,7 @@ class DictNodenet(Nodenet):
             if self._nodes[node_uid].type == "Activator":
                 parent_nodespace.unset_activator_value(self._nodes[node_uid].get_parameter('type'))
             del self._nodes[node_uid]
+            self._track_deletion('nodes', node_uid)
 
     def delete_nodespace(self, uid):
         self.delete_node(uid)
@@ -404,9 +408,11 @@ class DictNodenet(Nodenet):
 
     def _register_node(self, node):
         self._nodes[node.uid] = node
+        node.last_changed = self.current_step
 
     def _register_nodespace(self, nodespace):
         self._nodespaces[nodespace.uid] = nodespace
+        nodespace.last_changed = self.current_step
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -792,6 +798,43 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+
+    def _track_deletion(self, entity_type, uid):
+        """
+        Track deletion of entitytype. either 'nodes' or 'nodespaces'
+        """
+        if self.current_step not in self.deleted_items:
+            self.deleted_items[self.current_step] = {
+                'nodespaces_deleted': [],
+                'nodes_deleted': []
+            }
+        self.deleted_items[self.current_step]["%s_deleted" % entity_type].append(uid)
+
+    def get_structural_changes(self, nodespace_uid, since_step):
+        ns = self.get_nodespace(nodespace_uid)
+        result = {
+            'nodes_dirty': {},
+            'nodespaces_dirty': {},
+            'nodes_deleted': [],
+            'nodespaces_deleted': []
+        }
+        for i in range(since_step, self.current_step + 1):
+            if i in self.deleted_items:
+                result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
+                result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+
+        for uid in ns.get_known_ids():
+            if uid not in result['nodes_deleted'] and self.is_node(uid):
+                if self.get_node(uid).last_changed >= since_step:
+                    result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+                    for assoc in self.get_node(uid).get_associated_node_uids():
+                        if self.get_node(assoc).parent_nodespace != ns.uid and assoc not in result['nodes_dirty']:
+                            result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
+
+            elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
+                if self.get_nodespace(uid).last_changed >= since_step:
+                    result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+        return result
 
     def get_dashboard(self):
         data = super(DictNodenet, self).get_dashboard()

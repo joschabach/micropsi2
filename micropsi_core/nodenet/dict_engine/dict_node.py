@@ -129,6 +129,7 @@ class DictNode(NetEntity, Node):
             self.__slots[slot] = DictSlot(slot, self)
         if state:
             self.__state = state
+        self.last_changed = 0
         nodenet._register_node(self)
         self.sheaves = {"default": emptySheafElement.copy()}
         self.activation = activation
@@ -340,6 +341,9 @@ class DictNode(NetEntity, Node):
 
         target = self.nodenet.get_node(target_node_uid)
 
+        self.last_changed = self.nodenet.current_step
+        target.last_changed = self.nodenet.current_step
+
         if slot_name not in target.get_slot_types():
             raise ValueError("Node %s has no slot %s" % (target_node_uid, slot_name))
 
@@ -359,6 +363,8 @@ class DictNode(NetEntity, Node):
 
     def unlink_completely(self):
         """Deletes all links originating from this node or ending at this node"""
+        self.last_changed = self.nodenet.current_step
+
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
             for link_candidate in self.get_gate(gate_name_candidate).get_links():
@@ -367,9 +373,12 @@ class DictNode(NetEntity, Node):
             for link_candidate in self.get_slot(slot_name_candidate).get_links():
                 links_to_delete.add(link_candidate)
         for link in links_to_delete:
+            link.target_node.last_changed = self.nodenet.current_step
             link.remove()
 
     def unlink(self, gate_name=None, target_node_uid=None, slot_name=None):
+        self.last_changed = self.nodenet.current_step
+
         links_to_delete = set()
         for gate_name_candidate in self.get_gate_types():
             if gate_name is None or gate_name == gate_name_candidate:
@@ -378,6 +387,7 @@ class DictNode(NetEntity, Node):
                         if slot_name is None or slot_name == link_candidate.target_slot.type:
                             links_to_delete.add(link_candidate)
         for link in links_to_delete:
+            link.target_node.last_changed = self.nodenet.current_step
             link.remove()
 
 

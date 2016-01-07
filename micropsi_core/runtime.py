@@ -345,6 +345,7 @@ def get_nodenet_activation_data(nodenet_uid, last_call_step=-1, nodespace=None):
     }
     return data
 
+
 def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?
@@ -682,6 +683,7 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
     uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
     return True, uid
 
+
 def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
     """Creates a new nodespace
     Arguments:
@@ -753,6 +755,13 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."
+
+
+def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
+    """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
+    Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
+    """
+    return nodenets[nodenet_uid].get_structural_changes(nodespace_uid, since_step)
 
 
 def __pythonify(name):

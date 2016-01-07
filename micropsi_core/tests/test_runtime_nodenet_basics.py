@@ -365,3 +365,19 @@ def test_get_structural_changes(fixed_nodenet):
     assert newnode.uid in result['nodes_dirty']
     assert len(result['nodes_dirty'][newnode.uid]['links']['gen']) == 1
     assert newspace.uid in result['nodespaces_dirty']
+
+
+def test_get_structural_changes_cycles(fixed_nodenet):
+    net = micropsi.nodenets[fixed_nodenet]
+    net.step()
+    nodes = {}
+    for n in net.netapi.get_nodes():
+        nodes[n.name] = n
+    net.netapi.delete_node(nodes['B2'])
+    net.step()
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    assert nodes['B2'].uid in result['nodes_deleted']
+    for i in range(101):
+        net.step()
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    assert nodes['B2'].uid not in result['nodes_deleted']

@@ -489,6 +489,14 @@ class DictNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, self._nodes.copy(), self.netapi)
 
+        steps = sorted(list(self.deleted_items.keys()))
+        if steps:
+            for i in steps:
+                if i >= self.current_step - 100:
+                    break
+                else:
+                    del self.deleted_items[i]
+
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
         node = DictNode(

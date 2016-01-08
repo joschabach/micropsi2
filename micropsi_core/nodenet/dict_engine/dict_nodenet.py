@@ -191,8 +191,6 @@ class DictNodenet(Nodenet):
 
         self.nodegroups = {}
 
-        self.deleted_items = {}
-
         self.initialize_nodenet({})
 
     def get_data(self, **params):
@@ -806,17 +804,6 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
-
-    def _track_deletion(self, entity_type, uid):
-        """
-        Track deletion of entitytype. either 'nodes' or 'nodespaces'
-        """
-        if self.current_step not in self.deleted_items:
-            self.deleted_items[self.current_step] = {
-                'nodespaces_deleted': [],
-                'nodes_deleted': []
-            }
-        self.deleted_items[self.current_step]["%s_deleted" % entity_type].append(uid)
 
     def get_structural_changes(self, nodespace_uid, since_step):
         ns = self.get_nodespace(nodespace_uid)

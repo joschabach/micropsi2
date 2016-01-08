@@ -541,6 +541,14 @@ class TheanoNodenet(Nodenet):
             for operator in self.stepoperators:
                 operator.execute(self, None, self.netapi)
 
+        steps = sorted(list(self.deleted_items.keys()))
+        if steps:
+            for i in steps:
+                if i >= self.current_step - 100:
+                    break
+                else:
+                    del self.deleted_items[i]
+
     def get_partition(self, uid):
         if uid is None:
             return self.rootpartition
@@ -1448,6 +1456,30 @@ class TheanoNodenet(Nodenet):
 
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
+
+    def get_structural_changes(self, nodespace_uid, since_step):
+        partition = self.get_partition(nodespace_uid)
+        nodespace = self.get_nodespace(nodespace_uid)
+        result = {
+            'nodes_dirty': {},
+            'nodespaces_dirty': {},
+            'nodes_deleted': [],
+            'nodespaces_deleted': []
+        }
+
+        for i in range(since_step, self.current_step + 1):
+            if i in self.deleted_items:
+                result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
+                result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+
+        changed_nodes, changed_nodespaces = partition.get_structural_changes(nodespace.uid, since_step)
+        for uid in changed_nodes:
+            uid = node_to_id(uid, partition.pid)
+            result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+        for uid in changed_nodespaces:
+            uid = nodespace_to_id(uid, partition.pid)
+            result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+        return result
 
     def get_dashboard(self):
         data = super(TheanoNodenet, self).get_dashboard()

@@ -1833,7 +1833,7 @@ class TheanoPartition():
 
     def has_structural_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
-        return self.nodespaces_content_changed[ns_id] >= since_step
+        return (self.nodespaces_content_changed[ns_id] >= since_step).__bool__()
 
     def get_structural_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)

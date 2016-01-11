@@ -1,6 +1,5 @@
 __author__ = 'rvuine'
 
-import micropsi_core.tools
 import math
 from abc import ABCMeta, abstractmethod
 

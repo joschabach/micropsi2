@@ -6,13 +6,10 @@ import theano
 from theano import tensor as T
 import numpy as np
 import scipy.sparse as sp
-import scipy
 import theano.sparse as ST
 from theano.tensor import nnet as N
 
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
-
-from configuration import config as settings
 
 
 class TheanoPartition():

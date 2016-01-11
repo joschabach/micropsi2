@@ -23,17 +23,6 @@ class DictNodespace(NetEntity, Nodespace):
         netentities: a dictionary containing all the contained nodes and nodespaces, to speed up drawing
     """
 
-    @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-        }
-        return data
-
     def __init__(self, nodenet, parent_nodespace, position, name="", uid=None, index=None):
         """create a node space at a given position and within a given node space"""
         self.__activators = {}
@@ -41,6 +30,15 @@ class DictNodespace(NetEntity, Nodespace):
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         nodenet._register_nodespace(self)
+
+    def get_data(self):
+        return {
+            "uid": self.uid,
+            "index": self.index,
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
+        }
 
     def get_known_ids(self, entitytype=None):
         if entitytype:

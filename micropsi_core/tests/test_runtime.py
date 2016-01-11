@@ -136,8 +136,32 @@ def test_get_links_for_nodes(test_nodenet, node):
     api.link(node, 'gen', pipe1, 'gen')
     api.link(pipe2, 'sub', node, 'sub')
     data = micropsi.get_links_for_nodes(test_nodenet, [node.uid])
-    assert len(data['links'].values()) == 3  # node has a genloop
+    assert len(data['links']) == 3  # node has a genloop
     assert len(data['nodes'].values()) == 2
     assert pipe1.uid in data['nodes']
     assert pipe2.uid in data['nodes']
     assert pipe3.uid not in data['nodes']
+
+
+def test_create_nodenet_from_template(test_nodenet, node, engine):
+    mode = micropsi.cfg['micropsi2'].get('single_agent_mode')
+    micropsi.cfg['micropsi2'].update({'single_agent_mode': '1'})
+    api = micropsi.nodenets[test_nodenet].netapi
+    node1 = api.get_node(node)
+    node2 = api.create_node("Register", None, "node2")
+    api.link(node1, 'gen', node2, 'gen')
+    micropsi.save_nodenet(test_nodenet)
+    result, uid = micropsi.new_nodenet('copynet', engine=engine, template=test_nodenet)
+    data = micropsi.get_nodenet_data(uid, None)
+    for uid, n in data['nodes'].items():
+        if n['name'] == node1.name:
+            assert len(n['links']['gen']) == 2
+        else:
+            assert n['name'] == node2.name
+    micropsi.cfg['micropsi2'].update({'single_agent_mode': mode})
+
+
+def test_export_json_does_not_send_duplicate_links(fixed_nodenet):
+    import json
+    result = json.loads(micropsi.export_nodenet(fixed_nodenet))
+    assert len(result['links']) == 4

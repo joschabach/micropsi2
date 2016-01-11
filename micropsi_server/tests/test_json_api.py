@@ -28,13 +28,14 @@ def test_select_nodenet(app, test_nodenet):
     assert data == test_nodenet
 
 
-def test_load_nodenet(app, test_nodenet):
+def test_load_nodenet(app, test_nodenet, node):
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
     data = response.json_body['data']
     assert 'nodetypes' in data
     assert 'nodes' in data
-    assert 'links' in data
+    assert 'links' not in data
+    assert len(data['nodes'][node]['links']['gen']) == 1  # genloop
     assert data['uid'] == test_nodenet
 
 
@@ -295,6 +296,7 @@ def test_export_nodenet(app, test_nodenet, node):
     data = json.loads(response.json_body['data'])
     assert data['name'] == 'Testnet'
     assert data['nodes'][node]['type'] == 'Pipe'
+    assert 'links' in data
 
 
 def test_import_nodenet(app, test_nodenet, node):
@@ -794,12 +796,10 @@ def test_clone_nodes(app, test_nodenet, node):
         'offset': [23, 23]
     })
     assert_success(response)
-    node = response.json_body['data']['nodes'][0]
-    link = response.json_body['data']['links'][0]
+    node = list(response.json_body['data'].values())[0]
     assert node['name'] == 'N1_copy'
     assert node['position'] == [33, 33]
-    assert link['source_node_uid'] == node['uid']
-    assert link['target_node_uid'] == node['uid']
+    assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 
 
 def test_set_node_position(app, test_nodenet, node):
@@ -1027,9 +1027,10 @@ def test_add_link(app, test_nodenet, node):
     assert_success(response)
     uid = response.json_body['data']
     assert uid is not None
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    assert uid in data['links']
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert data['nodes'][node]['links']['sub'][0]['target_node_uid'] == node
+    assert round(data['nodes'][node]['links']['sub'][0]['weight'], 3) == 0.7
 
 
 def test_set_link_weight(app, test_nodenet, node):
@@ -1043,10 +1044,9 @@ def test_set_link_weight(app, test_nodenet, node):
         'weight': 0.345
     })
     assert_success(response)
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    for link in data['links'].values():
-        assert float("%.3f" % link['weight']) == 0.345
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    assert float("%.3f" % data['nodes'][node]['links']['gen'][0]['weight']) == 0.345
 
 
 def test_get_links_for_nodes(app, test_nodenet, node):
@@ -1055,7 +1055,7 @@ def test_get_links_for_nodes(app, test_nodenet, node):
         'node_uids': [node]
     })
     assert_success(response)
-    link = list(response.json_body['data']['links'].values())[0]
+    link = list(response.json_body['data']['links'])[0]
     assert link['source_node_uid'] == node
 
 
@@ -1069,9 +1069,9 @@ def test_delete_link(app, test_nodenet, node):
         'slot_type': "gen"
     })
     assert_success(response)
-    response = app.get_json('/rpc/export_nodenet(nodenet_uid="%s")' % test_nodenet)
-    data = json.loads(response.json_body['data'])
-    data['links'] == {}
+    response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
+    data = response.json_body['data']
+    data['nodes'][node]['links'] == {}
 
 
 def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
@@ -1327,15 +1327,17 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['nodes'][node]['parameters']['wait'] == 10
     assert data['nodes'][node]['position'] == [10, 10]
     assert data['nodes'][node]['type'] == "Pipe"
-    assert data['nodes'][node] == node_data
+    assert 'links' not in data
+
+    assert node_data['parameters']['expectation'] == 1
+    assert node_data['parameters']['wait'] == 10
+    assert node_data['position'] == [10, 10]
+    assert node_data['type'] == "Pipe"
 
     # Links
-    for link in data['links'].values():
+    for link in data['nodes'][node]['links']['gen']:
         assert link['weight'] == 1
-        assert link['certainty'] == 1
-        assert link['source_node_uid'] == node
         assert link['target_node_uid'] == node
-        assert link['source_gate_name'] == 'gen'
         assert link['target_slot_name'] == 'gen'
 
     # Nodespaces

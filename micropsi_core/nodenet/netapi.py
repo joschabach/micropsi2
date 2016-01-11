@@ -337,7 +337,7 @@ class NetAPI(object):
             msg: a string to display to the user
         """
         self.__nodenet.user_prompt = {
-            'node': node.data,
+            'node': node.get_data(include_links=False),
             'msg': msg,
             'options': None
         }
@@ -366,7 +366,7 @@ class NetAPI(object):
             netapi.ask_user_for_parameter(node, "Please decide what to do next", options)
         """
         self.__nodenet.user_prompt = {
-            'node': node.data,
+            'node': node.get_data(),
             'msg': msg,
             'options': options
         }

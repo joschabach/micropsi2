@@ -357,6 +357,7 @@ function setNodespaceData(data, changed){
                 if (uid in selection) delete selection[uid];
             }
         }
+        var links_data = {}
         for(uid in data.nodes){
             item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions);
             if(uid in nodes){
@@ -368,6 +369,14 @@ function setNodespaceData(data, changed){
                 }
             } else{
                 addNode(item);
+            }
+            for(gate in data.nodes[uid].links){
+                for(var i = 0; i < data.nodes[uid].links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + data.nodes[uid].links[gate][i]['target_slot_name'] + ":" + data.nodes[uid].links[gate][i]['target_node_uid']
+                    links_data[luid] = data.nodes[uid].links[gate][i]
+                    links_data[luid].source_node_uid = uid
+                    links_data[luid].source_gate_name = gate
+                }
             }
         }
         for(uid in data.nodespaces){
@@ -394,11 +403,11 @@ function setNodespaceData(data, changed){
             });
         } else {
             for(var uid in links) {
-                if(!(uid in data.links)) {
+                if(!(uid in links_data)) {
                     removeLink(links[uid]);
                 }
             }
-            addLinks(data.links);
+            addLinks(links_data);
         }
 
         updateModulators(data.modulators);
@@ -2337,7 +2346,12 @@ function loadLinksForSelection(callback){
                     for(var uid in data.nodes){
                         addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
                     }
-                    addLinks(data.links);
+                    var linkdict = {};
+                    for(var i = 0; i < data.links.length; i++){
+                        luid = data.links[i]['source_node_uid'] + ":" + data.links[i]['source_gate_name'] + ":" + data.links[i]['target_slot_name'] + ":" + data.links[i]['target_node_uid'];
+                        linkdict[luid] = data.links[i];
+                    }
+                    addLinks(linkdict);
                     if(uids.length == 1 && uids[0] in selection && clickType != "gate"){
                         showNodeForm(uids[0]);
                     }
@@ -3625,7 +3639,9 @@ function showNodeForm(nodeUid){
             for(key in nodes[nodeUid].slots){
                 link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
-                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
+                    if(links[id].sourceNodeUid in nodes){
+                        link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
+                    }
                 }
             }
         }
@@ -3634,7 +3650,9 @@ function showNodeForm(nodeUid){
         for(name in nodes[nodeUid].gates){
             link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){
-                link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">-&gt;</a> &nbsp;<a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
+                if(links[id].targetNodeUid in nodes){
+                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">-&gt;</a> &nbsp;<a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
+                }
             }
             content += '<tr><td><a href="#followgate" class="followgate" data-node="'+nodeUid+'" data-gate="'+name+'">'+name+'</td>';
             if(link_list){

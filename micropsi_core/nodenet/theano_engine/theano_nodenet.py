@@ -1113,7 +1113,7 @@ class TheanoNodenet(Nodenet):
         else:
             partition = self.get_nodespace(nodespace_uid).partition
             nodespace_id = nodespace_from_id(nodespace_uid)
-            ids = np.where(partition.allocated_node_parents == nodespace_id)
+            ids = np.where(partition.allocated_node_parents == nodespace_id)[0]
             for id in ids:
                 elements = get_elements_per_type(partition.allocated_nodes[id])
                 offset = partition.allocated_node_offsets[id]

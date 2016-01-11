@@ -362,7 +362,7 @@ class DictNodenet(Nodenet):
         if nodespace_uid is None:
             node_ids = self._nodes.keys()
         else:
-            node_ids = self.get_nodespace(nodespace_uid).get_known_entities("nodes")
+            node_ids = self.get_nodespace(nodespace_uid).get_known_ids("nodes")
 
         for uid in node_ids:
             node = self.get_node(uid)

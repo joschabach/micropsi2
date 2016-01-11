@@ -405,7 +405,7 @@ class TheanoPartition():
 
         pipe_sur = slots[:, 7]                                                      # start with sur
         pipe_sur = pipe_sur + T.gt(slots[:, 3], 0.2)                                # add gen-loop 1
-        pipe_sur = pipe_sur + slots[:, 9]                                           # add exp
+        pipe_sur = pipe_sur + (slots[:, 9] * slots[:, 6])                           # add exp * sub
                                                                                     # drop to zero if < expectation
         pipe_sur = T.switch(T.lt(pipe_sur, self.g_expect) * T.gt(pipe_sur, 0), 0, pipe_sur)
                                                                                     # check if we're in timeout

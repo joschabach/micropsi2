@@ -1457,6 +1457,11 @@ class TheanoNodenet(Nodenet):
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
 
+    def has_structural_changes(self, nodespace_uid, since_step):
+        partition = self.get_partition(nodespace_uid)
+        nodespace = self.get_nodespace(nodespace_uid)
+        return partition.has_structural_changes(nodespace.uid, since_step)
+
     def get_structural_changes(self, nodespace_uid, since_step):
         partition = self.get_partition(nodespace_uid)
         nodespace = self.get_nodespace(nodespace_uid)

@@ -337,11 +337,11 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
-def get_nodenet_activation_data(nodenet_uid, last_call_step=-1, nodespace=None):
+def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     nodenet = get_nodenet(nodenet_uid)
     data = {
-        'activations': nodenet.get_activation_data(nodespace, 1),
-        'structure_changes': False
+        'activations': nodenet.get_activation_data(nodespace, rounded=1),
+        'structure_changes': nodenet.has_structural_changes(nodespace, last_call_step)
     }
     return data
 

@@ -380,6 +380,7 @@ class DictNodenet(Nodenet):
             parent_nodespace = self._nodespaces.get(self._nodespaces[node_uid].parent_nodespace)
             if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
                 parent_nodespace._unregister_entity('nodespaces', node_uid)
+                parent_nodespace.contents_last_changed = self.current_step
             del self._nodespaces[node_uid]
             self._track_deletion('nodespaces', node_uid)
         else:
@@ -387,6 +388,7 @@ class DictNodenet(Nodenet):
             node.unlink_completely()
             parent_nodespace = self._nodespaces.get(self._nodes[node_uid].parent_nodespace)
             parent_nodespace._unregister_entity('nodes', node_uid)
+            parent_nodespace.contents_last_changed = self.current_step
             if self._nodes[node_uid].type == "Activator":
                 parent_nodespace.unset_activator_value(self._nodes[node_uid].get_parameter('type'))
             del self._nodes[node_uid]
@@ -407,10 +409,12 @@ class DictNodenet(Nodenet):
     def _register_node(self, node):
         self._nodes[node.uid] = node
         node.last_changed = self.current_step
+        self.get_nodespace(node.parent_nodespace).content_last_changed = self.current_step
 
     def _register_nodespace(self, nodespace):
         self._nodespaces[nodespace.uid] = nodespace
         nodespace.last_changed = self.current_step
+        self.get_nodespace(nodespace.parent_nodespace).content_last_changed = self.current_step
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -804,6 +808,9 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+
+    def has_structural_changes(self, nodespace_uid, since_step):
+        return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
 
     def get_structural_changes(self, nodespace_uid, since_step):
         ns = self.get_nodespace(nodespace_uid)

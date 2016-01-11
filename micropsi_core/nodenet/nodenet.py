@@ -502,6 +502,14 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def has_structural_changes(self, nodespace_uid, since_step):
+        """
+        Returns true, if the structure of the nodespace has changed since the given step, false otherwise
+        Structural changes include everything besides activation
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def get_structural_changes(self, nodespace_uid, since_step):
         """
         Returns a dictionary of structural changes that happened in the given nodespace

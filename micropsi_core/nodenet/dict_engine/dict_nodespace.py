@@ -30,6 +30,7 @@ class DictNodespace(NetEntity, Nodespace):
         uid = uid or micropsi_core.tools.generate_uid()
         NetEntity.__init__(self, nodenet, parent_nodespace, position, name, "nodespaces", uid, index)
         self.last_changed = nodenet.current_step
+        self.contents_last_changed = nodenet.current_step
         nodenet._register_nodespace(self)
 
     def get_data(self):

@@ -357,6 +357,8 @@ def test_get_structural_changes(fixed_nodenet):
     net.netapi.link(newnode, 'gen', nodes['B1'], 'gen')
     newspace = net.netapi.create_nodespace(None, "nodespace")
     net.step()
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 1)
+    assert test['structure_changes']
     result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     assert nodes['A1'].uid in result['nodes_dirty']
@@ -367,6 +369,9 @@ def test_get_structural_changes(fixed_nodenet):
     assert newspace.uid in result['nodespaces_dirty']
     assert len(result['nodes_dirty'].keys()) == 4
     assert len(result['nodespaces_dirty'].keys()) == 1
+    net.step()
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 2)
+    assert not test['structure_changes']
 
 
 def test_get_structural_changes_cycles(fixed_nodenet):

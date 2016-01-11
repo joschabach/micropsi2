@@ -343,8 +343,8 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
 def test_get_structural_changes(fixed_nodenet):
     net = micropsi.nodenets[fixed_nodenet]
     net.step()
-    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
-    assert result['nodes_dirty'] == {}
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 0)
+    assert set(result['nodes_dirty'].keys()) == set(net.get_node_uids())
     assert result['nodes_deleted'] == []
     assert result['nodespaces_dirty'] == {}
     assert result['nodespaces_deleted'] == []
@@ -365,6 +365,8 @@ def test_get_structural_changes(fixed_nodenet):
     assert newnode.uid in result['nodes_dirty']
     assert len(result['nodes_dirty'][newnode.uid]['links']['gen']) == 1
     assert newspace.uid in result['nodespaces_dirty']
+    assert len(result['nodes_dirty'].keys()) == 4
+    assert len(result['nodespaces_dirty'].keys()) == 1
 
 
 def test_get_structural_changes_cycles(fixed_nodenet):

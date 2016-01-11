@@ -156,7 +156,7 @@ class TheanoPartition():
         self.allocated_nodes = None
 
         # array, index is node id, value is nodenet-step where node was last modified
-        self.nodes_last_changed = np.zeros(self.NoN, dtype=np.int32)
+        self.nodes_last_changed = np.zeros(self.NoN, dtype=np.int32) - 1
 
         # array, index is node id, value is offset in a and w
         self.allocated_node_offsets = None
@@ -171,7 +171,7 @@ class TheanoPartition():
         self.allocated_nodespaces = None
 
         # array, index is nodespace id, value is nodenet-step where nodespace was last modified
-        self.nodespaces_last_changed = np.zeros(self.NoN, dtype=np.int32)
+        self.nodespaces_last_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
 
         # directional activator assignment, key is nodespace ID, value is activator ID
         self.allocated_nodespaces_por_activators = None
@@ -217,13 +217,11 @@ class TheanoPartition():
 
         # instantiate numpy data structures
         self.allocated_nodes = np.zeros(self.NoN, dtype=np.int32)
-        self.nodes_last_changed = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_node_offsets = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_elements_to_nodes = np.zeros(self.NoE, dtype=np.int32)
 
         self.allocated_node_parents = np.zeros(self.NoN, dtype=np.int32)
         self.allocated_nodespaces = np.zeros(self.NoNS, dtype=np.int32)
-        self.nodespaces_last_changed = np.zeros(self.NoNS, dtype=np.int32)
 
         self.allocated_nodespaces_por_activators = np.zeros(self.NoNS, dtype=np.int32)
         self.allocated_nodespaces_ret_activators = np.zeros(self.NoNS, dtype=np.int32)
@@ -1814,7 +1812,7 @@ class TheanoPartition():
         node_ids = np.where(self.nodes_last_changed >= since_step)[0]
         node_ids = node_ids[np.where(self.allocated_node_parents[node_ids] == ns_id)[0]]
         nodespace_ids = np.where(self.nodespaces_last_changed >= since_step)[0]
-        nodespace_ids = nodespace_ids[np.where(self.allocated_node_parents[nodespace_ids] == ns_id)[0]]
+        nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
     def integrity_check(self):

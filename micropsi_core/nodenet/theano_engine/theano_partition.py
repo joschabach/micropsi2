@@ -822,6 +822,15 @@ class TheanoPartition():
             self.NoN = datafile['sizeinformation'][0]
             self.NoE = datafile['sizeinformation'][1]
             self.NoNS = datafile['sizeinformation'][2]
+
+            # rebuild the ephemerals
+            self.nodes_last_changed = np.zeros(self.NoN, dtype=np.int32) - 1
+            self.nodespaces_last_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
+            self.nodespaces_content_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
+
+            a_prev_array = np.zeros(self.NoE, dtype=self.nodenet.numpyfloatX)
+            self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
+
         else:
             self.logger.warn("no sizeinformation in file, falling back to defaults")
 

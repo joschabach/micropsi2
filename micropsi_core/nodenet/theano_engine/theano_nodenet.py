@@ -435,8 +435,10 @@ class TheanoNodenet(Nodenet):
         for uid in nodenet_data.get('nodes', {}):
             data = nodenet_data['nodes'][uid]
             parent_uid = data['parent_nodespace']
+            id_to_pass = uid
             if not keep_uids:
                 parent_uid = uidmap[data['parent_nodespace']]
+                id_to_pass = None
             if data['type'] not in self._nodetypes and data['type'] not in self.native_modules:
                 self.logger.warn("Invalid nodetype %s for node %s" % (data['type'], uid))
                 data['parameters'] = {
@@ -450,7 +452,7 @@ class TheanoNodenet(Nodenet):
                 parent_uid,
                 data['position'],
                 name=data['name'],
-                uid=uid,
+                uid=id_to_pass,
                 parameters=data.get('parameters'),
                 gate_parameters=data.get('gate_parameters'),
                 gate_functions=data.get('gate_functions'))
@@ -519,9 +521,9 @@ class TheanoNodenet(Nodenet):
                     uid=nodespace_uid
                 )
         else:
-            if not nodespace_uid in uidmap:
+            if nodespace_uid not in uidmap:
                 parent_uid = data[nodespace_uid].get('parent_nodespace')
-                if not parent_uid in uidmap:
+                if parent_uid not in uidmap:
                     self.merge_nodespace_data(parent_uid, data, uidmap, keep_uids)
                 newuid = self.create_nodespace(
                     uidmap[data[nodespace_uid].get('parent_nodespace')],

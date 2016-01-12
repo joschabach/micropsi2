@@ -346,7 +346,7 @@ def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     return data
 
 
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
+def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?
     """
@@ -367,6 +367,13 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dash
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
             data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+        if nodenet_diff is not None:
+            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
+            data['nodenet_diff'] = {
+                'activations': activations['activations']
+            }
+            if activations['structure_changes']:
+                data['nodenet_diff']['structure_changes'] = nodenet_obj.get_structural_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None

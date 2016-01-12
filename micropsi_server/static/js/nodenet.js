@@ -423,6 +423,90 @@ function setNodespaceData(data, changed){
     drawGridLines(view.element);
 }
 
+function setNodespaceDiffData(data, changed){
+    nodenetscope.activate();
+    if (data && !jQuery.isEmptyObject(data)){
+        if(!('selectionBox' in nodeLayer)){
+            nodeLayer.addChild(selectionBox);
+        }
+        var uid;
+
+        // structure first:
+        if(data.structure_changes){
+            for(var i=0; i < data.structure_changes.nodes_deleted; i++){
+                uid = data.structure_changes.nodes_deleted[i];
+                removeNode(nodes[uid]);
+                if (uid in selection) delete selection[uid];
+            }
+            for(var i=0; i < data.structure_changes.nodespaces_deleted; i++){
+                uid = data.structure_changes.nodespaces_deleted[i];
+                removeNode(nodes[uid]);
+                if (uid in selection) delete selection[uid];
+                delete nodespaces[uid]
+            }
+            links_data = {}
+            for(var uid in data.structure_changes.nodes_dirty){
+                var nodedata = data.structure_changes.nodes_dirty[uid];
+                if(uid in nodes){
+                    removeNode(nodes[uid]);
+                }
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions);
+                addNode(item);
+                for(gate in nodedata.links){
+                    for(var i = 0; i < nodedata.links[gate].length; i++){
+                        luid = uid + ":" + gate + ":" + nodedata.links[gate][i]['target_slot_name'] + ":" + nodedata.links[gate][i]['target_node_uid']
+                        links_data[luid] = nodedata.links[gate][i]
+                        links_data[luid].source_node_uid = uid
+                        links_data[luid].source_gate_name = gate
+                    }
+                }
+            }
+            addLinks(links_data);
+            for(var uid in data.structure_changes.nodespaces_dirty){
+                var nodespacedata = data.structure_changes.nodespaces_dirty[uid];
+                if(!(uid in nodespaces)){
+                    nodespaces[uid] = nodespacedata;
+                }
+                item = new Node(uid, nodespacedata['position'][0], nodespacedata['position'][1], nodespacedata.parent_nodespace, nodespacedata.name, "Nodespace", 0, nodespacedata.state);
+                if(uid in nodes){
+                    redrawNode(item);
+                    nodes[uid].update(item);
+                } else{
+                    addNode(item);
+                }
+
+            }
+        }
+        // activations:
+        for(var uid in data.activations){
+            if(!data.structure_changes || !uid in data.structure_changes.nodes_dirty){
+                activations = data.activations[uid];
+                var gen = 0
+                for(var i=0; i < nodes[uid].gateIndexes.length; i++){
+                    var type = nodes[uid].gateIndexes[i];
+                    nodes[uid].gates[type].sheaves['default'].activation = activations[i];
+                    if(type == 'gen'){
+                        gen = activations[i];
+                    }
+                }
+                nodes[uid].sheaves['default'].activation = gen;
+                setActivation(nodes[uid]);
+                redrawNodeLinks(nodes[uid]);
+            }
+        }
+        updateModulators(data.modulators);
+
+        if(data.monitors){
+            monitors = data.monitors;
+        }
+        if(changed){
+            updateNodespaceForm();
+        }
+    }
+    updateViewSize();
+    drawGridLines(view.element);
+}
+
 function addLinks(link_data){
     var link, sourceId, targetId;
     var outsideLinks = [];
@@ -455,24 +539,29 @@ function addLinks(link_data){
     }
 }
 
-function get_nodenet_data(){
+function get_nodenet_params(){
     return {
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
         'include_links': $.cookie('renderlinks') == 'always',
     }
 }
+function get_nodenet_diff_params(){
+    return {
+        'nodespace': currentNodeSpace,
+        'step': window.currentSimulationStep,
+    }
+}
 
 
 if($('#nodenet_editor').height() > 0){
-    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+    register_stepping_function('nodenet_diff', get_nodenet_diff_params, setNodespaceDiffData);
 }
-
 $('#nodenet_editor').on('shown', function(){
-    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+    register_stepping_function('nodenet_diff', get_nodenet_diff_params, setNodespaceDiffData);
 });
 $('#nodenet_editor').on('hidden', function(){
-    unregister_stepping_function('nodenet');
+    unregister_stepping_function('nodenet_diff');
 });
 
 function refreshNodespace(nodespace, step, callback){

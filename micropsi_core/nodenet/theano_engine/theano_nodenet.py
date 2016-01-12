@@ -1104,7 +1104,7 @@ class TheanoNodenet(Nodenet):
             for partition in self.partitions.values():
                 ids = np.nonzero(partition.allocated_nodes)[0]
                 for id in ids:
-                    elements = get_elements_per_type(partition.allocated_nodes[id])
+                    elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                     offset = partition.allocated_node_offsets[id]
                     if rounded is None:
                         activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
@@ -1115,7 +1115,7 @@ class TheanoNodenet(Nodenet):
             nodespace_id = nodespace_from_id(nodespace_uid)
             ids = np.where(partition.allocated_node_parents == nodespace_id)[0]
             for id in ids:
-                elements = get_elements_per_type(partition.allocated_nodes[id])
+                elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
                 offset = partition.allocated_node_offsets[id]
                 if rounded is None:
                     activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]

@@ -129,7 +129,6 @@ class DictNode(NetEntity, Node):
             self.__slots[slot] = DictSlot(slot, self)
         if state:
             self.__state = state
-        self.last_changed = nodenet.current_step
         nodenet._register_node(self)
         self.sheaves = {"default": emptySheafElement.copy()}
         self.activation = activation

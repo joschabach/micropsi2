@@ -409,12 +409,12 @@ class DictNodenet(Nodenet):
     def _register_node(self, node):
         self._nodes[node.uid] = node
         node.last_changed = self.current_step
-        self.get_nodespace(node.parent_nodespace).content_last_changed = self.current_step
+        self.get_nodespace(node.parent_nodespace).contents_last_changed = self.current_step
 
     def _register_nodespace(self, nodespace):
         self._nodespaces[nodespace.uid] = nodespace
         nodespace.last_changed = self.current_step
-        self.get_nodespace(nodespace.parent_nodespace).content_last_changed = self.current_step
+        self.get_nodespace(nodespace.parent_nodespace).contents_last_changed = self.current_step
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""

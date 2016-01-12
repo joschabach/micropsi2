@@ -341,11 +341,8 @@ class TheanoNodenet(Nodenet):
                     return False
 
             # initialize with metadata
+            nodes_data = initfrom.pop('nodes', {})
             self.initialize_nodenet(initfrom)
-
-            nodes_data = {}
-            if 'nodes' in initfrom:
-                nodes_data = initfrom['nodes']
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
@@ -421,9 +418,9 @@ class TheanoNodenet(Nodenet):
             self.create_partition(pid,
                                   parent_uid,
                                   True,
-                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2),
+                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2 + 1),
                                   7,
-                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2))
+                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2) + 1)
         self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized

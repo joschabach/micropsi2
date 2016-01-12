@@ -370,7 +370,8 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
         if nodenet_diff is not None:
             activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
             data['nodenet_diff'] = {
-                'activations': activations['activations']
+                'activations': activations['activations'],
+                'modulators': nodenet_obj.construct_modulators_dict()
             }
             if activations['structure_changes']:
                 data['nodenet_diff']['structure_changes'] = nodenet_obj.get_structural_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])

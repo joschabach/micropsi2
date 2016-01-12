@@ -447,11 +447,12 @@ function setNodespaceDiffData(data, changed){
             links_data = {}
             for(var uid in data.structure_changes.nodes_dirty){
                 var nodedata = data.structure_changes.nodes_dirty[uid];
-                if(uid in nodes){
-                    removeNode(nodes[uid]);
-                }
                 item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions);
-                addNode(item);
+                if(uid in nodes){
+                    redrawNode(item);
+                } else{
+                    addNode(item);
+                }
                 for(gate in nodedata.links){
                     for(var i = 0; i < nodedata.links[gate].length; i++){
                         luid = uid + ":" + gate + ":" + nodedata.links[gate][i]['target_slot_name'] + ":" + nodedata.links[gate][i]['target_node_uid']

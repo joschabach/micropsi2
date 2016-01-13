@@ -1995,7 +1995,7 @@ function onMouseDown(event) {
                 }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
-                    showNodeForm(nodeUid);
+                    showNodeForm(nodeUid, true);
                 }
                 // check for slots and gates
                 var i;
@@ -3687,7 +3687,22 @@ function showLinkForm(linkUid){
     $('a.followgate').on('click', followgate);
 }
 
-function showNodeForm(nodeUid){
+function showNodeForm(nodeUid, refresh){
+    if(refresh){
+        api.call('get_node', {
+            nodenet_uid:currentNodenet,
+            node_uid: nodeUid
+        }, function(data){
+            item = new Node(uid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions);
+            nodes[nodeUid].update(item);
+            if(clickType == 'gate'){
+                showGateForm(nodes[nodeUid], nodes[nodeUid].gates[nodes[nodeUid].gateIndexes[clickIndex]]);
+            } else {
+                showNodeForm(nodeUid);
+            }
+        });
+        return;
+    }
     $('#nodenet_forms .form-horizontal').hide();
     var form = $('#edit_node_form');
     form.show();

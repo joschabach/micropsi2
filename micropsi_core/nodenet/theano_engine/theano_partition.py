@@ -174,7 +174,7 @@ class TheanoPartition():
         self.nodespaces_last_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
 
         # array, index is nodespace id, value is nodenet-step where the immediate children of this nodespace were last modified
-        self.nodespaces_content_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
+        self.nodespaces_contents_last_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
 
         # directional activator assignment, key is nodespace ID, value is activator ID
         self.allocated_nodespaces_por_activators = None
@@ -826,7 +826,7 @@ class TheanoPartition():
             # rebuild the ephemerals
             self.nodes_last_changed = np.zeros(self.NoN, dtype=np.int32) - 1
             self.nodespaces_last_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
-            self.nodespaces_content_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
+            self.nodespaces_contents_last_changed = np.zeros(self.NoNS, dtype=np.int32) - 1
 
             a_prev_array = np.zeros(self.NoE, dtype=self.nodenet.numpyfloatX)
             self.a_prev = theano.shared(value=a_prev_array.astype(T.config.floatX), name="a_prev", borrow=True)
@@ -1111,9 +1111,9 @@ class TheanoPartition():
             new_nodespaces_last_changed[0:self.NoNS] = self.nodespaces_last_changed
             self.nodespaces_last_changed = new_nodespaces_last_changed
 
-            new_nodespaces_content_changed = np.zeros(new_NoNS, dtype=np.int32)
-            new_nodespaces_content_changed[0:self.NoNS] = self.nodespaces_content_changed
-            self.nodespaces_content_changed = new_nodespaces_content_changed
+            new_nodespaces_contents_last_changed = np.zeros(new_NoNS, dtype=np.int32)
+            new_nodespaces_contents_last_changed[0:self.NoNS] = self.nodespaces_contents_last_changed
+            self.nodespaces_contents_last_changed = new_nodespaces_contents_last_changed
 
             self.has_new_usages = True
             self.NoNS = new_NoNS
@@ -1294,7 +1294,7 @@ class TheanoPartition():
         self.nodes_last_changed[id] = self.nodenet.current_step
         self.allocated_node_parents[id] = nodespace_id
         self.allocated_node_offsets[id] = offset
-        self.nodespaces_content_changed[nodespace_id] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[nodespace_id] = self.nodenet.current_step
 
         for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.nodenet.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = id
@@ -1414,7 +1414,7 @@ class TheanoPartition():
 
         self.unlink_node_completely(node_id)
         self.nodenet._track_deletion('nodes', node_to_id(node_id, self.pid))
-        self.nodespaces_content_changed[self.allocated_node_parents[node_id]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[node_id]] = self.nodenet.current_step
 
         # forget
         self.allocated_nodes[node_id] = 0
@@ -1494,9 +1494,9 @@ class TheanoPartition():
         self.nodes_last_changed[connected_nodes] = self.nodenet.current_step
         self.nodes_last_changed[connecting_nodes] = self.nodenet.current_step
         # update all involved elements' parents' changed-steps
-        self.nodespaces_content_changed[self.allocated_node_parents[node_id]] = self.nodenet.current_step
-        self.nodespaces_content_changed[self.allocated_node_parents[connected_nodes]] = self.nodenet.current_step
-        self.nodespaces_content_changed[self.allocated_node_parents[connecting_nodes]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[node_id]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[connected_nodes]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[connecting_nodes]] = self.nodenet.current_step
 
     def get_associated_elements(self, node_id):
         type = self.allocated_nodes[node_id]
@@ -1538,7 +1538,7 @@ class TheanoPartition():
         self.last_allocated_nodespace = id
         self.allocated_nodespaces[id] = parent_id
         self.nodespaces_last_changed[id] = self.nodenet.current_step
-        self.nodespaces_content_changed[parent_id] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[parent_id] = self.nodenet.current_step
         return id
 
     def delete_nodespace(self, nodespace_id):
@@ -1554,7 +1554,7 @@ class TheanoPartition():
         self.allocated_nodespaces[nodespace_id] = 0
         self.last_allocated_nodespace = nodespace_id
         self.nodenet._track_deletion('nodespaces', nodespace_to_id(nodespace_id, self.pid))
-        self.nodespaces_content_changed[self.allocated_nodespaces[nodespace_id]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_nodespaces[nodespace_id]] = self.nodenet.current_step
 
     def set_node_gate_parameter(self, id, gate_type, parameter, value):
         numerical_node_type = self.allocated_nodes[id]
@@ -1672,8 +1672,8 @@ class TheanoPartition():
 
         self.nodes_last_changed[source_node_id] = self.nodenet.current_step
         self.nodes_last_changed[target_node_id] = self.nodenet.current_step
-        self.nodespaces_content_changed[self.allocated_node_parents[source_node_id]] = self.nodenet.current_step
-        self.nodespaces_content_changed[self.allocated_node_parents[target_node_id]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[source_node_id]] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[target_node_id]] = self.nodenet.current_step
 
         # if (slot_type == "por" or slot_type == "ret") and self.allocated_nodes[node_from_id(target_node_uid)] == PIPE:
         #     self.__por_ret_dirty = False
@@ -1771,10 +1771,10 @@ class TheanoPartition():
 
         for id in self.allocated_elements_to_nodes[grp_from]:
             self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_content_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
         for id in self.allocated_elements_to_nodes[grp_to]:
             self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_content_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
 
         # todo: only set this if one of the groups is por/ret relevant
         if self.has_pipes:
@@ -1829,10 +1829,10 @@ class TheanoPartition():
 
         for id in self.allocated_elements_to_nodes[theano_from_elements.get_value()]:
             self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_content_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
         for id in self.allocated_elements_to_nodes[theano_to_elements.get_value()]:
             self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_content_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
 
         self.inlinks[partition_from_spid] = (
             theano_from_elements,
@@ -1842,7 +1842,7 @@ class TheanoPartition():
 
     def has_structural_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
-        return (self.nodespaces_content_changed[ns_id] >= since_step).__bool__()
+        return (self.nodespaces_contents_last_changed[ns_id] >= since_step).__bool__()
 
     def get_structural_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)

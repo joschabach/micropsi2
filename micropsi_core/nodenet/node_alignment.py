@@ -29,14 +29,13 @@ def align(nodenet, nodespace):
     nodespace = nodenet.get_nodespace(nodespace).uid
 
     unaligned_nodespaces = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodespaces'),
-        key=lambda i:nodenet.get_nodespace(i).index)
+        key=lambda i: nodenet.get_nodespace(i).index)
     unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
-        key = lambda i: nodenet.get_node(i).index)
-    sensors = [ s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor" ]
-    actors = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor" ]
-    activators = [ a for a in unaligned_nodes if nodenet.get_node(a).type == "Activator" ]
-    unaligned_nodes = [ n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor", "Activator") ]
-
+        key=lambda i: nodenet.get_node(i).index)
+    sensors = [s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor"]
+    actors = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor"]
+    activators = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Activator"]
+    unaligned_nodes = [n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor", "Activator")]
 
     # position nodespaces
 
@@ -54,8 +53,8 @@ def align(nodenet, nodespace):
     # group nodes that share a sur-linked parent below that parent
     group_with_same_parent(por_groups)
     # put sensors and actors below
-    sensor_group = HorizontalGroup([ DisplayNode(i) for i in sensors ] + [ DisplayNode(i) for i in actors ])
-    actviator_group = HorizontalGroup([ DisplayNode(i) for i in activators ])
+    sensor_group = HorizontalGroup([DisplayNode(i) for i in sensors] + [DisplayNode(i) for i in actors])
+    actviator_group = HorizontalGroup([DisplayNode(i) for i in activators])
     por_groups.append(sensor_group)
     por_groups.append(actviator_group)
     # calculate actual coordinates by traversing the group structure
@@ -63,12 +62,13 @@ def align(nodenet, nodespace):
 
     return True
 
-INVERSE_DIRECTIONS = { "s": "n", "w": "e", "nw": "se", "ne": "sw",
-                       "n": "s", "e": "w", "se": "nw", "sw": "ne",
-                       "o": "O", "O": "o", "b": "a", "a": "b" }
+INVERSE_DIRECTIONS = {"s": "n", "w": "e", "nw": "se", "ne": "sw",
+                      "n": "s", "e": "w", "se": "nw", "sw": "ne",
+                      "o": "O", "O": "o", "b": "a", "a": "b"}
+
 
 class DisplayNode(object):
-    def __init__(self, uid, directions = None, parent = None):
+    def __init__(self, uid, directions=None, parent=None):
         self.uid = uid
         self.directions = directions or {}
         self.parent = parent
@@ -101,6 +101,7 @@ class DisplayNode(object):
     def arrange(self, nodenet, starting_point=[0, 0, 0]):
         nodenet.get_node(self.uid).position = starting_point
 
+
 def unify_links(nodenet, node_id_list):
     """create a proxy representation of the node space to simplify bi-directional links.
     This structure is an ordered set of proxy nodes (DisplayNode) with directions.
@@ -119,20 +120,20 @@ def unify_links(nodenet, node_id_list):
         node = nodenet.get_node(node_id)
         vertical_only = True
         for gate_type in node.get_gate_types():
-            direction = {"sub": "s", "ret": "w", "cat": "ne", "sym":"nw",
-                         "sur": "n", "por": "e", "exp": "sw", "ref":"se", "gen": "n"}.get(gate_type, "o")
+            direction = {"sub": "s", "ret": "w", "cat": "ne", "sym": "nw",
+                         "sur": "n", "por": "e", "exp": "sw", "ref": "se", "gen": "n"}.get(gate_type, "o")
             if direction:
                 # "o" is for unknown gate types
                 for link in node.get_gate(gate_type).get_links():
                     target_node_id = link.target_node.uid
                     if target_node_id in node_index:
                         # otherwise, the link points outside the current nodespace and will be ignored here
-                        if not direction in node_index[node_id].directions:
-                            node_index[node_id].directions[direction]=OrderedSet()
+                        if direction not in node_index[node_id].directions:
+                            node_index[node_id].directions[direction] = OrderedSet()
                         node_index[node_id].directions[direction].add(node_index[target_node_id])
                         inverse = INVERSE_DIRECTIONS[direction]
-                        if not inverse in node_index[target_node_id].directions:
-                            node_index[target_node_id].directions[inverse]=OrderedSet()
+                        if inverse not in node_index[target_node_id].directions:
+                            node_index[target_node_id].directions[inverse] = OrderedSet()
                         node_index[target_node_id].directions[inverse].add(node_index[node_id])
             if direction != 'n' and direction != 's':
                 vertical_only = False
@@ -142,16 +143,17 @@ def unify_links(nodenet, node_id_list):
     for node_id in node_index:
         for direction in node_index[node_id].directions:
             node_index[node_id].directions[direction] = list(node_index[node_id].directions[direction])
-            node_index[node_id].directions[direction].sort(key = lambda i: nodenet.get_node(i.uid).index)
+            node_index[node_id].directions[direction].sort(key=lambda i: nodenet.get_node(i.uid).index)
 
     return UnorderedGroup(node_index.values())
+
 
 def group_horizontal_links(all_nodes):
     """group direct horizontal links (por)"""
     h_groups = UnorderedGroup()
     excluded_nodes = OrderedSet()
     for i in all_nodes:
-        if not i.directions.get("w"): # find leftmost nodes
+        if not i.directions.get("w"):  # find leftmost nodes
             excluded_nodes.add(i)
             if i.directions.get("e"):
                 h_group = HorizontalGroup([i])
@@ -164,7 +166,7 @@ def group_horizontal_links(all_nodes):
                 h_groups.append(i)
         # now handle circles (we find them by identifying left-over nodes that still have "e" links)
     for i in all_nodes:
-        if not i in excluded_nodes:
+        if i not in excluded_nodes:
             excluded_nodes.add(i)
             if i.directions.get("e"):
                 h_group = HorizontalGroup([i])
@@ -178,11 +180,12 @@ def group_horizontal_links(all_nodes):
     _fix_link_inheritance(h_groups, OrderedSet())
     return h_groups
 
+
 def _add_nodes_horizontally(display_node, h_group, excluded_nodes):
     """recursive helper function for adding horizontally linked nodes to a group"""
 
     while True:
-        successor_nodes = [ node for node in display_node.directions.get("e", []) if node not in excluded_nodes ]
+        successor_nodes = [node for node in display_node.directions.get("e", []) if node not in excluded_nodes]
 
         if len(successor_nodes) == 1:
             display_node = successor_nodes[0]
@@ -193,6 +196,7 @@ def _add_nodes_horizontally(display_node, h_group, excluded_nodes):
         else:
             break
 
+
 def group_other_links(all_groups):
     """group other horizontal links (native modules)"""
     excluded_nodes = OrderedSet()
@@ -201,12 +205,13 @@ def group_other_links(all_groups):
     _fix_link_inheritance(all_groups, OrderedSet())
     return all_groups
 
+
 def _group_other_links(groups, excluded_nodes, direction):
     for i in groups:
-        if i.directions.get(direction): # inverse non-standard links
+        if i.directions.get(direction):  # inverse non-standard links
             predecessors = []
             for node in i.directions[direction]:
-                if not node in excluded_nodes and not node.directions.get("w") and not node.directions.get("e"):
+                if node not in excluded_nodes and not node.directions.get("w") and not node.directions.get("e"):
                     # this node is not part of another group at this point
                     excluded_nodes.add(node)
                     predecessors.append(node.parent)
@@ -215,14 +220,16 @@ def _group_other_links(groups, excluded_nodes, direction):
             if len(predecessors) > 1:
                 i.insert(0, VerticalGroup(predecessors[0]))
 
+
 def group_with_same_parent(all_groups):
     """group horizontal groups that share the same super-node"""
     # find groups with same super-node
     candidates = OrderedDict()
     for g in all_groups:
         if "n" in g.directions:
-            super_node = list(g.directions["n"])[0] # there can be multiple super-nodes, but we only take the 1st
-            if super_node not in candidates: candidates[super_node] = []
+            super_node = list(g.directions["n"])[0]  # there can be multiple super-nodes, but we only take the 1st
+            if super_node not in candidates:
+                candidates[super_node] = []
             candidates[super_node].append(g)
     # build vertical groups
     for super_node in candidates:
@@ -230,7 +237,8 @@ def group_with_same_parent(all_groups):
         for g in candidates[super_node]:
             all_groups.remove(g)
             if isinstance(g, HorizontalGroup):
-                for e in g: h_group.append(e)
+                for e in g:
+                    h_group.append(e)
             else:
                 h_group.append(g)
 
@@ -241,8 +249,9 @@ def group_with_same_parent(all_groups):
             if super_node in clist:
                 clist[clist.index(super_node)] = v_group
 
-    #_fix_link_inheritance(all_groups, OrderedSet())
+    # _fix_link_inheritance(all_groups, OrderedSet())
     return all_groups
+
 
 def _fix_link_inheritance(group, excluded_nodes):
     """recursive helper function to mark for a group and every sub-group into which directions it is linked.
@@ -256,7 +265,8 @@ def _fix_link_inheritance(group, excluded_nodes):
             locally_excluded_nodes = OrderedSet()
             _fix_link_inheritance(i, locally_excluded_nodes)
             for d in i.directions:
-                if not d in group.directions: group.directions[d] = OrderedSet()
+                if d not in group.directions:
+                    group.directions[d] = OrderedSet()
                 for node in i.directions[d]:
                     group.directions[d].add(node)
             for i in locally_excluded_nodes:
@@ -265,8 +275,11 @@ def _fix_link_inheritance(group, excluded_nodes):
         dirs_copy = group.directions.copy()
         for d in dirs_copy:
             for node in dirs_copy[d]:
-                if node in excluded_nodes: group.directions[d].remove(node)
-            if not group.directions[d]: del group.directions[d]
+                if node in excluded_nodes:
+                    group.directions[d].remove(node)
+            if not group.directions[d]:
+                del group.directions[d]
+
 
 class UnorderedGroup(list):
 
@@ -277,7 +290,7 @@ class UnorderedGroup(list):
                 return False
         return True
 
-    def __init__(self, elements = None, parent = None):
+    def __init__(self, elements=None, parent=None):
         self.directions = {}
         self.parent = parent
         if elements:
@@ -287,8 +300,10 @@ class UnorderedGroup(list):
 
     def __repr__(self):
         sig = "Group"
-        if self.__class__.__name__ == "HorizontalGroup": sig = "HGroup"
-        if self.__class__.__name__ == "VerticalGroup": sig = "VGroup"
+        if self.__class__.__name__ == "HorizontalGroup":
+            sig = "HGroup"
+        if self.__class__.__name__ == "VerticalGroup":
+            sig = "VGroup"
 
         params = ""
         if self.directions:

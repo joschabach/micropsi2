@@ -392,6 +392,11 @@ class TheanoNodenet(Nodenet):
                 self.names = initfrom['names']
             if 'positions' in initfrom:
                 self.positions = initfrom['positions']
+                # compatibility:
+                for key in self.positions:
+                    if len(self.positions[key]) == 3:
+                        break  # already 3d coordinates
+                    self.positions[key] = (self.positions[key] + [0] * 3)[:3]
             if 'actuatormap' in initfrom:
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:

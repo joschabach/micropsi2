@@ -327,7 +327,6 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
             initfrom = {}
-            datafile = None
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
@@ -341,12 +340,11 @@ class TheanoNodenet(Nodenet):
                     return False
 
             # initialize with metadata
-            nodes_data = initfrom.pop('nodes', {})
             self.initialize_nodenet(initfrom)
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load_data(datafilename, nodes_data)
+                partition.load_data(datafilename, initfrom.get('nodes', {}))
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
@@ -383,6 +381,21 @@ class TheanoNodenet(Nodenet):
             self.set_runner_condition(initfrom['runner_condition'])
 
         if len(initfrom) != 0:
+            # instantiate partitions
+            partitions_to_instantiate = initfrom.get('partition_parents', {})
+            largest_pid = 0
+            for partition_spid, parent_uid in partitions_to_instantiate.items():
+                pid = int(partition_spid)
+                if pid > largest_pid:
+                    largest_pid = pid
+                self.create_partition(pid,
+                                      parent_uid,
+                                      True,
+                                      round(len(initfrom.get('nodes', {}).keys()) * 1.2 + 1),
+                                      7,
+                                      round(len(set(initfrom.get('nodespaces', {}).keys())) * 1.2) + 1)
+            self.last_allocated_partition = largest_pid
+
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
             if 'names' in initfrom:
@@ -407,21 +420,6 @@ class TheanoNodenet(Nodenet):
 
         # re-use the root nodespace
         uidmap[self.rootpartition.rootnodespace_uid] = self.rootpartition.rootnodespace_uid
-
-        # instantiate partitions
-        partitions_to_instantiate = nodenet_data.get('partition_parents', {})
-        largest_pid = 0
-        for partition_spid, parent_uid in partitions_to_instantiate.items():
-            pid = int(partition_spid)
-            if pid > largest_pid:
-                largest_pid = pid
-            self.create_partition(pid,
-                                  parent_uid,
-                                  True,
-                                  round(len(nodenet_data.get('nodes', {}).keys()) * 1.2 + 1),
-                                  7,
-                                  round(len(set(nodenet_data.get('nodespaces', {}).keys())) * 1.2) + 1)
-        self.last_allocated_partition = largest_pid
 
         # merge in spaces, make sure that parent nodespaces exist before children are initialized
         nodespaces_to_merge = set(nodenet_data.get('nodespaces', {}).keys())

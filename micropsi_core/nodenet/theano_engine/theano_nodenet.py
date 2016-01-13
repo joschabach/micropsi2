@@ -603,6 +603,7 @@ class TheanoNodenet(Nodenet):
         uid = node_to_id(id, partition.pid)
 
         if position is not None:
+            position = (position + [0] * 3)[:3]
             self.positions[uid] = position
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
@@ -894,6 +895,7 @@ class TheanoNodenet(Nodenet):
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:
+            position = (position + [0] * 3)[:3]
             self.positions[uid] = position
 
         return uid

@@ -44,6 +44,7 @@ class NetEntity(object):
 
     @position.setter
     def position(self, position):
+        position = (position + [0] * 3)[:3]
         self.__position = position
 
     @property

@@ -58,13 +58,14 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))
+        return self._nodenet.positions.get(self.uid, [10, 10, 0])
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
+            position = (position + [0] * 3)[:3]
             self._nodenet.positions[self.uid] = position
 
     @property

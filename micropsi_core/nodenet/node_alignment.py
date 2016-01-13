@@ -43,7 +43,7 @@ def align(nodenet, nodespace):
     for i, id in enumerate(unaligned_nodespaces):
         nodenet.get_nodespace(id).position = calculate_grid_position(i)
 
-    start_position = (BORDER + GRID/2, BORDER + (0.5+math.ceil(len(unaligned_nodespaces)/PREFERRED_WIDTH))*GRID)
+    start_position = (BORDER + GRID / 2, BORDER + (0.5 + math.ceil(len(unaligned_nodespaces) / PREFERRED_WIDTH)) * GRID, 0)
 
     # simplify linkage
     group = unify_links(nodenet, unaligned_nodes)
@@ -98,7 +98,7 @@ class DisplayNode(object):
     def height(self):
         return 1
 
-    def arrange(self, nodenet, starting_point = (0,0)):
+    def arrange(self, nodenet, starting_point=[0, 0, 0]):
         nodenet.get_node(self.uid).position = starting_point
 
 def unify_links(nodenet, node_id_list):
@@ -328,12 +328,13 @@ class UnorderedGroup(list):
         element.parent = self
         list.append(self, element)
 
-    def arrange(self, nodenet, start_position = (0, 0)):
+    def arrange(self, nodenet, start_position=[0, 0, 0]):
         # arrange elements of unordered group below each other
-        x, y = start_position
+        x, y, z = start_position
         for i in self:
-            i.arrange(nodenet, (x, y))
-            y += i.height()*GRID
+            i.arrange(nodenet, [x, y, z])
+            y += i.height() * GRID
+
 
 class HorizontalGroup(UnorderedGroup):
 
@@ -349,12 +350,13 @@ class HorizontalGroup(UnorderedGroup):
             height = max(i.height(), height)
         return height
 
-    def arrange(self, nodenet, start_position = (0,0)):
-        x, y = start_position
+    def arrange(self, nodenet, start_position=[0, 0, 0]):
+        x, y, z = start_position
         for i in self:
-            i.arrange(nodenet, (x, y))
+            i.arrange(nodenet, [x, y, z])
             xshift = 1 if self.stackable else i.width()
-            x += xshift*GRID
+            x += xshift * GRID
+
 
 class VerticalGroup(UnorderedGroup):
 
@@ -370,14 +372,14 @@ class VerticalGroup(UnorderedGroup):
             height += i.height()
         return height
 
-    def arrange(self, nodenet, start_position = (0,0)):
-        x, y = start_position
+    def arrange(self, nodenet, start_position=[0, 0, 0]):
+        x, y, z = start_position
         for i in self:
-            i.arrange(nodenet, (x, y))
-            y += i.height()*GRID
+            i.arrange(nodenet, [x, y, z])
+            y += i.height() * GRID
 
 
-def calculate_grid_position(index, start_position = (0, 0)):
+def calculate_grid_position(index, start_position=[0, 0, 0]):
     """Determines the position of an item in a simple grid, based on default values defined here"""
     return (
         BORDER + (index % PREFERRED_WIDTH + 1) * GRID - GRID / 2,

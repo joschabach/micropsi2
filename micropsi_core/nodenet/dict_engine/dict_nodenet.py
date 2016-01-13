@@ -179,7 +179,7 @@ class DictNodenet(Nodenet):
 
         self._nodes = {}
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
+        self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
 
         self._nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -278,7 +278,7 @@ class DictNodenet(Nodenet):
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
+        self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
@@ -400,7 +400,7 @@ class DictNodenet(Nodenet):
         self.max_coords = {'x': 0, 'y': 0}
 
         self._nodespaces = {}
-        DictNodespace(self, None, (0, 0), "Root", "Root")
+        DictNodespace(self, None, [0, 0, 0], "Root", "Root")
 
     def _register_node(self, node):
         self._nodes[node.uid] = node

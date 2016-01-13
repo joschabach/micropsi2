@@ -339,12 +339,20 @@ class TheanoNodenet(Nodenet):
                     self.logger.warn("Could not open nodenet metadata file %s", filename)
                     return False
 
-            # initialize with metadata
+            # determine whether we have a complete json dump, or our theano npz partition files:
+            if 'nodespaces' not in initfrom:
+                # npz case, don't pass nodes to initfrom, since nodespaces are not initialized
+                nodes_data = initfrom.pop('nodes', {})
+            else:
+                # json dump case: leave nodes in data
+                nodes_data = initfrom.get('nodes', {})
+
+            # initialize
             self.initialize_nodenet(initfrom)
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
-                partition.load_data(datafilename, initfrom.get('nodes', {}))
+                partition.load_data(datafilename, nodes_data)
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")

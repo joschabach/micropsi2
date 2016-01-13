@@ -179,7 +179,6 @@ class DictNodenet(Nodenet):
 
         self._nodes = {}
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
 
         self._nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -398,9 +397,7 @@ class DictNodenet(Nodenet):
         self._nodes = {}
 
         self.max_coords = {'x': 0, 'y': 0}
-
-        self._nodespaces = {}
-        DictNodespace(self, None, [0, 0, 0], "Root", "Root")
+        self.initialize_nodenet({})
 
     def _register_node(self, node):
         self._nodes[node.uid] = node

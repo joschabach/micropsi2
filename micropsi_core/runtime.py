@@ -682,6 +682,7 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
     uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
     return True, uid
 
+
 def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
     """Creates a new nodespace
     Arguments:

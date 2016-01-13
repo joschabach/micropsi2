@@ -973,7 +973,7 @@ def test_set_link_weights(fixed_nodenet):
     assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 0
 
     # create link
-        # list style indexing
+    # list style indexing
     try:
         w[1][1] = 0.5
     except:

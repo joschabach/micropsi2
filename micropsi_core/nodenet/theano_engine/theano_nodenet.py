@@ -524,9 +524,9 @@ class TheanoNodenet(Nodenet):
                     uid=nodespace_uid
                 )
         else:
-            if not nodespace_uid in uidmap:
+            if nodespace_uid not in uidmap:
                 parent_uid = data[nodespace_uid].get('parent_nodespace')
-                if not parent_uid in uidmap:
+                if parent_uid not in uidmap:
                     self.merge_nodespace_data(parent_uid, data, uidmap, keep_uids)
                 newuid = self.create_nodespace(
                     uidmap[data[nodespace_uid].get('parent_nodespace')],

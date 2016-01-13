@@ -111,21 +111,20 @@ class MicropsiRunner(threading.Thread):
                         if nodenet.check_stop_runner_condition():
                             nodenet.is_active = False
                             continue
-                        with nodenet.netlock:
-                            log = True
-                            try:
-                                if self.profiler:
-                                    self.profiler.enable()
-                                nodenet.timed_step()
-                                if self.profiler:
-                                    self.profiler.disable()
-                                nodenet.update_monitors()
-                            except:
-                                if self.profiler:
-                                    self.profiler.disable()
-                                nodenet.is_active = False
-                                logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
-                                MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
+                        log = True
+                        try:
+                            if self.profiler:
+                                self.profiler.enable()
+                            nodenet.timed_step()
+                            if self.profiler:
+                                self.profiler.disable()
+                            nodenet.update_monitors()
+                        except:
+                            if self.profiler:
+                                self.profiler.disable()
+                            nodenet.is_active = False
+                            logging.getLogger("agent.%s" % uid).error("Exception in NodenetRunner:", exc_info=1)
+                            MicropsiRunner.last_nodenet_exception[uid] = sys.exc_info()
                         if nodenet.world and nodenet.current_step % runner['factor'] == 0:
                             try:
                                 worlds[nodenet.world].step()

@@ -2833,7 +2833,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     var method = "";
     var params = {
         nodenet_uid: currentNodenet,
-        position: [x,y],
+        position: [x,y,0],
         nodespace: currentNodeSpace,
         name: name}
     if(type == "Nodespace"){
@@ -2889,7 +2889,7 @@ function handlePasteNodes(pastemode){
     // none;
     var offset = [viewProperties.copyPasteOffset, viewProperties.copyPasteOffset];
     if(clickPosition && copyPosition){
-        offset = [(clickPosition.x / viewProperties.zoomFactor) - (copyPosition.x), (clickPosition.y / viewProperties.zoomFactor) - (copyPosition.y)];
+        offset = [(clickPosition.x / viewProperties.zoomFactor) - (copyPosition.x), (clickPosition.y / viewProperties.zoomFactor) - (copyPosition.y), 0];
     }
     copy_ids = Object.keys(clipboard);
     api.call('clone_nodes', {
@@ -3234,7 +3234,7 @@ function moveNode(nodeUid, x, y){
     api.call("set_node_position", {
         nodenet_uid: currentNodenet,
         node_uid: nodeUid,
-        position: [x,y]});
+        position: [x,y,0]});
 }
 
 function handleEditNode(event){

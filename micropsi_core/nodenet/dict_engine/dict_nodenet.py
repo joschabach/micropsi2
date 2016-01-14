@@ -327,24 +327,24 @@ class DictNodenet(Nodenet):
         else:
             return self._native_modules[type]
 
-    def get_nodespace_data(self, nodespace, include_links):
+    def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
             'nodes': {},
             'name': self.name,
             'is_active': self.is_active,
             'current_step': self.current_step,
-            'nodespaces': self.construct_nodespaces_dict(nodespace),
+            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'world': self.world,
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
         followupnodes = []
-        for uid in self._nodes:
-            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
-                node = self.get_node(uid)
-                data['nodes'][uid] = node.get_data(include_links=include_links)
-                if include_links:
-                    followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+        nodespace = self.get_nodespace(nodespace_uid)
+        for uid in nodespace.get_known_ids(entitytype="nodes"):
+            node = self.get_node(uid)
+            data['nodes'][uid] = node.get_data(include_links=include_links)
+            if include_links:
+                followupnodes.extend(node.get_associated_node_uids())
         if include_links:
             for uid in followupnodes:
                 if uid not in data['nodes']:

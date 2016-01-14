@@ -153,8 +153,6 @@ class Nodenet(metaclass=ABCMeta):
         self.owner = owner
         self._monitors = {}
 
-        self.max_coords = {'x': 0, 'y': 0}
-
         self.netlock = Lock()
 
         self.logger = logging.getLogger('agent.%s' % self.uid)
@@ -181,7 +179,6 @@ class Nodenet(metaclass=ABCMeta):
         data = self.metadata
         data.update({
             'nodes': {},
-            'max_coords': self.max_coords,
             'nodespaces': {},
             'monitors': self.construct_monitors_dict(),
             'modulators': {},

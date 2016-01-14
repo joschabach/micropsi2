@@ -122,8 +122,6 @@ initializeSidebarForms();
 
 canvas_container = $('#nodenet').parent();
 
-max_coordinates = {};
-
 var clipboard = {};
 
 // hm. not really nice. but let's see if we got other pairs, or need them configurable:
@@ -344,9 +342,6 @@ function setNodespaceData(data, changed){
         currentWorldadapter = data.worldadapter;
         nodenetRunning = data.is_active;
 
-        if('max_coords' in data){
-            max_coordinates = data['max_coords'];
-        }
         if(!('selectionBox' in nodeLayer)){
             nodeLayer.addChild(selectionBox);
         }
@@ -2226,14 +2221,10 @@ function onMouseUp(event) {
                 for(var uid in selection){
                     if(uid in nodes){
                         moveNode(uid, nodes[uid].x, nodes[uid].y);
-                        if(max_coordinates.x && nodes[uid].x > max_coordinates.x) max_coordinates.x = nodes[uid].x;
-                        if(max_coordinates.y && nodes[uid].y > max_coordinates.y) max_coordinates.y = nodes[uid].y;
                     }
                 }
             } else {
                 moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
-                if(max_coordinates.x && nodes[path.name].x > max_coordinates.x) max_coordinates.x = nodes[path.name].x;
-                if(max_coordinates.y && nodes[path.name].y > max_coordinates.y) max_coordinates.y = nodes[path.name].y;
             }
 
             movePath = false;

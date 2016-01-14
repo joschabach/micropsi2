@@ -331,7 +331,6 @@ class DictNodenet(Nodenet):
         data = {
             'nodes': {},
             'name': self.name,
-            'max_coords': {'x': 0, 'y': 0},
             'is_active': self.is_active,
             'current_step': self.current_step,
             'nodespaces': self.construct_nodespaces_dict(nodespace),
@@ -344,10 +343,6 @@ class DictNodenet(Nodenet):
             if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
                 node = self.get_node(uid)
                 data['nodes'][uid] = node.get_data(include_links=include_links)
-                if node.position[0] > data['max_coords']['x']:
-                    data['max_coords']['x'] = node.position[0]
-                if node.position[1] > data['max_coords']['y']:
-                    data['max_coords']['y'] = node.position[1]
                 if include_links:
                     followupnodes.extend(self.get_node(uid).get_associated_node_uids())
         if include_links:
@@ -395,8 +390,6 @@ class DictNodenet(Nodenet):
     def clear(self):
         super(DictNodenet, self).clear()
         self._nodes = {}
-
-        self.max_coords = {'x': 0, 'y': 0}
         self.initialize_nodenet({})
 
     def _register_node(self, node):

@@ -31,6 +31,7 @@ class TheanoNodespace(Nodespace):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
+            position = list(position)
             position = (position + [0] * 3)[:3]
             self._nodenet.positions[self.uid] = position
 

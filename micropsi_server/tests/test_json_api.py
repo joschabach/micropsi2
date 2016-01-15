@@ -1401,7 +1401,7 @@ def test_get_state_diff(app, test_nodenet, node):
     assert 'activations' in data
     assert 'structure_changes' in data
     assert node in data['structure_changes']['nodes_dirty']
-    node2 = nodenet.create_node("Register", None, (10, 10), name="node2")
+    node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_current_state', params={
         'nodenet_uid': test_nodenet,

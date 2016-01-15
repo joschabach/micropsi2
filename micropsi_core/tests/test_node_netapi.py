@@ -753,21 +753,21 @@ def test_set_gate_function(fixed_nodenet):
 def test_autoalign(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     for uid in net.get_node_uids():
-        net.get_node(uid).position = (12, 13)
+        net.get_node(uid).position = [12, 13, 11]
     netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
     positions = []
     for uid in net.get_node_uids():
         if net.get_node(uid).parent_nodespace == netapi.get_nodespace(None).uid:
             positions.extend(net.get_node(uid).position)
-    assert set(positions) != set((12, 13))
+    assert set(positions) != set([12, 13, 11])
 
     for uid in net.get_node_uids():
-        net.get_node(uid).position = (12, 13)
+        net.get_node(uid).position = [12, 13, 11]
     netapi.autoalign_nodespace('InVaLiD')
     positions = []
     for uid in net.get_node_uids():
         positions.extend(net.get_node(uid).position)
-    assert set(positions) == set((12, 13))
+    assert set(positions) == set([12, 13, 11])
 
 
 def test_copy_nodes(fixed_nodenet):
@@ -973,7 +973,7 @@ def test_set_link_weights(fixed_nodenet):
     assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 0
 
     # create link
-        # list style indexing
+    # list style indexing
     try:
         w[1][1] = 0.5
     except:

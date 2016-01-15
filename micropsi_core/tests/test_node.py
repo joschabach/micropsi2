@@ -43,3 +43,14 @@ def test_node_states(test_nodenet, node):
     assert node.get_state('foobar') == 'bazbaz'
     node.set_state('foobar', 42)
     assert node.get_state('foobar') == 42
+
+
+def test_entity_positions_as_tuples(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    api = nodenet.netapi
+    node = api.create_node("Pipe", None, "node1")
+    nodespace = api.create_nodespace(None, "nodespace1")
+    node.position = (23, 42)
+    nodespace.position = (13, 23, 42)
+    assert node.position == [23, 42, 0]
+    assert nodespace.position == [13, 23, 42]

@@ -179,7 +179,6 @@ class DictNodenet(Nodenet):
 
         self._nodes = {}
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self._nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -278,7 +277,7 @@ class DictNodenet(Nodenet):
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
+        self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
@@ -328,29 +327,24 @@ class DictNodenet(Nodenet):
         else:
             return self._native_modules[type]
 
-    def get_nodespace_data(self, nodespace, include_links):
+    def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
             'nodes': {},
             'name': self.name,
-            'max_coords': {'x': 0, 'y': 0},
             'is_active': self.is_active,
             'current_step': self.current_step,
-            'nodespaces': self.construct_nodespaces_dict(nodespace),
+            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'world': self.world,
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
         followupnodes = []
-        for uid in self._nodes:
-            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
-                node = self.get_node(uid)
-                data['nodes'][uid] = node.get_data(include_links=include_links)
-                if node.position[0] > data['max_coords']['x']:
-                    data['max_coords']['x'] = node.position[0]
-                if node.position[1] > data['max_coords']['y']:
-                    data['max_coords']['y'] = node.position[1]
-                if include_links:
-                    followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+        nodespace = self.get_nodespace(nodespace_uid)
+        for uid in nodespace.get_known_ids(entitytype="nodes"):
+            node = self.get_node(uid)
+            data['nodes'][uid] = node.get_data(include_links=include_links)
+            if include_links:
+                followupnodes.extend(node.get_associated_node_uids())
         if include_links:
             for uid in followupnodes:
                 if uid not in data['nodes']:
@@ -396,11 +390,7 @@ class DictNodenet(Nodenet):
     def clear(self):
         super(DictNodenet, self).clear()
         self._nodes = {}
-
-        self.max_coords = {'x': 0, 'y': 0}
-
-        self._nodespaces = {}
-        DictNodespace(self, None, (0, 0), "Root", "Root")
+        self.initialize_nodenet({})
 
     def _register_node(self, node):
         self._nodes[node.uid] = node

@@ -12,10 +12,10 @@ __date__ = '29.10.12'
 
 
 def prepare_nodenet(test_nodenet):
-    res, node_a_uid = micropsi.add_node(test_nodenet, "Pipe", (200, 250), None, state=None, name="A")
-    res, node_b_uid = micropsi.add_node(test_nodenet, "Pipe", (500, 350), None, state=None, name="B")
-    res, node_c_uid = micropsi.add_node(test_nodenet, "Pipe", (300, 150), None, state=None, name="C")
-    res, node_s_uid = micropsi.add_node(test_nodenet, "Sensor", (200, 450), None, state=None, name="S")
+    res, node_a_uid = micropsi.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
+    res, node_b_uid = micropsi.add_node(test_nodenet, "Pipe", [500, 350, 10], None, state=None, name="B")
+    res, node_c_uid = micropsi.add_node(test_nodenet, "Pipe", [300, 150, 10], None, state=None, name="C")
+    res, node_s_uid = micropsi.add_node(test_nodenet, "Sensor", [200, 450, 10], None, state=None, name="S")
     return {
         'a': node_a_uid,
         'b': node_b_uid,
@@ -36,12 +36,21 @@ def test_add_node(test_nodenet):
 
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace.get("nodes", [])) == 0
-    res, uid = micropsi.add_node(test_nodenet, "Pipe", (200, 250), None, state=None, name="A")
+    res, uid = micropsi.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
     nodespace = micropsi.get_nodenet_data(test_nodenet, None)
     assert len(nodespace["nodes"]) == 1
     node1 = nodespace["nodes"][uid]
     assert node1["name"] == "A"
-    assert node1["position"] == (200, 250)
+    assert node1["position"] == [200, 250, 10]
+
+
+def test_position_always_3d(test_nodenet):
+    micropsi.load_nodenet(test_nodenet)
+    res, nuid = micropsi.add_node(test_nodenet, "Pipe", [200], None, state=None, name="A")
+    res, nsuid = micropsi.add_nodespace(test_nodenet, [200, 125, 0, 134], None, name="NS")
+    data = micropsi.get_nodenet_data(test_nodenet, None)
+    assert data['nodes'][nuid]['position'] == [200, 0, 0]
+    assert data['nodespaces'][nsuid]['position'] == [200, 125, 0]
 
 
 def test_get_nodenet_activation_data(test_nodenet):
@@ -68,7 +77,7 @@ def test_get_nodespace(test_nodenet):
     assert len(nodespace["nodes"]) == 4
     node1 = nodespace["nodes"][nodes['a']]
     assert node1["name"] == "A"
-    assert node1["position"] == (200, 250)
+    assert node1["position"] == [200, 250, 10]
 
 
 def test_get_nodespace_list(test_nodenet):
@@ -83,7 +92,7 @@ def test_get_nodespace_list(test_nodenet):
 
 
 def test_get_nodespace_list_with_empty_nodespace(test_nodenet):
-    res, uid = micropsi.add_nodespace(test_nodenet, (200, 250), None, name="Foospace")
+    res, uid = micropsi.add_nodespace(test_nodenet, [200, 250, 10], None, name="Foospace")
     data = micropsi.get_nodespace_list(test_nodenet)
     assert data[uid]['nodes'] == {}
 
@@ -192,7 +201,7 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath, nodetyp
 
 def test_non_standard_gate_defaults(fixed_nodenet):
     nodenet = micropsi.nodenets[fixed_nodenet]
-    res, uid = micropsi.add_node(fixed_nodenet, 'Register', [30, 30], name='test')
+    res, uid = micropsi.add_node(fixed_nodenet, 'Register', [30, 30, 10], name='test')
     node = nodenet.netapi.get_node(uid)
     genparams = {'maximum': 0.5}
     micropsi.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
@@ -234,7 +243,7 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath, nodetype_d
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
-    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Testnode")
     remove(nodetype_def)
     remove(nodefunc_def)
     micropsi.reload_native_modules()
@@ -289,7 +298,7 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath, nodetype_d
 
 def test_node_parameters_none_resets_to_default(fixed_nodenet):
     nodenet = micropsi.nodenets[fixed_nodenet]
-    res, uid = micropsi.add_node(fixed_nodenet, 'Pipe', [30, 30], name='test')
+    res, uid = micropsi.add_node(fixed_nodenet, 'Pipe', [30, 30, 10], name='test')
     node = nodenet.netapi.get_node(uid)
     micropsi.set_node_parameters(fixed_nodenet, node.uid, {'expectation': '', 'wait': 0})
     assert node.get_parameter('expectation') == 1
@@ -339,6 +348,6 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, node
 
     micropsi.reload_native_modules()
     data = micropsi.get_nodenet_data(fixed_nodenet, None)
-    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Test")
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = micropsi.nodenets[fixed_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 13

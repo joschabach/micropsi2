@@ -654,7 +654,7 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "name" (str): display name
         "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
         "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
-        "position" (list): the x, y coordinates of this node, as a list
+        "position" (list): the x, y, z coordinates of this node, as a list
         "sheaves" (dict): a dict of sheaf-activations for this node
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
@@ -682,6 +682,7 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
     uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
     return True, uid
 
+
 def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
     """Creates a new nodespace
     Arguments:
@@ -697,7 +698,7 @@ def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=N
     return True, uid
 
 
-def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 50]):
+def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 50, 50]):
     """
     Clones a bunch of nodes. The nodes will get new unique node ids,
     a "copy" suffix to their name, and a slight positional offset.
@@ -711,6 +712,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     If you however specify a nodespace, all clones will be copied to the given nodespace.
     """
 
+    offset = (offset + [0] * 3)[:3]
     nodenet = get_nodenet(nodenet_uid)
     result = {}
     copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
@@ -729,7 +731,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        uid = nodenet.create_node(n.type, target_nodespace, (n.position[0] + offset[0], n.position[1] + offset[1]), name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
+        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
         if uid:
             uidmap[n.uid] = uid
         else:
@@ -774,6 +776,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
     xpos = []
     ypos = []
+    zpos = []
     nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
     nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
 
@@ -791,6 +794,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         idmap[nodespace.uid] = varname
         xpos.append(node.position[0])
         ypos.append(node.position[1])
+        zpos.append(node.position[2])
 
     # nodes and gates
     for i, node in enumerate(nodes):
@@ -823,6 +827,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         idmap[node.uid] = varname
         xpos.append(node.position[0])
         ypos.append(node.position[1])
+        zpos.append(node.position[2])
 
     lines.append("")
 
@@ -887,13 +892,14 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     lines.append("")
 
     # positions
-    origin = (100, 100)
-    factor = (int(min(xpos)), int(min(ypos)))
+    origin = [100, 100, 100]
+    factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
     lines.append("origin_pos = (%d, %d)" % origin)
     for node in nodes + nodespaces:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])
-        lines.append("%s.position = (origin_pos[0] + %i, origin_pos[1] + %i)" % (idmap[node.uid], x, y))
+        z = int(node.position[2] - factor[2])
+        lines.append("%s.position = [origin_pos[0] + %i, origin_pos[1] + %i, origin_pos[2] + %i]" % (idmap[node.uid], x, y, z))
 
     return "\n".join(lines)
 

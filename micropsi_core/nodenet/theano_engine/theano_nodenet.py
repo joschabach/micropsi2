@@ -392,6 +392,11 @@ class TheanoNodenet(Nodenet):
                 self.names = initfrom['names']
             if 'positions' in initfrom:
                 self.positions = initfrom['positions']
+                # compatibility:
+                for key in self.positions:
+                    if len(self.positions[key]) == 3:
+                        break  # already 3d coordinates
+                    self.positions[key] = (self.positions[key] + [0] * 3)[:3]
             if 'actuatormap' in initfrom:
                 self.actuatormap = initfrom['actuatormap']
             if 'sensormap' in initfrom:
@@ -519,9 +524,9 @@ class TheanoNodenet(Nodenet):
                     uid=nodespace_uid
                 )
         else:
-            if not nodespace_uid in uidmap:
+            if nodespace_uid not in uidmap:
                 parent_uid = data[nodespace_uid].get('parent_nodespace')
-                if not parent_uid in uidmap:
+                if parent_uid not in uidmap:
                     self.merge_nodespace_data(parent_uid, data, uidmap, keep_uids)
                 newuid = self.create_nodespace(
                     uidmap[data[nodespace_uid].get('parent_nodespace')],
@@ -603,6 +608,7 @@ class TheanoNodenet(Nodenet):
         uid = node_to_id(id, partition.pid)
 
         if position is not None:
+            position = (position + [0] * 3)[:3]
             self.positions[uid] = position
         if name is not None and name != "" and name != uid:
             self.names[uid] = name
@@ -894,6 +900,7 @@ class TheanoNodenet(Nodenet):
         if name is not None and len(name) > 0 and name != uid:
             self.names[uid] = name
         if position is not None:
+            position = (position + [0] * 3)[:3]
             self.positions[uid] = position
 
         return uid

@@ -339,3 +339,53 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
     assert round(register2.get_slot('gen').get_links()[0].weight, 2) == 0.9
     assert register2.get_slot('gen').get_links()[0].source_node.name == 'Source2'
     assert n2.get_node(register2.uid).name == "Register2"
+
+
+def test_get_structural_changes(fixed_nodenet):
+    net = micropsi.nodenets[fixed_nodenet]
+    net.step()
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 0)
+    assert set(result['nodes_dirty'].keys()) == set(net.get_node_uids())
+    assert result['nodes_deleted'] == []
+    assert result['nodespaces_dirty'] == {}
+    assert result['nodespaces_deleted'] == []
+    nodes = {}
+    for n in net.netapi.get_nodes():
+        nodes[n.name] = n
+    net.netapi.unlink(nodes['A1'], 'por', nodes['A2'], 'gen')
+    net.netapi.delete_node(nodes['B2'])
+    newnode = net.netapi.create_node('Pipe', None, "asdf")
+    net.netapi.link(newnode, 'gen', nodes['B1'], 'gen')
+    newspace = net.netapi.create_nodespace(None, "nodespace")
+    net.step()
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 1)
+    assert test['structure_changes']
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    assert nodes['B2'].uid in result['nodes_deleted']
+    assert nodes['A1'].uid in result['nodes_dirty']
+    assert nodes['A2'].uid in result['nodes_dirty']
+    assert result['nodes_dirty'][nodes['A1'].uid]['links'] == {}
+    assert newnode.uid in result['nodes_dirty']
+    assert len(result['nodes_dirty'][newnode.uid]['links']['gen']) == 1
+    assert newspace.uid in result['nodespaces_dirty']
+    assert len(result['nodes_dirty'].keys()) == 4
+    assert len(result['nodespaces_dirty'].keys()) == 1
+    net.step()
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 2)
+    assert not test['structure_changes']
+
+
+def test_get_structural_changes_cycles(fixed_nodenet):
+    net = micropsi.nodenets[fixed_nodenet]
+    net.step()
+    nodes = {}
+    for n in net.netapi.get_nodes():
+        nodes[n.name] = n
+    net.netapi.delete_node(nodes['B2'])
+    net.step()
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    assert nodes['B2'].uid in result['nodes_deleted']
+    for i in range(101):
+        net.step()
+    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    assert nodes['B2'].uid not in result['nodes_deleted']

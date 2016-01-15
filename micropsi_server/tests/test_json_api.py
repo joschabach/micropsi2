@@ -1384,3 +1384,31 @@ def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, n
     assert data['version'] == 1
     assert data['world'] is None
     assert data['worldadapter'] is None
+
+
+def test_get_state_diff(app, test_nodenet, node):
+    from micropsi_core import runtime
+    nodenet = runtime.nodenets[test_nodenet]
+    runtime.step_nodenet(test_nodenet)
+    response = app.post_json('/rpc/get_current_state', params={
+        'nodenet_uid': test_nodenet,
+        'nodenet_diff': {
+            'nodespace': None,
+            'step': 0,
+        }
+    })
+    data = response.json_body['data']['nodenet_diff']
+    assert 'activations' in data
+    assert 'structure_changes' in data
+    assert node in data['structure_changes']['nodes_dirty']
+    node2 = nodenet.create_node("Register", None, (10, 10), name="node2")
+    runtime.step_nodenet(test_nodenet)
+    response = app.post_json('/rpc/get_current_state', params={
+        'nodenet_uid': test_nodenet,
+        'nodenet_diff': {
+            'nodespace': None,
+            'step': 1,
+        }
+    })
+    data = response.json_body['data']['nodenet_diff']
+    assert [node2] == list(data['structure_changes']['nodes_dirty'].keys())

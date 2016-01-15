@@ -162,6 +162,7 @@ class Nodenet(metaclass=ABCMeta):
 
         self.netapi = NetAPI(self)
 
+        self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
 
@@ -496,6 +497,42 @@ class Nodenet(metaclass=ABCMeta):
         Returns a list of available gate functions
         """
         pass  # pragma: no cover
+
+    @abstractmethod
+    def has_structural_changes(self, nodespace_uid, since_step):
+        """
+        Returns true, if the structure of the nodespace has changed since the given step, false otherwise
+        Structural changes include everything besides activation
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_structural_changes(self, nodespace_uid, since_step):
+        """
+        Returns a dictionary of structural changes that happened in the given nodespace
+        since the given step
+        Expected result format is
+        {
+            'nodes_dirty': {},
+            'nodespaces_dirty': {},
+            'nodes_deleted': [],
+            'nodespaces_deleted': []
+        }
+        where the deleted fields carry lists of uids and the dirty fields
+        carry data-dicts with the new state of the entity
+        """
+        pass  # pragma: no cover
+
+    def _track_deletion(self, entity_type, uid):
+        """
+        Track deletion of entitytype. either 'nodes' or 'nodespaces'
+        """
+        if self.current_step not in self.deleted_items:
+            self.deleted_items[self.current_step] = {
+                'nodespaces_deleted': [],
+                'nodes_deleted': []
+            }
+        self.deleted_items[self.current_step]["%s_deleted" % entity_type].append(uid)
 
     def clear(self):
         self._monitors = {}

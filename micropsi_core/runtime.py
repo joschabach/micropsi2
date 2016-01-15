@@ -337,15 +337,17 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
-def get_nodenet_activation_data(nodenet_uid, last_call_step=-1, nodespace=None):
+def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     nodenet = get_nodenet(nodenet_uid)
-    data = {
-        'activations': nodenet.get_activation_data(nodespace, 1),
-        'structure_changes': False
-    }
+    with nodenet.netlock:
+        data = {
+            'activations': nodenet.get_activation_data(nodespace, rounded=1),
+            'structure_changes': nodenet.has_structural_changes(nodespace, last_call_step)
+        }
     return data
 
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
+
+def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?
     """
@@ -366,6 +368,14 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dash
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
             data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+        if nodenet_diff is not None:
+            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
+            data['nodenet_diff'] = {
+                'activations': activations['activations'],
+                'modulators': nodenet_obj.construct_modulators_dict()
+            }
+            if activations['structure_changes']:
+                data['nodenet_diff']['structure_changes'] = nodenet_obj.get_structural_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
@@ -755,6 +765,13 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."
+
+
+def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
+    """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
+    Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
+    """
+    return nodenets[nodenet_uid].get_structural_changes(nodespace_uid, since_step)
 
 
 def __pythonify(name):

@@ -670,6 +670,8 @@ fetch_stepping_info = function(){
     api.call('get_current_state', params, success=function(data){
         busy = false;
         var start = new Date().getTime();
+        window.currentSimulationStep = data.current_nodenet_step;
+        window.nodenetRunning = data.is_active;
         for(key in listeners){
             if(data[key]){
                 listeners[key].callback(data[key]);

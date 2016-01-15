@@ -736,8 +736,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, world=world, monitors=monitors, dashboard=dashboard)
+def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("generate_uid")
@@ -1023,7 +1023,12 @@ def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
 
 @rpc("get_nodespace_activations")
 def get_nodespace_activations(nodenet_uid, nodespace, last_call_step=-1):
-    return True, runtime.get_nodenet_activation_data(nodenet_uid, last_call_step, nodespace)
+    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespace, last_call_step)
+
+
+@rpc("get_structural_changes")
+def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
+    return runtime.get_structural_changes(nodenet_uid, nodespace_uid, since_step)
 
 
 @rpc("get_node")

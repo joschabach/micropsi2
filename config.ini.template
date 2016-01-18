@@ -52,7 +52,8 @@ level_system = WARNING
 level_world = WARNING
 level_agent = WARNING
 
-logfile = /tmp/micropsi.log
+# optional: write the log messages to a file as well as stdout
+#logfile = /tmp/micropsi.log
 
 [theano]
 

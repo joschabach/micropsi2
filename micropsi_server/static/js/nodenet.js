@@ -1995,7 +1995,6 @@ function onMouseDown(event) {
                 }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
-                    showNodeForm(nodeUid, true);
                 }
                 // check for slots and gates
                 var i;
@@ -2329,6 +2328,7 @@ function onMouseUp(event) {
                 var except = [path.name];
                 deselectAll(except);
                 selectNode(path.name);
+                showNodeForm(path.name, true);
             }
         }
     }

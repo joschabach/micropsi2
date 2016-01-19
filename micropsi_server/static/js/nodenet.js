@@ -452,6 +452,7 @@ function setNodespaceDiffData(data, changed){
                         }
                     }
                     redrawNode(item);
+                    nodes[uid].update(item);
                 } else{
                     addNode(item);
                 }

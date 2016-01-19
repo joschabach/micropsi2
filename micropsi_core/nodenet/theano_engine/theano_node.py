@@ -68,6 +68,7 @@ class TheanoNode(Node):
             position = list(position)
             position = (position + [0] * 3)[:3]
             self._nodenet.positions[self.uid] = position
+        self._partition.node_changed(self.uid)
 
     @property
     def name(self):

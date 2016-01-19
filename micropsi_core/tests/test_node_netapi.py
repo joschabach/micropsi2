@@ -770,6 +770,19 @@ def test_autoalign(fixed_nodenet):
     assert set(positions) == set([12, 13, 11])
 
 
+def test_autoalign_updates_last_changed(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = [12, 13, 11]
+    net.step()
+    net.step()
+    netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
+    changes = net.get_nodespace_changes(None, 2)
+    for uid in net.get_node_uids():
+        if net.get_node(uid).position != [12, 13, 11]:
+            assert uid in changes['nodes_dirty']
+
+
 def test_copy_nodes(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     nodespace = netapi.create_nodespace(None, name='copy')

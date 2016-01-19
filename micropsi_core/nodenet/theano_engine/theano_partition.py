@@ -1477,6 +1477,11 @@ class TheanoPartition():
         if self.allocated_nodespaces_sampling_activators[parent] == node_id:
             self.allocated_nodespaces_sampling_activators[parent] = 0
 
+    def node_changed(self, uid):
+        node_id = node_from_id(uid)
+        self.nodes_last_changed[node_id] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[node_id]] = self.nodenet.current_step
+
     def unlink_node_completely(self, node_id):
         type = self.allocated_nodes[node_id]
         offset = self.allocated_node_offsets[node_id]

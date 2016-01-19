@@ -470,25 +470,22 @@ function setNodespaceDiffData(data, changed){
                 } else{
                     addNode(item);
                 }
-
             }
         }
         // activations:
         for(var uid in data.activations){
-            if(!data.structure_changes || !uid in data.structure_changes.nodes_dirty){
-                activations = data.activations[uid];
-                var gen = 0
-                for(var i=0; i < nodes[uid].gateIndexes.length; i++){
-                    var type = nodes[uid].gateIndexes[i];
-                    nodes[uid].gates[type].sheaves['default'].activation = activations[i];
-                    if(type == 'gen'){
-                        gen = activations[i];
-                    }
+            activations = data.activations[uid];
+            var gen = 0
+            for(var i=0; i < nodes[uid].gateIndexes.length; i++){
+                var type = nodes[uid].gateIndexes[i];
+                nodes[uid].gates[type].sheaves['default'].activation = activations[i];
+                if(type == 'gen'){
+                    gen = activations[i];
                 }
-                nodes[uid].sheaves['default'].activation = gen;
-                setActivation(nodes[uid]);
-                redrawNodeLinks(nodes[uid]);
             }
+            nodes[uid].sheaves['default'].activation = gen;
+            setActivation(nodes[uid]);
+            redrawNodeLinks(nodes[uid]);
         }
         updateModulators(data.modulators);
 

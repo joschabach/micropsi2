@@ -444,6 +444,13 @@ function setNodespaceDiffData(data, changed){
                 var nodedata = data.structure_changes.nodes_dirty[uid];
                 item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions);
                 if(uid in nodes){
+                    for (var gateName in nodes[uid].gates) {
+                        for (linkUid in nodes[uid].gates[gateName].outgoing) {
+                            if(linkUid in linkLayer.children) {
+                                removeLink(links[linkUid]);
+                            }
+                        }
+                    }
                     redrawNode(item);
                 } else{
                     addNode(item);
@@ -938,7 +945,7 @@ function nodeRedrawNeeded(node){
 // redraw only the links that are connected to the given node
 function redrawNodeLinks(node) {
     var linkUid;
-    for(var dir in  node.placeholder){
+    for(var dir in node.placeholder){
         node.placeholder[dir].remove();
     }
     for (var gateName in node.gates) {

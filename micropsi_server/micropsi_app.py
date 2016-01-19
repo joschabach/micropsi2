@@ -1033,7 +1033,7 @@ def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
 
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
-    return True, runtime.get_node(nodenet_uid, node_uid)
+    return runtime.get_node(nodenet_uid, node_uid)
 
 
 @rpc("add_node", permission_required="manage nodenets")

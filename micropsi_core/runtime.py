@@ -669,7 +669,14 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    return nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
+    if nodenets[nodenet_uid].is_node(node_uid):
+        return True, nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
+    elif nodenets[nodenet_uid].is_nodespace(node_uid):
+        data = nodenets[nodenet_uid].get_nodespace(node_uid).get_data()
+        data['type'] = 'Nodespace'
+        return True, data
+    else:
+        return False, "Unknown UID"
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):

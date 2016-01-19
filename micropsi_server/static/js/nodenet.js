@@ -428,15 +428,15 @@ function setNodespaceDiffData(data, changed){
 
         // structure first:
         if(data.changes){
-            for(var i=0; i < data.changes.nodes_deleted; i++){
+            for(var i=0; i < data.changes.nodes_deleted.length; i++){
                 uid = data.changes.nodes_deleted[i];
-                removeNode(nodes[uid]);
                 if (uid in selection) delete selection[uid];
+                if(uid in nodes) removeNode(nodes[uid]);
             }
-            for(var i=0; i < data.changes.nodespaces_deleted; i++){
+            for(var i=0; i < data.changes.nodespaces_deleted.length; i++){
                 uid = data.changes.nodespaces_deleted[i];
-                removeNode(nodes[uid]);
                 if (uid in selection) delete selection[uid];
+                if (uid in nodes) removeNode(nodes[uid]);
                 delete nodespaces[uid]
             }
             links_data = {}

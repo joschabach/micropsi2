@@ -799,10 +799,10 @@ class DictNodenet(Nodenet):
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
 
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
 
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         ns = self.get_nodespace(nodespace_uid)
         result = {
             'nodes_dirty': {},

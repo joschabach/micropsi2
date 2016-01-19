@@ -1470,12 +1470,12 @@ class TheanoNodenet(Nodenet):
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
 
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         partition = self.get_partition(nodespace_uid)
         nodespace = self.get_nodespace(nodespace_uid)
-        return partition.has_structural_changes(nodespace.uid, since_step)
+        return partition.has_nodespace_changes(nodespace.uid, since_step)
 
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         partition = self.get_partition(nodespace_uid)
         nodespace = self.get_nodespace(nodespace_uid)
         result = {
@@ -1490,7 +1490,7 @@ class TheanoNodenet(Nodenet):
                 result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                 result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
 
-        changed_nodes, changed_nodespaces = partition.get_structural_changes(nodespace.uid, since_step)
+        changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
         for uid in changed_nodes:
             uid = node_to_id(uid, partition.pid)
             result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)

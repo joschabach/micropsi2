@@ -427,21 +427,21 @@ function setNodespaceDiffData(data, changed){
         var uid;
 
         // structure first:
-        if(data.structure_changes){
-            for(var i=0; i < data.structure_changes.nodes_deleted; i++){
-                uid = data.structure_changes.nodes_deleted[i];
+        if(data.changes){
+            for(var i=0; i < data.changes.nodes_deleted; i++){
+                uid = data.changes.nodes_deleted[i];
                 removeNode(nodes[uid]);
                 if (uid in selection) delete selection[uid];
             }
-            for(var i=0; i < data.structure_changes.nodespaces_deleted; i++){
-                uid = data.structure_changes.nodespaces_deleted[i];
+            for(var i=0; i < data.changes.nodespaces_deleted; i++){
+                uid = data.changes.nodespaces_deleted[i];
                 removeNode(nodes[uid]);
                 if (uid in selection) delete selection[uid];
                 delete nodespaces[uid]
             }
             links_data = {}
-            for(var uid in data.structure_changes.nodes_dirty){
-                var nodedata = data.structure_changes.nodes_dirty[uid];
+            for(var uid in data.changes.nodes_dirty){
+                var nodedata = data.changes.nodes_dirty[uid];
                 item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions);
                 if(uid in nodes){
                     for (var gateName in nodes[uid].gates) {
@@ -465,8 +465,8 @@ function setNodespaceDiffData(data, changed){
                 }
             }
             addLinks(links_data);
-            for(var uid in data.structure_changes.nodespaces_dirty){
-                var nodespacedata = data.structure_changes.nodespaces_dirty[uid];
+            for(var uid in data.changes.nodespaces_dirty){
+                var nodespacedata = data.changes.nodespaces_dirty[uid];
                 if(!(uid in nodespaces)){
                     nodespaces[uid] = nodespacedata;
                 }

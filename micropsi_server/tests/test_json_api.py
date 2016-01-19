@@ -1399,8 +1399,8 @@ def test_get_state_diff(app, test_nodenet, node):
     })
     data = response.json_body['data']['nodenet_diff']
     assert 'activations' in data
-    assert 'structure_changes' in data
-    assert node in data['structure_changes']['nodes_dirty']
+    assert 'changes' in data
+    assert node in data['changes']['nodes_dirty']
     node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_current_state', params={
@@ -1411,4 +1411,4 @@ def test_get_state_diff(app, test_nodenet, node):
         }
     })
     data = response.json_body['data']['nodenet_diff']
-    assert [node2] == list(data['structure_changes']['nodes_dirty'].keys())
+    assert [node2] == list(data['changes']['nodes_dirty'].keys())

@@ -341,10 +341,10 @@ def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
     assert n2.get_node(register2.uid).name == "Register2"
 
 
-def test_get_structural_changes(fixed_nodenet):
+def test_get_nodespace_changes(fixed_nodenet):
     net = micropsi.nodenets[fixed_nodenet]
     net.step()
-    result = micropsi.get_structural_changes(fixed_nodenet, None, 0)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 0)
     assert set(result['nodes_dirty'].keys()) == set(net.get_node_uids())
     assert result['nodes_deleted'] == []
     assert result['nodespaces_dirty'] == {}
@@ -359,8 +359,8 @@ def test_get_structural_changes(fixed_nodenet):
     newspace = net.netapi.create_nodespace(None, "nodespace")
     net.step()
     test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 1)
-    assert test['structure_changes']
-    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    assert test['has_changes']
+    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     assert nodes['A1'].uid in result['nodes_dirty']
     assert nodes['A2'].uid in result['nodes_dirty']
@@ -372,10 +372,10 @@ def test_get_structural_changes(fixed_nodenet):
     assert len(result['nodespaces_dirty'].keys()) == 1
     net.step()
     test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 2)
-    assert not test['structure_changes']
+    assert not test['has_changes']
 
 
-def test_get_structural_changes_cycles(fixed_nodenet):
+def test_get_nodespace_changes_cycles(fixed_nodenet):
     net = micropsi.nodenets[fixed_nodenet]
     net.step()
     nodes = {}
@@ -383,9 +383,9 @@ def test_get_structural_changes_cycles(fixed_nodenet):
         nodes[n.name] = n
     net.netapi.delete_node(nodes['B2'])
     net.step()
-    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     for i in range(101):
         net.step()
-    result = micropsi.get_structural_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
     assert nodes['B2'].uid not in result['nodes_deleted']

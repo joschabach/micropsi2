@@ -1026,9 +1026,9 @@ def get_nodespace_activations(nodenet_uid, nodespace, last_call_step=-1):
     return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespace, last_call_step)
 
 
-@rpc("get_structural_changes")
-def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
-    return runtime.get_structural_changes(nodenet_uid, nodespace_uid, since_step)
+@rpc("get_nodespace_changes")
+def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
+    return runtime.get_nodespace_changes(nodenet_uid, nodespace_uid, since_step)
 
 
 @rpc("get_node")

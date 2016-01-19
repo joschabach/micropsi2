@@ -342,7 +342,7 @@ def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     with nodenet.netlock:
         data = {
             'activations': nodenet.get_activation_data(nodespace, rounded=1),
-            'structure_changes': nodenet.has_structural_changes(nodespace, last_call_step)
+            'has_changes': nodenet.has_nodespace_changes(nodespace, last_call_step)
         }
     return data
 
@@ -374,8 +374,8 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
                 'activations': activations['activations'],
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
-            if activations['structure_changes']:
-                data['nodenet_diff']['structure_changes'] = nodenet_obj.get_structural_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
+            if activations['has_changes']:
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
@@ -774,11 +774,11 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
-def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
+def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return nodenets[nodenet_uid].get_structural_changes(nodespace_uid, since_step)
+    return nodenets[nodenet_uid].get_nodespace_changes(nodespace_uid, since_step)
 
 
 def __pythonify(name):

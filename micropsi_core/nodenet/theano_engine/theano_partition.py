@@ -1840,11 +1840,11 @@ class TheanoPartition():
             theano_weights,
             propagation_function)
 
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
         return (self.nodespaces_contents_last_changed[ns_id] >= since_step).__bool__()
 
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
         node_ids = np.where(self.nodes_last_changed >= since_step)[0]
         node_ids = node_ids[np.where(self.allocated_node_parents[node_ids] == ns_id)[0]]

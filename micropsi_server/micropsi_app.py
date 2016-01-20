@@ -1051,9 +1051,9 @@ def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset
     return runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)
 
 
-@rpc("set_node_positions", permission_required="manage nodenets")
-def set_node_positions(nodenet_uid, positions):
-    return runtime.set_node_positions(nodenet_uid, positions)
+@rpc("set_entity_positions", permission_required="manage nodenets")
+def set_entity_positions(nodenet_uid, positions):
+    return runtime.set_entity_positions(nodenet_uid, positions)
 
 
 @rpc("set_node_name", permission_required="manage nodenets")

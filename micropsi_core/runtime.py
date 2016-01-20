@@ -928,7 +928,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return "\n".join(lines)
 
 
-def set_node_positions(nodenet_uid, positions):
+def set_entity_positions(nodenet_uid, positions):
     """ Takes a dict with node_uids as keys and new positions for the nodes as values """
     nodenet = nodenets[nodenet_uid]
     for uid in positions:

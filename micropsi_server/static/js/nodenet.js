@@ -3316,7 +3316,7 @@ function cancelLinkCreationHandler() {
 }
 
 function moveNodesOnServer(position_data){
-    api.call("set_node_positions", {
+    api.call("set_entity_positions", {
         nodenet_uid: currentNodenet,
         positions: position_data
     });

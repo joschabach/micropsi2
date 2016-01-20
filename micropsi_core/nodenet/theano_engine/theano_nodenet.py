@@ -751,6 +751,13 @@ class TheanoNodenet(Nodenet):
             associated_uids.append(node_to_id(id_to_clear, partition.pid))
 
         for uid_to_clear in associated_uids:
+            partition = self.get_partition(uid_to_clear)
+            if uid_to_clear in partition.native_module_instances:
+                proxy = partition.native_module_instances[uid_to_clear]
+                for g in proxy.get_gate_types():
+                    proxy.get_gate(g).invalidate_caches()
+                for s in proxy.get_slot_types():
+                    proxy.get_slot(s).invalidate_caches()
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
 

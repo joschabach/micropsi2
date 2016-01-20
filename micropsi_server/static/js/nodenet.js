@@ -2311,16 +2311,17 @@ function onMouseUp(event) {
         if(path.nodeMoved && nodes[path.name]){
             // update position on server
             path.nodeMoved = false;
+            movedNodes = {};
             if(dragMultiples){
                 for(var uid in selection){
                     if(uid in nodes){
-                        moveNode(uid, nodes[uid].x, nodes[uid].y);
+                        movedNodes[uid] = [nodes[uid].x, nodes[uid].y];
                     }
                 }
             } else {
-                moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
+                movedNodes[path.name] = [nodes[path.name].x, nodes[path.name].y];
             }
-
+            moveNodesOnServer(movedNodes);
             movePath = false;
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
@@ -3316,11 +3317,11 @@ function cancelLinkCreationHandler() {
     linkCreationStart = null;
 }
 
-function moveNode(nodeUid, x, y){
-    api.call("set_node_position", {
+function moveNodesOnServer(position_data){
+    api.call("set_node_positions", {
         nodenet_uid: currentNodenet,
-        node_uid: nodeUid,
-        position: [x,y,0]});
+        positions: position_data
+    });
 }
 
 function handleEditNode(event){

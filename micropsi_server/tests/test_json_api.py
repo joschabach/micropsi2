@@ -802,12 +802,11 @@ def test_clone_nodes(app, test_nodenet, node):
     assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 
 
-def test_set_node_position(app, test_nodenet, node):
+def test_set_node_positions(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/set_node_position', params={
+    response = app.post_json('/rpc/set_node_positions', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'position': [42, 23, 11]
+        'positions': {node: [42, 23, 11]}
     })
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))

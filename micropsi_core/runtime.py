@@ -928,13 +928,14 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return "\n".join(lines)
 
 
-def set_node_position(nodenet_uid, node_uid, pos):
-    """Positions the specified node at the given coordinates."""
+def set_node_positions(nodenet_uid, positions):
+    """ Takes a dict with node_uids as keys and new positions for the nodes as values """
     nodenet = nodenets[nodenet_uid]
-    if nodenet.is_node(node_uid):
-        nodenet.get_node(node_uid).position = pos
-    elif nodenet.is_nodespace(node_uid):
-        nodenet.get_nodespace(node_uid).position = pos
+    for uid in positions:
+        if nodenet.is_node(uid):
+            nodenet.get_node(uid).position = positions[uid]
+        elif nodenet.is_nodespace(uid):
+            nodenet.get_nodespace(uid).position = positions[uid]
     return True
 
 

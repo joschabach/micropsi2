@@ -1061,9 +1061,9 @@ def set_node_name(nodenet_uid, node_uid, name):
     return runtime.set_node_name(nodenet_uid, node_uid, name)
 
 
-@rpc("delete_node", permission_required="manage nodenets")
-def delete_node(nodenet_uid, node_uid):
-    return runtime.delete_node(nodenet_uid, node_uid)
+@rpc("delete_nodes", permission_required="manage nodenets")
+def delete_nodes(nodenet_uid, node_uids):
+    return runtime.delete_nodes(nodenet_uid, node_uids)
 
 
 @rpc("delete_nodespace", permission_required="manage nodenets")

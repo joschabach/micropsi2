@@ -962,14 +962,14 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return True
 
 
-def delete_node(nodenet_uid, node_uid):
-    """Removes the node or node space"""
+def delete_nodes(nodenet_uid, node_uids):
+    """Removes the nodes with the given uids"""
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_node(node_uid):
-            nodenets[nodenet_uid].delete_node(node_uid)
-            return True
-        return False
+        for uid in node_uids:
+            if nodenet.is_node(uid):
+                nodenets[nodenet_uid].delete_node(uid)
+    return True
 
 
 def delete_nodespace(nodenet_uid, nodespace_uid):

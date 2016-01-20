@@ -827,9 +827,9 @@ def test_set_node_name(app, test_nodenet, node):
 
 def test_delete_node(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/delete_node', params={
+    response = app.post_json('/rpc/delete_nodes', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': node
+        'node_uids': [node]
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)

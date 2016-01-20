@@ -3002,41 +3002,39 @@ function handlePasteNodes(pastemode){
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
-    function deleteNodeOnServer(node){
-        var method = "";
-        var params = {nodenet_uid: currentNodenet};
-        if(node.type == "Nodespace"){
-            method = "delete_nodespace";
-            params.nodespace_uid = node.uid;
-        } else {
-            method = "delete_node";
-            params.node_uid = node.uid;
+    function deleteNodespaceOnServer(nodespace_uid){
+        var params = {
+            nodenet_uid: currentNodenet,
+            nodespace_uid: nodespace_uid
         }
-        api.call(method, params,
+        api.call("delete_nodespace", params,
             success=function(data){
-                dialogs.notification('node deleted', 'success');
+                dialogs.notification('nodespace deleted', 'success');
                 getNodespaceList();
-                if(method == "delete_nodespace"){
-                    refreshNodespace(currentNodeSpace, -1);
-                }
+                refreshNodespace(currentNodeSpace, -1);
             }
         );
     }
     var deletedNodes = [];
-    if (nodeUid in nodes) {
-        deletedNodes.push(nodes[nodeUid]);
-        removeNode(nodes[nodeUid]);
-        if (nodeUid in selection) delete selection[nodeUid];
-    }
+    var deletedNodespaces = [];
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            deletedNodes.push(nodes[selected]);
+            if(nodes[selected].type == "Nodespace"){
+                deletedNodespaces.push(selected);
+            } else{
+                deletedNodes.push(selected);
+            }
             removeNode(nodes[selected]);
             delete selection[selected];
         }
     }
-    for(var i in deletedNodes){
-        deleteNodeOnServer(deletedNodes[i]);
+    for(var i=0; i < deletedNodespaces.length; i++){
+        deleteNodespaceOnServer(deletedNodespaces[i]);
+    }
+    if(deletedNodes.length){
+        api.call('delete_nodes', {nodenet_uid: currentNodenet, node_uids: deletedNodes}, function(){
+            dialogs.notification('nodes deleted', 'success');
+        });
     }
     showDefaultForm();
 }

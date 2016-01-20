@@ -531,6 +531,14 @@ class DictNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self._nodespaces
 
+    def set_entity_positions(self, positions):
+        """ Sets the position of nodes or nodespaces """
+        for uid in positions:
+            if uid in self._nodes:
+                self._nodes[uid].position = positions[uid]
+            elif uid in self._nodespaces:
+                self._nodespaces[uid].position = positions[uid]
+
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
         nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')

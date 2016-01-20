@@ -931,11 +931,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 def set_entity_positions(nodenet_uid, positions):
     """ Takes a dict with node_uids as keys and new positions for the nodes as values """
     nodenet = nodenets[nodenet_uid]
-    for uid in positions:
-        if nodenet.is_node(uid):
-            nodenet.get_node(uid).position = positions[uid]
-        elif nodenet.is_nodespace(uid):
-            nodenet.get_nodespace(uid).position = positions[uid]
+    nodenet.set_entity_positions(positions)
     return True
 
 

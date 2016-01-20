@@ -803,6 +803,13 @@ class TheanoNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
 
+    def set_entity_positions(self, positions):
+        for uid in positions:
+            pos = (positions[uid] + [0] * 3)[:3]
+            self.positions[uid] = pos
+            if uid in self.proxycache:
+                self.proxycache[uid].position = pos
+
     def create_partition(self, pid, parent_uid, sparse, initial_number_of_nodes, average_elements_per_node_assumption, initial_number_of_nodespaces):
 
         if parent_uid is None:

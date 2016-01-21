@@ -2,6 +2,16 @@ import os
 import numpy as np
 
 import matplotlib
+import platform
+
+# we need special backends to work around the default behaviour
+# expecting the main-thread to do gui-stuff, since we're
+# (a) a multithreaded webserver, and
+# (b) plot from the runner-thread as well as the frontend
+# find os: http://stackoverflow.com/questions/1854/python-what-os-am-i-running-on
+# if tested, include here:
+if platform.system() == "Darwin":
+    matplotlib.use('macosx')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 

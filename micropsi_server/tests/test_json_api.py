@@ -139,6 +139,10 @@ def test_start_simulation(app, test_nodenet):
 def test_start_simulation_with_condition(app, test_nodenet):
     import time
     app.set_auth()
+    app.post_json('/rpc/set_runner_properties', params={
+        'timestep': 10,
+        'factor': 1
+    })
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     response = app.post_json('/rpc/set_runner_condition', params={
         'nodenet_uid': test_nodenet,

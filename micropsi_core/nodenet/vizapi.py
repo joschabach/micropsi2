@@ -8,7 +8,8 @@ import platform
 # expecting the main-thread to do gui-stuff, since we're
 # (a) a multithreaded webserver, and
 # (b) plot from the runner-thread as well as the frontend
-# find os: http://stackoverflow.com/questions/1854/python-what-os-am-i-running-on
+# find os: http://stackoverflow.com/q/1854
+# find supported backends: http://stackoverflow.com/a/13731150
 # if tested, include here:
 if platform.system() == "Darwin":
     matplotlib.use('macosx')

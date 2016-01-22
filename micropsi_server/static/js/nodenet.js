@@ -3741,7 +3741,12 @@ function showNodeForm(nodeUid, refresh){
                 link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
                     if(links[id].sourceNodeUid in nodes){
-                        link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
+                        var n = nodes[links[id].sourceNodeUid];
+                        var ns = '';
+                        if(n.parent != currentNodeSpace){
+                            ns = nodespaces[n.parent].name+"/";
+                        }
+                        link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+n.uid+'" class="follownode">'+ns+(n.name || n.uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
                     }
                 }
             }
@@ -3752,7 +3757,12 @@ function showNodeForm(nodeUid, refresh){
             link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){
                 if(links[id].targetNodeUid in nodes){
-                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">-&gt;</a> &nbsp;<a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
+                    var n = nodes[links[id].targetNodeUid];
+                    var ns = '';
+                    if(n.parent != currentNodeSpace){
+                        ns = nodespaces[n.parent].name+"/";
+                    }
+                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">-&gt;</a> &nbsp;<a href="#followNode" data="'+n.uid+'" class="follownode">'+ns+(n.name || n.uid.substr(0,8)+'&hellip;')+'</a></li>';
                 }
             }
             content += '<tr><td><a href="#followgate" class="followgate" data-node="'+nodeUid+'" data-gate="'+name+'">'+name+'</td>';

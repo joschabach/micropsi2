@@ -359,3 +359,27 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, node
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = micropsi.nodenets[fixed_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 13
+
+
+def test_node_parameters_from_persistence(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
+    with open(nodetype_def, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "gatetypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "parameters": ["testparam"],\
+            "parameter_defaults": {\
+                "testparam": 13\
+              }\
+            }}')
+    with open(nodefunc_def, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    micropsi.reload_native_modules()
+    res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Test")
+    node = micropsi.nodenets[fixed_nodenet].get_node(uid)
+    node.set_parameter("testparam", 42)
+    micropsi.save_nodenet(fixed_nodenet)
+    micropsi.revert_nodenet(fixed_nodenet)
+    node = micropsi.nodenets[fixed_nodenet].get_node(uid)
+    assert node.get_parameter("testparam") == 42

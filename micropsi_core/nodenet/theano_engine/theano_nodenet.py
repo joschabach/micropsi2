@@ -341,12 +341,7 @@ class TheanoNodenet(Nodenet):
                     return False
 
             # determine whether we have a complete json dump, or our theano npz partition files:
-            if 'nodespaces' not in initfrom:
-                # npz case, don't pass nodes to initfrom, since nodespaces are not initialized
-                nodes_data = initfrom.pop('nodes', {})
-            else:
-                # json dump case: leave nodes in data
-                nodes_data = initfrom.get('nodes', {})
+            nodes_data = initfrom.get('nodes', {})
 
             # initialize
             self.initialize_nodenet(initfrom)

@@ -1294,7 +1294,9 @@ class TheanoPartition():
         self.nodes_last_changed[id] = self.nodenet.current_step
         self.allocated_node_parents[id] = nodespace_id
         self.allocated_node_offsets[id] = offset
-        self.nodespaces_contents_last_changed[nodespace_id] = self.nodenet.current_step
+        if nodespace_id < len(self.nodespaces_contents_last_changed):
+            # due to the order of initializing, nodespaces might just not be here yet.
+            self.nodespaces_contents_last_changed[nodespace_id] = self.nodenet.current_step
 
         for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.nodenet.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = id

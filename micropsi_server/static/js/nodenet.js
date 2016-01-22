@@ -158,7 +158,7 @@ $(document).on('load_nodenet', function(event, uid){
 });
 
 $(document).on('nodenet_changed', function(event, new_nodenet){
-    setCurrentNodenet(new_nodenet);
+    setCurrentNodenet(new_nodenet, null, true);
 });
 
 function toggleButtons(on){

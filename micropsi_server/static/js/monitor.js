@@ -242,7 +242,7 @@ $(function(){
                 el.checked=true;
             }
         });
-        $('#clear_logs').on('click', function(evt){
+        $('#clear_logs').on('click', function(event){
             event.preventDefault();
             logs = [];
             refreshLoggerView();

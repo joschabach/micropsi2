@@ -114,6 +114,7 @@ available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
 sorted_native_modules = [];
+nodenet_data = null;
 
 initializeMenus();
 initializeDialogs();

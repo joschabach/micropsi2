@@ -353,6 +353,13 @@ function setNodespaceData(data, changed){
                 if (uid in selection) delete selection[uid];
             }
         }
+
+        // we're rendering nodes first, and these might include links from an old nodespace
+        // re-rendering the node might want to re-render the links, which fails if the targetnodes
+        // are not yet there... thus, just remove all links for the moment.
+        for(uid in links){
+            removeLink(links[uid]);
+        }
         var links_data = {}
         for(uid in data.nodes){
             item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions);
@@ -813,6 +820,8 @@ function removeLink(link) {
     if(!sourceNode || ! targetNode){
         delete links[link.uid];
         if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
+        if(sourceNode) delete sourceNode.gates[link.gateName].outgoing[link.uid];
+        if(targetNode) delete targetNode.slots[link.slotName].incoming[link.uid];
         return;
     }
     if(sourceNode.parent != targetNode.parent){

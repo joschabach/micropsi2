@@ -2986,15 +2986,21 @@ function handlePasteNodes(pastemode){
         offset: offset
     }, success = function(data){
         deselectAll();
-        for(var i = 0; i < data.nodes.length; i++){
-            var n = data.nodes[i];
+        var links_data = {};
+        for(var key in data){
+            var n = data[key];
             addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
             selectNode(n.uid);
+            for(gate in n.links){
+                for(var i = 0; i < n.links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + n.links[gate][i]['target_slot_name'] + ":" + n.links[gate][i]['target_node_uid']
+                    links_data[luid] = n.links[gate][i]
+                    links_data[luid].source_node_uid = uid
+                    links_data[luid].source_gate_name = gate
+                }
+            }
         }
-        for(i = 0; i < data.links.length; i++){
-            var l = data.links[i];
-            addLink(new Link(l.uid, l.source_node_uid, l.source_gate_name, l.target_node_uid, l.target_slot_name, l.weight, l.certainty));
-        }
+        addLinks(links_data);
         view.draw();
     });
 }

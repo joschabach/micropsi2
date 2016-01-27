@@ -2338,7 +2338,7 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-    if(currentNodenet && nodenet_data['renderlinks'] == 'selection'){
+    if(currentNodenet && nodenet_data && nodenet_data['renderlinks'] == 'selection'){
         loadLinksForSelection();
     }
 }

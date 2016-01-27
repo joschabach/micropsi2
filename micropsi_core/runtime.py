@@ -734,6 +734,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     result = {}
     copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
     copylinks = {}
+    followupnodes = []
     uidmap = {}
     if clonemode != 'none':
         for _, n in copynodes.items():
@@ -745,6 +746,8 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
                 for s in n.get_slot_types():
                     for link in n.get_slot(s).get_links():
                         copylinks[link.signature] = link
+                        if link.source_node.uid not in copynodes:
+                            followupnodes.append(link.source_node.uid)
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
@@ -766,6 +769,9 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
             l.certainty)
 
     for uid in uidmap.values():
+        result[uid] = nodenet.get_node(uid).get_data(include_links=True)
+
+    for uid in followupnodes:
         result[uid] = nodenet.get_node(uid).get_data(include_links=True)
 
     if len(result.keys()) or len(nodes) == 0:

@@ -2990,7 +2990,9 @@ function handlePasteNodes(pastemode){
         for(var key in data){
             var n = data[key];
             addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
-            selectNode(n.uid);
+            if(n.parent_nodespace == currentNodeSpace){
+                selectNode(n.uid);
+            }
             for(gate in n.links){
                 for(var i = 0; i < n.links[gate].length; i++){
                     luid = uid + ":" + gate + ":" + n.links[gate][i]['target_slot_name'] + ":" + n.links[gate][i]['target_node_uid']

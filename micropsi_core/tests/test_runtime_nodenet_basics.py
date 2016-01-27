@@ -154,7 +154,9 @@ def test_clone_nodes_all_links(fixed_nodenet):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
     success, result = micropsi.clone_nodes(fixed_nodenet, ['n0001', 'n0002'], 'all')
     assert success
-    assert len(result.keys()) == 2
+    # expect 3 instead of two results, because the sensor that links to A1 should be delivered
+    # as a followupdnode to A1_copy to render incoming links
+    assert len(result.keys()) == 3
     for n in result.values():
         if n['name'] == 'A1_copy':
             a1_copy = n

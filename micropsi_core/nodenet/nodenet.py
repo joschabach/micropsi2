@@ -282,6 +282,12 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def set_entity_positions(self, positions):
+        """ Sets the position of nodes or nodespaces.
+        Parameters: a hash of uids to their positions """
+        pass   # pragma: no cover
+
+    @abstractmethod
     def create_nodespace(self, parent_uid, position, name="", uid=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.

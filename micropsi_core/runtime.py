@@ -934,13 +934,10 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return "\n".join(lines)
 
 
-def set_node_position(nodenet_uid, node_uid, pos):
-    """Positions the specified node at the given coordinates."""
+def set_entity_positions(nodenet_uid, positions):
+    """ Takes a dict with node_uids as keys and new positions for the nodes as values """
     nodenet = nodenets[nodenet_uid]
-    if nodenet.is_node(node_uid):
-        nodenet.get_node(node_uid).position = pos
-    elif nodenet.is_nodespace(node_uid):
-        nodenet.get_nodespace(node_uid).position = pos
+    nodenet.set_entity_positions(positions)
     return True
 
 
@@ -967,14 +964,14 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return True
 
 
-def delete_node(nodenet_uid, node_uid):
-    """Removes the node or node space"""
+def delete_nodes(nodenet_uid, node_uids):
+    """Removes the nodes with the given uids"""
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_node(node_uid):
-            nodenets[nodenet_uid].delete_node(node_uid)
-            return True
-        return False
+        for uid in node_uids:
+            if nodenet.is_node(uid):
+                nodenets[nodenet_uid].delete_node(uid)
+    return True
 
 
 def delete_nodespace(nodenet_uid, nodespace_uid):

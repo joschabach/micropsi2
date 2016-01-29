@@ -1051,9 +1051,9 @@ def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset
     return runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)
 
 
-@rpc("set_node_position", permission_required="manage nodenets")
-def set_node_position(nodenet_uid, node_uid, position):
-    return runtime.set_node_position(nodenet_uid, node_uid, position)
+@rpc("set_entity_positions", permission_required="manage nodenets")
+def set_entity_positions(nodenet_uid, positions):
+    return runtime.set_entity_positions(nodenet_uid, positions)
 
 
 @rpc("set_node_name", permission_required="manage nodenets")
@@ -1061,9 +1061,9 @@ def set_node_name(nodenet_uid, node_uid, name):
     return runtime.set_node_name(nodenet_uid, node_uid, name)
 
 
-@rpc("delete_node", permission_required="manage nodenets")
-def delete_node(nodenet_uid, node_uid):
-    return runtime.delete_node(nodenet_uid, node_uid)
+@rpc("delete_nodes", permission_required="manage nodenets")
+def delete_nodes(nodenet_uid, node_uids):
+    return runtime.delete_nodes(nodenet_uid, node_uids)
 
 
 @rpc("delete_nodespace", permission_required="manage nodenets")

@@ -47,6 +47,7 @@ class NetEntity(object):
         position = list(position)
         position = (position + [0] * 3)[:3]
         self.__position = position
+        self.last_changed = self.nodenet.current_step
 
     @property
     def name(self):

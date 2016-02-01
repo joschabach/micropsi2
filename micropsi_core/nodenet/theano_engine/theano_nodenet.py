@@ -341,12 +341,7 @@ class TheanoNodenet(Nodenet):
                     return False
 
             # determine whether we have a complete json dump, or our theano npz partition files:
-            if 'nodespaces' not in initfrom:
-                # npz case, don't pass nodes to initfrom, since nodespaces are not initialized
-                nodes_data = initfrom.pop('nodes', {})
-            else:
-                # json dump case: leave nodes in data
-                nodes_data = initfrom.get('nodes', {})
+            nodes_data = initfrom.get('nodes', {})
 
             # initialize
             self.initialize_nodenet(initfrom)
@@ -751,6 +746,13 @@ class TheanoNodenet(Nodenet):
             associated_uids.append(node_to_id(id_to_clear, partition.pid))
 
         for uid_to_clear in associated_uids:
+            partition = self.get_partition(uid_to_clear)
+            if uid_to_clear in partition.native_module_instances:
+                proxy = partition.native_module_instances[uid_to_clear]
+                for g in proxy.get_gate_types():
+                    proxy.get_gate(g).invalidate_caches()
+                for s in proxy.get_slot_types():
+                    proxy.get_slot(s).invalidate_caches()
             if uid_to_clear in self.proxycache:
                 del self.proxycache[uid_to_clear]
 
@@ -802,6 +804,13 @@ class TheanoNodenet(Nodenet):
 
     def is_nodespace(self, uid):
         return uid in self.get_nodespace_uids()
+
+    def set_entity_positions(self, positions):
+        for uid in positions:
+            pos = (positions[uid] + [0] * 3)[:3]
+            self.positions[uid] = pos
+            if uid in self.proxycache:
+                self.proxycache[uid].position = pos
 
     def create_partition(self, pid, parent_uid, sparse, initial_number_of_nodes, average_elements_per_node_assumption, initial_number_of_nodespaces):
 
@@ -1470,12 +1479,12 @@ class TheanoNodenet(Nodenet):
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
 
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         partition = self.get_partition(nodespace_uid)
         nodespace = self.get_nodespace(nodespace_uid)
-        return partition.has_structural_changes(nodespace.uid, since_step)
+        return partition.has_nodespace_changes(nodespace.uid, since_step)
 
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         partition = self.get_partition(nodespace_uid)
         nodespace = self.get_nodespace(nodespace_uid)
         result = {
@@ -1490,7 +1499,7 @@ class TheanoNodenet(Nodenet):
                 result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                 result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
 
-        changed_nodes, changed_nodespaces = partition.get_structural_changes(nodespace.uid, since_step)
+        changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
         for uid in changed_nodes:
             uid = node_to_id(uid, partition.pid)
             result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)

@@ -291,11 +291,11 @@ def get_slots_per_type(type, nativemodules=None):
     if type == REGISTER:
         return 1
     elif type == SENSOR:
-        return 1
+        return 0
     elif type == ACTUATOR:
         return 1
     elif type == ACTIVATOR:
-        return 0
+        return 1
     elif type == CONCEPT:
         return 7
     elif type == SCRIPT:

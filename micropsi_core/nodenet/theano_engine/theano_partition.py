@@ -1294,7 +1294,9 @@ class TheanoPartition():
         self.nodes_last_changed[id] = self.nodenet.current_step
         self.allocated_node_parents[id] = nodespace_id
         self.allocated_node_offsets[id] = offset
-        self.nodespaces_contents_last_changed[nodespace_id] = self.nodenet.current_step
+        if nodespace_id < len(self.nodespaces_contents_last_changed):
+            # due to the order of initializing, nodespaces might just not be here yet.
+            self.nodespaces_contents_last_changed[nodespace_id] = self.nodenet.current_step
 
         for element in range (0, get_elements_per_type(self.allocated_nodes[id], self.nodenet.native_modules)):
             self.allocated_elements_to_nodes[offset + element] = id
@@ -1476,6 +1478,11 @@ class TheanoPartition():
             self.allocated_nodespaces_exp_activators[parent] = 0
         if self.allocated_nodespaces_sampling_activators[parent] == node_id:
             self.allocated_nodespaces_sampling_activators[parent] = 0
+
+    def node_changed(self, uid):
+        node_id = node_from_id(uid)
+        self.nodes_last_changed[node_id] = self.nodenet.current_step
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[node_id]] = self.nodenet.current_step
 
     def unlink_node_completely(self, node_id):
         type = self.allocated_nodes[node_id]
@@ -1840,11 +1847,11 @@ class TheanoPartition():
             theano_weights,
             propagation_function)
 
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
         return (self.nodespaces_contents_last_changed[ns_id] >= since_step).__bool__()
 
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         ns_id = nodespace_from_id(nodespace_uid)
         node_ids = np.where(self.nodes_last_changed >= since_step)[0]
         node_ids = node_ids[np.where(self.allocated_node_parents[node_ids] == ns_id)[0]]

@@ -7,9 +7,6 @@ Tests for netapi, i.e. the interface native modules will be developed against
 
 import pytest
 from micropsi_core import runtime as micropsi
-from micropsi_core.nodenet.node import Nodetype
-
-from micropsi_core.tests import test_node_logic
 
 
 def prepare(fixed_nodenet):
@@ -697,36 +694,36 @@ def test_node_netapi_unlink_direction(fixed_nodenet):
     assert len(n_c.get_slot('sub').get_links()) == 0
 
 
-def test_node_netapi_import_actors(fixed_nodenet):
+def test_node_netapi_import_actors(fixed_nodenet, test_world):
     # test importing data targets as actors
     net, netapi, source = prepare(fixed_nodenet)
-    world = test_node_logic.add_dummyworld(fixed_nodenet)
+    micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
-    netapi.import_actors(root_ns.uid, "test_")
-    actors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(actors) == 1
-    assert actors[0].get_parameter('datatarget') == "test_target"
+    netapi.import_actors(root_ns.uid)
+    actors = netapi.get_nodes(root_ns.uid, nodetype="Actor")
+    assert len(actors) == 2
+    assert set([a.get_parameter('datatarget') for a in actors]) == set(net.worldadapter_instance.datatargets.keys())
 
     # do it again, make sure we can call import multiple times
-    netapi.import_actors(root_ns.uid, "test_")
-    actors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(actors) == 1
+    netapi.import_actors(root_ns.uid)
+    actors = netapi.get_nodes(root_ns.uid, nodetype="Actor")
+    assert len(actors) == 2
 
 
-def test_node_netapi_import_sensors(fixed_nodenet):
+def test_node_netapi_import_sensors(fixed_nodenet, test_world):
     # test importing data sources as sensors
     net, netapi, source = prepare(fixed_nodenet)
-    world = test_node_logic.add_dummyworld(fixed_nodenet)
+    micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
-    netapi.import_sensors(root_ns.uid, "test_")
-    sensors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(sensors) == 1
-    assert sensors[0].get_parameter('datasource') == "test_source"
+    netapi.import_sensors(root_ns.uid)
+    sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
+    assert len(sensors) == 2
+    assert set([s.get_parameter('datasource') for s in sensors]) == set(net.worldadapter_instance.datasources.keys())
 
     # do it again, make sure we can call import multiple times
-    netapi.import_sensors(root_ns.uid, "test_")
-    sensors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(sensors) == 1
+    netapi.import_sensors(root_ns.uid)
+    sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
+    assert len(sensors) == 2
 
 
 def test_set_gate_function(fixed_nodenet):
@@ -768,6 +765,19 @@ def test_autoalign(fixed_nodenet):
     for uid in net.get_node_uids():
         positions.extend(net.get_node(uid).position)
     assert set(positions) == set([12, 13, 11])
+
+
+def test_autoalign_updates_last_changed(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = [12, 13, 11]
+    net.step()
+    net.step()
+    netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
+    changes = net.get_nodespace_changes(None, 2)
+    for uid in net.get_node_uids():
+        if net.get_node(uid).position != [12, 13, 11]:
+            assert uid in changes['nodes_dirty']
 
 
 def test_copy_nodes(fixed_nodenet):

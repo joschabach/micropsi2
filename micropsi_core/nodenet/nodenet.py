@@ -282,6 +282,12 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def set_entity_positions(self, positions):
+        """ Sets the position of nodes or nodespaces.
+        Parameters: a hash of uids to their positions """
+        pass   # pragma: no cover
+
+    @abstractmethod
     def create_nodespace(self, parent_uid, position, name="", uid=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.
@@ -499,7 +505,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         """
         Returns true, if the structure of the nodespace has changed since the given step, false otherwise
         Structural changes include everything besides activation
@@ -507,7 +513,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         """
         Returns a dictionary of structural changes that happened in the given nodespace
         since the given step

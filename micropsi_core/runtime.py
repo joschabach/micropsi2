@@ -175,7 +175,10 @@ MicropsiRunner.last_world_exception = {}
 MicropsiRunner.last_nodenet_exception = {}
 
 
-def kill_runners(signal, frame):
+def kill_runners(signal=None, frame=None):
+    for uid in worlds:
+        if hasattr(worlds[uid], 'kill_minecraft_thread'):
+            worlds[uid].kill_minecraft_thread()
     runner['runner'].resume()
     runner['running'] = False
     runner['runner'].join()
@@ -342,7 +345,7 @@ def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     with nodenet.netlock:
         data = {
             'activations': nodenet.get_activation_data(nodespace, rounded=1),
-            'structure_changes': nodenet.has_structural_changes(nodespace, last_call_step)
+            'has_changes': nodenet.has_nodespace_changes(nodespace, last_call_step)
         }
     return data
 
@@ -374,8 +377,8 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
                 'activations': activations['activations'],
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
-            if activations['structure_changes']:
-                data['nodenet_diff']['structure_changes'] = nodenet_obj.get_structural_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
+            if activations['has_changes']:
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
@@ -669,7 +672,14 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    return nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
+    if nodenets[nodenet_uid].is_node(node_uid):
+        return True, nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
+    elif nodenets[nodenet_uid].is_nodespace(node_uid):
+        data = nodenets[nodenet_uid].get_nodespace(node_uid).get_data()
+        data['type'] = 'Nodespace'
+        return True, data
+    else:
+        return False, "Unknown UID"
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
@@ -727,6 +737,7 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     result = {}
     copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
     copylinks = {}
+    followupnodes = []
     uidmap = {}
     if clonemode != 'none':
         for _, n in copynodes.items():
@@ -738,6 +749,8 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
                 for s in n.get_slot_types():
                     for link in n.get_slot(s).get_links():
                         copylinks[link.signature] = link
+                        if link.source_node.uid not in copynodes:
+                            followupnodes.append(link.source_node.uid)
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
@@ -761,17 +774,20 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     for uid in uidmap.values():
         result[uid] = nodenet.get_node(uid).get_data(include_links=True)
 
+    for uid in followupnodes:
+        result[uid] = nodenet.get_node(uid).get_data(include_links=True)
+
     if len(result.keys()) or len(nodes) == 0:
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."
 
 
-def get_structural_changes(nodenet_uid, nodespace_uid, since_step):
+def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return nodenets[nodenet_uid].get_structural_changes(nodespace_uid, since_step)
+    return nodenets[nodenet_uid].get_nodespace_changes(nodespace_uid, since_step)
 
 
 def __pythonify(name):
@@ -921,13 +937,10 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     return "\n".join(lines)
 
 
-def set_node_position(nodenet_uid, node_uid, pos):
-    """Positions the specified node at the given coordinates."""
+def set_entity_positions(nodenet_uid, positions):
+    """ Takes a dict with node_uids as keys and new positions for the nodes as values """
     nodenet = nodenets[nodenet_uid]
-    if nodenet.is_node(node_uid):
-        nodenet.get_node(node_uid).position = pos
-    elif nodenet.is_nodespace(node_uid):
-        nodenet.get_nodespace(node_uid).position = pos
+    nodenet.set_entity_positions(positions)
     return True
 
 
@@ -954,14 +967,14 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return True
 
 
-def delete_node(nodenet_uid, node_uid):
-    """Removes the node or node space"""
+def delete_nodes(nodenet_uid, node_uids):
+    """Removes the nodes with the given uids"""
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_node(node_uid):
-            nodenets[nodenet_uid].delete_node(node_uid)
-            return True
-        return False
+        for uid in node_uids:
+            if nodenet.is_node(uid):
+                nodenets[nodenet_uid].delete_node(uid)
+    return True
 
 
 def delete_nodespace(nodenet_uid, nodespace_uid):

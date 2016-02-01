@@ -12,13 +12,17 @@ import os
 import configparser
 import warnings
 
+if os.path.isfile('config.ini'):
+    filename = 'config.ini'
+else:
+    filename = 'config.default.ini'
 try:
     config = configparser.ConfigParser()
-    with open('config.ini') as fp:
+    with open(filename) as fp:
         config.read_file(fp)
 except OSError:
-    warnings.warn('config.ini not found - please copy config.template.ini to config.ini and edit according to your preferences')
-    raise RuntimeError("config.ini not found")
+    warnings.warn('Can not read config from inifile %s' % filename)
+    raise RuntimeError('Can not read config from inifile %s' % filename)
 
 config['micropsi2']['version'] = "0.7-alpha5-dev"
 config['micropsi2']['apptitle'] = "MicroPsi"

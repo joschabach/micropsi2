@@ -531,6 +531,14 @@ class DictNodenet(Nodenet):
     def is_nodespace(self, uid):
         return uid in self._nodespaces
 
+    def set_entity_positions(self, positions):
+        """ Sets the position of nodes or nodespaces """
+        for uid in positions:
+            if uid in self._nodes:
+                self._nodes[uid].position = positions[uid]
+            elif uid in self._nodespaces:
+                self._nodespaces[uid].position = positions[uid]
+
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
         nodes = self._nodes if nodespace is None else self._nodespaces[nodespace].get_known_ids('nodes')
@@ -799,10 +807,10 @@ class DictNodenet(Nodenet):
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
 
-    def has_structural_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uid, since_step):
         return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
 
-    def get_structural_changes(self, nodespace_uid, since_step):
+    def get_nodespace_changes(self, nodespace_uid, since_step):
         ns = self.get_nodespace(nodespace_uid)
         result = {
             'nodes_dirty': {},

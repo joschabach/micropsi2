@@ -103,8 +103,15 @@
                         </ul>
                     </form>
                     <form class="form-horizontal span4 monitor_list">
-                        <label for="monitor_filter_logs">Filter:</label>
-                        <input type="text" value="" id="monitor_filter_logs" class="input-small"/>
+                        <p><label for="monitor_filter_logs">Filter:</label>
+                        <input type="text" value="" id="monitor_filter_logs" class="input-small"/></p>
+
+                        <!-- <p><label for="log_show_step" class="agent_log">
+                            <input type="checkbox" id="log_show_step" class="log_show_step" data="" />
+                            show nodenet step
+                        </label></p> -->
+
+                        <p><button id="clear_logs" class="btn btn-small">clear logs</button></p>
                     </form>
                 </div>
             </div>

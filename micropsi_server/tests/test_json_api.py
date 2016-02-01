@@ -139,6 +139,10 @@ def test_start_simulation(app, test_nodenet):
 def test_start_simulation_with_condition(app, test_nodenet):
     import time
     app.set_auth()
+    app.post_json('/rpc/set_runner_properties', params={
+        'timestep': 10,
+        'factor': 1
+    })
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     response = app.post_json('/rpc/set_runner_condition', params={
         'nodenet_uid': test_nodenet,
@@ -802,12 +806,11 @@ def test_clone_nodes(app, test_nodenet, node):
     assert node['links']['gen'][0]['target_node_uid'] == node['uid']
 
 
-def test_set_node_position(app, test_nodenet, node):
+def test_set_entity_positions(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/set_node_position', params={
+    response = app.post_json('/rpc/set_entity_positions', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': node,
-        'position': [42, 23, 11]
+        'positions': {node: [42, 23, 11]}
     })
     assert_success(response)
     response = app.get_json('/rpc/get_node(nodenet_uid="%s",node_uid="%s")' % (test_nodenet, node))
@@ -828,9 +831,9 @@ def test_set_node_name(app, test_nodenet, node):
 
 def test_delete_node(app, test_nodenet, node):
     app.set_auth()
-    response = app.post_json('/rpc/delete_node', params={
+    response = app.post_json('/rpc/delete_nodes', params={
         'nodenet_uid': test_nodenet,
-        'node_uid': node
+        'node_uids': [node]
     })
     assert_success(response)
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -1399,8 +1402,8 @@ def test_get_state_diff(app, test_nodenet, node):
     })
     data = response.json_body['data']['nodenet_diff']
     assert 'activations' in data
-    assert 'structure_changes' in data
-    assert node in data['structure_changes']['nodes_dirty']
+    assert 'changes' in data
+    assert node in data['changes']['nodes_dirty']
     node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
     response = app.post_json('/rpc/get_current_state', params={
@@ -1411,4 +1414,4 @@ def test_get_state_diff(app, test_nodenet, node):
         }
     })
     data = response.json_body['data']['nodenet_diff']
-    assert [node2] == list(data['structure_changes']['nodes_dirty'].keys())
+    assert [node2] == list(data['changes']['nodes_dirty'].keys())

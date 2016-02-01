@@ -10,10 +10,17 @@ Prerequisites
 * Python3
 
 
-Run
+Run from bash
 -----
 * Run `./run.sh`
 * View in browser at [http://localhost:6543/](http://localhost:6543/)
+
+
+Instructions for windows:
+-----
+* If you don't have python installed, Download and install python from https://www.python.org/downloads/windows/
+** During installation, under "customize", make sure to activate the option "Add python.exe to Path"
+* from the windows command-line run `python start_micropsi_server.py` in the micropsi2 folder
 
 
 Attribution

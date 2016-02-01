@@ -1,6 +1,7 @@
 Additional Features
 -----
 For some of the more advanced features of the Micropsi2 runtime, additional manual configuration is necessary.
+For windows see special instructions below
 
 
 Set up virtualenv
@@ -29,9 +30,24 @@ Set up Theano-based theano_engine
 
 Configuration
 -----
-* See `config.ini.template` for configuration options available in `config.ini`
+* See `config.ini.default` for configuration options.
+* Copy `config.ini.default` to `config.ini` to customize.
 
 
 Tests
 -----
 * To run the tests type `make tests`
+
+
+Instructions for windows (wip):
+-----
+windows support for the additional configuration is highly experimental.
+* Install [WinPython 3.4.3.7](http://winpython.github.io/)
+* From the installed folder, add the folders `python-3.4.3` and `python-3.4.3\Scripts` to your PATH environment variable
+* Install GCC and C/C++ compilers via [mingw](mingw-w64.org)
+* From the mingw Folder, add the `bin` Folder to your PATH environment variable
+* Install pycrypto for python3.4. Get one of the [pycrypto windows binaries](https://github.com/axper/python3-pycrypto-windows-installer), open the WinPython Control Panel, click "Add Packages", select the downloaded pycrypto installer, and click "Install packages"
+* now you can install our modified spock via
+`pip install -e -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev`
+* this should lead to a working MicroPsi with Theano and minecraft support.
+* you can optionally also install the rest of the requirements.txt which only concers tests.

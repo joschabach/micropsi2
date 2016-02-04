@@ -16,6 +16,7 @@
 /include/
 /lib/
 .DS_Store
+/config.ini
 /.Python
 .coverage
 /htmlcov/

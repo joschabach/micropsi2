@@ -19,7 +19,7 @@ Run from bash
 Instructions for windows:
 -----
 * If you don't have python installed, Download and install python from https://www.python.org/downloads/windows/
-** During installation, under "customize", make sure to activate the option "Add python.exe to Path"
+  * During installation, under "customize", make sure to activate the option "Add python.exe to Path"
 * from the windows command-line run `python start_micropsi_server.py` in the micropsi2 folder
 
 

@@ -8,19 +8,20 @@ For more information visit [micropsi.com](http://www.micropsi.com), for instance
 Prerequisites
 -----
 * Python3
+* On Windows, we recommend downloading and installing [WinPython 3.4.3.7](http://winpython.github.io/)
 
 
-Run from bash
+Run on OS X or Linux:
 -----
 * Run `./run.sh`
 * View in browser at [http://localhost:6543/](http://localhost:6543/)
 
 
-Instructions for windows:
+Run on Windows:
 -----
-* If you don't have python installed, we recommend downloading and installing [WinPython 3.4.3.7](http://winpython.github.io/)
-  * From the installed folder, add the folders `python-3.4.3` and `python-3.4.3\Scripts` to your PATH environment variable
-* from the windows command-line run `python start_micropsi_server.py` in the micropsi2 folder
+* Add the winpython folders `python-3.4.3` and `python-3.4.3\Scripts` to your PATH environment variable
+* On the Windows command-line, "cd" to the microps2 folder and run `python start_micropsi_server.py`
+* View in browser at [http://localhost:6543/](http://localhost:6543/)
 
 
 Attribution

@@ -18,8 +18,8 @@ Run from bash
 
 Instructions for windows:
 -----
-* If you don't have python installed, Download and install python from https://www.python.org/downloads/windows/
-  * During installation, under "customize", make sure to activate the option "Add python.exe to Path"
+* If you don't have python installed, we recommend downloading and installing [WinPython 3.4.3.7](http://winpython.github.io/)
+  * From the installed folder, add the folders `python-3.4.3` and `python-3.4.3\Scripts` to your PATH environment variable
 * from the windows command-line run `python start_micropsi_server.py` in the micropsi2 folder
 
 

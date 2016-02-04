@@ -50,4 +50,5 @@ windows support for the additional configuration is highly experimental.
 * now you can install our modified spock via
 `pip install -e -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev`
 * this should lead to a working MicroPsi with Theano and minecraft support.
-* you can optionally also install the rest of the requirements.txt which only concers tests.
+* install the optional packages with `pip install cherrypy pytest mock webtest`
+* run `python start_micropsi_server.py`

@@ -14,7 +14,6 @@ default Nodetypes
 from abc import ABCMeta, abstractmethod
 
 import micropsi_core.tools
-from .link import Link
 
 __author__ = 'joscha'
 __date__ = '09.05.12'
@@ -27,26 +26,6 @@ class Node(metaclass=ABCMeta):
     """
     Abstract base class for node implementations.
     """
-
-    @property
-    def data(self):
-
-        data = {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-            "type": self.type,
-            "parameters": self.clone_parameters(),
-            "state": self.clone_state(),
-            "gate_parameters": self.clone_non_default_gate_parameters(),
-            "sheaves": self.clone_sheaves(),
-            "activation": self.activation,
-            "gate_activations": self.construct_gates_dict(),
-            "gate_functions": self.get_gatefunction_names()
-        }
-        return data
 
     @property
     @abstractmethod
@@ -76,18 +55,18 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def position(self):
         """
-        This node's 2D coordinates within its nodespace
+        This node's 3D coordinates within its nodespace
         """
-        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        # todo: persistent 3D coordinates are likely to be made non-persistent or stored elsewhere
         pass  # pragma: no cover
 
     @position.setter
     @abstractmethod
     def position(self, position):
         """
-        This node's 2D coordinates within its nodespace
+        This node's 3D coordinates within its nodespace
         """
-        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        # todo: persistent 3D coordinates are likely to be made non-persistent or stored elsewhere
         pass  # pragma: no cover
 
     @property
@@ -175,6 +154,35 @@ class Node(metaclass=ABCMeta):
         self._nodetype_name = nodetype_name
         self._nodetype = nodetype
         self.logger = nodetype.logger
+
+    def get_data(self, complete=False, include_links=True):
+        data = {
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
+            "type": self.type,
+            "parameters": self.clone_parameters(),
+            "state": self.clone_state(),
+            "gate_parameters": self.clone_non_default_gate_parameters(),
+            "sheaves": self.clone_sheaves(),
+            "activation": self.activation,
+            "gate_activations": self.construct_gates_dict(),
+            "gate_functions": self.get_gatefunction_names()
+        }
+        data["uid"] = self.uid
+        if complete:
+            data['index'] = self.index
+        if include_links:
+            data['links'] = self.construct_links_dict()
+        return data
+
+    def construct_links_dict(self):
+        links = {}
+        for key in self.get_gate_types():
+            gatelinks = self.get_gate(key).get_links()
+            if gatelinks:
+                links[key] = [l.get_data() for l in gatelinks]
+        return links
 
     @abstractmethod
     def get_gate(self, type):
@@ -554,16 +562,6 @@ class Nodetype(object):
         "rho": 0,
         "spreadsheaves": 0
     }
-
-    @property
-    def data(self):
-        data = {
-            "name": self.name,
-            "slottypes": self.slottypes,
-            "gatetypes": self.gatetypes,
-            "parameters": self.parameters
-        }
-        return data
 
     @property
     def parameters(self):

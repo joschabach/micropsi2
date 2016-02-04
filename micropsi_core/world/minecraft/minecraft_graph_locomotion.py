@@ -240,8 +240,8 @@ class MinecraftGraphLocomotion(WorldAdapter):
                 if self.current_loco_node is None:
                     # bot is outside our graph, teleport to a random graph location to get started.
                     target = random.choice(list(self.loco_nodes.keys()))
-                    # self.locomote(target)
-                self.locomote(self.forest_uid)
+                    self.locomote(target)
+                # self.locomote(self.forest_uid)
 
         else:
 

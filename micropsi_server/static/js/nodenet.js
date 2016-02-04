@@ -114,6 +114,7 @@ available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
 sorted_native_modules = [];
+nodenet_data = null;
 
 initializeMenus();
 initializeDialogs();
@@ -121,8 +122,6 @@ initializeControls();
 initializeSidebarForms();
 
 canvas_container = $('#nodenet').parent();
-
-max_coordinates = {};
 
 var clipboard = {};
 
@@ -160,7 +159,7 @@ $(document).on('load_nodenet', function(event, uid){
 });
 
 $(document).on('nodenet_changed', function(event, new_nodenet){
-    setCurrentNodenet(new_nodenet);
+    setCurrentNodenet(new_nodenet, null, true);
 });
 
 function toggleButtons(on){
@@ -344,9 +343,6 @@ function setNodespaceData(data, changed){
         currentWorldadapter = data.worldadapter;
         nodenetRunning = data.is_active;
 
-        if('max_coords' in data){
-            max_coordinates = data['max_coords'];
-        }
         if(!('selectionBox' in nodeLayer)){
             nodeLayer.addChild(selectionBox);
         }
@@ -357,6 +353,14 @@ function setNodespaceData(data, changed){
                 if (uid in selection) delete selection[uid];
             }
         }
+
+        // we're rendering nodes first, and these might include links from an old nodespace
+        // re-rendering the node might want to re-render the links, which fails if the targetnodes
+        // are not yet there... thus, just remove all links for the moment.
+        for(uid in links){
+            removeLink(links[uid]);
+        }
+        var links_data = {}
         for(uid in data.nodes){
             item = new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions);
             if(uid in nodes){
@@ -368,6 +372,14 @@ function setNodespaceData(data, changed){
                 }
             } else{
                 addNode(item);
+            }
+            for(gate in data.nodes[uid].links){
+                for(var i = 0; i < data.nodes[uid].links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + data.nodes[uid].links[gate][i]['target_slot_name'] + ":" + data.nodes[uid].links[gate][i]['target_node_uid']
+                    links_data[luid] = data.nodes[uid].links[gate][i]
+                    links_data[luid].source_node_uid = uid
+                    links_data[luid].source_gate_name = gate
+                }
             }
         }
         for(uid in data.nodespaces){
@@ -394,13 +406,103 @@ function setNodespaceData(data, changed){
             });
         } else {
             for(var uid in links) {
-                if(!(uid in data.links)) {
+                if(!(uid in links_data)) {
                     removeLink(links[uid]);
                 }
             }
-            addLinks(data.links);
+            addLinks(links_data);
         }
 
+        updateModulators(data.modulators);
+
+        if(data.monitors){
+            monitors = data.monitors;
+        }
+        if(changed){
+            updateNodespaceForm();
+        }
+    }
+    updateViewSize();
+    drawGridLines(view.element);
+}
+
+function setNodespaceDiffData(data, changed){
+    nodenetscope.activate();
+    if (data && !jQuery.isEmptyObject(data)){
+        if(!('selectionBox' in nodeLayer)){
+            nodeLayer.addChild(selectionBox);
+        }
+        var uid;
+
+        // structure first:
+        if(data.changes){
+            for(var i=0; i < data.changes.nodes_deleted.length; i++){
+                uid = data.changes.nodes_deleted[i];
+                if (uid in selection) delete selection[uid];
+                if(uid in nodes) removeNode(nodes[uid]);
+            }
+            for(var i=0; i < data.changes.nodespaces_deleted.length; i++){
+                uid = data.changes.nodespaces_deleted[i];
+                if (uid in selection) delete selection[uid];
+                if (uid in nodes) removeNode(nodes[uid]);
+                delete nodespaces[uid]
+            }
+            links_data = {}
+            for(var uid in data.changes.nodes_dirty){
+                var nodedata = data.changes.nodes_dirty[uid];
+                item = new Node(uid, nodedata['position'][0], nodedata['position'][1], nodedata.parent_nodespace, nodedata.name, nodedata.type, nodedata.sheaves, nodedata.state, nodedata.parameters, nodedata.gate_activations, nodedata.gate_parameters, nodedata.gate_functions);
+                if(uid in nodes){
+                    for (var gateName in nodes[uid].gates) {
+                        for (linkUid in nodes[uid].gates[gateName].outgoing) {
+                            if(linkUid in linkLayer.children) {
+                                removeLink(links[linkUid]);
+                            }
+                        }
+                    }
+                    redrawNode(item);
+                    nodes[uid].update(item);
+                } else{
+                    addNode(item);
+                }
+                for(gate in nodedata.links){
+                    for(var i = 0; i < nodedata.links[gate].length; i++){
+                        luid = uid + ":" + gate + ":" + nodedata.links[gate][i]['target_slot_name'] + ":" + nodedata.links[gate][i]['target_node_uid']
+                        links_data[luid] = nodedata.links[gate][i]
+                        links_data[luid].source_node_uid = uid
+                        links_data[luid].source_gate_name = gate
+                    }
+                }
+            }
+            addLinks(links_data);
+            for(var uid in data.changes.nodespaces_dirty){
+                var nodespacedata = data.changes.nodespaces_dirty[uid];
+                if(!(uid in nodespaces)){
+                    nodespaces[uid] = nodespacedata;
+                }
+                item = new Node(uid, nodespacedata['position'][0], nodespacedata['position'][1], nodespacedata.parent_nodespace, nodespacedata.name, "Nodespace", 0, nodespacedata.state);
+                if(uid in nodes){
+                    redrawNode(item);
+                    nodes[uid].update(item);
+                } else{
+                    addNode(item);
+                }
+            }
+        }
+        // activations:
+        for(var uid in data.activations){
+            activations = data.activations[uid];
+            var gen = 0
+            for(var i=0; i < nodes[uid].gateIndexes.length; i++){
+                var type = nodes[uid].gateIndexes[i];
+                nodes[uid].gates[type].sheaves['default'].activation = activations[i];
+                if(type == 'gen'){
+                    gen = activations[i];
+                }
+            }
+            nodes[uid].sheaves['default'].activation = gen;
+            setActivation(nodes[uid]);
+            redrawNodeLinks(nodes[uid]);
+        }
         updateModulators(data.modulators);
 
         if(data.monitors){
@@ -446,24 +548,29 @@ function addLinks(link_data){
     }
 }
 
-function get_nodenet_data(){
+function get_nodenet_params(){
     return {
         'nodespace': currentNodeSpace,
         'step': currentSimulationStep - 1,
         'include_links': $.cookie('renderlinks') == 'always',
     }
 }
+function get_nodenet_diff_params(){
+    return {
+        'nodespace': currentNodeSpace,
+        'step': window.currentSimulationStep,
+    }
+}
 
 
 if($('#nodenet_editor').height() > 0){
-    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+    register_stepping_function('nodenet_diff', get_nodenet_diff_params, setNodespaceDiffData);
 }
-
 $('#nodenet_editor').on('shown', function(){
-    register_stepping_function('nodenet', get_nodenet_data, setNodespaceData);
+    register_stepping_function('nodenet_diff', get_nodenet_diff_params, setNodespaceDiffData);
 });
 $('#nodenet_editor').on('hidden', function(){
-    unregister_stepping_function('nodenet');
+    unregister_stepping_function('nodenet_diff');
 });
 
 function refreshNodespace(nodespace, step, callback){
@@ -713,6 +820,8 @@ function removeLink(link) {
     if(!sourceNode || ! targetNode){
         delete links[link.uid];
         if (link.uid in linkLayer.children) linkLayer.children[link.uid].remove();
+        if(sourceNode) delete sourceNode.gates[link.gateName].outgoing[link.uid];
+        if(targetNode) delete targetNode.slots[link.slotName].incoming[link.uid];
         return;
     }
     if(sourceNode.parent != targetNode.parent){
@@ -847,7 +956,7 @@ function nodeRedrawNeeded(node){
 // redraw only the links that are connected to the given node
 function redrawNodeLinks(node) {
     var linkUid;
-    for(var dir in  node.placeholder){
+    for(var dir in node.placeholder){
         node.placeholder[dir].remove();
     }
     for (var gateName in node.gates) {
@@ -1896,7 +2005,6 @@ function onMouseDown(event) {
                 }
                 else if (!linkCreationStart) {
                     selectNode(nodeUid);
-                    showNodeForm(nodeUid);
                 }
                 // check for slots and gates
                 var i;
@@ -2213,20 +2321,17 @@ function onMouseUp(event) {
         if(path.nodeMoved && nodes[path.name]){
             // update position on server
             path.nodeMoved = false;
+            movedNodes = {};
             if(dragMultiples){
                 for(var uid in selection){
                     if(uid in nodes){
-                        moveNode(uid, nodes[uid].x, nodes[uid].y);
-                        if(max_coordinates.x && nodes[uid].x > max_coordinates.x) max_coordinates.x = nodes[uid].x;
-                        if(max_coordinates.y && nodes[uid].y > max_coordinates.y) max_coordinates.y = nodes[uid].y;
+                        movedNodes[uid] = [nodes[uid].x, nodes[uid].y];
                     }
                 }
             } else {
-                moveNode(path.name, nodes[path.name].x, nodes[path.name].y);
-                if(max_coordinates.x && nodes[path.name].x > max_coordinates.x) max_coordinates.x = nodes[path.name].x;
-                if(max_coordinates.y && nodes[path.name].y > max_coordinates.y) max_coordinates.y = nodes[path.name].y;
+                movedNodes[path.name] = [nodes[path.name].x, nodes[path.name].y];
             }
-
+            moveNodesOnServer(movedNodes);
             movePath = false;
             updateViewSize();
         } else if(!event.modifiers.shift && !event.modifiers.control && !event.modifiers.command && event.event.button != 2){
@@ -2234,6 +2339,7 @@ function onMouseUp(event) {
                 var except = [path.name];
                 deselectAll(except);
                 selectNode(path.name);
+                showNodeForm(path.name, true);
             }
         }
     }
@@ -2243,7 +2349,7 @@ function onMouseUp(event) {
         selectionRectangle.width = selectionRectangle.height = 1;
         selectionBox.setBounds(selectionRectangle);
     }
-    if(currentNodenet && nodenet_data['renderlinks'] == 'selection'){
+    if(currentNodenet && nodenet_data && nodenet_data['renderlinks'] == 'selection'){
         loadLinksForSelection();
     }
 }
@@ -2337,7 +2443,12 @@ function loadLinksForSelection(callback){
                     for(var uid in data.nodes){
                         addNode(new Node(uid, data.nodes[uid]['position'][0], data.nodes[uid]['position'][1], data.nodes[uid].parent_nodespace, data.nodes[uid].name, data.nodes[uid].type, data.nodes[uid].sheaves, data.nodes[uid].state, data.nodes[uid].parameters, data.nodes[uid].gate_activations, data.nodes[uid].gate_parameters, data.nodes[uid].gate_functions));
                     }
-                    addLinks(data.links);
+                    var linkdict = {};
+                    for(var i = 0; i < data.links.length; i++){
+                        luid = data.links[i]['source_node_uid'] + ":" + data.links[i]['source_gate_name'] + ":" + data.links[i]['target_slot_name'] + ":" + data.links[i]['target_node_uid'];
+                        linkdict[luid] = data.links[i];
+                    }
+                    addLinks(linkdict);
                     if(uids.length == 1 && uids[0] in selection && clickType != "gate"){
                         showNodeForm(uids[0]);
                     }
@@ -2460,16 +2571,12 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
-            if(Object.keys(native_modules).length > 8 ){
-                html += '<li class="divider"></li><li><a  data-create-node="Native">Create Native Module</a></i></li>';
-            } else {
-                html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
-                html += '<ul class="sub-menu dropdown-menu">';
-                for(var idx in sorted_native_modules){
-                    html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
-                }
-                html += '</ul></li>';
+            html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+            html += '<ul class="sub-menu dropdown-menu">';
+            for(var idx in sorted_native_modules){
+                html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
             }
+            html += '</ul></li>';
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         html += '<li class="divider"></li><li data-paste-nodes';
@@ -2823,7 +2930,7 @@ function createNodeHandler(x, y, name, type, parameters, callback) {
     var method = "";
     var params = {
         nodenet_uid: currentNodenet,
-        position: [x,y],
+        position: [x,y,0],
         nodespace: currentNodeSpace,
         name: name}
     if(type == "Nodespace"){
@@ -2879,7 +2986,7 @@ function handlePasteNodes(pastemode){
     // none;
     var offset = [viewProperties.copyPasteOffset, viewProperties.copyPasteOffset];
     if(clickPosition && copyPosition){
-        offset = [(clickPosition.x / viewProperties.zoomFactor) - (copyPosition.x), (clickPosition.y / viewProperties.zoomFactor) - (copyPosition.y)];
+        offset = [(clickPosition.x / viewProperties.zoomFactor) - (copyPosition.x), (clickPosition.y / viewProperties.zoomFactor) - (copyPosition.y), 0];
     }
     copy_ids = Object.keys(clipboard);
     api.call('clone_nodes', {
@@ -2890,56 +2997,62 @@ function handlePasteNodes(pastemode){
         offset: offset
     }, success = function(data){
         deselectAll();
-        for(var i = 0; i < data.nodes.length; i++){
-            var n = data.nodes[i];
+        var links_data = {};
+        for(var key in data){
+            var n = data[key];
             addNode(new Node(n.uid, n.position[0], n.position[1], n.parent_nodespace, n.name, n.type, null, null, n.parameters));
-            selectNode(n.uid);
+            if(n.parent_nodespace == currentNodeSpace){
+                selectNode(n.uid);
+            }
+            for(gate in n.links){
+                for(var i = 0; i < n.links[gate].length; i++){
+                    luid = uid + ":" + gate + ":" + n.links[gate][i]['target_slot_name'] + ":" + n.links[gate][i]['target_node_uid']
+                    links_data[luid] = n.links[gate][i]
+                    links_data[luid].source_node_uid = uid
+                    links_data[luid].source_gate_name = gate
+                }
+            }
         }
-        for(i = 0; i < data.links.length; i++){
-            var l = data.links[i];
-            addLink(new Link(l.uid, l.source_node_uid, l.source_gate_name, l.target_node_uid, l.target_slot_name, l.weight, l.certainty));
-        }
+        addLinks(links_data);
         view.draw();
     });
 }
 
 // let user delete the current node, or all selected nodes
 function deleteNodeHandler(nodeUid) {
-    function deleteNodeOnServer(node){
-        var method = "";
-        var params = {nodenet_uid: currentNodenet};
-        if(node.type == "Nodespace"){
-            method = "delete_nodespace";
-            params.nodespace_uid = node.uid;
-        } else {
-            method = "delete_node";
-            params.node_uid = node.uid;
+    function deleteNodespaceOnServer(nodespace_uid){
+        var params = {
+            nodenet_uid: currentNodenet,
+            nodespace_uid: nodespace_uid
         }
-        api.call(method, params,
+        api.call("delete_nodespace", params,
             success=function(data){
-                dialogs.notification('node deleted', 'success');
+                dialogs.notification('nodespace deleted', 'success');
                 getNodespaceList();
-                if(method == "delete_nodespace"){
-                    refreshNodespace(currentNodeSpace, -1);
-                }
+                refreshNodespace(currentNodeSpace, -1);
             }
         );
     }
     var deletedNodes = [];
-    if (nodeUid in nodes) {
-        deletedNodes.push(nodes[nodeUid]);
-        removeNode(nodes[nodeUid]);
-        if (nodeUid in selection) delete selection[nodeUid];
-    }
+    var deletedNodespaces = [];
     for (var selected in selection) {
         if(selection[selected].constructor == Node){
-            deletedNodes.push(nodes[selected]);
+            if(nodes[selected].type == "Nodespace"){
+                deletedNodespaces.push(selected);
+            } else{
+                deletedNodes.push(selected);
+            }
             removeNode(nodes[selected]);
             delete selection[selected];
         }
     }
-    for(var i in deletedNodes){
-        deleteNodeOnServer(deletedNodes[i]);
+    for(var i=0; i < deletedNodespaces.length; i++){
+        deleteNodespaceOnServer(deletedNodespaces[i]);
+    }
+    if(deletedNodes.length){
+        api.call('delete_nodes', {nodenet_uid: currentNodenet, node_uids: deletedNodes}, function(){
+            dialogs.notification('nodes deleted', 'success');
+        });
     }
     showDefaultForm();
 }
@@ -3220,11 +3333,11 @@ function cancelLinkCreationHandler() {
     linkCreationStart = null;
 }
 
-function moveNode(nodeUid, x, y){
-    api.call("set_node_position", {
+function moveNodesOnServer(position_data){
+    api.call("set_entity_positions", {
         nodenet_uid: currentNodenet,
-        node_uid: nodeUid,
-        position: [x,y]});
+        positions: position_data
+    });
 }
 
 function handleEditNode(event){
@@ -3278,11 +3391,16 @@ function handleEditNode(event){
 function handleEditGate(event){
     event.preventDefault();
     var node, gate;
+    var form = $(event.target);
     if(clickType == 'gate'){
+        // click on gate in editor
         node = nodes[clickOriginUid];
         gate = node.gates[node.gateIndexes[clickIndex]];
+    } else {
+        // click on gate in sidebar
+        node = nodes[form.attr('data-node')];
+        gate = node.gates[form.attr('data-gate')];
     }
-    var form = $(event.target);
     var data = form.serializeArray();
     var params = {};
     var old_params = gate.parameters;
@@ -3587,7 +3705,22 @@ function showLinkForm(linkUid){
     $('a.followgate').on('click', followgate);
 }
 
-function showNodeForm(nodeUid){
+function showNodeForm(nodeUid, refresh){
+    if(refresh){
+        api.call('get_node', {
+            nodenet_uid:currentNodenet,
+            node_uid: nodeUid
+        }, function(data){
+            item = new Node(nodeUid, data['position'][0], data['position'][1], data.parent_nodespace, data.name, data.type, data.sheaves, data.state, data.parameters, data.gate_activations, data.gate_parameters, data.gate_functions);
+            nodes[nodeUid].update(item);
+            if(clickType == 'gate'){
+                showGateForm(nodes[nodeUid], nodes[nodeUid].gates[nodes[nodeUid].gateIndexes[clickIndex]]);
+            } else {
+                showNodeForm(nodeUid);
+            }
+        });
+        return;
+    }
     $('#nodenet_forms .form-horizontal').hide();
     var form = $('#edit_node_form');
     form.show();
@@ -3629,7 +3762,14 @@ function showNodeForm(nodeUid){
             for(key in nodes[nodeUid].slots){
                 link_list += "<tr><td>" + key + "</td><td><ul>";
                 for(id in nodes[nodeUid].slots[key].incoming){
-                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+links[id].sourceNodeUid+'" class="follownode">'+(nodes[links[id].sourceNodeUid].name || nodes[links[id].sourceNodeUid].uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
+                    if(links[id].sourceNodeUid in nodes){
+                        var n = nodes[links[id].sourceNodeUid];
+                        var ns = '';
+                        if(n.parent != currentNodeSpace){
+                            ns = nodespaces[n.parent].name+"/";
+                        }
+                        link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">&lt;-</a> &nbsp;<a href="#followNode" data="'+n.uid+'" class="follownode">'+ns+(n.name || n.uid.substr(0,8)+'&hellip;')+':'+links[id].gateName+'</a></li>';
+                    }
                 }
             }
         }
@@ -3638,7 +3778,14 @@ function showNodeForm(nodeUid){
         for(name in nodes[nodeUid].gates){
             link_list = "";
             for(id in nodes[nodeUid].gates[name].outgoing){
-                link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">-&gt;</a> &nbsp;<a href="#followNode" data="'+links[id].targetNodeUid+'" class="follownode">'+(nodes[links[id].targetNodeUid].name || nodes[links[id].targetNodeUid].uid.substr(0,8)+'&hellip;')+'</a></li>';
+                if(links[id].targetNodeUid in nodes){
+                    var n = nodes[links[id].targetNodeUid];
+                    var ns = '';
+                    if(n.parent != currentNodeSpace){
+                        ns = nodespaces[n.parent].name+"/";
+                    }
+                    link_list += '<li><a href="#followlink" data="'+id+'" class="followlink">-&gt;</a> &nbsp;<a href="#followNode" data="'+n.uid+'" class="follownode">'+ns+(n.name || n.uid.substr(0,8)+'&hellip;')+'</a></li>';
+                }
             }
             content += '<tr><td><a href="#followgate" class="followgate" data-node="'+nodeUid+'" data-gate="'+name+'">'+name+'</td>';
             if(link_list){
@@ -3726,6 +3873,8 @@ function showGateForm(node, gate){
         }
     });
     $('#gate_gatefunction').val(gate.gatefunction);
+    form.attr('data-node', node.uid);
+    form.attr('data-gate', gate.name);
     form.show();
 }
 

@@ -1,11 +1,18 @@
 
+0.7-alpha5 (2016-02-04)
+==========
+
+ * Changed the nodenet data protocol to only transfer diffs while stepping
+ * Windows compatibility & instructions
+
+
 0.6-alpha4 (2015-11-17)
 ==========
 
  * Made the theano engine the non-experimental default
  * Made partitions configurable
- * Introduced LSTMS
- * Introduced Vizualization-API
+ * Introduced LSTMs
+ * Introduced Visualization API
  * Introduced dashboard
 
 

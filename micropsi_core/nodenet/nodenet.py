@@ -51,33 +51,9 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @property
-    @abstractmethod
-    def data(self):
-        """
-        Returns a dict representing the whole node net.
-        Concrete implementations may call this (super) method and then add the following fields if they want to
-        use JSON persistency:
-
-        links
-        nodes
-        nodespaces
-        version
-        """
-        data = self.metadata
-        data.update({
-            'links': {},
-            'nodes': {},
-            'max_coords': self.max_coords,
-            'nodespaces': {},
-            'monitors': self.construct_monitors_dict(),
-            'modulators': {},
-        })
-        return data
-
-    @property
     def metadata(self):
         """
-        Returns a dict representing the node net meta data (a subset of .data).
+        Returns a dict representing the node net meta data.
         """
         data = {
             'uid': self.uid,
@@ -177,8 +153,6 @@ class Nodenet(metaclass=ABCMeta):
         self.owner = owner
         self._monitors = {}
 
-        self.max_coords = {'x': 0, 'y': 0}
-
         self.netlock = Lock()
 
         self.logger = logging.getLogger('agent.%s' % self.uid)
@@ -188,8 +162,29 @@ class Nodenet(metaclass=ABCMeta):
 
         self.netapi = NetAPI(self)
 
+        self.deleted_items = {}
         self.stepping_rate = []
         self.dashboard_values = {}
+
+    def get_data(self, complete=False, include_links=True):
+        """
+        Returns a dict representing the whole node net.
+        Concrete implementations may call this (super) method and then add the following fields if they want to
+        use JSON persistency:
+
+        links
+        nodes
+        nodespaces
+        version
+        """
+        data = self.metadata
+        data.update({
+            'nodes': {},
+            'nodespaces': {},
+            'monitors': self.construct_monitors_dict(),
+            'modulators': {},
+        })
+        return data
 
     @abstractmethod
     def save(self, filename):
@@ -287,6 +282,12 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
+    def set_entity_positions(self, positions):
+        """ Sets the position of nodes or nodespaces.
+        Parameters: a hash of uids to their positions """
+        pass   # pragma: no cover
+
+    @abstractmethod
     def create_nodespace(self, parent_uid, position, name="", uid=None):
         """
         Creates a new nodespace  in the nodespace with the given UID, at the given position.
@@ -363,8 +364,7 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_nodespace_data(self, nodespace_uid, include_links):
         """
-        Returns a data dict of the structure defined in the .data property, filtered for nodes in the given
-        nodespace.
+        Returns a data dict of the nodenet state for the given nodespace.
 
         Implementations are expected to fill the following keys:
         'nodes' - map of nodes it the given rectangle
@@ -375,10 +375,17 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def get_activation_data(self, nodespace_uid=None, rounded=1):
+        """
+        Returns a dict of uids to lists of activation values.
+        Callers need to know the types of nodes that these activations belong to.
+        """
+        pass  # pragma: no cover
+
     @abstractmethod
     def merge_data(self, nodenet_data, keep_uids=False):
         """
-        Merges in the data in nodenet_data, which is a dict of the structure defined by the .data property.
+        Merges the data in nodenet_data into this nodenet.
         If keep_uids is True, the supplied UIDs will be used. This may lead to all sorts of inconsistencies,
         so only tests should use keep_uids=True
         """
@@ -387,7 +394,6 @@ class Nodenet(metaclass=ABCMeta):
     @abstractmethod
     def get_modulator(self, modulator):
         """
-
         Returns the numeric value of the given global modulator
         """
         pass  # pragma: no cover
@@ -498,6 +504,42 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    @abstractmethod
+    def has_nodespace_changes(self, nodespace_uid, since_step):
+        """
+        Returns true, if the structure of the nodespace has changed since the given step, false otherwise
+        Structural changes include everything besides activation
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
+    def get_nodespace_changes(self, nodespace_uid, since_step):
+        """
+        Returns a dictionary of structural changes that happened in the given nodespace
+        since the given step
+        Expected result format is
+        {
+            'nodes_dirty': {},
+            'nodespaces_dirty': {},
+            'nodes_deleted': [],
+            'nodespaces_deleted': []
+        }
+        where the deleted fields carry lists of uids and the dirty fields
+        carry data-dicts with the new state of the entity
+        """
+        pass  # pragma: no cover
+
+    def _track_deletion(self, entity_type, uid):
+        """
+        Track deletion of entitytype. either 'nodes' or 'nodespaces'
+        """
+        if self.current_step not in self.deleted_items:
+            self.deleted_items[self.current_step] = {
+                'nodespaces_deleted': [],
+                'nodes_deleted': []
+            }
+        self.deleted_items[self.current_step]["%s_deleted" % entity_type].append(uid)
+
     def clear(self):
         self._monitors = {}
 
@@ -551,7 +593,7 @@ class Nodenet(metaclass=ABCMeta):
     def construct_monitors_dict(self):
         data = {}
         for monitor_uid in self._monitors:
-            data[monitor_uid] = self._monitors[monitor_uid].data
+            data[monitor_uid] = self._monitors[monitor_uid].get_data()
         return data
 
     def remove_monitor(self, monitor_uid):

@@ -22,17 +22,6 @@ class Nodespace(metaclass=ABCMeta):
     """
 
     @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "index": self.index,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace,
-        }
-        return data
-
-    @property
     @abstractmethod
     def uid(self):
         """
@@ -60,18 +49,18 @@ class Nodespace(metaclass=ABCMeta):
     @abstractmethod
     def position(self):
         """
-        This node's 2D coordinates within its nodespace
+        This node's 3D coordinates within its nodespace
         """
-        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        # todo: persistent 3D coordinates are likely to be made non-persistent or stored elsewhere
         pass  # pragma: no cover
 
     @position.setter
     @abstractmethod
     def position(self, position):
         """
-        This node's 2D coordinates within its nodespace
+        This node's 3D coordinates within its nodespace
         """
-        # todo: persistent 2D coordinates are likely to be made non-persistent or stored elsewhere
+        # todo: persistent 3D coordinates are likely to be made non-persistent or stored elsewhere
         pass  # pragma: no cover
 
     @property
@@ -97,6 +86,18 @@ class Nodespace(metaclass=ABCMeta):
         The UID of this node's parent nodespace
         """
         pass  # pragma: no cover
+
+    def get_data(self):
+        """
+        Returns the json representation of this nodespace
+        """
+        return {
+            "uid": self.uid,
+            "index": self.index,
+            "name": self.name,
+            "position": self.position,
+            "parent_nodespace": self.parent_nodespace,
+        }
 
     @abstractmethod
     def get_activator_value(self, type):

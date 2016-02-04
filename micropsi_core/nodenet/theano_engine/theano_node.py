@@ -4,7 +4,6 @@ from micropsi_core.nodenet.node import Node, Gate, Slot
 from micropsi_core.nodenet.theano_engine.theano_link import TheanoLink
 from micropsi_core.nodenet.theano_engine.theano_stepoperators import *
 from micropsi_core.nodenet.theano_engine.theano_definitions import *
-from micropsi_core.nodenet.theano_engine import theano_nodespace as nodespace
 import numpy as np
 
 
@@ -59,14 +58,17 @@ class TheanoNode(Node):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))
+        return self._nodenet.positions.get(self.uid, [10, 10, 0])
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
+            position = list(position)
+            position = (position + [0] * 3)[:3]
             self._nodenet.positions[self.uid] = position
+        self._partition.node_changed(self.uid)
 
     @property
     def name(self):

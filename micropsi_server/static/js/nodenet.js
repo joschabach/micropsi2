@@ -3391,11 +3391,16 @@ function handleEditNode(event){
 function handleEditGate(event){
     event.preventDefault();
     var node, gate;
+    var form = $(event.target);
     if(clickType == 'gate'){
+        // click on gate in editor
         node = nodes[clickOriginUid];
         gate = node.gates[node.gateIndexes[clickIndex]];
+    } else {
+        // click on gate in sidebar
+        node = nodes[form.attr('data-node')];
+        gate = node.gates[form.attr('data-gate')];
     }
-    var form = $(event.target);
     var data = form.serializeArray();
     var params = {};
     var old_params = gate.parameters;
@@ -3868,6 +3873,8 @@ function showGateForm(node, gate){
         }
     });
     $('#gate_gatefunction').val(gate.gatefunction);
+    form.attr('data-node', node.uid);
+    form.attr('data-gate', gate.name);
     form.show();
 }
 

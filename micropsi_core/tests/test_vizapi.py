@@ -43,7 +43,7 @@ def test_save_file(test_nodenet, resourcepath):
     plot.add_activation_plot(activations)
     filepath = os.path.join(resourcepath, "plot.png")
     returnpath = plot.save_to_file(filepath)
-    assert returnpath == filepath
+    assert os.path.abspath(returnpath) == os.path.abspath(filepath)
     assert os.path.isfile(filepath)
 
 
@@ -58,7 +58,7 @@ def test_plot_from_nodefunc(test_nodenet, resourcepath, nodetype_def, nodefunc_d
     plot.add_activation_plot(activations)
     filepath = os.path.join(resourcepath, "plot.png")
     returnpath = plot.save_to_file(filepath)
-    assert returnpath == filepath
+    assert os.path.abspath(returnpath) == os.path.abspath(filepath)
     assert os.path.isfile(filepath)
     os.remove(filepath)
     with open(nodetype_def, 'w') as fp:

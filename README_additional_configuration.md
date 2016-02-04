@@ -45,8 +45,8 @@ Windows support for advanced features is experimental.
 
 Configuration
 -----
-* See `config.ini.default` for configuration options.
-* Copy `config.ini.default` to `config.ini` to customize.
+* See `config.default.ini` for configuration options.
+* Copy `config.default.ini` to `config.ini` to customize.
 
 
 Tests

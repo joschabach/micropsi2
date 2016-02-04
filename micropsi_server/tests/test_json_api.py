@@ -1164,8 +1164,12 @@ def test_get_nodenet_logger_messages(app, test_nodenet):
     logging.getLogger('system').warning('foobar')
     response = app.get_json('/rpc/get_logger_messages(logger=["system", "agent.%s"])' % test_nodenet)
     assert 'servertime' in response.json_body['data']
-    netlog = response.json_body['data']['logs'][-2]
-    syslog = response.json_body['data']['logs'][-1]
+    netlog = syslog = None
+    for item in response.json_body['data']['logs']:
+        if item['logger'] == 'system':
+            syslog = item
+        elif item['logger'].startswith('agent'):
+            netlog = item
     assert netlog['step'] == 0
     assert syslog['step'] is None
 

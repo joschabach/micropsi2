@@ -70,8 +70,11 @@ def test_unregister_logger():
 
 
 def test_get_multiple_logger_messages_are_sorted():
+    from time import sleep
     logging.getLogger('world').warning('First.')
+    sleep(0.01)
     logging.getLogger('system').warning('Second')
+    sleep(0.01)
     logging.getLogger('world').warning('Wat?')
     res = micropsi.get_logger_messages(['system', 'world'])
     assert len(res['logs']) == 3

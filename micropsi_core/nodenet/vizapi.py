@@ -11,8 +11,11 @@ import platform
 # find os: http://stackoverflow.com/q/1854
 # find supported backends: http://stackoverflow.com/a/13731150
 # if tested, include here:
-if platform.system() == "Darwin":
-    matplotlib.use('macosx')
+# if platform.system() == "Darwin":
+#     matplotlib.use('macosx')
+# else:
+matplotlib.use('agg')
+
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 

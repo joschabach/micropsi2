@@ -7,9 +7,6 @@ Tests for netapi, i.e. the interface native modules will be developed against
 
 import pytest
 from micropsi_core import runtime as micropsi
-from micropsi_core.nodenet.node import Nodetype
-
-from micropsi_core.tests import test_node_logic
 
 
 def prepare(fixed_nodenet):
@@ -51,13 +48,14 @@ def test_node_netapi_create_register_node(fixed_nodenet):
     assert len(node.get_gate('gen').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
-    assert node.data['uid'] == node.uid
-    assert node.data['name'] == node.name
-    assert node.data['type'] == node.type
+    data = node.get_data()
+    assert data['uid'] == node.uid
+    assert data['name'] == node.name
+    assert data['type'] == node.type
 
     node = netapi.create_node("Register", None)
-    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    #assert node.data['name'] == node.name
+    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    # assert data['name'] == node.name
 
 
 def test_node_netapi_create_pipe_node(fixed_nodenet):
@@ -86,17 +84,18 @@ def test_node_netapi_create_pipe_node(fixed_nodenet):
     assert len(node.get_gate('exp').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
-    assert node.data['uid'] == node.uid
+    data = node.get_data()
+    assert data['uid'] == node.uid
     for key in node.get_gate_types():
-        assert key not in node.data['gate_parameters']
+        assert key not in data['gate_parameters']
         for parameter, value in node.nodetype.gate_defaults[key].items():
             assert node.get_gate(key).get_parameter(parameter) == value
-    assert node.data['name'] == node.name
-    assert node.data['type'] == node.type
+    assert data['name'] == node.name
+    assert data['type'] == node.type
 
     node = netapi.create_node("Pipe", None)
-    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    #assert node.data['name'] == node.name
+    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    # assert data['name'] == node.name
 
 
 @pytest.mark.engine("dict_engine")
@@ -130,13 +129,14 @@ def test_node_netapi_create_concept_node(fixed_nodenet):
     assert len(node.get_gate('ref').activations) == 1
 
     # frontend/persistency-oriented data dictionary test
-    assert node.data['uid'] == node.uid
-    assert node.data['name'] == node.name
-    assert node.data['type'] == node.type
+    data = node.get_data()
+    assert data['uid'] == node.uid
+    assert data['name'] == node.name
+    assert data['type'] == node.type
 
     node = netapi.create_node("Pipe", None)
-    #TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
-    #assert node.data['name'] == node.name
+    # TODO: teh weirdness, server-internally, we return uids as names, clients don't see this, confusion ensues
+    # assert data['name'] == node.name
 
 
 def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
@@ -146,7 +146,7 @@ def test_node_netapi_create_node_in_nodespace(fixed_nodenet):
     node = netapi.create_node("Register", nodespace.uid, "TestName")
 
     assert node.parent_nodespace == nodespace.uid
-    assert node.data['parent_nodespace'] == nodespace.uid
+    assert node.get_data()['parent_nodespace'] == nodespace.uid
 
 
 def test_node_netapi_get_nodespace_one(fixed_nodenet):
@@ -181,7 +181,7 @@ def test_node_netapi_get_node(fixed_nodenet):
     queried_node = netapi.get_node(node.uid)
     assert queried_node.uid == node.uid
     assert queried_node.name == node.name
-    assert queried_node.data == node.data
+    assert queried_node.get_data() == node.get_data()
     assert queried_node.type == node.type
 
 
@@ -499,15 +499,17 @@ def test_node_netapi_link(fixed_nodenet):
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
-            if otherside_link.uid == link.uid:
+            if otherside_link.signature == link.signature:
                 found = True
         assert found
 
         # frontend/persistency-facing
-        assert link.data['weight'] == link.weight
-        assert link.data['uid'] == link.uid
-        assert link.data['source_node_uid'] == node2.uid
-        assert link.data['target_node_uid'] == node1.uid
+        assert link.get_data()['weight'] == link.weight
+        assert link.get_data()['target_node_uid'] == node1.uid
+        assert link.get_data()['target_slot_name'] == 'gen'
+        # frontend/persistency-facing
+        assert link.get_data(complete=True)['source_node_uid'] == node2.uid
+        assert link.get_data(complete=True)['source_gate_name'] == 'gen'
 
 
 def test_node_netapi_link_change_weight(fixed_nodenet):
@@ -530,15 +532,14 @@ def test_node_netapi_link_change_weight(fixed_nodenet):
 
         found = False
         for otherside_link in node1.get_slot("gen").get_links():
-            if otherside_link.uid == link.uid:
+            if otherside_link.signature == link.signature:
                 found = True
         assert found
 
         # frontend/persistency-facing
-        assert link.data['weight'] == link.weight
-        assert link.data['uid'] == link.uid
-        assert link.data['source_node_uid'] == node2.uid
-        assert link.data['target_node_uid'] == node1.uid
+        assert link.get_data()['weight'] == link.weight
+        assert link.get_data()['target_node_uid'] == node1.uid
+        assert link.get_data()['target_slot_name'] == 'gen'
 
 
 def test_node_netapi_link_with_reciprocal(fixed_nodenet):
@@ -693,36 +694,36 @@ def test_node_netapi_unlink_direction(fixed_nodenet):
     assert len(n_c.get_slot('sub').get_links()) == 0
 
 
-def test_node_netapi_import_actors(fixed_nodenet):
+def test_node_netapi_import_actors(fixed_nodenet, test_world):
     # test importing data targets as actors
     net, netapi, source = prepare(fixed_nodenet)
-    world = test_node_logic.add_dummyworld(fixed_nodenet)
+    micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
-    netapi.import_actors(root_ns.uid, "test_")
-    actors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(actors) == 1
-    assert actors[0].get_parameter('datatarget') == "test_target"
+    netapi.import_actors(root_ns.uid)
+    actors = netapi.get_nodes(root_ns.uid, nodetype="Actor")
+    assert len(actors) == 2
+    assert set([a.get_parameter('datatarget') for a in actors]) == set(net.worldadapter_instance.datatargets.keys())
 
     # do it again, make sure we can call import multiple times
-    netapi.import_actors(root_ns.uid, "test_")
-    actors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(actors) == 1
+    netapi.import_actors(root_ns.uid)
+    actors = netapi.get_nodes(root_ns.uid, nodetype="Actor")
+    assert len(actors) == 2
 
 
-def test_node_netapi_import_sensors(fixed_nodenet):
+def test_node_netapi_import_sensors(fixed_nodenet, test_world):
     # test importing data sources as sensors
     net, netapi, source = prepare(fixed_nodenet)
-    world = test_node_logic.add_dummyworld(fixed_nodenet)
+    micropsi.set_nodenet_properties(fixed_nodenet, world_uid=test_world, worldadapter='Braitenberg')
     root_ns = netapi.get_nodespace(None)
-    netapi.import_sensors(root_ns.uid, "test_")
-    sensors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(sensors) == 1
-    assert sensors[0].get_parameter('datasource') == "test_source"
+    netapi.import_sensors(root_ns.uid)
+    sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
+    assert len(sensors) == 2
+    assert set([s.get_parameter('datasource') for s in sensors]) == set(net.worldadapter_instance.datasources.keys())
 
     # do it again, make sure we can call import multiple times
-    netapi.import_sensors(root_ns.uid, "test_")
-    sensors = netapi.get_nodes(root_ns.uid, "test_")
-    assert len(sensors) == 1
+    netapi.import_sensors(root_ns.uid)
+    sensors = netapi.get_nodes(root_ns.uid, nodetype="Sensor")
+    assert len(sensors) == 2
 
 
 def test_set_gate_function(fixed_nodenet):
@@ -749,21 +750,34 @@ def test_set_gate_function(fixed_nodenet):
 def test_autoalign(fixed_nodenet):
     net, netapi, source = prepare(fixed_nodenet)
     for uid in net.get_node_uids():
-        net.get_node(uid).position = (12, 13)
+        net.get_node(uid).position = [12, 13, 11]
     netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
     positions = []
     for uid in net.get_node_uids():
         if net.get_node(uid).parent_nodespace == netapi.get_nodespace(None).uid:
             positions.extend(net.get_node(uid).position)
-    assert set(positions) != set((12, 13))
+    assert set(positions) != set([12, 13, 11])
 
     for uid in net.get_node_uids():
-        net.get_node(uid).position = (12, 13)
+        net.get_node(uid).position = [12, 13, 11]
     netapi.autoalign_nodespace('InVaLiD')
     positions = []
     for uid in net.get_node_uids():
         positions.extend(net.get_node(uid).position)
-    assert set(positions) == set((12, 13))
+    assert set(positions) == set([12, 13, 11])
+
+
+def test_autoalign_updates_last_changed(fixed_nodenet):
+    net, netapi, source = prepare(fixed_nodenet)
+    for uid in net.get_node_uids():
+        net.get_node(uid).position = [12, 13, 11]
+    net.step()
+    net.step()
+    netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
+    changes = net.get_nodespace_changes(None, 2)
+    for uid in net.get_node_uids():
+        if net.get_node(uid).position != [12, 13, 11]:
+            assert uid in changes['nodes_dirty']
 
 
 def test_copy_nodes(fixed_nodenet):
@@ -969,7 +983,7 @@ def test_set_link_weights(fixed_nodenet):
     assert len(netapi.get_node(sepp2.uid).get_gate('gen').get_links()) == 0
 
     # create link
-        # list style indexing
+    # list style indexing
     try:
         w[1][1] = 0.5
     except:

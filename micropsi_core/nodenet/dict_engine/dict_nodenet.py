@@ -149,16 +149,6 @@ class DictNodenet(Nodenet):
     """
 
     @property
-    def data(self):
-        data = super(DictNodenet, self).data
-        data['links'] = self.construct_links_dict()
-        data['nodes'] = self.construct_nodes_dict()
-        data['nodespaces'] = self.construct_nodespaces_dict("Root")
-        data['version'] = self._version
-        data['modulators'] = self.construct_modulators_dict()
-        return data
-
-    @property
     def engine(self):
         return "dict_engine"
 
@@ -189,7 +179,6 @@ class DictNodenet(Nodenet):
 
         self._nodes = {}
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
 
         self._nodetypes = {}
         for type, data in STANDARD_NODETYPES.items():
@@ -203,10 +192,23 @@ class DictNodenet(Nodenet):
 
         self.initialize_nodenet({})
 
+    def get_data(self, **params):
+        data = super().get_data(**params)
+        data['nodes'] = self.construct_nodes_dict(**params)
+        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['version'] = self._version
+        data['modulators'] = self.construct_modulators_dict()
+        return data
+
+    def export_json(self):
+        data = self.get_data(complete=True, include_links=False)
+        data['links'] = self.construct_links_list()
+        return data
+
     def save(self, filename):
-        # dict_engine saves metadata and data into the same json file, so just dump .data
+        # dict_engine saves everything to json, just dump the json export
         with open(filename, 'w+') as fp:
-            fp.write(json.dumps(self.data, sort_keys=True, indent=4))
+            fp.write(json.dumps(self.export_json(), sort_keys=True, indent=4))
         if os.path.getsize(filename) < 100:
             # kind of hacky, but we don't really know what was going on
             raise RuntimeError("Error writing nodenet file")
@@ -245,7 +247,7 @@ class DictNodenet(Nodenet):
         self._native_modules = {}
         for key in native_modules:
             self._native_modules[key] = Nodetype(nodenet=self, **native_modules[key])
-        saved = self.data
+        saved = self.export_json()
         self.clear()
         self.merge_data(saved, keep_uids=True)
 
@@ -275,26 +277,26 @@ class DictNodenet(Nodenet):
 
         # set up nodespaces; make sure that parent nodespaces exist before children are initialized
         self._nodespaces = {}
-        self._nodespaces["Root"] = DictNodespace(self, None, (0, 0), name="Root", uid="Root")
+        self._nodespaces["Root"] = DictNodespace(self, None, [0, 0, 0], name="Root", uid="Root")
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
             self.merge_data(initfrom, keep_uids=True)
 
-    def construct_links_dict(self):
-        data = {}
+    def construct_links_list(self):
+        data = []
         for node_uid in self.get_node_uids():
-            links = self.get_node(node_uid).get_associated_links()
-            for link in links:
-                data[link.uid] = link.data
+            node = self.get_node(node_uid)
+            for g in node.get_gate_types():
+                data.extend([l.get_data(complete=True) for l in node.get_gate(g).get_links()])
         return data
 
-    def construct_nodes_dict(self, max_nodes=-1):
+    def construct_nodes_dict(self, max_nodes=-1, **params):
         data = {}
         i = 0
         for node_uid in self.get_node_uids():
             i += 1
-            data[node_uid] = self.get_node(node_uid).data
+            data[node_uid] = self.get_node(node_uid).get_data(**params)
             if max_nodes > 0 and i > max_nodes:
                 break
         return data
@@ -315,7 +317,7 @@ class DictNodenet(Nodenet):
                     is_in_hierarchy = True
 
             if is_in_hierarchy:
-                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).data
+                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).get_data()
         return data
 
     def get_nodetype(self, type):
@@ -325,39 +327,44 @@ class DictNodenet(Nodenet):
         else:
             return self._native_modules[type]
 
-    def get_nodespace_data(self, nodespace, include_links):
+    def get_nodespace_data(self, nodespace_uid, include_links):
         data = {
-            'links': {},
             'nodes': {},
             'name': self.name,
-            'max_coords': {'x': 0, 'y': 0},
             'is_active': self.is_active,
             'current_step': self.current_step,
-            'nodespaces': self.construct_nodespaces_dict(nodespace),
+            'nodespaces': self.construct_nodespaces_dict(nodespace_uid),
             'world': self.world,
             'worldadapter': self.worldadapter,
             'modulators': self.construct_modulators_dict()
         }
-        links = []
         followupnodes = []
-        for uid in self._nodes:
-            if self.get_node(uid).parent_nodespace == nodespace:  # maybe sort directly by nodespace??
-                node = self.get_node(uid)
-                data['nodes'][uid] = node.data
-                if node.position[0] > data['max_coords']['x']:
-                    data['max_coords']['x'] = node.position[0]
-                if node.position[1] > data['max_coords']['y']:
-                    data['max_coords']['y'] = node.position[1]
-                if include_links:
-                    links.extend(self.get_node(uid).get_associated_links())
-                    followupnodes.extend(self.get_node(uid).get_associated_node_uids())
+        nodespace = self.get_nodespace(nodespace_uid)
+        for uid in nodespace.get_known_ids(entitytype="nodes"):
+            node = self.get_node(uid)
+            data['nodes'][uid] = node.get_data(include_links=include_links)
+            if include_links:
+                followupnodes.extend(node.get_associated_node_uids())
         if include_links:
-            for link in links:
-                data['links'][link.uid] = link.data
             for uid in followupnodes:
                 if uid not in data['nodes']:
-                    data['nodes'][uid] = self.get_node(uid).data
+                    data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
         return data
+
+    def get_activation_data(self, nodespace_uid=None, rounded=1):
+        activations = {}
+        if nodespace_uid is None:
+            node_ids = self._nodes.keys()
+        else:
+            node_ids = self.get_nodespace(nodespace_uid).get_known_ids("nodes")
+
+        for uid in node_ids:
+            node = self.get_node(uid)
+            if rounded is None:
+                activations[uid] = [node.get_gate(gate_name).activation for gate_name in node.get_gate_types()]
+            else:
+                activations[uid] = [round(node.get_gate(gate_name).activation, rounded) for gate_name in node.get_gate_types()]
+        return activations
 
     def delete_node(self, node_uid):
         if node_uid in self._nodespaces:
@@ -367,15 +374,19 @@ class DictNodenet(Nodenet):
             parent_nodespace = self._nodespaces.get(self._nodespaces[node_uid].parent_nodespace)
             if parent_nodespace and parent_nodespace.is_entity_known_as('nodespaces', node_uid):
                 parent_nodespace._unregister_entity('nodespaces', node_uid)
+                parent_nodespace.contents_last_changed = self.current_step
             del self._nodespaces[node_uid]
+            self._track_deletion('nodespaces', node_uid)
         else:
             node = self._nodes[node_uid]
             node.unlink_completely()
             parent_nodespace = self._nodespaces.get(self._nodes[node_uid].parent_nodespace)
             parent_nodespace._unregister_entity('nodes', node_uid)
+            parent_nodespace.contents_last_changed = self.current_step
             if self._nodes[node_uid].type == "Activator":
                 parent_nodespace.unset_activator_value(self._nodes[node_uid].get_parameter('type'))
             del self._nodes[node_uid]
+            self._track_deletion('nodes', node_uid)
 
     def delete_nodespace(self, uid):
         self.delete_node(uid)
@@ -383,17 +394,17 @@ class DictNodenet(Nodenet):
     def clear(self):
         super(DictNodenet, self).clear()
         self._nodes = {}
-
-        self.max_coords = {'x': 0, 'y': 0}
-
-        self._nodespaces = {}
-        DictNodespace(self, None, (0, 0), "Root", "Root")
+        self.initialize_nodenet({})
 
     def _register_node(self, node):
         self._nodes[node.uid] = node
+        node.last_changed = self.current_step
+        self.get_nodespace(node.parent_nodespace).contents_last_changed = self.current_step
 
     def _register_nodespace(self, nodespace):
         self._nodespaces[nodespace.uid] = nodespace
+        nodespace.last_changed = self.current_step
+        self.get_nodespace(nodespace.parent_nodespace).contents_last_changed = self.current_step
 
     def merge_data(self, nodenet_data, keep_uids=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
@@ -426,16 +437,19 @@ class DictNodenet(Nodenet):
             self._nodes[newuid] = DictNode(self, **data)
 
         # merge in links
-        for linkid in nodenet_data.get('links', {}):
-            data = nodenet_data['links'][linkid]
-            if data['source_node_uid'] in invalid_nodes or data['target_node_uid'] in invalid_nodes:
+        links = nodenet_data.get('links', [])
+        if isinstance(links, dict):
+            # compatibility
+            links = links.values()
+        for link in links:
+            if link['source_node_uid'] in invalid_nodes or link['target_node_uid'] in invalid_nodes:
                 continue
             self.create_link(
-                uidmap[data['source_node_uid']],
-                data['source_gate_name'],
-                uidmap[data['target_node_uid']],
-                data['target_slot_name'],
-                data['weight']
+                uidmap[link['source_node_uid']],
+                link['source_gate_name'],
+                uidmap[link['target_node_uid']],
+                link['target_slot_name'],
+                link['weight']
             )
 
         for monitorid in nodenet_data.get('monitors', {}):
@@ -466,6 +480,14 @@ class DictNodenet(Nodenet):
 
             for operator in self.stepoperators:
                 operator.execute(self, self._nodes.copy(), self.netapi)
+
+        steps = sorted(list(self.deleted_items.keys()))
+        if steps:
+            for i in steps:
+                if i >= self.current_step - 100:
+                    break
+                else:
+                    del self.deleted_items[i]
 
     def create_node(self, nodetype, nodespace_uid, position, name="", uid=None, parameters=None, gate_parameters=None):
         nodespace_uid = self.get_nodespace(nodespace_uid).uid
@@ -508,6 +530,14 @@ class DictNodenet(Nodenet):
 
     def is_nodespace(self, uid):
         return uid in self._nodespaces
+
+    def set_entity_positions(self, positions):
+        """ Sets the position of nodes or nodespaces """
+        for uid in positions:
+            if uid in self._nodes:
+                self._nodes[uid].position = positions[uid]
+            elif uid in self._nodespaces:
+                self._nodespaces[uid].position = positions[uid]
 
     def get_nativemodules(self, nodespace=None):
         """Returns a dict of native modules. Optionally filtered by the given nodespace"""
@@ -776,6 +806,35 @@ class DictNodenet(Nodenet):
         from inspect import getmembers, isfunction
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
+
+    def has_nodespace_changes(self, nodespace_uid, since_step):
+        return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
+
+    def get_nodespace_changes(self, nodespace_uid, since_step):
+        ns = self.get_nodespace(nodespace_uid)
+        result = {
+            'nodes_dirty': {},
+            'nodespaces_dirty': {},
+            'nodes_deleted': [],
+            'nodespaces_deleted': []
+        }
+        for i in range(since_step, self.current_step + 1):
+            if i in self.deleted_items:
+                result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
+                result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+
+        for uid in ns.get_known_ids():
+            if uid not in result['nodes_deleted'] and self.is_node(uid):
+                if self.get_node(uid).last_changed >= since_step:
+                    result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+                    for assoc in self.get_node(uid).get_associated_node_uids():
+                        if self.get_node(assoc).parent_nodespace != ns.uid and assoc not in result['nodes_dirty']:
+                            result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
+
+            elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
+                if self.get_nodespace(uid).last_changed >= since_step:
+                    result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+        return result
 
     def get_dashboard(self):
         data = super(DictNodenet, self).get_dashboard()

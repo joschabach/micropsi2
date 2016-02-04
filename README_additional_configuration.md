@@ -1,9 +1,10 @@
 Additional Features
 -----
 For some of the more advanced features of the Micropsi2 runtime, additional manual configuration is necessary.
+Support for the advanced features on Windows is experimental, see below.
 
 
-Set up virtualenv
+OS X: Set up virtualenv
 -----
 Additional dependencies necessary for running the Toolkit with Minecraft connectivity or theano_engine node nets
 require a working virtualenv on your machine.
@@ -13,12 +14,12 @@ To install virtualenv on OS X, you could:
 * Use pip3 to install virtualenv: `pip3 install virtualenv`
 
 
-Set up Minecraft connectivity
+OS X: Set up Minecraft connectivity
 -----
 * To run micropsi with minecraft connectivity, you need to call `make` after checkout and virtualenv setup
 
 
-Set up Theano-based theano_engine
+OS X: Set up Theano-based theano_engine
 -----
 * To run micropsi with an optional node net implementation based on Theano, you need to install Theano
 * Call 'make' after checkout
@@ -27,9 +28,25 @@ Set up Theano-based theano_engine
 * When creating a new node net, you should now be able to chose theano_engine
 
 
+Windows: Set up theano_engine and Minecraft connectivity with winpython
+-----
+Windows support for advanced features is experimental.
+* Install [WinPython 3.4.3.7](http://winpython.github.io/)
+* From the installed folder, add the folders `python-3.4.3` and `python-3.4.3\Scripts` to your PATH environment variable
+* Install GCC and C/C++ compilers via [mingw](mingw-w64.org)
+* From the mingw Folder, add the `bin` Folder to your PATH environment variable
+* Install pycrypto for python3.4. Get one of the [pycrypto windows binaries](https://github.com/axper/python3-pycrypto-windows-installer), open the WinPython Control Panel, click "Add Packages", select the downloaded pycrypto installer, and click "Install packages"
+* now you can install our modified spock via
+`pip install -e -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev`
+* this should lead to a working MicroPsi with Theano and minecraft support.
+* install the optional packages with `pip install cherrypy pytest mock webtest`
+* run `python start_micropsi_server.py`
+
+
 Configuration
 -----
-* See `config.ini.template` for configuration options available in `config.ini`
+* See `config.default.ini` for configuration options.
+* Copy `config.default.ini` to `config.ini` to customize.
 
 
 Tests

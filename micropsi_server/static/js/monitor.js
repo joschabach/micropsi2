@@ -37,6 +37,8 @@ $(function(){
     var log_container = $('#logs');
 
     var fixed_position = null;
+    var showStepInLog = true;
+    var logs_to_add = [];
 
     init();
 
@@ -172,34 +174,48 @@ $(function(){
                 data.logs.logs[idx].logger = "agent";
             }
             logs.push(data.logs.logs[idx]);
+            logs_to_add.push(data.logs.logs[idx]);
+        }
+        if(!fixed_position){
+            addLoggerMessages(logs_to_add);
+            logs_to_add = [];
         }
         if(logs.length > viewProperties.max_log_entries){
             logs.splice(0, logs.length - viewProperties.max_log_entries);
         }
-        if(!fixed_position){
-            refreshLoggerView();
-        }
     }
 
     function refreshLoggerView(){
+        log_container.html('');
+        addLoggerMessages(logs);
+    }
+
+    function addLoggerMessages(data_to_add){
         var height = log_container.height();
         var scrollHeight = log_container[0].scrollHeight;
         var st = log_container.scrollTop();
         var doscroll = (st >= (scrollHeight - height));
         var html = '';
         var filter = $('#monitor_filter_logs').val().toLowerCase();
-        for(var idx in logs){
-            item = logs[idx];
+        var pad = String(currentSimulationStep).length;
+        var space = "               ";  // spaces for padding.
+        for(var idx in data_to_add){
+            item = data_to_add[idx];
             if(filter){
                 var check = (item.logger + item.msg + item.module+ item.function + item.level).toLowerCase();
                 if(check.indexOf(filter) > -1){
-                    html += '<span class="logentry log_'+item.level+'" data-step="'+(item.step||'')+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+                    html += '<span class="logentry log_'+item.level+'" data-step="'+(item.step||'')+'">'+
+                    ((showStepInLog && !isNaN(parseInt(item.step))) ? (space+item.step).slice(-pad) : (space).slice(-pad)) +
+                    (space + item.logger).slice(-8) +' | ' + item.msg + '</span>';
                 }
             } else {
-                html += '<span class="logentry log_'+item.level+'" data-step="'+(item.step||'')+'">'+("          " + item.logger).slice(-10)+' | ' + item.msg +'</span>';
+                html += '<span class="logentry log_'+item.level+'" data-step="'+(item.step||'')+'">'+
+                ((showStepInLog && !isNaN(parseInt(item.step))) ? (space+item.step).slice(-pad) : (space).slice(-pad)) +
+                (space + item.logger).slice(-8) +' | ' + item.msg + '</span>';
             }
         }
-        log_container.html(html);
+
+        log_container.append(html);
         if(doscroll){
             log_container.scrollTop(log_container[0].scrollHeight);
         }
@@ -225,6 +241,11 @@ $(function(){
             if(capturedLoggers[$(el).attr('data')]){
                 el.checked=true;
             }
+        });
+        $('#clear_logs').on('click', function(event){
+            event.preventDefault();
+            logs = [];
+            refreshLoggerView();
         });
     }
 

@@ -5,20 +5,19 @@ import pytest
 import logging
 
 
+testpath = os.path.join('.', 'test-data')
+
 try:
-    shutil.rmtree('/tmp/micropsi_tests/')
+    shutil.rmtree(testpath)
 except OSError:
     pass
 
-os.makedirs('/tmp/micropsi_tests/worlds')
-os.makedirs('/tmp/micropsi_tests/nodenets')
-
-
 # override config
 from configuration import config
-config['paths']['resource_path'] = '/tmp/micropsi_tests'
+config['paths']['resource_path'] = testpath
 config['paths']['server_settings_path'] = os.path.join(config['paths']['resource_path'], 'server_config.json')
 config['paths']['usermanager_path'] = os.path.join(config['paths']['resource_path'], 'user-db.json')
+config['micropsi2']['single_agent_mode'] = ''
 if 'theano' in config:
     config['theano']['initial_number_of_nodes'] = '50'
 
@@ -147,11 +146,23 @@ def test_nodenet(request, test_world, engine):
     if nn_uid not in nodenets:
         success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
         micropsi.save_nodenet(nn_uid)
+    if nn_uid not in micropsi.nodenets:
+        micropsi.load_nodenet(nn_uid)
     return nn_uid
 
 
 @pytest.fixture(scope="function")
 def node(request, test_nodenet):
-    res, uid = micropsi.add_node(test_nodenet, 'Pipe', [10, 10], name='N1')
+    res, uid = micropsi.add_node(test_nodenet, 'Pipe', [10, 10, 10], name='N1')
     micropsi.add_link(test_nodenet, uid, 'gen', uid, 'gen')
     return uid
+
+
+def pytest_internalerror(excrepr, excinfo):
+    """ called for internal errors. """
+    shutil.rmtree(config['paths']['resource_path'])
+
+
+def pytest_keyboard_interrupt(excinfo):
+    """ called for keyboard interrupt. """
+    shutil.rmtree(config['paths']['resource_path'])

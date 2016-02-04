@@ -101,7 +101,7 @@ def test_remove_monitor(fixed_nodenet):
 
 def test_remove_monitored_node(fixed_nodenet):
     uid = micropsi.add_gate_monitor(fixed_nodenet, 'n0001', 'gen', sheaf='default')
-    micropsi.delete_node(fixed_nodenet, 'n0001')
+    micropsi.delete_nodes(fixed_nodenet, ['n0001'])
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.export_monitor_data(fixed_nodenet)
     assert monitor[uid]['values'][1] is None
@@ -117,7 +117,7 @@ def test_remove_monitored_link(fixed_nodenet):
 
 def test_remove_monitored_link_via_delete_node(fixed_nodenet):
     uid = micropsi.add_link_monitor(fixed_nodenet, 'n0005', 'gen', 'n0003', 'gen', 'weight', 'Testmonitor')
-    micropsi.delete_node(fixed_nodenet, 'n0005')
+    micropsi.delete_nodes(fixed_nodenet, ['n0005'])
     micropsi.step_nodenet(fixed_nodenet)
     monitor = micropsi.export_monitor_data(fixed_nodenet)
     assert monitor[uid]['values'][1] is None

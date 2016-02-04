@@ -8,11 +8,19 @@ For more information on the cognitive architecture visit [micropsi.com](http://w
 Prerequisites
 -----
 * Python3
+* On Windows, we recommend downloading and installing [WinPython 3.4.3.7](http://winpython.github.io/)
 
 
-Run
+Run on OS X or Linux:
 -----
 * Run `./run.sh`
+* View in browser at [http://localhost:6543/](http://localhost:6543/)
+
+
+Run on Windows:
+-----
+* Add the winpython folders `python-3.4.3` and `python-3.4.3\Scripts` to your PATH environment variable
+* On the Windows command-line, "cd" to the microps2 folder and run `python start_micropsi_server.py`
 * View in browser at [http://localhost:6543/](http://localhost:6543/)
 
 

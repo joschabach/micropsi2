@@ -1,6 +1,6 @@
 __author__ = 'rvuine'
 
-from micropsi_core.nodenet.stepoperators import StepOperator, Propagate, Calculate
+from micropsi_core.nodenet.stepoperators import Propagate, Calculate
 
 
 class DictPropagate(Propagate):

@@ -11,17 +11,6 @@ class TheanoNodespace(Nodespace):
     """
 
     @property
-    def data(self):
-        data = {
-            "uid": self.uid,
-            "index": 0,
-            "name": self.name,
-            "position": self.position,
-            "parent_nodespace": self.parent_nodespace
-        }
-        return data
-
-    @property
     def uid(self):
         return nodespace_to_id(self._id, self._partition.pid)
 
@@ -35,13 +24,15 @@ class TheanoNodespace(Nodespace):
 
     @property
     def position(self):
-        return self._nodenet.positions.get(self.uid, (10,10))
+        return self._nodenet.positions.get(self.uid, [10, 10, 0])
 
     @position.setter
     def position(self, position):
         if position is None and self.uid in self._nodenet.positions:
             del self._nodenet.positions[self.uid]
         else:
+            position = list(position)
+            position = (position + [0] * 3)[:3]
             self._nodenet.positions[self.uid] = position
 
     @property
@@ -66,6 +57,10 @@ class TheanoNodespace(Nodespace):
                 return None
         else:
             return nodespace_to_id(parent_nodespace_id, self._partition.pid)
+
+    @property
+    def partition(self):
+        return self._partition
 
     def __init__(self, nodenet, partition, uid):
         self.__activators = {}

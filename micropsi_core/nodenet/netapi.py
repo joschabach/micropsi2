@@ -156,7 +156,7 @@ class NetAPI(object):
         """
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
-        pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
+        pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
         uid = self.__nodenet.create_node(nodetype, nodespace, pos, name)
         entity = self.__nodenet.get_node(uid)
@@ -171,7 +171,7 @@ class NetAPI(object):
         """
         if name is None:
             name = ""   # TODO: empty names crash the client right now, but really shouldn't
-        pos = (self.__nodenet.max_coords['x'] + 50, 100)  # default so native modules will not be bothered with positions
+        pos = [100, 100, 0]  # default so native modules will not be bothered with positions
 
         uid = self.__nodenet.create_nodespace(parent_nodespace, pos, name=name, options=options)
         entity = self.__nodenet.get_nodespace(uid)
@@ -337,7 +337,7 @@ class NetAPI(object):
             msg: a string to display to the user
         """
         self.__nodenet.user_prompt = {
-            'node': node.data,
+            'node': node.get_data(include_links=False),
             'msg': msg,
             'options': None
         }
@@ -366,7 +366,7 @@ class NetAPI(object):
             netapi.ask_user_for_parameter(node, "Please decide what to do next", options)
         """
         self.__nodenet.user_prompt = {
-            'node': node.data,
+            'node': node.get_data(),
             'msg': msg,
             'options': options
         }

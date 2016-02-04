@@ -736,8 +736,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
 
 
 @rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, world=world, monitors=monitors, dashboard=dashboard)
+def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("generate_uid")
@@ -1021,9 +1021,19 @@ def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
     return True, runtime.get_nodenet_data(nodenet_uid, nodespace, step, include_links)
 
 
+@rpc("get_nodespace_activations")
+def get_nodespace_activations(nodenet_uid, nodespace, last_call_step=-1):
+    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespace, last_call_step)
+
+
+@rpc("get_nodespace_changes")
+def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
+    return runtime.get_nodespace_changes(nodenet_uid, nodespace_uid, since_step)
+
+
 @rpc("get_node")
 def get_node(nodenet_uid, node_uid):
-    return True, runtime.get_node(nodenet_uid, node_uid)
+    return runtime.get_node(nodenet_uid, node_uid)
 
 
 @rpc("add_node", permission_required="manage nodenets")
@@ -1041,9 +1051,9 @@ def clone_nodes(nodenet_uid, node_uids, clone_mode="all", nodespace=None, offset
     return runtime.clone_nodes(nodenet_uid, node_uids, clone_mode, nodespace=nodespace, offset=offset)
 
 
-@rpc("set_node_position", permission_required="manage nodenets")
-def set_node_position(nodenet_uid, node_uid, position):
-    return runtime.set_node_position(nodenet_uid, node_uid, position)
+@rpc("set_entity_positions", permission_required="manage nodenets")
+def set_entity_positions(nodenet_uid, positions):
+    return runtime.set_entity_positions(nodenet_uid, positions)
 
 
 @rpc("set_node_name", permission_required="manage nodenets")
@@ -1051,9 +1061,9 @@ def set_node_name(nodenet_uid, node_uid, name):
     return runtime.set_node_name(nodenet_uid, node_uid, name)
 
 
-@rpc("delete_node", permission_required="manage nodenets")
-def delete_node(nodenet_uid, node_uid):
-    return runtime.delete_node(nodenet_uid, node_uid)
+@rpc("delete_nodes", permission_required="manage nodenets")
+def delete_nodes(nodenet_uid, node_uids):
+    return runtime.delete_nodes(nodenet_uid, node_uids)
 
 
 @rpc("delete_nodespace", permission_required="manage nodenets")

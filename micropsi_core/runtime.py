@@ -175,7 +175,10 @@ MicropsiRunner.last_world_exception = {}
 MicropsiRunner.last_nodenet_exception = {}
 
 
-def kill_runners(signal, frame):
+def kill_runners(signal=None, frame=None):
+    for uid in worlds:
+        if hasattr(worlds[uid], 'kill_minecraft_thread'):
+            worlds[uid].kill_minecraft_thread()
     runner['runner'].resume()
     runner['running'] = False
     runner['runner'].join()
@@ -263,10 +266,17 @@ def load_nodenet(nodenet_uid):
         world_uid = worldadapter = None
 
         nodenet_lock.acquire()
+
+        if cfg['micropsi2'].get('single_agent_mode'):
+            # unload all other nodenets if single_agent_mode is selected
+            for uid in list(nodenets.keys()):
+                if uid != nodenet_uid:
+                    unload_nodenet(uid)
+
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 
-            if data.world:
+            if hasattr(data, 'world') and data.world:
                 if data.world in worlds:
                     world_uid = data.world
                     worldadapter = data.get('worldadapter')
@@ -330,7 +340,17 @@ def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
     return data
 
 
-def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dashboard=None):
+def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
+    nodenet = get_nodenet(nodenet_uid)
+    with nodenet.netlock:
+        data = {
+            'activations': nodenet.get_activation_data(nodespace, rounded=1),
+            'has_changes': nodenet.has_nodespace_changes(nodespace, last_call_step)
+        }
+    return data
+
+
+def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?
     """
@@ -351,6 +371,14 @@ def get_current_state(nodenet_uid, nodenet=None, world=None, monitors=None, dash
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
             data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+        if nodenet_diff is not None:
+            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
+            data['nodenet_diff'] = {
+                'activations': activations['activations'],
+                'modulators': nodenet_obj.construct_modulators_dict()
+            }
+            if activations['has_changes']:
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
@@ -413,11 +441,11 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
-
     if template is not None and template in nodenet_data:
         load_nodenet(template)
-        data_to_merge = nodenets[template].data
+        data_to_merge = nodenets[template].export_json()
         data_to_merge.update(data)
+        load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
 
     nodenets[uid].save(filename)
@@ -556,7 +584,7 @@ def export_nodenet(nodenet_uid):
 
     Returns a string that contains the nodenet state in JSON format.
     """
-    return json.dumps(nodenets[nodenet_uid].data, sort_keys=True, indent=4)
+    return json.dumps(nodenets[nodenet_uid].export_json(), sort_keys=True, indent=4)
 
 
 def import_nodenet(string, owner=None):
@@ -625,12 +653,11 @@ def get_nodespace_list(nodenet_uid):
     return data
 
 
-def get_node(nodenet_uid, node_uid):
+def get_node(nodenet_uid, node_uid, include_links=True):
     """Returns a dictionary with all node parameters, if node exists, or None if it does not. The dict is
     structured as follows:
 
     {
-        "index" (int): index for auto-alignment,
         "uid" (str): unique identifier,
         "state" (dict): a dictionary of node states and their values,
         "type" (string): the type of this node,
@@ -640,12 +667,19 @@ def get_node(nodenet_uid, node_uid):
         "name" (str): display name
         "gate_activations" (dict): a dictionary containing dicts of activations for each gate of this node
         "gate_functions"(dict): a dictionary containing the name of the gatefunction for each gate of this node
-        "position" (list): the x, y coordinates of this node, as a list
+        "position" (list): the x, y, z coordinates of this node, as a list
         "sheaves" (dict): a dict of sheaf-activations for this node
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    return nodenets[nodenet_uid].get_node(node_uid).data
+    if nodenets[nodenet_uid].is_node(node_uid):
+        return True, nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
+    elif nodenets[nodenet_uid].is_nodespace(node_uid):
+        data = nodenets[nodenet_uid].get_nodespace(node_uid).get_data()
+        data['type'] = 'Nodespace'
+        return True, data
+    else:
+        return False, "Unknown UID"
 
 
 def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name="", parameters=None):
@@ -668,6 +702,7 @@ def add_node(nodenet_uid, type, pos, nodespace=None, state=None, uid=None, name=
     uid = nodenet.create_node(type, nodespace, pos, name, uid=uid, parameters=parameters)
     return True, uid
 
+
 def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=None):
     """Creates a new nodespace
     Arguments:
@@ -683,7 +718,7 @@ def add_nodespace(nodenet_uid, pos, nodespace=None, uid=None, name="", options=N
     return True, uid
 
 
-def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 50]):
+def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 50, 50]):
     """
     Clones a bunch of nodes. The nodes will get new unique node ids,
     a "copy" suffix to their name, and a slight positional offset.
@@ -697,56 +732,62 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
     If you however specify a nodespace, all clones will be copied to the given nodespace.
     """
 
+    offset = (offset + [0] * 3)[:3]
     nodenet = get_nodenet(nodenet_uid)
-    result = {'nodes': [], 'links': []}
+    result = {}
     copynodes = {uid: nodenet.get_node(uid) for uid in node_uids}
     copylinks = {}
+    followupnodes = []
     uidmap = {}
     if clonemode != 'none':
         for _, n in copynodes.items():
             for g in n.get_gate_types():
                 for link in n.get_gate(g).get_links():
                     if clonemode == 'all' or link.target_node.uid in copynodes:
-                        copylinks[link.uid] = link
+                        copylinks[link.signature] = link
             if clonemode == 'all':
                 for s in n.get_slot_types():
                     for link in n.get_slot(s).get_links():
-                        copylinks[link.uid] = link
+                        copylinks[link.signature] = link
+                        if link.source_node.uid not in copynodes:
+                            followupnodes.append(link.source_node.uid)
 
     for _, n in copynodes.items():
         target_nodespace = nodespace if nodespace is not None else n.parent_nodespace
-        uid = nodenet.create_node(n.type, target_nodespace, (n.position[0] + offset[0], n.position[1] + offset[1]), name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
+        uid = nodenet.create_node(n.type, target_nodespace, [n.position[0] + offset[0], n.position[1] + offset[1], n.position[2] + offset[2]], name=n.name + '_copy', uid=None, parameters=n.clone_parameters().copy(), gate_parameters=n.get_gate_parameters())
         if uid:
             uidmap[n.uid] = uid
-            result['nodes'].append(nodenet.get_node(uid).data)
         else:
             logger.warning('Could not clone node: ' + uid)
 
     for uid, l in copylinks.items():
         source_uid = uidmap.get(l.source_node.uid, l.source_node.uid)
         target_uid = uidmap.get(l.target_node.uid, l.target_node.uid)
-        success = nodenet.create_link(
+        nodenet.create_link(
             source_uid,
             l.source_gate.type,
             target_uid,
             l.target_slot.type,
             l.weight,
             l.certainty)
-        if success:
-            links = nodenet.get_node(source_uid).get_gate(l.source_gate.type).get_links()
-            link = None
-            for candidate in links:
-                if candidate.target_slot.type == l.target_slot.type and candidate.target_node.uid == target_uid:
-                    link = candidate
-                    break
-            result['links'].append(link.data)
-        else:
-            logger.warning('Could not duplicate link: ' + uid)
 
-    if len(result['nodes']) or len(nodes) == 0:
+    for uid in uidmap.values():
+        result[uid] = nodenet.get_node(uid).get_data(include_links=True)
+
+    for uid in followupnodes:
+        result[uid] = nodenet.get_node(uid).get_data(include_links=True)
+
+    if len(result.keys()) or len(nodes) == 0:
         return True, result
     else:
         return False, "Could not clone nodes. See log for details."
+
+
+def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
+    """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
+    Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
+    """
+    return nodenets[nodenet_uid].get_nodespace_changes(nodespace_uid, since_step)
 
 
 def __pythonify(name):
@@ -768,6 +809,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
     xpos = []
     ypos = []
+    zpos = []
     nodes = sorted(nodes, key=lambda node: node.position[1] * 1000 + node.position[0])
     nodespaces = sorted(nodespaces, key=lambda node: node.position[1] * 1000 + node.position[0])
 
@@ -785,6 +827,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         idmap[nodespace.uid] = varname
         xpos.append(node.position[0])
         ypos.append(node.position[1])
+        zpos.append(node.position[2])
 
     # nodes and gates
     for i, node in enumerate(nodes):
@@ -817,6 +860,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         idmap[node.uid] = varname
         xpos.append(node.position[0])
         ypos.append(node.position[1])
+        zpos.append(node.position[2])
 
     lines.append("")
 
@@ -881,24 +925,22 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     lines.append("")
 
     # positions
-    origin = (100, 100)
-    factor = (int(min(xpos)), int(min(ypos)))
+    origin = [100, 100, 100]
+    factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
     lines.append("origin_pos = (%d, %d)" % origin)
     for node in nodes + nodespaces:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])
-        lines.append("%s.position = (origin_pos[0] + %i, origin_pos[1] + %i)" % (idmap[node.uid], x, y))
+        z = int(node.position[2] - factor[2])
+        lines.append("%s.position = [origin_pos[0] + %i, origin_pos[1] + %i, origin_pos[2] + %i]" % (idmap[node.uid], x, y, z))
 
     return "\n".join(lines)
 
 
-def set_node_position(nodenet_uid, node_uid, pos):
-    """Positions the specified node at the given coordinates."""
+def set_entity_positions(nodenet_uid, positions):
+    """ Takes a dict with node_uids as keys and new positions for the nodes as values """
     nodenet = nodenets[nodenet_uid]
-    if nodenet.is_node(node_uid):
-        nodenet.get_node(node_uid).position = pos
-    elif nodenet.is_nodespace(node_uid):
-        nodenet.get_nodespace(node_uid).position = pos
+    nodenet.set_entity_positions(positions)
     return True
 
 
@@ -925,14 +967,14 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return True
 
 
-def delete_node(nodenet_uid, node_uid):
-    """Removes the node or node space"""
+def delete_nodes(nodenet_uid, node_uids):
+    """Removes the nodes with the given uids"""
     nodenet = nodenets[nodenet_uid]
     with nodenet.netlock:
-        if nodenet.is_node(node_uid):
-            nodenets[nodenet_uid].delete_node(node_uid)
-            return True
-        return False
+        for uid in node_uids:
+            if nodenet.is_node(uid):
+                nodenets[nodenet_uid].delete_node(uid)
+    return True
 
 
 def delete_nodespace(nodenet_uid, nodespace_uid):
@@ -1054,7 +1096,8 @@ def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, sl
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):
-    """ Returns a dict of links connected to the given nodes """
+    """ Returns a list of links connected to the given nodes,
+    and their connected nodes, if they are not in the same nodespace"""
     nodenet = nodenets[nodenet_uid]
     source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
@@ -1062,12 +1105,12 @@ def get_links_for_nodes(nodenet_uid, node_uids):
     for node in source_nodes:
         nodelinks = node.get_associated_links()
         for l in nodelinks:
-            links[l.uid] = l.data
+            links[l.signature] = l.get_data(complete=True)
             if l.source_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.source_node.uid] = l.source_node.data
+                nodes[l.source_node.uid] = l.source_node.get_data(include_links=False)
             if l.target_node.parent_nodespace != node.parent_nodespace:
-                nodes[l.target_node.uid] = l.target_node.data
-    return {'links': links, 'nodes': nodes}
+                nodes[l.target_node.uid] = l.target_node.get_data(include_links=False)
+    return {'links': list(links.values()), 'nodes': nodes}
 
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):

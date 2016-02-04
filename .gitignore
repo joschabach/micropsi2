@@ -16,6 +16,7 @@
 /include/
 /lib/
 .DS_Store
+/config.ini
 /.Python
 .coverage
 /htmlcov/
@@ -23,3 +24,4 @@
 /*.sublime-project
 /*.sublime-workspace
 micropsi.log
+/test-data/

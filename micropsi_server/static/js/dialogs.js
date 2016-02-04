@@ -639,7 +639,7 @@ $(function() {
 updateWorldAdapterSelector = function() {
     var option = $("#nn_world option:selected");
     if (option) {
-        $("#nn_worldadapter").load("/create_worldadapter_selector/"+option.val());
+        $("#nn_worldadapter").parent().load("/create_worldadapter_selector/"+option.val());
     }
 };
 

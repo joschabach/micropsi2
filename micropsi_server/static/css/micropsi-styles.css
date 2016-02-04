@@ -627,3 +627,7 @@ p.clear {
 .docstring {
   white-space: pre-line;
 }
+
+.hint.small {
+  font-size: 0.9em;
+}

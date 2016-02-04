@@ -28,7 +28,7 @@ OS X: Set up Theano-based theano_engine
 * When creating a new node net, you should now be able to chose theano_engine
 
 
-Windows: Set up theano_engine, Minecraft connectivity, and virtualenv
+Windows: Set up theano_engine and Minecraft connectivity with winpython
 -----
 Windows support for advanced features is experimental.
 * Install [WinPython 3.4.3.7](http://winpython.github.io/)

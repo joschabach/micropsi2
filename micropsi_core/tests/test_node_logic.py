@@ -22,9 +22,6 @@ class DummyWorld(World):
 
 class DummyWorldAdapter(WorldAdapter):
 
-    supported_datasources = ['test_source']
-    supported_datatargets = ['test_target']
-
     def __init__(self, world, uid=None, **data):
         WorldAdapter.__init__(self, world, uid=uid, **data)
         self.datasources = {'test_source': 0.7}

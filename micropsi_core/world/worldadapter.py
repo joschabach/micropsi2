@@ -29,16 +29,10 @@ class WorldAdapter(WorldObject):
     The agent writes activation values into data targets, and receives it from data sources. The world adapter
     takes care of translating between the world and these values at each world cycle.
     """
-    supported_datasources = []
-    supported_datatargets = []
 
     def __init__(self, world, uid=None, **data):
         self.datasources = {}
-        for key in self.supported_datasources:
-            self.datasources[key] = 0
         self.datatargets = {}
-        for key in self.supported_datatargets:
-            self.datatargets[key] = 0
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
         self.datasource_snapshots = {}
@@ -92,7 +86,7 @@ class WorldAdapter(WorldObject):
 
     def reset_datatargets(self):
         """ resets (zeros) the datatargets """
-        for datatarget in self.supported_datatargets:
+        for datatarget in self.datatargets:
             self.datatargets[datatarget] = 0
 
     def update_data_sources_and_targets(self):
@@ -106,8 +100,9 @@ class WorldAdapter(WorldObject):
 
 class Default(WorldAdapter):
 
-    supported_datasources = ['static_on', 'random', 'static_off']
-    supported_datatargets = ['echo']
+    def __init__(self, world, uid=None, **data):
+        self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
+        self.datatargets = {'echo': 0}
 
     def update_data_sources_and_targets(self):
         import random

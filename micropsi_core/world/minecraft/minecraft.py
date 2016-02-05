@@ -41,7 +41,7 @@ class Minecraft(World):
         'thread': None
     }
 
-    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1):
+    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1, config={}):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
         """

@@ -65,9 +65,23 @@ class World(object):
     def is_active(self, is_active):
         self.data['is_active'] = is_active
 
+    @staticmethod
+    def get_config_options():
+        """ Returns a list of configuration-options for this world.
+        Expected format:
+        [{
+            'name': 'param1',
+            'description': 'this is just an example',
+            'options': ['value1', 'value2'],
+            'default': 'value1'
+        }]
+        description, options and default are optional settings
+        """
+        return []
+
     supported_worldadapters = ['Default']
 
-    def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION):
+    def __init__(self, filename, world_type="", name="", owner="", uid=None, engine=None, version=WORLD_VERSION, config={}):
         """Create a new MicroPsi simulation environment.
 
         Arguments:
@@ -84,7 +98,8 @@ class World(object):
             "version": WORLD_VERSION,  # used to check compatibility of the world data
             "objects": {},
             "agents": {},
-            "current_step": 0
+            "current_step": 0,
+            "config": config
         }
 
         folder = self.__module__.split('.')

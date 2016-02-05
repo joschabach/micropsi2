@@ -200,6 +200,16 @@ def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     runtime.step_nodenet(test_nodenet)
     world.agents[test_nodenet].reset_datatargets.assert_called_once_with()
 
+
+def test_worlds_are_configurable():
+    res, uid = runtime.new_world('testworld', 'Island', config={'foo': 'bar', '42': '23'})
+    assert uid in runtime.worlds
+    assert runtime.worlds[uid].data['config']['foo'] == 'bar'
+    runtime.revert_world(uid)
+    assert runtime.worlds[uid].data['config']['foo'] == 'bar'
+    assert runtime.worlds[uid].data['config']['42'] == '23'
+
+
 """
 def test_get_world_view(micropsi, test_world):
     assert 0

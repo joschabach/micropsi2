@@ -88,7 +88,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner="", uid=None):
+def new_world(world_name, world_type, owner="", uid=None, config={}):
     """Creates a new world  and registers it.
 
     Arguments:
@@ -106,7 +106,7 @@ def new_world(world_name, world_type, owner="", uid=None):
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
                                                   version=1,
-                                                  owner=owner)
+                                                  owner=owner, config=config)
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
     try:
@@ -201,16 +201,7 @@ def get_world_class_from_name(world_type):
 
 
 def get_available_world_types():
-    """Returns the names of the available world types"""
+    """Returns a mapping of the available world type names to their classes"""
     import importlib
     from micropsi_core.world.world import World
-    return [cls.__name__ for cls in tools.itersubclasses(vars()['World'])]
-    for cls in tools.itersubclasses(World):
-        if 'minecraft' in cls.__name__.toLower():
-            try:
-                import spock
-            except:
-                # requirement not satisfied, ignore
-                continue
-        available_worlds.append(cls.__name__)
-    return available_worlds
+    return dict((cls.__name__, cls) for cls in tools.itersubclasses(vars()['World']))

@@ -1231,6 +1231,8 @@ def parse_definition(json, filename=None):
             result['world_type'] = json['world_type']
         if "settings" in json:
             result['settings'] = json['settings']
+        if "config" in json:
+            result['config'] = json['config']
         return Bunch(**result)
 
 

@@ -20,7 +20,7 @@
 $(function(){
     var adapters = {};
     %for name in worlds[world_uid].supported_worldadapters:
-    adapters["{{name}}"] = "{{worlds[world_uid].supported_worldadapters[name].__doc__ or ''}}";
+    adapters["{{name}}"] = "{{(worlds[world_uid].supported_worldadapters[name].__doc__ or '').replace('\n', ' ')}}";
     %end
     var el = $('#nn_worldadapter');
     var updateDescription = function(){

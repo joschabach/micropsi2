@@ -49,16 +49,18 @@ def get_world_properties(world_uid):
     return data
 
 
-def get_worldadapters(world_uid):
-    """Returns the world adapters available in the given world"""
-
+def get_worldadapters(world_uid, nodenet_uid=None):
+    """ Returns the world adapters available in the given world. Provide an optional nodenet_uid of an agent
+    in the given world to obtain datasources and datatargets for the agent's worldadapter"""
     data = {}
     if world_uid in micropsi_core.runtime.worlds:
-        for name, worldadapter in micropsi_core.runtime.worlds[world_uid].supported_worldadapters.items():
-            data[name] = {
-                'datasources': worldadapter.supported_datasources,
-                'datatargets': worldadapter.supported_datatargets
-            }
+        world = micropsi_core.runtime.worlds[world_uid]
+        for name, worldadapter in world.supported_worldadapters.items():
+            data[name] = {'description': worldadapter.__doc__}
+        if nodenet_uid and nodenet_uid in world.agents:
+            agent = world.agents[nodenet_uid]
+            data[agent.__class__.__name__]['datasources'] = sorted(agent.datasources.keys())
+            data[agent.__class__.__name__]['datatargets'] = sorted(agent.datatargets.keys())
     return data
 
 

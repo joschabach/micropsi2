@@ -182,7 +182,7 @@ function get_available_worlds(){
 function get_available_worldadapters(world_uid, callback){
     worldadapters = {};
     if(world_uid){
-        api.call("get_worldadapters", {world_uid: world_uid},
+        api.call("get_worldadapters", {world_uid: world_uid, nodenet_uid: currentNodenet},
             success=function(data){
                 worldadapters = data;
                 currentWorld = world_uid;
@@ -192,9 +192,7 @@ function get_available_worldadapters(world_uid, callback){
                 keys.sort();
                 for (var idx in keys){
                     name = keys[idx];
-                    worldadapters[name].datasources = worldadapters[name].datasources.sort();
-                    worldadapters[name].datatargets = worldadapters[name].datatargets.sort();
-                    str += '<option>'+name+'</option>';
+                    str += '<option title="'+worldadapters[name]['description']+'">'+name+'</option>';
                 }
                 $('#nodenet_worldadapter').html(str);
                 if(callback){

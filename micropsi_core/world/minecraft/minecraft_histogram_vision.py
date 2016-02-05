@@ -62,7 +62,6 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
             for j in range(self.num_fov):
                 name = "fov__%02d_%02d" % (i, j)
                 self.datasources[name] = 0.
-                MinecraftHistogramVision.supported_datasources.append(name)
 
         self.simulated_vision = False
         if 'simulate_vision' in cfg['minecraft']:

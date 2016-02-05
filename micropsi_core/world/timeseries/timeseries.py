@@ -38,7 +38,7 @@ class TimeSeries(World):
     @property
     def t(self):
         """current index into the original time series"""
-        return self.current_step % self.len_ts
+        return (self.current_step / 3) % self.len_ts
 
     @property
     def state(self):

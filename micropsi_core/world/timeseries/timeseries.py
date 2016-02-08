@@ -32,15 +32,17 @@ class TimeSeries(World):
             self.startdate = f['startdate']
             self.enddate = f['enddate']
 
-        z_transform = True # todo use the new configurable world options
+        self.shuffle = True # todo use the new configurable world options.
+        z_transform = True  # todo use the new configurable world options
+
         if z_transform:
             data_z = np.empty_like(self.timeseries)
             data_z[:] = np.nan
-            for i,row in enumerate(self.timeseries):
+            for i, row in enumerate(self.timeseries):
                 if not np.all(np.isnan(row)):
                     var = np.nanvar(row)
                     if var > 0:
-                        data_z[i,:] = (row-np.nanmean(row))/np.sqrt(var)
+                        data_z[i,:] = (row - np.nanmean(row)) / np.sqrt(var)
             self.timeseries = data_z
 
         self.len_ts = self.timeseries.shape[1]
@@ -48,13 +50,14 @@ class TimeSeries(World):
     # todo: option to use only a subset of the data (e.g. for training/test)
 
     @property
-    def t(self):
-        """current index into the original time series"""
-        return (self.current_step / 3) % self.len_ts
-
-    @property
     def state(self):
-        return self.timeseries[:, self.t]
+        t = (self.current_step - 1) % self.len_ts
+        if self.shuffle:
+            if t == 0:
+                idxs = np.arange(self.len_ts)
+                self.permutation = np.random.permutation(idxs)
+            t = self.permutation[t]
+        return self.timeseries[:, t]
 
 
 class TimeSeriesRunner(WorldAdapter):

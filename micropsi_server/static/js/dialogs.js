@@ -837,13 +837,13 @@ function stopNodenetrunner(event){
     });
 }
 
-function resetNodenet(event){
+function revertAll(event){
     event.preventDefault();
     nodenetRunning = false;
     if(currentNodenet){
         $('#loading').show();
         api.call(
-            'revert_nodenet',
+            'revert_simulation',
             {nodenet_uid: currentNodenet},
             function(){
                 window.location.reload();
@@ -857,7 +857,7 @@ function resetNodenet(event){
 $(function() {
     $('#nodenet_start').on('click', startNodenetrunner);
     $('#nodenet_stop').on('click', stopNodenetrunner);
-    $('#nodenet_reset').on('click', resetNodenet);
+    $('#revert_all').on('click', revertAll);
     $('#nodenet_step_forward').on('click', stepNodenet);
 });
 

@@ -322,6 +322,10 @@ class World(object):
             return True
         return False
 
+    def __del__(self):
+        """Empty destructor"""
+        pass
+
 
 # imports of individual world types:
 try:

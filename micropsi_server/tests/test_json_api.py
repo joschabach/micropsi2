@@ -277,6 +277,20 @@ def test_revert_nodenet(app, test_nodenet, test_world):
     assert data['worldadapter'] is None
 
 
+def test_revert_both(app, test_nodenet, test_world):
+    app.set_auth()
+    app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Braitenberg", world_uid=test_world))
+    for i in range(5):
+        app.get_json('/rpc/step_simulation(nodenet_uid="%s")' % test_nodenet)
+    res = app.get_json('/rpc/get_current_state(nodenet_uid="%s")' % test_nodenet)
+    assert res.json_body['data']['current_nodenet_step'] > 0
+    assert res.json_body['data']['current_world_step'] > 0
+    app.get_json('/rpc/revert_simulation(nodenet_uid="%s")' % test_nodenet)
+    res = app.get_json('/rpc/get_current_state(nodenet_uid="%s")' % test_nodenet)
+    assert res.json_body['data']['current_nodenet_step'] == 0
+    assert res.json_body['data']['current_world_step'] == 0
+
+
 def test_save_nodenet(app, test_nodenet, test_world):
     app.set_auth()
     response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, nodenet_name="new_name", worldadapter="Braitenberg", world_uid=test_world))

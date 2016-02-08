@@ -159,6 +159,9 @@ def set_world_properties(world_uid, world_name=None, owner=None):
 def revert_world(world_uid):
     """Reverts the world to the last saved state."""
     data = micropsi_core.runtime.world_data[world_uid]
+    if world_uid in micropsi_core.runtime.worlds:
+        micropsi_core.runtime.worlds[world_uid].__del__()
+        del micropsi_core.runtime.worlds[world_uid]
     micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
     return True
 

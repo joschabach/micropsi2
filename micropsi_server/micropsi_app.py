@@ -827,6 +827,11 @@ def step_simulation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 
+@rpc("revert_simulation", permission_required="manage nodenets")
+def revert_simulation(nodenet_uid):
+    return runtime.revert_nodenet(nodenet_uid, True)
+
+
 @rpc("revert_nodenet", permission_required="manage nodenets")
 def revert_nodenet(nodenet_uid):
     return runtime.revert_nodenet(nodenet_uid)

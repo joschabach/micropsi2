@@ -1,12 +1,12 @@
 from threading import Thread
 
+from spock import plugins as spockplugins
 from spock.client import Client
-from spock.plugins import DefaultPlugins
 from spock.plugins.core.event import EventPlugin
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
-from spock.plugins.helpers.world import WorldPlugin
 from spock.plugins.helpers.reconnect import ReConnectPlugin
+from spock.plugins.helpers.world import WorldPlugin
 
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
@@ -35,24 +35,21 @@ class Minecraft(World):
         'y': 256,
     }
 
-    # thread and spock only exist once
-    instances = {
-        'spock': None,
-        'thread': None
-    }
-
     def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1, config={}):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
         """
         from micropsi_core.runtime import add_signal_handler
 
+        self.instances = {
+            'spock': None,
+            'thread': None
+        }
         # do spock things first, then initialize micropsi world because the latter requires self.spockplugin
-
         # register all necessary spock plugins
         # DefaultPlugins contain EventPlugin, NetPlugin, TimerPlugin, AuthPlugin,
         # ThreadPoolPlugin, StartPlugin and KeepalivePlugin
-        plugins = DefaultPlugins
+        plugins = spockplugins.DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
         plugins.append(WorldPlugin)
@@ -127,9 +124,16 @@ class Minecraft(World):
     def kill_minecraft_thread(self, *args):
         """
         """
-        self.spockplugin.event.kill()
-        self.instances['thread'].join()
+        if hasattr(self, 'spockplugin'):
+            self.spockplugin.event.kill()
+            self.instances['thread'].join()
         # self.spockplugin.threadpool.shutdown(False)
+
+    def __del__(self):
+        from importlib import reload
+        self.kill_minecraft_thread()
+        reload(spockplugins)
+
 
 
 class Minecraft2D(Minecraft):

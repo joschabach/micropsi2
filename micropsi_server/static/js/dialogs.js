@@ -106,6 +106,13 @@ var dialogs = {
                 } else {
                     dialogs.setModalForm(data, callback);
                 }
+            },
+            error: function(data, param1){
+                if(data.status == 500){
+                    $('body').html(data.responseText);
+                } else {
+                    dialogs.notification(data.statusText, "error");
+                }
             }
         });
     },

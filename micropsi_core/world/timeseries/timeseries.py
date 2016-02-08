@@ -31,6 +31,18 @@ class TimeSeries(World):
             self.ids = f['ids']
             self.startdate = f['startdate']
             self.enddate = f['enddate']
+
+        z_transform = True # todo use the new configurable world options
+        if z_transform:
+            data_z = np.empty_like(self.timeseries)
+            data_z[:] = np.nan
+            for i,row in enumerate(self.timeseries):
+                if not np.all(np.isnan(row)):
+                    var = np.nanvar(row)
+                    if var > 0:
+                        data_z[i,:] = (row-np.nanmean(row))/np.sqrt(var)
+            self.timeseries = data_z
+
         self.len_ts = self.timeseries.shape[1]
 
     # todo: option to use only a subset of the data (e.g. for training/test)

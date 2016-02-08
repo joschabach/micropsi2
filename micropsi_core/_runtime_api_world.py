@@ -103,6 +103,11 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
     if uid is None:
         uid = tools.generate_uid()
 
+    if world_type.startswith('Minecraft'):
+        for uid in micropsi_core.runtime.worlds:
+            if micropsi_core.runtime.worlds[uid].__class__.__name__.startswith('Minecraft'):
+                raise RuntimeError("Only one instance of a minecraft world is supported right now")
+
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
                                                   version=1,

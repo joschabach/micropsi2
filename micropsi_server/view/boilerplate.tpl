@@ -43,11 +43,11 @@
 <body oncontextmenu="return false">
 <div class="container-fluid" xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
 
-%include
+{{!base}}
 
 </div>
 
-%include dialogs.tpl
+%include("dialogs.tpl")
 
 </body>
 </html>

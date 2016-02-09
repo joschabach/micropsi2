@@ -26,6 +26,7 @@ class TimeSeries(World):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         path = os.path.join(cfg['micropsi2']['data_directory'], 'timeseries.npz')
         print("loading timeseries from", path, "for world", uid)
+
         with np.load(path) as f:
             self.timeseries = f['data']
             self.ids = f['ids']
@@ -33,10 +34,11 @@ class TimeSeries(World):
             self.enddate = f['enddate']
 
         # todo use the new configurable world options.
-        self.shuffle = True  # randomize order of presentation
+        dummydata = False # present the same random pattern in each step.
         z_transform = True  # for each ID, center on mean & normalize by standard deviation
         clip_and_scale = False # for each ID, center on mean & clip to 4 standard deviations and rescale to [0,1].
         sigmoid = True # for each ID, z-transform and apply a sigmoid activation function
+        self.shuffle = True  # randomize order of presentation
         assert(not (clip_and_scale and sigmoid))
 
         def sigm(X):
@@ -48,7 +50,7 @@ class TimeSeries(World):
             return 1. / (1. + np.exp(-X))
 
 
-        if z_transform or clip_and_scale or sigmoid:
+        if (z_transform or clip_and_scale or sigmoid) and not dummydata:
             data_z = np.empty_like(self.timeseries)
             data_z[:] = np.nan
             pstds = []
@@ -66,7 +68,12 @@ class TimeSeries(World):
                             row_z = ((row_z / pstd) + 1) * 0.5
                         data_z[i,:] = row_z
             self.timeseries = data_z if not sigmoid else sigm(data_z)
-            # import ipdb; ipdb.set_trace()
+
+        if dummydata:
+            print("! Using dummy data")
+            n_ids = self.timeseries.shape[0]
+            self.timeseries = np.tile(np.random.rand(n_ids,1),(1,10))
+
         self.len_ts = self.timeseries.shape[1]
 
     # todo: option to use only a subset of the data (e.g. for training/test)

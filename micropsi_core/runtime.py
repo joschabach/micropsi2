@@ -1267,37 +1267,51 @@ def init_worlds(world_data):
     return worlds
 
 
-def load_user_files(do_reload=False):
-    # see if we have additional nodetypes defined by the user.
-    import sys
+def load_user_files(path=RESOURCE_PATH, reload_nodefunctions=False):
+    global native_modules, custom_recipes
+    for f in os.listdir(path):
+        if not f.startswith('.') and f != '__pycache__':
+            abspath = os.path.join(path, f)
+            if os.path.isdir(abspath):
+                load_user_files(abspath)
+            elif f == 'nodetypes.json':
+                parse_native_module_file(abspath)
+            elif f == 'recipes.py':
+                parse_recipe_file(abspath, reload_nodefunctions)
+            elif f == 'nodefunctions.py' and reload_nodefunctions:
+                reload_nodefunctions_file(abspath)
+
+
+def parse_native_module_file(path):
     global native_modules
-    native_modules = {}
-    custom_nodetype_file = os.path.join(RESOURCE_PATH, 'nodetypes.json')
-    if os.path.isfile(custom_nodetype_file):
-        try:
-            with open(custom_nodetype_file) as fp:
-                native_modules = json.load(fp)
-        except ValueError:
-            logging.getLogger('system').warn("Nodetype data in %s not well-formed." % custom_nodetype_file)
+    try:
+        with open(path) as fp:
+            modules = json.load(fp)
+            diffpath = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+            for key in modules:
+                modules[key]['path'] = diffpath
+                if key in native_modules:
+                    logging.getLogger("system").warn("Native module names must be unique. %s is not." % key)
+                native_modules[key] = modules[key]
+                sys.path.append(path)
+    except ValueError:
+        logging.getLogger('system').warn("Nodetype data in %s not well-formed." % path)
 
-    sys.path.append(RESOURCE_PATH)
-    parse_recipe_file()
-    return native_modules
 
-
-def parse_recipe_file():
-    custom_recipe_file = os.path.join(RESOURCE_PATH, 'recipes.py')
-    if not os.path.isfile(custom_recipe_file):
-        return
-
+def parse_recipe_file(path, reload=False):
+    global custom_recipes
     import importlib.machinery
     import inspect
-    global custom_recipes
 
-    loader = importlib.machinery.SourceFileLoader("recipes", custom_recipe_file)
+    diffpath = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    loader = importlib.machinery.SourceFileLoader("recipes", path)
     recipes = loader.load_module()
     # import recipes
-    custom_recipes = {}
+    all_modules = inspect.getmembers(recipes, inspect.ismodule)
+    for name, module in all_modules:
+        if module.__file__.startswith(RESOURCE_PATH):
+            loader = importlib.machinery.SourceFileLoader(name, module.__file__)
+            loader.load_module()
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
         argspec = inspect.getargspec(func)
@@ -1314,33 +1328,40 @@ def parse_recipe_file():
                 'name': arg,
                 'default': default
             })
+        if name in custom_recipes:
+            logging.getLogger("system").warn("Recipe function names must be unique. %s is not." % name)
         custom_recipes[name] = {
             'name': name,
             'parameters': params,
             'function': func,
-            'docstring': inspect.getdoc(func)
+            'docstring': inspect.getdoc(func),
+            'path': diffpath
         }
+
+
+def reload_nodefunctions_file(path):
+    import importlib
+    import inspect
+
+    loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
+    nodefuncs = loader.load_module()
+    for name, module in inspect.getmembers(nodefuncs, inspect.ismodule):
+        if module.__file__.startswith(RESOURCE_PATH):
+            loader = importlib.machinery.SourceFileLoader(name, module.__file__)
+            loader.load_module()
 
 
 def reload_native_modules():
     # stop nodenets, save state
+    global native_modules, custom_recipes
+    native_modules = {}
+    custom_recipes = {}
     runners = {}
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    load_user_files(True)
-    import importlib
-    import inspect
-    custom_nodefunctions_file = os.path.join(RESOURCE_PATH, 'nodefunctions.py')
-    if os.path.isfile(custom_nodefunctions_file):
-        loader = importlib.machinery.SourceFileLoader("nodefunctions", custom_nodefunctions_file)
-        nodefuncs = loader.load_module()
-        for key, obj in inspect.getmembers(nodefuncs):
-            if inspect.ismodule(obj):
-                if obj.__file__.startswith(RESOURCE_PATH):
-                    loader = importlib.machinery.SourceFileLoader(key, obj.__file__)
-                    loader.load_module()
+    load_user_files(reload_nodefunctions=True)
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets
@@ -1348,6 +1369,8 @@ def reload_native_modules():
         nodenets[uid].is_active = True
     return True
 
+native_modules = {}
+custom_recipes = {}
 
 load_definitions()
 init_worlds(world_data)

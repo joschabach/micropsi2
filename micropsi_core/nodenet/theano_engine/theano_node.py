@@ -262,15 +262,23 @@ class TheanoNode(Node):
                 self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
         elif self.type == "Actor" and parameter == "datatarget":
-            if self.uid in self._nodenet.inverted_actuator_map:
-                olddatatarget = self._nodenet.inverted_actuator_map[self.uid]     # first, clear old data target association
-                if self.uid in self._nodenet.actuatormap.get(olddatatarget, []):
-                    self._nodenet.actuatormap.get(olddatatarget, []).remove(self.uid)
+            if value is not None and value != "":
+                actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
+                old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
 
-            connectedactuators = self._nodenet.actuatormap.get(value, [])       # then, set the new one
-            connectedactuators.append(self.uid)
-            self._nodenet.actuatormap[value] = connectedactuators
-            self._nodenet.inverted_actuator_map[self.uid] = value
+                self._partition.actuator_indices[old_datatarget_index] = 0
+                datatarget_index = self._nodenet.worldadapter_instance.get_available_datatargets().index(value)
+
+                if self._partition.actuator_indices[datatarget_index] != actuator_element and \
+                        self._partition.actuator_indices[datatarget_index] > 0:
+
+                    other_actuator_element = self._partition.actuator_indices[datatarget_index]
+                    other_actuator_id = node_to_id(self._partition.allocated_elements_to_nodes[other_actuator_element], self._partition.pid)
+
+                    self.logger.warn("Datatarget %s had already been assigned to actuator %s, which will now be unassigned." % (value, other_actuator_id))
+
+                self._nodenet.actuatormap[value] = self.uid
+                self._partition.actuator_indices[datatarget_index] = actuator_element
         elif self.type == "Activator" and parameter == "type":
             if value != "sampling":
                 self._nodenet.set_nodespace_gatetype_activator(self.parent_nodespace, value, self.uid)
@@ -306,7 +314,12 @@ class TheanoNode(Node):
             else:
                 parameters['datasource'] = self._nodenet.worldadapter_instance.get_available_datasources()[datasource_index]
         elif self.type == "Actor":
-            parameters['datatarget'] = self._nodenet.inverted_actuator_map.get(self.uid, None)
+            actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
+            datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
+            if len(datatarget_index) == 0:
+                parameters['datatarget'] = None
+            else:
+                parameters['datatarget'] = self._nodenet.worldadapter_instance.get_available_datatargets()[datatarget_index]
         elif self.type == "Activator":
             activator_type = None
             if self._id in self._partition.allocated_nodespaces_por_activators:

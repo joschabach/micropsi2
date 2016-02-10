@@ -238,6 +238,7 @@ class TheanoPartition():
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
         self.sensor_indices = np.zeros(0, dtype=np.int32)
+        self.actuator_indices = np.zeros(0, dtype=np.int32)
 
         self.inlinks = {}
 
@@ -1434,6 +1435,10 @@ class TheanoPartition():
         if type == SENSOR:
             sensor_index = np.where(self.sensor_indices == node_id)[0]
             self.sensor_indices[sensor_index] = 0
+
+        if type == ACTUATOR:
+            actuator_index = np.where(self.actuator_indices == node_id)[0]
+            self.actuator_indices[actuator_index] = 0
 
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)

@@ -249,6 +249,10 @@ class TheanoNode(Node):
                 old_datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
 
                 self._partition.sensor_indices[old_datasource_index] = 0
+                if value not in self._nodenet.worldadapter_instance.get_available_datasources():
+                    self.logger.warn("Datasource %s not known in world adapter %s, will not be assigned." % (value, self._nodenet.worldadapter))
+                    return
+
                 datasource_index = self._nodenet.worldadapter_instance.get_available_datasources().index(value)
 
                 if self._partition.sensor_indices[datasource_index] != sensor_element and \
@@ -267,6 +271,10 @@ class TheanoNode(Node):
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
 
                 self._partition.actuator_indices[old_datatarget_index] = 0
+                if value not in self._nodenet.worldadapter_instance.get_available_datatargets():
+                    self.logger.warn("Datatarget %s not known in world adapter %s, whill not be assigned." % (value, self._nodenet.worldadapter))
+                    return
+
                 datatarget_index = self._nodenet.worldadapter_instance.get_available_datatargets().index(value)
 
                 if self._partition.actuator_indices[datatarget_index] != actuator_element and \

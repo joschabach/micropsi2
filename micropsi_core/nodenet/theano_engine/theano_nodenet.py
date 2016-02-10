@@ -187,29 +187,13 @@ class TheanoNodenet(Nodenet):
                 if not isinstance(node_id, str):
                     node_id = node_id[0]
                 if self.get_partition(node_id) == partition:
-                    actuator_element = partition.allocated_node_offsets[node_from_id(node_id)] + GEN
-                    datatarget_index = _worldadapter_instance.get_available_datatargets().index(datatarget)
-
-                    if partition.sensor_indices[datatarget_index] != sensor_element and partition.sensor_indices[datatarget_index] > 0:
-                        other_actuator_element = partition.actuator_indices[datatarget_index]
-                        other_actuator_id = node_to_id(partition.allocated_elements_to_nodes[other_actuator_element], partition.pid)
-                        self.logger.warn("Datatarget %s had already been assigned to actuator %s, which will now be unassigned." % (datatarget, other_actuator_id))
-
-                partition.actuator_indices[datatarget_index] = actuator_element
+                    self.get_node(node_id).set_parameter("datatarget", datatarget)
 
             for datasource, node_id in self.sensormap.items():
                 if not isinstance(node_id, str):
                     node_id = node_id[0]
                 if self.get_partition(node_id) == partition:
-                    sensor_element = partition.allocated_node_offsets[node_from_id(node_id)] + GEN
-                    datasource_index = _worldadapter_instance.get_available_datasources().index(datasource)
-
-                    if partition.sensor_indices[datasource_index] != sensor_element and partition.sensor_indices[datasource_index] > 0:
-                        other_sensor_element = partition.sensor_indices[datasource_index]
-                        other_sensor_id = node_to_id(partition.allocated_elements_to_nodes[other_sensor_element], partition.pid)
-                        self.logger.warn("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (datasource, other_sensor_id))
-
-                partition.sensor_indices[datasource_index] = sensor_element
+                    self.get_node(node_id).set_parameter("datasource", datasource)
 
     @property
     def current_step(self):

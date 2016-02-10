@@ -99,7 +99,9 @@ class WorldAdapter(WorldObject):
 
 
 class Default(WorldAdapter):
-
+    """
+    The default world adapter
+    """
     def __init__(self, world, uid=None, **data):
         self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
         self.datatargets = {'echo': 0}
@@ -110,3 +112,70 @@ class Default(WorldAdapter):
             self.datatarget_feedback['echo'] = self.datatargets['echo']
         self.datasources['static_on'] = 1
         self.datasources['random'] = random.uniform(0, 1)
+
+
+class BlippingWorldAdapter(WorldAdapter):
+    """
+    The BlippingWorldAdapter base class allows to avoid python dictionaries and loops for transmitting values
+    to nodenet engines.
+    Engines that bulk-query values, such as the theano_engine, will be faster.
+    Numpy arrays can be passed directly into the engine.
+    """
+    def __init__(self, world, uid=None, **data):
+        self.datasource_values = []
+        self.datatarget_values = []
+        self.datatarget_feedback_values = []
+
+    def get_datasource_value(self, key):
+        """allows the agent to read a value from a datasource"""
+        index = self.get_available_datasources().index(key)
+        return self.datasource_values[index]
+
+    def get_datasource_values(self):
+        """allows the agent to read all datasource values"""
+        return self.datasource_values
+
+    def add_to_datatarget(self, key, value):
+        """allows the agent to write a value to a datatarget"""
+        index = self.get_available_datasources().index(key)
+        self.datatarget_values[index] += value
+
+    def get_datatarget_feedback_value(self, key):
+        """get feedback whether the actor-induced action succeeded"""
+        index = self.get_available_datatargets().index(key)
+        return self.datatarget_feedback_values[index]
+
+    def get_datatarget_feedback_values(self):
+        """allows the agent to read all datasource values"""
+        return self.datatarget_feedback_values
+
+    def set_datatarget_feedback(self, key, value):
+        """set feedback for the given datatarget"""
+        index = self.get_available_datatargets().index(key)
+        self.datatarget_feedback_values[index] = value
+
+    def get_available_datasources(self):
+        """
+        must be implemented by the concrete world adapater and return a list of datasource name strings,
+        in the same order as values returned by get_datasource_values()
+        """
+        pass
+
+    def get_available_datatargets(self):
+        """
+        must be implemented by the concrete world adapater and return a list of datatarget name strings,
+        in the same order as values returned by get_datatarget_feedback_values()
+        """
+        pass
+
+    def update_data_sources_and_targets(self):
+        """
+        must be implemented by concrete world adapters to read and set the following arrays:
+        datasource_values
+        datatarget_values
+        datatarget_feedback_values
+
+        Arrays sizes need to be equal to the corresponding dict objects.
+        The values of the dict objects will be bypassed and ignored.
+        """
+        pass

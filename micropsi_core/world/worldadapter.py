@@ -66,6 +66,10 @@ class WorldAdapter(WorldObject):
         """allows the agent to read a value from a datasource"""
         return self.datasource_snapshots.get(key)
 
+    def get_datasources(self):
+        """allows the agent to read all datasource values"""
+        return [float(x) for x in self.datasource_snapshots.values()]
+
     def add_to_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:

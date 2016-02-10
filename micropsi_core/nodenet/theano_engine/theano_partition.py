@@ -237,6 +237,12 @@ class TheanoPartition():
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
+        # this should really be len(self.nodenet.worldadapter_instance.get_available_datasources())
+        # instead of self.NoE (which is the most pessimistic assumption: all elements are sensors)
+        # worldadapter instances are very unreliable buggers however, and you never know when they're there
+        # TODO: fix this to len(available_datasources)
+        self.sensor_indices = np.zeros(self.NoE, dtype=np.int32)
+
         self.inlinks = {}
 
         self.deleted_items = {}

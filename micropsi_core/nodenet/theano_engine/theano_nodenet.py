@@ -167,6 +167,16 @@ class TheanoNodenet(Nodenet):
         return "theano_engine"
 
     @property
+    def worldadapter_instance(self):
+        return self._worldadapter_instance
+
+    @worldadapter_instance.setter
+    def worldadapter_instance(self, _worldadapter_instance):
+        self._worldadapter_instance = _worldadapter_instance
+        for partition in self.partitions.values():
+            partition.sensor_indices = np.zeros(len(_worldadapter_instance.get_available_datasources()), np.int32)
+
+    @property
     def current_step(self):
         return self._step
 

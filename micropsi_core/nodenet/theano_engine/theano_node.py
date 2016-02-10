@@ -247,8 +247,18 @@ class TheanoNode(Node):
             if value is not None and value != "":
                 sensor_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
+
                 self._partition.sensor_indices[old_datasource_index] = 0
                 datasource_index = self._nodenet.worldadapter_instance.get_available_datasources().index(value)
+
+                if self._partition.sensor_indices[datasource_index] != sensor_element and \
+                        self._partition.sensor_indices[datasource_index] > 0:
+
+                    other_sensor_element = self._partition.sensor_indices[datasource_index]
+                    other_sensor_id = node_to_id(self._partition.allocated_elements_to_nodes[other_sensor_element], self._partition.pid)
+
+                    self.logger.warn("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (value, other_sensor_id))
+
                 self._partition.sensor_indices[datasource_index] = sensor_element
         elif self.type == "Actor" and parameter == "datatarget":
             if self.uid in self._nodenet.inverted_actuator_map:
@@ -288,10 +298,12 @@ class TheanoNode(Node):
     def clone_parameters(self):
         parameters = {}
         if self.type == "Sensor":
-            #parameters['datasource'] = self._nodenet.inverted_sensor_map.get(self.uid, None)
             sensor_element = self._partition.allocated_node_offsets[self._id] + GEN
             datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
-            parameters['datasource'] = self._nodenet.worldadapter_instance.get_available_datasources()[datasource_index]
+            if len(datasource_index) == 0:
+                parameters['datasource'] = None
+            else:
+                parameters['datasource'] = self._nodenet.worldadapter_instance.get_available_datasources()[datasource_index]
         elif self.type == "Actor":
             parameters['datatarget'] = self._nodenet.inverted_actuator_map.get(self.uid, None)
         elif self.type == "Activator":

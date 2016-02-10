@@ -35,9 +35,7 @@ class WorldAdapter(WorldObject):
         self.datatargets = {}
         self.datatarget_feedback = {}
         self.datasource_lock = Lock()
-        self.datasource_snapshots = {}
         WorldObject.__init__(self, world, category='agents', uid=uid, **data)
-        self.snapshot()
 
     def initialize_worldobject(self, data):
         for key in self.datasources:
@@ -48,12 +46,6 @@ class WorldAdapter(WorldObject):
                 self.datatargets[key] = data['datatargets'][key]
                 self.datatarget_feedback[key] = 0
 
-    # agent facing methods:
-    def snapshot(self):
-        """called by the agent every netstep to create a consistent set of sensory input"""
-        with self.datasource_lock:
-            self.datasource_snapshots = self.datasources.copy()
-
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
         return list(self.datasources.keys())
@@ -62,22 +54,26 @@ class WorldAdapter(WorldObject):
         """returns a list of identifiers of the datatargets available for this world adapter"""
         return list(self.datatargets.keys())
 
-    def get_datasource(self, key):
+    def get_datasource_value(self, key):
         """allows the agent to read a value from a datasource"""
-        return self.datasource_snapshots.get(key)
+        return self.datasources.get(key)
 
-    def get_datasources(self):
+    def get_datasource_values(self):
         """allows the agent to read all datasource values"""
-        return [float(x) for x in self.datasource_snapshots.values()]
+        return [float(x) for x in self.datasources.values()]
 
     def add_to_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:
             self.datatargets[key] += value
 
-    def get_datatarget_feedback(self, key):
+    def get_datatarget_feedback_value(self, key):
         """get feedback whether the actor-induced action succeeded"""
         return self.datatarget_feedback.get(key, 0)
+
+    def get_datatarget_feedback_values(self):
+        """allows the agent to read all datasource values"""
+        return [float(x) for x in self.datatarget_feedback.values()]
 
     def set_datatarget_feedback(self, key, value):
         """set feedback for the given datatarget"""

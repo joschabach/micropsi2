@@ -471,9 +471,6 @@ class DictNodenet(Nodenet):
 
     def step(self):
         """perform a simulation step"""
-        if self.worldadapter_instance:
-            self.worldadapter_instance.snapshot()
-
         with self.netlock:
 
             self._step += 1

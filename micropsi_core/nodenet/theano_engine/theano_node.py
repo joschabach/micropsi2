@@ -259,6 +259,7 @@ class TheanoNode(Node):
 
                     self.logger.warn("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (value, other_sensor_id))
 
+                self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
         elif self.type == "Actor" and parameter == "datatarget":
             if self.uid in self._nodenet.inverted_actuator_map:

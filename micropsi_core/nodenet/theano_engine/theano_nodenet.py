@@ -176,6 +176,21 @@ class TheanoNodenet(Nodenet):
         for partition in self.partitions.values():
             partition.sensor_indices = np.zeros(len(_worldadapter_instance.get_available_datasources()), np.int32)
 
+            for datasource, node_id in self.sensormap.items():
+                if not isinstance(node_id, str):
+                    node_id = node_id[0]
+                if self.get_partition(node_id) == partition:
+                    sensor_element = partition.allocated_node_offsets[node_from_id(node_id)] + GEN
+                    datasource_index = _worldadapter_instance.get_available_datasources().index(datasource)
+
+                    if partition.sensor_indices[datasource_index] != sensor_element and partition.sensor_indices[datasource_index] > 0:
+                        other_sensor_element = partition.sensor_indices[datasource_index]
+                        other_sensor_id = node_to_id(partition.allocated_elements_to_nodes[other_sensor_element], partition.pid)
+                        self.logger.warn("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (datasource, other_sensor_id))
+
+                partition.sensor_indices[datasource_index] = sensor_element
+
+
     @property
     def current_step(self):
         return self._step
@@ -189,10 +204,7 @@ class TheanoNodenet(Nodenet):
         self.names = {}
 
         # map of data sources to string node IDs
-        #self.sensormap = {}
-
-        # map of string node IDs to data sources
-        #self.inverted_sensor_map = {}
+        self.sensormap = {}
 
         # map of data targets to string node IDs
         self.actuatormap = {}
@@ -319,7 +331,7 @@ class TheanoNodenet(Nodenet):
             metadata['positions'] = self.positions
             metadata['names'] = self.names
             metadata['actuatormap'] = self.actuatormap
-            #metadata['sensormap'] = self.sensormap
+            metadata['sensormap'] = self.sensormap
             metadata['nodes'] = self.construct_native_modules_and_comments_dict()
             metadata['monitors'] = self.construct_monitors_dict()
             metadata['modulators'] = self.construct_modulators_dict()
@@ -369,9 +381,6 @@ class TheanoNodenet(Nodenet):
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
 
-            #for sensor, id_list in self.sensormap.items():
-            #    for id in id_list:
-            #        self.inverted_sensor_map[id] = sensor
             for actuator, id_list in self.actuatormap.items():
                 for id in id_list:
                     self.inverted_actuator_map[id] = actuator
@@ -408,8 +417,8 @@ class TheanoNodenet(Nodenet):
                     self.positions[key] = (self.positions[key] + [0] * 3)[:3]
             if 'actuatormap' in initfrom:
                 self.actuatormap = initfrom['actuatormap']
-            #if 'sensormap' in initfrom:
-            #    self.sensormap = initfrom['sensormap']
+            if 'sensormap' in initfrom:
+                self.sensormap = initfrom['sensormap']
             if 'current_step' in initfrom:
                 self._step = initfrom['current_step']
 
@@ -731,13 +740,8 @@ class TheanoNodenet(Nodenet):
         partition.delete_node(node_id)
 
         # remove sensor association if there should be one
-        #if uid in self.inverted_sensor_map:
-        #    sensor = self.inverted_sensor_map[uid]
-        #    del self.inverted_sensor_map[uid]
-        #    if sensor in self.sensormap:
-        #        self.sensormap[sensor].remove(uid)
-        #        if len(self.sensormap[sensor]) == 0:
-        #            del self.sensormap[sensor]
+        if uid in self.sensor_map.values():
+            self.sensormap = { k:v for k, v in self.sensormap.items() if v is not uid }
 
         # remove actuator association if there should be one
         if uid in self.inverted_actuator_map:
@@ -961,14 +965,14 @@ class TheanoNodenet(Nodenet):
     def get_sensors(self, nodespace=None, datasource=None):
         sensors = {}
         sensorlist = []
-        #if datasource is None:
-        #    for ds_sensors in self.sensormap.values():
-        #        sensorlist.extend(ds_sensors)
-        #elif datasource in self.sensormap:
-        #    sensorlist = self.sensormap[datasource]
-        #for uid in sensorlist:
-        #    if nodespace is None or self.get_partition(uid).allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
-        #        sensors[uid] = self.get_node(uid)
+        if datasource is None:
+            for ds_sensors in self.sensormap.values():
+                sensorlist.extend(ds_sensors)
+        elif datasource in self.sensormap:
+            sensorlist = self.sensormap[datasource]
+        for uid in sensorlist:
+            if nodespace is None or self.get_partition(uid).allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
+                sensors[uid] = self.get_node(uid)
         return sensors
 
     def get_actors(self, nodespace=None, datatarget=None):

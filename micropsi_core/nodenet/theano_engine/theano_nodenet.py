@@ -173,7 +173,13 @@ class TheanoNodenet(Nodenet):
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         self._worldadapter_instance = _worldadapter_instance
+
         for partition in self.partitions.values():
+            if _worldadapter_instance is None:
+                partition.actuator_indices = np.zeros(0, np.int32)
+                partition.sensor_indices = np.zeros(0, np.int32)
+                continue
+            
             partition.actuator_indices = np.zeros(len(_worldadapter_instance.get_available_datatargets()), np.int32)
             partition.sensor_indices = np.zeros(len(_worldadapter_instance.get_available_datasources()), np.int32)
 

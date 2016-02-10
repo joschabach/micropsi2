@@ -346,3 +346,8 @@ except ImportError as e:
         pass
     else:
         sys.stdout.write("Could not import minecraft world.\nError: %s \n\n" % e.msg)
+
+try:
+    from micropsi_core.world.timeseries import timeseries
+except ImportError as e:
+    sys.stdout.write("Could not import timeseries world.\nError: %s \n\n" % e.msg)

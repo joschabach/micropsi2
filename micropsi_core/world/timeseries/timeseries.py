@@ -90,13 +90,11 @@ class TimeSeries(World):
 
 
 class TimeSeriesRunner(WorldAdapter):
-    supported_datasources = []
-    supported_datatargets = []
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
         for idx, ID in enumerate(self.world.ids):
-            self.supported_datasources.append(str(ID))
+            self.datasources[str(ID)] = 0
 
     def update_data_sources_and_targets(self):
         state = self.world.state

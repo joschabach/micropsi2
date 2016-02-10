@@ -951,10 +951,9 @@ class TheanoNodenet(Nodenet):
         sensors = {}
         sensorlist = []
         if datasource is None:
-            for ds_sensors in self.sensormap.values():
-                sensorlist.extend(ds_sensors)
+            sensorlist = self.sensormap.values()
         elif datasource in self.sensormap:
-            sensorlist = self.sensormap[datasource]
+            sensorlist.append(self.sensormap[datasource])
         for uid in sensorlist:
             if nodespace is None or self.get_partition(uid).allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
                 sensors[uid] = self.get_node(uid)
@@ -964,10 +963,9 @@ class TheanoNodenet(Nodenet):
         actuators = {}
         actuatorlist = []
         if datatarget is None:
-            for dt_actuators in self.actuatormap.values():
-                actuatorlist.extend(dt_actuators)
+            actuatorlist = self.actuatormap.values()
         elif datatarget in self.actuatormap:
-            actuatorlist = self.actuatormap[datatarget]
+            actuatorlist.append(self.actuatormap[datatarget])
         for uid in actuatorlist:
             if nodespace is None or self.get_partition(uid).allocated_node_parents[node_from_id(uid)] == nodespace_from_id(nodespace):
                 actuators[uid] = self.get_node(uid)

@@ -1431,6 +1431,10 @@ class TheanoPartition():
         self.g_function_selector.set_value(g_function_selector_array, borrow=True)
         self.allocated_elements_to_nodes[np.where(self.allocated_elements_to_nodes == node_id)[0]] = 0
 
+        if type == SENSOR:
+            sensor_index = np.where(self.sensor_indices == node_id)[0]
+            self.sensor_indices[sensor_index] = 0
+
         if type == PIPE:
             n_function_selector_array = self.n_function_selector.get_value(borrow=True)
             n_function_selector_array[offset + GEN] = NFPG_PIPE_NON

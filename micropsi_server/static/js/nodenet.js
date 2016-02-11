@@ -110,6 +110,7 @@ selectionBox.name = "selectionBox";
 
 nodetypes = {};
 native_modules = {};
+native_module_categories = {};
 available_gatetypes = [];
 nodespaces = {};
 sorted_nodetypes = [];
@@ -288,9 +289,27 @@ function setCurrentNodenet(uid, nodespace, changed){
                     if(a > b) return 1;
                     return 0;
                 });
+
+                function buildTreeRecursive(item, path, idx){
+                    if (idx < path.length){
+                        name = path[idx];
+                        if (!item[name]){
+                            item[name] = {};
+                        }
+                        buildTreeRecursive(item[name], path, idx + 1);
+                    }
+                }
+
+                categories = [];
                 for(var key in native_modules){
                     nodetypes[key] = native_modules[key];
+                    categories.push(native_modules[key].category.split('/'));
                 }
+                native_module_categories = {}
+                for(var i =0; i < categories.length; i++){
+                    buildTreeRecursive(native_module_categories, categories[i], 0);
+                }
+
                 available_gatetypes = [];
                 for(var key in nodetypes){
                     $.merge(available_gatetypes, nodetypes[key].gatetypes || []);
@@ -2552,6 +2571,32 @@ function initializeDialogs(){
 
 var clickPosition = null;
 
+function buildNativeModuleDropdown(cat, html, current_category){
+    if(!current_category){
+        current_category='';
+    }
+    var catentries = []
+    for(var key in cat){
+        catentries.push(key);
+    }
+    for(var i = 0; i < catentries.length; i++){
+        var newcategory = current_category || '';
+        if(current_category == '') newcategory += catentries[i]
+        else newcategory += '/'+catentries[i];
+        html += '<li><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
+        html += '<ul class="sub-menu dropdown-menu">'
+        html += buildNativeModuleDropdown(cat[catentries[i]], '', newcategory);
+        html += '</ul></li>';
+    }
+    for(var idx in sorted_native_modules){
+        key = sorted_native_modules[idx];
+        if(native_modules[key].category == current_category){
+            html += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
+        }
+    }
+    return html
+}
+
 function openContextMenu(menu_id, event) {
     event.cancelBubble = true;
     if(!currentNodenet){
@@ -2573,9 +2618,7 @@ function openContextMenu(menu_id, event) {
         if(Object.keys(native_modules).length){
             html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
             html += '<ul class="sub-menu dropdown-menu">';
-            for(var idx in sorted_native_modules){
-                html += '<li><a data-create-node="' + sorted_native_modules[idx] + '">Create '+ native_modules[sorted_native_modules[idx]].name +' Node</a></li>';
-            }
+            html += buildNativeModuleDropdown(native_module_categories, '', '')
             html += '</ul></li>';
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';

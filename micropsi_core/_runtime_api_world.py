@@ -59,8 +59,8 @@ def get_worldadapters(world_uid, nodenet_uid=None):
             data[name] = {'description': worldadapter.__doc__}
         if nodenet_uid and nodenet_uid in world.agents:
             agent = world.agents[nodenet_uid]
-            data[agent.__class__.__name__]['datasources'] = sorted(agent.datasources.keys())
-            data[agent.__class__.__name__]['datatargets'] = sorted(agent.datatargets.keys())
+            data[agent.__class__.__name__]['datasources'] = agent.get_available_datasources()
+            data[agent.__class__.__name__]['datatargets'] = agent.get_available_datatargets()
     return data
 
 

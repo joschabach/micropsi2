@@ -129,6 +129,7 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
     Numpy arrays can be passed directly into the engine.
     """
     def __init__(self, world, uid=None, **data):
+        WorldAdapter.__init__(self, world, duid=uid)
         self.datasource_values = []
         self.datatarget_values = []
         self.datatarget_feedback_values = []
@@ -167,7 +168,7 @@ class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
 
     def reset_datatargets(self):
         """ resets (zeros) the datatargets """
-        self.datatarget_values[:] = 0
+        pass
 
     @abstractmethod
     def get_available_datasources(self):

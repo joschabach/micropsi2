@@ -599,22 +599,22 @@ class Nodetype(object):
         self._nodefunction_name = nodefunction_name
         try:
             if self.path:
-                module = SourceFileLoader("nodefunctions", os.path.join(RESOURCE_PATH, self.path, "nodefunctions.py")).load_module()
+                module = SourceFileLoader("nodefunctions", self.path).load_module()
                 self.nodefunction = getattr(module, nodefunction_name)
             else:
                 from micropsi_core.nodenet import nodefunctions
                 if hasattr(nodefunctions, nodefunction_name):
                     self.nodefunction = getattr(nodefunctions, nodefunction_name)
                 else:
-                    self.logger.warn("Can not find definition of nodefunction %s" % nodefunction_name)
+                    self.logger.warning("Can not find definition of nodefunction %s" % nodefunction_name)
 
         except (ImportError, AttributeError) as err:
-            self.logger.warn("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
+            self.logger.warning("Import error while importing node function: nodefunctions.%s %s" % (nodefunction_name, err))
             raise err
 
     def __init__(self, name, nodenet, slottypes=None, gatetypes=None, parameters=None,
                  nodefunction_definition=None, nodefunction_name=None, parameter_values=None, gate_defaults=None,
-                 symbol=None, shape=None, engine=None, parameter_defaults=None, path=''):
+                 symbol=None, shape=None, engine=None, parameter_defaults=None, path='', category=''):
         """Initializes or creates a nodetype.
 
         Arguments:
@@ -634,6 +634,7 @@ class Nodetype(object):
         self.gatetypes = gatetypes or {}
 
         self.path = path
+        self.category = category
 
         self.logger = nodenet.logger
 

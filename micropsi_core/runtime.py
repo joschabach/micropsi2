@@ -37,6 +37,8 @@ NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
 RESOURCE_PATH = cfg['paths']['resource_path']
 
+sys.path.append(RESOURCE_PATH)
+
 configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
 worlds = {}
@@ -1140,7 +1142,8 @@ def get_available_recipes():
             recipes[name] = {
                 'name': name,
                 'parameters': data['parameters'],
-                'docstring': data['docstring']
+                'docstring': data['docstring'],
+                'category': data['category']
             }
     return recipes
 
@@ -1287,9 +1290,10 @@ def parse_native_module_file(path):
     try:
         with open(path) as fp:
             modules = json.load(fp)
-            diffpath = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+            category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
             for key in modules:
-                modules[key]['path'] = diffpath
+                modules[key]['path'] = os.path.join(os.path.dirname(path), 'nodefunctions.py')
+                modules[key]['category'] = category
                 if key in native_modules:
                     logging.getLogger("system").warn("Native module names must be unique. %s is not." % key)
                 native_modules[key] = modules[key]
@@ -1300,18 +1304,20 @@ def parse_native_module_file(path):
 
 def parse_recipe_file(path, reload=False):
     global custom_recipes
-    import importlib.machinery
+    import importlib
     import inspect
 
-    diffpath = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
-    loader = importlib.machinery.SourceFileLoader("recipes", path)
-    recipes = loader.load_module()
-    # import recipes
-    all_modules = inspect.getmembers(recipes, inspect.ismodule)
-    for name, module in all_modules:
+    category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    relpath = os.path.relpath(path, start=RESOURCE_PATH)
+    pyname = relpath.replace(os.path.sep, '.')[:-3]
+
+    recipes = __import__(pyname, fromlist=['recipes'])
+    importlib.reload(sys.modules[pyname])
+
+    for name, module in inspect.getmembers(recipes, inspect.ismodule):
         if module.__file__.startswith(RESOURCE_PATH):
-            loader = importlib.machinery.SourceFileLoader(name, module.__file__)
-            loader.load_module()
+            module = importlib.reload(module)
+
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
         argspec = inspect.getargspec(func)
@@ -1335,7 +1341,8 @@ def parse_recipe_file(path, reload=False):
             'parameters': params,
             'function': func,
             'docstring': inspect.getdoc(func),
-            'path': diffpath
+            'category': category,
+            'path': path
         }
 
 
@@ -1374,7 +1381,7 @@ custom_recipes = {}
 
 load_definitions()
 init_worlds(world_data)
-load_user_files()
+reload_native_modules()
 
 # initialize runners
 # Initialize the threads for the continuous simulation of nodenets and worlds

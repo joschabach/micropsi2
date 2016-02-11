@@ -22,8 +22,8 @@ class TimeSeries(World):
     """
     supported_worldadapters = ['TimeSeriesRunner']
 
-    def __init__(self, filename, world_type="Island", name="", owner="", engine=None, uid=None, version=1):
-        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
+    def __init__(self, filename, world_type="Island", name="", owner="", engine=None, uid=None, version=1, config={}):
+        World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
         path = os.path.join(cfg['micropsi2']['data_directory'], 'timeseries.npz')
         print("loading timeseries from", path, "for world", uid)
 

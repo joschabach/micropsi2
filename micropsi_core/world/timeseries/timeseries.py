@@ -4,7 +4,7 @@ Worlds and bodies for agents whose habitats are ordered sequences of vectors.
 import os.path
 from configuration import config as cfg
 from micropsi_core.world.world import World
-from micropsi_core.world.worldadapter import WorldAdapter
+from micropsi_core.world.worldadapter import WorldAdapter, ArrayWorldAdapter
 import numpy as np
 
 
@@ -89,14 +89,22 @@ class TimeSeries(World):
         return self.timeseries[:, t]
 
 
-class TimeSeriesRunner(WorldAdapter):
+class TimeSeriesRunner(ArrayWorldAdapter):
 
     def __init__(self, world, uid=None, **data):
         super().__init__(world, uid, **data)
+
+        self.available_datatargets = []
+        self.available_datasources = []
+
         for idx, ID in enumerate(self.world.ids):
-            self.datasources[str(ID)] = 0
+            self.available_datasources.append(str(ID))
+
+    def get_available_datasources(self):
+        return self.available_datasources
+
+    def get_available_datatargets(self):
+        return self.available_datatargets
 
     def update_data_sources_and_targets(self):
-        state = self.world.state
-        for idx, ID in enumerate(self.world.ids):
-            self.datasources[str(ID)] = state[idx]
+        self.datasource_values = self.world.state

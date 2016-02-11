@@ -21,9 +21,10 @@ __date__ = '10.05.12'
 
 from threading import Lock
 from micropsi_core.world.worldobject import WorldObject
+from abc import ABCMeta, abstractmethod
 
 
-class WorldAdapter(WorldObject):
+class WorldAdapter(WorldObject, metaclass=ABCMeta):
     """Transmits data between agent and environment.
 
     The agent writes activation values into data targets, and receives it from data sources. The world adapter
@@ -94,6 +95,7 @@ class WorldAdapter(WorldObject):
         for datatarget in self.datatargets:
             self.datatargets[datatarget] = 0
 
+    @abstractmethod
     def update_data_sources_and_targets(self):
         """must be implemented by concrete world adapters to read datatargets and fill datasources"""
         pass
@@ -119,9 +121,9 @@ class Default(WorldAdapter):
         self.datasources['random'] = random.uniform(0, 1)
 
 
-class BlippingWorldAdapter(WorldAdapter):
+class ArrayWorldAdapter(WorldAdapter, metaclass=ABCMeta):
     """
-    The BlippingWorldAdapter base class allows to avoid python dictionaries and loops for transmitting values
+    The ArrayWorldAdapter base class allows to avoid python dictionaries and loops for transmitting values
     to nodenet engines.
     Engines that bulk-query values, such as the theano_engine, will be faster.
     Numpy arrays can be passed directly into the engine.
@@ -167,6 +169,7 @@ class BlippingWorldAdapter(WorldAdapter):
         """ resets (zeros) the datatargets """
         self.datatarget_values[:] = 0
 
+    @abstractmethod
     def get_available_datasources(self):
         """
         must be implemented by the concrete world adapater and return a list of datasource name strings,
@@ -174,6 +177,7 @@ class BlippingWorldAdapter(WorldAdapter):
         """
         pass
 
+    @abstractmethod
     def get_available_datatargets(self):
         """
         must be implemented by the concrete world adapater and return a list of datatarget name strings,
@@ -181,6 +185,7 @@ class BlippingWorldAdapter(WorldAdapter):
         """
         pass
 
+    @abstractmethod
     def update_data_sources_and_targets(self):
         """
         must be implemented by concrete world adapters to read and set the following arrays:
@@ -188,7 +193,8 @@ class BlippingWorldAdapter(WorldAdapter):
         datatarget_values
         datatarget_feedback_values
 
-        Arrays sizes need to be equal to the corresponding dict objects.
-        The values of the dict objects will be bypassed and ignored.
+        Arrays sizes need to be equal to the corresponding responses of get_available_datasources() and
+        get_available_datatargets().
+        Values of the superclass' dict objects will be bypassed and ignored.
         """
         pass

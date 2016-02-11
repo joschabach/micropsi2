@@ -1364,6 +1364,8 @@ def reload_native_modules():
     native_modules = {}
     custom_recipes = {}
     runners = {}
+    from micropsi_core.nodenet.native_modules import nodetypes
+    native_modules.update(nodetypes)
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True

@@ -48,11 +48,11 @@ class WorldAdapter(WorldObject):
 
     def get_available_datasources(self):
         """returns a list of identifiers of the datasources available for this world adapter"""
-        return list(self.datasources.keys())
+        return sorted(list(self.datasources.keys()))
 
     def get_available_datatargets(self):
         """returns a list of identifiers of the datatargets available for this world adapter"""
-        return list(self.datatargets.keys())
+        return sorted(list(self.datatargets.keys()))
 
     def get_datasource_value(self, key):
         """allows the agent to read a value from a datasource"""
@@ -60,12 +60,17 @@ class WorldAdapter(WorldObject):
 
     def get_datasource_values(self):
         """allows the agent to read all datasource values"""
-        return [float(x) for x in self.datasources.values()]
+        return [float(self.datasources[x]) for x in self.get_available_datasources()]
 
     def add_to_datatarget(self, key, value):
         """allows the agent to write a value to a datatarget"""
         if key in self.datatargets:
             self.datatargets[key] += value
+
+    def set_datatarget_values(self, values):
+        """allows the agent to write a list of value to the datatargets"""
+        for i, key in enumerate(self.get_available_datatargets()):
+            self.datatargets[key] = values[i]
 
     def get_datatarget_feedback_value(self, key):
         """get feedback whether the actor-induced action succeeded"""
@@ -73,7 +78,7 @@ class WorldAdapter(WorldObject):
 
     def get_datatarget_feedback_values(self):
         """allows the agent to read all datasource values"""
-        return [float(x) for x in self.datatarget_feedback.values()]
+        return [float(self.datatarget_feedback[x]) for x in self.get_available_datatargets()]
 
     def set_datatarget_feedback(self, key, value):
         """set feedback for the given datatarget"""
@@ -153,6 +158,14 @@ class BlippingWorldAdapter(WorldAdapter):
         """set feedback for the given datatarget"""
         index = self.get_available_datatargets().index(key)
         self.datatarget_feedback_values[index] = value
+
+    def set_datatarget_values(self, values):
+        """allows the agent to write a list of value to the datatargets"""
+        self.datatarget_values = values
+
+    def reset_datatargets(self):
+        """ resets (zeros) the datatargets """
+        self.datatarget_values[:] = 0
 
     def get_available_datasources(self):
         """

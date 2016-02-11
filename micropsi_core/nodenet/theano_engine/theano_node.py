@@ -244,7 +244,7 @@ class TheanoNode(Node):
             else:
                 value = None
         if self.type == "Sensor" and parameter == "datasource":
-            if value is not None and value != "":
+            if value is not None and value != "" and self._nodenet.worldadapter_instance is not None:
                 sensor_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
 
@@ -266,7 +266,7 @@ class TheanoNode(Node):
                 self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
         elif self.type == "Actor" and parameter == "datatarget":
-            if value is not None and value != "":
+            if value is not None and value != "" and self._nodenet.worldadapter_instance is not None:
                 actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
 

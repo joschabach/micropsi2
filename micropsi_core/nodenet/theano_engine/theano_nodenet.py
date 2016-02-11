@@ -730,11 +730,11 @@ class TheanoNodenet(Nodenet):
         partition.delete_node(node_id)
 
         # remove sensor association if there should be one
-        if uid in self.sensor_map.values():
+        if uid in self.sensormap.values():
             self.sensormap = {k:v for k, v in self.sensormap.items() if v is not uid }
 
         # remove actuator association if there should be one
-        if uid in self.actuator_map.values():
+        if uid in self.actuatormap.values():
             self.actuatormap = {k:v for k, v in self.actuatormap.items() if v is not uid }
 
         self.clear_supplements(uid)
@@ -1311,14 +1311,11 @@ class TheanoNodenet(Nodenet):
         """
         Returns a list of datatarget values for writing back to the world adapter
         """
-        if len(self.actuatormap) == 0:
-            return []
-
-        actuator_values_to_write = np.zeros(len(self.actuatormap), np.int32)
+        actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
 
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
-            actuator_values_to_write += a_array[partition.actuator_indices]
+            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
 
         return actuator_values_to_write
 

@@ -52,9 +52,7 @@ class TheanoCalculate(Calculate):
         if self.worldadapter is None:
             return
 
-        values_to_write = self.nodenet.read_actuators()
-        for datatarget in values_to_write:
-            self.worldadapter.add_to_datatarget(datatarget, values_to_write[datatarget])
+        self.worldadapter.set_datatarget_values(self.nodenet.read_actuators())
 
     def count_success_and_failure(self, nodenet):
         nays = 0

@@ -731,11 +731,11 @@ class TheanoNodenet(Nodenet):
 
         # remove sensor association if there should be one
         if uid in self.sensormap.values():
-            self.sensormap = {k:v for k, v in self.sensormap.items() if v is not uid }
+            self.sensormap = {k:v for k, v in self.sensormap.items() if v is not uid}
 
         # remove actuator association if there should be one
         if uid in self.actuatormap.values():
-            self.actuatormap = {k:v for k, v in self.actuatormap.items() if v is not uid }
+            self.actuatormap = {k:v for k, v in self.actuatormap.items() if v is not uid}
 
         self.clear_supplements(uid)
 

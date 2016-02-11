@@ -120,7 +120,7 @@
                 <div class="control-group">
                     <label class="control-label" for="recipe_name_input">Name</label>
                     <div class="controls">
-                        <select name="recipe_name_input" class="input-xlarge" id="recipe_name_input"></select>
+                        <input type="text" name="recipe_name_input" class="input-xlarge" id="recipe_name_input"/>
                     </div>
                 </div>
             </fieldset>

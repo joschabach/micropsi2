@@ -524,12 +524,10 @@ $(function() {
             $('#recipe_modal .docstring').show();
             $('#recipe_modal .docstring').html(recipes[name].docstring);
             $('#recipe_modal .btn-primary').show();
-            $('#recipe_modal form').show();
         } else {
             $('#recipe_modal .default_explanation').show();
             $('#recipe_modal .docstring').hide();
             $('#recipe_modal .btn-primary').hide();
-            $('#recipe_modal form').hide();
         }
         if(name in recipes){
             var html = '';
@@ -621,13 +619,15 @@ $(function() {
         $('#recipe_modal button').prop('disabled', false);
         api.call('get_available_recipes', {}, function(data){
             recipes = data;
-            var options = '';
-            var items = Object.values(data);
-            var sorted = items.sort(sortByName);
-            for(var idx in sorted){
-                options += '<option>' + items[idx].name + '</option>';
+            var options = [];
+            for(var key in data){
+                options.push(data[key].name);
             }
-            recipe_name_input.html(options);
+            recipe_name_input.typeahead({'source': options, highlighter: function(item){
+                var search = recipe_name_input.val();
+                var text = item.replace(search, "<strong>"+search+"</strong>");
+                return '<span>'+text+' <span style="color:#999;font-size:.9em">('+recipes[item].category+')</span></span>';
+            }});
             recipe_name_input.focus();
             update_parameters_for_recipe();
         });

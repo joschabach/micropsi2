@@ -49,8 +49,11 @@ def test_nodenet_data_gate_parameters(fixed_nodenet):
     assert data == {'gen': {'threshold': 1}}
 
 
-def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_user_prompt(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -61,7 +64,7 @@ def test_user_prompt(fixed_nodenet, nodetype_def, nodefunc_def):
                 "testparam": 13\
               }\
             }}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -241,8 +244,11 @@ def test_modulators(fixed_nodenet):
     assert nodenet.netapi.get_modulator("test_modulator") == -1
 
 
-def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_node_parameters(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -258,7 +264,7 @@ def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):
                 "protocol_mode": "all_active"\
             }}\
         }')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     assert micropsi.reload_native_modules()
@@ -294,15 +300,18 @@ def test_delete_linked_nodes(fixed_nodenet):
     netapi.delete_node(evil_two)
 
 
-def test_multiple_nodenet_interference(engine, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_multiple_nodenet_interference(engine, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
             "gatetypes": ["gen", "foo", "bar"],\
             "nodefunction_name": "testnodefunc"\
         }}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    node.get_gate('gen').gate_function(17)")
 
     micropsi.reload_native_modules()

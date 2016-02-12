@@ -171,10 +171,13 @@ def test_reload_native_modules(fixed_nodenet):
 # performance reasons, changed defaults will only affect newly created nodes.
 # This test will have to be replaced when the generic solution proposed in TOL-90 has been
 # implemented.
-def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
+def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath,):
     # gate_parameters are a property of the nodetype, and should change with
     # the nodetype definition if not explicitly overwritten for a given node
-    with open(nodetype_def, 'w') as fp:
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -186,11 +189,11 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath, nodetyp
                 "amplification": 13\
               }\
             }}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10], name="Testnode")
-    with open(nodetype_def, 'w') as fp:
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -233,9 +236,11 @@ def test_ignore_links(test_nodenet):
     assert 'links' not in nodespace["nodes"][nodes['a']]
 
 
-def test_remove_and_reload_native_module(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
-    from os import remove
-    with open(nodetype_def, 'w') as fp:
+def test_remove_and_reload_native_module(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -247,20 +252,23 @@ def test_remove_and_reload_native_module(fixed_nodenet, resourcepath, nodetype_d
                 "amplification": 13\
               }\
             }}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Testnode")
-    remove(nodetype_def)
-    remove(nodefunc_def)
+    os.remove(nodetype_file)
+    os.remove(nodefunc_file)
     micropsi.reload_native_modules()
-    assert micropsi.get_available_native_module_types(fixed_nodenet) == {}
+    assert 'Testnode' not in micropsi.get_available_native_module_types(fixed_nodenet)
 
 
 @pytest.mark.engine("dict_engine")
-def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "engine": "theano_engine",\
             "name": "Testnode",\
@@ -273,7 +281,7 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath, nodetype_def
                 "amplification": 13\
               }\
             }}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -282,8 +290,11 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath, nodetype_def
 
 
 @pytest.mark.engine("theano_engine")
-def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "engine": "dict_engine",\
             "name": "Testnode",\
@@ -296,7 +307,7 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath, nodetype_d
                 "amplification": 13\
               }\
             }}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -313,8 +324,10 @@ def test_node_parameters_none_resets_to_default(fixed_nodenet):
     assert node.get_parameter('wait') == 0
 
 
-def test_get_recipes(fixed_nodenet, resourcepath, recipes_def):
-    with open(recipes_def, 'w') as fp:
+def test_get_recipes(fixed_nodenet, resourcepath):
+    import os
+    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    with open(recipe_file, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
     return {'count':count}
@@ -327,8 +340,10 @@ def testfoo(netapi, count=23):
     assert recipes['testfoo']['parameters'][0]['default'] == 23
 
 
-def test_run_recipe(fixed_nodenet, resourcepath, recipes_def):
-    with open(recipes_def, 'w') as fp:
+def test_run_recipe(fixed_nodenet, resourcepath):
+    import os
+    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    with open(recipe_file, 'w') as fp:
         fp.write("""
 def testfoo(netapi, count=23):
     return {'count':count}
@@ -339,8 +354,11 @@ def testfoo(netapi, count=23):
     assert result['count'] == 42
 
 
-def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_node_parameter_defaults(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -351,7 +369,7 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, node
                 "testparam": 13\
               }\
             }}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
@@ -361,8 +379,11 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath, nodetype_def, node
     assert node.get_parameter("testparam") == 13
 
 
-def test_node_parameters_from_persistence(fixed_nodenet, resourcepath, nodetype_def, nodefunc_def):
-    with open(nodetype_def, 'w') as fp:
+def test_node_parameters_from_persistence(fixed_nodenet, resourcepath):
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -373,7 +394,7 @@ def test_node_parameters_from_persistence(fixed_nodenet, resourcepath, nodetype_
                 "testparam": 13\
               }\
             }}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     micropsi.reload_native_modules()
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Test")

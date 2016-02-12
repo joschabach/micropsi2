@@ -235,7 +235,10 @@ class TheanoNode(Node):
         return ids
 
     def get_parameter(self, parameter):
-        return self.clone_parameters().get(parameter, None)
+        if self.type in self._nodenet.native_modules:
+            return self.parameters.get(parameter, self.nodetype.parameter_defaults.get(parameter, None))
+        else:
+            return self.clone_parameters().get(parameter, None)
 
     def set_parameter(self, parameter, value):
         if value == '' or value is None:

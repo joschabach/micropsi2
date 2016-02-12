@@ -767,14 +767,23 @@ def gradient_descent(netapi, node=None, **params):
         import theano.tensor as T
 
         # get shared name prefix of nodes in input, hidden, and output layers
-        input_ = node.get_parameter('input_layer')
-        hidden = node.get_parameter('hidden_layer')
-        output = node.get_parameter('output_layer')
+        input_ = node.get_parameter('input_prefix')
+        hidden = node.get_parameter('hidden_prefix')
+        output = node.get_parameter('output_prefix')
 
-        # get nodespaces, default to parent nodespace
-        ns_input_uid = params.get("input_nodespace") or node.parent_nodespace
-        ns_hidden_uid = params.get("hidden_nodespace") or node.parent_nodespace
-        ns_output_uid = params.get("output_nodespace") or node.parent_nodespace
+        # get the name of the nodespace where the input lives
+        ns_input_name = node.get_parameter('input_nodespace')
+
+        # get nodespace uids of nodes in input, hidden, and output layers
+        # assumption: if the input layer consists of sensor nodes, they have their
+        # own nodespace, all other nodes are in this node's nodespace
+        ns_input_uid = None
+        for ns in netapi.get_nodespaces():
+            if ns.name == ns_input_name:
+                ns_input_uid = ns.uid
+                break
+        ns_hidden_uid = node.parent_nodespace
+        ns_output_uid = node.parent_nodespace
 
         # initialization
         if not hasattr(node, 'initialized'):

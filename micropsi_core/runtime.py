@@ -1276,7 +1276,7 @@ def load_user_files(path=RESOURCE_PATH, reload_nodefunctions=False):
         if not f.startswith('.') and f != '__pycache__':
             abspath = os.path.join(path, f)
             if os.path.isdir(abspath):
-                load_user_files(abspath)
+                load_user_files(path=abspath, reload_nodefunctions=reload_nodefunctions)
             elif f == 'nodetypes.json':
                 parse_native_module_file(abspath)
             elif f == 'recipes.py':

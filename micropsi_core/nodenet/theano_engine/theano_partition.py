@@ -1771,14 +1771,14 @@ class TheanoPartition():
             return w_matrix[rows,cols]
 
     def set_link_weights(self, nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w):
-        if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
-        if nodespace_to_uid not in self.nodegroups or group_to not in self.nodegroups[nodespace_to_uid]:
-            raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
-        if len(self.nodegroups[nodespace_from_uid][group_from]) != new_w.shape[1]:
-            raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[nodespace_from_uid][group_from]), new_w.shape[1]))
-        if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
-            raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
+        #if nodespace_from_uid not in self.nodegroups or group_from not in self.nodegroups[nodespace_from_uid]:
+        #    raise ValueError("Group %s does not exist in nodespace %s." % (group_from, nodespace_from_uid))
+        #if nodespace_to_uid not in self.nodegroups or group_to not in self.nodegroups[nodespace_to_uid]:
+        #    raise ValueError("Group %s does not exist in nodespace %s." % (group_to, nodespace_to_uid))
+        #if len(self.nodegroups[nodespace_from_uid][group_from]) != new_w.shape[1]:
+        #    raise ValueError("group_from %s has length %i, but new_w.shape[1] is %i" % (group_from, len(self.nodegroups[nodespace_from_uid][group_from]), new_w.shape[1]))
+        #if len(self.nodegroups[nodespace_to_uid][group_to]) != new_w.shape[0]:
+        #    raise ValueError("group_to %s has length %i, but new_w.shape[0] is %i" % (group_to, len(self.nodegroups[nodespace_to_uid][group_to]), new_w.shape[0]))
 
         w_matrix = self.w.get_value(borrow=True)
         grp_from = self.nodegroups[nodespace_from_uid][group_from]
@@ -1787,16 +1787,13 @@ class TheanoPartition():
         w_matrix[rows, cols] = new_w
         self.w.set_value(w_matrix, borrow=True)
 
-        for id in self.allocated_elements_to_nodes[grp_from]:
-            self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
-        for id in self.allocated_elements_to_nodes[grp_to]:
-            self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+        cstep = self.nodenet.current_step
+        self.nodes_last_changed[self.allocated_elements_to_nodes[grp_from]] = cstep
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[self.allocated_elements_to_nodes[grp_from]]] = cstep
+        self.nodes_last_changed[self.allocated_elements_to_nodes[grp_to]] = cstep
+        self.nodespaces_contents_last_changed[self.allocated_node_parents[self.allocated_elements_to_nodes[grp_to]]] = cstep
 
-        # todo: only set this if one of the groups is por/ret relevant
-        if self.has_pipes:
-            self.por_ret_dirty = True
+        self.por_ret_dirty = self.has_pipes
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
         if partition_from_spid in self.inlinks:

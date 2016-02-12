@@ -1433,12 +1433,14 @@ class TheanoNodenet(Nodenet):
         else:
             partition_from.set_link_weights(nodespace_from_uid, group_from, nodespace_to_uid, group_to, new_w)
 
-        uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
-        uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
+        self.proxycache.clear()
 
-        for uid in uids_to_invalidate:
-            if uid in self.proxycache:
-                del self.proxycache[uid]
+        #uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
+        #uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
+
+        #for uid in uids_to_invalidate:
+        #    if uid in self.proxycache:
+        #        del self.proxycache[uid]
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]

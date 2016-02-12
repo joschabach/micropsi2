@@ -166,6 +166,30 @@ def test_reload_native_modules(fixed_nodenet):
     assert links_before == links_after
 
 
+def test_native_module_and_recipe_categories(fixed_nodenet, resourcepath):
+    import os
+    os.mkdir(os.path.join(resourcepath, 'Test', 'Test2'))
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    recipe_file = os.path.join(resourcepath, 'Test', 'Test2', 'recipes.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"]\
+            }}')
+    with open(nodefunc_file, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    with open(recipe_file, 'w') as fp:
+        fp.write("def testrecipe(netapi):\r\n    pass")
+    micropsi.reload_native_modules()
+    res = micropsi.get_available_native_module_types(fixed_nodenet)
+    assert res['Testnode']['category'] == 'Test'
+    res = micropsi.get_available_recipes()
+    assert res['testrecipe']['category'] == 'Test/Test2'
+
+
 @pytest.mark.engine("dict_engine")
 # This behavior is not available in theano_engine: Default inheritance at runtime is not implemented for
 # performance reasons, changed defaults will only affect newly created nodes.

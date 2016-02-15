@@ -285,7 +285,7 @@ def load_nodenet(nodenet_uid):
                 else:
                     logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
 
-            engine = data.get('engine', 'dict_engine')
+            engine = data.get('engine') or 'dict_engine'
 
             logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
@@ -929,7 +929,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     # positions
     origin = [100, 100, 100]
     factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
-    lines.append("origin_pos = (%d, %d)" % origin)
+    lines.append("origin_pos = (%d, %d, %d)" % (origin[0], origin[1], origin[2]))
     for node in nodes + nodespaces:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])

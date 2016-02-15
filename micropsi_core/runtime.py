@@ -283,7 +283,7 @@ def load_nodenet(nodenet_uid):
                 else:
                     logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
 
-            engine = data.get('engine', 'dict_engine')
+            engine = data.get('engine') or 'dict_engine'
 
             logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 

@@ -927,7 +927,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
     # positions
     origin = [100, 100, 100]
     factor = [int(min(xpos)), int(min(ypos)), int(min(zpos))]
-    lines.append("origin_pos = (%d, %d)" % (origin[0], origin[1]))
+    lines.append("origin_pos = (%d, %d, %d)" % (origin[0], origin[1], origin[2]))
     for node in nodes + nodespaces:
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])

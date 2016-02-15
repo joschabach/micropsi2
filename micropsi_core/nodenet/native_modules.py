@@ -92,10 +92,20 @@ if numpy_installed:
         "category": "backward_pass",
         "path": os.path.abspath(__file__),
         "parameters": [
-            "input_nodesace", "hidden_nodespace", "output_nodespace"
-            "ae_type", "learning_rate", "sparsity_value", "sparsity_penalty",
-            "weight_decay", "adadelta_rho", "adadelta_eps", "t", "tied_weights",
-            "ctr", "check_grad", "input_layer", "hidden_layer", "output_layer"
+            "ae_type",
+            "adadelta_rho",
+            "adadelta_eps",
+            "check_grad",
+            "weight_decay",
+            "tied_weights",
+            "sparsity_value",
+            "sparsity_penalty",
+            "t",
+            "ctr",
+            "input_prefix",
+            "hidden_prefix",
+            "output_prefix",
+            "input_nodespace"
         ],
         "parameter_values": {
             "ae_type": ["sparse", "denoising"],
@@ -105,9 +115,8 @@ if numpy_installed:
         "parameter_defaults": {
             "ae_type": "denoising",
             "tied_weights": "True",
-            "input_layer": "fov__",
-            "hidden_layer": "hidden_1",
-            "output_layer": "output_1"
+            "hidden_prefix": "hidden_1",
+            "output_prefix": "output_1"
         }
     }
 

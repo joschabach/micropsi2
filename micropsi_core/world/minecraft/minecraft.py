@@ -135,7 +135,6 @@ class Minecraft(World):
         reload(spockplugins)
 
 
-
 class Minecraft2D(Minecraft):
     """ mandatory: list of world adapters that are supported"""
     supported_worldadapters = [
@@ -156,6 +155,16 @@ class Minecraft2D(Minecraft):
 
         # a 2D perspective projection
         self.get_perspective_projection(self.spockplugin.clientinfo.position)
+
+    def get_world_view(self, step):
+        """ returns a list of world objects, and the current step of the simulation """
+        return {
+            'objects': self.get_world_objects(),
+            'agents': self.data.get('agents', {}),
+            'current_step': self.current_step,
+            'projection': self.data['projection'],
+            'assets': self.assets
+        }
 
     def get_perspective_projection(self, agent_info):
         """

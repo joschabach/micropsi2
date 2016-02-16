@@ -116,7 +116,7 @@
                         World:<span class="world_step">0</span><br/>
                         Net:<span class="nodenet_step">0</span>
                     </span>
-                  <a href="#" id="nodenet_reset" class="btn"  title="revert nodenet" data-nodenet-control><i class="icon-fast-backward"></i></a>
+                  <a href="#" id="revert_all" class="btn"  title="revert all" data-nodenet-control><i class="icon-fast-backward"></i></a>
                   <a href="#" id="nodenet_step_forward" class="btn separated" title="step simulation" data-nodenet-control><i class="icon-step-forward"></i></a>
                   <a href="#" id="nodenet_start" class="btn" title="run simulation" data-nodenet-control><i class="icon-play"></i></a>
                   <a href="#" class="btn btn-expand" title="simulation settings" data-toggle="dropdown" data-nodenet-control>

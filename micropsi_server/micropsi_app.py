@@ -617,7 +617,9 @@ def edit_world_form():
     token = request.get_cookie("token")
     id = request.params.get('id', None)
     title = 'Edit World' if id is not None else 'New World'
-    return template("world_form.tpl", title=title, worldtypes=runtime.get_available_world_types(),
+    worldtypes = runtime.get_available_world_types()
+    return template("world_form.tpl", title=title,
+        worldtypes=worldtypes,
         version=VERSION,
         user_id=usermanager.get_user_id_for_session_token(token),
         permissions=usermanager.get_permissions_for_session_token(token))
@@ -626,9 +628,14 @@ def edit_world_form():
 @micropsi_app.route("/world/edit", method="POST")
 def edit_world():
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
+    type = params['world_type']
+    config = {}
+    for p in params:
+        if p.startswith(type + '_'):
+            config[p[len(type) + 1:]] = params[p]
     user_id, permissions, token = get_request_data()
     if "manage worlds" in permissions:
-        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id)
+        result, uid = runtime.new_world(params['world_name'], params['world_type'], user_id, config=config)
         if result:
             return dict(status="success", msg="World created", world_uid=uid)
         else:
@@ -820,6 +827,11 @@ def step_simulation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 
+@rpc("revert_simulation", permission_required="manage nodenets")
+def revert_simulation(nodenet_uid):
+    return runtime.revert_nodenet(nodenet_uid, True)
+
+
 @rpc("revert_nodenet", permission_required="manage nodenets")
 def revert_nodenet(nodenet_uid):
     return runtime.revert_nodenet(nodenet_uid)
@@ -864,9 +876,9 @@ def get_world_properties(world_uid):
 
 
 @rpc("get_worldadapters")
-def get_worldadapters(world_uid):
+def get_worldadapters(world_uid, nodenet_uid=None):
     try:
-        return True, runtime.get_worldadapters(world_uid)
+        return True, runtime.get_worldadapters(world_uid, nodenet_uid=nodenet_uid)
     except KeyError:
         return False, 'World %s not found' % world_uid
 
@@ -914,7 +926,7 @@ def new_world(world_name, world_type, owner=None):
 
 @rpc("get_available_world_types")
 def get_available_world_types():
-    return True, runtime.get_available_world_types()
+    return True, sorted(runtime.get_available_world_types().keys())
 
 
 @rpc("delete_world", permission_required="manage worlds")

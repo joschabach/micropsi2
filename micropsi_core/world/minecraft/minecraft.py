@@ -1,12 +1,12 @@
 from threading import Thread
 
+from spock import plugins as spockplugins
 from spock.client import Client
-from spock.plugins import DefaultPlugins
 from spock.plugins.core.event import EventPlugin
 from spock.plugins.helpers.clientinfo import ClientInfoPlugin
 from spock.plugins.helpers.move import MovementPlugin
-from spock.plugins.helpers.world import WorldPlugin
 from spock.plugins.helpers.reconnect import ReConnectPlugin
+from spock.plugins.helpers.world import WorldPlugin
 
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter
@@ -35,24 +35,21 @@ class Minecraft(World):
         'y': 256,
     }
 
-    # thread and spock only exist once
-    instances = {
-        'spock': None,
-        'thread': None
-    }
-
-    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1):
+    def __init__(self, filename, world_type="Minecraft", name="", owner="", engine=None, uid=None, version=1, config={}):
         """
         Initializes spock client including MicropsiPlugin, starts minecraft communication thread.
         """
         from micropsi_core.runtime import add_signal_handler
 
+        self.instances = {
+            'spock': None,
+            'thread': None
+        }
         # do spock things first, then initialize micropsi world because the latter requires self.spockplugin
-
         # register all necessary spock plugins
         # DefaultPlugins contain EventPlugin, NetPlugin, TimerPlugin, AuthPlugin,
         # ThreadPoolPlugin, StartPlugin and KeepalivePlugin
-        plugins = DefaultPlugins
+        plugins = spockplugins.DefaultPlugins
         plugins.append(ClientInfoPlugin)
         plugins.append(MovementPlugin)
         plugins.append(WorldPlugin)
@@ -127,9 +124,16 @@ class Minecraft(World):
     def kill_minecraft_thread(self, *args):
         """
         """
-        self.spockplugin.event.kill()
-        self.instances['thread'].join()
+        if hasattr(self, 'spockplugin'):
+            self.spockplugin.event.kill()
+            self.instances['thread'].join()
         # self.spockplugin.threadpool.shutdown(False)
+
+    def __del__(self):
+        from importlib import reload
+        self.kill_minecraft_thread()
+        reload(spockplugins)
+
 
 
 class Minecraft2D(Minecraft):
@@ -322,9 +326,6 @@ class MinecraftWorldAdapter(WorldAdapter):
     moves into one of the four cardinal directions ( until it dies ).
     """
 
-    supported_datasources = ['x', 'y', 'z', 'yaw', 'pitch', 'groundtype']
-    supported_datatargets = ['go_north', 'go_east', 'go_west', 'go_south', 'yaw', 'pitch']
-
     spawn_position = {
         'x': -105,
         'y': 63,
@@ -334,6 +335,9 @@ class MinecraftWorldAdapter(WorldAdapter):
     def __init__(self, world, uid=None, **data):
         world.spockplugin.clientinfo.spawn_position = self.spawn_position
         WorldAdapter.__init__(self, world, uid=uid, **data)
+        self.datasources = dict((i, 0) for i in ['x', 'y', 'z', 'yaw', 'pitch', 'groundtype'])
+        self.datatargets = dict((i, 0) for i in ['go_north', 'go_east', 'go_west', 'go_south', 'yaw', 'pitch'])
+
 
     def initialize_worldobject(self, data):
 
@@ -405,22 +409,24 @@ class MinecraftWorldAdapter(WorldAdapter):
 
 class MinecraftBraitenberg(WorldAdapter):
 
-    supported_datasources = [
-        'diamond_offset_x',
-        'diamond_offset_z',
-        'grd_stone',
-        'grd_dirt',
-        'grd_wood',
-        'grd_coal',
-        'obstcl_x+',
-        'obstcl_x-',
-        'obstcl_z+',
-        'obstcl_z-'
-    ]
-    supported_datatargets = [
-        'move_x',
-        'move_z'
-    ]
+    def __init__(self, world, uid=None, **data):
+        super().__init__(world, uid, **data)
+        self.datasources = {
+            'diamond_offset_x': 0,
+            'diamond_offset_z': 0,
+            'grd_stone': 0,
+            'grd_dirt': 0,
+            'grd_wood': 0,
+            'grd_coal': 0,
+            'obstcl_x+': 0,
+            'obstcl_x-': 0,
+            'obstcl_z+': 0,
+            'obstcl_z-': 0
+        }
+        self.datatargets = {
+            'move_x': 0,
+            'move_z': 0
+        }
 
     def update_data_sources_and_targets(self):
         """called on every world simulation step to advance the life of the agent"""

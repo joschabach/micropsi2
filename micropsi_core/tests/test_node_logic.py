@@ -14,16 +14,13 @@ class DummyWorld(World):
 
     supported_worldadapters = ['DummyWorldAdapter']
 
-    def __init__(self, filename, world_type="DummyWorld", name="", owner="", uid=None, version=1):
+    def __init__(self, filename, world_type="DummyWorld", name="", owner="", uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.current_step = 0
         self.data['assets'] = {}
 
 
 class DummyWorldAdapter(WorldAdapter):
-
-    supported_datasources = ['test_source']
-    supported_datatargets = ['test_target']
 
     def __init__(self, world, uid=None, **data):
         WorldAdapter.__init__(self, world, uid=uid, **data)

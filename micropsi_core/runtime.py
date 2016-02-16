@@ -564,8 +564,10 @@ def step_nodenet(nodenet_uid):
     return nodenets[nodenet_uid].current_step
 
 
-def revert_nodenet(nodenet_uid):
+def revert_nodenet(nodenet_uid, also_revert_world=False):
     """Returns the nodenet to the last saved state."""
+    if also_revert_world and nodenet_uid in nodenets and nodenets[nodenet_uid].world:
+        revert_world(nodenets[nodenet_uid].world)
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
@@ -1231,6 +1233,8 @@ def parse_definition(json, filename=None):
             result['world_type'] = json['world_type']
         if "settings" in json:
             result['settings'] = json['settings']
+        if "config" in json:
+            result['config'] = json['config']
         return Bunch(**result)
 
 

@@ -43,7 +43,7 @@ class Island(World):
         }
     }
 
-    def __init__(self, filename, world_type="Island", name="", owner="", engine=None, uid=None, version=1):
+    def __init__(self, filename, world_type="Island", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version)
         self.load_groundmap()
         # self.current_step = 0
@@ -291,11 +291,12 @@ class Waterhole(WorldObject):
 
 class Survivor(WorldAdapter):
 
-    supported_datasources = ['body-energy', 'body-water', 'body-integrity']
-    supported_datatargets = ['action_eat', 'action_drink', 'loco_north', 'loco_south', 'loco_east', 'loco_west']
 
     def __init__(self, world, uid=None, **data):
         super(Survivor, self).__init__(world, uid, **data)
+
+        self.datasources = dict((s, 0) for s in ['body-energy', 'body-water', 'body-integrity'])
+        self.datatargets = dict((t, 0) for t in ['action_eat', 'action_drink', 'loco_north', 'loco_south', 'loco_east', 'loco_west'])
 
         self.currentobject = None
 
@@ -311,7 +312,7 @@ class Survivor(WorldAdapter):
         self.datasources['body-integrity'] = self.integrity
 
     def initialize_worldobject(self, data):
-        if not "position" in data:
+        if "position" not in data:
             self.position = self.world.groundmap['start_position']
 
     def update_data_sources_and_targets(self):
@@ -417,15 +418,15 @@ class Braitenberg(WorldAdapter):
     # maximum speed
     speed_limit = 1.
 
-    supported_datasources = ['brightness_l', 'brightness_r']
-    supported_datatargets = ['engine_l', 'engine_r']
-
     def __init__(self, world, uid=None, **data):
         super(Braitenberg, self).__init__(world, uid, **data)
+
+        self.datasources = {'brightness_l': 0, 'brightness_r': 0}
+        self.datatargets = {'engine_l': 0, 'engine_r': 0}
         self.datatarget_feedback = {'engine_l': 0, 'engine_r': 0}
 
     def initialize_worldobject(self, data):
-        if not "position" in data:
+        if "position" not in data:
             self.position = self.world.groundmap['start_position']
 
     def update_data_sources_and_targets(self):

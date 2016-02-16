@@ -49,16 +49,18 @@ def get_world_properties(world_uid):
     return data
 
 
-def get_worldadapters(world_uid):
-    """Returns the world adapters available in the given world"""
-
+def get_worldadapters(world_uid, nodenet_uid=None):
+    """ Returns the world adapters available in the given world. Provide an optional nodenet_uid of an agent
+    in the given world to obtain datasources and datatargets for the agent's worldadapter"""
     data = {}
     if world_uid in micropsi_core.runtime.worlds:
-        for name, worldadapter in micropsi_core.runtime.worlds[world_uid].supported_worldadapters.items():
-            data[name] = {
-                'datasources': worldadapter.supported_datasources,
-                'datatargets': worldadapter.supported_datatargets
-            }
+        world = micropsi_core.runtime.worlds[world_uid]
+        for name, worldadapter in world.supported_worldadapters.items():
+            data[name] = {'description': worldadapter.__doc__}
+        if nodenet_uid and nodenet_uid in world.agents:
+            agent = world.agents[nodenet_uid]
+            data[agent.__class__.__name__]['datasources'] = sorted(agent.datasources.keys())
+            data[agent.__class__.__name__]['datatargets'] = sorted(agent.datatargets.keys())
     return data
 
 
@@ -86,7 +88,7 @@ def set_worldagent_properties(world_uid, uid, position=None, orientation=None, n
     return micropsi_core.runtime.worlds[world_uid].set_agent_properties(uid, position, orientation, name, parameters)
 
 
-def new_world(world_name, world_type, owner="", uid=None):
+def new_world(world_name, world_type, owner="", uid=None, config={}):
     """Creates a new world  and registers it.
 
     Arguments:
@@ -101,10 +103,15 @@ def new_world(world_name, world_type, owner="", uid=None):
     if uid is None:
         uid = tools.generate_uid()
 
+    if world_type.startswith('Minecraft'):
+        for uid in micropsi_core.runtime.worlds:
+            if micropsi_core.runtime.worlds[uid].__class__.__name__.startswith('Minecraft'):
+                raise RuntimeError("Only one instance of a minecraft world is supported right now")
+
     filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
                                                   version=1,
-                                                  owner=owner)
+                                                  owner=owner, config=config)
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(micropsi_core.runtime.world_data[uid], sort_keys=True, indent=4))
     try:
@@ -118,9 +125,10 @@ def new_world(world_name, world_type, owner="", uid=None):
 def delete_world(world_uid):
     """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
     world = micropsi_core.runtime.worlds[world_uid]
-    for uid in world.agents:
-        world.unregister_agent(micropsi_core.runtime.nodenets[uid])
-        nodenets[uid].world = None
+    for uid in list(world.agents.keys()):
+        world.unregister_nodenet(micropsi_core.runtime.nodenets[uid])
+        micropsi_core.runtime.nodenets[uid].world = None
+    micropsi_core.runtime.worlds[world_uid].__del__()
     del micropsi_core.runtime.worlds[world_uid]
     os.remove(micropsi_core.runtime.world_data[world_uid].filename)
     del micropsi_core.runtime.world_data[world_uid]
@@ -152,6 +160,9 @@ def set_world_properties(world_uid, world_name=None, owner=None):
 def revert_world(world_uid):
     """Reverts the world to the last saved state."""
     data = micropsi_core.runtime.world_data[world_uid]
+    if world_uid in micropsi_core.runtime.worlds:
+        micropsi_core.runtime.worlds[world_uid].__del__()
+        del micropsi_core.runtime.worlds[world_uid]
     micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
     return True
 
@@ -199,16 +210,7 @@ def get_world_class_from_name(world_type):
 
 
 def get_available_world_types():
-    """Returns the names of the available world types"""
+    """Returns a mapping of the available world type names to their classes"""
     import importlib
     from micropsi_core.world.world import World
-    return [cls.__name__ for cls in tools.itersubclasses(vars()['World'])]
-    for cls in tools.itersubclasses(World):
-        if 'minecraft' in cls.__name__.toLower():
-            try:
-                import spock
-            except:
-                # requirement not satisfied, ignore
-                continue
-        available_worlds.append(cls.__name__)
-    return available_worlds
+    return dict((cls.__name__, cls) for cls in tools.itersubclasses(vars()['World']))

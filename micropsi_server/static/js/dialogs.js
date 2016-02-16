@@ -106,6 +106,13 @@ var dialogs = {
                 } else {
                     dialogs.setModalForm(data, callback);
                 }
+            },
+            error: function(data, param1){
+                if(data.status == 500){
+                    $('body').html(data.responseText);
+                } else {
+                    dialogs.notification(data.statusText, "error");
+                }
             }
         });
     },
@@ -639,7 +646,7 @@ $(function() {
 updateWorldAdapterSelector = function() {
     var option = $("#nn_world option:selected");
     if (option) {
-        $("#nn_worldadapter").load("/create_worldadapter_selector/"+option.val());
+        $("#nn_worldadapter").parent().load("/create_worldadapter_selector/"+option.val());
     }
 };
 
@@ -837,13 +844,13 @@ function stopNodenetrunner(event){
     });
 }
 
-function resetNodenet(event){
+function revertAll(event){
     event.preventDefault();
     nodenetRunning = false;
     if(currentNodenet){
         $('#loading').show();
         api.call(
-            'revert_nodenet',
+            'revert_simulation',
             {nodenet_uid: currentNodenet},
             function(){
                 window.location.reload();
@@ -857,7 +864,7 @@ function resetNodenet(event){
 $(function() {
     $('#nodenet_start').on('click', startNodenetrunner);
     $('#nodenet_stop').on('click', stopNodenetrunner);
-    $('#nodenet_reset').on('click', resetNodenet);
+    $('#revert_all').on('click', revertAll);
     $('#nodenet_step_forward').on('click', stepNodenet);
 });
 

@@ -42,12 +42,15 @@ def test_get_world_properties(test_world):
     assert test_world == wp["uid"]
 
 
-def test_get_worldadapters(test_world):
+def test_get_worldadapters(test_world, test_nodenet):
     wa = micropsi.get_worldadapters(test_world)
-    assert 'engine_l' in wa['Braitenberg']['datatargets']
-    assert 'engine_r' in wa['Braitenberg']['datatargets']
-    assert 'brightness_l' in wa['Braitenberg']['datasources']
-    assert 'brightness_r' in wa['Braitenberg']['datasources']
+    assert 'Braitenberg' in wa
+    assert 'description' in wa['Braitenberg']
+    assert 'datasources' not in wa['Braitenberg']
+    runtime.set_nodenet_properties(test_nodenet, worldadapter='Braitenberg', world_uid=test_world)
+    wa = micropsi.get_worldadapters(test_world, test_nodenet)
+    assert wa['Braitenberg']['datatargets'] == ['engine_l', 'engine_r']
+    assert wa['Braitenberg']['datasources'] == ['brightness_l', 'brightness_r']
 
 
 def test_add_worldobject(test_world):
@@ -196,6 +199,16 @@ def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     world.agents[test_nodenet].reset_datatargets = mock.MagicMock(name='reset')
     runtime.step_nodenet(test_nodenet)
     world.agents[test_nodenet].reset_datatargets.assert_called_once_with()
+
+
+def test_worlds_are_configurable():
+    res, uid = runtime.new_world('testworld', 'Island', config={'foo': 'bar', '42': '23'})
+    assert uid in runtime.worlds
+    assert runtime.worlds[uid].data['config']['foo'] == 'bar'
+    runtime.revert_world(uid)
+    assert runtime.worlds[uid].data['config']['foo'] == 'bar'
+    assert runtime.worlds[uid].data['config']['42'] == '23'
+
 
 """
 def test_get_world_view(micropsi, test_world):

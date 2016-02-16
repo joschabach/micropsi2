@@ -2579,6 +2579,7 @@ function buildNativeModuleDropdown(cat, html, current_category){
     for(var key in cat){
         catentries.push(key);
     }
+    catentries.sort();
     for(var i = 0; i < catentries.length; i++){
         var newcategory = current_category || '';
         if(current_category == '') newcategory += catentries[i]

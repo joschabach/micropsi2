@@ -28,7 +28,7 @@ if numpy_installed:
         "gatetypes": ["e"],
         "nodefunction_name": "gradient_descent_lstm",
         "symbol": "↺",
-        "category": "backward_pass",
+        "category": "nn_learning",
         "path": os.path.abspath(__file__),
         "parameters": [
             "adadelta_rho",
@@ -89,7 +89,7 @@ if numpy_installed:
         "gatetypes": ["gen"],
         "nodefunction_name": "gradient_descent",
         "symbol": "☲",
-        "category": "backward_pass",
+        "category": "nn_learning",
         "path": os.path.abspath(__file__),
         "parameters": [
             "ae_type",

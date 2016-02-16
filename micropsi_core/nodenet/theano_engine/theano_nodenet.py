@@ -1046,7 +1046,7 @@ class TheanoNodenet(Nodenet):
 
                 numeric_id = node_from_id(uid)
                 number_of_elements = len(np.where(partition.allocated_elements_to_nodes == numeric_id)[0])
-                new_numer_of_elements = max(len(native_modules[instance.type]['slottypes']), len(native_modules[instance.type]['gatetypes']))
+                new_numer_of_elements = max(len(native_modules[instance.type].get('slottypes', [])), len(native_modules[instance.type].get('gatetypes', [])))
                 if number_of_elements != new_numer_of_elements:
                     self.logger.warn("Number of elements changed for node type %s from %d to %d, recreating instance %s" %
                                     (instance.type, number_of_elements, new_numer_of_elements, uid))

@@ -173,14 +173,26 @@ var api = {
         if(data.status == 0){
             msg = "Server not reachable.";
         } else {
-            try{
-                error = JSON.parse(data.responseText);
-                var errtext = $('<div/>').text(error.data).html();
-                msg += '<strong>' + errtext + '</strong>';
-                if(error.traceback){
-                    msg += '<p><pre class="exception">'+error.traceback+'</pre></p>';
+            if(data.responseText){
+                try{
+                    error = JSON.parse(data.responseText);
+                    var errtext = $('<div/>').text(error.data).html();
+                    msg += '<strong>' + errtext + '</strong>';
+                    if(error.traceback){
+                        msg += '<p><pre class="exception">'+error.traceback+'</pre></p>';
+                    }
+                } catch (err){}
+            } else if(data.data) {
+                if(typeof data.data == 'object'){
+                    msg = '<ul>';
+                    for(var i in data.data){
+                        msg += '<li>'+data.data[i]+'</li>';
+                    }
+                    msg += '</ul>';
+                } else {
+                    msg = data
                 }
-            } catch (err){}
+            }
             if(!msg){
                 msg = type || "serverside exception";
             }

@@ -275,7 +275,7 @@ class TheanoNode(Node):
 
                 self._partition.actuator_indices[old_datatarget_index] = 0
                 if value not in self._nodenet.worldadapter_instance.get_available_datatargets():
-                    self.logger.warn("Datatarget %s not known in world adapter %s, whill not be assigned." % (value, self._nodenet.worldadapter))
+                    self.logger.warn("Datatarget %s not known in world adapter %s, will not be assigned." % (value, self._nodenet.worldadapter))
                     return
 
                 datatarget_index = self._nodenet.worldadapter_instance.get_available_datatargets().index(value)

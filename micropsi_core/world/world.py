@@ -120,7 +120,7 @@ class World(object):
         self.agents = {}
         self.objects = {}
 
-        #self.the_image = None
+        # self.the_image = None
 
         self.load()
 

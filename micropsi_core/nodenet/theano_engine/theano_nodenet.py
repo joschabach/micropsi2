@@ -349,7 +349,6 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
             initfrom = {}
-            datafile = None
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)

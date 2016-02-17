@@ -168,6 +168,13 @@ class Nodenet(metaclass=ABCMeta):
         self.stepping_rate = []
         self.dashboard_values = {}
 
+        self._modulators = {}
+        if use_modulators:
+            self._modulators['por_ret_decay'] = 0.
+            from micropsi_core.nodenet.stepoperators import DoernerianEmotionalModulators as emo
+            for modulator in emo.writeable_modulators + emo.readable_modulators:
+                self._modulators[modulator] = 1
+
     def get_data(self, complete=False, include_links=True):
         """
         Returns a dict representing the whole node net.

@@ -281,8 +281,6 @@ class TheanoNodenet(Nodenet):
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
-        self._modulators = {}
-        self._modulators['por_ret_decay'] = 0.
 
         self.proxycache = {}
 
@@ -320,8 +318,9 @@ class TheanoNodenet(Nodenet):
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),
-            TheanoCalculate(self),
-            DoernerianEmotionalModulators()]
+            TheanoCalculate(self)]
+        if self.use_modulators:
+            self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, filename):

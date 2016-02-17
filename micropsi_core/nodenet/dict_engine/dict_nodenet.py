@@ -168,14 +168,13 @@ class DictNodenet(Nodenet):
 
         super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
 
-        self.stepoperators = [DictPropagate(), DictCalculate(), DoernerianEmotionalModulators()]
+        self.stepoperators = [DictPropagate(), DictCalculate()]
+        if self.use_modulators:
+            self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
-        self._modulators = {
-            'por_ret_decay': 0.
-        }
 
         self._nodes = {}
         self._nodespaces = {}
@@ -270,7 +269,7 @@ class DictNodenet(Nodenet):
         computation of the node net
         """
 
-        self._modulators = initfrom.get("modulators", {})
+        self._modulators.update(initfrom.get("modulators", {}))
 
         if initfrom.get('runner_condition'):
             self.set_runner_condition(initfrom['runner_condition'])

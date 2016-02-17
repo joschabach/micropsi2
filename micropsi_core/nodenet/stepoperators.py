@@ -88,6 +88,25 @@ class DoernerianEmotionalModulators(StepOperator):
 
     """
 
+    writeable_modulators = [
+        'base_sum_importance_of_intentions',
+        'base_sum_urgency_of_intentions',
+        'base_competence_for_intention',
+        'base_importance_of_intention',
+        'base_urgency_of_intention',
+        'base_number_of_active_motives',
+        'base_number_of_expected_events',
+        'base_number_of_unexpected_events',
+        'base_urge_change',
+        'base_age_influence_on_competence']
+    readable_modulators = [
+        'emo_pleasure',
+        'emo_activation',
+        'emo_securing_rate',
+        'emo_resolution',
+        'emo_selection_threshold',
+        'emo_competence']
+
     @property
     def priority(self):
         return 1000

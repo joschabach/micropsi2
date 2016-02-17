@@ -578,7 +578,7 @@ def write_nodenet():
     user_id, permissions, token = get_request_data()
     params = dict((key, request.forms.getunicode(key)) for key in request.forms)
     if "manage nodenets" in permissions:
-        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'))
+        result, nodenet_uid = runtime.new_nodenet(params['nn_name'], engine=params['nn_engine'], worldadapter=params['nn_worldadapter'], template=params.get('nn_template'), owner=user_id, world_uid=params.get('nn_world'), use_modulators=params.get('nn_modulators', False))
         if result:
             return dict(status="success", msg="Nodenet created", nodenet_uid=nodenet_uid)
         else:
@@ -730,7 +730,7 @@ def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
 
 
 @rpc("new_nodenet")
-def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None):
+def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadapter=None, world_uid=None, use_modulators=None):
     if owner is None:
         owner, _, _ = get_request_data()
     return runtime.new_nodenet(
@@ -739,7 +739,8 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         worldadapter=worldadapter,
         template=template,
         owner=owner,
-        world_uid=world_uid)
+        world_uid=world_uid,
+        use_modulators=use_modulators)
 
 
 @rpc("get_current_state")

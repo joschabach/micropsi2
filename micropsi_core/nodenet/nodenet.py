@@ -65,7 +65,8 @@ class Nodenet(metaclass=ABCMeta):
             'world': self._world_uid,
             'worldadapter': self._worldadapter_uid,
             'version': NODENET_VERSION,
-            'runner_condition': self._runner_condition
+            'runner_condition': self._runner_condition,
+            'use_modulators': self.use_modulators
         }
         return data
 
@@ -135,7 +136,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         self._worldadapter_instance = _worldadapter_instance
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -145,6 +146,7 @@ class Nodenet(metaclass=ABCMeta):
         self._worldadapter_uid = worldadapter if world else None
         self._worldadapter_instance = None
         self.is_active = False
+        self.use_modulators = use_modulators
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._uid = uid

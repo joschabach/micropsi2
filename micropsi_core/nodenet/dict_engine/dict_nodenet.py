@@ -156,7 +156,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -166,7 +166,7 @@ class DictNodenet(Nodenet):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid)
+        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
 
         self.stepoperators = [DictPropagate(), DictCalculate(), DoernerianEmotionalModulators()]
         self.stepoperators.sort(key=lambda op: op.priority)

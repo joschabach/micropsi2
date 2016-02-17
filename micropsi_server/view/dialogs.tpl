@@ -112,7 +112,7 @@
         <button type="button" class="close" data-dismiss="modal">×</button>
         <h3>Run Recipe</h3>
     </div>
-    <div class="modal-body">
+    <div class="modal-body" style="min-height:400px">
         <p class="default_explanation">You can place a python file with useful functions called "recipes.py" in your resource directory (next to nodefunctions.py) and run them via this dialog. All functions must have the netapi as their first mandatory parameter, and can define additional parameters which you can then specify in this dialog</p>
         <p class="docstring"></p>
         <form class="form-horizontal">
@@ -120,7 +120,8 @@
                 <div class="control-group">
                     <label class="control-label" for="recipe_name_input">Name</label>
                     <div class="controls">
-                        <input type="text" name="recipe_name_input" class="input-xlarge" id="recipe_name_input"/>
+                        <select name="recipe_name_input" class="input-xlarge" id="recipe_name_input">
+                        </select>
                     </div>
                 </div>
             </fieldset>

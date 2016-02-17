@@ -541,8 +541,8 @@ $(function() {
             $('#recipe_modal .docstring').hide();
             $('#recipe_modal .btn-primary').hide();
         }
+        var html = '';
         if(name in recipes){
-            var html = '';
             for(var i in recipes[name].parameters){
                 var param = recipes[name].parameters[i];
                 html += '' +
@@ -553,8 +553,8 @@ $(function() {
                     '</div>'+
                 '</div>';
             }
-            $('.recipe_param_container').html(html);
         }
+        $('.recipe_param_container').html(html);
     };
 
     var run_recipe = function(event){
@@ -631,15 +631,30 @@ $(function() {
         $('#recipe_modal button').prop('disabled', false);
         api.call('get_available_recipes', {}, function(data){
             recipes = data;
-            var options = [];
-            for(var key in data){
-                options.push(data[key].name);
+            var categories = {};
+            for(var key in recipes){
+                if(!categories[recipes[key].category]){
+                    categories[recipes[key].category] = [];
+                }
+                categories[recipes[key].category].push(recipes[key]);
             }
-            recipe_name_input.typeahead({'source': options, highlighter: function(item){
-                var search = recipe_name_input.val();
-                var text = item.replace(search, "<strong>"+search+"</strong>");
-                return '<span>'+text+' <span style="color:#999;font-size:.9em">('+recipes[item].category+')</span></span>';
-            }});
+            var sorted = Object.keys(categories);
+            sorted.sort();
+            recipe_name_input.chosen('destroy');
+            var html = '<option></option>';
+            var cat;
+            for(var i in sorted){
+                cat = sorted[i]
+                html += '<optgroup label="'+cat+'">';
+                categories[cat].sort(sortByName);
+                for(var i in categories[cat]){
+                    html += '<option>' + categories[cat][i].name + '</option>';
+                }
+                html += '</optgroup>'
+            }
+            recipe_name_input.html(html);
+            recipe_name_input.val('');
+            recipe_name_input.chosen({'search_contains': true});
             recipe_name_input.focus();
             update_parameters_for_recipe();
         });

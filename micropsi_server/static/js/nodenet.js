@@ -614,21 +614,28 @@ function updateModulators(data){
     var sorted = [];
     globalDataSources = [];
     globalDataTargets = [];
-
+    if($.isEmptyObject(data)){
+        return $('.modulators_container').hide();
+    }
+    $('.modulators_container').show();
     for(key in data){
         sorted.push({'name': key, 'value': data[key]});
     }
     sorted.sort(sortByName);
+    var emo_html = '';
+    var base_html = ''
     // display reversed to get emo_ before base_
-    for(var i = sorted.length-1; i >=0; i--){
-        html += '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button></td></tr>'
+    for(var i = 0; i < sorted.length; i++){
+        var html = '<tr><td>'+sorted[i].name+'</td><td>'+sorted[i].value.toFixed(2)+'</td><td><button class="btn btn-mini" data="'+sorted[i].name+'">monitor</button></td></tr>';
         if(sorted[i].name.substr(0, 3) == "emo"){
+            emo_html += html
             globalDataSources.push(sorted[i].name);
         } else {
+            base_html += html
             globalDataTargets.push(sorted[i].name);
         }
     }
-    table.html(html);
+    table.html(emo_html + base_html);
     $('button', table).each(function(idx, button){
         $(button).on('click', function(evt){
             evt.preventDefault();

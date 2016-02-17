@@ -1,4 +1,4 @@
-%include menu.tpl version = version, permissions = permissions, user_id = user_id
+%include("menu.tpl", version=version, permissions=permissions, user_id=user_id)
 
 <div class="row-fluid">
     <p>
@@ -45,4 +45,4 @@
     <a class="btn save_all_nodenets btn-primary" href="/save_all_nodenets">Save all nodenets</a>
 </div>
 
-%rebase boilerplate title = "Manage Nodenets"
+%rebase("boilerplate.tpl", title="Manage Nodenets")

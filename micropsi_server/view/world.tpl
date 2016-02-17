@@ -12,7 +12,7 @@
 
                              <td>
                                 <div class="btn-group" id="world_list">
-                                    %include nodenet_list type="world",mine=mine,others=others,current=current
+                                    %include("nodenet_list.tpl", type="world", mine=mine, others=others, current=current)
                                 </div>
                             </td>
                         </tr>

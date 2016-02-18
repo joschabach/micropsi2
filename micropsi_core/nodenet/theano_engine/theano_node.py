@@ -324,14 +324,14 @@ class TheanoNode(Node):
             if len(datasource_index) == 0:
                 parameters['datasource'] = None
             else:
-                parameters['datasource'] = self._nodenet.worldadapter_instance.get_available_datasources()[datasource_index]
+                parameters['datasource'] = self._nodenet.get_datasources()[datasource_index]
         elif self.type == "Actor":
             actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
             datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
             if len(datatarget_index) == 0:
                 parameters['datatarget'] = None
             else:
-                parameters['datatarget'] = self._nodenet.worldadapter_instance.get_available_datatargets()[datatarget_index]
+                parameters['datatarget'] = self._nodenet.get_datatargets()[datatarget_index]
         elif self.type == "Activator":
             activator_type = None
             if self._id in self._partition.allocated_nodespaces_por_activators:

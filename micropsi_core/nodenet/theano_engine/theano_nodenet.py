@@ -360,10 +360,6 @@ class TheanoNodenet(Nodenet):
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
 
-            for actuator, id_list in self.actuatormap.items():
-                for id in id_list:
-                    self.inverted_actuator_map[id] = actuator
-
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
 

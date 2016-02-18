@@ -237,8 +237,8 @@ class TheanoPartition():
 
         self.allocated_elements_to_activators = np.zeros(self.NoE, dtype=np.int32)
 
-        self.sensor_indices = np.zeros(0, dtype=np.int32)
-        self.actuator_indices = np.zeros(0, dtype=np.int32)
+        self.sensor_indices = np.zeros(0, dtype=np.int32)  # index := datasource, value:=node_id
+        self.actuator_indices = np.zeros(0, dtype=np.int32)  # index := datatarget, value:=node_id
 
         self.inlinks = {}
 

@@ -247,16 +247,17 @@ class TheanoNode(Node):
             else:
                 value = None
         if self.type == "Sensor" and parameter == "datasource":
-            if value is not None and value != "" and self._nodenet.worldadapter_instance is not None:
+            if value is not None and value != "":
+                datasources = self._nodenet.get_datasources()
                 sensor_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
 
                 self._partition.sensor_indices[old_datasource_index] = 0
-                if value not in self._nodenet.worldadapter_instance.get_available_datasources():
-                    self.logger.warn("Datasource %s not known in world adapter %s, will not be assigned." % (value, self._nodenet.worldadapter))
+                if value not in datasources:
+                    self.logger.warn("Datasource %s not known, will not be assigned." % value)
                     return
 
-                datasource_index = self._nodenet.worldadapter_instance.get_available_datasources().index(value)
+                datasource_index = datasources.index(value)
 
                 if self._partition.sensor_indices[datasource_index] != sensor_element and \
                         self._partition.sensor_indices[datasource_index] > 0:
@@ -269,16 +270,17 @@ class TheanoNode(Node):
                 self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
         elif self.type == "Actor" and parameter == "datatarget":
-            if value is not None and value != "" and self._nodenet.worldadapter_instance is not None:
+            if value is not None and value != "":
+                datatargets = self._nodenet.get_datatargets()
                 actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
-
                 self._partition.actuator_indices[old_datatarget_index] = 0
-                if value not in self._nodenet.worldadapter_instance.get_available_datatargets():
-                    self.logger.warn("Datatarget %s not known in world adapter %s, will not be assigned." % (value, self._nodenet.worldadapter))
+                if value not in datatargets:
+                    import pdb; pdb.set_trace()
+                    self.logger.warn("Datatarget %s not known, will not be assigned." % value)
                     return
 
-                datatarget_index = self._nodenet.worldadapter_instance.get_available_datatargets().index(value)
+                datatarget_index = datatargets.index(value)
 
                 if self._partition.actuator_indices[datatarget_index] != actuator_element and \
                         self._partition.actuator_indices[datatarget_index] > 0:

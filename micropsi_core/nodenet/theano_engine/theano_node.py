@@ -276,7 +276,6 @@ class TheanoNode(Node):
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
                 self._partition.actuator_indices[old_datatarget_index] = 0
                 if value not in datatargets:
-                    import pdb; pdb.set_trace()
                     self.logger.warn("Datatarget %s not known, will not be assigned." % value)
                     return
 

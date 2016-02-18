@@ -98,7 +98,8 @@ class DoernerianEmotionalModulators(StepOperator):
         'base_number_of_expected_events',
         'base_number_of_unexpected_events',
         'base_urge_change',
-        'base_age_influence_on_competence']
+        'base_age_influence_on_competence',
+        'base_porret_decay_factor']
     readable_modulators = [
         'emo_pleasure',
         'emo_activation',

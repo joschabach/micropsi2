@@ -54,7 +54,7 @@ class TheanoNetAPI(NetAPI):
         #    self.decay = theano.function([por_cols, por_rows], None, updates={nodenet.w: new_w}, accept_inplace=True)
         import numpy as np
         from .theano_definitions import node_from_id, PIPE, POR
-        porretdecay = self.__nodenet.get_modulator('por_ret_decay')
+        porretdecay = self.__nodenet.get_modulator('base_porret_decay_factor')
         ns = self.get_nodespace(nodespace_uid)
         partition = ns._partition
         if partition.has_pipes and porretdecay != 0:

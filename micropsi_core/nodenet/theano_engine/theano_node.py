@@ -254,7 +254,7 @@ class TheanoNode(Node):
 
                 self._partition.sensor_indices[old_datasource_index] = 0
                 if value not in datasources:
-                    self.logger.warn("Datasource %s not known, will not be assigned." % value)
+                    self.logger.warning("Datasource %s not known, will not be assigned." % value)
                     return
 
                 datasource_index = datasources.index(value)
@@ -265,7 +265,7 @@ class TheanoNode(Node):
                     other_sensor_element = self._partition.sensor_indices[datasource_index]
                     other_sensor_id = node_to_id(self._partition.allocated_elements_to_nodes[other_sensor_element], self._partition.pid)
 
-                    self.logger.warn("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (value, other_sensor_id))
+                    self.logger.warning("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (value, other_sensor_id))
 
                 self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
@@ -276,7 +276,7 @@ class TheanoNode(Node):
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
                 self._partition.actuator_indices[old_datatarget_index] = 0
                 if value not in datatargets:
-                    self.logger.warn("Datatarget %s not known, will not be assigned." % value)
+                    self.logger.warning("Datatarget %s not known, will not be assigned." % value)
                     return
 
                 datatarget_index = datatargets.index(value)
@@ -287,7 +287,7 @@ class TheanoNode(Node):
                     other_actuator_element = self._partition.actuator_indices[datatarget_index]
                     other_actuator_id = node_to_id(self._partition.allocated_elements_to_nodes[other_actuator_element], self._partition.pid)
 
-                    self.logger.warn("Datatarget %s had already been assigned to actuator %s, which will now be unassigned." % (value, other_actuator_id))
+                    self.logger.warning("Datatarget %s had already been assigned to actuator %s, which will now be unassigned." % (value, other_actuator_id))
 
                 self._nodenet.actuatormap[value] = self.uid
                 self._partition.actuator_indices[datatarget_index] = actuator_element

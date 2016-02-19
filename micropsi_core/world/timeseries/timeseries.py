@@ -40,6 +40,9 @@ class TimeSeries(World):
                 self.enddate = f['enddate']
         except IOError as error:
             self.logger.error("Could not load data file %s, error was: %s" % (path, str(error)))
+            self.ids = [0]
+            self.timeseries[[0, 0, 0]]
+            self.len_ts = 1
             return
 
         # todo use the new configurable world options.

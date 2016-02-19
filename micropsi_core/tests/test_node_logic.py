@@ -32,8 +32,8 @@ class DummyWorldAdapter(WorldAdapter):
         self.world.test_target_value = self.datatargets['test_target']
 
 
-def prepare(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
+def prepare(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     source = netapi.create_node("Register", None, "Source")
     netapi.link(source, "gen", source, "gen")
@@ -42,8 +42,8 @@ def prepare(fixed_nodenet):
     return nodenet, netapi, source
 
 
-def add_dummyworld(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
+def add_dummyworld(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
     if nodenet.world:
         micropsi.worlds[nodenet.world].unregister_nodenet(nodenet)
 
@@ -55,9 +55,9 @@ def add_dummyworld(fixed_nodenet):
     return micropsi.worlds[worlduid]
 
 
-def test_node_logic_loop(fixed_nodenet):
+def test_node_logic_loop(test_nodenet):
     # test gen looping behaviour
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
     net.step()
     assert source.get_gate("gen").activation == 1
     net.step()
@@ -67,18 +67,18 @@ def test_node_logic_loop(fixed_nodenet):
     assert source.get_gate("gen").activation == 0.5
 
 
-def test_node_logic_die(fixed_nodenet):
+def test_node_logic_die(test_nodenet):
     # without the link, activation ought to drop to 0
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
 
     netapi.unlink(source, "gen", source, "gen")
     net.step()
     assert source.get_gate("gen").activation == 0
 
 
-def test_node_logic_sum(fixed_nodenet):
+def test_node_logic_sum(test_nodenet):
     # propagate positive activation, expect sum
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
 
     reg_a = netapi.create_node("Register", None, "RegA")
     reg_b = netapi.create_node("Register", None, "RegB")
@@ -94,9 +94,9 @@ def test_node_logic_sum(fixed_nodenet):
     assert reg_result.get_gate("gen").activation == 1
 
 
-def test_node_logic_cancel(fixed_nodenet):
+def test_node_logic_cancel(test_nodenet):
     # propagate positive and negative activation, expect cancellation
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
 
     reg_a = netapi.create_node("Register", None, "RegA")
     reg_b = netapi.create_node("Register", None, "RegB")
@@ -113,9 +113,9 @@ def test_node_logic_cancel(fixed_nodenet):
     assert reg_result.get_gate("gen").activation == 0
 
 
-def test_node_logic_store_and_forward(fixed_nodenet):
+def test_node_logic_store_and_forward(test_nodenet):
     # collect activation in one node, go forward only if both dependencies are met
-    net, netapi, source = prepare(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
 
     reg_a = netapi.create_node("Register", None, "RegA")
     reg_b = netapi.create_node("Register", None, "RegB")
@@ -134,8 +134,8 @@ def test_node_logic_store_and_forward(fixed_nodenet):
     assert reg_result.get_gate("gen").activation == 1
 
 
-def test_node_logic_activators(fixed_nodenet):
-    net, netapi, source = prepare(fixed_nodenet)
+def test_node_logic_activators(test_nodenet):
+    net, netapi, source = prepare(test_nodenet)
     activator = netapi.create_node('Activator', None)
     activator.set_parameter('type', 'sub')
     activator.activation = 1
@@ -147,10 +147,10 @@ def test_node_logic_activators(fixed_nodenet):
     assert testpipe.get_gate("sub").activation == 0
 
 
-def test_node_logic_sensor(fixed_nodenet):
+def test_node_logic_sensor(test_nodenet):
     # read a sensor value from the dummy world adapter
-    net, netapi, source = prepare(fixed_nodenet)
-    world = add_dummyworld(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
+    world = add_dummyworld(test_nodenet)
 
     register = netapi.create_node("Register", None)
     netapi.link_sensor(register, "test_source", "gen")
@@ -160,10 +160,10 @@ def test_node_logic_sensor(fixed_nodenet):
     assert round(register.get_gate("gen").activation, 1) == 0.7
 
 
-def test_node_logic_actor(fixed_nodenet):
+def test_node_logic_actor(test_nodenet):
     # write a value to the dummy world adapter
-    net, netapi, source = prepare(fixed_nodenet)
-    world = add_dummyworld(fixed_nodenet)
+    net, netapi, source = prepare(test_nodenet)
+    world = add_dummyworld(test_nodenet)
 
     register = netapi.create_node("Register", None)
     netapi.link_actor(source, "test_target", 0.5, 1, "gen", "gen")

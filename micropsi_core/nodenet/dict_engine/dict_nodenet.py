@@ -156,7 +156,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -166,16 +166,15 @@ class DictNodenet(Nodenet):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid)
+        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
 
-        self.stepoperators = [DictPropagate(), DictCalculate(), DoernerianEmotionalModulators()]
+        self.stepoperators = [DictPropagate(), DictCalculate()]
+        if self.use_modulators:
+            self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
-        self._modulators = {
-            'por_ret_decay': 0.
-        }
 
         self._nodes = {}
         self._nodespaces = {}
@@ -270,7 +269,7 @@ class DictNodenet(Nodenet):
         computation of the node net
         """
 
-        self._modulators = initfrom.get("modulators", {})
+        self._modulators.update(initfrom.get("modulators", {}))
 
         if initfrom.get('runner_condition'):
             self.set_runner_condition(initfrom['runner_condition'])
@@ -471,9 +470,6 @@ class DictNodenet(Nodenet):
 
     def step(self):
         """perform a simulation step"""
-        if self.worldadapter_instance:
-            self.worldadapter_instance.snapshot()
-
         with self.netlock:
 
             self._step += 1

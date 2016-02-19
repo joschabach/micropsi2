@@ -59,8 +59,8 @@ def get_worldadapters(world_uid, nodenet_uid=None):
             data[name] = {'description': worldadapter.__doc__}
         if nodenet_uid and nodenet_uid in world.agents:
             agent = world.agents[nodenet_uid]
-            data[agent.__class__.__name__]['datasources'] = sorted(agent.datasources.keys())
-            data[agent.__class__.__name__]['datatargets'] = sorted(agent.datatargets.keys())
+            data[agent.__class__.__name__]['datasources'] = agent.get_available_datasources()
+            data[agent.__class__.__name__]['datatargets'] = agent.get_available_datatargets()
     return data
 
 
@@ -183,7 +183,7 @@ def export_world(world_uid):
 def import_world(worlddata, owner=None):
     """Imports a JSON string with world data. May not overwrite an existing world."""
     data = json.loads(worlddata)
-    if not 'uid' in data:
+    if 'uid' not in data:
         data['uid'] = tools.generate_uid()
     else:
         if data['uid'] in micropsi_core.runtime.worlds:

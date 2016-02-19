@@ -20,7 +20,7 @@ def register(netapi, node=None, **params):
 
 def sensor(netapi, node=None, datasource=None, **params):
     if datasource in netapi.worldadapter.get_available_datasources():
-        datasource_value = netapi.worldadapter.get_datasource(datasource)
+        datasource_value = netapi.worldadapter.get_datasource_value(datasource)
     else:
         datasource_value = netapi.get_modulator(datasource)
     node.activation = datasource_value
@@ -33,7 +33,7 @@ def actor(netapi, node=None, datatarget=None, **params):
     activation_to_set = node.get_slot("gen").activation
     if datatarget in netapi.worldadapter.get_available_datatargets():
         netapi.worldadapter.add_to_datatarget(datatarget, activation_to_set)
-        feedback = netapi.worldadapter.get_datatarget_feedback(datatarget)
+        feedback = netapi.worldadapter.get_datatarget_feedback_value(datatarget)
     else:
         netapi.set_modulator(datatarget, activation_to_set)
         feedback = 1
@@ -201,7 +201,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 
-    if node.get_slot('sub').get_activation(sheaf) > 0:
+    if node.get_slot('sub').get_activation(sheaf) > 0 and node.nodenet.use_modulators:
         if sur > 0:
             netapi.change_modulator('base_number_of_expected_events', 1)
         elif sur < 0:

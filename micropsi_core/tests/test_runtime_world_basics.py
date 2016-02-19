@@ -166,29 +166,6 @@ def test_reset_datatargets(test_world, test_nodenet):
     assert world.agents[test_nodenet].datatargets['engine_r'] == 0
 
 
-def test_actuators_do_not_reset_each_others_datatarget(test_world, test_nodenet):
-    world = runtime.worlds[test_world]
-    nodenet = runtime.get_nodenet(test_nodenet)
-    runtime.load_nodenet(test_nodenet)
-    nodenet.world = test_world
-    runtime.set_runner_properties(200, 1)
-    runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
-    actor1 = nodenet.netapi.create_node("Actor", None)
-    actor2 = nodenet.netapi.create_node("Actor", None)
-    actor1.set_parameter('datatarget', 'engine_r')
-    actor2.set_parameter('datatarget', 'engine_r')
-    reg1 = nodenet.netapi.create_node("Register", None)
-    reg2 = nodenet.netapi.create_node("Register", None)
-    nodenet.netapi.link(reg1, 'gen', actor1, 'gen')
-    nodenet.netapi.link(reg2, 'gen', actor2, 'gen')
-    reg1.activation = 0.7
-    reg2.activation = 0.3
-    mock_reset = mock.Mock(return_value=None)
-    world.agents[test_nodenet].reset_datatargets = mock_reset
-    runtime.step_nodenet(test_nodenet)
-    assert world.agents[test_nodenet].datatargets['engine_r'] == 1
-
-
 def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     world = runtime.worlds[test_world]
     nodenet = runtime.get_nodenet(test_nodenet)

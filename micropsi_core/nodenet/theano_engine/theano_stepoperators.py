@@ -44,23 +44,15 @@ class TheanoCalculate(Calculate):
         if self.worldadapter is None:
             return
 
-        datasource_to_value_map = {}
-        for datasource in self.worldadapter.get_available_datasources():
-            datasource_to_value_map[datasource] = self.worldadapter.get_datasource(datasource)
-
-        datatarget_to_value_map = {}
-        for datatarget in self.worldadapter.get_available_datatargets():
-            datatarget_to_value_map[datatarget] = self.worldadapter.get_datatarget_feedback(datatarget)
-
-        self.nodenet.set_sensors_and_actuator_feedback_to_values(datasource_to_value_map, datatarget_to_value_map)
+        self.nodenet.set_sensors_and_actuator_feedback_to_values(
+            self.worldadapter.get_datasource_values(),
+            self.worldadapter.get_datatarget_feedback_values())
 
     def write_actuators(self):
         if self.worldadapter is None:
             return
 
-        values_to_write = self.nodenet.read_actuators()
-        for datatarget in values_to_write:
-            self.worldadapter.add_to_datatarget(datatarget, values_to_write[datatarget])
+        self.worldadapter.set_datatarget_values(self.nodenet.read_actuators())
 
     def count_success_and_failure(self, nodenet):
         nays = 0
@@ -79,4 +71,5 @@ class TheanoCalculate(Calculate):
         self.read_sensors_and_actuator_feedback()
         for partition in nodenet.partitions.values():
             partition.calculate()
-        self.count_success_and_failure(nodenet)
+        if nodenet.use_modulators:
+            self.count_success_and_failure(nodenet)

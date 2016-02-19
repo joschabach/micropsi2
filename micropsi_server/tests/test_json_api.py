@@ -1000,8 +1000,9 @@ def test_get_available_datatargets(app, test_nodenet, test_world):
     assert 'engine_r' in response.json_body['data']
 
 
-def test_bind_datasource_to_sensor(app, test_nodenet):
+def test_bind_datasource_to_sensor(app, test_nodenet, test_world):
     app.set_auth()
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Sensor',
@@ -1019,8 +1020,9 @@ def test_bind_datasource_to_sensor(app, test_nodenet):
     assert response.json_body['data']['parameters']['datasource'] == 'brightness_l'
 
 
-def test_bind_datatarget_to_actor(app, test_nodenet):
+def test_bind_datatarget_to_actor(app, test_nodenet, test_world):
     app.set_auth()
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, world_uid=test_world, worldadapter="Braitenberg"))
     response = app.post_json('/rpc/add_node', params={
         'nodenet_uid': test_nodenet,
         'type': 'Actor',

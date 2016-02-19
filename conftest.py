@@ -100,6 +100,9 @@ def resourcepath():
 
 @pytest.fixture(scope="function")
 def test_world(request):
+    """
+    Fixture: A test world of type Island
+    """
     global world_uid
     success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User", uid=world_uid)
     return world_uid
@@ -107,6 +110,9 @@ def test_world(request):
 
 @pytest.fixture(scope="function")
 def test_nodenet(request, test_world, engine):
+    """
+    Fixture: A completely empty nodenet without a worldadapter
+    """
     global nn_uid
     success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
     micropsi.save_nodenet(nn_uid)
@@ -115,6 +121,9 @@ def test_nodenet(request, test_world, engine):
 
 @pytest.fixture(scope="function")
 def node(request, test_nodenet):
+    """
+    Fixture: A Pipe node with a genloop
+    """
     res, uid = micropsi.add_node(test_nodenet, 'Pipe', [10, 10, 10], name='N1')
     micropsi.add_link(test_nodenet, uid, 'gen', uid, 'gen')
     return uid

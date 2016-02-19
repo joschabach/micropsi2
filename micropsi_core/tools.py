@@ -226,5 +226,5 @@ def itersubclasses(cls, folder=None, _seen=None):
             if folder is None or sub.__module__.startswith(folder):
                 _seen.add(sub)
                 yield sub
-                for sub in itersubclasses(sub, folder=folder, _seen=_seen):
-                    yield sub
+            for sub in itersubclasses(sub, folder=folder, _seen=_seen):
+                yield sub

@@ -287,18 +287,21 @@ def load_nodenet(nodenet_uid):
 
             logger.register_logger("agent.%s" % nodenet_uid, cfg['logging']['level_agent'])
 
+            params = {
+                'name': data.name,
+                'worldadapter': worldadapter,
+                'world': world_uid,
+                'owner': data.owner,
+                'uid': data.uid,
+                'native_modules': filter_native_modules(engine),
+                'use_modulators': data.get('use_modulators', True)  # getter for compatibility
+            }
             if engine == 'dict_engine':
                 from micropsi_core.nodenet.dict_engine.dict_nodenet import DictNodenet
-                nodenets[nodenet_uid] = DictNodenet(
-                    name=data.name, worldadapter=worldadapter,
-                    world=world_uid, owner=data.owner, uid=data.uid,
-                    native_modules=filter_native_modules(engine))
+                nodenets[nodenet_uid] = DictNodenet(**params)
             elif engine == 'theano_engine':
                 from micropsi_core.nodenet.theano_engine.theano_nodenet import TheanoNodenet
-                nodenets[nodenet_uid] = TheanoNodenet(
-                    name=data.name, worldadapter=worldadapter,
-                    world=world_uid, owner=data.owner, uid=data.uid,
-                    native_modules=filter_native_modules(engine))
+                nodenets[nodenet_uid] = TheanoNodenet(**params)
             # Add additional engine types here
             else:
                 nodenet_lock.release()
@@ -410,7 +413,7 @@ def unload_nodenet(nodenet_uid):
     return True
 
 
-def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None):
+def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=None, owner="", world_uid=None, uid=None, use_modulators=True):
     """Creates a new node net manager and registers it.
 
     Arguments:
@@ -436,7 +439,8 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         owner=owner,
         world=world_uid,
         settings={},
-        engine=engine)
+        engine=engine,
+        use_modulators=use_modulators)
 
     filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
@@ -1235,6 +1239,8 @@ def parse_definition(json, filename=None):
             result['settings'] = json['settings']
         if "config" in json:
             result['config'] = json['config']
+        if 'use_modulators' in json:
+            result['use_modulators'] = json['use_modulators']
         return Bunch(**result)
 
 

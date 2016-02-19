@@ -183,7 +183,7 @@ def export_world(world_uid):
 def import_world(worlddata, owner=None):
     """Imports a JSON string with world data. May not overwrite an existing world."""
     data = json.loads(worlddata)
-    if not 'uid' in data:
+    if 'uid' not in data:
         data['uid'] = tools.generate_uid()
     else:
         if data['uid'] in micropsi_core.runtime.worlds:

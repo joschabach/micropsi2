@@ -125,6 +125,9 @@ def recipes_def():
 
 @pytest.fixture(scope="function")
 def test_world(request):
+    """
+    Fixture: A test world of type Island
+    """
     global world_uid
     worlds = micropsi.get_available_worlds("Pytest User")
     if world_uid not in worlds:
@@ -141,6 +144,9 @@ def test_world(request):
 
 @pytest.fixture(scope="function")
 def test_nodenet(request, test_world, engine):
+    """
+    Fixture: A completely empty nodenet without a worldadapter
+    """
     global nn_uid
     nodenets = micropsi.get_available_nodenets("Pytest User") or {}
     if nn_uid not in nodenets:
@@ -153,6 +159,9 @@ def test_nodenet(request, test_world, engine):
 
 @pytest.fixture(scope="function")
 def node(request, test_nodenet):
+    """
+    Fixture: A Pipe node with a genloop
+    """
     res, uid = micropsi.add_node(test_nodenet, 'Pipe', [10, 10, 10], name='N1')
     micropsi.add_link(test_nodenet, uid, 'gen', uid, 'gen')
     return uid

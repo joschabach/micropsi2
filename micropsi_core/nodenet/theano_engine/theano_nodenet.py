@@ -173,33 +173,13 @@ class TheanoNodenet(Nodenet):
     @worldadapter_instance.setter
     def worldadapter_instance(self, _worldadapter_instance):
         self._worldadapter_instance = _worldadapter_instance
-
-        for partition in self.partitions.values():
-            if _worldadapter_instance is None:
-                partition.actuator_indices = np.zeros(0, np.int32)
-                partition.sensor_indices = np.zeros(0, np.int32)
-                continue
-            
-            partition.actuator_indices = np.zeros(len(_worldadapter_instance.get_available_datatargets()), np.int32)
-            partition.sensor_indices = np.zeros(len(_worldadapter_instance.get_available_datasources()), np.int32)
-
-            for datatarget, node_id in self.actuatormap.items():
-                if not isinstance(node_id, str):
-                    node_id = node_id[0]
-                if self.get_partition(node_id) == partition:
-                    self.get_node(node_id).set_parameter("datatarget", datatarget)
-
-            for datasource, node_id in self.sensormap.items():
-                if not isinstance(node_id, str):
-                    node_id = node_id[0]
-                if self.get_partition(node_id) == partition:
-                    self.get_node(node_id).set_parameter("datasource", datasource)
+        self._rebuild_sensor_actor_indices()
 
     @property
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -213,7 +193,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid)
+        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
 
         precision = settings['theano']['precision']
         if precision == "32":
@@ -281,8 +261,6 @@ class TheanoNodenet(Nodenet):
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
-        self._modulators = {}
-        self._modulators['por_ret_decay'] = 0.
 
         self.proxycache = {}
 
@@ -320,8 +298,9 @@ class TheanoNodenet(Nodenet):
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),
-            TheanoCalculate(self),
-            DoernerianEmotionalModulators()]
+            TheanoCalculate(self)]
+        if self.use_modulators:
+            self.stepoperators.append(DoernerianEmotionalModulators())
         self.stepoperators.sort(key=lambda op: op.priority)
 
     def save(self, filename):
@@ -350,7 +329,6 @@ class TheanoNodenet(Nodenet):
 
         with self.netlock:
             initfrom = {}
-            datafile = None
             if os.path.isfile(filename):
                 try:
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
@@ -381,10 +359,6 @@ class TheanoNodenet(Nodenet):
             # (numerical native module types are runtime dependent and may differ from when allocated_nodes
             # was saved).
             self.reload_native_modules(self.native_module_definitions)
-
-            for actuator, id_list in self.actuatormap.items():
-                for id in id_list:
-                    self.inverted_actuator_map[id] = actuator
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
@@ -731,11 +705,11 @@ class TheanoNodenet(Nodenet):
 
         # remove sensor association if there should be one
         if uid in self.sensormap.values():
-            self.sensormap = {k:v for k, v in self.sensormap.items() if v is not uid}
+            self.sensormap = {k: v for k, v in self.sensormap.items() if v != uid}
 
         # remove actuator association if there should be one
         if uid in self.actuatormap.values():
-            self.actuatormap = {k:v for k, v in self.actuatormap.items() if v is not uid}
+            self.actuatormap = {k: v for k, v in self.actuatormap.items() if v != uid}
 
         self.clear_supplements(uid)
 
@@ -1318,6 +1292,45 @@ class TheanoNodenet(Nodenet):
             actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
 
         return actuator_values_to_write
+
+    def _rebuild_sensor_actor_indices(self):
+        """
+        Rebuilds the actor and sensor indices for all partitions
+        """
+        for partition in self.partitions.values():
+            partition.sensor_indices = np.zeros(len(self.get_datasources()), np.int32)
+            partition.actuator_indices = np.zeros(len(self.get_datatargets()), np.int32)
+            for datatarget, node_id in self.actuatormap.items():
+                if not isinstance(node_id, str):
+                    node_id = node_id[0]
+                if self.get_partition(node_id) == partition:
+                    self.get_node(node_id).set_parameter("datatarget", datatarget)
+
+            for datasource, node_id in self.sensormap.items():
+                if not isinstance(node_id, str):
+                    node_id = node_id[0]
+                if self.get_partition(node_id) == partition:
+                    self.get_node(node_id).set_parameter("datasource", datasource)
+
+    def get_datasources(self):
+        """ Returns a sorted list of available datasources, including worldadapter datasources
+        and readable modulators"""
+        modulators = sorted(self._modulators.keys())
+        datasources = self.worldadapter_instance.get_available_datasources() if self.worldadapter_instance else []
+        for item in modulators:
+            if item in DoernerianEmotionalModulators.readable_modulators:
+                datasources.append(item)
+        return datasources
+
+    def get_datatargets(self):
+        """ Returns a sorted list of available datatargets, including worldadapter datatargets
+        and writeable modulators"""
+        modulators = sorted(self._modulators.keys())
+        datatargets = self.worldadapter_instance.get_available_datatargets() if self.worldadapter_instance else []
+        for item in modulators:
+            if item not in DoernerianEmotionalModulators.readable_modulators:
+                datatargets.append(item)
+        return datatargets
 
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):
         if nodespace_uid is None:

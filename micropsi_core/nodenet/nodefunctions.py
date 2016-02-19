@@ -201,7 +201,7 @@ def pipe(netapi, node=None, sheaf="default", **params):
     if exp == 0: exp += node.get_slot("sur").get_activation("default")      # no activation in our sheaf, maybe from sensors?
     if exp > 1: exp = 1
 
-    if node.get_slot('sub').get_activation(sheaf) > 0:
+    if node.get_slot('sub').get_activation(sheaf) > 0 and node.nodenet.use_modulators:
         if sur > 0:
             netapi.change_modulator('base_number_of_expected_events', 1)
         elif sur < 0:

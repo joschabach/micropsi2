@@ -247,16 +247,17 @@ class TheanoNode(Node):
             else:
                 value = None
         if self.type == "Sensor" and parameter == "datasource":
-            if value is not None and value != "" and self._nodenet.worldadapter_instance is not None:
+            if value is not None and value != "":
+                datasources = self._nodenet.get_datasources()
                 sensor_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datasource_index = np.where(self._partition.sensor_indices == sensor_element)[0]
 
                 self._partition.sensor_indices[old_datasource_index] = 0
-                if value not in self._nodenet.worldadapter_instance.get_available_datasources():
-                    self.logger.warn("Datasource %s not known in world adapter %s, will not be assigned." % (value, self._nodenet.worldadapter))
+                if value not in datasources:
+                    self.logger.warning("Datasource %s not known, will not be assigned." % value)
                     return
 
-                datasource_index = self._nodenet.worldadapter_instance.get_available_datasources().index(value)
+                datasource_index = datasources.index(value)
 
                 if self._partition.sensor_indices[datasource_index] != sensor_element and \
                         self._partition.sensor_indices[datasource_index] > 0:
@@ -264,21 +265,21 @@ class TheanoNode(Node):
                     other_sensor_element = self._partition.sensor_indices[datasource_index]
                     other_sensor_id = node_to_id(self._partition.allocated_elements_to_nodes[other_sensor_element], self._partition.pid)
 
-                    self.logger.warn("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (value, other_sensor_id))
+                    self.logger.warning("Datasource %s had already been assigned to sensor %s, which will now be unassigned." % (value, other_sensor_id))
 
                 self._nodenet.sensormap[value] = self.uid
                 self._partition.sensor_indices[datasource_index] = sensor_element
         elif self.type == "Actor" and parameter == "datatarget":
-            if value is not None and value != "" and self._nodenet.worldadapter_instance is not None:
+            if value is not None and value != "":
+                datatargets = self._nodenet.get_datatargets()
                 actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
                 old_datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
-
                 self._partition.actuator_indices[old_datatarget_index] = 0
-                if value not in self._nodenet.worldadapter_instance.get_available_datatargets():
-                    self.logger.warn("Datatarget %s not known in world adapter %s, whill not be assigned." % (value, self._nodenet.worldadapter))
+                if value not in datatargets:
+                    self.logger.warning("Datatarget %s not known, will not be assigned." % value)
                     return
 
-                datatarget_index = self._nodenet.worldadapter_instance.get_available_datatargets().index(value)
+                datatarget_index = datatargets.index(value)
 
                 if self._partition.actuator_indices[datatarget_index] != actuator_element and \
                         self._partition.actuator_indices[datatarget_index] > 0:
@@ -286,7 +287,7 @@ class TheanoNode(Node):
                     other_actuator_element = self._partition.actuator_indices[datatarget_index]
                     other_actuator_id = node_to_id(self._partition.allocated_elements_to_nodes[other_actuator_element], self._partition.pid)
 
-                    self.logger.warn("Datatarget %s had already been assigned to actuator %s, which will now be unassigned." % (value, other_actuator_id))
+                    self.logger.warning("Datatarget %s had already been assigned to actuator %s, which will now be unassigned." % (value, other_actuator_id))
 
                 self._nodenet.actuatormap[value] = self.uid
                 self._partition.actuator_indices[datatarget_index] = actuator_element
@@ -323,14 +324,14 @@ class TheanoNode(Node):
             if len(datasource_index) == 0:
                 parameters['datasource'] = None
             else:
-                parameters['datasource'] = self._nodenet.worldadapter_instance.get_available_datasources()[datasource_index]
+                parameters['datasource'] = self._nodenet.get_datasources()[datasource_index]
         elif self.type == "Actor":
             actuator_element = self._partition.allocated_node_offsets[self._id] + GEN
             datatarget_index = np.where(self._partition.actuator_indices == actuator_element)[0]
             if len(datatarget_index) == 0:
                 parameters['datatarget'] = None
             else:
-                parameters['datatarget'] = self._nodenet.worldadapter_instance.get_available_datatargets()[datatarget_index]
+                parameters['datatarget'] = self._nodenet.get_datatargets()[datatarget_index]
         elif self.type == "Activator":
             activator_type = None
             if self._id in self._partition.allocated_nodespaces_por_activators:

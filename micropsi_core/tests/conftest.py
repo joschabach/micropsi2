@@ -12,6 +12,23 @@ nn_uid = 'Testnet'
 
 @pytest.fixture(scope="function")
 def fixed_nodenet(request, test_world, engine):
+    """
+    A test nodenet filled with some example data (nodenet_data.py)
+    Structure:
+
+          ->  A1 ->  A2
+        /
+       S                     ACTA
+        \
+          ->  B1 ->  B2
+
+    S: Sensor, brightness_l
+    A1: Pipe
+    A2: Pipe
+    B1: Pipe
+    B2: Pipe
+    ACTA: Activator, por
+    """
     from micropsi_core.tests.nodenet_data import fixed_nodenet_data
     if engine == "theano_engine":
         fixed_nodenet_data = fixed_nodenet_data.replace('Root', 's0001')

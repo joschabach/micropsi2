@@ -231,14 +231,27 @@ def test_clone_nodes_copies_gate_params(fixed_nodenet):
     assert round(copy.get_gate_parameters()['gen']['maximum'], 2) == 0.1
 
 
-def test_modulators(fixed_nodenet):
+def test_modulators(fixed_nodenet, engine):
     nodenet = micropsi.get_nodenet(fixed_nodenet)
+    # assert modulators are instantiated from the beginning
+    assert nodenet._modulators != {}
+    assert nodenet.get_modulator('emo_activation') is not None
 
-    nodenet.netapi.change_modulator("test_modulator", 0.42)
-    assert nodenet.netapi.get_modulator("test_modulator") == 0.42
-
+    # set a modulator
     nodenet.set_modulator("test_modulator", -1)
     assert nodenet.netapi.get_modulator("test_modulator") == -1
+
+    # assert change_modulator sets diff.
+    nodenet.netapi.change_modulator("test_modulator", 0.42)
+    assert round(nodenet.netapi.get_modulator("test_modulator"), 4) == -0.58
+
+    # no modulators should be set if we disable the emotional_parameter module
+    res, uid = micropsi.new_nodenet('foobar', engine, use_modulators=False)
+    new_nodenet = micropsi.get_nodenet(uid)
+    assert new_nodenet._modulators == {}
+    # and no Emo-stepoperator should be set.
+    for item in new_nodenet.stepoperators:
+        assert 'Emotional' not in item.__class__.__name__
 
 
 def test_node_parameters(fixed_nodenet, nodetype_def, nodefunc_def):

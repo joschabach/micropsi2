@@ -120,7 +120,7 @@ class World(object):
         self.agents = {}
         self.objects = {}
 
-        #self.the_image = None
+        # self.the_image = None
 
         self.load()
 
@@ -261,9 +261,8 @@ class World(object):
         if nodenet.uid in self.agents:
             # stop corresponding nodenet
             micropsi_core.runtime.stop_nodenetrunner(nodenet.uid)
-
             # remove agent
-            nodenet.worldadapter_instance = None
+            # nodenet.worldadapter_instance = None
             del self.agents[nodenet.uid]
         if nodenet.uid in self.data['agents']:
             del self.data['agents'][nodenet.uid]
@@ -281,7 +280,6 @@ class World(object):
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
             return False, "World %s does not support Worldadapter %s" % (self.name, worldadapter_name)
-
 
     def set_object_properties(self, uid, position=None, orientation=None, name=None, parameters=None):
         """set attributes of the world object 'uid'; only supplied attributes will be changed.

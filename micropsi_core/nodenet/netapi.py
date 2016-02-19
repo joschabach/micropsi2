@@ -539,15 +539,15 @@ class NetAPI(object):
 
     def decay_por_links(self, nodespace_uid):
         """ Decayes all por-links in the given nodespace """
-        decay_factor = self.__nodenet.get_modulator('base_porret_decay_factor')
+        porretdecay = self.__nodenet.get_modulator('base_porret_decay_factor')
         nodes = self.get_nodes(nodespace=nodespace_uid, nodetype="Pipe")
-        pordecay = (1 - self.__nodenet.get_modulator('por_ret_decay'))
-        if decay_factor and pordecay is not None and pordecay > 0:
+        decay_factor = (1 - porretdecay)
+        if porretdecay != 0:
             for node in nodes:
                 porgate = node.get_gate('por')
                 for link in porgate.get_links():
                     if link.weight > 0:
-                        link._set_weight(max(link.weight * pordecay, 0))
+                        link._set_weight(max(link.weight * decay_factor, 0))
 
     def announce_nodes(self, nodespace_uid, numer_of_nodes, average_element_per_node):
         pass

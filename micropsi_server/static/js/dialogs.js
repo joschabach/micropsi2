@@ -180,14 +180,26 @@ var api = {
         if(data.status == 0){
             msg = "Server not reachable.";
         } else {
-            try{
-                error = JSON.parse(data.responseText);
-                var errtext = $('<div/>').text(error.data).html();
-                msg += '<strong>' + errtext + '</strong>';
-                if(error.traceback){
-                    msg += '<p><pre class="exception">'+error.traceback+'</pre></p>';
+            if(data.responseText){
+                try{
+                    error = JSON.parse(data.responseText);
+                    var errtext = $('<div/>').text(error.data).html();
+                    msg += '<strong>' + errtext + '</strong>';
+                    if(error.traceback){
+                        msg += '<p><pre class="exception">'+error.traceback+'</pre></p>';
+                    }
+                } catch (err){}
+            } else if(data.data) {
+                if(typeof data.data == 'object'){
+                    msg = '<ul>';
+                    for(var i in data.data){
+                        msg += '<li>'+data.data[i]+'</li>';
+                    }
+                    msg += '</ul>';
+                } else {
+                    msg = data
                 }
-            } catch (err){}
+            }
             if(!msg){
                 msg = type || "serverside exception";
             }
@@ -531,15 +543,13 @@ $(function() {
             $('#recipe_modal .docstring').show();
             $('#recipe_modal .docstring').html(recipes[name].docstring);
             $('#recipe_modal .btn-primary').show();
-            $('#recipe_modal form').show();
         } else {
             $('#recipe_modal .default_explanation').show();
             $('#recipe_modal .docstring').hide();
             $('#recipe_modal .btn-primary').hide();
-            $('#recipe_modal form').hide();
         }
+        var html = '';
         if(name in recipes){
-            var html = '';
             for(var i in recipes[name].parameters){
                 var param = recipes[name].parameters[i];
                 html += '' +
@@ -550,8 +560,8 @@ $(function() {
                     '</div>'+
                 '</div>';
             }
-            $('.recipe_param_container').html(html);
         }
+        $('.recipe_param_container').html(html);
     };
 
     var run_recipe = function(event){
@@ -628,13 +638,30 @@ $(function() {
         $('#recipe_modal button').prop('disabled', false);
         api.call('get_available_recipes', {}, function(data){
             recipes = data;
-            var options = '';
-            var items = Object.values(data);
-            var sorted = items.sort(sortByName);
-            for(var idx in sorted){
-                options += '<option>' + items[idx].name + '</option>';
+            var categories = {};
+            for(var key in recipes){
+                if(!categories[recipes[key].category]){
+                    categories[recipes[key].category] = [];
+                }
+                categories[recipes[key].category].push(recipes[key]);
             }
-            recipe_name_input.html(options);
+            var sorted = Object.keys(categories);
+            sorted.sort();
+            recipe_name_input.chosen('destroy');
+            var html = '<option></option>';
+            var cat;
+            for(var i in sorted){
+                cat = sorted[i]
+                html += '<optgroup label="'+cat+'">';
+                categories[cat].sort(sortByName);
+                for(var i in categories[cat]){
+                    html += '<option>' + categories[cat][i].name + '</option>';
+                }
+                html += '</optgroup>'
+            }
+            recipe_name_input.html(html);
+            recipe_name_input.val('');
+            recipe_name_input.chosen({'search_contains': true});
             recipe_name_input.focus();
             update_parameters_for_recipe();
         });

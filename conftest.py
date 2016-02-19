@@ -36,10 +36,6 @@ logging.getLogger('world').setLevel(logging.WARNING)
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
 
-nodetype_file = os.path.join(config['paths']['resource_path'], 'nodetypes.json')
-nodefunc_file = os.path.join(config['paths']['resource_path'], 'nodefunctions.py')
-recipes_file = os.path.join(config['paths']['resource_path'], 'recipes.py')
-
 
 try:
     import theano
@@ -82,25 +78,19 @@ def pytest_runtest_setup(item):
         engine_marker = engine_marker.args[0]
         if engine_marker != item.callspec.params['engine']:
             pytest.skip("test requires engine %s" % engine_marker)
+    for uid in list(micropsi.nodenets.keys()):
+        micropsi.delete_nodenet(uid)
+    for uid in list(micropsi.worlds.keys()):
+        micropsi.delete_world(uid)
+    shutil.rmtree(config['paths']['resource_path'])
+    os.mkdir(config['paths']['resource_path'])
+    os.mkdir(os.path.join(config['paths']['resource_path'], 'nodenets'))
+    os.mkdir(os.path.join(config['paths']['resource_path'], 'worlds'))
+    # default native module container
+    os.mkdir(os.path.join(config['paths']['resource_path'], 'Test'))
+    micropsi.reload_native_modules()
     micropsi.logger.clear_logs()
-
-
-def pytest_runtest_teardown(item, nextitem):
-    if nextitem is None:
-        print("DELETING ALL STUFF")
-        shutil.rmtree(config['paths']['resource_path'])
-    else:
-        uids = list(micropsi.nodenets.keys())
-        for uid in uids:
-            micropsi.delete_nodenet(uid)
-        if os.path.isfile(nodetype_file):
-            os.remove(nodetype_file)
-        if os.path.isfile(nodefunc_file):
-            os.remove(nodefunc_file)
-        if os.path.isfile(recipes_file):
-            os.remove(recipes_file)
-        micropsi.reload_native_modules()
-        set_logging_levels()
+    set_logging_levels()
 
 
 @pytest.fixture(scope="session")
@@ -108,46 +98,18 @@ def resourcepath():
     return config['paths']['resource_path']
 
 
-@pytest.fixture()
-def nodetype_def():
-    return nodetype_file
-
-
-@pytest.fixture
-def nodefunc_def():
-    return nodefunc_file
-
-
-@pytest.fixture
-def recipes_def():
-    return recipes_file
-
-
 @pytest.fixture(scope="function")
 def test_world(request):
     global world_uid
-    worlds = micropsi.get_available_worlds("Pytest User")
-    if world_uid not in worlds:
-        success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User", uid=world_uid)
-
-    def fin():
-        try:
-            micropsi.delete_world(world_uid)
-        except:
-            pass  # world was deleted in test
-    request.addfinalizer(fin)
+    success, world_uid = micropsi.new_world("World of Pain", "Island", "Pytest User", uid=world_uid)
     return world_uid
 
 
 @pytest.fixture(scope="function")
 def test_nodenet(request, test_world, engine):
     global nn_uid
-    nodenets = micropsi.get_available_nodenets("Pytest User") or {}
-    if nn_uid not in nodenets:
-        success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
-        micropsi.save_nodenet(nn_uid)
-    if nn_uid not in micropsi.nodenets:
-        micropsi.load_nodenet(nn_uid)
+    success, nn_uid = micropsi.new_nodenet("Testnet", engine=engine, owner="Pytest User", uid='Testnet')
+    micropsi.save_nodenet(nn_uid)
     return nn_uid
 
 

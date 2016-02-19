@@ -77,10 +77,14 @@ def test_set_nodenet_properties(app, test_nodenet, test_world):
     assert data['worldadapter'] == 'Braitenberg'
 
 
-def test_set_node_state(app, test_nodenet, nodetype_def, nodefunc_def):
+def test_set_node_state(app, test_nodenet, resourcepath):
+    import os
     app.set_auth()
     # create a native module:
-    with open(nodetype_def, 'w') as fp:
+
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
@@ -88,7 +92,7 @@ def test_set_node_state(app, test_nodenet, nodetype_def, nodefunc_def):
             "gatetypes": ["gen", "foo", "bar"],\
             "symbol": "t"}}')
 
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     response = app.get_json('/rpc/reload_native_modules()')
@@ -900,10 +904,13 @@ def test_get_available_node_types(app, test_nodenet):
     assert 'Sensor' in response.json_body['data']
 
 
-def test_get_available_native_module_types(app, test_nodenet):
+def test_get_available_native_module_types(app, test_nodenet, engine):
     response = app.get_json('/rpc/get_available_native_module_types(nodenet_uid="%s")' % test_nodenet)
     assert_success(response)
-    assert response.json_body['data'] == {}
+    if engine == 'dict_engine':
+        assert response.json_body['data'] == {}
+    elif engine == 'theano_engine':
+        assert "GradientDescent" in response.json_body['data']
 
 
 def test_set_node_parameters(app, test_nodenet):
@@ -1091,17 +1098,20 @@ def test_delete_link(app, test_nodenet, node):
     data['nodes'][node]['links'] == {}
 
 
-def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
+def test_reload_native_modules(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
-    with open(nodetype_def, 'w') as fp:
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
             "nodefunction_name": "testnodefunc",\
             "gatetypes": ["gen", "foo", "bar"],\
             "symbol": "t"}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
     assert_success(response)
@@ -1113,17 +1123,20 @@ def test_reload_native_modules(app, test_nodenet, nodetype_def, nodefunc_def):
     assert data['name'] == 'Testnode'
 
 
-def test_user_prompt_response(app, test_nodenet, nodetype_def, nodefunc_def):
+def test_user_prompt_response(app, test_nodenet, resourcepath):
     app.set_auth()
     # create a native module:
-    with open(nodetype_def, 'w') as fp:
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
             "nodefunction_name": "testnodefunc",\
             "gatetypes": ["gen", "foo", "bar"],\
             "symbol": "t"}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
     assert_success(response)
@@ -1231,9 +1244,11 @@ def test_500(app):
     assert response.json_body['traceback'] is not None
 
 
-def test_get_recipes(app, test_nodenet, recipes_def):
+def test_get_recipes(app, test_nodenet, resourcepath):
     app.set_auth()
-    with open(recipes_def, 'w') as fp:
+    import os
+    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    with open(recipe_file, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
     return {'quatsch': quatsch}
@@ -1247,9 +1262,11 @@ def foobar(netapi, quatsch=23):
     assert data['foobar']['parameters'][0]['default'] == 23
 
 
-def test_run_recipes(app, test_nodenet, recipes_def):
+def test_run_recipes(app, test_nodenet, resourcepath):
     app.set_auth()
-    with open(recipes_def, 'w') as fp:
+    import os
+    recipe_file = os.path.join(resourcepath, 'Test', 'recipes.py')
+    with open(recipe_file, 'w') as fp:
         fp.write("""
 def foobar(netapi, quatsch=23):
     return {'quatsch': quatsch}
@@ -1272,16 +1289,19 @@ def test_get_agent_dashboard(app, test_nodenet, node):
     assert data['count_nodes'] == 1
 
 
-def test_nodenet_data_structure(app, test_nodenet, nodetype_def, nodefunc_def, node):
+def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     app.set_auth()
-    with open(nodetype_def, 'w') as fp:
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
         fp.write('{"Testnode": {\
             "name": "Testnode",\
             "slottypes": ["gen", "foo", "bar"],\
             "nodefunction_name": "testnodefunc",\
             "gatetypes": ["gen", "foo", "bar"],\
             "symbol": "t"}}')
-    with open(nodefunc_def, 'w') as fp:
+    with open(nodefunc_file, 'w') as fp:
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
     response = app.get_json('/rpc/reload_native_modules()')
     response = app.post_json('/rpc/add_nodespace', params={

@@ -274,7 +274,7 @@ graphs
     margin-top: -30px;
 }
 
-.dropdown-menu li:hover .sub-menu {
+.dropdown-menu li:hover > .sub-menu {
     visibility: visible;
     display: block;
 }

@@ -107,6 +107,11 @@ def pytest_runtest_setup(item):
 
 
 @pytest.fixture(scope="session")
+def runtime():
+    return micropsi
+
+
+@pytest.fixture(scope="session")
 def resourcepath():
     return cfg['paths']['data_directory']
 

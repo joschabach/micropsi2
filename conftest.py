@@ -25,17 +25,12 @@ cfg['micropsi2']['single_agent_mode'] = ''
 if 'theano' in cfg:
     cfg['theano']['initial_number_of_nodes'] = '50'
 
-micropsi.initialize()
 
 # create testuser
 from micropsi_server.micropsi_app import usermanager
 
 usermanager.create_user('Pytest User', 'test', 'Administrator', uid='Pytest User')
 user_token = usermanager.start_session('Pytest User', 'test', True)
-
-# reset logging levels
-logging.getLogger('system').setLevel(logging.WARNING)
-logging.getLogger('world').setLevel(logging.WARNING)
 
 world_uid = 'WorldOfPain'
 nn_uid = 'Testnet'
@@ -57,6 +52,19 @@ def set_logging_levels():
 def pytest_addoption(parser):
     parser.addoption("--engine", action="store", default=engine_defaults,
         help="The engine that should be used for this testrun.")
+    parser.addoption("--agents", action="store_true",
+        help="Only test agents-code from the data_directory")
+
+
+def pytest_cmdline_main(config):
+    """ called for performing the main command line action. The default
+    implementation will invoke the configure hooks and runtest_mainloop. """
+    if config.getoption('agents'):
+        config.args = [original_ini_data_directory]
+        micropsi.initialize(persistency_path=testpath, resource_path=original_ini_data_directory)
+    else:
+        micropsi.initialize(persistency_path=testpath)
+    set_logging_levels()
 
 
 def pytest_generate_tests(metafunc):

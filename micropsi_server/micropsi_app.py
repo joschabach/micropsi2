@@ -28,6 +28,8 @@ import inspect
 from micropsi_server import minidoc
 import logging
 
+runtime.initialize()
+
 from configuration import config as cfg
 
 VERSION = cfg['micropsi2']['version']

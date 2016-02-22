@@ -35,32 +35,22 @@ from .micropsi_logger import MicropsiLogger
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
-RESOURCE_PATH = cfg['paths']['resource_path']
 
-sys.path.append(RESOURCE_PATH)
+signal_handler_registry = []
+runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
-configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+nodenet_lock = threading.Lock()
+
+# global variables set by intialize()
+RESOURCE_PATH = None
+
+configs = None
+logger = None
 
 worlds = {}
 nodenets = {}
 native_modules = {}
 custom_recipes = {}
-
-runner = {'timestep': 1000, 'runner': None, 'factor': 1}
-
-signal_handler_registry = []
-
-logger = MicropsiLogger({
-    'system': cfg['logging']['level_system'],
-    'world': cfg['logging']['level_world']
-}, cfg['logging'].get('logfile'))
-
-nodenet_lock = threading.Lock()
-
-if cfg['micropsi2'].get('profile_runner'):
-    import cProfile
-    import pstats
-    import io
 
 
 def add_signal_handler(handler):
@@ -84,6 +74,7 @@ class MicropsiRunner(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         if cfg['micropsi2'].get('profile_runner'):
+            import cProfile
             self.profiler = cProfile.Profile()
         else:
             self.profiler = None
@@ -144,6 +135,8 @@ class MicropsiRunner(threading.Thread):
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
                     if self.profiler:
+                        import pstats
+                        import io
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
@@ -1403,30 +1396,44 @@ def reload_native_modules():
     else:
         return False, errors
 
-native_modules = {}
-custom_recipes = {}
 
-load_definitions()
-init_worlds(world_data)
-result, errors = reload_native_modules()
-for e in errors:
-    logging.getLogger("system").error(e)
+def initialize():
+    global RESOURCE_PATH, configs, logger, runner
 
-# initialize runners
-# Initialize the threads for the continuous simulation of nodenets and worlds
-if 'runner_timestep' not in configs:
-    configs['runner_timestep'] = 200
-    configs.save_configs()
-if 'runner_factor' not in configs:
-    configs['runner_factor'] = 2
-    configs.save_configs()
+    RESOURCE_PATH = cfg['path']['resource_path']
 
-set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+    sys.path.append(resource_path)
 
-runner['running'] = True
-runner['runner'] = MicropsiRunner()
+    configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
 
-add_signal_handler(kill_runners)
+    if logger is None:
+        logger = MicropsiLogger({
+            'system': cfg['logging']['level_system'],
+            'world': cfg['logging']['level_world']
+        }, cfg['logging'].get('logfile'))
 
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+    load_definitions()
+    init_worlds(world_data)
+    result, errors = reload_native_modules()
+    for e in errors:
+        logging.getLogger("system").error(e)
+
+    # initialize runners
+    # Initialize the threads for the continuous simulation of nodenets and worlds
+    if 'runner_timestep' not in configs:
+        configs['runner_timestep'] = 200
+        configs.save_configs()
+    if 'runner_factor' not in configs:
+        configs['runner_factor'] = 2
+        configs.save_configs()
+
+    set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+
+    runner['running'] = True
+    runner['runner'] = MicropsiRunner()
+
+    if kill_runners not in signal_handler_registry:
+        add_signal_handler(kill_runners)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)

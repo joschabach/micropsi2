@@ -1244,12 +1244,12 @@ def parse_definition(json, filename=None):
 # Set up the MicroPsi runtime
 def load_definitions():
     global nodenet_data, world_data
-    nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
-    world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
+    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), type="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), type="world")
     if not world_data:
         # create a default world for convenience.
         uid = tools.generate_uid()
-        filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+        filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))

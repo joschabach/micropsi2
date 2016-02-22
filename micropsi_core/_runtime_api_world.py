@@ -108,7 +108,7 @@ def new_world(world_name, world_type, owner="", uid=None, config={}):
             if micropsi_core.runtime.worlds[uid].__class__.__name__.startswith('Minecraft'):
                 raise RuntimeError("Only one instance of a minecraft world is supported right now")
 
-    filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
+    filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, uid + ".json")
     micropsi_core.runtime.world_data[uid] = Bunch(uid=uid, name=world_name, world_type=world_type, filename=filename,
                                                   version=1,
                                                   owner=owner, config=config)
@@ -169,7 +169,7 @@ def revert_world(world_uid):
 
 def save_world(world_uid):
     """Stores the world state on the server."""
-    with open(os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY,
+    with open(os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY,
                            world_uid) + '.json', 'w+') as fp:
         fp.write(json.dumps(micropsi_core.runtime.worlds[world_uid].data, sort_keys=True, indent=4))
     return True
@@ -190,7 +190,7 @@ def import_world(worlddata, owner=None):
             raise RuntimeError("A world with this ID already exists.")
     if owner is not None:
         data['owner'] = owner
-    filename = os.path.join(micropsi_core.runtime.RESOURCE_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')
+    filename = os.path.join(micropsi_core.runtime.PERSISTENCY_PATH, micropsi_core.runtime.WORLD_DIRECTORY, data['uid'] + '.json')
     data['filename'] = filename
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(data))

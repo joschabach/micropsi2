@@ -43,6 +43,6 @@ for level in ['level_agent', 'level_system', 'level_world']:
         config['logging'][level] = 'WARNING'
 
 config.add_section('paths')
-config['paths']['resource_path'] = os.path.join(os.path.dirname(__file__), data_path)
+config['paths']['data_directory'] = os.path.join(os.path.dirname(__file__), data_path)
 config['paths']['usermanager_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'user-db.json')
 config['paths']['server_settings_path'] = os.path.join(os.path.dirname(__file__), 'resources', 'server-config.json')

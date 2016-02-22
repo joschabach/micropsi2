@@ -43,6 +43,7 @@ nodenet_lock = threading.Lock()
 
 # global variables set by intialize()
 RESOURCE_PATH = None
+PERSISTENCY_PATH = None
 
 configs = None
 logger = None
@@ -302,7 +303,7 @@ def load_nodenet(nodenet_uid):
                 nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-            nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
+            nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
@@ -316,7 +317,7 @@ def load_nodenet(nodenet_uid):
 
         nodenet_lock.release()
         return True, nodenet_uid
-    return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
+    return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
 def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
@@ -437,7 +438,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         engine=engine,
         use_modulators=use_modulators)
 
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
@@ -456,7 +457,7 @@ def delete_nodenet(nodenet_uid):
 
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
     nodenet = get_nodenet(nodenet_uid)
     nodenet.remove(filename)
     unload_nodenet(nodenet_uid)
@@ -575,7 +576,7 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
+    nodenet.save(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
     nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
@@ -605,7 +606,7 @@ def import_nodenet(string, owner=None):
     if 'owner':
         import_data['owner'] = owner
     # assert import_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(import_data))
     nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
@@ -1273,7 +1274,7 @@ def init_worlds(world_data):
     return worlds
 
 
-def load_user_files(path=RESOURCE_PATH, reload_nodefunctions=False, errors=[]):
+def load_user_files(path, reload_nodefunctions=False, errors=[]):
     global native_modules, custom_recipes
     for f in os.listdir(path):
         if not f.startswith('.') and f != '__pycache__':
@@ -1384,7 +1385,7 @@ def reload_native_modules():
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    errors = load_user_files(reload_nodefunctions=True, errors=[])
+    errors = load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[])
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets
@@ -1397,10 +1398,17 @@ def reload_native_modules():
         return False, errors
 
 
-def initialize():
-    global RESOURCE_PATH, configs, logger, runner
+def initialize(persistency_path=None, resource_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner
 
-    RESOURCE_PATH = cfg['path']['resource_path']
+    if persistency_path is None:
+        persistency_path = cfg['paths']['data_directory']
+
+    if resource_path is None:
+        resource_path = persistency_path
+
+    PERSISTENCY_PATH = persistency_path
+    RESOURCE_PATH = resource_path
 
     sys.path.append(resource_path)
 

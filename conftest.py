@@ -106,6 +106,11 @@ def pytest_runtest_setup(item):
     set_logging_levels()
 
 
+def pytest_sessionfinish(session, exitstatus):
+    shutil.rmtree(testpath)
+    micropsi.kill_runners()
+
+
 @pytest.fixture(scope="session")
 def runtime():
     return micropsi

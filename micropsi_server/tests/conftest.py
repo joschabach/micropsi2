@@ -9,7 +9,7 @@ from configuration import config
 from conftest import user_token
 from micropsi_server import usermanagement
 
-test_path = os.path.join(config['paths']['resource_path'], 'user-test-db.json')
+test_path = os.path.join(config['paths']['data_directory'], 'user-test-db.json')
 
 
 class MicropsiTestApp(TestApp):

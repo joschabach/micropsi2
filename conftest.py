@@ -13,15 +13,19 @@ except OSError:
     pass
 
 # override config
-from configuration import config
-config['paths']['resource_path'] = testpath
-config['paths']['server_settings_path'] = os.path.join(config['paths']['resource_path'], 'server_config.json')
-config['paths']['usermanager_path'] = os.path.join(config['paths']['resource_path'], 'user-db.json')
-config['micropsi2']['single_agent_mode'] = ''
-if 'theano' in config:
-    config['theano']['initial_number_of_nodes'] = '50'
-
 from micropsi_core import runtime as micropsi
+
+from micropsi_core.runtime import cfg
+original_ini_data_directory = cfg['paths']['data_directory']
+
+cfg['paths']['data_directory'] = testpath
+cfg['paths']['server_settings_path'] = os.path.join(testpath, 'server_cfg.json')
+cfg['paths']['usermanager_path'] = os.path.join(testpath, 'user-db.json')
+cfg['micropsi2']['single_agent_mode'] = ''
+if 'theano' in cfg:
+    cfg['theano']['initial_number_of_nodes'] = '50'
+
+micropsi.initialize()
 
 # create testuser
 from micropsi_server.micropsi_app import usermanager
@@ -82,12 +86,13 @@ def pytest_runtest_setup(item):
         micropsi.delete_nodenet(uid)
     for uid in list(micropsi.worlds.keys()):
         micropsi.delete_world(uid)
-    shutil.rmtree(config['paths']['resource_path'])
-    os.mkdir(config['paths']['resource_path'])
-    os.mkdir(os.path.join(config['paths']['resource_path'], 'nodenets'))
-    os.mkdir(os.path.join(config['paths']['resource_path'], 'worlds'))
+    shutil.rmtree(testpath)
+    os.mkdir(testpath)
+    os.mkdir(os.path.join(testpath, 'nodenets'))
+    os.mkdir(os.path.join(testpath, 'worlds'))
     # default native module container
-    os.mkdir(os.path.join(config['paths']['resource_path'], 'Test'))
+    os.mkdir(os.path.join(testpath, 'Test'))
+    open(os.path.join(testpath, 'Test', '__init__.py'), 'w').close()
     micropsi.reload_native_modules()
     micropsi.logger.clear_logs()
     set_logging_levels()
@@ -95,7 +100,7 @@ def pytest_runtest_setup(item):
 
 @pytest.fixture(scope="session")
 def resourcepath():
-    return config['paths']['resource_path']
+    return cfg['paths']['data_directory']
 
 
 @pytest.fixture(scope="function")
@@ -131,9 +136,9 @@ def node(request, test_nodenet):
 
 def pytest_internalerror(excrepr, excinfo):
     """ called for internal errors. """
-    shutil.rmtree(config['paths']['resource_path'])
+    shutil.rmtree(testpath)
 
 
 def pytest_keyboard_interrupt(excinfo):
     """ called for keyboard interrupt. """
-    shutil.rmtree(config['paths']['resource_path'])
+    shutil.rmtree(testpath)

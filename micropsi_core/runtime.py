@@ -1347,7 +1347,7 @@ def parse_recipe_file(path, reload=False):
                 'name': arg,
                 'default': default
             })
-        if name in custom_recipes:
+        if name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
             logging.getLogger("system").warning("Recipe function names must be unique. %s is not." % name)
         custom_recipes[name] = {
             'name': name,

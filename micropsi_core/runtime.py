@@ -1320,8 +1320,10 @@ def parse_recipe_file(path, reload=False):
     pyname = relpath.replace(os.path.sep, '.')[:-3]
 
     try:
-        recipes = __import__(pyname, fromlist=['recipes'])
-        importlib.reload(sys.modules[pyname])
+        loader = importlib.machinery.SourceFileLoader('recipes', path)
+        recipes = loader.load_module()
+        # recipes = __import__(pyname, fromlist=['recipes'])
+        # importlib.reload(sys.modules[pyname])
     except SyntaxError as e:
         return "%s in recipe file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
 

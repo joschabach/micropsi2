@@ -22,4 +22,8 @@ tests:
 test-coverage:
 	bin/py.test --cov micropsi_core --cov micropsi_server --cov-report html
 
+agent-tests:
+	bin/py.test --agents
+
+
 .PHONY: run

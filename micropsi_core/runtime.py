@@ -1307,7 +1307,6 @@ def parse_native_module_file(path):
             if key in native_modules:
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % key)
             native_modules[key] = modules[key]
-            sys.path.append(path)
 
 
 def parse_recipe_file(path, reload=False):

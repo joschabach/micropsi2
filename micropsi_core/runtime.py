@@ -1439,7 +1439,8 @@ def initialize(persistency_path=None, resource_path=None):
     set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
 
     runner['running'] = True
-    runner['runner'] = MicropsiRunner()
+    if runner.get('runner') is None:
+        runner['runner'] = MicropsiRunner()
 
     if kill_runners not in signal_handler_registry:
         add_signal_handler(kill_runners)

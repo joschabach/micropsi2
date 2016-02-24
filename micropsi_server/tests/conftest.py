@@ -6,9 +6,10 @@ from webtest import TestApp
 nn_uid = 'Testnet'
 
 from configuration import config
-from conftest import user_token
 from micropsi_server import usermanagement
+from micropsi_server.micropsi_app import usermanager
 
+user_token = usermanager.users['Pytest User']['session_token']
 test_path = os.path.join(config['paths']['data_directory'], 'user-test-db.json')
 
 

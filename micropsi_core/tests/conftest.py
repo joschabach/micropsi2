@@ -10,7 +10,7 @@ DELETE_TEST_FILES_ON_EXIT = True
 nn_uid = 'Testnet'
 
 
-@pytest.fixture(scope="function")
+@pytest.yield_fixture(scope="function")
 def fixed_nodenet(request, test_world, engine):
     """
     A test nodenet filled with some example data (nodenet_data.py)
@@ -36,4 +36,8 @@ def fixed_nodenet(request, test_world, engine):
     micropsi.get_nodenet(uid)
     micropsi.merge_nodenet(uid, fixed_nodenet_data, keep_uids=True)
     micropsi.save_nodenet(uid)
-    return uid
+    yield uid
+    try:
+        micropsi.delete_nodenet(uid)
+    except:
+        pass

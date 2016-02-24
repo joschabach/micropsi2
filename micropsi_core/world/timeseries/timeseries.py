@@ -46,11 +46,11 @@ class TimeSeries(World):
             return
 
         # todo use the new configurable world options.
-        dummydata = config('dummydata') == "True"
-        z_transform = config('z_transform') == "True"
-        clip_and_scale = config('clip_and_scale') == "True"
-        sigmoid = config('sigmoid') == "True"
-        self.shuffle = config('shuffle') == "True"
+        dummydata = config['dummy_data'] == "True"
+        z_transform = config['z_transform'] == "True"
+        clip_and_scale = config['clip_and_scale'] == "True"
+        sigmoid = config['sigmoid'] == "True"
+        self.shuffle = config['shuffle'] == "True"
 
         if clip_and_scale and sigmoid:
             self.logger.warn("clip_and_scale and sigmoid cannot both be configured, choosing sigmoid")

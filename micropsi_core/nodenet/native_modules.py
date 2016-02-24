@@ -797,6 +797,8 @@ def gradient_descent(netapi, node=None, **params):
         # initialization
         if not hasattr(node, 'initialized'):
 
+            node.set_state('cumulative_error', 0)
+
             sparse = str(node.get_parameter('ae_type')) == "sparse"
             # denoising = str(node.get_parameter('ae_type')) == "denoising"
             tied_weights = str(node.get_parameter('tied_weights')) == "True"
@@ -896,7 +898,7 @@ def gradient_descent(netapi, node=None, **params):
                 cost = error_term + weight_constraint
 
             node.cost = theano.function([weight_decay, sparsity_value, sparsity_penalty], cost, on_unused_input='ignore')
-            node.error = theano.function([], error_term)
+            node.error = theano.function([], error_term / len(b_h_array))
 
             # compute gradients
             sigmoid_deriv_a_o = a_o * (1. - a_o)
@@ -1107,15 +1109,6 @@ def gradient_descent(netapi, node=None, **params):
         node.a_h.set_value(a_h_array, borrow=True)
         node.a_o.set_value(a_o_array, borrow=True)
 
-        # save current error as node parameter
-        node.set_parameter('error', float(node.error()))
-        # # print average reconstruction error
-        # node.set_parameter('error', node.get_parameter('error') + node.error())
-        # if node.get_parameter('t') % 100 == 0:
-        #     netapi.logger.debug("Number of backprop steps computed %d" % node.get_parameter('t'))
-        #     netapi.logger.debug("Reconstruction error %f" % (node.get_parameter('error') / 100))
-        #     node.set_parameter('error', 0.0)
-
         # update values in shared variables ( using backpropgation of the gradients )
         node.get_updated_parameters(weight_decay, sparsity_value, sparsity_penalty, ada_rho, ada_eps)
 
@@ -1125,9 +1118,20 @@ def gradient_descent(netapi, node=None, **params):
         netapi.set_thetas(ns_hidden_uid, hidden, node.b_h.get_value(borrow=True))
         netapi.set_link_weights(ns_input_uid, input_, ns_hidden_uid, hidden, node.w_hi.get_value(borrow=True))
 
+        error = float(node.error())
+        # save current error as node parameter
+        node.set_parameter('error', error)
+        node.set_state('cumulative_error', node.get_state('cumulative_error') + error)
+
+        t = int(node.get_parameter('t'))
+        if t % 1000 == 0:
+            netapi.logger.debug("Number of backprop steps computed %d" % t)
+            netapi.logger.debug("Average Error %.6f (Latest: 0=%.6f)" % ((node.get_state('cumulative_error') / 1000), error))
+            node.set_state('cumulative_error', 0.0)
+
         # reset counter after successful backprop step; cf. must wait for new sensory activation to reach output layer
         node.set_parameter('ctr', 0)
-        node.set_parameter('t', int(node.get_parameter('t')) + 1)
+        node.set_parameter('t', t + 1)
 
 
 def sigmoid(z):

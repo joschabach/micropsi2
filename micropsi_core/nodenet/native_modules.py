@@ -994,10 +994,8 @@ def gradient_descent(netapi, node=None, **params):
 
             node.initialized = True
 
-        # get activations from node net
+        # get input activations from node net
         a_i_array = netapi.get_activations(ns_input_uid, input_)
-        a_h_array = netapi.get_activations(ns_hidden_uid, hidden)
-        a_o_array = netapi.get_activations(ns_output_uid, output)
 
         # learn only if activation on the input layer has been persistent for as many steps as your neural net has layers
         # Note: since we're currently using denoising autoencoders, this means persistent up to Bernoulli noise
@@ -1024,6 +1022,10 @@ def gradient_descent(netapi, node=None, **params):
         # until counter equals number of layers, ie. the same activation has reached all layers, don't compute
         if node.get_parameter('ctr') < 3:
             return
+
+        # get other activations from node net
+        a_h_array = netapi.get_activations(ns_hidden_uid, hidden)
+        a_o_array = netapi.get_activations(ns_output_uid, output)
 
         # define learning parameters
         param = node.get_parameter('weight_decay')

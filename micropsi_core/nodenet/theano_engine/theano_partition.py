@@ -1077,143 +1077,141 @@ class TheanoPartition():
 
         new_NoNS = int(self.NoNS + growby)
 
-        with self.nodenet.netlock:
-            new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
-            self.allocated_nodespaces = new_allocated_nodespaces
+        new_allocated_nodespaces = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces[0:self.NoNS] = self.allocated_nodespaces
+        self.allocated_nodespaces = new_allocated_nodespaces
 
-            new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
-            self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
+        new_allocated_nodespaces_por_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_por_activators[0:self.NoNS] = self.allocated_nodespaces_por_activators
+        self.allocated_nodespaces_por_activators = new_allocated_nodespaces_por_activators
 
-            new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
-            self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
+        new_allocated_nodespaces_ret_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_ret_activators[0:self.NoNS] = self.allocated_nodespaces_ret_activators
+        self.allocated_nodespaces_ret_activators = new_allocated_nodespaces_ret_activators
 
-            new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
-            self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
+        new_allocated_nodespaces_sub_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sub_activators[0:self.NoNS] = self.allocated_nodespaces_sub_activators
+        self.allocated_nodespaces_sub_activators = new_allocated_nodespaces_sub_activators
 
-            new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
-            self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
+        new_allocated_nodespaces_sur_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sur_activators[0:self.NoNS] = self.allocated_nodespaces_sur_activators
+        self.allocated_nodespaces_sur_activators = new_allocated_nodespaces_sur_activators
 
-            new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
-            self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
+        new_allocated_nodespaces_cat_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_cat_activators[0:self.NoNS] = self.allocated_nodespaces_cat_activators
+        self.allocated_nodespaces_cat_activators = new_allocated_nodespaces_cat_activators
 
-            new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
-            self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
+        new_allocated_nodespaces_exp_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_exp_activators[0:self.NoNS] = self.allocated_nodespaces_exp_activators
+        self.allocated_nodespaces_exp_activators = new_allocated_nodespaces_exp_activators
 
-            new_allocated_nodespaces_sampling_activators = np.zeros(new_NoNS, dtype=np.int32)
-            new_allocated_nodespaces_sampling_activators[0:self.NoNS] = self.allocated_nodespaces_sampling_activators
-            self.allocated_nodespaces_sampling_activators = new_allocated_nodespaces_sampling_activators
+        new_allocated_nodespaces_sampling_activators = np.zeros(new_NoNS, dtype=np.int32)
+        new_allocated_nodespaces_sampling_activators[0:self.NoNS] = self.allocated_nodespaces_sampling_activators
+        self.allocated_nodespaces_sampling_activators = new_allocated_nodespaces_sampling_activators
 
-            new_nodespaces_last_changed = np.zeros(new_NoNS, dtype=np.int32)
-            new_nodespaces_last_changed[0:self.NoNS] = self.nodespaces_last_changed
-            self.nodespaces_last_changed = new_nodespaces_last_changed
+        new_nodespaces_last_changed = np.zeros(new_NoNS, dtype=np.int32)
+        new_nodespaces_last_changed[0:self.NoNS] = self.nodespaces_last_changed
+        self.nodespaces_last_changed = new_nodespaces_last_changed
 
-            new_nodespaces_contents_last_changed = np.zeros(new_NoNS, dtype=np.int32)
-            new_nodespaces_contents_last_changed[0:self.NoNS] = self.nodespaces_contents_last_changed
-            self.nodespaces_contents_last_changed = new_nodespaces_contents_last_changed
+        new_nodespaces_contents_last_changed = np.zeros(new_NoNS, dtype=np.int32)
+        new_nodespaces_contents_last_changed[0:self.NoNS] = self.nodespaces_contents_last_changed
+        self.nodespaces_contents_last_changed = new_nodespaces_contents_last_changed
 
-            self.has_new_usages = True
-            self.NoNS = new_NoNS
+        self.has_new_usages = True
+        self.NoNS = new_NoNS
 
     def grow_number_of_elements(self, growby):
 
         new_NoE = int(self.NoE + growby)
 
-        with self.nodenet.netlock:
-            new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
-            new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
-            self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
+        new_allocated_elements_to_nodes = np.zeros(new_NoE, dtype=np.int32)
+        new_allocated_elements_to_nodes[0:self.NoE] = self.allocated_elements_to_nodes
+        self.allocated_elements_to_nodes = new_allocated_elements_to_nodes
 
-            new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
-            new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
-            self.allocated_elements_to_activators = new_allocated_elements_to_activators
+        new_allocated_elements_to_activators = np.zeros(new_NoE, dtype=np.int32)
+        new_allocated_elements_to_activators[0:self.NoE] = self.allocated_elements_to_activators
+        self.allocated_elements_to_activators = new_allocated_elements_to_activators
 
-            if self.sparse:
-                new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
-            else:
-                new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
-            new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
-            self.w.set_value(new_w, borrow=True)
+        if self.sparse:
+            new_w = sp.csr_matrix((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+        else:
+            new_w = np.zeros((new_NoE, new_NoE), dtype=self.nodenet.scipyfloatX)
+        new_w[0:self.NoE, 0:self.NoE] = self.w.get_value(borrow=True)
+        self.w.set_value(new_w, borrow=True)
 
-            new_a = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a[0:self.NoE] = self.a.get_value(borrow=True)
-            self.a.set_value(new_a, borrow=True)
+        new_a = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a[0:self.NoE] = self.a.get_value(borrow=True)
+        self.a.set_value(new_a, borrow=True)
 
-            new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-            self.a_shifted.set_value(new_a_shifted, borrow=True)
+        new_a_shifted = np.lib.stride_tricks.as_strided(new_a, shape=(new_NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.a_shifted.set_value(new_a_shifted, borrow=True)
 
-            new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
-            self.a_in.set_value(new_a_in, borrow=True)
+        new_a_in = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a_in[0:self.NoE] = self.a_in.get_value(borrow=True)
+        self.a_in.set_value(new_a_in, borrow=True)
 
-            new_a_prev = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
-            self.a_prev.set_value(new_a_prev, borrow=True)
+        new_a_prev = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_a_prev[0:self.NoE] = self.a_prev.get_value(borrow=True)
+        self.a_prev.set_value(new_a_prev, borrow=True)
 
-            new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
-            self.g_theta.set_value(new_g_theta, borrow=True)
+        new_g_theta = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_theta[0:self.NoE] = self.g_theta.get_value(borrow=True)
+        self.g_theta.set_value(new_g_theta, borrow=True)
 
-            new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
-            self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
+        new_g_theta_shifted = np.lib.stride_tricks.as_strided(new_g_theta, shape=(self.NoE, 7), strides=(self.nodenet.byte_per_float, self.nodenet.byte_per_float))
+        self.g_theta_shifted.set_value(new_g_theta_shifted, borrow=True)
 
-            new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
-            self.g_factor.set_value(new_g_factor, borrow=True)
+        new_g_factor = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_factor[0:self.NoE] = self.g_factor.get_value(borrow=True)
+        self.g_factor.set_value(new_g_factor, borrow=True)
 
-            new_g_threshold = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
-            self.g_threshold.set_value(new_g_threshold, borrow=True)
+        new_g_threshold = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_threshold[0:self.NoE] = self.g_threshold.get_value(borrow=True)
+        self.g_threshold.set_value(new_g_threshold, borrow=True)
 
-            new_g_amplification = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
-            self.g_amplification.set_value(new_g_amplification, borrow=True)
+        new_g_amplification = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_amplification[0:self.NoE] = self.g_amplification.get_value(borrow=True)
+        self.g_amplification.set_value(new_g_amplification, borrow=True)
 
-            new_g_min = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
-            self.g_min.set_value(new_g_min, borrow=True)
+        new_g_min = np.zeros(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_min[0:self.NoE] = self.g_min.get_value(borrow=True)
+        self.g_min.set_value(new_g_min, borrow=True)
 
-            new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
-            self.g_max.set_value(new_g_max, borrow=True)
+        new_g_max = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_max[0:self.NoE] =  self.g_max.get_value(borrow=True)
+        self.g_max.set_value(new_g_max, borrow=True)
 
-            new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
-            new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
-            self.g_function_selector.set_value(new_g_function_selector, borrow=True)
+        new_g_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_g_function_selector[0:self.NoE] = self.g_function_selector.get_value(borrow=True)
+        self.g_function_selector.set_value(new_g_function_selector, borrow=True)
 
-            new_g_expect = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
-            new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
-            self.g_expect.set_value(new_g_expect, borrow=True)
+        new_g_expect = np.ones(new_NoE, dtype=self.nodenet.numpyfloatX)
+        new_g_expect[0:self.NoE] = self.g_expect.get_value(borrow=True)
+        self.g_expect.set_value(new_g_expect, borrow=True)
 
-            new_g_countdown = np.zeros(new_NoE, dtype=np.int16)
-            new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
-            self.g_countdown.set_value(new_g_countdown, borrow=True)
+        new_g_countdown = np.zeros(new_NoE, dtype=np.int16)
+        new_g_countdown[0:self.NoE] = self.g_countdown.get_value(borrow=True)
+        self.g_countdown.set_value(new_g_countdown, borrow=True)
 
-            new_g_wait = np.ones(new_NoE, dtype=np.int16)
-            new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
-            self.g_wait.set_value(new_g_wait, borrow=True)
+        new_g_wait = np.ones(new_NoE, dtype=np.int16)
+        new_g_wait[0:self.NoE] = self.g_wait.get_value(borrow=True)
+        self.g_wait.set_value(new_g_wait, borrow=True)
 
-            new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
-            new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
-            self.n_function_selector.set_value(new_n_function_selector, borrow=True)
+        new_n_function_selector = np.zeros(new_NoE, dtype=np.int8)
+        new_n_function_selector[0:self.NoE] = self.n_function_selector.get_value(borrow=True)
+        self.n_function_selector.set_value(new_n_function_selector, borrow=True)
 
-            new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
-            self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
+        new_n_node_porlinked = np.zeros(new_NoE, dtype=np.int8)
+        self.n_node_porlinked.set_value(new_n_node_porlinked, borrow=True)
 
-            new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
-            self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
+        new_n_node_retlinked = np.zeros(new_NoE, dtype=np.int8)
+        self.n_node_retlinked.set_value(new_n_node_retlinked, borrow=True)
 
-            self.NoE = new_NoE
-            self.has_new_usages = True
+        self.NoE = new_NoE
+        self.has_new_usages = True
 
-            if self.has_pipes:
-                self.por_ret_dirty = True
+        if self.has_pipes:
+            self.por_ret_dirty = True
 
     def announce_nodes(self, number_of_nodes, average_elements_per_node):
 

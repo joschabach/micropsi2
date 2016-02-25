@@ -18,11 +18,15 @@ clean:
 
 tests:
 	bin/py.test
+	bin/py.test --agents
 
 test-coverage:
 	bin/py.test --cov micropsi_core --cov micropsi_server --cov-report html
 
-agent-tests:
+test-toolkit:
+	bin/py.test
+
+test-agents:
 	bin/py.test --agents
 
 

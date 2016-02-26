@@ -35,32 +35,23 @@ from .micropsi_logger import MicropsiLogger
 
 NODENET_DIRECTORY = "nodenets"
 WORLD_DIRECTORY = "worlds"
-RESOURCE_PATH = cfg['paths']['resource_path']
 
-sys.path.append(RESOURCE_PATH)
+signal_handler_registry = []
+runner = {'timestep': 1000, 'runner': None, 'factor': 1}
 
-configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+nodenet_lock = threading.Lock()
+
+# global variables set by intialize()
+RESOURCE_PATH = None
+PERSISTENCY_PATH = None
+
+configs = None
+logger = None
 
 worlds = {}
 nodenets = {}
 native_modules = {}
 custom_recipes = {}
-
-runner = {'timestep': 1000, 'runner': None, 'factor': 1}
-
-signal_handler_registry = []
-
-logger = MicropsiLogger({
-    'system': cfg['logging']['level_system'],
-    'world': cfg['logging']['level_world']
-}, cfg['logging'].get('logfile'))
-
-nodenet_lock = threading.Lock()
-
-if cfg['micropsi2'].get('profile_runner'):
-    import cProfile
-    import pstats
-    import io
 
 
 def add_signal_handler(handler):
@@ -84,6 +75,7 @@ class MicropsiRunner(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         if cfg['micropsi2'].get('profile_runner'):
+            import cProfile
             self.profiler = cProfile.Profile()
         else:
             self.profiler = None
@@ -144,6 +136,8 @@ class MicropsiRunner(threading.Thread):
                 average_duration = self.sum_of_durations / self.number_of_samples
                 if self.total_steps % self.granularity == 0:
                     if self.profiler:
+                        import pstats
+                        import io
                         s = io.StringIO()
                         sortby = 'cumtime'
                         ps = pstats.Stats(self.profiler, stream=s).sort_stats(sortby)
@@ -309,7 +303,7 @@ def load_nodenet(nodenet_uid):
                 nodenet_lock.release()
                 return False, "Nodenet %s requires unknown engine %s" % (nodenet_uid, engine)
 
-            nodenets[nodenet_uid].load(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
+            nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
@@ -323,7 +317,7 @@ def load_nodenet(nodenet_uid):
 
         nodenet_lock.release()
         return True, nodenet_uid
-    return False, "Nodenet %s not found in %s" % (nodenet_uid, RESOURCE_PATH)
+    return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
 def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
@@ -444,7 +438,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
         engine=engine,
         use_modulators=use_modulators)
 
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, data['uid'] + ".json")
     nodenet_data[data['uid']] = Bunch(**data)
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
@@ -463,7 +457,7 @@ def delete_nodenet(nodenet_uid):
 
     Simple unloading is maintained automatically when a nodenet is suspended and another one is accessed.
     """
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json')
     nodenet = get_nodenet(nodenet_uid)
     nodenet.remove(filename)
     unload_nodenet(nodenet_uid)
@@ -582,7 +576,7 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
     nodenet = nodenets[nodenet_uid]
-    nodenet.save(os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
+    nodenet.save(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
     nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
 
@@ -612,7 +606,7 @@ def import_nodenet(string, owner=None):
     if 'owner':
         import_data['owner'] = owner
     # assert import_data['world'] in worlds
-    filename = os.path.join(RESOURCE_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
+    filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
     with open(filename, 'w+') as fp:
         fp.write(json.dumps(import_data))
     nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
@@ -1250,12 +1244,12 @@ def parse_definition(json, filename=None):
 # Set up the MicroPsi runtime
 def load_definitions():
     global nodenet_data, world_data
-    nodenet_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, NODENET_DIRECTORY), type="nodenet")
-    world_data = crawl_definition_files(path=os.path.join(RESOURCE_PATH, WORLD_DIRECTORY), type="world")
+    nodenet_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY), type="nodenet")
+    world_data = crawl_definition_files(path=os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY), type="world")
     if not world_data:
         # create a default world for convenience.
         uid = tools.generate_uid()
-        filename = os.path.join(RESOURCE_PATH, WORLD_DIRECTORY, uid + '.json')
+        filename = os.path.join(PERSISTENCY_PATH, WORLD_DIRECTORY, uid + '.json')
         world_data[uid] = Bunch(uid=uid, name="default", version=1, filename=filename)
         with open(filename, 'w+') as fp:
             fp.write(json.dumps(world_data[uid], sort_keys=True, indent=4))
@@ -1280,7 +1274,7 @@ def init_worlds(world_data):
     return worlds
 
 
-def load_user_files(path=RESOURCE_PATH, reload_nodefunctions=False, errors=[]):
+def load_user_files(path, reload_nodefunctions=False, errors=[]):
     global native_modules, custom_recipes
     for f in os.listdir(path):
         if not f.startswith('.') and f != '__pycache__':
@@ -1313,7 +1307,6 @@ def parse_native_module_file(path):
             if key in native_modules:
                 logging.getLogger("system").warning("Native module names must be unique. %s is not." % key)
             native_modules[key] = modules[key]
-            sys.path.append(path)
 
 
 def parse_recipe_file(path, reload=False):
@@ -1326,8 +1319,10 @@ def parse_recipe_file(path, reload=False):
     pyname = relpath.replace(os.path.sep, '.')[:-3]
 
     try:
-        recipes = __import__(pyname, fromlist=['recipes'])
-        importlib.reload(sys.modules[pyname])
+        loader = importlib.machinery.SourceFileLoader('recipes', path)
+        recipes = loader.load_module()
+        # recipes = __import__(pyname, fromlist=['recipes'])
+        # importlib.reload(sys.modules[pyname])
     except SyntaxError as e:
         return "%s in recipe file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
 
@@ -1351,7 +1346,7 @@ def parse_recipe_file(path, reload=False):
                 'name': arg,
                 'default': default
             })
-        if name in custom_recipes:
+        if name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
             logging.getLogger("system").warning("Recipe function names must be unique. %s is not." % name)
         custom_recipes[name] = {
             'name': name,
@@ -1391,7 +1386,7 @@ def reload_native_modules():
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    errors = load_user_files(reload_nodefunctions=True, errors=[])
+    errors = load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[])
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets
@@ -1403,30 +1398,52 @@ def reload_native_modules():
     else:
         return False, errors
 
-native_modules = {}
-custom_recipes = {}
 
-load_definitions()
-init_worlds(world_data)
-result, errors = reload_native_modules()
-for e in errors:
-    logging.getLogger("system").error(e)
+def initialize(persistency_path=None, resource_path=None):
+    global PERSISTENCY_PATH, RESOURCE_PATH, configs, logger, runner
 
-# initialize runners
-# Initialize the threads for the continuous simulation of nodenets and worlds
-if 'runner_timestep' not in configs:
-    configs['runner_timestep'] = 200
-    configs.save_configs()
-if 'runner_factor' not in configs:
-    configs['runner_factor'] = 2
-    configs.save_configs()
+    if persistency_path is None:
+        persistency_path = cfg['paths']['data_directory']
 
-set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+    if resource_path is None:
+        resource_path = persistency_path
 
-runner['running'] = True
-runner['runner'] = MicropsiRunner()
+    PERSISTENCY_PATH = persistency_path
+    RESOURCE_PATH = resource_path
 
-add_signal_handler(kill_runners)
+    sys.path.append(resource_path)
 
-signal.signal(signal.SIGINT, signal_handler)
-signal.signal(signal.SIGTERM, signal_handler)
+    configs = config.ConfigurationManager(cfg['paths']['server_settings_path'])
+
+    if logger is None:
+        logger = MicropsiLogger({
+            'system': cfg['logging']['level_system'],
+            'world': cfg['logging']['level_world']
+        }, cfg['logging'].get('logfile'))
+
+    load_definitions()
+    init_worlds(world_data)
+    result, errors = reload_native_modules()
+    for e in errors:
+        logging.getLogger("system").error(e)
+
+    # initialize runners
+    # Initialize the threads for the continuous simulation of nodenets and worlds
+    if 'runner_timestep' not in configs:
+        configs['runner_timestep'] = 200
+        configs.save_configs()
+    if 'runner_factor' not in configs:
+        configs['runner_factor'] = 2
+        configs.save_configs()
+
+    set_runner_properties(configs['runner_timestep'], configs['runner_factor'])
+
+    runner['running'] = True
+    if runner.get('runner') is None:
+        runner['runner'] = MicropsiRunner()
+
+    if kill_runners not in signal_handler_registry:
+        add_signal_handler(kill_runners)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)

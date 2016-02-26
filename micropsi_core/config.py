@@ -51,7 +51,8 @@ class ConfigurationManager(object):
         # check if we already have a configuration manager with this resource file
         absolute_path = os.path.abspath(config_path)
         if absolute_path in ConfigurationManager.instances:
-            raise RuntimeError("A configuration manager with this resource path already exists!")
+            logging.getLogger("system").warning("A configuration manager with this resource path already exists!")
+            # raise RuntimeError("A configuration manager with this resource path already exists!")
 
         ConfigurationManager.instances.append(absolute_path)
         self.key = absolute_path

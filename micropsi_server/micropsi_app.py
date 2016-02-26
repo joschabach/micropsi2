@@ -1230,6 +1230,7 @@ def main(host=None, port=None):
     port = port or cfg['micropsi2']['port']
     server = cfg['micropsi2']['server']
     print("Starting App on Port " + str(port))
+    runtime.initialize()
     run(micropsi_app, host=host, port=port, quiet=True, server=server)
 
 if __name__ == "__main__":

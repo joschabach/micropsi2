@@ -595,7 +595,6 @@ class Nodetype(object):
     def nodefunction_name(self, nodefunction_name):
         import os
         from importlib.machinery import SourceFileLoader
-        from micropsi_core.runtime import RESOURCE_PATH
         self._nodefunction_name = nodefunction_name
         try:
             if self.path:

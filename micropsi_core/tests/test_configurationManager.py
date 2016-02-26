@@ -64,5 +64,4 @@ def test_create_configs(path, path2):
     assert conf_mgr["record"]["i"] == 12
     assert conf2["color"] == "blue"
 
-    with pytest.raises(RuntimeError):
-        ConfigurationManager(path)  # we cannot have more than one config manager at a single path
+    ConfigurationManager(path)  # we can now have more than one config manager at a single path

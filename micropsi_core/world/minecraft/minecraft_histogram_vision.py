@@ -50,11 +50,14 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
             'fov_hist__106': 0,
         })
 
-        self.datatargets.update({
+        targets = {
             'orientation': 0,
             'fov_x': 0,
             'fov_y': 0
-        })
+        }
+
+        self.datatargets.update(targets)
+        self.datatarget_feedback.update(targets)
 
         # add datasources for fovea
         for i in range(self.num_fov):

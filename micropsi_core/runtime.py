@@ -1332,6 +1332,11 @@ def parse_recipe_file(path, reload=False):
 
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
+        filename = os.path.realpath(func.__code__.co_filename)
+        if filename != os.path.realpath(path) and os.path.basename(filename) == 'recipes.py':
+            # import from another recipes file. ignore, to avoid
+            # false duplicate-function-name alerts
+            continue
         argspec = inspect.getargspec(func)
         arguments = argspec.args[1:]
         defaults = argspec.defaults or []

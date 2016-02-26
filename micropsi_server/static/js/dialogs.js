@@ -663,6 +663,7 @@ $(function() {
             recipe_name_input.val('');
             recipe_name_input.chosen({'search_contains': true});
             recipe_name_input.focus();
+            recipe_name_input.trigger('chosen:open');
             update_parameters_for_recipe();
         });
     });

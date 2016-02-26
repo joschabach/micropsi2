@@ -258,6 +258,7 @@ def _fix_link_inheritance(group, excluded_nodes):
     The function adds the links as .directions to the group and its sub-groups, and carries a set of
     excluded_nodes to remember which links should not be inherited upwards"""
 
+    from copy import deepcopy
     if hasattr(group, "uid"):
         excluded_nodes.add(group)
     else:
@@ -274,7 +275,7 @@ def _fix_link_inheritance(group, excluded_nodes):
         # now delete all links to excluded nodes
         dirs_copy = group.directions.copy()
         for d in dirs_copy:
-            for node in dirs_copy[d]:
+            for node in deepcopy(dirs_copy[d]):
                 if node in excluded_nodes:
                     group.directions[d].remove(node)
             if not group.directions[d]:

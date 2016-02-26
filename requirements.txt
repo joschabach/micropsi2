@@ -12,7 +12,7 @@ py==1.4.26
 pycrypto==2.6.1
 pytest==2.6.4
 pytest-cov==1.8.1
-scipy==0.15.1
+scipy
 six==1.8.0
 -e git+https://github.com/micropsi-industries/spock.git#egg=spock-dev
 waitress==0.8.9

@@ -8,9 +8,9 @@ coverage==3.7.1
 matplotlib==1.4.3
 mock==1.0.1
 numpy==1.9.2
-py==1.4.26
+py==1.4.31
 pycrypto==2.6.1
-pytest==2.6.4
+pytest==2.8.7
 pytest-cov==1.8.1
 scipy==0.17.0
 six==1.8.0

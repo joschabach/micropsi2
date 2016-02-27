@@ -1794,6 +1794,7 @@ class TheanoPartition():
         self.por_ret_dirty = self.has_pipes
 
     def set_inlink_weights(self, partition_from_spid, new_from_elements, new_to_elements, new_weights):
+        from_partition = self.nodenet.partitions[partition_from_spid]
         if partition_from_spid in self.inlinks:
             theano_from_elements = self.inlinks[partition_from_spid][0]
             theano_to_elements = self.inlinks[partition_from_spid][1]
@@ -1813,8 +1814,6 @@ class TheanoPartition():
             theano_from_elements = theano.shared(value=old_from_elements, name=fromname, borrow=True)
             theano_to_elements = theano.shared(value=old_to_elements, name=toname, borrow=True)
             theano_weights = theano.shared(value=old_weights.astype(T.config.floatX), name=weightsname, borrow=True)
-
-            from_partition = self.nodenet.partitions[partition_from_spid]
 
             propagation_function = self.get_compiled_propagate_inlinks(
                 from_partition,
@@ -1840,9 +1839,9 @@ class TheanoPartition():
         theano_to_elements.set_value(to_elements, borrow=True)
         theano_weights.set_value(weights, borrow=True)
 
-        for id in self.allocated_elements_to_nodes[theano_from_elements.get_value()]:
-            self.nodes_last_changed[id] = self.nodenet.current_step
-            self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step
+        for id in from_partition.allocated_elements_to_nodes[theano_from_elements.get_value()]:
+            from_partition.nodes_last_changed[id] = self.nodenet.current_step
+            from_partition.nodespaces_contents_last_changed[from_partition.allocated_node_parents[id]] = self.nodenet.current_step
         for id in self.allocated_elements_to_nodes[theano_to_elements.get_value()]:
             self.nodes_last_changed[id] = self.nodenet.current_step
             self.nodespaces_contents_last_changed[self.allocated_node_parents[id]] = self.nodenet.current_step

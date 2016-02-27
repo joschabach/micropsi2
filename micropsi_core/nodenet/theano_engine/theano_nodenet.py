@@ -1288,8 +1288,9 @@ class TheanoNodenet(Nodenet):
         actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
 
         for partition in self.partitions.values():
-            a_array = partition.a.get_value(borrow=True)
-            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
+            if len(partition.actuator_indices):
+                a_array = partition.a.get_value(borrow=True)
+                actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
 
         return actuator_values_to_write
 

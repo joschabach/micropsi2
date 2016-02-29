@@ -257,6 +257,42 @@ def test_modulators(fixed_nodenet, engine):
         assert 'Emotional' not in item.__class__.__name__
 
 
+def test_modulators_sensor_actor_connection(test_nodenet, test_world):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    micropsi.set_nodenet_properties(test_nodenet, worldadapter="Braitenberg", world_uid=test_world)
+    res, s1_id = micropsi.add_node(test_nodenet, "Sensor", [10, 10], None, name="brightness_l", parameters={'datasource': 'brightness_l'})
+    res, s2_id = micropsi.add_node(test_nodenet, "Sensor", [20, 20], None, name="emo_activation", parameters={'datasource': 'emo_activation'})
+    res, a1_id = micropsi.add_node(test_nodenet, "Actor", [30, 30], None, name="engine_l", parameters={'datatarget': 'engine_l'})
+    res, a2_id = micropsi.add_node(test_nodenet, "Actor", [40, 40], None, name="base_importance_of_intention", parameters={'datatarget': 'base_importance_of_intention'})
+    res, r1_id = micropsi.add_node(test_nodenet, "Register", [10, 30], None, name="r1")
+    res, r2_id = micropsi.add_node(test_nodenet, "Register", [10, 30], None, name="r2")
+    s1 = nodenet.get_node(s1_id)
+    s2 = nodenet.get_node(s2_id)
+    r1 = nodenet.get_node(r1_id)
+    r2 = nodenet.get_node(r2_id)
+    s2.set_gate_parameter('gen', 'maximum', 999)
+    micropsi.add_link(test_nodenet, r1_id, 'gen', a1_id, 'gen')
+    micropsi.add_link(test_nodenet, r2_id, 'gen', a2_id, 'gen')
+    r1.activation = 0.3
+    r2.activation = 0.7
+    emo_val = nodenet.get_modulator("emo_activation")
+
+    # patch reset method, to check if datatarget was written
+    def nothing():
+        pass
+    nodenet.worldadapter_instance.reset_datatargets = nothing
+
+    nodenet.step()
+    assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
+    assert s1.activation == nodenet.worldadapter_instance.get_datasource_value('brightness_l')
+    assert s2.activation == emo_val
+    assert round(nodenet.get_modulator('base_importance_of_intention'), 3) == 0.7
+    assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
+    emo_val = nodenet.get_modulator("emo_activation")
+    nodenet.step()
+    assert s2.activation == emo_val
+
+
 def test_node_parameters(fixed_nodenet, resourcepath):
     import os
     nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')

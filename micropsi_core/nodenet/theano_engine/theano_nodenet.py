@@ -800,6 +800,7 @@ class TheanoNodenet(Nodenet):
             self.partitionmap[parent_uid] = []
         self.partitionmap[parent_uid].append(partition)
         self.inverted_partitionmap[partition.spid] = parent_uid
+        self._rebuild_sensor_actor_indices(partition)
         return partition.spid
 
     def delete_partition(self, pid):
@@ -1273,8 +1274,19 @@ class TheanoNodenet(Nodenet):
 
     def set_sensors_and_actuator_feedback_to_values(self, sensor_values, actuator_feedback_values):
         """
-        Sets the sensors for the given data sources to the given values
+        Sets the sensors for the given data sources or modulators to the given values
         """
+        if self.use_modulators:
+            # include modulators
+            readables = [0 for _ in DoernerianEmotionalModulators.readable_modulators]
+            for idx, key in enumerate(sorted(DoernerianEmotionalModulators.readable_modulators)):
+                readables[idx] = self.get_modulator(key)
+            sensor_values = sensor_values + readables
+            writeables = [0 for _ in DoernerianEmotionalModulators.writeable_modulators]
+            for idx, key in enumerate(sorted(DoernerianEmotionalModulators.writeable_modulators)):
+                writeables[idx] = 1
+            actuator_feedback_values = actuator_feedback_values + writeables
+
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
             a_array[partition.sensor_indices] = sensor_values
@@ -1283,22 +1295,31 @@ class TheanoNodenet(Nodenet):
 
     def read_actuators(self):
         """
-        Returns a list of datatarget values for writing back to the world adapter
+        Returns a list of datatarget values for writing back to the world adapter,
+        writes modulator-values from datatargets
         """
         actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
-
         for partition in self.partitions.values():
-            if len(partition.actuator_indices):
-                a_array = partition.a.get_value(borrow=True)
-                actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
-
+            a_array = partition.a.get_value(borrow=True)
+            actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
+        if self.use_modulators:
+            writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
+            # remove modulators from actuator values
+            modulator_values = actuator_values_to_write[-len(writeables):]
+            actuator_values_to_write = actuator_values_to_write[:-len(writeables)]
+            for idx, key in enumerate(writeables):
+                self.set_modulator(key, modulator_values[idx])
         return actuator_values_to_write
 
-    def _rebuild_sensor_actor_indices(self):
+    def _rebuild_sensor_actor_indices(self, partition=None):
         """
-        Rebuilds the actor and sensor indices for all partitions
+        Rebuilds the actor and sensor indices of the given partition or all partitions if None
         """
-        for partition in self.partitions.values():
+        if partition is not None:
+            partitions = [partition]
+        else:
+            partitions = self.partitions.values()
+        for partition in partitions:
             partition.sensor_indices = np.zeros(len(self.get_datasources()), np.int32)
             partition.actuator_indices = np.zeros(len(self.get_datatargets()), np.int32)
             for datatarget, node_id in self.actuatormap.items():

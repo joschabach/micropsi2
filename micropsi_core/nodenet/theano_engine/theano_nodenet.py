@@ -258,6 +258,7 @@ class TheanoNodenet(Nodenet):
         self.rootpartition = rootpartition
         self.partitionmap = {}
         self.inverted_partitionmap = {}
+        self._rebuild_sensor_actor_indices(rootpartition)
 
         self._version = NODENET_VERSION  # used to check compatibility of the node net data
         self._step = 0
@@ -362,6 +363,8 @@ class TheanoNodenet(Nodenet):
 
             # re-initialize step operators for theano recompile to new shared variables
             self.initialize_stepoperators()
+
+            self._rebuild_sensor_actor_indices()
 
             return True
 

@@ -188,7 +188,7 @@ class DoernerianEmotionalModulators(StepOperator):
         nodenet.set_modulator("base_number_of_expected_events", 0)
         nodenet.set_modulator("base_number_of_unexpected_events", 0)
         nodenet.set_modulator("base_urge_change", 0)
-        nodenet.set_modulator("base_porret_decay_factor", 1)
+        # nodenet.set_modulator("base_porret_decay_factor", 1)
 
         # setting emotional parameters
         nodenet.set_modulator("emo_pleasure", emo_pleasure)

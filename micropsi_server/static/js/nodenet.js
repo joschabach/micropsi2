@@ -2916,15 +2916,18 @@ function openLinkCreationDialog(nodeUid){
 }
 
 function get_datasource_options(worldadapter, value){
-    var sources = worldadapters[worldadapter].datasources;
-    html = '<optgroup label="Datasources">';
-    for(var i in sources){
-        html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
+    var html = '';
+    if(worldadapter){
+        var sources = worldadapters[worldadapter].datasources;
+        html += '<optgroup label="Datasources">';
+        for(var i in sources){
+            html += '<option value="'+sources[i]+'"'+ ((value && value==sources[i]) ? ' selected="selected"':'') +'>'+sources[i]+'</option>';
+        }
+        if(value && sources.indexOf(value) < 0) {
+            html += '<option value="'+value+'"selected="selected">'+value+'</option>';
+        }
+        html += '</optgroup>';
     }
-    if(value && sources.indexOf(value) < 0) {
-        html += '<option value="'+value+'"selected="selected">'+value+'</option>';
-    }
-    html += '</optgroup>';
     html += '<optgroup label="Nodenet Globals">';
     for(var i in globalDataSources){
         html += '<option value="'+globalDataSources[i]+'"'+ ((value && value==globalDataSources[i]) ? ' selected="selected"':'') +'>'+globalDataSources[i]+'</option>';
@@ -2934,15 +2937,18 @@ function get_datasource_options(worldadapter, value){
 }
 
 function get_datatarget_options(worldadapter, value){
-    var targets = worldadapters[worldadapter].datatargets;
-    html = '<optgroup label="Datatargets">';
-    for(var i in targets){
-        html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
+    var html = '';
+    if(worldadapter){
+        var targets = worldadapters[worldadapter].datatargets;
+        html += '<optgroup label="Datatargets">';
+        for(var i in targets){
+            html += '<option value="'+targets[i]+'"'+ ((value && value==targets[i]) ? ' selected="selected"':'') +'>'+targets[i]+'</option>';
+        }
+        if(value && targets.indexOf(value) < 0) {
+            html += '<option value="'+value+'"selected="selected">'+value+'</option>';
+        }
+        html += '</optgroup>';
     }
-    if(value && targets.indexOf(value) < 0) {
-        html += '<option value="'+value+'"selected="selected">'+value+'</option>';
-    }
-    html += '</optgroup>';
     html += '<optgroup label="Nodenet Globals">';
     for(var i in globalDataTargets){
         html += '<option value="'+globalDataTargets[i]+'"'+ ((value && value==globalDataTargets[i]) ? ' selected="selected"':'') +'>'+globalDataTargets[i]+'</option>';
@@ -3871,16 +3877,12 @@ function getNodeParameterHTML(parameters, parameter_values){
             var i;
             switch(name){
                 case "datatarget":
-                    if(currentWorldadapter in worldadapters){
-                        var opts = get_datatarget_options(currentWorldadapter, value);
-                        input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+opts+"</select>";
-                    }
+                    var opts = get_datatarget_options(currentWorldadapter, value);
+                    input = "<select name=\"datatarget\" class=\"inplace\" id=\"node_datatarget\">"+opts+"</select>";
                     break;
                 case "datasource":
-                    if(currentWorldadapter in worldadapters){
-                        var opts = get_datasource_options(currentWorldadapter, value);
-                        input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+opts+"</select>";
-                    }
+                    var opts = get_datasource_options(currentWorldadapter, value);
+                    input = "<select name=\"datasource\" class=\"inplace\" id=\"node_datasource\">"+opts+"</select>";
                     break;
                 default:
                     if(parameter_values && parameter_values[name]){

@@ -206,7 +206,7 @@ class TheanoNodenet(Nodenet):
             self.scipyfloatX = scipy.float64
             self.numpyfloatX = np.float64
             self.byte_per_float = 8
-        else:
+        else:  # pragma: no cover
             self.logger.warn("Unsupported precision value from configuration: %s, falling back to float64", precision)
             T.config.floatX = "float64"
             self.scipyfloatX = scipy.float64
@@ -230,14 +230,14 @@ class TheanoNodenet(Nodenet):
         try:
             average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
         except:
-            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
 
         initial_number_of_nodes = 2000
         configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
         try:
             initial_number_of_nodes = int(configured_initial_number_of_nodes)
         except:
-            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
 
         sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']
@@ -246,7 +246,7 @@ class TheanoNodenet(Nodenet):
         elif configuredsparse == "False":
             sparse = False
         else:
-            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
             sparse = True
 
         rootpartition = TheanoPartition(self,
@@ -335,10 +335,10 @@ class TheanoNodenet(Nodenet):
                     self.logger.info("Loading nodenet %s metadata from file %s", self.name, filename)
                     with open(filename) as file:
                         initfrom.update(json.load(file))
-                except ValueError:
+                except ValueError:  # pragma: no cover
                     self.logger.warn("Could not read nodenet metadata from file %s", filename)
                     return False
-                except IOError:
+                except IOError:  # pragma: no cover
                     self.logger.warn("Could not open nodenet metadata file %s", filename)
                     return False
 
@@ -855,7 +855,7 @@ class TheanoNodenet(Nodenet):
                 try:
                     average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
                 except:
-                    self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
+                    self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
 
             initial_number_of_nodes = 2000
             if "initial_number_of_nodes" in options:
@@ -865,7 +865,7 @@ class TheanoNodenet(Nodenet):
                 try:
                     initial_number_of_nodes = int(configured_initial_number_of_nodes)
                 except:
-                    self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
+                    self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
 
             sparse = True
             if "sparse" in options:
@@ -877,7 +877,7 @@ class TheanoNodenet(Nodenet):
                 elif configuredsparse == "False":
                     sparse = False
                 else:
-                    self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
+                    self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
                     sparse = True
 
             self.last_allocated_partition += 1

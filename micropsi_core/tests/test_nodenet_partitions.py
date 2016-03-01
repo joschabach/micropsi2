@@ -31,12 +31,18 @@ def test_cross_partition_links(test_nodenet):
     assert register.activation == 1
     # change link weight
     netapi.link(source, 'gen', register, 'gen', weight=0.7)
+
+    assert register.uid in netapi.get_node(source.uid).get_associated_node_uids()
+    assert source.uid in netapi.get_node(register.uid).get_associated_node_uids()
+
     link = register.get_slot('gen').get_links()[0]
     assert round(link.weight, 3) == 0.7
     nodenet.step()
     assert round(register.activation, 3) == 0.7
-    netapi.unlink(source, 'gen', register, 'gen', )
-    assert netapi.get_node(register.uid).get_gate('gen').get_links() == []
+    netapi.unlink(source, 'gen', register, 'gen')
+    assert len(source.get_gate('gen').get_links()) == 1
+    assert netapi.get_node(register.uid).get_gate('gen').empty
+    assert netapi.get_node(register.uid).get_slot('gen').empty
     nodenet.step()
     assert register.activation == 0
 

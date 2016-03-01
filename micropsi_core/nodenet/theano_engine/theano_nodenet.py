@@ -229,15 +229,15 @@ class TheanoNodenet(Nodenet):
         configured_elements_per_node_assumption = settings['theano']['elements_per_node_assumption']
         try:
             average_elements_per_node_assumption = int(configured_elements_per_node_assumption)
-        except:
-            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)  # pragma: no cover
+        except:  # pragma: no cover
+            self.logger.warn("Unsupported elements_per_node_assumption value from configuration: %s, falling back to 4", configured_elements_per_node_assumption)
 
         initial_number_of_nodes = 2000
         configured_initial_number_of_nodes = settings['theano']['initial_number_of_nodes']
         try:
             initial_number_of_nodes = int(configured_initial_number_of_nodes)
-        except:
-            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)  # pragma: no cover
+        except:  # pragma: no cover
+            self.logger.warn("Unsupported initial_number_of_nodes value from configuration: %s, falling back to 2000", configured_initial_number_of_nodes)
 
         sparse = True
         configuredsparse = settings['theano']['sparse_weight_matrix']
@@ -245,8 +245,8 @@ class TheanoNodenet(Nodenet):
             sparse = True
         elif configuredsparse == "False":
             sparse = False
-        else:
-            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)  # pragma: no cover
+        else:  # pragma: no cover
+            self.logger.warn("Unsupported sparse_weight_matrix value from configuration: %s, falling back to True", configuredsparse)
             sparse = True
 
         rootpartition = TheanoPartition(self,

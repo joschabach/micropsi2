@@ -671,7 +671,6 @@ class TheanoPartition():
         self.n_node_retlinked.set_value(n_node_retlinked_array)
 
     def grow_number_of_nodes(self, growby):
-
         new_NoN = int(self.NoN + growby)
 
         new_allocated_nodes = np.zeros(new_NoN, dtype=np.int32)

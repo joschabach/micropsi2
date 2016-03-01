@@ -59,14 +59,41 @@ def test_partition_persistence(test_nodenet):
 
 
 @pytest.mark.engine("theano_engine")
-def test_delete_node(test_nodenet):
+def test_delete_node_deletes_inlinks(test_nodenet):
     nodenet = micropsi.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
     nodespace, source, register = prepare(netapi)
+    target = netapi.create_node("Register", None, "target")
+    netapi.link(register, 'gen', target, 'gen')
     netapi.delete_node(register)
     links = netapi.get_node(source.uid).get_gate('gen').get_links()
     assert len(links) == 1
     assert links[0].target_node.uid == source.uid
+    assert target.get_slot('gen').empty
+    assert nodespace.partition.inlinks == {}
+    assert len(nodenet.rootpartition.inlinks[nodespace.partition.spid][1].get_value()) == 0
+
+
+@pytest.mark.engine("theano_engine")
+def test_delete_node_modifies_inlinks(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace, source, register = prepare(netapi)
+    target = netapi.create_node("Register", None, "target")
+
+    register2 = netapi.create_node("Register", nodespace.uid, "reg2")
+    netapi.link(register, 'gen', target, 'gen')
+    netapi.link(register2, 'gen', target, 'gen')
+    netapi.link(source, 'gen', register2, 'gen')
+
+    netapi.delete_node(register)
+    assert len(source.get_gate('gen').get_links()) == 2
+    assert len(target.get_slot('gen').get_links()) == 1
+
+    assert list(nodespace.partition.inlinks.keys()) == [nodenet.rootpartition.spid]
+    assert list(nodenet.rootpartition.inlinks.keys()) == [nodespace.partition.spid]
+    assert len(nodespace.partition.inlinks[nodenet.rootpartition.spid][1].get_value()) == 1
+    assert len(nodenet.rootpartition.inlinks[nodespace.partition.spid][1].get_value()) == 1
 
 
 @pytest.mark.engine("theano_engine")
@@ -83,10 +110,8 @@ def test_grow_partitions(test_nodenet):
     for i in range(20):
         netapi.create_node("Pipe", nodespace.uid, "N %d" % i)
 
-    partition = None
-    for p in nodenet.partitions.values():
-        if p != nodenet.rootpartition:
-            partition = p
+    partition = nodespace.partition
+
     # growby (NoN // 2): 2,3,4,6,9,13,19,28
     assert len(partition.allocated_nodes) == 28
     assert partition.NoE > 28 * 4
@@ -111,10 +136,7 @@ def test_announce_nodes(test_nodenet):
     # announce 20 pipe nodes
     netapi.announce_nodes(nodespace.uid, 20, 8)
 
-    partition = None
-    for p in nodenet.partitions.values():
-        if p != nodenet.rootpartition:
-            partition = p
+    partition = nodespace.partition
 
     # 18 nodes needed
     assert partition.NoN == 26  # growby: 18 + 18//3

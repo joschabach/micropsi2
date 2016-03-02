@@ -85,7 +85,6 @@ def test_get_multiple_logger_messages_are_sorted():
 
 def test_register_runner_condition_step(test_nodenet):
     import time
-    micropsi.set_runner_properties(1, 1)
     success, data = micropsi.set_runner_condition(test_nodenet, steps=7)
     assert data['step'] == 7
     assert data['step_amount'] == 7
@@ -104,7 +103,6 @@ def test_register_runner_condition_step(test_nodenet):
 
 def test_register_runner_condition_monitor(test_nodenet):
     import time
-    micropsi.set_runner_properties(1, 1)
     nn = micropsi.nodenets[test_nodenet]
     node = nn.netapi.create_node('Register', None)
     nn.netapi.link(node, 'gen', node, 'gen', weight=2)

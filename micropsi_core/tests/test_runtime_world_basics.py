@@ -172,7 +172,6 @@ def test_worldadapter_update_calls_reset_datatargets(test_world, test_nodenet):
     runtime.load_nodenet(test_nodenet)
     nodenet.world = test_world
     runtime.set_nodenet_properties(nodenet.uid, worldadapter='Braitenberg', world_uid=world.uid)
-    runtime.set_runner_properties(1, 1)
     world.agents[test_nodenet].reset_datatargets = mock.MagicMock(name='reset')
     runtime.step_nodenet(test_nodenet)
     world.agents[test_nodenet].reset_datatargets.assert_called_once_with()

@@ -85,10 +85,8 @@ def plotfunc(netapi, node=None, **params):
     micropsi.reload_native_modules()
     node = nodenet.netapi.create_node("Plotter", None, name="Plotter")
     node.set_parameter("plotpath", resourcepath)
-    micropsi.set_runner_properties(1000, 1)
     micropsi.start_nodenetrunner(test_nodenet)
     sleep(2)
     micropsi.stop_nodenetrunner(test_nodenet)
-    print(micropsi.MicropsiRunner.last_nodenet_exception)
     assert micropsi.MicropsiRunner.last_nodenet_exception == {}
     assert os.path.isfile(os.path.join(resourcepath, "plot.png"))

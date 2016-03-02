@@ -91,6 +91,7 @@ def pytest_runtest_setup(item):
     open(os.path.join(testpath, 'Test', '__init__.py'), 'w').close()
     micropsi.reload_native_modules()
     micropsi.logger.clear_logs()
+    micropsi.set_runner_properties(1, 1)
     set_logging_levels()
 
 

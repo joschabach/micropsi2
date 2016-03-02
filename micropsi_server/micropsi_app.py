@@ -1218,6 +1218,16 @@ def get_available_recipes():
     return True, runtime.get_available_recipes()
 
 
+@rpc("run_operation")
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    return runtime.run_operation(nodenet_uid, name, parameters, selection_uids)
+
+
+@rpc('get_available_operations')
+def get_available_operations():
+    return True, runtime.get_available_operations()
+
+
 @rpc('get_agent_dashboard')
 def get_agent_dashboard(nodenet_uid):
     return True, runtime.get_agent_dashboard(nodenet_uid)

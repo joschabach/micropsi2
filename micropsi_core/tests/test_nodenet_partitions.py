@@ -121,6 +121,11 @@ def test_grow_partitions(test_nodenet):
 
     assert len(partition.allocated_nodespaces) == 4
 
+    # step, save, and load the net to make sure all data structures have been grown properly
+    micropsi.step_nodenet(test_nodenet)
+    micropsi.save_nodenet(test_nodenet)
+    micropsi.revert_nodenet(test_nodenet)
+    micropsi.step_nodenet(test_nodenet)
 
 @pytest.mark.engine("theano_engine")
 def test_announce_nodes(test_nodenet):

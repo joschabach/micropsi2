@@ -160,3 +160,29 @@ def test_delete_partition(test_nodenet):
     links = source.get_gate('gen').get_links()
     assert len(links) == 1
     assert links[0].target_node == source
+
+
+@pytest.mark.engine("theano_engine")
+def test_sensor_actuator_indices(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    result, world_uid = micropsi.new_world('default', 'World')
+    micropsi.set_nodenet_properties(test_nodenet, worldadapter='Default', world_uid=world_uid)
+    sensor = netapi.create_node("Sensor", None, "static_sensor")
+    sensor.set_parameter("datasource", "static_on")
+    actor = netapi.create_node("Actor", None, "echo_actor")
+    actor.set_parameter("datatarget", "echo")
+    register = netapi.create_node("Register", None, "source")
+    register.activation = 0.8
+    netapi.link(register, 'gen', register, 'gen', weight=0.5)
+    netapi.link(register, 'gen', actor, 'gen')
+    micropsi.step_nodenet(test_nodenet)
+    assert sensor.activation == 0
+    assert actor.get_gate('gen').activation == 0
+    micropsi.step_nodenet(test_nodenet)
+    assert sensor.activation == 1
+    assert round(actor.get_gate('gen').activation, 3) == 0.8
+    netapi.delete_node(sensor)
+    netapi.delete_node(actor)
+    assert set(nodenet.rootpartition.actuator_indices) == {0}
+    assert set(nodenet.rootpartition.sensor_indices) == {0}

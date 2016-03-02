@@ -52,6 +52,7 @@ worlds = {}
 nodenets = {}
 native_modules = {}
 custom_recipes = {}
+custom_operations = {}
 
 
 def add_signal_handler(handler):
@@ -1148,6 +1149,21 @@ def get_available_recipes():
     return recipes
 
 
+def get_available_operations():
+    """ Returns a dict of available user-operations """
+    operations = {}
+    for name, data in custom_operations.items():
+        if not name.startswith('_'):
+            operations[name] = {
+                'name': name,
+                'parameters': data['parameters'],
+                'docstring': data['docstring'],
+                'category': data['category'],
+                'selection': data['selectioninfo']
+            }
+    return operations
+
+
 def run_recipe(nodenet_uid, name, parameters):
     """ Calls the given recipe with the provided parameters, and returns the output, if any """
     netapi = nodenets[nodenet_uid].netapi
@@ -1174,6 +1190,34 @@ def run_recipe(nodenet_uid, name, parameters):
         return True, result
     else:
         return False, "Script not found"
+
+
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    """ Calls the given operation on the selection"""
+    netapi = nodenets[nodenet_uid].netapi
+    params = {}
+    for key in parameters:
+        if parameters[key] != '':
+            params[key] = parameters[key]
+    if name in custom_operations:
+        func = custom_operations[name]['function']
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler = cProfile.Profile()
+            profiler.enable()
+        result = {'reload': True}
+        ret = func(netapi, selection_uids, **params)
+        if ret:
+            result.update(ret)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler.disable()
+            s = io.StringIO()
+            sortby = 'cumtime'
+            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps.print_stats('nodenet')
+            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
+        return True, result
+    else:
+        return False, "Operation not found"
 
 
 def get_agent_dashboard(nodenet_uid):
@@ -1285,9 +1329,11 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
             elif f == 'nodetypes.json':
                 err = parse_native_module_file(abspath)
             elif f == 'recipes.py':
-                err = parse_recipe_file(abspath, reload_nodefunctions)
+                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
             elif f == 'nodefunctions.py' and reload_nodefunctions:
                 err = reload_nodefunctions_file(abspath)
+            elif f == 'operations.py':
+                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
             if err:
                 errors.append(err)
     return errors
@@ -1309,22 +1355,24 @@ def parse_native_module_file(path):
             native_modules[key] = modules[key]
 
 
-def parse_recipe_file(path, reload=False):
+def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False):
     global custom_recipes
     import importlib
     import inspect
 
-    category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    category = category_overwrite or os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
     relpath = os.path.relpath(path, start=RESOURCE_PATH)
-    pyname = relpath.replace(os.path.sep, '.')[:-3]
+    name = os.path.basename(path)[:-3]
+
+    mode = 'recipes' if os.path.basename(path).startswith('recipes') else 'operations'
 
     try:
-        loader = importlib.machinery.SourceFileLoader('recipes', path)
+        loader = importlib.machinery.SourceFileLoader(name, path)
         recipes = loader.load_module()
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
     except SyntaxError as e:
-        return "%s in recipe file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
+        return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):
         if module.__file__.startswith(RESOURCE_PATH):
@@ -1333,12 +1381,15 @@ def parse_recipe_file(path, reload=False):
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
         filename = os.path.realpath(func.__code__.co_filename)
-        if filename != os.path.realpath(path) and os.path.basename(filename) == 'recipes.py':
-            # import from another recipes file. ignore, to avoid
+        if filename != os.path.realpath(path) and os.path.basename(filename) == os.path.basename(path):
+            # import from another file of the same mode. ignore, to avoid
             # false duplicate-function-name alerts
             continue
         argspec = inspect.getargspec(func)
-        arguments = argspec.args[1:]
+        if mode == 'recipes':
+            arguments = argspec.args[1:]
+        elif mode == 'operations':
+            arguments = argspec.args[2:]
         defaults = argspec.defaults or []
         params = []
         diff = len(arguments) - len(defaults)
@@ -1351,9 +1402,11 @@ def parse_recipe_file(path, reload=False):
                 'name': arg,
                 'default': default
             })
-        if name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
+        if mode == 'recipes' and name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
             logging.getLogger("system").warning("Recipe function names must be unique. %s is not." % name)
-        custom_recipes[name] = {
+        elif mode == 'operations' and name in custom_operations and id(func) != id(custom_operations[name]['function']):
+            logging.getLogger("system").warning("Operations function names must be unique. %s is not." % name)
+        data = {
             'name': name,
             'parameters': params,
             'function': func,
@@ -1361,6 +1414,13 @@ def parse_recipe_file(path, reload=False):
             'category': category,
             'path': path
         }
+
+        if mode == 'recipes':
+            custom_recipes[name] = data
+        elif mode == 'operations':
+            if hasattr(func, 'selectioninfo'):
+                data['selectioninfo'] = func.selectioninfo
+                custom_operations[name] = data
 
 
 def reload_nodefunctions_file(path):
@@ -1381,12 +1441,19 @@ def reload_nodefunctions_file(path):
 
 def reload_native_modules():
     # stop nodenets, save state
-    global native_modules, custom_recipes
+    global native_modules, custom_recipes, custom_operations
     native_modules = {}
     custom_recipes = {}
+    custom_operations = {}
     runners = {}
+    # load builtins:
     from micropsi_core.nodenet.native_modules import nodetypes
     native_modules.update(nodetypes)
+    operationspath = os.path.abspath('micropsi_core/nodenet/operations/')
+    for file in os.listdir(operationspath):
+        import micropsi_core.nodenet.operations
+        if file != '__init__.py' and not file.startswith('.') and os.path.isfile(os.path.join(operationspath, file)):
+            parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True

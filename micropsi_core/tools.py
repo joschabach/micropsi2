@@ -9,27 +9,14 @@ __author__ = 'joscha'
 __date__ = '29.06.12'
 
 import uuid
-import os
+
 
 def generate_uid():
     """produce a unique identifier, restricted to an ASCII string"""
     return uuid.uuid1().hex
 
-def mkdir(new_directory_name):
-    """if the directory does not exist, create it; otherwise, exit quietly"""
 
-    if os.path.isdir(new_directory_name):
-        pass
-    elif os.path.isfile(new_directory_name):
-        raise OSError("a file with the same name as the desired directory, '%s', already exists." % new_directory_name)
-    else:
-        head, tail = os.path.split(new_directory_name)
-        if head and not os.path.isdir(head):
-            mkdir(head)
-        if tail:
-            os.mkdir(new_directory_name)
-
-def check_for_url_proof_id(id, existing_ids = None, min_id_length = 1, max_id_length = 21):
+def check_for_url_proof_id(id, existing_ids=None, min_id_length=1, max_id_length=21):
     """Returns (True, id) if id is permissible, and (False, error message) otherwise. Since
     we strip the id, you should use the returned one, not the original one"""
 
@@ -38,16 +25,16 @@ def check_for_url_proof_id(id, existing_ids = None, min_id_length = 1, max_id_le
     # maybe this is too restrictive, but I want to use the id directly in urls
     for c in id:
         if not c.lower() in "0123456789abcdefghijklmnopqrstuvwxyz@._-":
-            return False, "The character '%s' is not allowed" %c
+            return False, "The character '%s' is not allowed" % c
 
-    if existing_ids and id.lower() in existing_ids: return False, "ID already exists"
+    if existing_ids and id.lower() in existing_ids:
+        return False, "ID already exists"
     if len(id) < min_id_length:
         return False, "Must at least have %s characters" % min_id_length
     if len(id) > max_id_length:
         return False, "Must have less than %s characters" % max_id_length
 
     return True, id
-
 
 
 # Global parameters for all created functions
@@ -61,12 +48,15 @@ SAFE_SYMBOLS = ["list", "dict", "tuple", "set", "long", "float", "object", "bool
 
 # add standard exceptions
 __bi = __builtins__
-if type(__bi) is not dict: __bi = __bi.__dict__
+if type(__bi) is not dict:
+    __bi = __bi.__dict__
 for k in __bi:
-    if k.endswith("Error") or k.endswith("Warning"): SAFE_SYMBOLS.append(k)
+    if k.endswith("Error") or k.endswith("Warning"):
+        SAFE_SYMBOLS.append(k)
 del __bi
 
-def create_function(source_string, parameters = "", additional_symbols = None):
+
+def create_function(source_string, parameters="", additional_symbols=None):
     """Create a python function from the given source code.
 
     Arguments:
@@ -86,7 +76,7 @@ def create_function(source_string, parameters = "", additional_symbols = None):
         get_user = create_function(my_function_source, parameters="index = 0",
                                    additional_symbols = {'usermanager': usermanager})
         print get_user("klaus")
-    
+
     (This function is inspired by a recipe by David Decotigny.)
     """
 
@@ -99,12 +89,12 @@ def create_function(source_string, parameters = "", additional_symbols = None):
 
     # Setup the local and global dictionaries of the execution
     # environment for __my_function__
-    bis   = dict() # builtins
+    bis = dict()  # builtins
     globs = dict()
-    locs  = dict()
+    locs = dict()
 
     # Setup a standard-compatible python environment
-    bis["locals"]  = lambda: locs
+    bis["locals"] = lambda: locs
     bis["globals"] = lambda: globs
     globs["__builtins__"] = bis
     globs["__name__"] = "SUBENV"
@@ -159,7 +149,9 @@ class Bunch(dict):
         for i in kwargs:
             self[i] = kwargs[i]
 
+
 import collections
+
 
 class OrderedSet(collections.OrderedDict, collections.MutableSet):
 
@@ -205,6 +197,7 @@ class OrderedSet(collections.OrderedDict, collections.MutableSet):
     symmetric_difference_update = property(lambda self: self.__ixor__)
     union = property(lambda self: self.__or__)
 
+
 def itersubclasses(cls, folder=None, _seen=None):
     """
     Generator over all subclasses of a given class, in depth first order.
@@ -216,10 +209,11 @@ def itersubclasses(cls, folder=None, _seen=None):
 
     if not isinstance(cls, type):
         raise TypeError('itersubclasses must be called with new-style classes, not %.100r' % cls)
-    if _seen is None: _seen = set()
+    if _seen is None:
+        _seen = set()
     try:
         subs = cls.__subclasses__()
-    except TypeError: # fails only when cls is type
+    except TypeError:  # fails only when cls is type
         subs = cls.__subclasses__(cls)
     for sub in subs:
         if sub not in _seen:

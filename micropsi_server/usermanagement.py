@@ -89,7 +89,7 @@ class UserManager(object):
         # set up persistence
         if userfile_path is None:
             userfile_path = cfg['paths']['usermanager_path']
-        micropsi_core.tools.mkdir(os.path.dirname(userfile_path))
+        os.makedirs(os.path.dirname(userfile_path), exist_ok=True)
 
         self.user_file_name = userfile_path  # todo: make this work without a file system
         try:

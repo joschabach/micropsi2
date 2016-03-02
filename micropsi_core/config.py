@@ -58,7 +58,7 @@ class ConfigurationManager(object):
         self.key = absolute_path
 
         # set up persistence
-        micropsi_core.tools.mkdir(os.path.dirname(config_path))
+        os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
         self.config_file_name = config_path
         self.auto_save = auto_save

@@ -1201,7 +1201,7 @@ def crawl_definition_files(path, type="definition"):
     """
 
     result = {}
-    tools.mkdir(path)
+    os.makedirs(path, exist_ok=True)
 
     for user_directory_name, user_directory_names, file_names in os.walk(path):
         for definition_file_name in file_names:

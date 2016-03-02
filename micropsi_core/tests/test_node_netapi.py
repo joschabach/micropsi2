@@ -1074,3 +1074,26 @@ def test_set_dashboard_value(test_nodenet, node):
     netapi = nodenet.netapi
     netapi.set_dashboard_value('foo', 'bar')
     assert nodenet.dashboard_values['foo'] == 'bar'
+
+
+def test_decay_porret_links(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    pipes = []
+    netapi.set_modulator('base_porret_decay_factor', 0.1)
+    for i in range(10):
+        node = netapi.create_node("Pipe", None, "P%d" % i)
+        pipes.append(node)
+        if i > 0:
+            netapi.link_with_reciprocal(pipes[i - 1], node, 'porret', weight=0.1 * i)
+
+    netapi.link_with_reciprocal(pipes[0], pipes[1], 'subsur', weight=0.5)
+    reg = netapi.create_node("Register", None, "source")
+    netapi.link(reg, 'gen', pipes[0], 'gen', 0.4)
+    netapi.decay_por_links(None)
+    for i in range(9):
+        assert round(pipes[i].get_gate('por').get_links()[0].weight, 3) == round(0.1 * (i + 1) * 0.9, 3)
+    # sub/sur/ret/gen links unchanged
+    assert round(reg.get_gate('gen').get_links()[0].weight, 3) == 0.4
+    assert round(pipes[0].get_gate('sub').get_links()[0].weight, 3) == 0.5
+    assert round(pipes[7].get_gate('ret').get_links()[0].weight, 3) == 0.7

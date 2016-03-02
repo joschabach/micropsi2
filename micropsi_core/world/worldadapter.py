@@ -107,11 +107,13 @@ class WorldAdapter(WorldObject, metaclass=ABCMeta):
 
 class Default(WorldAdapter):
     """
-    The default world adapter
+    A default Worldadapter, that provides example-datasources and -targets
     """
     def __init__(self, world, uid=None, **data):
+        super().__init__(world, uid=uid, **data)
         self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
         self.datatargets = {'echo': 0}
+        self.datatarget_feedback = {'echo': 0}
 
     def update_data_sources_and_targets(self):
         import random

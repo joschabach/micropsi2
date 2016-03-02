@@ -77,7 +77,7 @@ class TheanoNodespace(Nodespace):
                 for partition in self._nodenet.partitionmap[self.uid]:
                     uids.append(partition.rootnodespace_uid)
             return uids
-        elif entitytype == None:
+        elif entitytype is None:
             ids = self.get_known_ids('nodes')
             ids.extend(self.get_known_ids('nodespaces'))
             return ids

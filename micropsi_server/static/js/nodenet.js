@@ -2657,6 +2657,7 @@ function openMultipleNodesContextMenu(event){
     var node = null;
     var compact = false;
     var nodetypes = [];
+    var count = 0
     for(var uid in selection){
         if(!node) node = nodes[uid];
         if(isCompact(nodes[uid])) {
@@ -2665,6 +2666,7 @@ function openMultipleNodesContextMenu(event){
         if(nodetypes.indexOf(nodes[uid].type) == -1){
             nodetypes.push(nodes[uid].type);
         }
+        count += 1;
     }
     var menu = $('#multi_node_menu .nodenet_menu');
     var html = '';
@@ -2680,9 +2682,11 @@ function openMultipleNodesContextMenu(event){
 
     applicable_operations = {};
     for(var key in available_operations){
-        var supported_types = available_operations[key].selection.nodetypes;
-        if(supported_types.length == 0 || $(nodetypes).not(supported_types).get().length == 0){
-            applicable_operations[key] = available_operations[key]
+        var conditions = available_operations[key].selection;
+        if((conditions.nodetypes.length == 0 || $(nodetypes).not(conditions.nodetypes).get().length == 0) &&
+           (count >= conditions.mincount) &&
+           (conditions.maxcount < 0 || count <= conditions.maxcount)){
+                applicable_operations[key] = available_operations[key]
         }
     }
 
@@ -2696,7 +2700,7 @@ function openMultipleNodesContextMenu(event){
     }
     sorted_operations = Object.keys(applicable_operations).sort();
 
-    if(len(sorted_operations)){
+    if(sorted_operations.length){
         html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
         html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
             items = '';
@@ -2709,6 +2713,8 @@ function openMultipleNodesContextMenu(event){
             return items;
         });
         html += '</ul></li>';
+    } else {
+        html += '<li class="divider"></li><li class="noop disabled"><a>Operations</a></li>';
     }
     if(nodetypes.length == 1){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);

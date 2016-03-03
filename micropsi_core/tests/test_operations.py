@@ -2,6 +2,28 @@
 from micropsi_core import runtime
 
 
+def test_user_operation(test_nodenet, resourcepath):
+    import os
+    os.makedirs(os.path.join(resourcepath, 'foobar'))
+    with open(os.path.join(resourcepath, 'foobar', 'operations.py'), 'w+') as fp:
+        fp.write("""
+def delete_nodes(netapi, selection):
+    for uid in selection:
+        netapi.delete_node(netapi.get_node(uid))
+
+delete_nodes.selectioninfo = {
+    'nodetypes': [],
+    'mincount': 1,
+    'maxcount': -1
+}""")
+    runtime.reload_native_modules()
+    ops = runtime.get_available_operations()
+    assert ops['delete_nodes']['category'] == 'foobar'
+    res, uid = runtime.add_node(test_nodenet, "Register", [10, 10], None)
+    runtime.run_operation(test_nodenet, "delete_nodes", {}, [uid])
+    assert uid not in runtime.nodenets[test_nodenet].get_node_uids()
+
+
 def test_autoalign_operation(test_nodenet):
     ops = runtime.get_available_operations()
     assert ops['autoalign']['selection']['nodetypes'] == []

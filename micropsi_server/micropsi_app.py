@@ -723,7 +723,6 @@ def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
     if result:
         data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
-        data['recipes'] = runtime.get_available_recipes()
         return True, data
     else:
         return False, uid

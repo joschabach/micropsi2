@@ -151,6 +151,10 @@ registerResizeHandler();
 globalDataSources = [];
 globalDataTargets = [];
 
+available_operations = {};
+operation_categories = {};
+sorted_operations = [];
+
 $(document).on('load_nodenet', function(event, uid){
     ns = 'Root';
     if(uid == currentNodenet){
@@ -233,6 +237,31 @@ function setNodenetValues(data){
     }
 }
 
+function buildCategoryTree(item, path, idx){
+    if (idx < path.length){
+        name = path[idx];
+        if (!item[name]){
+            item[name] = {};
+        }
+        buildCategoryTree(item[name], path, idx + 1);
+    }
+}
+
+
+api.call("get_available_operations", {}, function(data){
+    available_operations = data
+    categories = [];
+    for(var key in available_operations){
+        categories.push(available_operations[key].category.split('/'));
+    }
+    operation_categories = {}
+    for(var i =0; i < categories.length; i++){
+        buildCategoryTree(operation_categories, categories[i], 0);
+    }
+    sorted_operations = Object.keys(available_operations).sort();
+});
+
+
 function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
         nodespace = "Root";
@@ -288,16 +317,6 @@ function setCurrentNodenet(uid, nodespace, changed){
                     return 0;
                 });
 
-                function buildTreeRecursive(item, path, idx){
-                    if (idx < path.length){
-                        name = path[idx];
-                        if (!item[name]){
-                            item[name] = {};
-                        }
-                        buildTreeRecursive(item[name], path, idx + 1);
-                    }
-                }
-
                 categories = [];
                 for(var key in native_modules){
                     nodetypes[key] = native_modules[key];
@@ -305,7 +324,7 @@ function setCurrentNodenet(uid, nodespace, changed){
                 }
                 native_module_categories = {}
                 for(var i =0; i < categories.length; i++){
-                    buildTreeRecursive(native_module_categories, categories[i], 0);
+                    buildCategoryTree(native_module_categories, categories[i], 0);
                 }
 
                 available_gatetypes = [];
@@ -2576,7 +2595,7 @@ function initializeDialogs(){
 
 var clickPosition = null;
 
-function buildNativeModuleDropdown(cat, html, current_category){
+function buildRecursiveDropdown(cat, html, current_category, generate_items){
     if(!current_category){
         current_category='';
     }
@@ -2589,17 +2608,14 @@ function buildNativeModuleDropdown(cat, html, current_category){
         var newcategory = current_category || '';
         if(current_category == '') newcategory += catentries[i]
         else newcategory += '/'+catentries[i];
-        html += '<li><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
+        html += '<li class="noop"><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
         html += '<ul class="sub-menu dropdown-menu">'
-        html += buildNativeModuleDropdown(cat[catentries[i]], '', newcategory);
+        html += buildRecursiveDropdown(cat[catentries[i]], '', newcategory, generate_items);
         html += '</ul></li>';
     }
-    for(var idx in sorted_native_modules){
-        key = sorted_native_modules[idx];
-        if(native_modules[key].category == current_category){
-            html += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
-        }
-    }
+
+    html += generate_items(current_category);
+
     return html
 }
 
@@ -2622,9 +2638,18 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
-            html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+            html += '<li class="divider"></li><li class="noop"><a>Create Native Module<i class="icon-chevron-right"></i></a>';
             html += '<ul class="sub-menu dropdown-menu">';
-            html += buildNativeModuleDropdown(native_module_categories, '', '')
+            html += buildRecursiveDropdown(native_module_categories, '', '', function(current_category){
+                items = '';
+                for(var idx in sorted_native_modules){
+                    key = sorted_native_modules[idx];
+                    if(native_modules[key].category == current_category){
+                        items += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
+                    }
+                }
+                return items;
+            });
             html += '</ul></li>';
         }
         html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
@@ -2636,22 +2661,19 @@ function openContextMenu(menu_id, event) {
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
+    $(menu_id+" li.noop").on('click', function(event){event.stopPropagation();})
 }
 
 function openMultipleNodesContextMenu(event){
-    var typecheck = null;
-    var sametype = true;
     var node = null;
     var compact = false;
+    var nodetypes = [];
     for(var uid in selection){
         if(isCompact(nodes[uid])) {
             compact = true;
         }
-        if(typecheck == null || typecheck == nodes[uid].type){
-            typecheck = nodes[uid].type;
-            node = nodes[uid];
-        } else {
-            sametype = false;
+        if(nodetypes.indexOf(nodes[uid].type) > -1){
+            nodetypes.push(nodes[uid].type);
         }
     }
     var menu = $('#multi_node_menu .nodenet_menu');
@@ -2662,7 +2684,20 @@ function openMultipleNodesContextMenu(event){
     html += '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
-    if(sametype){
+
+    html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
+    html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
+        items = '';
+        for(var idx in sorted_operations){
+            key = sorted_operations[idx];
+            if(available_operations[key].category == current_category){
+                items += '<li><a data-run-operation="' + key + '">'+ key +'</a></li>';
+            }
+        }
+        return items;
+    });
+    html += '</ul></li>';
+    if(nodetypes.length == 1){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
     html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
@@ -2835,18 +2870,29 @@ function handleContextMenu(event) {
                     }
                     break;
                 default:
-                    var linktype = $(event.target).attr('data-link-type');
-                    if (linktype) {
-                        var forwardlinktype = linktype;
-                        if(forwardlinktype.indexOf('/')){
-                            forwardlinktype = forwardlinktype.split('/')[0];
-                        }
-                        for(var uid in selection){
-                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
-                            createLinkHandler(uid, clickIndex, linktype);
-                        }
+                    if($el.attr('data-run-operation')){
+                        api.call('run_operation', {
+                            'nodenet_uid': currentNodenet,
+                            'name': $el.attr('data-run-operation'),
+                            'parameters': {},
+                            'selection_uids': Object.keys(selection)}, function(data){
+                                refreshNodespace()
+                            }
+                        );
                     } else {
-                        openLinkCreationDialog(path.name)
+                        var linktype = $(event.target).attr('data-link-type');
+                        if (linktype) {
+                            var forwardlinktype = linktype;
+                            if(forwardlinktype.indexOf('/')){
+                                forwardlinktype = forwardlinktype.split('/')[0];
+                            }
+                            for(var uid in selection){
+                                clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                                createLinkHandler(uid, clickIndex, linktype);
+                            }
+                        } else {
+                            openLinkCreationDialog(path.name)
+                        }
                     }
             }
             break;

@@ -827,9 +827,9 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         else:
             lines.append("%s = netapi.create_nodespace(None)" % (varname))
         idmap[nodespace.uid] = varname
-        xpos.append(node.position[0])
-        ypos.append(node.position[1])
-        zpos.append(node.position[2])
+        xpos.append(nodespace.position[0])
+        ypos.append(nodespace.position[1])
+        zpos.append(nodespace.position[2])
 
     # nodes and gates
     for i, node in enumerate(nodes):

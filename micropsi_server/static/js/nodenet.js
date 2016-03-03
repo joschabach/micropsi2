@@ -152,8 +152,6 @@ globalDataSources = [];
 globalDataTargets = [];
 
 available_operations = {};
-operation_categories = {};
-sorted_operations = [];
 
 $(document).on('load_nodenet', function(event, uid){
     ns = 'Root';
@@ -250,15 +248,6 @@ function buildCategoryTree(item, path, idx){
 
 api.call("get_available_operations", {}, function(data){
     available_operations = data
-    categories = [];
-    for(var key in available_operations){
-        categories.push(available_operations[key].category.split('/'));
-    }
-    operation_categories = {}
-    for(var i =0; i < categories.length; i++){
-        buildCategoryTree(operation_categories, categories[i], 0);
-    }
-    sorted_operations = Object.keys(available_operations).sort();
 });
 
 
@@ -2661,7 +2650,7 @@ function openContextMenu(menu_id, event) {
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
-    $(menu_id+" li.noop").on('click', function(event){event.stopPropagation();})
+    $(menu_id+" li.noop > a").on('click', function(event){event.stopPropagation();})
 }
 
 function openMultipleNodesContextMenu(event){
@@ -2669,10 +2658,11 @@ function openMultipleNodesContextMenu(event){
     var compact = false;
     var nodetypes = [];
     for(var uid in selection){
+        if(!node) node = nodes[uid];
         if(isCompact(nodes[uid])) {
             compact = true;
         }
-        if(nodetypes.indexOf(nodes[uid].type) > -1){
+        if(nodetypes.indexOf(nodes[uid].type) == -1){
             nodetypes.push(nodes[uid].type);
         }
     }
@@ -2685,18 +2675,41 @@ function openMultipleNodesContextMenu(event){
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
 
-    html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
-    html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
-        items = '';
-        for(var idx in sorted_operations){
-            key = sorted_operations[idx];
-            if(available_operations[key].category == current_category){
-                items += '<li><a data-run-operation="' + key + '">'+ key +'</a></li>';
-            }
+    operation_categories = {};
+    sorted_operations = [];
+
+    applicable_operations = {};
+    for(var key in available_operations){
+        var supported_types = available_operations[key].selection.nodetypes;
+        if(supported_types.length == 0 || $(nodetypes).not(supported_types).get().length == 0){
+            applicable_operations[key] = available_operations[key]
         }
-        return items;
-    });
-    html += '</ul></li>';
+    }
+
+    categories = [];
+    for(var key in applicable_operations){
+        categories.push(applicable_operations[key].category.split('/'));
+    }
+    operation_categories = {}
+    for(var i =0; i < categories.length; i++){
+        buildCategoryTree(operation_categories, categories[i], 0);
+    }
+    sorted_operations = Object.keys(applicable_operations).sort();
+
+    if(len(sorted_operations)){
+        html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
+        html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
+            items = '';
+            for(var idx in sorted_operations){
+                key = sorted_operations[idx];
+                if(applicable_operations[key].category == current_category){
+                    items += '<li><a data-run-operation="' + key + '">'+ key +'</a></li>';
+                }
+            }
+            return items;
+        });
+        html += '</ul></li>';
+    }
     if(nodetypes.length == 1){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }

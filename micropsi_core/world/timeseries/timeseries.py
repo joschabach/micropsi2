@@ -16,8 +16,8 @@ class TimeSeries(World):
 
     The file should be a numpy archive with the following fields:
 
-    'startdate', 'enddate': datetime objects
-    'data': numpy array of shape (nr of ids) x (nr minutes between startdate and enddate)
+    'data': numpy array of shape (nr of ids) x (nr of timestamps)
+    'timestamps', a list of timestamps - the legend for the data's second axis
     'ids': a list of IDs - the legend for data's first axis.
     """
     supported_worldadapters = ['TimeSeriesRunner']
@@ -36,12 +36,12 @@ class TimeSeries(World):
             with np.load(path) as f:
                 self.timeseries = f['data']
                 self.ids = f['ids']
-                self.startdate = f['startdate']
-                self.enddate = f['enddate']
+                self.timestamps = f['timestamps']
         except IOError as error:
             self.logger.error("Could not load data file %s, error was: %s" % (path, str(error)))
             self.ids = [0]
             self.timeseries[[0, 0, 0]]
+            self.timestamps = [0]
             self.len_ts = 1
             return
 

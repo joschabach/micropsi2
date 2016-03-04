@@ -163,7 +163,10 @@ def revert_world(world_uid):
     if world_uid in micropsi_core.runtime.worlds:
         micropsi_core.runtime.worlds[world_uid].__del__()
         del micropsi_core.runtime.worlds[world_uid]
-    micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
+    if data.get('world_type'):
+        micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
+    else:
+        micropsi_core.runtime.worlds[world_uid] = world.World(**data)
     return True
 
 

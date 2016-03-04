@@ -114,6 +114,7 @@ class Default(WorldAdapter):
         self.datasources = dict((s, 0) for s in ['static_on', 'random', 'static_off'])
         self.datatargets = {'echo': 0}
         self.datatarget_feedback = {'echo': 0}
+        self.update_data_sources_and_targets()
 
     def update_data_sources_and_targets(self):
         import random

@@ -181,9 +181,9 @@ def test_sensor_actuator_indices(test_nodenet):
     register.activation = 0.8
     netapi.link(register, 'gen', register, 'gen', weight=0.5)
     netapi.link(register, 'gen', actor, 'gen')
-    micropsi.step_nodenet(test_nodenet)
     assert sensor.activation == 0
     assert actor.get_gate('gen').activation == 0
+    micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
     assert sensor.activation == 1
     assert round(actor.get_gate('gen').activation, 3) == 0.8

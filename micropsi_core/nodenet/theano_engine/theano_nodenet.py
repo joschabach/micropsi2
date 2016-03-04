@@ -1279,16 +1279,21 @@ class TheanoNodenet(Nodenet):
         """
         Sets the sensors for the given data sources or modulators to the given values
         """
+        # convert from python types:
+        if type(sensor_values).__module__ != 'numpy':
+            sensor_values = np.asarray(sensor_values)
+        if type(actuator_feedback_values).__module__ != 'numpy':
+            actuator_feedback_values = np.asarray(actuator_feedback_values)
         if self.use_modulators:
             # include modulators
             readables = [0 for _ in DoernerianEmotionalModulators.readable_modulators]
             for idx, key in enumerate(sorted(DoernerianEmotionalModulators.readable_modulators)):
                 readables[idx] = self.get_modulator(key)
-            sensor_values = sensor_values + readables
+            sensor_values = np.concatenate((sensor_values, np.asarray(readables)))
             writeables = [0 for _ in DoernerianEmotionalModulators.writeable_modulators]
             for idx, key in enumerate(sorted(DoernerianEmotionalModulators.writeable_modulators)):
                 writeables[idx] = 1
-            actuator_feedback_values = actuator_feedback_values + writeables
+            actuator_feedback_values = np.concatenate((actuator_feedback_values, np.asarray(writeables)))
 
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)

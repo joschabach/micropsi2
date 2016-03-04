@@ -1446,6 +1446,7 @@ def reload_native_modules():
     custom_recipes = {}
     custom_operations = {}
     runners = {}
+    errors = []
     # load builtins:
     from micropsi_core.nodenet.native_modules import nodetypes
     native_modules.update(nodetypes)
@@ -1453,12 +1454,15 @@ def reload_native_modules():
     for file in os.listdir(operationspath):
         import micropsi_core.nodenet.operations
         if file != '__init__.py' and not file.startswith('.') and os.path.isfile(os.path.join(operationspath, file)):
-            parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
+            err = parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
+            if err:
+                errors.append(err)
+
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    errors = load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[])
+    errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets

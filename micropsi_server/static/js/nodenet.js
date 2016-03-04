@@ -2890,14 +2890,7 @@ function handleContextMenu(event) {
                     break;
                 default:
                     if($el.attr('data-run-operation')){
-                        api.call('run_operation', {
-                            'nodenet_uid': currentNodenet,
-                            'name': $el.attr('data-run-operation'),
-                            'parameters': {},
-                            'selection_uids': Object.keys(selection)}, function(data){
-                                refreshNodespace()
-                            }
-                        );
+                        runOperation($el.attr('data-run-operation'));
                     } else {
                         var linktype = $(event.target).attr('data-link-type');
                         if (linktype) {
@@ -2959,6 +2952,42 @@ function handleContextMenu(event) {
             }
     }
     view.draw();
+}
+
+function runOperation(name){
+    api.call('run_operation', {
+        'nodenet_uid': currentNodenet,
+        'name': $el.attr('data-run-operation'),
+        'parameters': {},
+        'selection_uids': Object.keys(selection)}, function(data){
+            refreshNodespace();
+            if(!$.isEmptyObject(data)){
+                html = '';
+                if(data.content_type && data.content_type.indexOf("image") > -1){
+                    html += '<p><img src="'+data.content_type+','+data.data+'" /></p>';
+                    delete data.content_type
+                    delete data.data
+                }
+                if(Object.keys(data).length){
+                    html += '<dl>';
+                    for(var key in data){
+                        html += '<dt>'+key+':</dt>';
+                        if(typeof data[key] == 'string'){
+                            html += '<dd>'+data[key]+'</dd>';
+                        } else {
+                            html += '<dd>'+JSON.stringify(data[key])+'</dd>';
+                        }
+                    }
+                    html += '</dl>';
+                }
+                if(html){
+                    $('#recipe_result .modal-body').html(html);
+                    $('#recipe_result').modal('show');
+                    $('#recipe_result button').off();
+                }
+            }
+        }
+    );
 }
 
 function openLinkCreationDialog(nodeUid){

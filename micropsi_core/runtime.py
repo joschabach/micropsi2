@@ -1204,7 +1204,7 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
         if cfg['micropsi2'].get('profile_runner'):
             profiler = cProfile.Profile()
             profiler.enable()
-        result = {'reload': True}
+        result = {}
         ret = func(netapi, selection_uids, **params)
         if ret:
             result.update(ret)

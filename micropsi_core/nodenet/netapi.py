@@ -384,6 +384,12 @@ class NetAPI(object):
         if nodespace in self.__nodenet.get_nodespace_uids():
             align(self.__nodenet, nodespace)
 
+    def autoalign_entities(self, nodespace, entity_uids):
+        """ Calls the autoalignment on the given entities in the given nodespace """
+        from micropsi_core.nodenet.node_alignment import align
+        if nodespace in self.__nodenet.get_nodespace_uids():
+            align(self.__nodenet, nodespace, entity_uids)
+
     def get_modulator(self, modulator):
         """
         Returns the numeric value of the given global modulator

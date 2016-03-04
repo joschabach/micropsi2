@@ -136,6 +136,24 @@
     </div>
 </div>
 
+<div class="modal hide" id="operations-modal">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">×</button>
+        <h3></h3>
+    </div>
+    <div class="modal-body">
+        <p class="docstring"></p>
+        <form class="form-horizontal">
+            <fieldset></fieldset>
+            <input type="submit" style="display:none"/>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Close</button>
+        <button class="btn btn-primary">Run</button>
+    </div>
+</div>
+
 <div id="recipe_result" class="modal hide">
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal">×</button>

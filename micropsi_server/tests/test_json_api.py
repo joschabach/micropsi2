@@ -1455,3 +1455,19 @@ def test_get_state_diff(app, test_nodenet, node):
     })
     data = response.json_body['data']['nodenet_diff']
     assert [node2] == list(data['changes']['nodes_dirty'].keys())
+
+
+def test_get_operations(app, test_nodenet):
+    response = app.get_json('/rpc/get_available_operations()')
+    data = response.json_body['data']
+    assert data['autoalign']['selection']['nodetypes'] == []
+
+
+def test_run_operation(app, test_nodenet, node):
+    response = app.post_json('/rpc/run_operation', {
+        'nodenet_uid': test_nodenet,
+        'name': 'autoalign',
+        'parameters': {},
+        'selection_uids': [node]
+    })
+    assert response.json_body['status'] == 'success'

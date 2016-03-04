@@ -723,7 +723,6 @@ def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
     if result:
         data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
-        data['recipes'] = runtime.get_available_recipes()
         return True, data
     else:
         return False, uid
@@ -1216,6 +1215,16 @@ def run_recipe(nodenet_uid, name, parameters):
 @rpc('get_available_recipes')
 def get_available_recipes():
     return True, runtime.get_available_recipes()
+
+
+@rpc("run_operation")
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    return runtime.run_operation(nodenet_uid, name, parameters, selection_uids)
+
+
+@rpc('get_available_operations')
+def get_available_operations():
+    return True, runtime.get_available_operations()
 
 
 @rpc('get_agent_dashboard')

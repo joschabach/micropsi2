@@ -84,6 +84,13 @@
                         </select></td>
                     </tr>
                     <tr>
+                        <td><label for="nodenet_vis">activation display</label></td>
+                        <td><select name="nodenet_vis" type="checkbox" name="nodenet_vis" id="nodenet_vis">
+                            <option value="redgreen">red / green</option>
+                            <option value="alpha">opacity / green</option>
+                        </select></td>
+                    </tr>
+                    <tr>
                         <td><label for="nodenet_snap">Snap to grid</label></td>
                         <td><input type="checkbox" name="nodenet_snap" id="nodenet_snap" /></td>
                     </tr>

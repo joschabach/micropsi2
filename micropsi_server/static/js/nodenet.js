@@ -224,6 +224,7 @@ function setNodenetValues(data){
     $('#nodenet_name').val(data.name);
     $('#nodenet_snap').attr('checked', data.snap_to_grid);
     $('#nodenet_renderlinks').val(nodenet_data.renderlinks);
+    $('#nodenet_vis').val(nodenet_data.vis);
     if (!jQuery.isEmptyObject(worldadapters)) {
         var worldadapter_select = $('#nodenet_worldadapter');
         worldadapter_select.val(data.worldadapter);
@@ -261,6 +262,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             nodenet_data = data;
             nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
+            nodenet_data['vis'] = $.cookie('activation_display') || 'redgreen';
 
             showDefaultForm();
             currentNodeSpace = data['nodespace'];
@@ -1239,7 +1241,13 @@ function renderLink(link, force) {
     linkItem.name = "link";
     var linkContainer = new Group(linkItem);
     linkContainer.name = link.uid;
-
+    if (nodenet_data['vis'] == 'alpha'){
+        if(sourceNode){
+            linkContainer.opacity = Math.max(0.1, sourceNode.sheaves[currentSheaf].activation)
+        } else {
+            linkContainer.opacity = 0.1
+        }
+    }
     linkLayer.addChild(linkContainer);
 }
 
@@ -1784,8 +1792,23 @@ function setActivation(node) {
     }
     if (node.uid in nodeLayer.children) {
         var nodeItem = nodeLayer.children[node.uid];
-        node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
-            activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+        if((nodenet_data['vis'] != 'alpha') || node.sheaves[currentSheaf].activation > 0.5){
+            node.fillColor = nodeItem.children["activation"].children["body"].fillColor =
+                activationColor(node.sheaves[currentSheaf].activation, viewProperties.nodeColor);
+        }
+        if(nodenet_data['vis'] == 'alpha'){
+            for(var i in nodeItem.children){
+                if(nodeItem.children[i].name == 'labelText'){
+                    nodeItem.children[i].opacity = 0;
+                    if (node.sheaves[currentSheaf].activation > 0.5){
+                        nodeItem.children[i].opacity = node.sheaves[currentSheaf].activation;
+                    }
+                } else {
+                    nodeItem.children[i].opacity = Math.max(0.1, node.sheaves[currentSheaf].activation)
+                }
+            }
+        }
+
         if (!isCompact(node) && (node.slotIndexes.length || node.gateIndexes.length)) {
             var i=0;
             var type;
@@ -3615,13 +3638,17 @@ function handleEditNodenet(event){
     $.cookie('renderlinks', nodenet_data.renderlinks || '', {path: '/', expires: 7})
     nodenet_data.snap_to_grid = $('#nodenet_snap').attr('checked');
     $.cookie('snap_to_grid', nodenet_data.snap_to_grid || '', {path: '/', expires: 7})
+    if(nodenet_data.vis != $('#nodenet_vis').val()) reload = true;
+    nodenet_data.vis = $('#nodenet_vis').val();
+    $.cookie('activation_display', nodenet_data.vis || '', {path: '/', expires: 7})
     api.call("set_nodenet_properties", params,
         success=function(data){
             dialogs.notification('Nodenet data saved', 'success');
             if(reload){
                 window.location.reload();
             } else {
-                setCurrentNodenet(currentNodenet, currentNodeSpace);
+                // setCurrentNodenet(currentNodenet, currentNodeSpace);
+                refreshNodespace();
             }
         }
     );

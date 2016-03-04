@@ -2890,7 +2890,7 @@ function handleContextMenu(event) {
                     break;
                 default:
                     if($el.attr('data-run-operation')){
-                        runOperation($el.attr('data-run-operation'));
+                        selectOperation($el.attr('data-run-operation'));
                     } else {
                         var linktype = $(event.target).attr('data-link-type');
                         if (linktype) {
@@ -2954,11 +2954,44 @@ function handleContextMenu(event) {
     view.draw();
 }
 
-function runOperation(name){
+function selectOperation(name){
+    var modal = $('#operations-modal');
+    if(available_operations[name].parameters){
+        $('#recipe_modal .docstring').html(available_operations[name].docstring);
+        var html = '';
+        for(var i in available_operations[name].parameters){
+            var param = available_operations[name].parameters[i];
+            html += '' +
+            '<div class="control-group">'+
+                '<label class="control-label" for="op_'+param.name+'_input">'+param.name+'</label>'+
+                '<div class="controls">'+
+                    '<input type="text" name="'+param.name+'" class="input-xlarge" id="op_'+param.name+'_input" value="'+((param.default == null) ? '' : param.default)+'"/>'+
+                '</div>'+
+            '</div>';
+        }
+        $('fieldset', modal).html(html);
+        var run = function(){
+            data = $('form', modal).serializeArray();
+            parameters = {};
+            for(var i=0; i < data.length; i++){
+                parameters[data[i].name] = data[i].value
+            }
+            modal.modal('hide');
+            runOperation(name, parameters);
+        };
+        $('form', modal).on('submit', run);
+        $('.btn-primary', modal).on('click', run);
+        modal.modal('show');
+    } else {
+        runOperation(name);
+    }
+}
+
+function runOperation(name, params){
     api.call('run_operation', {
         'nodenet_uid': currentNodenet,
         'name': $el.attr('data-run-operation'),
-        'parameters': {},
+        'parameters': params || {},
         'selection_uids': Object.keys(selection)}, function(data){
             refreshNodespace();
             if(!$.isEmptyObject(data)){

@@ -4,6 +4,7 @@ from micropsi_core.nodenet.operations import selectioninfo
 
 @selectioninfo(mincount=2)
 def autoalign(netapi, selection):
+    """ Autoalign the selected nodes"""
     nodespace = None
     if len(selection):
         try:

@@ -2707,7 +2707,7 @@ function openMultipleNodesContextMenu(event){
             for(var idx in sorted_operations){
                 key = sorted_operations[idx];
                 if(applicable_operations[key].category == current_category){
-                    items += '<li><a data-run-operation="' + key + '">'+ key +'</a></li>';
+                    items += '<li><a title="'+applicable_operations[key].docstring+'" data-run-operation="' + key + '">'+ key +'</a></li>';
                 }
             }
             return items;

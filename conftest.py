@@ -140,6 +140,16 @@ def test_world(request):
         pass
 
 
+@pytest.fixture(scope="function")
+def default_world(request):
+    """
+    Fixture: A test world of type Island
+    """
+    for uid in micropsi.worlds:
+        if micropsi.worlds[uid].data['world_type'] == 'World':
+            return uid
+
+
 @pytest.yield_fixture(scope="function")
 def test_nodenet(request, test_world, engine):
     """

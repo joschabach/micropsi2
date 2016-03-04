@@ -19,20 +19,6 @@ def prepare(fixed_nodenet):
     return nodenet, netapi, source
 
 
-def add_dummyworld(fixed_nodenet):
-    nodenet = micropsi.get_nodenet(fixed_nodenet)
-    if nodenet.world:
-        nodenet.world.unregister_nodenet(nodenet)
-
-    worlduid = micropsi.new_world("DummyWorld", "DummyWorld", "DummyOwner")[1]
-
-    nodenet.world = worlduid
-    nodenet.worldadapter = "DummyWorldAdapter"
-
-    micropsi.worlds[worlduid].register_nodenet("DummyWorldAdapter", nodenet)
-    return micropsi.worlds[worlduid]
-
-
 def test_node_netapi_create_register_node(fixed_nodenet):
     # test register node creation
     net, netapi, source = prepare(fixed_nodenet)

@@ -1118,15 +1118,6 @@ class TheanoNodenet(Nodenet):
                     activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
         return activations
 
-    def get_modulator(self, modulator):
-        return self._modulators.get(modulator, 1)
-
-    def change_modulator(self, modulator, diff):
-        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
-
-    def set_modulator(self, modulator, value):
-        self._modulators[modulator] = value
-
     def get_nodetype(self, type):
         if type in self._nodetypes:
             return self._nodetypes[type]

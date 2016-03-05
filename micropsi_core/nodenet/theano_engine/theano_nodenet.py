@@ -179,7 +179,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -193,7 +193,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
+        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
 
         precision = settings['theano']['precision']
         if precision == "32":

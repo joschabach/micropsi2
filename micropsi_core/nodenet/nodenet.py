@@ -136,7 +136,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         self._worldadapter_instance = _worldadapter_instance
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True, worldadapter_instance=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -144,7 +144,7 @@ class Nodenet(metaclass=ABCMeta):
         self._name = name
         self._world_uid = world
         self._worldadapter_uid = worldadapter if world else None
-        self._worldadapter_instance = None
+        self._worldadapter_instance = worldadapter_instance
         self.is_active = False
         self.use_modulators = use_modulators
 

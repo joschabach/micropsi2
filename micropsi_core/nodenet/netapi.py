@@ -256,7 +256,7 @@ class NetAPI(object):
         self.link(node, gate, actor, 'gen', weight, certainty)
         # self.link(actor, 'gen', node, slot)
 
-    def link_sensor(self, node, datasource, slot='sur'):
+    def link_sensor(self, node, datasource, slot='sur', weight=1):
         """
         Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
         a new sensor will be created, otherwise the first sensor found will be used
@@ -269,7 +269,7 @@ class NetAPI(object):
             sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
             sensor.set_parameter('datasource', datasource)
 
-        self.link(sensor, 'gen', node, slot)
+        self.link(sensor, 'gen', node, slot, weight)
 
     def import_actors(self, nodespace, datatarget_prefix=None):
         """

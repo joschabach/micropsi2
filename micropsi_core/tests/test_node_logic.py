@@ -124,10 +124,10 @@ def test_node_logic_sensor_datasource(test_nodenet, default_world):
     net, netapi, source = prepare(test_nodenet)
     micropsi.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
     register = netapi.create_node("Register", None)
-    netapi.link_sensor(register, "static_on", "gen")
+    netapi.link_sensor(register, "static_on", "gen", weight=0.35)
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
-    assert round(register.get_gate("gen").activation, 1) == 1
+    assert round(register.get_gate("gen").activation, 3) == 0.35
 
 
 def test_node_logic_actor_modulator(test_nodenet, default_world):

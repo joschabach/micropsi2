@@ -245,8 +245,6 @@ class NetAPI(object):
         Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
         a new actor will be created, otherwise the first actor found will be used
         """
-        if datatarget not in self.worldadapter.get_available_datatargets():
-            raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
             if candidate.get_parameter('datatarget') == datatarget:
@@ -263,8 +261,6 @@ class NetAPI(object):
         Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
         a new sensor will be created, otherwise the first sensor found will be used
         """
-        if datasource not in self.worldadapter.get_available_datasources():
-            raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
             if candidate.get_parameter('datasource') == datasource:

@@ -117,7 +117,7 @@ def test_node_logic_sensor_modulator(test_nodenet, default_world):
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
-    assert netapi.get_modulator("emo_activation") == register.activation
+    assert round(netapi.get_modulator("emo_activation"), 3) == round(register.activation, 3)
 
 
 def test_node_logic_sensor_datasource(test_nodenet, default_world):
@@ -134,7 +134,7 @@ def test_node_logic_actor_modulator(test_nodenet, default_world):
     net, netapi, source = prepare(test_nodenet)
     netapi.link_actor(source, "base_porret_decay_factor", weight=0.3, gate="gen")
     micropsi.step_nodenet(test_nodenet)
-    assert netapi.get_modulator("base_porret_decay_factor") == 0.3
+    assert round(netapi.get_modulator("base_porret_decay_factor"), 3) == 0.3
 
 
 def test_node_logic_actor_datatarget(test_nodenet, default_world):

@@ -2649,6 +2649,8 @@ function openContextMenu(menu_id, event) {
             html += ' class="disabled"';
         }
         html += '><a href="#">Paste nodes</a></li>';
+        selection[currentNodeSpace] = {};
+        html += getOperationsDropdownHTML(["Nodespace"], 1);
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
@@ -2679,6 +2681,22 @@ function openMultipleNodesContextMenu(event){
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
 
+    html += getOperationsDropdownHTML(nodetypes, count);
+
+    if(nodetypes.length == 1){
+        html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
+    }
+    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
+    menu.html(html);
+    if(Object.keys(clipboard).length === 0){
+        $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
+    } else {
+        $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
+    }
+    openContextMenu('#multi_node_menu', event);
+}
+
+function getOperationsDropdownHTML(nodetypes, count){
     operation_categories = {};
     sorted_operations = [];
 
@@ -2702,6 +2720,7 @@ function openMultipleNodesContextMenu(event){
     }
     sorted_operations = Object.keys(applicable_operations).sort();
 
+    var html = '';
     if(sorted_operations.length){
         html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
         html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
@@ -2718,17 +2737,7 @@ function openMultipleNodesContextMenu(event){
     } else {
         html += '<li class="divider"></li><li class="noop disabled"><a>Operations</a></li>';
     }
-    if(nodetypes.length == 1){
-        html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
-    }
-    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
-    menu.html(html);
-    if(Object.keys(clipboard).length === 0){
-        $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
-    } else {
-        $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
-    }
-    openContextMenu('#multi_node_menu', event);
+    return html;
 }
 
 function getNodeLinkageContextMenuHTML(node){
@@ -2846,6 +2855,10 @@ function handleContextMenu(event) {
                     ypos/viewProperties.zoomFactor,
                     "", type, null, callback);
             } else{
+                if($el.attr('data-run-operation')){
+                    selectOperation($el.attr('data-run-operation'));
+                    break;
+                }
                 return false;
             }
             break;
@@ -2958,7 +2971,7 @@ function handleContextMenu(event) {
 
 function selectOperation(name){
     var modal = $('#operations-modal');
-    if(available_operations[name].parameters){
+    if(available_operations[name].parameters.length){
         $('#recipe_modal .docstring').html(available_operations[name].docstring);
         var html = '';
         for(var i in available_operations[name].parameters){

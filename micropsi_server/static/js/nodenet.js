@@ -2596,9 +2596,16 @@ function buildRecursiveDropdown(cat, html, current_category, generate_items){
     }
     catentries.sort();
     for(var i = 0; i < catentries.length; i++){
+        if(catentries[i] == ''){
+            continue;
+        }
         var newcategory = current_category || '';
-        if(current_category == '') newcategory += catentries[i]
-        else newcategory += '/'+catentries[i];
+        if(current_category == ''){
+            newcategory += catentries[i]
+        }
+        else {
+            newcategory += '/'+catentries[i];
+        }
         html += '<li class="noop"><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
         html += '<ul class="sub-menu dropdown-menu">'
         html += buildRecursiveDropdown(cat[catentries[i]], '', newcategory, generate_items);
@@ -2643,12 +2650,12 @@ function openContextMenu(menu_id, event) {
             });
             html += '</ul></li>';
         }
-        html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         html += '<li class="divider"></li><li data-paste-nodes';
         if(Object.keys(clipboard).length === 0){
             html += ' class="disabled"';
         }
         html += '><a href="#">Paste nodes</a></li>';
+        html += getOperationsDropdownHTML(["Nodespace"], 1);
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
@@ -2679,6 +2686,22 @@ function openMultipleNodesContextMenu(event){
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
 
+    html += getOperationsDropdownHTML(nodetypes, count);
+
+    if(nodetypes.length == 1){
+        html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
+    }
+    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
+    menu.html(html);
+    if(Object.keys(clipboard).length === 0){
+        $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
+    } else {
+        $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
+    }
+    openContextMenu('#multi_node_menu', event);
+}
+
+function getOperationsDropdownHTML(nodetypes, count){
     operation_categories = {};
     sorted_operations = [];
 
@@ -2702,6 +2725,7 @@ function openMultipleNodesContextMenu(event){
     }
     sorted_operations = Object.keys(applicable_operations).sort();
 
+    var html = '';
     if(sorted_operations.length){
         html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
         html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
@@ -2718,17 +2742,7 @@ function openMultipleNodesContextMenu(event){
     } else {
         html += '<li class="divider"></li><li class="noop disabled"><a>Operations</a></li>';
     }
-    if(nodetypes.length == 1){
-        html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
-    }
-    html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
-    menu.html(html);
-    if(Object.keys(clipboard).length === 0){
-        $('#multi_node_menu li[data-paste-nodes]').addClass('disabled');
-    } else {
-        $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
-    }
-    openContextMenu('#multi_node_menu', event);
+    return html;
 }
 
 function getNodeLinkageContextMenuHTML(node){
@@ -2801,7 +2815,6 @@ function handleContextMenu(event) {
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
-            var autoalign = $el.attr("data-auto-align");
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2832,9 +2845,7 @@ function handleContextMenu(event) {
                     };
                     break;
             }
-            if(autoalign){
-                autoalignmentHandler();
-            } else if(type) {
+            if(type) {
                 if(nodenet_data.snap_to_grid){
                     var xpos = Math.round(clickPosition.x / 10) * 10;
                     var ypos = Math.round(clickPosition.y / 10) * 10;
@@ -2846,6 +2857,10 @@ function handleContextMenu(event) {
                     ypos/viewProperties.zoomFactor,
                     "", type, null, callback);
             } else{
+                if($el.attr('data-run-operation')){
+                    selectOperation($el.attr('data-run-operation'));
+                    break;
+                }
                 return false;
             }
             break;
@@ -2958,7 +2973,7 @@ function handleContextMenu(event) {
 
 function selectOperation(name){
     var modal = $('#operations-modal');
-    if(available_operations[name].parameters){
+    if(available_operations[name].parameters.length){
         $('#recipe_modal .docstring').html(available_operations[name].docstring);
         var html = '';
         for(var i in available_operations[name].parameters){
@@ -2990,11 +3005,15 @@ function selectOperation(name){
 }
 
 function runOperation(name, params){
+    var selection_uids = Object.keys(selection);
+    if(selection_uids.length == 0){
+        selection_uids = [currentNodeSpace];
+    }
     api.call('run_operation', {
         'nodenet_uid': currentNodenet,
         'name': $el.attr('data-run-operation'),
         'parameters': params || {},
-        'selection_uids': Object.keys(selection)}, function(data){
+        'selection_uids': selection_uids}, function(data){
             refreshNodespace();
             if(!$.isEmptyObject(data)){
                 html = '';
@@ -3084,17 +3103,6 @@ function get_datatarget_options(worldadapter, value){
     }
     html += '</optgroup>';
     return html;
-}
-
-// rearrange nodes in the current nodespace
-function autoalignmentHandler() {
-    api.call("align_nodes", {
-            nodenet_uid: currentNodenet,
-            nodespace: currentNodeSpace
-        },
-        function(data){
-            setCurrentNodenet(currentNodenet, currentNodeSpace);
-        });
 }
 
 // let user create a new node

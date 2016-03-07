@@ -27,7 +27,7 @@ delete_nodes.selectioninfo = {
 def test_autoalign_operation(test_nodenet):
     ops = runtime.get_available_operations()
     assert ops['autoalign']['selection']['nodetypes'] == []
-    assert ops['autoalign']['selection']['mincount'] == 2
+    assert ops['autoalign']['selection']['mincount'] == 1
     assert ops['autoalign']['selection']['maxcount'] == -1
     assert ops['autoalign']['category'] == 'layout'
     assert ops['autoalign']['parameters'] == []
@@ -40,7 +40,13 @@ def test_autoalign_operation(test_nodenet):
     api.link_with_reciprocal(p1, p2, 'subsur')
     api.link_with_reciprocal(p1, p3, 'subsur')
     api.link_with_reciprocal(p2, p3, 'porret')
+    runtime.save_nodenet(test_nodenet)
     runtime.run_operation(test_nodenet, "autoalign", {}, [p1.uid, p2.uid, p3.uid, ns1])
+    assert p1.position[0] == p2.position[0]
+    assert p1.position[1] < p2.position[1]
+    assert p2.position[1] == p3.position[1]
+    runtime.revert_nodenet(test_nodenet)
+    runtime.run_operation(test_nodenet, "autoalign", {}, [api.get_nodespace(None).uid])
     assert p1.position[0] == p2.position[0]
     assert p1.position[1] < p2.position[1]
     assert p2.position[1] == p3.position[1]

@@ -2655,7 +2655,6 @@ function openContextMenu(menu_id, event) {
             html += ' class="disabled"';
         }
         html += '><a href="#">Paste nodes</a></li>';
-        selection[currentNodeSpace] = {};
         html += getOperationsDropdownHTML(["Nodespace"], 1);
         list.html(html);
     }
@@ -3006,11 +3005,15 @@ function selectOperation(name){
 }
 
 function runOperation(name, params){
+    var selection_uids = Object.keys(selection);
+    if(selection_uids.length == 0){
+        selection_uids = [currentNodeSpace];
+    }
     api.call('run_operation', {
         'nodenet_uid': currentNodenet,
         'name': $el.attr('data-run-operation'),
         'parameters': params || {},
-        'selection_uids': Object.keys(selection)}, function(data){
+        'selection_uids': selection_uids}, function(data){
             refreshNodespace();
             if(!$.isEmptyObject(data)){
                 html = '';

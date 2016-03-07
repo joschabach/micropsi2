@@ -226,7 +226,7 @@
                             </table>
                         </td>
                     </tr>
-                    <tr class="node">
+                    <tr>
                         <td> &nbsp;</td>
                         <td>
                             <button type="submit" class="btn btn-primary">Apply</button>

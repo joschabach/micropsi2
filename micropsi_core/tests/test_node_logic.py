@@ -110,19 +110,34 @@ def test_node_logic_activators(test_nodenet):
     assert testpipe.get_gate("sub").activation == 0
 
 
-def test_node_logic_sensor(test_nodenet, default_world):
-    # read a sensor value from the dummy world adapter
+def test_node_logic_sensor_modulator(test_nodenet, default_world):
+    net, netapi, source = prepare(test_nodenet)
+    register = netapi.create_node("Register", None)
+    netapi.link_sensor(register, "emo_activation", "gen")
+    micropsi.step_nodenet(test_nodenet)
+    micropsi.step_nodenet(test_nodenet)
+    micropsi.step_nodenet(test_nodenet)
+    assert round(netapi.get_modulator("emo_activation"), 3) == round(register.activation, 3)
+
+
+def test_node_logic_sensor_datasource(test_nodenet, default_world):
     net, netapi, source = prepare(test_nodenet)
     micropsi.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
     register = netapi.create_node("Register", None)
-    netapi.link_sensor(register, "static_on", "gen")
+    netapi.link_sensor(register, "static_on", "gen", weight=0.35)
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
-    assert round(register.get_gate("gen").activation, 1) == 1
+    assert round(register.get_gate("gen").activation, 3) == 0.35
 
 
-def test_node_logic_actor(test_nodenet, default_world):
-    # write a value to the dummy world adapter
+def test_node_logic_actor_modulator(test_nodenet, default_world):
+    net, netapi, source = prepare(test_nodenet)
+    netapi.link_actor(source, "base_porret_decay_factor", weight=0.3, gate="gen")
+    micropsi.step_nodenet(test_nodenet)
+    assert round(netapi.get_modulator("base_porret_decay_factor"), 3) == 0.3
+
+
+def test_node_logic_actor_datatarget(test_nodenet, default_world):
     net, netapi, source = prepare(test_nodenet)
     micropsi.set_nodenet_properties(test_nodenet, worldadapter="Default", world_uid=default_world)
     netapi.link_actor(source, "echo", weight=0.5, gate="gen")
@@ -133,3 +148,26 @@ def test_node_logic_actor(test_nodenet, default_world):
     micropsi.step_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
     assert round(register.get_gate("gen").activation, 1) == 0.5
+
+
+def test_node_logic_sensor_nomodulators(engine, default_world):
+    result, nnuid = micropsi.new_nodenet("adf", engine, "Default", world_uid=default_world, use_modulators=False)
+    net, netapi, source = prepare(nnuid)
+    register = netapi.create_node("Register", None)
+    netapi.link_sensor(register, "static_on", "gen", weight=0.4)
+    micropsi.step_nodenet(nnuid)
+    micropsi.step_nodenet(nnuid)
+    assert round(register.get_gate("gen").activation, 1) == 0.4
+
+
+def test_node_logic_actor_nomodulators(engine, default_world):
+    result, nnuid = micropsi.new_nodenet("adf", engine, "Default", world_uid=default_world, use_modulators=False)
+    net, netapi, source = prepare(nnuid)
+    netapi.link_actor(source, "echo", weight=0.7, gate="gen")
+    register = netapi.create_node("Register", None)
+    actor = netapi.get_nodes(node_name_prefix="echo")[0]
+    netapi.link(actor, "gen", register, "gen")
+    micropsi.step_nodenet(nnuid)
+    micropsi.step_nodenet(nnuid)
+    micropsi.step_nodenet(nnuid)
+    assert round(register.get_gate("gen").activation, 1) == 0.7

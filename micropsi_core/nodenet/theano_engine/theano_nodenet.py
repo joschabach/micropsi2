@@ -179,7 +179,7 @@ class TheanoNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
 
         # map of string uids to positions. Not all nodes necessarily have an entry.
         self.positions = {}
@@ -193,7 +193,7 @@ class TheanoNodenet(Nodenet):
         # map of data targets to string node IDs
         self.actuatormap = {}
 
-        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
+        super(TheanoNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
 
         precision = settings['theano']['precision']
         if precision == "32":
@@ -1118,15 +1118,6 @@ class TheanoNodenet(Nodenet):
                     activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
         return activations
 
-    def get_modulator(self, modulator):
-        return self._modulators.get(modulator, 1)
-
-    def change_modulator(self, modulator, diff):
-        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
-
-    def set_modulator(self, modulator, value):
-        self._modulators[modulator] = value
-
     def get_nodetype(self, type):
         if type in self._nodetypes:
             return self._nodetypes[type]
@@ -1275,15 +1266,16 @@ class TheanoNodenet(Nodenet):
         """
         return copy.deepcopy(STANDARD_NODETYPES)
 
-    def set_sensors_and_actuator_feedback_to_values(self, sensor_values, actuator_feedback_values):
+    def set_sensors_and_actuator_feedback_values(self):
         """
-        Sets the sensors for the given data sources or modulators to the given values
+        Sets the values for sensors and actuator_feedback from the worldadapter
         """
         # convert from python types:
-        if type(sensor_values).__module__ != 'numpy':
-            sensor_values = np.asarray(sensor_values)
-        if type(actuator_feedback_values).__module__ != 'numpy':
-            actuator_feedback_values = np.asarray(actuator_feedback_values)
+        sensor_values = np.array([])
+        actuator_feedback_values = np.array([])
+        if self._worldadapter_instance:
+            sensor_values = np.concatenate((sensor_values, np.asarray(self._worldadapter_instance.get_datasource_values())))
+            actuator_feedback_values = np.concatenate((actuator_feedback_values, np.asarray(self._worldadapter_instance.get_datatarget_feedback_values())))
         if self.use_modulators:
             # include modulators
             readables = [0 for _ in DoernerianEmotionalModulators.readable_modulators]
@@ -1301,23 +1293,24 @@ class TheanoNodenet(Nodenet):
             a_array[partition.actuator_indices] = actuator_feedback_values
             partition.a.set_value(a_array, borrow=True)
 
-    def read_actuators(self):
+    def set_actuator_values(self):
         """
-        Returns a list of datatarget values for writing back to the world adapter,
-        writes modulator-values from datatargets
+        Writes the values from the actuators to datatargets and modulators
         """
         actuator_values_to_write = np.zeros_like(self.rootpartition.actuator_indices)
         for partition in self.partitions.values():
             a_array = partition.a.get_value(borrow=True)
             actuator_values_to_write = actuator_values_to_write + a_array[partition.actuator_indices]
-        if self.use_modulators:
+        if self.use_modulators and bool(self.actuatormap):
             writeables = sorted(DoernerianEmotionalModulators.writeable_modulators)
             # remove modulators from actuator values
             modulator_values = actuator_values_to_write[-len(writeables):]
             actuator_values_to_write = actuator_values_to_write[:-len(writeables)]
             for idx, key in enumerate(writeables):
-                self.set_modulator(key, modulator_values[idx])
-        return actuator_values_to_write
+                if key in self.actuatormap:
+                    self.set_modulator(key, modulator_values[idx])
+        if self._worldadapter_instance:
+            self._worldadapter_instance.set_datatarget_values(actuator_values_to_write)
 
     def _rebuild_sensor_actor_indices(self, partition=None):
         """
@@ -1345,21 +1338,17 @@ class TheanoNodenet(Nodenet):
     def get_datasources(self):
         """ Returns a sorted list of available datasources, including worldadapter datasources
         and readable modulators"""
-        modulators = sorted(self._modulators.keys())
         datasources = self.worldadapter_instance.get_available_datasources() if self.worldadapter_instance else []
-        for item in modulators:
-            if item in DoernerianEmotionalModulators.readable_modulators:
-                datasources.append(item)
+        for item in sorted(DoernerianEmotionalModulators.readable_modulators):
+            datasources.append(item)
         return datasources
 
     def get_datatargets(self):
         """ Returns a sorted list of available datatargets, including worldadapter datatargets
         and writeable modulators"""
-        modulators = sorted(self._modulators.keys())
         datatargets = self.worldadapter_instance.get_available_datatargets() if self.worldadapter_instance else []
-        for item in modulators:
-            if item not in DoernerianEmotionalModulators.readable_modulators:
-                datatargets.append(item)
+        for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
+            datatargets.append(item)
         return datatargets
 
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):

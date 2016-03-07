@@ -19,7 +19,7 @@ def register(netapi, node=None, **params):
 
 
 def sensor(netapi, node=None, datasource=None, **params):
-    if datasource in netapi.worldadapter.get_available_datasources():
+    if netapi.worldadapter and datasource in netapi.worldadapter.get_available_datasources():
         datasource_value = netapi.worldadapter.get_datasource_value(datasource)
     else:
         datasource_value = netapi.get_modulator(datasource)
@@ -28,10 +28,8 @@ def sensor(netapi, node=None, datasource=None, **params):
 
 
 def actor(netapi, node=None, datatarget=None, **params):
-    if not netapi.worldadapter:
-        return
     activation_to_set = node.get_slot("gen").activation
-    if datatarget in netapi.worldadapter.get_available_datatargets():
+    if netapi.worldadapter and datatarget in netapi.worldadapter.get_available_datatargets():
         netapi.worldadapter.add_to_datatarget(datatarget, activation_to_set)
         feedback = netapi.worldadapter.get_datatarget_feedback_value(datatarget)
     else:

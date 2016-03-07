@@ -273,12 +273,16 @@ def load_nodenet(nodenet_uid):
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 
+            worldadapter_instance = None
             if hasattr(data, 'world') and data.world:
                 if data.world in worlds:
                     world_uid = data.world
                     worldadapter = data.get('worldadapter')
                 else:
                     logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+
+            if world_uid:
+                result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
 
             engine = data.get('engine') or 'dict_engine'
 
@@ -287,6 +291,7 @@ def load_nodenet(nodenet_uid):
             params = {
                 'name': data.name,
                 'worldadapter': worldadapter,
+                'worldadapter_instance': worldadapter_instance,
                 'world': world_uid,
                 'owner': data.owner,
                 'uid': data.uid,
@@ -313,8 +318,6 @@ def load_nodenet(nodenet_uid):
         else:
             world_uid = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
-        if world_uid:
-            worlds[world_uid].register_nodenet(worldadapter, nodenets[nodenet_uid])
 
         nodenet_lock.release()
         return True, nodenet_uid
@@ -404,7 +407,7 @@ def unload_nodenet(nodenet_uid):
         return False
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
-        worlds[nodenet.world].unregister_nodenet(nodenet)
+        worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
     logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
@@ -471,7 +474,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
 
     nodenet = nodenets[nodenet_uid]
     if nodenet.world and nodenet.world != world_uid:
-        worlds[nodenet.world].unregister_nodenet(nodenet)
+        worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
@@ -479,7 +482,9 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        worlds[world_uid].register_nodenet(worldadapter, nodenet)
+        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid)
+        if result:
+            nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
         nodenet.name = nodenet_name
     if owner:

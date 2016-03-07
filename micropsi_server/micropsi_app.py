@@ -755,7 +755,7 @@ def generate_uid():
 @rpc("create_auth_token")
 def create_auth_token(user, password, remember=True):
     # log in new user
-    token = usermanager.start_session(user, password, True)
+    token = usermanager.start_session(user, password, remember)
     if token:
         return True, token
     else:

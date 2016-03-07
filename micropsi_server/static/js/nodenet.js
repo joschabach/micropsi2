@@ -2596,9 +2596,16 @@ function buildRecursiveDropdown(cat, html, current_category, generate_items){
     }
     catentries.sort();
     for(var i = 0; i < catentries.length; i++){
+        if(catentries[i] == ''){
+            continue;
+        }
         var newcategory = current_category || '';
-        if(current_category == '') newcategory += catentries[i]
-        else newcategory += '/'+catentries[i];
+        if(current_category == ''){
+            newcategory += catentries[i]
+        }
+        else {
+            newcategory += '/'+catentries[i];
+        }
         html += '<li class="noop"><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
         html += '<ul class="sub-menu dropdown-menu">'
         html += buildRecursiveDropdown(cat[catentries[i]], '', newcategory, generate_items);

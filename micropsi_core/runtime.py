@@ -1361,6 +1361,8 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
     import inspect
 
     category = category_overwrite or os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    if category == '.':
+        category == ''  # relapth in rootfolder
     relpath = os.path.relpath(path, start=RESOURCE_PATH)
     name = os.path.basename(path)[:-3]
 

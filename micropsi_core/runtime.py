@@ -1377,7 +1377,7 @@ def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False
         return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):
-        if module.__file__.startswith(RESOURCE_PATH):
+        if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
             module = importlib.reload(module)
 
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
@@ -1433,7 +1433,7 @@ def reload_nodefunctions_file(path):
         loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
         nodefuncs = loader.load_module()
         for name, module in inspect.getmembers(nodefuncs, inspect.ismodule):
-            if module.__file__.startswith(RESOURCE_PATH):
+            if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
                 loader = importlib.machinery.SourceFileLoader(name, module.__file__)
                 loader.load_module()
     except SyntaxError as e:

@@ -706,7 +706,7 @@ def show_dashboard():
 #         ##  ##      ##   ##   ###  ##
 #         ##  ###### ##     ##  ## # ##
 #         ##      ##  ##   ##   ##  ###
-#        ##   #####    #####    ##   ##
+#        ##   #####    #####    ##   ## JSON
 #
 #
 #################################################################
@@ -750,6 +750,19 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
 @rpc("generate_uid")
 def generate_uid():
     return True, tools.generate_uid()
+
+
+@rpc("create_auth_token")
+def create_auth_token(user, password, remember=True):
+    # log in new user
+    token = usermanager.start_session(user, password, True)
+    if token:
+        return True, token
+    else:
+        if user in usermanager.users:
+            return False, "User name and password do not match"
+        else:
+            return False, "User unknown"
 
 
 @rpc("get_available_nodenets")

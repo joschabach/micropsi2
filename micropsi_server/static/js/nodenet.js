@@ -2643,7 +2643,6 @@ function openContextMenu(menu_id, event) {
             });
             html += '</ul></li>';
         }
-        html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         html += '<li class="divider"></li><li data-paste-nodes';
         if(Object.keys(clipboard).length === 0){
             html += ' class="disabled"';
@@ -2810,7 +2809,6 @@ function handleContextMenu(event) {
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
-            var autoalign = $el.attr("data-auto-align");
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2841,9 +2839,7 @@ function handleContextMenu(event) {
                     };
                     break;
             }
-            if(autoalign){
-                autoalignmentHandler();
-            } else if(type) {
+            if(type) {
                 if(nodenet_data.snap_to_grid){
                     var xpos = Math.round(clickPosition.x / 10) * 10;
                     var ypos = Math.round(clickPosition.y / 10) * 10;
@@ -3097,17 +3093,6 @@ function get_datatarget_options(worldadapter, value){
     }
     html += '</optgroup>';
     return html;
-}
-
-// rearrange nodes in the current nodespace
-function autoalignmentHandler() {
-    api.call("align_nodes", {
-            nodenet_uid: currentNodenet,
-            nodespace: currentNodeSpace
-        },
-        function(data){
-            setCurrentNodenet(currentNodenet, currentNodeSpace);
-        });
 }
 
 // let user create a new node

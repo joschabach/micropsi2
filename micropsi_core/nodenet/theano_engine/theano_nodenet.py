@@ -760,9 +760,6 @@ class TheanoNodenet(Nodenet):
         if uid is None:
             uid = nodespace_to_id(1, self.rootpartition.pid)
 
-        if not self.is_nodespace(uid):
-            raise KeyError("No nodespace with id %s exists", uid)
-
         partition = self.get_partition(uid)
 
         if uid in self.proxycache:

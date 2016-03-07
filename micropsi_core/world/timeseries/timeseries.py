@@ -6,6 +6,7 @@ from configuration import config as cfg
 from micropsi_core.world.world import World
 from micropsi_core.world.worldadapter import WorldAdapter, ArrayWorldAdapter
 import numpy as np
+from datetime import datetime
 
 
 class TimeSeries(World):
@@ -22,7 +23,7 @@ class TimeSeries(World):
     """
     supported_worldadapters = ['TimeSeriesRunner']
 
-    def __init__(self, filename, world_type="Island", name="", owner="", engine=None, uid=None, version=1, config={}):
+    def __init__(self, filename, world_type="TimeSeries", name="", owner="", engine=None, uid=None, version=1, config={}):
         World.__init__(self, filename, world_type=world_type, name=name, owner=owner, uid=uid, version=version, config=config)
 
         filename = config.get('time_series_data_file', "timeseries.npz")
@@ -31,6 +32,9 @@ class TimeSeries(World):
         else:
             path = os.path.join(cfg['micropsi2']['data_directory'], filename)
         self.logger.info("loading timeseries from %s for world %s" % (path, uid))
+
+        self.realtime_per_entry = int(config['realtime_per_entry'])
+        self.last_realtime_step = datetime.utcnow().timestamp() * 1000
 
         try:
             with np.load(path) as f:
@@ -92,6 +96,15 @@ class TimeSeries(World):
 
     # todo: option to use only a subset of the data (e.g. for training/test)
 
+    def step(self):
+        now = datetime.utcnow().timestamp() * 1000
+        if now - self.realtime_per_entry > self.last_realtime_step:
+            self.current_step += 1
+            for uid in self.agents:
+                with self.agents[uid].datasource_lock:
+                    self.agents[uid].update()
+            self.last_realtime_step = now
+
     @property
     def state(self):
         t = (self.current_step - 1) % self.len_ts
@@ -124,7 +137,7 @@ class TimeSeries(World):
              'options': ["True", "False"]},
             {'name': 'z_transform',
              'description': 'For each ID, center on mean & normalize by standard deviation',
-             'default': 'True',
+             'default': 'False',
              'options': ["True", "False"]},
             {'name': 'clip_and_scale',
              'description': 'For each ID, center on mean & clip to 4 standard deviations and rescale to [0,1].',
@@ -132,13 +145,17 @@ class TimeSeries(World):
              'options': ["True", "False"]},
             {'name': 'sigmoid',
              'description': 'For each ID, z-transform and apply a sigmoid activation function',
-             'default': 'True',
+             'default': 'False',
              'options': ["True", "False"]},
+            {'name': 'realtime_per_entry',
+             'description': 'Present each pattern from the data for this number of milliseconds',
+             'default': '0'},
             {'name': 'dummy_data',
              'description': 'Present the same random pattern in each step (instead of the actual time series data)',
              'default': 'False',
              'options': ["True", "False"]}
         ]
+
 
 class TimeSeriesRunner(ArrayWorldAdapter):
 
@@ -146,7 +163,7 @@ class TimeSeriesRunner(ArrayWorldAdapter):
         super().__init__(world, uid, **data)
 
         self.available_datatargets = []
-        self.available_datasources = []
+        self.available_datasources = ["update"]
 
         for idx, ID in enumerate(self.world.ids):
             self.available_datasources.append(str(ID))

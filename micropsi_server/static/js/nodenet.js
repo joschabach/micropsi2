@@ -194,7 +194,6 @@ function get_available_worldadapters(world_uid, callback){
         api.call("get_worldadapters", {world_uid: world_uid, nodenet_uid: currentNodenet},
             success=function(data){
                 worldadapters = data;
-                currentWorld = world_uid;
                 var str = '';
                 var name;
                 var keys = Object.keys(worldadapters);

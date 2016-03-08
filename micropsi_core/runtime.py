@@ -606,13 +606,17 @@ def import_nodenet(string, owner=None):
             raise RuntimeError("A nodenet with this ID already exists.")
     if 'owner':
         import_data['owner'] = owner
-    # assert import_data['world'] in worlds
+    nodenet_uid = import_data['uid']
     filename = os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, import_data['uid'] + '.json')
+    meta = parse_definition(import_data, filename)
+    nodenet_data[nodenet_uid] = meta
+    # assert import_data['world'] in worlds
     with open(filename, 'w+') as fp:
-        fp.write(json.dumps(import_data))
-    nodenet_data[import_data['uid']] = parse_definition(import_data, filename)
-    load_nodenet(import_data['uid'])
-    return import_data['uid']
+        fp.write(json.dumps(meta))
+    load_nodenet(nodenet_uid)
+    merge_nodenet(nodenet_uid, string, keep_uids=True)
+    save_nodenet(nodenet_uid)
+    return nodenet_uid
 
 
 def merge_nodenet(nodenet_uid, string, keep_uids=False):

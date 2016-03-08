@@ -346,7 +346,7 @@ class TheanoNodenet(Nodenet):
             nodes_data = initfrom.get('nodes', {})
 
             # initialize
-            self.initialize_nodenet(initfrom, native_module_instances_only=('partition_parents' in initfrom))
+            self.initialize_nodenet(initfrom, native_module_instances_only=True)
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")

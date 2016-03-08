@@ -145,7 +145,7 @@ var api = {
 
     call: function(functionname, params, success_cb, error_cb, method){
         var url = '/rpc/'+functionname;
-        if(method != "post"){
+        if(method == "get"){
             args = '';
             for(var key in params){
                 args += key+'='+encodeURIComponent(JSON.stringify(params[key]))+',';
@@ -154,8 +154,8 @@ var api = {
         }
         $.ajax({
             url: url,
-            data: ((method == "post") ? JSON.stringify(params) : null),
-            type: method || "get",
+            data: ((method != "get") ? JSON.stringify(params) : null),
+            type: method || "post",
             processData: (method == "get"),
             contentType: "application/json",
             success: function(response){
@@ -484,8 +484,7 @@ $(function() {
         }, function(data){
             api.defaultErrorCallback(data);
             $('#monitor_modal').modal('hide');
-        },
-        method="post");
+        });
     }
     $('#monitor_modal .btn-primary').on('click', submitMonitorModal);
     $('#monitor_modal form').on('submit', submitMonitorModal);

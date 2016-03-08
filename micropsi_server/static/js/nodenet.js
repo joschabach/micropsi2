@@ -164,6 +164,9 @@ $(document).on('load_nodenet', function(event, uid){
 $(document).on('nodenet_changed', function(event, new_nodenet){
     setCurrentNodenet(new_nodenet, null, true);
 });
+$(document).on('new_world_created', function(data){
+    get_available_worlds();
+});
 
 function toggleButtons(on){
     if(on)
@@ -179,6 +182,9 @@ function get_available_worlds(){
             html += '<option value="'+uid+'">'+data[uid].name+'</option>';
         }
         $('#nodenet_world').html(html);
+        if(currentNodenet && nodenet_data){
+            $('#nodenet_world').val(nodenet_data.world);
+        }
     });
 }
 

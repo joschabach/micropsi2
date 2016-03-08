@@ -332,6 +332,7 @@ $(function() {
         event.preventDefault();
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
             dialogs.notification('World created. ID: ' + data.world_uid, 'success');
+            $(document).trigger('new_world_created', data);
             var url = '/world_list/' + ($.cookie('selected_world') || '');
             $.get(url, {}, function(data){
                 $('#world_list').html(data);

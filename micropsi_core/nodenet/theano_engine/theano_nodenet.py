@@ -346,7 +346,7 @@ class TheanoNodenet(Nodenet):
             nodes_data = initfrom.get('nodes', {})
 
             # initialize
-            self.initialize_nodenet(initfrom)
+            self.initialize_nodenet(initfrom, native_module_instances_only=('partition_parents' in initfrom))
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
@@ -374,7 +374,7 @@ class TheanoNodenet(Nodenet):
             if neighbor.startswith(self.uid):
                 os.remove(os.path.join(os.path.dirname(filename), neighbor))
 
-    def initialize_nodenet(self, initfrom):
+    def initialize_nodenet(self, initfrom, native_module_instances_only=False):
 
         self._modulators.update(initfrom.get("modulators", {}))
 
@@ -383,7 +383,7 @@ class TheanoNodenet(Nodenet):
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
-            self.merge_data(initfrom, keep_uids=True)
+            self.merge_data(initfrom, keep_uids=True, native_module_instances_only=native_module_instances_only)
             if 'names' in initfrom:
                 self.names = initfrom['names']
             if 'positions' in initfrom:
@@ -400,9 +400,8 @@ class TheanoNodenet(Nodenet):
             if 'current_step' in initfrom:
                 self._step = initfrom['current_step']
 
-    def merge_data(self, nodenet_data, keep_uids=False):
+    def merge_data(self, nodenet_data, keep_uids=False, native_module_instances_only=False):
         """merges the nodenet state with the current node net, might have to give new UIDs to some entities"""
-
         uidmap = {}
         invalid_nodes = []
 
@@ -448,15 +447,20 @@ class TheanoNodenet(Nodenet):
                 data['type'] = 'Comment'
                 del data['gate_parameters']
                 invalid_nodes.append(uid)
-            new_uid = self.create_node(
-                data['type'],
-                parent_uid,
-                data['position'],
-                name=data['name'],
-                uid=id_to_pass,
-                parameters=data.get('parameters'),
-                gate_parameters=data.get('gate_parameters'),
-                gate_functions=data.get('gate_functions'))
+            if native_module_instances_only:
+                node = TheanoNode(self, self.get_partition(uid), parent_uid, uid, get_numerical_node_type(data['type'], nativemodules=self.native_modules), parameters=data.get('parameters'))
+                self.proxycache[node.uid] = node
+                new_uid = node.uid
+            else:
+                new_uid = self.create_node(
+                    data['type'],
+                    parent_uid,
+                    data['position'],
+                    name=data['name'],
+                    uid=id_to_pass,
+                    parameters=data.get('parameters'),
+                    gate_parameters=data.get('gate_parameters'),
+                    gate_functions=data.get('gate_functions'))
             uidmap[uid] = new_uid
             node_proxy = self.get_node(new_uid)
             for gatetype in data.get('gate_activations', {}):   # todo: implement sheaves
@@ -759,6 +763,9 @@ class TheanoNodenet(Nodenet):
     def get_nodespace(self, uid):
         if uid is None:
             uid = nodespace_to_id(1, self.rootpartition.pid)
+
+        if not self.is_nodespace(uid):
+            raise KeyError("No nodespace with id %s exists", uid)
 
         partition = self.get_partition(uid)
 

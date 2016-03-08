@@ -41,18 +41,10 @@ class TheanoCalculate(Calculate):
         self.nodenet = nodenet
 
     def read_sensors_and_actuator_feedback(self):
-        if self.worldadapter is None:
-            return
-
-        self.nodenet.set_sensors_and_actuator_feedback_to_values(
-            self.worldadapter.get_datasource_values(),
-            self.worldadapter.get_datatarget_feedback_values())
+        self.nodenet.set_sensors_and_actuator_feedback_values()
 
     def write_actuators(self):
-        if self.worldadapter is None:
-            return
-
-        self.worldadapter.set_datatarget_values(self.nodenet.read_actuators())
+        self.nodenet.set_actuator_values()
 
     def count_success_and_failure(self, nodenet):
         nays = 0

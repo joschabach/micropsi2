@@ -126,7 +126,8 @@ def delete_world(world_uid):
     """Removes the world with the given uid from the server (and unloads it from memory if it is running.)"""
     world = micropsi_core.runtime.worlds[world_uid]
     for uid in list(world.agents.keys()):
-        world.unregister_nodenet(micropsi_core.runtime.nodenets[uid])
+        world.unregister_nodenet(uid)
+        micropsi_core.runtime.nodenets[uid].worldadapter_instance = None
         micropsi_core.runtime.nodenets[uid].world = None
     micropsi_core.runtime.worlds[world_uid].__del__()
     del micropsi_core.runtime.worlds[world_uid]
@@ -163,7 +164,10 @@ def revert_world(world_uid):
     if world_uid in micropsi_core.runtime.worlds:
         micropsi_core.runtime.worlds[world_uid].__del__()
         del micropsi_core.runtime.worlds[world_uid]
-    micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
+    if data.get('world_type'):
+        micropsi_core.runtime.worlds[world_uid] = get_world_class_from_name(data.world_type)(**data)
+    else:
+        micropsi_core.runtime.worlds[world_uid] = world.World(**data)
     return True
 
 

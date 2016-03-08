@@ -52,6 +52,7 @@ worlds = {}
 nodenets = {}
 native_modules = {}
 custom_recipes = {}
+custom_operations = {}
 
 
 def add_signal_handler(handler):
@@ -272,12 +273,16 @@ def load_nodenet(nodenet_uid):
         if nodenet_uid not in nodenets:
             data = nodenet_data[nodenet_uid]
 
+            worldadapter_instance = None
             if hasattr(data, 'world') and data.world:
                 if data.world in worlds:
                     world_uid = data.world
                     worldadapter = data.get('worldadapter')
                 else:
                     logging.getLogger("system").warn("World %s for nodenet %s not found" % (data.world, data.uid))
+
+            if world_uid:
+                result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
 
             engine = data.get('engine') or 'dict_engine'
 
@@ -286,6 +291,7 @@ def load_nodenet(nodenet_uid):
             params = {
                 'name': data.name,
                 'worldadapter': worldadapter,
+                'worldadapter_instance': worldadapter_instance,
                 'world': world_uid,
                 'owner': data.owner,
                 'uid': data.uid,
@@ -312,8 +318,6 @@ def load_nodenet(nodenet_uid):
         else:
             world_uid = nodenets[nodenet_uid].world or None
             worldadapter = nodenets[nodenet_uid].worldadapter
-        if world_uid:
-            worlds[world_uid].register_nodenet(worldadapter, nodenets[nodenet_uid])
 
         nodenet_lock.release()
         return True, nodenet_uid
@@ -403,7 +407,7 @@ def unload_nodenet(nodenet_uid):
         return False
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
-        worlds[nodenet.world].unregister_nodenet(nodenet)
+        worlds[nodenet.world].unregister_nodenet(nodenet.uid)
     del nodenets[nodenet_uid]
     logger.unregister_logger('agent.%s' % nodenet_uid)
     return True
@@ -470,7 +474,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
 
     nodenet = nodenets[nodenet_uid]
     if nodenet.world and nodenet.world != world_uid:
-        worlds[nodenet.world].unregister_nodenet(nodenet)
+        worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
     if worldadapter is None:
         worldadapter = nodenet.worldadapter
@@ -478,7 +482,9 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
         assert worldadapter in worlds[world_uid].supported_worldadapters
         nodenet.world = world_uid
         nodenet.worldadapter = worldadapter
-        worlds[world_uid].register_nodenet(worldadapter, nodenet)
+        result, wa_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet.uid)
+        if result:
+            nodenet.worldadapter_instance = wa_instance
     if nodenet_name:
         nodenet.name = nodenet_name
     if owner:
@@ -1148,6 +1154,21 @@ def get_available_recipes():
     return recipes
 
 
+def get_available_operations():
+    """ Returns a dict of available user-operations """
+    operations = {}
+    for name, data in custom_operations.items():
+        if not name.startswith('_'):
+            operations[name] = {
+                'name': name,
+                'parameters': data['parameters'],
+                'docstring': data['docstring'],
+                'category': data['category'],
+                'selection': data['selectioninfo']
+            }
+    return operations
+
+
 def run_recipe(nodenet_uid, name, parameters):
     """ Calls the given recipe with the provided parameters, and returns the output, if any """
     netapi = nodenets[nodenet_uid].netapi
@@ -1174,6 +1195,34 @@ def run_recipe(nodenet_uid, name, parameters):
         return True, result
     else:
         return False, "Script not found"
+
+
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    """ Calls the given operation on the selection"""
+    netapi = nodenets[nodenet_uid].netapi
+    params = {}
+    for key in parameters:
+        if parameters[key] != '':
+            params[key] = parameters[key]
+    if name in custom_operations:
+        func = custom_operations[name]['function']
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler = cProfile.Profile()
+            profiler.enable()
+        result = {}
+        ret = func(netapi, selection_uids, **params)
+        if ret:
+            result.update(ret)
+        if cfg['micropsi2'].get('profile_runner'):
+            profiler.disable()
+            s = io.StringIO()
+            sortby = 'cumtime'
+            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps.print_stats('nodenet')
+            logging.getLogger("agent.%s" % nodenet_uid).debug(s.getvalue())
+        return True, result
+    else:
+        return False, "Operation not found"
 
 
 def get_agent_dashboard(nodenet_uid):
@@ -1285,9 +1334,11 @@ def load_user_files(path, reload_nodefunctions=False, errors=[]):
             elif f == 'nodetypes.json':
                 err = parse_native_module_file(abspath)
             elif f == 'recipes.py':
-                err = parse_recipe_file(abspath, reload_nodefunctions)
+                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
             elif f == 'nodefunctions.py' and reload_nodefunctions:
                 err = reload_nodefunctions_file(abspath)
+            elif f == 'operations.py':
+                err = parse_recipe_or_operations_file(abspath, reload_nodefunctions)
             if err:
                 errors.append(err)
     return errors
@@ -1309,36 +1360,43 @@ def parse_native_module_file(path):
             native_modules[key] = modules[key]
 
 
-def parse_recipe_file(path, reload=False):
+def parse_recipe_or_operations_file(path, reload=False, category_overwrite=False):
     global custom_recipes
     import importlib
     import inspect
 
-    category = os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    category = category_overwrite or os.path.relpath(os.path.dirname(path), start=RESOURCE_PATH)
+    if category == '.':
+        category == ''  # relapth in rootfolder
     relpath = os.path.relpath(path, start=RESOURCE_PATH)
-    pyname = relpath.replace(os.path.sep, '.')[:-3]
+    name = os.path.basename(path)[:-3]
+
+    mode = 'recipes' if os.path.basename(path).startswith('recipes') else 'operations'
 
     try:
-        loader = importlib.machinery.SourceFileLoader('recipes', path)
+        loader = importlib.machinery.SourceFileLoader(name, path)
         recipes = loader.load_module()
         # recipes = __import__(pyname, fromlist=['recipes'])
         # importlib.reload(sys.modules[pyname])
     except SyntaxError as e:
-        return "%s in recipe file %s, line %d" % (e.__class__.__name__, relpath, e.lineno)
+        return "%s in %s file %s, line %d" % (e.__class__.__name__, mode, relpath, e.lineno)
 
     for name, module in inspect.getmembers(recipes, inspect.ismodule):
-        if module.__file__.startswith(RESOURCE_PATH):
+        if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
             module = importlib.reload(module)
 
     all_functions = inspect.getmembers(recipes, inspect.isfunction)
     for name, func in all_functions:
         filename = os.path.realpath(func.__code__.co_filename)
-        if filename != os.path.realpath(path) and os.path.basename(filename) == 'recipes.py':
-            # import from another recipes file. ignore, to avoid
+        if filename != os.path.realpath(path) and os.path.basename(filename) == os.path.basename(path):
+            # import from another file of the same mode. ignore, to avoid
             # false duplicate-function-name alerts
             continue
         argspec = inspect.getargspec(func)
-        arguments = argspec.args[1:]
+        if mode == 'recipes':
+            arguments = argspec.args[1:]
+        elif mode == 'operations':
+            arguments = argspec.args[2:]
         defaults = argspec.defaults or []
         params = []
         diff = len(arguments) - len(defaults)
@@ -1351,9 +1409,11 @@ def parse_recipe_file(path, reload=False):
                 'name': arg,
                 'default': default
             })
-        if name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
+        if mode == 'recipes' and name in custom_recipes and id(func) != id(custom_recipes[name]['function']):
             logging.getLogger("system").warning("Recipe function names must be unique. %s is not." % name)
-        custom_recipes[name] = {
+        elif mode == 'operations' and name in custom_operations and id(func) != id(custom_operations[name]['function']):
+            logging.getLogger("system").warning("Operations function names must be unique. %s is not." % name)
+        data = {
             'name': name,
             'parameters': params,
             'function': func,
@@ -1361,6 +1421,13 @@ def parse_recipe_file(path, reload=False):
             'category': category,
             'path': path
         }
+
+        if mode == 'recipes':
+            custom_recipes[name] = data
+        elif mode == 'operations':
+            if hasattr(func, 'selectioninfo'):
+                data['selectioninfo'] = func.selectioninfo
+                custom_operations[name] = data
 
 
 def reload_nodefunctions_file(path):
@@ -1371,7 +1438,7 @@ def reload_nodefunctions_file(path):
         loader = importlib.machinery.SourceFileLoader("nodefunctions", path)
         nodefuncs = loader.load_module()
         for name, module in inspect.getmembers(nodefuncs, inspect.ismodule):
-            if module.__file__.startswith(RESOURCE_PATH):
+            if hasattr(module, '__file__') and module.__file__.startswith(RESOURCE_PATH):
                 loader = importlib.machinery.SourceFileLoader(name, module.__file__)
                 loader.load_module()
     except SyntaxError as e:
@@ -1381,17 +1448,28 @@ def reload_nodefunctions_file(path):
 
 def reload_native_modules():
     # stop nodenets, save state
-    global native_modules, custom_recipes
+    global native_modules, custom_recipes, custom_operations
     native_modules = {}
     custom_recipes = {}
+    custom_operations = {}
     runners = {}
+    errors = []
+    # load builtins:
     from micropsi_core.nodenet.native_modules import nodetypes
     native_modules.update(nodetypes)
+    operationspath = os.path.abspath('micropsi_core/nodenet/operations/')
+    for file in os.listdir(operationspath):
+        import micropsi_core.nodenet.operations
+        if file != '__init__.py' and not file.startswith('.') and os.path.isfile(os.path.join(operationspath, file)):
+            err = parse_recipe_or_operations_file(os.path.join(operationspath, file), category_overwrite=file[:-3])
+            if err:
+                errors.append(err)
+
     for uid in nodenets:
         if nodenets[uid].is_active:
             runners[uid] = True
             nodenets[uid].is_active = False
-    errors = load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[])
+    errors.extend(load_user_files(RESOURCE_PATH, reload_nodefunctions=True, errors=[]))
     for nodenet_uid in nodenets:
         nodenets[nodenet_uid].reload_native_modules(filter_native_modules(nodenets[nodenet_uid].engine))
     # restart previously active nodenets

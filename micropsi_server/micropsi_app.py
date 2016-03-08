@@ -706,7 +706,7 @@ def show_dashboard():
 #         ##  ##      ##   ##   ###  ##
 #         ##  ###### ##     ##  ## # ##
 #         ##      ##  ##   ##   ##  ###
-#        ##   #####    #####    ##   ##
+#        ##   #####    #####    ##   ## JSON
 #
 #
 #################################################################
@@ -723,7 +723,6 @@ def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
     if result:
         data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
         data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
-        data['recipes'] = runtime.get_available_recipes()
         return True, data
     else:
         return False, uid
@@ -751,6 +750,19 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
 @rpc("generate_uid")
 def generate_uid():
     return True, tools.generate_uid()
+
+
+@rpc("create_auth_token")
+def create_auth_token(user, password, remember=True):
+    # log in new user
+    token = usermanager.start_session(user, password, remember)
+    if token:
+        return True, token
+    else:
+        if user in usermanager.users:
+            return False, "User name and password do not match"
+        else:
+            return False, "User unknown"
 
 
 @rpc("get_available_nodenets")
@@ -1216,6 +1228,16 @@ def run_recipe(nodenet_uid, name, parameters):
 @rpc('get_available_recipes')
 def get_available_recipes():
     return True, runtime.get_available_recipes()
+
+
+@rpc("run_operation")
+def run_operation(nodenet_uid, name, parameters, selection_uids):
+    return runtime.run_operation(nodenet_uid, name, parameters, selection_uids)
+
+
+@rpc('get_available_operations')
+def get_available_operations():
+    return True, runtime.get_available_operations()
 
 
 @rpc('get_agent_dashboard')

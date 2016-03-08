@@ -151,6 +151,8 @@ registerResizeHandler();
 globalDataSources = [];
 globalDataTargets = [];
 
+available_operations = {};
+
 $(document).on('load_nodenet', function(event, uid){
     ns = 'Root';
     if(uid == currentNodenet){
@@ -234,6 +236,22 @@ function setNodenetValues(data){
     }
 }
 
+function buildCategoryTree(item, path, idx){
+    if (idx < path.length){
+        name = path[idx];
+        if (!item[name]){
+            item[name] = {};
+        }
+        buildCategoryTree(item[name], path, idx + 1);
+    }
+}
+
+
+api.call("get_available_operations", {}, function(data){
+    available_operations = data
+});
+
+
 function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
         nodespace = "Root";
@@ -290,16 +308,6 @@ function setCurrentNodenet(uid, nodespace, changed){
                     return 0;
                 });
 
-                function buildTreeRecursive(item, path, idx){
-                    if (idx < path.length){
-                        name = path[idx];
-                        if (!item[name]){
-                            item[name] = {};
-                        }
-                        buildTreeRecursive(item[name], path, idx + 1);
-                    }
-                }
-
                 categories = [];
                 for(var key in native_modules){
                     nodetypes[key] = native_modules[key];
@@ -307,7 +315,7 @@ function setCurrentNodenet(uid, nodespace, changed){
                 }
                 native_module_categories = {}
                 for(var i =0; i < categories.length; i++){
-                    buildTreeRecursive(native_module_categories, categories[i], 0);
+                    buildCategoryTree(native_module_categories, categories[i], 0);
                 }
 
                 available_gatetypes = [];
@@ -2601,7 +2609,7 @@ function initializeDialogs(){
 
 var clickPosition = null;
 
-function buildNativeModuleDropdown(cat, html, current_category){
+function buildRecursiveDropdown(cat, html, current_category, generate_items){
     if(!current_category){
         current_category='';
     }
@@ -2611,20 +2619,24 @@ function buildNativeModuleDropdown(cat, html, current_category){
     }
     catentries.sort();
     for(var i = 0; i < catentries.length; i++){
+        if(catentries[i] == ''){
+            continue;
+        }
         var newcategory = current_category || '';
-        if(current_category == '') newcategory += catentries[i]
-        else newcategory += '/'+catentries[i];
-        html += '<li><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
+        if(current_category == ''){
+            newcategory += catentries[i]
+        }
+        else {
+            newcategory += '/'+catentries[i];
+        }
+        html += '<li class="noop"><a>'+catentries[i]+'<i class="icon-chevron-right"></i></a>';
         html += '<ul class="sub-menu dropdown-menu">'
-        html += buildNativeModuleDropdown(cat[catentries[i]], '', newcategory);
+        html += buildRecursiveDropdown(cat[catentries[i]], '', newcategory, generate_items);
         html += '</ul></li>';
     }
-    for(var idx in sorted_native_modules){
-        key = sorted_native_modules[idx];
-        if(native_modules[key].category == current_category){
-            html += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
-        }
-    }
+
+    html += generate_items(current_category);
+
     return html
 }
 
@@ -2647,37 +2659,46 @@ function openContextMenu(menu_id, event) {
                 html += '<li><a data-create-node="' + sorted_nodetypes[idx] + '">Create ' + sorted_nodetypes[idx] +'</a></li>';
         }
         if(Object.keys(native_modules).length){
-            html += '<li class="divider"></li><li><a>Create Native Module<i class="icon-chevron-right"></i></a>';
+            html += '<li class="divider"></li><li class="noop"><a>Create Native Module<i class="icon-chevron-right"></i></a>';
             html += '<ul class="sub-menu dropdown-menu">';
-            html += buildNativeModuleDropdown(native_module_categories, '', '')
+            html += buildRecursiveDropdown(native_module_categories, '', '', function(current_category){
+                items = '';
+                for(var idx in sorted_native_modules){
+                    key = sorted_native_modules[idx];
+                    if(native_modules[key].category == current_category){
+                        items += '<li><a data-create-node="' + key + '">'+ native_modules[key].name +'</a></li>';
+                    }
+                }
+                return items;
+            });
             html += '</ul></li>';
         }
-        html += '<li class="divider"></li><li><a data-auto-align="true">Autoalign Nodes</a></li>';
         html += '<li class="divider"></li><li data-paste-nodes';
         if(Object.keys(clipboard).length === 0){
             html += ' class="disabled"';
         }
         html += '><a href="#">Paste nodes</a></li>';
+        html += getOperationsDropdownHTML(["Nodespace"], 1);
         list.html(html);
     }
     $(menu_id+" .dropdown-toggle").dropdown("toggle");
+    $(menu_id+" li.noop > a").on('click', function(event){event.stopPropagation();})
 }
 
 function openMultipleNodesContextMenu(event){
-    var typecheck = null;
-    var sametype = true;
     var node = null;
     var compact = false;
+    var nodetypes = [];
+    var count = 0
     for(var uid in selection){
+        if(!node) node = nodes[uid];
         if(isCompact(nodes[uid])) {
             compact = true;
         }
-        if(typecheck == null || typecheck == nodes[uid].type){
-            typecheck = nodes[uid].type;
-            node = nodes[uid];
-        } else {
-            sametype = false;
+        if(nodetypes.indexOf(nodes[uid].type) == -1){
+            nodetypes.push(nodes[uid].type);
         }
+        count += 1;
     }
     var menu = $('#multi_node_menu .nodenet_menu');
     var html = '';
@@ -2687,7 +2708,10 @@ function openMultipleNodesContextMenu(event){
     html += '<li data-copy-nodes><a href="#">Copy nodes</a></li>'+
         '<li data-paste-nodes><a href="#">Paste nodes</a></li>'+
         '<li><a href="#">Delete nodes</a></li>';
-    if(sametype){
+
+    html += getOperationsDropdownHTML(nodetypes, count);
+
+    if(nodetypes.length == 1){
         html += '<li class="divider"></li>' + getNodeLinkageContextMenuHTML(node);
     }
     html += '<li data-generate-fragment><a href="#">Generate netapi fragment</a></li>';
@@ -2698,6 +2722,50 @@ function openMultipleNodesContextMenu(event){
         $('#multi_node_menu li[data-paste-nodes]').removeClass('disabled');
     }
     openContextMenu('#multi_node_menu', event);
+}
+
+function getOperationsDropdownHTML(nodetypes, count){
+    operation_categories = {};
+    sorted_operations = [];
+
+    applicable_operations = {};
+    for(var key in available_operations){
+        var conditions = available_operations[key].selection;
+        if((conditions.nodetypes.length == 0 || $(nodetypes).not(conditions.nodetypes).get().length == 0) &&
+           (count >= conditions.mincount) &&
+           (conditions.maxcount < 0 || count <= conditions.maxcount)){
+                applicable_operations[key] = available_operations[key]
+        }
+    }
+
+    categories = [];
+    for(var key in applicable_operations){
+        categories.push(applicable_operations[key].category.split('/'));
+    }
+    operation_categories = {}
+    for(var i =0; i < categories.length; i++){
+        buildCategoryTree(operation_categories, categories[i], 0);
+    }
+    sorted_operations = Object.keys(applicable_operations).sort();
+
+    var html = '';
+    if(sorted_operations.length){
+        html += '<li class="divider"></li><li class="noop"><a>Operations<i class="icon-chevron-right"></i></a><ul class="sub-menu dropdown-menu">';
+        html += buildRecursiveDropdown(operation_categories, '', '', function(current_category){
+            items = '';
+            for(var idx in sorted_operations){
+                key = sorted_operations[idx];
+                if(applicable_operations[key].category == current_category){
+                    items += '<li><a title="'+applicable_operations[key].docstring+'" data-run-operation="' + key + '">'+ key +'</a></li>';
+                }
+            }
+            return items;
+        });
+        html += '</ul></li>';
+    } else {
+        html += '<li class="divider"></li><li class="noop disabled"><a>Operations</a></li>';
+    }
+    return html;
 }
 
 function getNodeLinkageContextMenuHTML(node){
@@ -2770,7 +2838,6 @@ function handleContextMenu(event) {
     switch (clickType) {
         case null: // create nodes
             var type = $el.attr("data-create-node");
-            var autoalign = $el.attr("data-auto-align");
             var callback = function(data){
                 dialogs.notification('Node created', 'success');
             };
@@ -2801,9 +2868,7 @@ function handleContextMenu(event) {
                     };
                     break;
             }
-            if(autoalign){
-                autoalignmentHandler();
-            } else if(type) {
+            if(type) {
                 if(nodenet_data.snap_to_grid){
                     var xpos = Math.round(clickPosition.x / 10) * 10;
                     var ypos = Math.round(clickPosition.y / 10) * 10;
@@ -2815,6 +2880,10 @@ function handleContextMenu(event) {
                     ypos/viewProperties.zoomFactor,
                     "", type, null, callback);
             } else{
+                if($el.attr('data-run-operation')){
+                    selectOperation($el.attr('data-run-operation'));
+                    break;
+                }
                 return false;
             }
             break;
@@ -2860,18 +2929,22 @@ function handleContextMenu(event) {
                     }
                     break;
                 default:
-                    var linktype = $(event.target).attr('data-link-type');
-                    if (linktype) {
-                        var forwardlinktype = linktype;
-                        if(forwardlinktype.indexOf('/')){
-                            forwardlinktype = forwardlinktype.split('/')[0];
-                        }
-                        for(var uid in selection){
-                            clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
-                            createLinkHandler(uid, clickIndex, linktype);
-                        }
+                    if($el.attr('data-run-operation')){
+                        selectOperation($el.attr('data-run-operation'));
                     } else {
-                        openLinkCreationDialog(path.name)
+                        var linktype = $(event.target).attr('data-link-type');
+                        if (linktype) {
+                            var forwardlinktype = linktype;
+                            if(forwardlinktype.indexOf('/')){
+                                forwardlinktype = forwardlinktype.split('/')[0];
+                            }
+                            for(var uid in selection){
+                                clickIndex = nodes[uid].gateIndexes.indexOf(forwardlinktype);
+                                createLinkHandler(uid, clickIndex, linktype);
+                            }
+                        } else {
+                            openLinkCreationDialog(path.name)
+                        }
                     }
             }
             break;
@@ -2919,6 +2992,79 @@ function handleContextMenu(event) {
             }
     }
     view.draw();
+}
+
+function selectOperation(name){
+    var modal = $('#operations-modal');
+    if(available_operations[name].parameters.length){
+        $('#recipe_modal .docstring').html(available_operations[name].docstring);
+        var html = '';
+        for(var i in available_operations[name].parameters){
+            var param = available_operations[name].parameters[i];
+            html += '' +
+            '<div class="control-group">'+
+                '<label class="control-label" for="op_'+param.name+'_input">'+param.name+'</label>'+
+                '<div class="controls">'+
+                    '<input type="text" name="'+param.name+'" class="input-xlarge" id="op_'+param.name+'_input" value="'+((param.default == null) ? '' : param.default)+'"/>'+
+                '</div>'+
+            '</div>';
+        }
+        $('fieldset', modal).html(html);
+        var run = function(){
+            data = $('form', modal).serializeArray();
+            parameters = {};
+            for(var i=0; i < data.length; i++){
+                parameters[data[i].name] = data[i].value
+            }
+            modal.modal('hide');
+            runOperation(name, parameters);
+        };
+        $('form', modal).on('submit', run);
+        $('.btn-primary', modal).on('click', run);
+        modal.modal('show');
+    } else {
+        runOperation(name);
+    }
+}
+
+function runOperation(name, params){
+    var selection_uids = Object.keys(selection);
+    if(selection_uids.length == 0){
+        selection_uids = [currentNodeSpace];
+    }
+    api.call('run_operation', {
+        'nodenet_uid': currentNodenet,
+        'name': $el.attr('data-run-operation'),
+        'parameters': params || {},
+        'selection_uids': selection_uids}, function(data){
+            refreshNodespace();
+            if(!$.isEmptyObject(data)){
+                html = '';
+                if(data.content_type && data.content_type.indexOf("image") > -1){
+                    html += '<p><img src="'+data.content_type+','+data.data+'" /></p>';
+                    delete data.content_type
+                    delete data.data
+                }
+                if(Object.keys(data).length){
+                    html += '<dl>';
+                    for(var key in data){
+                        html += '<dt>'+key+':</dt>';
+                        if(typeof data[key] == 'string'){
+                            html += '<dd>'+data[key]+'</dd>';
+                        } else {
+                            html += '<dd>'+JSON.stringify(data[key])+'</dd>';
+                        }
+                    }
+                    html += '</dl>';
+                }
+                if(html){
+                    $('#recipe_result .modal-body').html(html);
+                    $('#recipe_result').modal('show');
+                    $('#recipe_result button').off();
+                }
+            }
+        }
+    );
 }
 
 function openLinkCreationDialog(nodeUid){
@@ -2980,17 +3126,6 @@ function get_datatarget_options(worldadapter, value){
     }
     html += '</optgroup>';
     return html;
-}
-
-// rearrange nodes in the current nodespace
-function autoalignmentHandler() {
-    api.call("align_nodes", {
-            nodenet_uid: currentNodenet,
-            nodespace: currentNodeSpace
-        },
-        function(data){
-            setCurrentNodenet(currentNodenet, currentNodeSpace);
-        });
 }
 
 // let user create a new node

@@ -136,7 +136,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         self._worldadapter_instance = _worldadapter_instance
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, use_modulators=True, worldadapter_instance=None):
         """
         Constructor for the abstract base class, must be called by implementations
         """
@@ -144,7 +144,7 @@ class Nodenet(metaclass=ABCMeta):
         self._name = name
         self._world_uid = world
         self._worldadapter_uid = worldadapter if world else None
-        self._worldadapter_instance = None
+        self._worldadapter_instance = worldadapter_instance
         self.is_active = False
         self.use_modulators = use_modulators
 
@@ -399,26 +399,23 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    @abstractmethod
     def get_modulator(self, modulator):
         """
         Returns the numeric value of the given global modulator
         """
-        pass  # pragma: no cover
+        return self._modulators.get(modulator, 1)
 
-    @abstractmethod
     def change_modulator(self, modulator, diff):
         """
         Changes the value of the given global modulator by the value of diff
         """
-        pass  # pragma: no cover
+        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
 
-    @abstractmethod
     def set_modulator(self, modulator, value):
         """
         Changes the value of the given global modulator to the given value
         """
-        pass  # pragma: no cover
+        self._modulators[modulator] = value
 
     @abstractmethod
     def get_standard_nodetype_definitions(self):

@@ -156,7 +156,7 @@ class DictNodenet(Nodenet):
     def current_step(self):
         return self._step
 
-    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True):
+    def __init__(self, name="", worldadapter="Default", world=None, owner="", uid=None, native_modules={}, use_modulators=True, worldadapter_instance=None):
         """Create a new MicroPsi agent.
 
         Arguments:
@@ -166,7 +166,7 @@ class DictNodenet(Nodenet):
             uid (optional): unique handle of the agent; if none is given, it will be generated
         """
 
-        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators)
+        super(DictNodenet, self).__init__(name, worldadapter, world, owner, uid, use_modulators=use_modulators, worldadapter_instance=worldadapter_instance)
 
         self.stepoperators = [DictPropagate(), DictCalculate()]
         if self.use_modulators:
@@ -619,29 +619,11 @@ class DictNodenet(Nodenet):
         source_node.unlink(gate_type, target_node_uid, slot_type)
         return True
 
-    def get_modulator(self, modulator):
-        """
-        Returns the numeric value of the given global modulator
-        """
-        return self._modulators.get(modulator, 1)
-
-    def change_modulator(self, modulator, diff):
-        """
-        Changes the value of the given global modulator by the value of diff
-        """
-        self._modulators[modulator] = self._modulators.get(modulator, 0) + diff
-
     def construct_modulators_dict(self):
         """
         Returns a new dict containing all modulators
         """
         return self._modulators.copy()
-
-    def set_modulator(self, modulator, value):
-        """
-        Changes the value of the given global modulator to the given value
-        """
-        self._modulators[modulator] = value
 
     def get_standard_nodetype_definitions(self):
         """

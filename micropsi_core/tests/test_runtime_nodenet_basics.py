@@ -284,13 +284,13 @@ def test_modulators_sensor_actor_connection(test_nodenet, test_world):
 
     nodenet.step()
     assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
-    assert s1.activation == nodenet.worldadapter_instance.get_datasource_value('brightness_l')
-    assert s2.activation == emo_val
+    assert round(s1.activation, 3) == round(nodenet.worldadapter_instance.get_datasource_value('brightness_l'), 3)
+    assert round(s2.activation, 3) == round(emo_val, 3)
     assert round(nodenet.get_modulator('base_importance_of_intention'), 3) == 0.7
     assert round(nodenet.worldadapter_instance.datatargets['engine_l'], 3) == 0.3
     emo_val = nodenet.get_modulator("emo_activation")
     nodenet.step()
-    assert s2.activation == emo_val
+    assert round(s2.activation, 3) == round(emo_val, 3)
 
 
 def test_node_parameters(fixed_nodenet, resourcepath):

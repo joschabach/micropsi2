@@ -52,7 +52,7 @@ class NetAPI(object):
         """
         return self.__nodenet.get_node(uid)
 
-    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None):
+    def get_nodes(self, nodespace=None, node_name_prefix=None, nodetype=None, sortby='id'):
         """
         Returns a list of nodes in the given nodespace (all Nodespaces if None) whose names start with
         the given prefix (all if None)
@@ -71,6 +71,12 @@ class NetAPI(object):
             if node_name_prefix is not None and not node.name.startswith(node_name_prefix):
                 continue
             nodes.append(node)
+
+        if sortby == 'ids':
+            nodes = sorted(nodes, key=lambda node: node.uid)
+        elif sortby == 'names':
+            nodes = sorted(nodes, key=lambda node: node.name)
+
         return nodes
 
     def get_nodes_in_gate_field(self, node, gate=None, no_links_to=None, nodespace=None):
@@ -239,8 +245,6 @@ class NetAPI(object):
         Links a node to an actor. If no actor exists in the node's nodespace for the given datatarget,
         a new actor will be created, otherwise the first actor found will be used
         """
-        if datatarget not in self.worldadapter.get_available_datatargets():
-            raise KeyError("Data target %s not found" % datatarget)
         actor = None
         for uid, candidate in self.__nodenet.get_actors(node.parent_nodespace).items():
             if candidate.get_parameter('datatarget') == datatarget:
@@ -252,13 +256,11 @@ class NetAPI(object):
         self.link(node, gate, actor, 'gen', weight, certainty)
         # self.link(actor, 'gen', node, slot)
 
-    def link_sensor(self, node, datasource, slot='sur'):
+    def link_sensor(self, node, datasource, slot='sur', weight=1):
         """
         Links a node to a sensor. If no sensor exists in the node's nodespace for the given datasource,
         a new sensor will be created, otherwise the first sensor found will be used
         """
-        if datasource not in self.worldadapter.get_available_datasources():
-            raise KeyError("Data source %s not found" % datasource)
         sensor = None
         for uid, candidate in self.__nodenet.get_sensors(node.parent_nodespace).items():
             if candidate.get_parameter('datasource') == datasource:
@@ -267,7 +269,7 @@ class NetAPI(object):
             sensor = self.create_node("Sensor", node.parent_nodespace, datasource)
             sensor.set_parameter('datasource', datasource)
 
-        self.link(sensor, 'gen', node, slot)
+        self.link(sensor, 'gen', node, slot, weight)
 
     def import_actors(self, nodespace, datatarget_prefix=None):
         """
@@ -377,6 +379,12 @@ class NetAPI(object):
         from micropsi_core.nodenet.node_alignment import align
         if nodespace in self.__nodenet.get_nodespace_uids():
             align(self.__nodenet, nodespace)
+
+    def autoalign_entities(self, nodespace, entity_uids):
+        """ Calls the autoalignment on the given entities in the given nodespace """
+        from micropsi_core.nodenet.node_alignment import align
+        if nodespace in self.__nodenet.get_nodespace_uids():
+            align(self.__nodenet, nodespace, entity_uids)
 
     def get_modulator(self, modulator):
         """

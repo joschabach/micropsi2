@@ -18,11 +18,12 @@ GRID = 170.0
 PREFERRED_WIDTH = 8.0
 
 
-def align(nodenet, nodespace):
+def align(nodenet, nodespace, entity_uids=False):
     """aligns the entities in the given nodenet.
         Arguments:
             nodenet: current node net
             nodespace: the nodespace in which the entities are to be aligned
+            entity_uids: optional list of entity uids that should be aligned. If set, other entities remain untouched
         Returns:
             True on success, False otherwise
     """
@@ -32,17 +33,29 @@ def align(nodenet, nodespace):
         key=lambda i: nodenet.get_nodespace(i).index)
     unaligned_nodes = sorted(nodenet.get_nodespace(nodespace).get_known_ids('nodes'),
         key=lambda i: nodenet.get_node(i).index)
-    sensors = [s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor"]
-    actors = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor"]
-    activators = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Activator"]
-    unaligned_nodes = [n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor", "Activator")]
+
+    if entity_uids:
+        unaligned_nodespaces = [id for id in unaligned_nodespaces if id in entity_uids]
+        unaligned_nodes = [id for id in unaligned_nodes if id in entity_uids]
+        sensors = []
+        actors = []
+        activators = []
+        ymin = min(nodenet.get_node(n).position[1] for n in unaligned_nodes)
+        xmin = min(nodenet.get_node(n).position[0] for n in unaligned_nodes)
+        start_position = (xmin, ymin, 0)
+
+    else:
+        sensors = [s for s in unaligned_nodes if nodenet.get_node(s).type == "Sensor"]
+        actors = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Actor"]
+        activators = [a for a in unaligned_nodes if nodenet.get_node(a).type == "Activator"]
+        unaligned_nodes = [n for n in unaligned_nodes if not nodenet.get_node(n).type in ("Sensor", "Actor", "Activator")]
+
+        start_position = (BORDER + GRID / 2, BORDER + (0.5 + math.ceil(len(unaligned_nodespaces) / PREFERRED_WIDTH)) * GRID, 0)
 
     # position nodespaces
 
     for i, id in enumerate(unaligned_nodespaces):
         nodenet.get_nodespace(id).position = calculate_grid_position(i)
-
-    start_position = (BORDER + GRID / 2, BORDER + (0.5 + math.ceil(len(unaligned_nodespaces) / PREFERRED_WIDTH)) * GRID, 0)
 
     # simplify linkage
     group = unify_links(nodenet, unaligned_nodes)
@@ -61,6 +74,7 @@ def align(nodenet, nodespace):
     por_groups.arrange(nodenet, start_position)
 
     return True
+
 
 INVERSE_DIRECTIONS = {"s": "n", "w": "e", "nw": "se", "ne": "sw",
                       "n": "s", "e": "w", "se": "nw", "sw": "ne",

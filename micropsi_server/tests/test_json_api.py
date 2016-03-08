@@ -20,6 +20,13 @@ def test_generate_uid(app):
     assert re.match('[a-f0-9]+', response.json_body['data']) is not None
 
 
+def test_create_auth_token(app):
+    response = app.get_json('/rpc/create_auth_token(user="Pytest User",password="test")')
+    assert_success(response)
+    from micropsi_server.micropsi_app import usermanager
+    assert usermanager.users['Pytest User']['session_token'] == response.json_body['data']
+
+
 def test_select_nodenet(app, test_nodenet):
     app.set_auth()
     response = app.get_json('/rpc/select_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -1455,3 +1462,19 @@ def test_get_state_diff(app, test_nodenet, node):
     })
     data = response.json_body['data']['nodenet_diff']
     assert [node2] == list(data['changes']['nodes_dirty'].keys())
+
+
+def test_get_operations(app, test_nodenet):
+    response = app.get_json('/rpc/get_available_operations()')
+    data = response.json_body['data']
+    assert data['autoalign']['selection']['nodetypes'] == []
+
+
+def test_run_operation(app, test_nodenet, node):
+    response = app.post_json('/rpc/run_operation', {
+        'nodenet_uid': test_nodenet,
+        'name': 'autoalign',
+        'parameters': {},
+        'selection_uids': [node]
+    })
+    assert response.json_body['status'] == 'success'

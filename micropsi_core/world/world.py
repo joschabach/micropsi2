@@ -234,10 +234,10 @@ class World(object):
                     objects[uid] = obj
         return objects
 
-    def register_nodenet(self, worldadapter, nodenet):
+    def register_nodenet(self, worldadapter, nodenet_uid, nodenet_name=None):
         """Attempts to register a nodenet at this world.
 
-        Returns True, nodenet_uid if successful,
+        Returns True, spawned_agent_instance if successful,
         Returns False, error_message if not successful
 
         The methods checks if an existing worldadapterish object without a bound nodenet exists, and if not,
@@ -247,36 +247,37 @@ class World(object):
         We don't do it the other way around, because the soulless agent body may have been loaded as part of the
         world definition itself.
         """
-        if nodenet.uid in self.agents:
-            if self.agents[nodenet.uid].__class__.__name__ == worldadapter:
-                return True, nodenet.uid
+        if nodenet_uid in self.agents:
+            if self.agents[nodenet_uid].__class__.__name__ == worldadapter:
+                return True, self.agents[nodenet_uid]
             else:
                 return False, "Nodenet agent already exists in this world, but has the wrong type"
-        return self.spawn_agent(worldadapter, nodenet, name=nodenet.name)
+        return self.spawn_agent(worldadapter, nodenet_uid, nodenet_name=nodenet_name)
 
-    def unregister_nodenet(self, nodenet):
+    def unregister_nodenet(self, nodenet_uid):
         """Removes the connection between a nodenet and its incarnation in this world; may remove the corresponding
         agent object
         """
-        if nodenet.uid in self.agents:
+        if nodenet_uid in self.agents:
             # stop corresponding nodenet
-            micropsi_core.runtime.stop_nodenetrunner(nodenet.uid)
-            # remove agent
-            # nodenet.worldadapter_instance = None
-            del self.agents[nodenet.uid]
-        if nodenet.uid in self.data['agents']:
-            del self.data['agents'][nodenet.uid]
+            micropsi_core.runtime.stop_nodenetrunner(nodenet_uid)
+            del self.agents[nodenet_uid]
+        if nodenet_uid in self.data['agents']:
+            del self.data['agents'][nodenet_uid]
 
-    def spawn_agent(self, worldadapter_name, nodenet, **options):
+    def spawn_agent(self, worldadapter_name, nodenet_uid, **options):
         """Creates an agent object,
 
-        Returns True, nodenet_uid if successful,
+        Returns True, spawned_agent_instance if successful,
         Returns False, error_message if not successful
         """
         if worldadapter_name in self.supported_worldadapters:
-            self.agents[nodenet.uid] = self.supported_worldadapters[worldadapter_name](self, uid=nodenet.uid, **options)
-            nodenet.worldadapter_instance = self.agents[nodenet.uid]
-            return True, nodenet.uid
+            self.agents[nodenet_uid] = self.supported_worldadapters[worldadapter_name](
+                self,
+                uid=nodenet_uid,
+                name=options.get('nodenet_name', worldadapter_name),
+                **options)
+            return True, self.agents[nodenet_uid]
         else:
             self.logger.error("World %s does not support Worldadapter %s" % (self.name, worldadapter_name))
             return False, "World %s does not support Worldadapter %s" % (self.name, worldadapter_name)

@@ -1477,6 +1477,6 @@ def test_run_operation(app, test_nodenet, node):
         'nodenet_uid': test_nodenet,
         'name': 'autoalign',
         'parameters': {},
-        'selection_uids': [node]
+        'selection_uids': [None]
     })
     assert response.json_body['status'] == 'success'

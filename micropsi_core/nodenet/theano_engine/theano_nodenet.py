@@ -346,7 +346,7 @@ class TheanoNodenet(Nodenet):
             nodes_data = initfrom.get('nodes', {})
 
             # initialize
-            self.initialize_nodenet(initfrom, native_module_instances_only=True)
+            self.initialize_nodenet(initfrom)
 
             for partition in self.partitions.values():
                 datafilename = os.path.join(os.path.dirname(filename), self.uid + "-data-" + partition.spid + ".npz")
@@ -374,7 +374,7 @@ class TheanoNodenet(Nodenet):
             if neighbor.startswith(self.uid):
                 os.remove(os.path.join(os.path.dirname(filename), neighbor))
 
-    def initialize_nodenet(self, initfrom, native_module_instances_only=False):
+    def initialize_nodenet(self, initfrom):
 
         self._modulators.update(initfrom.get("modulators", {}))
 
@@ -383,7 +383,7 @@ class TheanoNodenet(Nodenet):
 
         if len(initfrom) != 0:
             # now merge in all init data (from the persisted file typically)
-            self.merge_data(initfrom, keep_uids=True, native_module_instances_only=native_module_instances_only)
+            self.merge_data(initfrom, keep_uids=True, native_module_instances_only=True)
             if 'names' in initfrom:
                 self.names = initfrom['names']
             if 'positions' in initfrom:

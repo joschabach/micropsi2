@@ -606,15 +606,6 @@ class Nodenet(metaclass=ABCMeta):
 
     def get_dashboard(self):
         data = self.dashboard_values.copy()
-        sensors = {}
-        actors = {}
-        if self.worldadapter_instance:
-            for s in self.worldadapter_instance.get_available_datasources():
-                sensors[s] = self.worldadapter_instance.get_datasource(s)
-            for uid, actor in self.get_actors().items():
-                actors[actor.get_parameter('datatarget')] = actor.activation
-        data['sensors'] = sensors
-        data['actors'] = actors
         data['is_active'] = self.is_active
         data['step'] = self.current_step
         if self.stepping_rate:

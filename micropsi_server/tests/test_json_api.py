@@ -1292,7 +1292,9 @@ def foobar(netapi, quatsch=23):
     assert data['quatsch'] == 23
 
 
-def test_get_agent_dashboard(app, test_nodenet, node):
+def test_get_agent_dashboard(app, test_nodenet, node, default_world):
+    app.set_auth()
+    response = app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Default", world_uid=default_world))
     response = app.get_json('/rpc/get_agent_dashboard(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['count_nodes'] == 1

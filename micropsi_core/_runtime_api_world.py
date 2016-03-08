@@ -127,7 +127,7 @@ def delete_world(world_uid):
     world = micropsi_core.runtime.worlds[world_uid]
     for uid in list(world.agents.keys()):
         world.unregister_nodenet(uid)
-        micropsi_core.nodenets[uid].worldadapter_instance = None
+        micropsi_core.runtime.nodenets[uid].worldadapter_instance = None
         micropsi_core.runtime.nodenets[uid].world = None
     micropsi_core.runtime.worlds[world_uid].__del__()
     del micropsi_core.runtime.worlds[world_uid]

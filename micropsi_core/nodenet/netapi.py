@@ -224,11 +224,27 @@ class NetAPI(object):
         target_node_uid = target_node.uid if target_node is not None else None
         source_node.unlink(source_gate, target_node_uid, target_slot)
 
+    def unlink_gate(self, node, gate_name, target_node_uid=None, target_slot_name=None):
+        """
+        Deletes all links from the given gate, optionally filtered by target_node_uid or target_slot_name
+        """
+        node.unlink(gate_name, target_node_uid=target_node_uid, slot_name=target_slot_name)
+
+    def unlink_slot(self, node, slot_name, source_node_uid=None, source_gate_name=None):
+        """
+        Deletes all links to the given slot, optionally filtered by source_node_uid or source_gate_name
+        """
+        for l in node.get_slot(slot_name).get_links():
+            if source_node_uid is None or l.source_node.uid == source_node_uid:
+                if source_gate_name is None or l.source_gate.type == source_gate_name:
+                    l.source_node.unlink(l.source_gate.type, target_node_uid=node.uid, slot_name=slot_name)
+
     def unlink_direction(self, node, gateslot=None):
         """
         Deletes all links from a node ending at the given slot or originating at the given gate
         Read this as 'delete all por linkage from this node'
         """
+        self.logger.warn("unlink direction is deprecated. use unlink_gate and unlink_slot")
         node.unlink(gateslot)
 
         links_to_delete = set()

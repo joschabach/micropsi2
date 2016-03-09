@@ -766,10 +766,10 @@ def create_auth_token(user, password, remember=True):
 
 
 @rpc("get_available_nodenets")
-def get_available_nodenets(user_id):
-    if user_id not in usermanager.users:
+def get_available_nodenets(user_id=None):
+    if user_id and user_id not in usermanager.users:
         return False, 'User not found'
-    return True, runtime.get_available_nodenets(user_id)
+    return True, runtime.get_available_nodenets(owner=user_id)
 
 
 @rpc("delete_nodenet", permission_required="manage nodenets")

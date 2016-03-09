@@ -1083,3 +1083,15 @@ def test_decay_porret_links(test_nodenet):
     assert round(reg.get_gate('gen').get_links()[0].weight, 3) == 0.4
     assert round(pipes[0].get_gate('sub').get_links()[0].weight, 3) == 0.5
     assert round(pipes[7].get_gate('ret').get_links()[0].weight, 3) == 0.7
+
+
+def test_unlink_asymetric_links(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    pipe = netapi.create_node("Pipe", None)
+    reg = netapi.create_node("Register", None)
+    netapi.link(pipe, 'por', reg, 'gen')
+    netapi.link(reg, 'gen', pipe, 'por')
+    netapi.unlink_direction(pipe, 'por')
+    assert pipe.get_gate('por').get_links() == []
+    assert pipe.get_slot('por').get_links() == []

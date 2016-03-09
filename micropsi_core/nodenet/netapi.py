@@ -226,7 +226,7 @@ class NetAPI(object):
 
     def unlink_direction(self, node, gateslot=None):
         """
-        Deletes all links from a node ending at the given gate or originating at the given slot
+        Deletes all links from a node ending at the given slot or originating at the given gate
         Read this as 'delete all por linkage from this node'
         """
         node.unlink(gateslot)
@@ -238,7 +238,7 @@ class NetAPI(object):
                     links_to_delete.add(link)
 
         for link in links_to_delete:
-            link.source_node.unlink(gateslot, node.uid)
+            link.source_node.unlink(target_node_uid=node.uid, slot_name=gateslot)
 
     def link_actor(self, node, datatarget, weight=1, certainty=1, gate='sub', slot='sur'):
         """

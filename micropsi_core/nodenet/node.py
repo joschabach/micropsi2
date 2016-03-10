@@ -482,6 +482,9 @@ class Gate(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
+    def __repr__(self):
+        return "<Gate %s of node %s)>" % (self.type, self.node)
+
 
 class Slot(metaclass=ABCMeta):
     """
@@ -546,6 +549,9 @@ class Slot(metaclass=ABCMeta):
         Returns a list of Link objects terminating at this slot
         """
         pass  # pragma: no cover
+
+    def __repr__(self):
+        return "<Slot %s of node %s)>" % (self.type, self.node)
 
 
 class Nodetype(object):

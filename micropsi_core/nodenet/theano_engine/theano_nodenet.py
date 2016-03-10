@@ -1346,16 +1346,18 @@ class TheanoNodenet(Nodenet):
         """ Returns a sorted list of available datasources, including worldadapter datasources
         and readable modulators"""
         datasources = self.worldadapter_instance.get_available_datasources() if self.worldadapter_instance else []
-        for item in sorted(DoernerianEmotionalModulators.readable_modulators):
-            datasources.append(item)
+        if self.use_modulators:
+            for item in sorted(DoernerianEmotionalModulators.readable_modulators):
+                datasources.append(item)
         return datasources
 
     def get_datatargets(self):
         """ Returns a sorted list of available datatargets, including worldadapter datatargets
         and writeable modulators"""
         datatargets = self.worldadapter_instance.get_available_datatargets() if self.worldadapter_instance else []
-        for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
-            datatargets.append(item)
+        if self.use_modulators:
+            for item in sorted(DoernerianEmotionalModulators.writeable_modulators):
+                datatargets.append(item)
         return datatargets
 
     def group_nodes_by_names(self, nodespace_uid, node_name_prefix=None, gatetype="gen", sortby='id', group_name=None):

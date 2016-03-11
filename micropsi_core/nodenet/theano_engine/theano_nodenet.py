@@ -830,6 +830,12 @@ class TheanoNodenet(Nodenet):
         for otherpartition in self.partitions.values():
             if spid in otherpartition.inlinks:
                 del otherpartition.inlinks[spid]
+                for uid, node in otherpartition.native_module_instances.items():
+                    for g in node.get_gate_types():
+                        node.get_gate(g).invalidate_caches()
+                    for s in node.get_slot_types():
+                        node.get_slot(s).invalidate_caches()
+
 
     def create_nodespace(self, parent_uid, position, name="", uid=None, options=None):
         if options is None:

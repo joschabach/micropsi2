@@ -188,9 +188,6 @@ def test_delete_partition_unlinks_native_module(test_nodenet, resourcepath):
     testnode = netapi.create_node("Testnode", None, "test")
     netapi.link(testnode, 'foo', register, 'gen')
     netapi.link(register, 'gen', testnode, 'bar')
-    micropsi.save_nodenet(test_nodenet)
-    # I don't understand why, but this is necessary.
-    micropsi.revert_nodenet(test_nodenet)
     netapi.delete_nodespace(nodespace)
     data = testnode.get_data(include_links=True)
     assert data['links'] == {}

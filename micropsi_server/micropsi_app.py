@@ -747,6 +747,11 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
     return runtime.get_current_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
+@rpc("get_nodenet_changes")
+def get_nodenet_changes(nodenet_uid, nodespaces=[], since_step=0):
+    return runtime.get_nodenet_changes(nodenet_uid, nodespaces=nodespaces, since_step=since_step)
+
+
 @rpc("generate_uid")
 def generate_uid():
     return True, tools.generate_uid()

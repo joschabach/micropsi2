@@ -1494,9 +1494,7 @@ class TheanoNodenet(Nodenet):
         nodespace = self.get_nodespace(nodespace_uid)
         return partition.has_nodespace_changes(nodespace.uid, since_step)
 
-    def get_nodespace_changes(self, nodespace_uid, since_step):
-        partition = self.get_partition(nodespace_uid)
-        nodespace = self.get_nodespace(nodespace_uid)
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         result = {
             'nodes_dirty': {},
             'nodespaces_dirty': {},
@@ -1504,18 +1502,27 @@ class TheanoNodenet(Nodenet):
             'nodespaces_deleted': []
         }
 
-        for i in range(since_step, self.current_step + 1):
-            if i in self.deleted_items:
-                result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
-                result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+        if nodespace_uids is None:
+            nodespace_uids = [self.get_nodespace(None).uid]
+        elif nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
-        changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-        for uid in changed_nodes:
-            uid = node_to_id(uid, partition.pid)
-            result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
-        for uid in changed_nodespaces:
-            uid = nodespace_to_id(uid, partition.pid)
-            result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+        for nsuid in nodespace_uids:
+            partition = self.get_partition(nsuid)
+            nodespace = self.get_nodespace(nsuid)
+            for i in range(since_step, self.current_step + 1):
+                if i in self.deleted_items:
+                    result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
+                    result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+            changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
+            for uid in changed_nodes:
+                uid = node_to_id(uid, partition.pid)
+                result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+            for uid in changed_nodespaces:
+                uid = nodespace_to_id(uid, partition.pid)
+                result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
 
     def get_dashboard(self):

@@ -381,7 +381,7 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
             if activations['has_changes']:
-                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes([nodenet_diff.get('nodespace')], nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
@@ -799,7 +799,7 @@ def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return nodenets[nodenet_uid].get_nodespace_changes(nodespace_uid, since_step)
+    return nodenets[nodenet_uid].get_nodespace_changes([nodespace_uid], since_step)
 
 
 def __pythonify(name):

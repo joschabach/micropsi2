@@ -788,30 +788,38 @@ class DictNodenet(Nodenet):
     def has_nodespace_changes(self, nodespace_uid, since_step):
         return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
 
-    def get_nodespace_changes(self, nodespace_uid, since_step):
-        ns = self.get_nodespace(nodespace_uid)
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         result = {
             'nodes_dirty': {},
             'nodespaces_dirty': {},
             'nodes_deleted': [],
             'nodespaces_deleted': []
         }
+
+        if nodespace_uids is None:
+            nodespace_uids = [self.get_nodespace(None).uid]
+        elif nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
+
         for i in range(since_step, self.current_step + 1):
             if i in self.deleted_items:
                 result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
                 result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
 
-        for uid in ns.get_known_ids():
-            if uid not in result['nodes_deleted'] and self.is_node(uid):
-                if self.get_node(uid).last_changed >= since_step:
-                    result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
-                    for assoc in self.get_node(uid).get_associated_node_uids():
-                        if self.get_node(assoc).parent_nodespace != ns.uid and assoc not in result['nodes_dirty']:
-                            result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
+        for nsuid in nodespace_uids:
+            for uid in self.get_nodespace(nsuid).get_known_ids():
+                if uid not in result['nodes_deleted'] and self.is_node(uid):
+                    if self.get_node(uid).last_changed >= since_step:
+                        result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+                        for assoc in self.get_node(uid).get_associated_node_uids():
+                            if self.get_node(assoc).parent_nodespace not in nodespace_uids and assoc not in result['nodes_dirty']:
+                                result['nodes_dirty'][assoc] = self.get_node(assoc).get_data(include_links=True)
 
-            elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
-                if self.get_nodespace(uid).last_changed >= since_step:
-                    result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+                elif uid not in result['nodespaces_deleted'] and self.is_nodespace(uid):
+                    if self.get_nodespace(uid).last_changed >= since_step:
+                        result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
 
     def get_dashboard(self):

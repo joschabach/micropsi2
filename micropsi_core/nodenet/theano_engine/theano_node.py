@@ -517,7 +517,10 @@ class TheanoSlot(Slot):
     def empty(self):
         w_matrix = self.__partition.w.get_value(borrow=True)
         slotrow = w_matrix[self.__partition.allocated_node_offsets[node_from_id(self.__node.uid)] + self.__numerictype]
-        return len(np.nonzero(slotrow)[1]) == 0
+        if self.__partition.sparse:
+            return len(np.nonzero(slotrow)[1]) == 0
+        else:
+            return len(np.nonzero(slotrow)[0]) == 0
 
     @property
     def activation(self):

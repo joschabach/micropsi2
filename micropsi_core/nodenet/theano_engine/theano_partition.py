@@ -1559,10 +1559,10 @@ class TheanoPartition():
     def delete_nodespace(self, nodespace_id):
         children_ids = np.where(self.allocated_nodespaces == nodespace_id)[0]
         for child_id in children_ids:
-            self.delete_nodespace(child_id)
+            self.nodenet.delete_nodespace(nodespace_to_id(child_id, self.pid))
         node_ids = np.where(self.allocated_node_parents == nodespace_id)[0]
         for node_id in node_ids:
-            self.delete_node(node_id)
+            self.nodenet.delete_node(node_to_id(node_id, self.pid))
             self.nodenet.clear_supplements(node_to_id(node_id, self.pid))
 
         self.nodenet.clear_supplements(nodespace_to_id(nodespace_id, self.pid))

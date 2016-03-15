@@ -1003,10 +1003,10 @@ def delete_nodespace(nodenet_uid, nodespace_uid):
 def get_available_node_types(nodenet_uid):
     """Returns a list of available node types. (Including native modules.)"""
     nodenet = nodenets[nodenet_uid]
-    all_nodetypes = filter_native_modules(nodenet.engine)
-    all_nodetypes.update(nodenet.get_standard_nodetype_definitions())
-    return all_nodetypes
-
+    return {
+        'nodetypes': nodenet.get_standard_nodetype_definitions(),
+        'native_modules': filter_native_modules(nodenet.engine)
+    }
 
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.

@@ -721,11 +721,15 @@ def select_nodenet(nodenet_uid):
 def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if result:
-        data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
-        data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
+        data = runtime.get_nodenet_data(nodenet_uid)
         return True, data
     else:
         return False, uid
+
+
+@rpc("load_nodespaces")
+def load_nodespaces(nodenet_uid, nodespaces=[], include_links=True):
+    return True, runtime.load_nodespaces(nodenet_uid, nodespaces, include_links)
 
 
 @rpc("new_nodenet")

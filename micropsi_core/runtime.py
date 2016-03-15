@@ -353,6 +353,13 @@ def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     return data
 
 
+def load_nodespaces(nodenet_uid, nodespaces=[], include_links=True):
+    """Return data for the given nodespaces"""
+    nodenet = get_nodenet(nodenet_uid)
+    # import pdb; pdb.set_trace()
+    return nodenet.load_nodespaces(nodespaces, include_links)
+
+
 def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
     """ returns the current state of the nodenet
     TODO: maybe merge with above get_nodenet_data?

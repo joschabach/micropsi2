@@ -296,6 +296,36 @@ class TheanoNodenet(Nodenet):
         data['links'] = self.construct_links_list()
         return data
 
+    def load_nodespaces(self, nodespace_uids=[], include_links=True):
+        """
+        Returns a dict with contents for the given nodespaces
+        """
+        data = self.metadata.copy()
+        data['nodes'] = {}
+        data['nodespaces'] = {}
+        followupnodes = []
+
+        if nodespace_uids is None:
+            nodespace_uids = [self.get_nodespace(None).uid]
+        elif nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
+
+        for nodespace_uid in nodespace_uids:
+            data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
+            nodespace = self.get_nodespace(nodespace_uid)
+            for uid in nodespace.get_known_ids(entitytype="nodes"):
+                node = self.get_node(uid)
+                data['nodes'][uid] = node.get_data(include_links=include_links)
+                if include_links:
+                    followupnodes.extend(node.get_associated_node_uids())
+        if include_links:
+            for uid in set(followupnodes):
+                if uid not in data['nodes']:
+                    data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
+        return data
+
     def initialize_stepoperators(self):
         self.stepoperators = [
             TheanoPropagate(),

@@ -195,6 +195,13 @@ class Nodenet(metaclass=ABCMeta):
         return data
 
     @abstractmethod
+    def load_nodespaces(self, nodespaces=[], include_links=True):
+        """
+        Returns a dict with contents for the given nodespaces
+        """
+        pass  # pragma: no cover
+
+    @abstractmethod
     def save(self, filename):
         """
         Saves the nodenet to the given main metadata json file.

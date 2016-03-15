@@ -324,22 +324,16 @@ def load_nodenet(nodenet_uid):
     return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
-def get_nodenet_data(nodenet_uid, nodespace, step=0, include_links=True):
-    """ returns the current state of the nodenet """
+def get_nodenet_data(nodenet_uid):
+    """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
     data = nodenet.metadata
-    if step > nodenet.current_step:
-        return data
-    with nodenet.netlock:
-        if not nodenets[nodenet_uid].is_nodespace(nodespace):
-            nodespace = nodenets[nodenet_uid].get_nodespace(None).uid
-        data.update(nodenets[nodenet_uid].get_nodespace_data(nodespace, include_links))
-        data['nodespace'] = nodespace
-        data.update({
-            'nodetypes': nodenet.get_standard_nodetype_definitions(),
-            'native_modules': filter_native_modules(nodenet.engine),
-            'monitors': nodenet.construct_monitors_dict()
-        })
+    data.update({
+        'nodetypes': nodenet.get_standard_nodetype_definitions(),
+        'nodespaces': nodenet.construct_nodespaces_dict(None),
+        'native_modules': filter_native_modules(nodenet.engine),
+        'monitors': nodenet.construct_monitors_dict()
+    })
     return data
 
 

@@ -374,7 +374,9 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
-            data['nodenet'] = get_nodenet_data(nodenet_uid=nodenet_uid, **nodenet)
+            if not type(nodenet) == dict:
+                nodenet = {}
+            data['nodenet'] = load_nodespaces(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
         if nodenet_diff is not None:
             activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
             data['nodenet_diff'] = {
@@ -382,13 +384,17 @@ def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, 
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
             if activations['has_changes']:
-                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes([nodenet_diff.get('nodespace')], nodenet_diff['step'])
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
         if world is not None and nodenet_obj.world:
+            if not type(world) == dict:
+                world = {}
             data['world'] = get_world_view(world_uid=nodenet_obj.world, **world)
         if monitors is not None:
+            if not type(monitors) == dict:
+                monitors = {}
             data['monitors'] = get_monitoring_info(nodenet_uid=nodenet_uid, **monitors)
         if dashboard is not None:
             data['dashboard'] = get_agent_dashboard(nodenet_uid)

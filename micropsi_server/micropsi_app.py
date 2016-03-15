@@ -1051,8 +1051,8 @@ def get_nodespace_list(nodenet_uid):
 
 
 @rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
-    return True, runtime.get_nodenet_data(nodenet_uid, nodespace, step, include_links)
+def get_nodespace(nodenet_uid, nodespace, include_links=True):
+    return True, runtime.load_nodespaces(nodenet_uid, nodespaces=[nodespace], include_links=True)
 
 
 @rpc("get_nodespace_activations")

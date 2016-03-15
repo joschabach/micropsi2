@@ -286,7 +286,7 @@ class TheanoNodenet(Nodenet):
         data['nodes'] = self.construct_nodes_dict(complete=complete, include_links=include_links)
         # for uid in data['nodes']:
         #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
-        data['nodespaces'] = self.construct_nodespaces_dict(None)
+        data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
         data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
@@ -1264,33 +1264,38 @@ class TheanoNodenet(Nodenet):
                     break
         return data
 
-    def construct_nodespaces_dict(self, nodespace_uid):
+    def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
         data = {}
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
-        for partition in self.partitions.values():
-            nodespace_id = nodespace_from_id(nodespace_uid)
-            nodespace_ids = np.nonzero(partition.allocated_nodespaces)[0]
-            nodespace_ids = np.append(nodespace_ids, 1)
-            for candidate_id in nodespace_ids:
-                is_in_hierarchy = False
-                if candidate_id == nodespace_id:
-                    is_in_hierarchy = True
-                else:
-                    parent_id = partition.allocated_nodespaces[candidate_id]
-                    while parent_id > 0 and parent_id != nodespace_id:
-                        parent_id = partition.allocated_nodespaces[parent_id]
-                    if parent_id == nodespace_id:
+        if transitive:
+            for partition in self.partitions.values():
+                nodespace_id = nodespace_from_id(nodespace_uid)
+                nodespace_ids = np.nonzero(partition.allocated_nodespaces)[0]
+                nodespace_ids = np.append(nodespace_ids, 1)
+                for candidate_id in nodespace_ids:
+                    is_in_hierarchy = False
+                    if candidate_id == nodespace_id:
                         is_in_hierarchy = True
+                    else:
+                        parent_id = partition.allocated_nodespaces[candidate_id]
+                        while parent_id > 0 and parent_id != nodespace_id:
+                            parent_id = partition.allocated_nodespaces[parent_id]
+                        if parent_id == nodespace_id:
+                            is_in_hierarchy = True
 
-                if is_in_hierarchy:
-                    data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).get_data()
+                    if is_in_hierarchy:
+                        data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).get_data()
 
-        if nodespace_uid in self.partitionmap:
-            for partition in self.partitionmap[nodespace_uid]:
-                partition_root_uid = partition.rootnodespace_uid
-                data[partition_root_uid] = self.get_nodespace(partition_root_uid).get_data()
+            if nodespace_uid in self.partitionmap:
+                for partition in self.partitionmap[nodespace_uid]:
+                    partition_root_uid = partition.rootnodespace_uid
+                    data[partition_root_uid] = self.get_nodespace(partition_root_uid).get_data()
+
+        else:
+            for uid in self.get_nodespace(nodespace_uid).get_known_ids('nodespaces'):
+                data[uid] = self.get_nodespace(uid).get_data()
 
         return data
 

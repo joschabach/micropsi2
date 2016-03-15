@@ -194,7 +194,7 @@ class DictNodenet(Nodenet):
     def get_data(self, **params):
         data = super().get_data(**params)
         data['nodes'] = self.construct_nodes_dict(**params)
-        data['nodespaces'] = self.construct_nodespaces_dict("Root")
+        data['nodespaces'] = self.construct_nodespaces_dict("Root", transitive=True)
         data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
@@ -330,23 +330,28 @@ class DictNodenet(Nodenet):
                 break
         return data
 
-    def construct_nodespaces_dict(self, nodespace_uid):
+    def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
         data = {}
         if nodespace_uid is None:
             nodespace_uid = "Root"
-        for nodespace_candidate_uid in self.get_nodespace_uids():
-            is_in_hierarchy = False
-            if nodespace_candidate_uid == nodespace_uid:
-                is_in_hierarchy = True
-            else:
-                parent_uid = self.get_nodespace(nodespace_candidate_uid).parent_nodespace
-                while parent_uid is not None and parent_uid != nodespace_uid:
-                    parent_uid = self.get_nodespace(parent_uid).parent_nodespace
-                if parent_uid == nodespace_uid:
-                    is_in_hierarchy = True
 
-            if is_in_hierarchy:
-                data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).get_data()
+        if transitive:
+            for nodespace_candidate_uid in self.get_nodespace_uids():
+                is_in_hierarchy = False
+                if nodespace_candidate_uid == nodespace_uid:
+                    is_in_hierarchy = True
+                else:
+                    parent_uid = self.get_nodespace(nodespace_candidate_uid).parent_nodespace
+                    while parent_uid is not None and parent_uid != nodespace_uid:
+                        parent_uid = self.get_nodespace(parent_uid).parent_nodespace
+                    if parent_uid == nodespace_uid:
+                        is_in_hierarchy = True
+
+                if is_in_hierarchy:
+                    data[nodespace_candidate_uid] = self.get_nodespace(nodespace_candidate_uid).get_data()
+        else:
+            for uid in self.get_nodespace(nodespace_uid).get_known_ids('nodespaces'):
+                data[uid] = self.get_nodespace(uid).get_data()
         return data
 
     def get_nodetype(self, type):

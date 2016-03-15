@@ -153,7 +153,7 @@ def test_create_nodenet_from_template(test_nodenet, node, engine):
     api.link(node1, 'gen', node2, 'gen')
     micropsi.save_nodenet(test_nodenet)
     result, uid = micropsi.new_nodenet('copynet', engine=engine, template=test_nodenet)
-    data = micropsi.get_nodenet_data(uid, None)
+    data = micropsi.load_nodespaces(uid)
     for uid, n in data['nodes'].items():
         if n['name'] == node1.name:
             assert len(n['links']['gen']) == 2

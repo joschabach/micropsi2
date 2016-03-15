@@ -27,17 +27,17 @@ def prepare_nodenet(test_nodenet):
 def test_add_node(test_nodenet):
     micropsi.load_nodenet(test_nodenet)
     # make sure nodenet is empty
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     try:
         for i in nodespace["nodes"]:
             micropsi.delete_node(test_nodenet, i)
     except:
         pass
 
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     assert len(nodespace.get("nodes", [])) == 0
     res, uid = micropsi.add_node(test_nodenet, "Pipe", [200, 250, 10], None, state=None, name="A")
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     assert len(nodespace["nodes"]) == 1
     node1 = nodespace["nodes"][uid]
     assert node1["name"] == "A"
@@ -48,7 +48,7 @@ def test_position_always_3d(test_nodenet):
     micropsi.load_nodenet(test_nodenet)
     res, nuid = micropsi.add_node(test_nodenet, "Pipe", [200], None, state=None, name="A")
     res, nsuid = micropsi.add_nodespace(test_nodenet, [200, 125, 0, 134], None, name="NS")
-    data = micropsi.get_nodenet_data(test_nodenet, None)
+    data = micropsi.load_nodespaces(test_nodenet)
     assert data['nodes'][nuid]['position'] == [200, 0, 0]
     assert data['nodespaces'][nsuid]['position'] == [200, 125, 0]
 
@@ -81,7 +81,7 @@ def test_get_nodenet_activation_data_for_nodespace(test_nodenet):
 
 def test_get_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     assert len(nodespace["nodes"]) == 4
     node1 = nodespace["nodes"][nodes['a']]
     assert node1["name"] == "A"
@@ -111,7 +111,7 @@ def test_add_link(test_nodenet):
     micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 1, 0.1)
     micropsi.add_link(test_nodenet, nodes['c'], "ret", nodes['b'], "gen", 1, 1)
 
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     assert len(nodespace["nodes"]) == 4
 
     link_a_b = nodespace["nodes"][nodes['a']]['links']['por'][0]
@@ -132,7 +132,7 @@ def test_delete_link(test_nodenet):
     success, link = micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5, 1)
     assert success
     micropsi.delete_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen")
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     assert nodespace['nodes'][nodes['a']]['links'] == {}
 
 
@@ -143,13 +143,13 @@ def test_save_nodenet(test_nodenet):
     # unload_nodenet
     micropsi.unload_nodenet(test_nodenet)
     try:
-        micropsi.get_nodenet_data(test_nodenet, None)
+        micropsi.load_nodespaces(test_nodenet)
         assert False, "could fetch a Nodespace that should not have been in memory"
     except:
         pass
     # load_nodenet
     micropsi.load_nodenet(test_nodenet)
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet)
     assert len(nodespace["nodes"]) == 4
     micropsi.delete_nodenet(test_nodenet)
 
@@ -243,7 +243,7 @@ def test_non_standard_gate_defaults(fixed_nodenet):
     assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
     assert node.get_data()['gate_parameters'] == {'gen': {'maximum': 0.5}}
     assert nodenet.get_data()['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
-    data = micropsi.get_nodenet_data(fixed_nodenet, None, step=-1)
+    data = micropsi.load_nodespaces(fixed_nodenet)
     assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
 
 
@@ -251,12 +251,12 @@ def test_ignore_links(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     micropsi.add_link(test_nodenet, nodes['a'], "por", nodes['b'], "gen", 0.5, 1)
 
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None)
+    nodespace = micropsi.load_nodespaces(test_nodenet, [])
     assert len(nodespace["nodes"]) == 4
     assert 'links' not in nodespace
 
     assert len(nodespace["nodes"][nodes['a']]['links']['por']) == 1
-    nodespace = micropsi.get_nodenet_data(test_nodenet, None, include_links=False)
+    nodespace = micropsi.load_nodespaces(test_nodenet, [], include_links=False)
     assert 'links' not in nodespace["nodes"][nodes['a']]
 
 
@@ -309,7 +309,7 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
-    data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
+    data = micropsi.get_nodenet_data(fixed_nodenet)
     assert "Testnode" not in data['native_modules']
 
 
@@ -335,7 +335,7 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
-    data = micropsi.get_nodenet_data(fixed_nodenet, nodespace='Root')
+    data = micropsi.get_nodenet_data(fixed_nodenet)
     assert "Testnode" not in data['native_modules']
 
 
@@ -397,7 +397,6 @@ def test_node_parameter_defaults(fixed_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
-    data = micropsi.get_nodenet_data(fixed_nodenet, None)
     res, uid = micropsi.add_node(fixed_nodenet, "Testnode", [10, 10, 10], name="Test")
     node = micropsi.nodenets[fixed_nodenet].get_node(uid)
     assert node.get_parameter("testparam") == 13

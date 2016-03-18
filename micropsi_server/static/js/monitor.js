@@ -15,7 +15,11 @@ $(function(){
     var currentMonitors = [];
 
     var currentSimulationStep = 0;
-    var currentNodenet = $.cookie('selected_nodenet');
+    var currentNodenet = '';
+    var cookieval = $.cookie('selected_nodenet');
+    if (cookieval && cookieval.indexOf('/')){
+        currentNodenet = cookieval.split('/')[0];
+    }
 
     var capturedLoggers = {
         'system': false,

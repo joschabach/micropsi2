@@ -91,8 +91,16 @@ prerenderLayer.visible = false;
 
 viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
-currentNodenet = $.cookie('selected_nodenet') || '';
-currentNodeSpace = $.cookie('selected_nodespace') || '';
+var nodenetcookie = $.cookie('selected_nodenet') || '';
+if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
+    nodenetcookie = nodenetcookie.split("/");
+    currentNodenet = nodenetcookie[0];
+    currentNodeSpace = nodenetcookie[1] || null;
+} else {
+    currentNodenet = '';
+    currentNodeSpace = '';
+}
+
 if(!$.cookie('renderlinks')){
     $.cookie('renderlinks', 'always');
 }
@@ -288,7 +296,7 @@ function setCurrentNodenet(uid, nodespace, changed){
             showDefaultForm();
             currentNodenet = uid;
 
-            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
                 native_modules = data.native_modules;
@@ -613,7 +621,7 @@ function refreshNodespace(nodespace, step, callback){
         var changed = nodespace != currentNodeSpace;
         if(changed){
             currentNodeSpace = nodespace;
-            $.cookie('selected_nodespace', currentNodeSpace, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', currentNodenet+"/"+currentNodeSpace, { expires: 7, path: '/' });
             $("#current_nodespace_name").text(nodespaces[nodespace].name);
             nodeLayer.removeChildren();
             linkLayer.removeChildren();

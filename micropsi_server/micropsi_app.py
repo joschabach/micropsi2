@@ -485,7 +485,7 @@ def select_nodenet_from_console(nodenet_uid):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return template("error", msg="Could not select nodenet")
-    response.set_cookie("selected_nodenet", nodenet_uid, path="/")
+    response.set_cookie("selected_nodenet", nodenet_uid + "/", path="/")
     redirect("/")
 
 

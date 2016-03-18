@@ -248,7 +248,7 @@ $(function() {
         dialogs.remote_form_dialog($(event.target).attr('href'), function(data){
             // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
             dialogs.notification('Nodenet created. ID: ' + data.nodenet_uid, 'success');
-            $.cookie('selected_nodenet', data.nodenet_uid, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', data.nodenet_uid+"/", { expires: 7, path: '/' });
             window.location.reload();
         });
     });
@@ -258,7 +258,7 @@ $(function() {
             api.call('delete_nodenet', {nodenet_uid: currentNodenet}, function(data){
                 currentNodenet=null;
                 // refreshNodenetList();  -- TODO: does not work yet (due to paperscript missing proper js integration)
-                $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+                $.cookie('selected_nodenet', "", { expires: 7, path: '/' });
                 dialogs.notification('Nodenet deleted');
                 window.location.reload();
             });
@@ -760,7 +760,7 @@ $(document).on('runner_started', fetch_stepping_info);
 $(document).on('runner_stepped', fetch_stepping_info);
 $(document).on('nodenet_changed', function(event, new_uid){
     currentNodenet = new_uid;
-    $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+    $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
     refreshNodenetList();
 })
 $(document).on('form_submit', function(event, data){
@@ -877,7 +877,15 @@ $.extend( $.fn.dataTableExt.oStdClasses, {
 } );
 
 $(document).ready(function() {
-    currentNodenet = $.cookie('selected_nodenet') || '';
+    var nodenetcookie = $.cookie('selected_nodenet') || '';
+    if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
+        nodenetcookie = nodenetcookie.split("/");
+        currentNodenet = nodenetcookie[0];
+        currentNodeSpace = nodenetcookie[1] || null;
+    } else {
+        currentNodenet = '';
+        currentNodeSpace = '';
+    }
     currentWorld = $.cookie('selected_world') || '';
     $('#nodenet_mgr').dataTable( {
         "sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",

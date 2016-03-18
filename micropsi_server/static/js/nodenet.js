@@ -276,8 +276,9 @@ function setCurrentNodenet(uid, nodespace, changed){
             toggleButtons(true);
 
             var nodenetChanged = changed || (uid != currentNodenet);
-            var nodespaceChanged = changed || (nodespace != currentNodeSpace);
 
+            currentNodenet = uid;
+            currentNodeSpace = data.rootnodespace;
             if(nodenetChanged){
                 $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
@@ -294,7 +295,6 @@ function setCurrentNodenet(uid, nodespace, changed){
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
-            currentNodenet = uid;
 
             $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){

@@ -332,7 +332,8 @@ def get_nodenet_data(nodenet_uid):
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'nodespaces': nodenet.construct_nodespaces_dict(None),
         'native_modules': filter_native_modules(nodenet.engine),
-        'monitors': nodenet.construct_monitors_dict()
+        'monitors': nodenet.construct_monitors_dict(),
+        'rootnodespace': nodenet.get_nodespace(None).uid
     })
     return data
 

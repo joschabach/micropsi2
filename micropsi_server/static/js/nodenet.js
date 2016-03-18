@@ -280,7 +280,6 @@ function setCurrentNodenet(uid, nodespace, changed){
             currentNodenet = uid;
             currentNodeSpace = data.rootnodespace;
             if(nodenetChanged){
-                $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
                 selection = {};
                 nodespaces = {};
@@ -289,6 +288,7 @@ function setCurrentNodenet(uid, nodespace, changed){
                 nodeLayer.removeChildren();
                 linkLayer.removeChildren();
             }
+            $(document).trigger('nodenet_loaded', uid);
 
             nodenet_data = data;
             nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';

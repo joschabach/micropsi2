@@ -44,6 +44,7 @@ $(function(){
     var showStepInLog = true;
     var logs_to_add = [];
 
+    var standalone = $('#nodenet_editor').length == 0;
     init();
 
     $('.layoutbtn').on('click', function(event){
@@ -84,6 +85,10 @@ $(function(){
         currentNodenet = newNodenet;
         init();
     });
+    $(document).on('nodenet_loaded', function(data, newNodenet){
+        currentNodenet = newNodenet;
+        refreshMonitors();
+    });
 
     log_container.on('click', '.logentry', function(event){
         var el = $(this)
@@ -105,7 +110,7 @@ $(function(){
 
     function init() {
         bindEvents();
-        if (currentNodenet = $.cookie('selected_nodenet')) {
+        if (standalone && currentNodenet) {
             $('#loading').show();
             api.call('load_nodenet', {
                 nodenet_uid: currentNodenet,

@@ -1490,7 +1490,7 @@ class TheanoNodenet(Nodenet):
         #        del self.proxycache[uid]
 
     def get_available_gatefunctions(self):
-        return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
+        return ["identity", "absolute", "sigmoid", "elu", "relu", "one_over_x"]
 
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")

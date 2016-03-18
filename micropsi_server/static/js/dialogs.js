@@ -676,7 +676,7 @@ fetch_stepping_info = function(){
         params[key] = listeners[key].input()
     }
     busy = true;
-    api.call('get_current_state', params, success=function(data){
+    api.call('get_simulation_state', params, success=function(data){
         busy = false;
         var start = new Date().getTime();
         window.currentSimulationStep = data.current_nodenet_step;

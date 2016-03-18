@@ -77,7 +77,7 @@ def test_user_prompt(fixed_nodenet, resourcepath):
         "foobar",
         options
     )
-    result, data = micropsi.get_current_state(fixed_nodenet, nodenet={})
+    result, data = micropsi.get_simulation_state(fixed_nodenet, nodenet={})
     assert 'user_prompt' in data
     assert data['user_prompt']['msg'] == 'foobar'
     assert data['user_prompt']['node']['uid'] == uid
@@ -103,7 +103,7 @@ def test_user_notification(test_nodenet, node):
     api = micropsi.nodenets[test_nodenet].netapi
     node_obj = api.get_node(node)
     api.notify_user(node_obj, "Hello there")
-    result, data = micropsi.get_current_state(test_nodenet, nodenet={'nodespace': 'Root'})
+    result, data = micropsi.get_simulation_state(test_nodenet, nodenet={'nodespace': 'Root'})
     assert 'user_prompt' in data
     assert data['user_prompt']['node']['uid'] == node
     assert data['user_prompt']['msg'] == "Hello there"

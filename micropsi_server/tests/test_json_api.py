@@ -223,7 +223,7 @@ def test_step_simulation(app, test_nodenet):
     assert response.json_body['data']['current_step'] == 1
 
 
-def test_get_current_state(app, test_nodenet, test_world, node):
+def test_get_simulation_state(app, test_nodenet, test_world, node):
     from time import sleep
     app.set_auth()
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
@@ -244,7 +244,7 @@ def test_get_current_state(app, test_nodenet, test_world, node):
     assert_success(response)
 
     sleep(1)
-    response = app.post_json('/rpc/get_current_state', params={
+    response = app.post_json('/rpc/get_simulation_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {
             'nodespace': None,
@@ -296,11 +296,11 @@ def test_revert_both(app, test_nodenet, test_world):
     app.post_json('/rpc/set_nodenet_properties', params=dict(nodenet_uid=test_nodenet, worldadapter="Braitenberg", world_uid=test_world))
     for i in range(5):
         app.get_json('/rpc/step_simulation(nodenet_uid="%s")' % test_nodenet)
-    res = app.get_json('/rpc/get_current_state(nodenet_uid="%s")' % test_nodenet)
+    res = app.get_json('/rpc/get_simulation_state(nodenet_uid="%s")' % test_nodenet)
     assert res.json_body['data']['current_nodenet_step'] > 0
     assert res.json_body['data']['current_world_step'] > 0
     app.get_json('/rpc/revert_simulation(nodenet_uid="%s")' % test_nodenet)
-    res = app.get_json('/rpc/get_current_state(nodenet_uid="%s")' % test_nodenet)
+    res = app.get_json('/rpc/get_simulation_state(nodenet_uid="%s")' % test_nodenet)
     assert res.json_body['data']['current_nodenet_step'] == 0
     assert res.json_body['data']['current_world_step'] == 0
 
@@ -1347,10 +1347,10 @@ def test_nodenet_data_structure(app, test_nodenet, resourcepath, node):
     response = app.get_json('/rpc/load_nodenet(nodenet_uid="%s")' % test_nodenet)
     metadata = response.json_body['data']
 
-    response_1 = app.post_json('/rpc/get_current_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
+    response_1 = app.post_json('/rpc/get_simulation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
     response = app.get_json('/rpc/save_nodenet(nodenet_uid="%s")' % test_nodenet)
     response = app.get_json('/rpc/revert_nodenet(nodenet_uid="%s")' % test_nodenet)
-    response_2 = app.post_json('/rpc/get_current_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
+    response_2 = app.post_json('/rpc/get_simulation_state', params={'nodenet_uid': test_nodenet, 'nodenet': {'nodespaces': [None]}, 'monitors': True})
 
     assert response_1.json_body['data']['nodenet'] == response_2.json_body['data']['nodenet']
     assert response_1.json_body['data']['monitors']['monitors'] == response_2.json_body['data']['monitors']['monitors']
@@ -1451,7 +1451,7 @@ def test_get_state_diff(app, test_nodenet, node):
     from micropsi_core import runtime
     nodenet = runtime.nodenets[test_nodenet]
     runtime.step_nodenet(test_nodenet)
-    response = app.post_json('/rpc/get_current_state', params={
+    response = app.post_json('/rpc/get_simulation_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet_diff': {
             'nodespace': None,
@@ -1464,7 +1464,7 @@ def test_get_state_diff(app, test_nodenet, node):
     assert node in data['changes']['nodes_dirty']
     node2 = nodenet.create_node("Register", None, [10, 10], name="node2")
     runtime.step_nodenet(test_nodenet)
-    response = app.post_json('/rpc/get_current_state', params={
+    response = app.post_json('/rpc/get_simulation_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet_diff': {
             'nodespace': None,

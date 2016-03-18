@@ -354,9 +354,8 @@ def load_nodespaces(nodenet_uid, nodespaces=[], include_links=True):
     return nodenet.load_nodespaces(nodespaces, include_links)
 
 
-def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    """ returns the current state of the nodenet
-    TODO: maybe merge with above get_nodenet_data?
+def get_simulation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    """ returns the current state of the simulation
     """
     data = {}
     nodenet_obj = get_nodenet(nodenet_uid)

@@ -746,9 +746,9 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         use_modulators=use_modulators)
 
 
-@rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+@rpc("get_simulation_state")
+def get_simulation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_simulation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("get_nodenet_changes")

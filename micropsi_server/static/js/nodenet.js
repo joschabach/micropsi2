@@ -258,14 +258,10 @@ api.call("get_available_operations", {}, function(data){
 
 function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
-        nodespace = "Root";
+        nodespace = null;
     }
     $('#loading').show();
-    api.call('load_nodenet',
-        {nodenet_uid: uid,
-            nodespace: nodespace,
-            include_links: $.cookie('renderlinks') == 'always',
-        },
+    api.call('load_nodenet', {nodenet_uid: uid},
         function(data){
             $('#loading').hide();
             nodenetscope.activate();
@@ -279,6 +275,10 @@ function setCurrentNodenet(uid, nodespace, changed){
                 clipboard = {};
                 selection = {};
                 nodespaces = {};
+                nodes = {};
+                links = {};
+                nodeLayer.removeChildren();
+                linkLayer.removeChildren();
             }
 
             nodenet_data = data;
@@ -286,17 +286,12 @@ function setCurrentNodenet(uid, nodespace, changed){
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
-            currentNodeSpace = data['nodespace'];
             currentNodenet = uid;
-
-            nodes = {};
-            links = {};
-            nodeLayer.removeChildren();
-            linkLayer.removeChildren();
 
             $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
+                native_modules = data.native_modules;
                 sorted_nodetypes = Object.keys(nodetypes);
                 sorted_nodetypes.sort(function(a, b){
                     if(a < b) return -1;
@@ -331,13 +326,11 @@ function setCurrentNodenet(uid, nodespace, changed){
                     showDefaultForm();
                 });
                 get_available_gatefunctions();
-                setNodespaceData(data, true);
                 getNodespaceList();
-            } else {
-                setNodespaceData(data, (nodespaceChanged));
+                $(document).trigger('refreshNodenetList');
             }
-            $(document).trigger('refreshNodenetList');
             nodenet_loaded = true;
+            refreshNodespace(nodespace)
         },
         function(data) {
             if(data.status == 500 || data.status === 0){
@@ -582,14 +575,14 @@ function addLinks(link_data){
 
 function get_nodenet_params(){
     return {
-        'nodespace': currentNodeSpace,
+        'nodespaces': [currentNodeSpace],
         'step': currentSimulationStep - 1,
         'include_links': $.cookie('renderlinks') == 'always',
     }
 }
 function get_nodenet_diff_params(){
     return {
-        'nodespace': currentNodeSpace,
+        'nodespaces': [currentNodeSpace],
         'step': window.currentSimulationStep,
     }
 }
@@ -614,11 +607,7 @@ function refreshNodespace(nodespace, step, callback){
     params = {
         nodenet_uid: currentNodenet,
         nodespace: nodespace,
-        step: currentSimulationStep
     };
-    if(step){
-        params.step = step;
-    }
     params.include_links = nodenet_data['renderlinks'] == 'always';
     api.call('get_nodespace', params , success=function(data){
         var changed = nodespace != currentNodeSpace;

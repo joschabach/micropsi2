@@ -4077,12 +4077,6 @@ function updateNodespaceForm(){
         } else {
             $('#nodespace_name').removeAttr('disabled');
         }
-        var nodetypehtml = '';
-        for(var idx in sorted_nodetypes){
-            if(nodetypes[sorted_nodetypes[idx]].gatetypes && nodetypes[sorted_nodetypes[idx]].gatetypes.length > 0){
-                nodetypehtml += '<option>' + sorted_nodetypes[idx] + '</option>';
-            }
-        }
     }
 }
 

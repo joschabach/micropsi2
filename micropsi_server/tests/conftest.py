@@ -9,7 +9,7 @@ from configuration import config
 from micropsi_server import usermanagement
 from micropsi_server.micropsi_app import usermanager
 
-user_token = usermanager.users['Pytest User']['session_token']
+user_token = list(usermanager.users['Pytest User']['sessions'].keys())[0]
 test_path = os.path.join(config['paths']['data_directory'], 'user-test-db.json')
 
 
@@ -67,6 +67,7 @@ def user_mgr(user_def):
 
 @pytest.fixture(scope="function")
 def eliza(user_mgr):
+    """ creates a user eliza, and a session. returns eliza's session token """
     user_mgr.create_user("eliza", "qwerty", "Full")
-    user_mgr.start_session("eliza")
-    return "eliza"
+    token = user_mgr.start_session("eliza")
+    return token

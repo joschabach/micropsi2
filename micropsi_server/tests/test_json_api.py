@@ -754,16 +754,6 @@ def test_get_nodespace_list(app, test_nodenet, node):
     assert node in response.json_body['data'][rootid]['nodes']
 
 
-def test_get_nodespace(app, test_nodenet, node):
-    response = app.post_json('/rpc/get_nodespace', params={
-        'nodenet_uid': test_nodenet,
-        'nodespace': None,
-        'include_links': True,
-    })
-    assert_success(response)
-    assert node in response.json_body['data']['nodes']
-
-
 def test_get_nodespace_activations(app, test_nodenet, node):
     response = app.post_json('/rpc/get_nodespace_activations', params={
         'nodenet_uid': test_nodenet,

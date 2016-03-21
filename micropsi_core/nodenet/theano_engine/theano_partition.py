@@ -1894,27 +1894,27 @@ class TheanoPartition():
 
             parameters = {}
             threshold = g_threshold_array[element].item()
-            #if 'threshold' not in self.nodetype.gate_defaults[gate_type] or threshold != self.nodetype.gate_defaults[gate_type]['threshold']:
-            parameters['threshold'] = float(threshold)
+            if threshold != nodetype.gate_defaults[gate]['threshold']:
+                parameters['threshold'] = float(threshold)
 
             amplification = g_amplification_array[element].item()
-            #if 'amplification' not in self.nodetype.gate_defaults[gate_type] or amplification != self.nodetype.gate_defaults[gate_type]['amplification']:
-            parameters['amplification'] = float(amplification)
+            if amplification != nodetype.gate_defaults[gate]['amplification']:
+                parameters['amplification'] = float(amplification)
 
             minimum = g_min_array[element].item()
-            #if 'minimum' not in self.nodetype.gate_defaults[gate_type] or minimum != self.nodetype.gate_defaults[gate_type]['minimum']:
-            parameters['minimum'] = float(minimum)
+            if minimum != nodetype.gate_defaults[gate]['minimum']:
+                parameters['minimum'] = float(minimum)
 
             maximum = g_max_array[element].item()
-            #if 'maximum' not in self.nodetype.gate_defaults[gate_type] or maximum != self.nodetype.gate_defaults[gate_type]['maximum']:
-            parameters['maximum'] = float(maximum)
+            if maximum != nodetype.gate_defaults[gate]['maximum']:
+                parameters['maximum'] = float(maximum)
 
             theta = g_theta[element].item()
-            #if 'theta' not in self.nodetype.gate_defaults[gate_type] or theta != self.nodetype.gate_defaults[gate_type]['theta']:
-            parameters['theta'] = float(theta)
+            if theta != self.nodetype.gate_defaults[gate]['theta']:
+                parameters['theta'] = float(theta)
 
-            #if not len(gate_parameters) == 0:
-            gate_parameters[gate] = parameters
+            if not len(gate_parameters) == 0:
+                gate_parameters[gate] = parameters
 
             gate_activations[gate] = {"default": {
                 "name": "default",

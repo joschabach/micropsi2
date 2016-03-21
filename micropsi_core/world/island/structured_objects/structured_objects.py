@@ -58,7 +58,7 @@ class StructuredObjects(WorldAdapter):
             return WorldAdapter.get_datasource(self, key)
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         # we don't move, for now
         self.position = self.world.get_movement_result(self.position, (0, 0))

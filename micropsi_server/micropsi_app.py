@@ -741,9 +741,9 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         use_modulators=use_modulators)
 
 
-@rpc("get_simulation_state")
-def get_simulation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_simulation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+@rpc("get_calculation_state")
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
 
 
 @rpc("get_nodenet_changes")
@@ -798,8 +798,8 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return runtime.set_node_activation(nodenet_uid, node_uid, activation)
 
 
-@rpc("start_simulation", permission_required="manage nodenets")
-def start_simulation(nodenet_uid):
+@rpc("start_calculation", permission_required="manage nodenets")
+def start_calculation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
 
 
@@ -829,23 +829,23 @@ def get_runner_properties():
     return True, runtime.get_runner_properties()
 
 
-@rpc("get_is_simulation_running")
-def get_is_simulation_running(nodenet_uid):
+@rpc("get_is_calculation_running")
+def get_is_calculation_running(nodenet_uid):
     return True, runtime.get_is_nodenet_running(nodenet_uid)
 
 
-@rpc("stop_simulation", permission_required="manage nodenets")
-def stop_simulation(nodenet_uid):
+@rpc("stop_calculation", permission_required="manage nodenets")
+def stop_calculation(nodenet_uid):
     return runtime.stop_nodenetrunner(nodenet_uid)
 
 
-@rpc("step_simulation", permission_required="manage nodenets")
-def step_simulation(nodenet_uid):
+@rpc("step_calculation", permission_required="manage nodenets")
+def step_calculation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 
-@rpc("revert_simulation", permission_required="manage nodenets")
-def revert_simulation(nodenet_uid):
+@rpc("revert_calculation", permission_required="manage nodenets")
+def revert_calculation(nodenet_uid):
     return runtime.revert_nodenet(nodenet_uid, True)
 
 

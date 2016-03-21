@@ -11,7 +11,7 @@ Note that agent and world do not need to be synchronized, so agents will have to
 between actions and sensory confirmation (among other things).
 
 During the initialization of the agent type, it might want to register an agent body object within the
-world simulation (for robotic bodies, the equivalent might consist in powering up/setup/boot operations.
+world environment (for robotic bodies, the equivalent might consist in powering up/setup/boot operations.
 Thus, agent types should be instantiated by the world, inherit from a moving object class of some kind
 and treated as parts of the world.
 """

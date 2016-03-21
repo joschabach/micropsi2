@@ -84,7 +84,7 @@ class MinecraftHistogramVision(MinecraftGraphLocomotion, MinecraftProjectionMixi
             self.record_file = open(cfg['minecraft']['record_vision'], 'a')
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         if self.waiting_for_spock:
             super().update_data_sources_and_targets()

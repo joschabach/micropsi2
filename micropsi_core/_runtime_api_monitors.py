@@ -12,7 +12,7 @@ import micropsi_core
 
 def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=None):
     """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
-    value in every simulation step.
+    value in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
     return nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
@@ -20,7 +20,7 @@ def add_gate_monitor(nodenet_uid, node_uid, gate, sheaf=None, name=None, color=N
 
 def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=None):
     """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-    value in every simulation step.
+    value in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
     return nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
@@ -28,7 +28,7 @@ def add_slot_monitor(nodenet_uid, node_uid, slot, sheaf=None, name=None, color=N
 
 def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=None):
     """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-    The monitor will collect respective value in every simulation step.
+    The monitor will collect respective value in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
     return nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property, name, color=color)
@@ -36,7 +36,7 @@ def add_link_monitor(nodenet_uid, source_node_uid, gate_type, target_node_uid, s
 
 def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
     """Adds a continuous monitor to a global modulator.
-    The monitor will collect respective value in every simulation step.
+    The monitor will collect respective value in every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
     return nodenet.add_modulator_monitor(modulator, name, color=color)
@@ -44,7 +44,7 @@ def add_modulator_monitor(nodenet_uid, modulator, name, color=None):
 
 def add_custom_monitor(nodenet_uid, function, name, color=None):
     """Adds a continuous monitor, that evaluates the given python-code and collects the
-    return-value for every simulation step.
+    return-value for every calculation step.
     Returns the uid of the new monitor."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
     return nodenet.add_custom_monitor(function, name, color=color)
@@ -97,7 +97,7 @@ def export_monitor_data(nodenet_uid, monitor_uid=None, monitor_from=0, monitor_c
 
 def get_monitor_data(nodenet_uid, step=0, monitor_from=0, monitor_count=-1):
     """Returns monitor and nodenet data for drawing monitor plots for the current step,
-    if the current step is newer than the supplied simulation step."""
+    if the current step is newer than the supplied calculation step."""
     nodenet = micropsi_core.runtime.get_nodenet(nodenet_uid)
     data = {
         'nodenet_running': nodenet.is_active,

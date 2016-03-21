@@ -52,7 +52,7 @@ from configuration import config as cfg
 
 ADMIN_USER = "admin"  # default name of the admin user
 DEFAULT_ROLE = "Restricted"  # new users can create and edit nodenets, but not create worlds
-IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the simulation)
+IDLE_TIME_BEFORE_SESSION_EXPIRES = 360000  # after 100h idle time, expire the user session (but not the calculation)
 TIME_INTERVAL_BETWEEN_EXPIRATION_CHECKS = 3600  # check every hour if we should log out users
 
 USER_ROLES = {  # sets of strings; each represents a permission.

@@ -654,7 +654,7 @@ updateWorldAdapterSelector = function() {
 
 
 var listeners = {}
-var simulationRunning = false;
+var calculationRunning = false;
 var currentNodenet;
 var runner_properties = {};
 var sections = ['nodenet_editor', 'monitor', 'world_editor'];
@@ -676,7 +676,7 @@ fetch_stepping_info = function(){
         params[key] = listeners[key].input()
     }
     busy = true;
-    api.call('get_simulation_state', params, success=function(data){
+    api.call('get_calculation_state', params, success=function(data){
         busy = false;
         var start = new Date().getTime();
         window.currentSimulationStep = data.current_nodenet_step;
@@ -689,36 +689,36 @@ fetch_stepping_info = function(){
         $('.nodenet_step').text(data.current_nodenet_step);
         $('.world_step').text(data.current_world_step);
         var text = [];
-        if(data.simulation_condition){
-            if(data.simulation_condition.step_amount){
-                text.push("run " + data.simulation_condition.step_amount + " steps");
-                $('#run_condition_steps').val(data.simulation_condition.step_amount);
+        if(data.calculation_condition){
+            if(data.calculation_condition.step_amount){
+                text.push("run " + data.calculation_condition.step_amount + " steps");
+                $('#run_condition_steps').val(data.calculation_condition.step_amount);
             }
-            if(data.simulation_condition.monitor){
-                text.push('<span style="color: '+data.simulation_condition.monitor.color+';">monitor = ' + data.simulation_condition.monitor.value + '</span>');
-                $('#run_condition_monitor_selector').val(data.simulation_condition.monitor.uid);
-                $('#run_condition_monitor_value').val(data.simulation_condition.monitor.value);
+            if(data.calculation_condition.monitor){
+                text.push('<span style="color: '+data.calculation_condition.monitor.color+';">monitor = ' + data.calculation_condition.monitor.value + '</span>');
+                $('#run_condition_monitor_selector').val(data.calculation_condition.monitor.uid);
+                $('#run_condition_monitor_value').val(data.calculation_condition.monitor.value);
             }
         }
         if(text.length){
-            $('#simulation_controls .runner_condition').html(text.join(" or "));
-            $('#simulation_controls .running_conditional').show();
+            $('#calculation_controls .runner_condition').html(text.join(" or "));
+            $('#calculation_controls .running_conditional').show();
             $('#remove_runner_condition').show();
         } else {
-            $('#simulation_controls .running_conditional').hide();
+            $('#calculation_controls .running_conditional').hide();
             $('#remove_runner_condition').hide();
             $('#set_runner_condition').show();
         }
 
         var end = new Date().getTime();
-        if(data.simulation_running && !busy){
+        if(data.calculation_running && !busy){
             if(runner_properties.timestep - (end - start) > 0){
                 window.setTimeout(fetch_stepping_info, runner_properties.timestep - (end - start));
             } else {
                 $(document).trigger('runner_stepped');
             }
         }
-        setButtonStates(data.simulation_running);
+        setButtonStates(data.calculation_running);
         if(data.user_prompt){
             promptUser(data.user_prompt);
         }
@@ -800,24 +800,24 @@ function setButtonStates(running){
         $(document).prop('title', "▶ " + default_title);
         $('#nodenet_start').addClass('active');
         $('#nodenet_stop').removeClass('active');
-        $('#simulation_controls .runner_running').show();
-        $('#simulation_controls .runner_paused').hide();
+        $('#calculation_controls .runner_running').show();
+        $('#calculation_controls .runner_paused').hide();
     } else {
         $(document).prop('title', default_title);
         $('#nodenet_start').removeClass('active');
         $('#nodenet_stop').addClass('active');
-        $('#simulation_controls .runner_running').hide();
-        $('#simulation_controls .runner_paused').show();
+        $('#calculation_controls .runner_running').hide();
+        $('#calculation_controls .runner_paused').show();
     }
 }
 
 function stepNodenet(event){
     event.preventDefault();
-    if(simulationRunning){
+    if(calculationRunning){
         stopNodenetrunner(event);
     }
     if(currentNodenet){
-        api.call("step_simulation",
+        api.call("step_calculation",
             {nodenet_uid: currentNodenet},
             success=function(data){
                 $(document).trigger('runner_stepped');
@@ -831,7 +831,7 @@ function startNodenetrunner(event){
     event.preventDefault();
     nodenetRunning = true;
     if(currentNodenet){
-        api.call('start_simulation', {nodenet_uid: currentNodenet}, function(){
+        api.call('start_calculation', {nodenet_uid: currentNodenet}, function(){
             $(document).trigger('runner_started');
         });
     } else {
@@ -840,7 +840,7 @@ function startNodenetrunner(event){
 }
 function stopNodenetrunner(event){
     event.preventDefault();
-    api.call('stop_simulation', {nodenet_uid: currentNodenet}, function(){
+    api.call('stop_calculation', {nodenet_uid: currentNodenet}, function(){
         $(document).trigger('runner_stopped');
         nodenetRunning = false;
     });
@@ -852,7 +852,7 @@ function revertAll(event){
     if(currentNodenet){
         $('#loading').show();
         api.call(
-            'revert_simulation',
+            'revert_calculation',
             {nodenet_uid: currentNodenet},
             function(){
                 window.location.reload();

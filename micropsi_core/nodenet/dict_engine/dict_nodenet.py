@@ -145,7 +145,7 @@ class DictNodenet(Nodenet):
         world: an environment for the node net
         worldadapter: an actual world adapter object residing in a world implementation, provides interface
         owner: an id of the user who created the node net
-        step: the current simulation step of the node net
+        step: the current calculation step of the node net
     """
 
     @property
@@ -504,7 +504,7 @@ class DictNodenet(Nodenet):
                 self._monitors[mon.uid] = mon
 
     def step(self):
-        """perform a simulation step"""
+        """perform a calculation step"""
         with self.netlock:
 
             self._step += 1

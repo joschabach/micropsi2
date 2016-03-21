@@ -522,7 +522,7 @@ class DictSlot(Slot):
         type: a string that determines the type of the slot
         node: the parent node of the slot
         activation: a numerical value which is the sum of all incoming activations
-        current_step: the simulation step when the slot last received activation
+        current_step: the calculation step when the slot last received activation
         incoming: a dictionary of incoming links together with the respective activation received by them
     """
 

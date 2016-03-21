@@ -521,31 +521,31 @@ class NetAPI(object):
 
     def add_gate_monitor(self, node_uid, gate, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a gate. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_gate_monitor(node_uid, gate, sheaf=sheaf, name=name, color=color)
 
     def add_slot_monitor(self, node_uid, slot, sheaf=None, name=None, color=None):
         """Adds a continuous monitor to the activation of a slot. The monitor will collect the activation
-        value in every simulation step.
+        value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_slot_monitor(node_uid, slot, sheaf=sheaf, name=name, color=color)
 
     def add_link_monitor(self, source_node_uid, gate_type, target_node_uid, slot_type, property=None, name=None, color=None):
         """Adds a continuous monitor to a link. You can choose to monitor either weight (default) or certainty
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_link_monitor(source_node_uid, gate_type, target_node_uid, slot_type, property=property, name=name, color=color)
 
     def add_modulator_monitor(self, modulator, name, color=None):
         """Adds a continuous monitor to a global modulator.
-        The monitor will collect respective value in every simulation step.
+        The monitor will collect respective value in every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_modulator_monitor(modulator, name, color=color)
 
     def add_custom_monitor(self, function, name, color=None):
         """Adds a continuous monitor, that evaluates the given python-code and collects the
-        return-value for every simulation step.
+        return-value for every calculation step.
         Returns the uid of the new monitor."""
         return self.__nodenet.add_custom_monitor(function, name, color=color)
 

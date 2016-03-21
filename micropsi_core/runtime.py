@@ -354,22 +354,22 @@ def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
     return nodenet.get_nodes(nodespaces, include_links)
 
 
-def get_simulation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    """ returns the current state of the simulation
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    """ returns the current state of the calculation
     """
     data = {}
     nodenet_obj = get_nodenet(nodenet_uid)
     if nodenet_obj is not None:
         condition = nodenet_obj.get_runner_condition()
         if condition:
-            data['simulation_condition'] = condition
+            data['calculation_condition'] = condition
             if 'monitor' in condition:
                 monitor = nodenet_obj.get_monitor(condition['monitor']['uid'])
                 if monitor:
-                    data['simulation_condition']['monitor']['color'] = monitor.color
+                    data['calculation_condition']['monitor']['color'] = monitor.color
                 else:
-                    del data['simulation_condition']['monitor']
-        data['simulation_running'] = nodenet_obj.is_active
+                    del data['calculation_condition']['monitor']
+        data['calculation_running'] = nodenet_obj.is_active
         data['current_nodenet_step'] = nodenet_obj.current_step
         data['current_world_step'] = worlds[nodenet_obj.world].current_step if nodenet_obj.world else 0
         if nodenet is not None:
@@ -508,10 +508,10 @@ def start_nodenetrunner(nodenet_uid):
 
 
 def set_runner_properties(timestep, factor):
-    """Sets the speed of the nodenet simulation in ms.
+    """Sets the speed of the nodenet calculation in ms.
 
     Argument:
-        timestep: sets the simulation speed.
+        timestep: sets the calculation speed.
     """
     configs['runner_timestep'] = timestep
     runner['timestep'] = timestep
@@ -566,7 +566,7 @@ def stop_nodenetrunner(nodenet_uid):
 
 
 def step_nodenet(nodenet_uid):
-    """Advances the given nodenet by one simulation step.
+    """Advances the given nodenet by one calculation step.
 
     Arguments:
         nodenet_uid: The uid of the nodenet
@@ -1528,7 +1528,7 @@ def initialize(persistency_path=None, resource_path=None):
         logging.getLogger("system").error(e)
 
     # initialize runners
-    # Initialize the threads for the continuous simulation of nodenets and worlds
+    # Initialize the threads for the continuous calculation of nodenets and worlds
     if 'runner_timestep' not in configs:
         configs['runner_timestep'] = 200
         configs.save_configs()

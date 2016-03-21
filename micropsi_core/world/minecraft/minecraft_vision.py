@@ -84,7 +84,7 @@ class MinecraftVision(MinecraftGraphLocomotion, MinecraftProjectionMixin):
         self.visual_field = {}
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         # first thing when spock initialization is done, determine current loco node
         if self.simulated_vision:

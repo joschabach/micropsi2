@@ -1962,8 +1962,8 @@ class TheanoPartition():
                                         "target_slot_name": target_slot_type,
                                         "target_node_uid": node_to_id(target_id, partition_to_spid)
                                     })
-
-                links[gate] = gate_links
+                if len(gate_links) > 0:
+                    links[gate] = gate_links
 
         state = None
         if uid in self.native_module_instances:

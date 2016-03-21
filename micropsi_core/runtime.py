@@ -324,7 +324,7 @@ def load_nodenet(nodenet_uid):
     return False, "Nodenet %s not found in %s" % (nodenet_uid, PERSISTENCY_PATH)
 
 
-def get_nodenet_data(nodenet_uid):
+def get_nodenet_metadata(nodenet_uid):
     """ returns the given nodenet's metadata"""
     nodenet = get_nodenet(nodenet_uid)
     data = nodenet.metadata
@@ -1016,6 +1016,7 @@ def get_available_node_types(nodenet_uid):
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'native_modules': filter_native_modules(nodenet.engine)
     }
+
 
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.

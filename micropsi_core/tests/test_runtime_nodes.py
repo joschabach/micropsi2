@@ -308,7 +308,7 @@ def test_engine_specific_nodetype_dict(fixed_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
-    data = micropsi.get_nodenet_data(fixed_nodenet)
+    data = micropsi.get_nodenet_metadata(fixed_nodenet)
     assert "Testnode" not in data['native_modules']
 
 
@@ -334,7 +334,7 @@ def test_engine_specific_nodetype_theano(fixed_nodenet, resourcepath):
         fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
 
     micropsi.reload_native_modules()
-    data = micropsi.get_nodenet_data(fixed_nodenet)
+    data = micropsi.get_nodenet_metadata(fixed_nodenet)
     assert "Testnode" not in data['native_modules']
 
 

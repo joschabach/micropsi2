@@ -714,12 +714,7 @@ def show_dashboard():
 
 @rpc("get_nodenet_metadata")
 def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
-    result, uid = runtime.load_nodenet(nodenet_uid)
-    if result:
-        data = runtime.get_nodenet_data(nodenet_uid)
-        return True, data
-    else:
-        return False, uid
+    return True, runtime.get_nodenet_metadata(nodenet_uid)
 
 
 @rpc("get_nodes")

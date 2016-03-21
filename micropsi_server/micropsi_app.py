@@ -722,9 +722,9 @@ def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
         return False, uid
 
 
-@rpc("load_nodespaces")
-def load_nodespaces(nodenet_uid, nodespaces=[], include_links=True):
-    return True, runtime.load_nodespaces(nodenet_uid, nodespaces, include_links)
+@rpc("get_nodes")
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
+    return True, runtime.get_nodes(nodenet_uid, nodespaces, include_links)
 
 
 @rpc("new_nodenet")
@@ -1047,7 +1047,7 @@ def get_nodespace_list(nodenet_uid):
 
 @rpc("get_nodespace")
 def get_nodespace(nodenet_uid, nodespace, include_links=True):
-    return True, runtime.load_nodespaces(nodenet_uid, nodespaces=[nodespace], include_links=True)
+    return True, runtime.get_nodes(nodenet_uid, nodespaces=[nodespace], include_links=True)
 
 
 @rpc("get_nodespace_activations")

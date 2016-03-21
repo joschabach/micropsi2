@@ -117,7 +117,7 @@ def test_set_node_state(app, test_nodenet, resourcepath):
         'state': {'foo': 'bar'}
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['nodes'][uid]['state'] == {'foo': 'bar'}
 
 
@@ -128,7 +128,7 @@ def test_set_node_activation(app, test_nodenet, node):
         'activation': '0.734'
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     sheaves = response.json_body['data']['nodes'][node]['sheaves']
     assert float("%.3f" % sheaves['default']['activation']) == 0.734
 
@@ -336,7 +336,7 @@ def test_import_nodenet(app, test_nodenet, node):
     assert response.json_body['data']['name'] == data['name']
     assert response.json_body['data']['world'] == data['world']
     assert response.json_body['data']['worldadapter'] == data['worldadapter']
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % uid)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % uid)
     assert list(response.json_body['data']['nodes'].keys()) == [node]
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
 
@@ -359,7 +359,7 @@ def test_merge_nodenet(app, test_nodenet, engine, node):
         'nodenet_data': json.dumps(data)
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % uid)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % uid)
     assert len(list(response.json_body['data']['nodes'].keys())) == 1
     assert response.json_body['data']['name'] == 'ImporterNet'
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
@@ -805,7 +805,7 @@ def test_add_nodespace(app, test_nodenet):
     })
     assert_success(response)
     uid = response.json_body['data']
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % (test_nodenet))
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % (test_nodenet))
     assert uid in response.json_body['data']['nodespaces']
     assert uid not in response.json_body['data']['nodes']
 
@@ -856,7 +856,7 @@ def test_delete_node(app, test_nodenet, node):
         'node_uids': [node]
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     assert response.json_body['data']['nodes'] == {}
 
 
@@ -874,7 +874,7 @@ def test_delete_nodespace(app, test_nodenet, node):
         'nodespace_uid': uid
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     assert uid not in response.json_body['data']['nodespaces']
 
 
@@ -1055,7 +1055,7 @@ def test_add_link(app, test_nodenet, node):
     assert_success(response)
     uid = response.json_body['data']
     assert uid is not None
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert data['nodes'][node]['links']['sub'][0]['target_node_uid'] == node
     assert round(data['nodes'][node]['links']['sub'][0]['weight'], 3) == 0.7
@@ -1072,7 +1072,7 @@ def test_set_link_weight(app, test_nodenet, node):
         'weight': 0.345
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     assert float("%.3f" % data['nodes'][node]['links']['gen'][0]['weight']) == 0.345
 
@@ -1097,7 +1097,7 @@ def test_delete_link(app, test_nodenet, node):
         'slot_type': "gen"
     })
     assert_success(response)
-    response = app.get_json('/rpc/load_nodespaces(nodenet_uid="%s")' % test_nodenet)
+    response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
     data = response.json_body['data']
     data['nodes'][node]['links'] == {}
 

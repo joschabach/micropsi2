@@ -614,10 +614,10 @@ function refreshNodespace(nodespace, step, callback){
     nodespace = nodespace || currentNodeSpace;
     params = {
         nodenet_uid: currentNodenet,
-        nodespace: nodespace,
+        nodespaces: [nodespace],
     };
     params.include_links = nodenet_data['renderlinks'] == 'always';
-    api.call('get_nodespace', params , success=function(data){
+    api.call('get_nodes', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
             currentNodeSpace = nodespace;

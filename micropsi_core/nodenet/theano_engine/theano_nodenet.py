@@ -296,7 +296,7 @@ class TheanoNodenet(Nodenet):
         data['links'] = self.construct_links_list()
         return data
 
-    def load_nodespaces(self, nodespace_uids=[], include_links=True):
+    def get_nodes(self, nodespace_uids=[], include_links=True):
         """
         Returns a dict with contents for the given nodespaces
         """

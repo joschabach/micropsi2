@@ -348,11 +348,10 @@ def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
     return data
 
 
-def load_nodespaces(nodenet_uid, nodespaces=[], include_links=True):
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
     """Return data for the given nodespaces"""
     nodenet = get_nodenet(nodenet_uid)
-    # import pdb; pdb.set_trace()
-    return nodenet.load_nodespaces(nodespaces, include_links)
+    return nodenet.get_nodes(nodespaces, include_links)
 
 
 def get_simulation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
@@ -376,7 +375,7 @@ def get_simulation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=Non
         if nodenet is not None:
             if not type(nodenet) == dict:
                 nodenet = {}
-            data['nodenet'] = load_nodespaces(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
+            data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
         if nodenet_diff is not None:
             activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
             data['nodenet_diff'] = {

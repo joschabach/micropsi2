@@ -153,7 +153,7 @@ def test_create_nodenet_from_template(test_nodenet, node, engine):
     api.link(node1, 'gen', node2, 'gen')
     micropsi.save_nodenet(test_nodenet)
     result, uid = micropsi.new_nodenet('copynet', engine=engine, template=test_nodenet)
-    data = micropsi.load_nodespaces(uid)
+    data = micropsi.get_nodes(uid)
     for uid, n in data['nodes'].items():
         if n['name'] == node1.name:
             assert len(n['links']['gen']) == 2
@@ -197,7 +197,7 @@ def test_generate_netapi_fragment(test_nodenet, resourcepath):
     assert set(names) == set([n.name for n in netapi.get_nodes()] + ['ns1'])
 
 
-def test_load_nodespaces(test_nodenet):
+def test_get_nodes(test_nodenet):
     nodenet = micropsi.nodenets[test_nodenet]
     netapi = nodenet.netapi
     ns1 = netapi.create_nodespace(None, "ns1")
@@ -206,12 +206,12 @@ def test_load_nodespaces(test_nodenet):
     n1 = netapi.create_node("Pipe", ns1.uid, "n1")
     n2 = netapi.create_node("Pipe", ns2.uid, "n2")
     n3 = netapi.create_node("Pipe", ns3.uid, "n3")
-    result = micropsi.load_nodespaces(test_nodenet)
+    result = micropsi.get_nodes(test_nodenet)
     assert set(result['nodes'].keys()) == {n1.uid, n2.uid, n3.uid}
     assert set(result['nodespaces'].keys()) == {ns1.uid, ns2.uid, ns3.uid}
-    result = micropsi.load_nodespaces(test_nodenet, [None])
+    result = micropsi.get_nodes(test_nodenet, [None])
     assert result['nodes'] == {}
     assert set(result['nodespaces'].keys()) == {ns1.uid, ns2.uid}
-    result = micropsi.load_nodespaces(test_nodenet, [ns1.uid])
+    result = micropsi.get_nodes(test_nodenet, [ns1.uid])
     assert set(result['nodes'].keys()) == {n1.uid}
     assert set(result['nodespaces'].keys()) == {ns3.uid}

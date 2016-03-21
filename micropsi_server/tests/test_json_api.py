@@ -24,7 +24,8 @@ def test_create_auth_token(app):
     response = app.get_json('/rpc/create_auth_token(user="Pytest User",password="test")')
     assert_success(response)
     from micropsi_server.micropsi_app import usermanager
-    assert usermanager.users['Pytest User']['session_token'] == response.json_body['data']
+    token = response.json_body['data']
+    assert token in usermanager.users['Pytest User']['sessions']
 
 
 def test_select_nodenet(app, test_nodenet):

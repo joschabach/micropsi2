@@ -1894,23 +1894,23 @@ class TheanoPartition():
 
             parameters = {}
             threshold = g_threshold_array[element].item()
-            if threshold != nodetype.gate_defaults[gate]['threshold']:
+            if 'threshold' not in nodetype.gate_defaults[gate] or threshold != nodetype.gate_defaults[gate]['threshold']:
                 parameters['threshold'] = float(threshold)
 
             amplification = g_amplification_array[element].item()
-            if amplification != nodetype.gate_defaults[gate]['amplification']:
+            if 'amplification' not in nodetype.gate_defaults[gate] or amplification != nodetype.gate_defaults[gate]['amplification']:
                 parameters['amplification'] = float(amplification)
 
             minimum = g_min_array[element].item()
-            if minimum != nodetype.gate_defaults[gate]['minimum']:
+            if 'minimum' not in nodetype.gate_defaults[gate] or minimum != nodetype.gate_defaults[gate]['minimum']:
                 parameters['minimum'] = float(minimum)
 
             maximum = g_max_array[element].item()
-            if maximum != nodetype.gate_defaults[gate]['maximum']:
+            if 'maximum' not in nodetype.gate_defaults[gate] or maximum != nodetype.gate_defaults[gate]['maximum']:
                 parameters['maximum'] = float(maximum)
 
             theta = g_theta[element].item()
-            if theta != self.nodetype.gate_defaults[gate]['theta']:
+            if 'theta' not in nodetype.gate_defaults[gate] or theta != nodetype.gate_defaults[gate]['theta']:
                 parameters['theta'] = float(theta)
 
             if not len(gate_parameters) == 0:

@@ -45,7 +45,6 @@ def test_add_node(test_nodenet):
 
 
 def test_position_always_3d(test_nodenet):
-    micropsi.load_nodenet(test_nodenet)
     res, nuid = micropsi.add_node(test_nodenet, "Pipe", [200], None, state=None, name="A")
     res, nsuid = micropsi.add_nodespace(test_nodenet, [200, 125, 0, 134], None, name="NS")
     data = micropsi.load_nodespaces(test_nodenet)
@@ -148,7 +147,7 @@ def test_save_nodenet(test_nodenet):
     except:
         pass
     # load_nodenet
-    micropsi.load_nodenet(test_nodenet)
+    micropsi.get_nodenet(test_nodenet)
     nodespace = micropsi.load_nodespaces(test_nodenet)
     assert len(nodespace["nodes"]) == 4
     micropsi.delete_nodenet(test_nodenet)

@@ -269,7 +269,7 @@ function setCurrentNodenet(uid, nodespace, changed){
         nodespace = null;
     }
     $('#loading').show();
-    api.call('load_nodenet', {nodenet_uid: uid},
+    api.call('get_nodenet_metadata', {nodenet_uid: uid},
         function(data){
             $('#loading').hide();
             nodenetscope.activate();

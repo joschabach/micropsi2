@@ -44,7 +44,6 @@ $(function(){
     var showStepInLog = true;
     var logs_to_add = [];
 
-    var standalone = $('#nodenet_editor').length == 0;
     init();
 
     $('.layoutbtn').on('click', function(event){
@@ -110,26 +109,7 @@ $(function(){
 
     function init() {
         bindEvents();
-        if (standalone && currentNodenet) {
-            $('#loading').show();
-            api.call('load_nodenet', {
-                nodenet_uid: currentNodenet,
-                include_links: false
-            }, function(data) {
-                $('#loading').hide();
-                refreshMonitors();
-            },
-            function(data) {
-                $('#loading').hide();
-                if(data.status == 500){
-                    api.defaultErrorCallback(data);
-                } else {
-                    currentNodenet = null;
-                    $.cookie('selected_nodenet', '', { expires: -1, path: '/' });
-                    dialogs.notification(data.data, "Info");
-                }
-            });
-        }
+        refreshMonitors();
     }
 
     function getPollParams(){

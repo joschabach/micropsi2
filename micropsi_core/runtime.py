@@ -454,7 +454,7 @@ def new_nodenet(nodenet_name, engine="dict_engine", worldadapter=None, template=
     load_nodenet(data['uid'])
     if template is not None and template in nodenet_data:
         load_nodenet(template)
-        data_to_merge = nodenets[template].export_json()
+        data_to_merge = get_nodenet(template).export_json()
         data_to_merge.update(data)
         load_nodenet(uid)
         nodenets[uid].merge_data(data_to_merge)
@@ -479,7 +479,7 @@ def delete_nodenet(nodenet_uid):
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     if nodenet.world and nodenet.world != world_uid:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
@@ -523,19 +523,20 @@ def set_runner_properties(timestep, factor):
 
 def set_runner_condition(nodenet_uid, monitor=None, steps=None):
     """ registers a condition that stops the runner if it is fulfilled"""
+    nodenet = get_nodenet(nodenet_uid)
     condition = {}
     if monitor is not None:
         condition['monitor'] = monitor
     if steps is not None:
-        condition['step'] = nodenets[nodenet_uid].current_step + steps
+        condition['step'] = nodenet.current_step + steps
         condition['step_amount'] = steps
     if condition:
-        nodenets[nodenet_uid].set_runner_condition(condition)
+        nodenet.set_runner_condition(condition)
     return True, condition
 
 
 def remove_runner_condition(nodenet_uid):
-    nodenets[nodenet_uid].unset_runner_condition()
+    get_nodenet(nodenet_uid).unset_runner_condition()
     return True
 
 
@@ -549,12 +550,13 @@ def get_runner_properties():
 
 def get_is_nodenet_running(nodenet_uid):
     """Returns True if a nodenet runner is active for the given nodenet, False otherwise."""
-    return nodenets[nodenet_uid].is_active
+    return get_nodenet(nodenet_uid).is_active
 
 
 def stop_nodenetrunner(nodenet_uid):
     """Stops the thread for the given nodenet."""
-    nodenets[nodenet_uid].is_active = False
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.is_active = False
     test = {nodenets[uid].is_active for uid in nodenets}
     if True not in test:
         test = {worlds[uid].is_active for uid in worlds}
@@ -570,17 +572,19 @@ def step_nodenet(nodenet_uid):
     Arguments:
         nodenet_uid: The uid of the nodenet
     """
-    nodenets[nodenet_uid].timed_step()
-    nodenets[nodenet_uid].update_monitors()
-    if nodenets[nodenet_uid].world and nodenets[nodenet_uid].current_step % configs['runner_factor'] == 0:
-        worlds[nodenets[nodenet_uid].world].step()
-    return nodenets[nodenet_uid].current_step
+    nodenet = get_nodenet(nodenet_uid)
+    nodenet.timed_step()
+    nodenet.update_monitors()
+    if nodenet.world and nodenet.current_step % configs['runner_factor'] == 0:
+        worlds[nodenet.world].step()
+    return nodenet.current_step
 
 
 def revert_nodenet(nodenet_uid, also_revert_world=False):
     """Returns the nodenet to the last saved state."""
-    if also_revert_world and nodenet_uid in nodenets and nodenets[nodenet_uid].world:
-        revert_world(nodenets[nodenet_uid].world)
+    nodenet = get_nodenet(nodenet_uid)
+    if also_revert_world and nodenet_uid in nodenets and nodenet.world:
+        revert_world(nodenet.world)
     unload_nodenet(nodenet_uid)
     load_nodenet(nodenet_uid)
     return True
@@ -588,7 +592,7 @@ def revert_nodenet(nodenet_uid, also_revert_world=False):
 
 def save_nodenet(nodenet_uid):
     """Stores the nodenet on the server (but keeps it open)."""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     nodenet.save(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + '.json'))
     nodenet_data[nodenet_uid] = Bunch(**nodenet.metadata)
     return True
@@ -599,7 +603,7 @@ def export_nodenet(nodenet_uid):
 
     Returns a string that contains the nodenet state in JSON format.
     """
-    return json.dumps(nodenets[nodenet_uid].export_json(), sort_keys=True, indent=4)
+    return json.dumps(get_nodenet(nodenet_uid).export_json(), sort_keys=True, indent=4)
 
 
 def import_nodenet(string, owner=None):
@@ -639,7 +643,7 @@ def merge_nodenet(nodenet_uid, string, keep_uids=False):
         string: a string that contains the nodenet data that is to be merged in JSON format.
         keep_uids: if true, no uid replacement will be performed. Dangerous.
     """
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     data = json.loads(string)
     nodenet.merge_data(data, keep_uids)
     return True
@@ -653,7 +657,7 @@ def get_nodespace_list(nodenet_uid):
      - nodespace parent
      - a list of nodes (uid, name, and type) residing in that nodespace
     """
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     data = {}
     for uid in nodenet.get_nodespace_uids():
         nodespace = nodenet.get_nodespace(uid)
@@ -691,10 +695,11 @@ def get_node(nodenet_uid, node_uid, include_links=True):
         "parent_nodespace" (str): the uid of the nodespace this node lives in
     }
     """
-    if nodenets[nodenet_uid].is_node(node_uid):
-        return True, nodenets[nodenet_uid].get_node(node_uid).get_data(include_links=include_links)
-    elif nodenets[nodenet_uid].is_nodespace(node_uid):
-        data = nodenets[nodenet_uid].get_nodespace(node_uid).get_data()
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.is_node(node_uid):
+        return True, nodenet.get_node(node_uid).get_data(include_links=include_links)
+    elif nodenet.is_nodespace(node_uid):
+        data = nodenet.get_nodespace(node_uid).get_data()
         data['type'] = 'Nodespace'
         return True, data
     else:
@@ -806,7 +811,7 @@ def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return nodenets[nodenet_uid].get_nodespace_changes([nodespace_uid], since_step)
+    return get_nodenet(nodenet_uid).get_nodespace_changes([nodespace_uid], since_step)
 
 
 def __pythonify(name):
@@ -958,14 +963,13 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
 
 def set_entity_positions(nodenet_uid, positions):
     """ Takes a dict with node_uids as keys and new positions for the nodes as values """
-    nodenet = nodenets[nodenet_uid]
-    nodenet.set_entity_positions(positions)
+    get_nodenet(nodenet_uid).set_entity_positions(positions)
     return True
 
 
 def set_node_name(nodenet_uid, node_uid, name):
     """Sets the display name of the node"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     if nodenet.is_node(node_uid):
         nodenet.get_node(node_uid).name = name
     elif nodenet.is_nodespace(node_uid):
@@ -975,30 +979,30 @@ def set_node_name(nodenet_uid, node_uid, name):
 
 def set_node_state(nodenet_uid, node_uid, state):
     """ Sets the state of the given node to the given state"""
-    node = nodenets[nodenet_uid].get_node(node_uid)
+    node = get_nodenet(nodenet_uid).get_node(node_uid)
     for key in state:
         node.set_state(key, state[key])
     return True
 
 
 def set_node_activation(nodenet_uid, node_uid, activation):
-    nodenets[nodenet_uid].get_node(node_uid).activation = activation
+    get_nodenet(nodenet_uid).get_node(node_uid).activation = activation
     return True
 
 
 def delete_nodes(nodenet_uid, node_uids):
     """Removes the nodes with the given uids"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         for uid in node_uids:
             if nodenet.is_node(uid):
-                nodenets[nodenet_uid].delete_node(uid)
+                nodenet.delete_node(uid)
     return True
 
 
 def delete_nodespace(nodenet_uid, nodespace_uid):
     """ Removes the given node space and all its contents"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         if nodenet.is_nodespace(nodespace_uid):
             nodenet.delete_nodespace(nodespace_uid)
@@ -1008,7 +1012,7 @@ def delete_nodespace(nodenet_uid, nodespace_uid):
 
 def get_available_node_types(nodenet_uid):
     """Returns a list of available node types. (Including native modules.)"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     return {
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
         'native_modules': filter_native_modules(nodenet.engine)
@@ -1017,13 +1021,14 @@ def get_available_node_types(nodenet_uid):
 def get_available_native_module_types(nodenet_uid):
     """Returns a list of native modules.
     If an nodenet uid is supplied, filter for node types defined within this nodenet."""
-    return filter_native_modules(nodenets[nodenet_uid].engine)
+    return filter_native_modules(get_nodenet(nodenet_uid).engine)
 
 
 def set_node_parameters(nodenet_uid, node_uid, parameters):
     """Sets a dict of arbitrary values to make the node stateful."""
+    nodenet = get_nodenet(nodenet_uid)
     for key, value in parameters.items():
-        nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
+        nodenet.get_node(node_uid).set_parameter(key, value)
     return True
 
 
@@ -1031,14 +1036,14 @@ def get_gatefunction(nodenet_uid, node_uid, gate_type):
     """
     Returns the name of the gate function configured for that given node and gate
     """
-    return nodenets[nodenet_uid].get_node(node_uid).get_gatefunction_name(gate_type)
+    return get_nodenet(nodenet_uid).get_node(node_uid).get_gatefunction_name(gate_type)
 
 
 def set_gatefunction(nodenet_uid, node_uid, gate_type, gatefunction=None):
     """
     Sets the gate function of the given node and gate.
     """
-    nodenets[nodenet_uid].get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
+    get_nodenet(nodenet_uid).get_node(node_uid).set_gatefunction_name(gate_type, gatefunction)
     return True
 
 
@@ -1046,33 +1051,36 @@ def get_available_gatefunctions(nodenet_uid):
     """
     Returns a list of names of the available gatefunctions
     """
-    return nodenets[nodenet_uid].get_available_gatefunctions()
+    return get_nodenet(nodenet_uid).get_available_gatefunctions()
 
 
 def set_gate_parameters(nodenet_uid, node_uid, gate_type, parameters):
     """Sets the gate parameters of the given gate of the given node to the supplied dictionary."""
+    nodenet = get_nodenet(nodenet_uid)
     for key, value in parameters.items():
-        nodenets[nodenet_uid].get_node(node_uid).set_gate_parameter(gate_type, key, value)
+        nodenet.get_node(node_uid).set_gate_parameter(gate_type, key, value)
     return True
 
 
 def get_available_datasources(nodenet_uid):
     """Returns a list of available datasource types for the given nodenet."""
-    if nodenets[nodenet_uid].worldadapter_instance:
-        return nodenets[nodenet_uid].worldadapter_instance.get_available_datasources()
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.worldadapter_instance:
+        return nodenet.worldadapter_instance.get_available_datasources()
     return []
 
 
 def get_available_datatargets(nodenet_uid):
     """Returns a list of available datatarget types for the given nodenet."""
-    if nodenets[nodenet_uid].worldadapter_instance:
-        return nodenets[nodenet_uid].worldadapter_instance.get_available_datatargets()
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.worldadapter_instance:
+        return nodenet.worldadapter_instance.get_available_datatargets()
     return []
 
 
 def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
     """Associates the datasource type to the sensor node with the given uid."""
-    node = nodenets[nodenet_uid].get_node(sensor_uid)
+    node = get_nodenet(nodenet_uid).get_node(sensor_uid)
     if node.type == "Sensor":
         node.set_parameter('datasource', datasource)
         return True
@@ -1081,7 +1089,7 @@ def bind_datasource_to_sensor(nodenet_uid, sensor_uid, datasource):
 
 def bind_datatarget_to_actor(nodenet_uid, actor_uid, datatarget):
     """Associates the datatarget type to the actor node with the given uid."""
-    node = nodenets[nodenet_uid].get_node(actor_uid)
+    node = get_nodenet(nodenet_uid).get_node(actor_uid)
     if node.type == "Actor":
         node.set_parameter('datatarget', datatarget)
         return True
@@ -1099,7 +1107,7 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
         weight: the weight of the link (a float)
         certainty (optional): a probabilistic parameter for the link
     """
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         success = nodenet.create_link(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
     uid = None
@@ -1110,14 +1118,13 @@ def add_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type
 
 def set_link_weight(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type, weight=1, certainty=1):
     """Set weight of the given link."""
-    nodenet = nodenets[nodenet_uid]
-    return nodenet.set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
+    return get_nodenet(nodenet_uid).set_link_weight(source_node_uid, gate_type, target_node_uid, slot_type, weight, certainty)
 
 
 def get_links_for_nodes(nodenet_uid, node_uids):
     """ Returns a list of links connected to the given nodes,
     and their connected nodes, if they are not in the same nodespace"""
-    nodenet = nodenets[nodenet_uid]
+    nodenet = get_nodenet(nodenet_uid)
     source_nodes = [nodenet.get_node(uid) for uid in node_uids]
     links = {}
     nodes = {}
@@ -1134,21 +1141,21 @@ def get_links_for_nodes(nodenet_uid, node_uids):
 
 def delete_link(nodenet_uid, source_node_uid, gate_type, target_node_uid, slot_type):
     """Delete the given link."""
-    nodenet = nodenets[nodenet_uid]
-    return nodenet.delete_link(source_node_uid, gate_type, target_node_uid, slot_type)
+    return get_nodenet(nodenet_uid).delete_link(source_node_uid, gate_type, target_node_uid, slot_type)
 
 
 def align_nodes(nodenet_uid, nodespace):
     """Perform auto-alignment of nodes in the current nodespace"""
-    result = node_alignment.align(nodenets[nodenet_uid], nodespace)
+    result = node_alignment.align(get_nodenet(nodenet_uid), nodespace)
     return result
 
 
 def user_prompt_response(nodenet_uid, node_uid, values, resume_nodenet):
+    nodenet = get_nodenet(nodenet_uid)
     for key, value in values.items():
-        nodenets[nodenet_uid].get_node(node_uid).set_parameter(key, value)
-    nodenets[nodenet_uid].is_active = resume_nodenet
-    nodenets[nodenet_uid].user_prompt = None
+        nodenet.get_node(node_uid).set_parameter(key, value)
+    nodenet.is_active = resume_nodenet
+    nodenet.user_prompt = None
 
 
 def get_available_recipes():
@@ -1182,7 +1189,7 @@ def get_available_operations():
 
 def run_recipe(nodenet_uid, name, parameters):
     """ Calls the given recipe with the provided parameters, and returns the output, if any """
-    netapi = nodenets[nodenet_uid].netapi
+    netapi = get_nodenet(nodenet_uid).netapi
     params = {}
     for key in parameters:
         if parameters[key] != '':
@@ -1210,7 +1217,7 @@ def run_recipe(nodenet_uid, name, parameters):
 
 def run_operation(nodenet_uid, name, parameters, selection_uids):
     """ Calls the given operation on the selection"""
-    netapi = nodenets[nodenet_uid].netapi
+    netapi = get_nodenet(nodenet_uid).netapi
     params = {}
     for key in parameters:
         if parameters[key] != '':
@@ -1238,7 +1245,7 @@ def run_operation(nodenet_uid, name, parameters, selection_uids):
 
 def get_agent_dashboard(nodenet_uid):
     from .emoexpression import calc_emoexpression_parameters
-    net = nodenets[nodenet_uid]
+    net = get_nodenet(nodenet_uid)
     with net.netlock:
         data = net.get_dashboard()
         data['face'] = calc_emoexpression_parameters(net)

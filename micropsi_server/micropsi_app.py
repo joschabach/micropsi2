@@ -712,13 +712,8 @@ def show_dashboard():
 #################################################################
 
 
-@rpc("select_nodenet")
-def select_nodenet(nodenet_uid):
-    return runtime.load_nodenet(nodenet_uid)
-
-
-@rpc("load_nodenet")
-def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
+@rpc("get_nodenet_metadata")
+def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if result:
         data = runtime.get_nodenet_data(nodenet_uid)

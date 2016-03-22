@@ -1863,7 +1863,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=[], complete=False, include_links=True):
+    def get_node_data(self, ids=None, complete=False, include_links=True):
 
         partition_has_outlinks = False
         for partition_to_spid, to_partition in self.nodenet.partitions.items():

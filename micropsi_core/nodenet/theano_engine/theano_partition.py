@@ -1863,7 +1863,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, complete=False, include_links=True):
+    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True):
 
         partition_has_outlinks = False
         for partition_to_spid, to_partition in self.nodenet.partitions.items():
@@ -1880,11 +1880,16 @@ class TheanoPartition():
         g_function_selector = self.g_function_selector.get_value(borrow=True)
         w = self.w.get_value(borrow=True)
 
-        nodes = {}
-        if ids is None:
-            ids = np.nonzero(self.allocated_nodes)[0]
+        if nodespace_ids is not None:
+            node_ids = np.where(self.allocated_node_parents == nodespace_ids)[0]
+        else:
+            node_ids = np.nonzero(self.allocated_nodes)[0]
 
-        for id in ids:
+        if ids is not None:
+            node_ids = np.intersect1d(node_ids, ids)
+
+        nodes = {}
+        for id in node_ids:
             uid = node_to_id(id, self.pid)
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
             nodetype = self.nodenet.get_nodetype(strtype)

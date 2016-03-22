@@ -308,22 +308,25 @@ class TheanoNodenet(Nodenet):
         if nodespace_uids is None:
             nodespace_uids = [self.get_nodespace(None).uid]
         elif nodespace_uids == []:
-            nodespace_uids = self.get_nodespace_uids()
+            nodespace_uids = False
         else:
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
-        for nodespace_uid in nodespace_uids:
-            data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
-            nodespace = self.get_nodespace(nodespace_uid)
-            for uid in nodespace.get_known_ids(entitytype="nodes"):
-                node = self.get_node(uid)
-                data['nodes'][uid] = node.get_data(include_links=include_links)
-                if include_links:
-                    followupnodes.extend(node.get_associated_node_uids())
-        if include_links:
-            for uid in set(followupnodes):
-                if uid not in data['nodes']:
-                    data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
+        if nodespace_uids:
+            by_partition = dict((spid, []) for spid in self.partitions)
+            for nodespace_uid in nodespace_uids:
+                data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
+                by_partition[self.get_partition(nodespace_uid).spid].append(nodespace_from_id(nodespace_uid))
+
+            for spid in by_partition:
+                if by_partition[spid]:
+                    data['nodes'].update(self.partitions[spid].get_node_data(nodespace_ids=by_partition[spid], include_links=include_links))
+
+        else:
+            data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
+            for partition in self.partitions.values():
+                data['nodes'].update(partition.get_node_data(include_links=include_links))
+
         return data
 
     def initialize_stepoperators(self):

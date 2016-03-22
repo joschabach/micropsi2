@@ -286,7 +286,7 @@ class TheanoNodenet(Nodenet):
         data['nodes'] = self.construct_nodes_dict(complete=complete, include_links=include_links)
         # for uid in data['nodes']:
         #    data['nodes'][uid]['gate_parameters'] = self.get_node(uid).clone_non_default_gate_parameters()
-        data['nodespaces'] = self.construct_nodespaces_dict(None)
+        data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
         data['version'] = self._version
         data['modulators'] = self.construct_modulators_dict()
         return data
@@ -294,6 +294,36 @@ class TheanoNodenet(Nodenet):
     def export_json(self):
         data = self.get_data(complete=True, include_links=False)
         data['links'] = self.construct_links_list()
+        return data
+
+    def get_nodes(self, nodespace_uids=[], include_links=True):
+        """
+        Returns a dict with contents for the given nodespaces
+        """
+        data = self.metadata.copy()
+        data['nodes'] = {}
+        data['nodespaces'] = {}
+        followupnodes = []
+
+        if nodespace_uids is None:
+            nodespace_uids = [self.get_nodespace(None).uid]
+        elif nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
+
+        for nodespace_uid in nodespace_uids:
+            data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
+            nodespace = self.get_nodespace(nodespace_uid)
+            for uid in nodespace.get_known_ids(entitytype="nodes"):
+                node = self.get_node(uid)
+                data['nodes'][uid] = node.get_data(include_links=include_links)
+                if include_links:
+                    followupnodes.extend(node.get_associated_node_uids())
+        if include_links:
+            for uid in set(followupnodes):
+                if uid not in data['nodes']:
+                    data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
         return data
 
     def initialize_stepoperators(self):
@@ -1240,33 +1270,38 @@ class TheanoNodenet(Nodenet):
                     break
         return data
 
-    def construct_nodespaces_dict(self, nodespace_uid):
+    def construct_nodespaces_dict(self, nodespace_uid, transitive=False):
         data = {}
         if nodespace_uid is None:
             nodespace_uid = self.get_nodespace(None).uid
 
-        for partition in self.partitions.values():
-            nodespace_id = nodespace_from_id(nodespace_uid)
-            nodespace_ids = np.nonzero(partition.allocated_nodespaces)[0]
-            nodespace_ids = np.append(nodespace_ids, 1)
-            for candidate_id in nodespace_ids:
-                is_in_hierarchy = False
-                if candidate_id == nodespace_id:
-                    is_in_hierarchy = True
-                else:
-                    parent_id = partition.allocated_nodespaces[candidate_id]
-                    while parent_id > 0 and parent_id != nodespace_id:
-                        parent_id = partition.allocated_nodespaces[parent_id]
-                    if parent_id == nodespace_id:
+        if transitive:
+            for partition in self.partitions.values():
+                nodespace_id = nodespace_from_id(nodespace_uid)
+                nodespace_ids = np.nonzero(partition.allocated_nodespaces)[0]
+                nodespace_ids = np.append(nodespace_ids, 1)
+                for candidate_id in nodespace_ids:
+                    is_in_hierarchy = False
+                    if candidate_id == nodespace_id:
                         is_in_hierarchy = True
+                    else:
+                        parent_id = partition.allocated_nodespaces[candidate_id]
+                        while parent_id > 0 and parent_id != nodespace_id:
+                            parent_id = partition.allocated_nodespaces[parent_id]
+                        if parent_id == nodespace_id:
+                            is_in_hierarchy = True
 
-                if is_in_hierarchy:
-                    data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).get_data()
+                    if is_in_hierarchy:
+                        data[nodespace_to_id(candidate_id, partition.pid)] = self.get_nodespace(nodespace_to_id(candidate_id, partition.pid)).get_data()
 
-        if nodespace_uid in self.partitionmap:
-            for partition in self.partitionmap[nodespace_uid]:
-                partition_root_uid = partition.rootnodespace_uid
-                data[partition_root_uid] = self.get_nodespace(partition_root_uid).get_data()
+            if nodespace_uid in self.partitionmap:
+                for partition in self.partitionmap[nodespace_uid]:
+                    partition_root_uid = partition.rootnodespace_uid
+                    data[partition_root_uid] = self.get_nodespace(partition_root_uid).get_data()
+
+        else:
+            for uid in self.get_nodespace(nodespace_uid).get_known_ids('nodespaces'):
+                data[uid] = self.get_nodespace(uid).get_data()
 
         return data
 
@@ -1500,9 +1535,7 @@ class TheanoNodenet(Nodenet):
         nodespace = self.get_nodespace(nodespace_uid)
         return partition.has_nodespace_changes(nodespace.uid, since_step)
 
-    def get_nodespace_changes(self, nodespace_uid, since_step):
-        partition = self.get_partition(nodespace_uid)
-        nodespace = self.get_nodespace(nodespace_uid)
+    def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         result = {
             'nodes_dirty': {},
             'nodespaces_dirty': {},
@@ -1510,18 +1543,27 @@ class TheanoNodenet(Nodenet):
             'nodespaces_deleted': []
         }
 
-        for i in range(since_step, self.current_step + 1):
-            if i in self.deleted_items:
-                result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
-                result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+        if nodespace_uids is None:
+            nodespace_uids = [self.get_nodespace(None).uid]
+        elif nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+        else:
+            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
-        changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
-        for uid in changed_nodes:
-            uid = node_to_id(uid, partition.pid)
-            result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
-        for uid in changed_nodespaces:
-            uid = nodespace_to_id(uid, partition.pid)
-            result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
+        for nsuid in nodespace_uids:
+            partition = self.get_partition(nsuid)
+            nodespace = self.get_nodespace(nsuid)
+            for i in range(since_step, self.current_step + 1):
+                if i in self.deleted_items:
+                    result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))
+                    result['nodes_deleted'].extend(self.deleted_items[i].get('nodes_deleted', []))
+            changed_nodes, changed_nodespaces = partition.get_nodespace_changes(nodespace.uid, since_step)
+            for uid in changed_nodes:
+                uid = node_to_id(uid, partition.pid)
+                result['nodes_dirty'][uid] = self.get_node(uid).get_data(include_links=True)
+            for uid in changed_nodespaces:
+                uid = nodespace_to_id(uid, partition.pid)
+                result['nodespaces_dirty'][uid] = self.get_nodespace(uid).get_data()
         return result
 
     def get_dashboard(self):

@@ -485,7 +485,7 @@ def select_nodenet_from_console(nodenet_uid):
     result, uid = runtime.load_nodenet(nodenet_uid)
     if not result:
         return template("error", msg="Could not select nodenet")
-    response.set_cookie("selected_nodenet", nodenet_uid, path="/")
+    response.set_cookie("selected_nodenet", nodenet_uid + "/", path="/")
     redirect("/")
 
 
@@ -712,20 +712,14 @@ def show_dashboard():
 #################################################################
 
 
-@rpc("select_nodenet")
-def select_nodenet(nodenet_uid):
-    return runtime.load_nodenet(nodenet_uid)
+@rpc("get_nodenet_metadata")
+def get_nodenet_metadata(nodenet_uid, nodespace='Root', include_links=True):
+    return True, runtime.get_nodenet_metadata(nodenet_uid)
 
 
-@rpc("load_nodenet")
-def load_nodenet(nodenet_uid, nodespace='Root', include_links=True):
-    result, uid = runtime.load_nodenet(nodenet_uid)
-    if result:
-        data = runtime.get_nodenet_data(nodenet_uid, nodespace, -1, include_links)
-        data['nodetypes'] = runtime.get_available_node_types(nodenet_uid)
-        return True, data
-    else:
-        return False, uid
+@rpc("get_nodes")
+def get_nodes(nodenet_uid, nodespaces=[], include_links=True):
+    return True, runtime.get_nodes(nodenet_uid, nodespaces, include_links)
 
 
 @rpc("new_nodenet")
@@ -742,9 +736,14 @@ def new_nodenet(name, owner=None, engine='dict_engine', template=None, worldadap
         use_modulators=use_modulators)
 
 
-@rpc("get_current_state")
-def get_current_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
-    return runtime.get_current_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+@rpc("get_calculation_state")
+def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=None, monitors=None, dashboard=None):
+    return runtime.get_calculation_state(nodenet_uid, nodenet=nodenet, nodenet_diff=nodenet_diff, world=world, monitors=monitors, dashboard=dashboard)
+
+
+@rpc("get_nodenet_changes")
+def get_nodenet_changes(nodenet_uid, nodespaces=[], since_step=0):
+    return runtime.get_nodenet_changes(nodenet_uid, nodespaces=nodespaces, since_step=since_step)
 
 
 @rpc("generate_uid")
@@ -794,8 +793,8 @@ def set_node_activation(nodenet_uid, node_uid, activation):
     return runtime.set_node_activation(nodenet_uid, node_uid, activation)
 
 
-@rpc("start_simulation", permission_required="manage nodenets")
-def start_simulation(nodenet_uid):
+@rpc("start_calculation", permission_required="manage nodenets")
+def start_calculation(nodenet_uid):
     return runtime.start_nodenetrunner(nodenet_uid)
 
 
@@ -825,23 +824,23 @@ def get_runner_properties():
     return True, runtime.get_runner_properties()
 
 
-@rpc("get_is_simulation_running")
-def get_is_simulation_running(nodenet_uid):
+@rpc("get_is_calculation_running")
+def get_is_calculation_running(nodenet_uid):
     return True, runtime.get_is_nodenet_running(nodenet_uid)
 
 
-@rpc("stop_simulation", permission_required="manage nodenets")
-def stop_simulation(nodenet_uid):
+@rpc("stop_calculation", permission_required="manage nodenets")
+def stop_calculation(nodenet_uid):
     return runtime.stop_nodenetrunner(nodenet_uid)
 
 
-@rpc("step_simulation", permission_required="manage nodenets")
-def step_simulation(nodenet_uid):
+@rpc("step_calculation", permission_required="manage nodenets")
+def step_calculation(nodenet_uid):
     return True, runtime.step_nodenet(nodenet_uid)
 
 
-@rpc("revert_simulation", permission_required="manage nodenets")
-def revert_simulation(nodenet_uid):
+@rpc("revert_calculation", permission_required="manage nodenets")
+def revert_calculation(nodenet_uid):
     return runtime.revert_nodenet(nodenet_uid, True)
 
 
@@ -1039,11 +1038,6 @@ def get_monitor_data(nodenet_uid, step, monitor_from=0, monitor_count=-1):
 def get_nodespace_list(nodenet_uid):
     """ returns a list of nodespaces in the given nodenet."""
     return True, runtime.get_nodespace_list(nodenet_uid)
-
-
-@rpc("get_nodespace")
-def get_nodespace(nodenet_uid, nodespace, step, include_links=True):
-    return True, runtime.get_nodenet_data(nodenet_uid, nodespace, step, include_links)
 
 
 @rpc("get_nodespace_activations")

@@ -1963,10 +1963,10 @@ class TheanoPartition():
                                         target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
                                         target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
                                         gate_links.append({
-                                            "weight": float(weights[element_index, link_index]),
+                                            "weight": float(weights[link_index, element_index]),
                                             "certainty": 1,
                                             "target_slot_name": target_slot_type,
-                                            "target_node_uid": node_to_id(target_id, partition_to_spid)
+                                            "target_node_uid": node_to_id(target_id, to_partition.pid)
                                         })
                     if len(gate_links) > 0:
                         links[gate] = gate_links

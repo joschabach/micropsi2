@@ -1880,12 +1880,12 @@ class TheanoPartition():
         g_function_selector = self.g_function_selector.get_value(borrow=True)
         w = self.w.get_value(borrow=True)
 
-        nodes = []
+        nodes = {}
         if ids is None:
             ids = np.nonzero(self.allocated_nodes)[0]
 
         for id in ids:
-            uid = node_to_id(id,self.pid)
+            uid = node_to_id(id, self.pid)
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
             nodetype = self.nodenet.get_nodetype(strtype)
 
@@ -2037,7 +2037,7 @@ class TheanoPartition():
             if include_links:
                 data['links'] = links
 
-            nodes.append(data)
+            nodes[uid] = data
 
         return nodes
 

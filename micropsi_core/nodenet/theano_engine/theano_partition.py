@@ -1863,7 +1863,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True):
+    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
 
         partition_has_outlinks = False
         for partition_to_spid, to_partition in self.nodenet.partitions.items():
@@ -1889,6 +1889,7 @@ class TheanoPartition():
             node_ids = np.intersect1d(node_ids, ids)
 
         nodes = {}
+        followupnodes = set()
         for id in node_ids:
             uid = node_to_id(id, self.pid)
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
@@ -1948,6 +1949,7 @@ class TheanoPartition():
                             "target_slot_name": target_slot_type,
                             "target_node_uid": node_to_id(target_id, self.pid)
                         })
+                        followupnodes.add(node_to_id(target_id, self.pid))
 
                     if partition_has_outlinks:
                         # does any of the inlinks in any partition orginate from me?
@@ -1973,6 +1975,21 @@ class TheanoPartition():
                                             "target_slot_name": target_slot_type,
                                             "target_node_uid": node_to_id(target_id, to_partition.pid)
                                         })
+                                        followupnodes.add(node_to_id(target_id, to_partition.pid))
+                    if include_followupnodes:
+                        # check for followupnodes in other partitions
+                        for from_partition, inlinks in self.inlinks.items():
+                            from_partition = self.nodenet.partitions[from_partition]
+                            from_elements = inlinks[0].get_value(borrow=True)
+                            to_elements = inlinks[1].get_value(borrow=True)
+                            weights = inlinks[2].get_value(borrow=True)
+                            if element in to_elements:
+                                element_index = np.where(to_elements == element)[0][0]
+                                link_indices = np.nonzero(weights[element_index, :])[0]
+                                for link_index in link_indices:
+                                    source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                                    followupnodes.add(node_to_id(source_id, from_partition.pid))
+
                     if len(gate_links) > 0:
                         links[gate] = gate_links
 
@@ -2043,6 +2060,12 @@ class TheanoPartition():
                 data['links'] = links
 
             nodes[uid] = data
+
+        if include_followupnodes:
+            for uid in followupnodes:
+                if uid not in nodes:
+                    node_id = node_from_id(uid)
+                    nodes.update(self.nodenet.get_partition(uid).get_node_data(ids=[node_id], include_links=True, include_followupnodes=False))
 
         return nodes
 

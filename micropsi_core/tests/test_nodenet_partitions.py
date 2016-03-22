@@ -283,7 +283,7 @@ def test_partition_get_node_data(test_nodenet):
     netapi.link(nodes[9], 'gen', nodes[4], 'gen', 0.375)
 
     node_data = nodenet.rootpartition.get_node_data()
-    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid])
+    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid, register.uid] + [nodes[9].uid, nodes[5].uid])
 
     node_data = nodenet.get_nodes()['nodes']
     n1, n3, n4, n9 = nodes[1], nodes[3], nodes[4], nodes[9]
@@ -293,5 +293,5 @@ def test_partition_get_node_data(test_nodenet):
     assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes(nodespace_uids=[nodespace.uid])['nodes']
-    assert set(node_data.keys()) == set([n.uid for n in nodes[5:]] + [register.uid])
+    assert len(node_data.keys()) == 12
 

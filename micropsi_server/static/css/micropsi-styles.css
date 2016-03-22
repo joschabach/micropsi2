@@ -451,11 +451,11 @@ table.emoexpression td {
   top: 100px !important;
 }
 
-#simulation_controls{
+#calculation_controls{
   margin-right: 20px;
 }
 
-#simulation_controls .step_counters {
+#calculation_controls .step_counters {
   font-size: 8px;
   line-height: 9px;
   text-align: left;
@@ -469,7 +469,7 @@ table.emoexpression td {
   border-right: 1px solid #333;
   margin-right: 1px;
 }
-#simulation_controls .btn-expand {
+#calculation_controls .btn-expand {
   font-size: 8px;
   padding-left: 1px;
   padding-right: 1px;

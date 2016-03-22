@@ -955,7 +955,7 @@ def generate_netapi_fragment(nodenet_uid, node_uids):
         x = int(node.position[0] - factor[0])
         y = int(node.position[1] - factor[1])
         z = int(node.position[2] - factor[2])
-        lines.append("%s.position = [origin_pos[0] + %i, origin_pos[1] + %i, origin_pos[2] + %i]" % (idmap[node.uid], x, y, z))
+        lines.append("%s.position = (origin_pos[0] + %i, origin_pos[1] + %i, origin_pos[2] + %i)" % (idmap[node.uid], x, y, z))
 
     return "\n".join(lines)
 

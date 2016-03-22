@@ -127,6 +127,7 @@ def test_grow_partitions(test_nodenet):
     micropsi.revert_nodenet(test_nodenet)
     micropsi.step_nodenet(test_nodenet)
 
+
 @pytest.mark.engine("theano_engine")
 def test_announce_nodes(test_nodenet):
     nodenet = micropsi.get_nodenet(test_nodenet)
@@ -168,6 +169,79 @@ def test_delete_partition(test_nodenet):
 
 
 @pytest.mark.engine("theano_engine")
+def test_delete_partition_unlinks_native_module(test_nodenet, resourcepath):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace, source, register = prepare(netapi)
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"]}}')
+    with open(nodefunc_file, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    micropsi.reload_native_modules()
+    testnode = netapi.create_node("Testnode", None, "test")
+    netapi.link(testnode, 'foo', register, 'gen')
+    netapi.link(register, 'gen', testnode, 'bar')
+    netapi.delete_nodespace(nodespace)
+    data = testnode.get_data(include_links=True)
+    assert data['links'] == {}
+
+
+@pytest.mark.engine("theano_engine")
+def test_delete_nodespace_unlinks_native_module(test_nodenet, resourcepath):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace = netapi.create_nodespace(None, "foo")
+    foopipe = netapi.create_node("Pipe", nodespace.uid, 'foopipe')
+    import os
+    nodetype_file = os.path.join(resourcepath, 'Test', 'nodetypes.json')
+    nodefunc_file = os.path.join(resourcepath, 'Test', 'nodefunctions.py')
+    with open(nodetype_file, 'w') as fp:
+        fp.write('{"Testnode": {\
+            "name": "Testnode",\
+            "slottypes": ["gen", "foo", "bar"],\
+            "nodefunction_name": "testnodefunc",\
+            "gatetypes": ["gen", "foo", "bar"]}}')
+    with open(nodefunc_file, 'w') as fp:
+        fp.write("def testnodefunc(netapi, node=None, **prams):\r\n    return 17")
+    micropsi.reload_native_modules()
+    testnode = netapi.create_node("Testnode", None, "test")
+    netapi.link(testnode, 'foo', foopipe, 'sub')
+    netapi.link(foopipe, 'sur', testnode, 'bar')
+    micropsi.save_nodenet(test_nodenet)
+    # I don't understand why, but this is necessary.
+    micropsi.revert_nodenet(test_nodenet)
+    netapi.delete_nodespace(nodespace)
+    data = netapi.get_node(testnode.uid).get_data(include_links=True)
+    assert data['links'] == {}
+
+
+@pytest.mark.engine("theano_engine")
+def test_delete_subnodespace_removes_x_partition_links(test_nodenet, resourcepath):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace = netapi.create_nodespace(None, "partition", options={'new_partition': True})
+    subnodespace = netapi.create_nodespace(nodespace.uid, "foo")
+    r1 = netapi.create_node("Register", None)
+    r2 = netapi.create_node("Register", subnodespace.uid)
+    r3 = netapi.create_node("Register", None)
+    netapi.link(r1, 'gen', r2, 'gen')
+    netapi.link(r2, 'gen', r3, 'gen')
+    netapi.delete_nodespace(subnodespace)
+    data = netapi.get_node(r1.uid).get_data({'include_links': True})
+    assert data['links'] == {}
+    for key in nodenet.rootpartition.inlinks:
+        for i in range(3):
+            assert len(nodenet.rootpartition.inlinks[key][i].get_value()) == 0
+
+
+@pytest.mark.engine("theano_engine")
 def test_sensor_actuator_indices(test_nodenet):
     nodenet = micropsi.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
@@ -191,3 +265,29 @@ def test_sensor_actuator_indices(test_nodenet):
     netapi.delete_node(actor)
     assert set(nodenet.rootpartition.actuator_indices) == {0}
     assert set(nodenet.rootpartition.sensor_indices) == {0}
+
+
+@pytest.mark.engine("theano_engine")
+def test_partition_get_node_data(test_nodenet):
+    nodenet = micropsi.get_nodenet(test_nodenet)
+    netapi = nodenet.netapi
+    nodespace, source, register = prepare(netapi)
+
+    nodes = []
+    for i in range(10):
+        n = netapi.create_node("Pipe", nodespace.uid if i > 4 else None, "node %d" % i)
+        nodes.append(n)
+
+    for i in range(4):
+        netapi.link(nodes[i], 'gen', nodes[5], 'gen', weight=((i + 2) / 10))
+    netapi.link(nodes[9], 'gen', nodes[4], 'gen', 0.375)
+
+    node_data = nodenet.rootpartition.get_node_data()
+    assert len(node_data.keys()) == 6
+
+    node_data = nodenet.get_nodes()['nodes']
+    n1, n3, n4, n9 = nodes[1], nodes[3], nodes[4], nodes[9]
+    assert round(node_data[n1.uid]['links']['gen'][0]['weight'], 3) == 0.3
+    assert round(node_data[n3.uid]['links']['gen'][0]['weight'], 3) == 0.5
+    assert round(node_data[n9.uid]['links']['gen'][0]['weight'], 3) == 0.375
+    assert node_data[n4.uid]['links'] == {}

@@ -330,7 +330,7 @@ def get_nodenet_metadata(nodenet_uid):
     data = nodenet.metadata
     data.update({
         'nodetypes': nodenet.get_standard_nodetype_definitions(),
-        'nodespaces': nodenet.construct_nodespaces_dict(None),
+        'nodespaces': nodenet.construct_nodespaces_dict(None, transitive=True),
         'native_modules': filter_native_modules(nodenet.engine),
         'monitors': nodenet.construct_monitors_dict(),
         'rootnodespace': nodenet.get_nodespace(None).uid

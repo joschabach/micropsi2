@@ -149,7 +149,7 @@ class Minecraft2D(Minecraft):
 
     def step(self):
         """
-        Is called on every world step to advance the simulation.
+        Is called on every world step to advance the calculation.
         """
         World.step(self)
 
@@ -157,7 +157,7 @@ class Minecraft2D(Minecraft):
         self.get_perspective_projection(self.spockplugin.clientinfo.position)
 
     def get_world_view(self, step):
-        """ returns a list of world objects, and the current step of the simulation """
+        """ returns a list of world objects, and the current step of the calculation """
         return {
             'objects': self.get_world_objects(),
             'agents': self.data.get('agents', {}),
@@ -358,7 +358,7 @@ class MinecraftWorldAdapter(WorldAdapter):
         self.datasources['groundtype'] = self.get_groundtype()
 
     def update_data_sources_and_targets(self):
-        """ Advances the agent's life on every cycle of the world simulation. """
+        """ Advances the agent's life on every cycle of the world calculation. """
         import random
 
         # translate data targets
@@ -438,7 +438,7 @@ class MinecraftBraitenberg(WorldAdapter):
         }
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
         # find diamond
         bot_x = self.world.spockplugin.clientinfo.position['x']
         bot_y = self.world.spockplugin.clientinfo.position['y']

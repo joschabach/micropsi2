@@ -1863,6 +1863,212 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
+    def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
+
+        partition_has_outlinks = False
+        for partition_to_spid, to_partition in self.nodenet.partitions.items():
+            if self.spid in to_partition.inlinks:
+                partition_has_outlinks = True
+                break
+
+        a = self.a.get_value(borrow=True)
+        g_threshold_array = self.g_threshold.get_value(borrow=True)
+        g_amplification_array = self.g_amplification.get_value(borrow=True)
+        g_min_array = self.g_min.get_value(borrow=True)
+        g_max_array = self.g_max.get_value(borrow=True)
+        g_theta = self.g_theta.get_value(borrow=True)
+        g_function_selector = self.g_function_selector.get_value(borrow=True)
+        w = self.w.get_value(borrow=True)
+
+        if nodespace_ids is not None:
+            node_ids = np.where(self.allocated_node_parents == nodespace_ids)[0]
+        else:
+            node_ids = np.nonzero(self.allocated_nodes)[0]
+
+        if ids is not None:
+            node_ids = np.intersect1d(node_ids, ids)
+
+        nodes = {}
+        followupnodes = set()
+        for id in node_ids:
+            uid = node_to_id(id, self.pid)
+            strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
+            nodetype = self.nodenet.get_nodetype(strtype)
+
+            gate_functions = {}
+            gate_parameters = {}
+            gate_activations = {}
+            links = {}
+            for gate in self.nodenet.get_nodetype(strtype).gatetypes:
+                numericalgate = get_numerical_gate_type(gate, self.nodenet.get_nodetype(strtype))
+                element = self.allocated_node_offsets[id] + numericalgate
+                gate_functions[gate] = get_string_gatefunction_type(g_function_selector[element])
+
+                parameters = {}
+                threshold = g_threshold_array[element].item()
+                if 'threshold' not in nodetype.gate_defaults[gate] or threshold != nodetype.gate_defaults[gate]['threshold']:
+                    parameters['threshold'] = float(threshold)
+
+                amplification = g_amplification_array[element].item()
+                if 'amplification' not in nodetype.gate_defaults[gate] or amplification != nodetype.gate_defaults[gate]['amplification']:
+                    parameters['amplification'] = float(amplification)
+
+                minimum = g_min_array[element].item()
+                if 'minimum' not in nodetype.gate_defaults[gate] or minimum != nodetype.gate_defaults[gate]['minimum']:
+                    parameters['minimum'] = float(minimum)
+
+                maximum = g_max_array[element].item()
+                if 'maximum' not in nodetype.gate_defaults[gate] or maximum != nodetype.gate_defaults[gate]['maximum']:
+                    parameters['maximum'] = float(maximum)
+
+                theta = g_theta[element].item()
+                if 'theta' not in nodetype.gate_defaults[gate] or theta != nodetype.gate_defaults[gate]['theta']:
+                    parameters['theta'] = float(theta)
+
+                if not len(parameters) == 0:
+                    gate_parameters[gate] = parameters
+
+                gate_activations[gate] = {"default": {
+                    "name": "default",
+                    "uid": "default",
+                    "activation": float(a[element])}}
+
+                if include_links:
+                    gate_links = []
+                    gatecolumn = w[:, element]
+                    links_indices = np.nonzero(gatecolumn)[0]
+                    for index in links_indices:
+                        target_id = self.allocated_elements_to_nodes[index]
+                        target_type = self.allocated_nodes[target_id]
+                        target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                        target_slot_numerical = index - self.allocated_node_offsets[target_id]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                        gate_links.append({
+                            "weight": float(w[index, element]),
+                            "certainty": 1,
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": node_to_id(target_id, self.pid)
+                        })
+                        followupnodes.add(node_to_id(target_id, self.pid))
+
+                    if partition_has_outlinks:
+                        # does any of the inlinks in any partition orginate from me?
+                        for partition_to_spid, to_partition in self.nodenet.partitions.items():
+                            if self.spid in to_partition.inlinks:
+                                inlinks = to_partition.inlinks[self.spid]
+                                from_elements = inlinks[0].get_value(borrow=True)
+                                to_elements = inlinks[1].get_value(borrow=True)
+                                weights = inlinks[2].get_value(borrow=True)
+                                if element in from_elements:
+                                    element_index = np.where(from_elements == element)[0][0]
+                                    gatecolumn = weights[:, element_index]
+                                    links_indices = np.nonzero(gatecolumn)[0]
+                                    for link_index in links_indices:
+                                        target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
+                                        target_type = to_partition.allocated_nodes[target_id]
+                                        target_slot_numerical = to_elements[link_index] - to_partition.allocated_node_offsets[target_id]
+                                        target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                                        target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                                        gate_links.append({
+                                            "weight": float(weights[link_index, element_index]),
+                                            "certainty": 1,
+                                            "target_slot_name": target_slot_type,
+                                            "target_node_uid": node_to_id(target_id, to_partition.pid)
+                                        })
+                                        followupnodes.add(node_to_id(target_id, to_partition.pid))
+                    if include_followupnodes:
+                        # check for followupnodes in other partitions
+                        for from_partition, inlinks in self.inlinks.items():
+                            from_partition = self.nodenet.partitions[from_partition]
+                            from_elements = inlinks[0].get_value(borrow=True)
+                            to_elements = inlinks[1].get_value(borrow=True)
+                            weights = inlinks[2].get_value(borrow=True)
+                            if element in to_elements:
+                                element_index = np.where(to_elements == element)[0][0]
+                                link_indices = np.nonzero(weights[element_index, :])[0]
+                                for link_index in link_indices:
+                                    source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
+                                    followupnodes.add(node_to_id(source_id, from_partition.pid))
+
+                    if len(gate_links) > 0:
+                        links[gate] = gate_links
+
+            state = None
+            if uid in self.native_module_instances:
+                state = self.native_module_instances.get(uid).clone_state()
+
+            parameters = {}
+            if strtype == "Sensor":
+                sensor_element = self.allocated_node_offsets[id] + GEN
+                datasource_index = np.where(self.sensor_indices == sensor_element)[0]
+                if len(datasource_index) == 0:
+                    parameters['datasource'] = None
+                else:
+                    parameters['datasource'] = self.nodenet.get_datasources()[datasource_index[0]]
+            elif strtype == "Actor":
+                actuator_element = self.allocated_node_offsets[id] + GEN
+                datatarget_index = np.where(self.actuator_indices == actuator_element)[0]
+                if len(datatarget_index) == 0:
+                    parameters['datatarget'] = None
+                else:
+                    parameters['datatarget'] = self.nodenet.get_datatargets()[datatarget_index[0]]
+            elif strtype == "Activator":
+                activator_type = None
+                if id in self.allocated_nodespaces_por_activators:
+                    activator_type = "por"
+                elif id in self.allocated_nodespaces_ret_activators:
+                    activator_type = "ret"
+                elif id in self.allocated_nodespaces_sub_activators:
+                    activator_type = "sub"
+                elif id in self.allocated_nodespaces_sur_activators:
+                    activator_type = "sur"
+                elif id in self.allocated_nodespaces_cat_activators:
+                    activator_type = "cat"
+                elif id in self.allocated_nodespaces_exp_activators:
+                    activator_type = "exp"
+                elif id in self.allocated_nodespaces_sampling_activators:
+                    activator_type = "sampling"
+                parameters['type'] = activator_type
+            elif strtype == "Pipe":
+                g_expect_array = self.g_expect.get_value(borrow=True)
+                value = g_expect_array[self.allocated_node_offsets[id] + get_numerical_gate_type("sur")].item()
+                parameters['expectation'] = value
+                g_wait_array = self.g_wait.get_value(borrow=True)
+                parameters['wait'] = g_wait_array[self.allocated_node_offsets[id] + get_numerical_gate_type("sur")].item()
+            elif strtype == "Comment":
+                parameters = self.comment_instances.get(uid).clone_parameters()
+            elif strtype in self.nodenet.native_modules:
+                parameters = self.native_module_instances.get(uid).clone_parameters()
+
+            data = {"uid": uid,
+                    "name": self.nodenet.names.get(uid, uid),
+                    "position": self.nodenet.positions.get(uid, (10, 10, 10)),
+                    "parent_nodespace": nodespace_to_id(self.allocated_node_parents[id], self.pid),
+                    "type": strtype,
+                    "parameters": parameters,
+                    "state": state,
+                    "gate_parameters": gate_parameters,
+                    "sheaves": {"default": {"name": "default",
+                                "uid": "default",
+                                "activation": float(a[self.allocated_node_offsets[id] + GEN])}},
+                    "activation": float(a[self.allocated_node_offsets[id] + GEN]),
+                    "gate_activations": gate_activations,
+                    "gate_functions": gate_functions}
+            if complete:
+                data['index'] = id
+            if include_links:
+                data['links'] = links
+
+            nodes[uid] = data
+
+        if include_followupnodes:
+            for uid in followupnodes:
+                if uid not in nodes:
+                    node_id = node_from_id(uid)
+                    nodes.update(self.nodenet.get_partition(uid).get_node_data(ids=[node_id], include_links=True, include_followupnodes=False))
+
+        return nodes
+
     def integrity_check(self):
 
         for nid in range(self.NoN):

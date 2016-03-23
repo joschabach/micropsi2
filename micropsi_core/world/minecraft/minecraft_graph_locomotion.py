@@ -204,7 +204,7 @@ class MinecraftGraphLocomotion(WorldAdapter):
         self.datasources['food'] = self.spockplugin.clientinfo.health['food'] / 20
 
     def update_data_sources_and_targets(self):
-        """called on every world simulation step to advance the life of the agent"""
+        """called on every world calculation step to advance the life of the agent"""
 
         self.datasources['awake'] = 0 if self.sleeping else 1
 

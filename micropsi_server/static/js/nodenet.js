@@ -91,8 +91,16 @@ prerenderLayer.visible = false;
 
 viewProperties.zoomFactor = parseFloat($.cookie('zoom_factor')) || viewProperties.zoomFactor;
 
-currentNodenet = $.cookie('selected_nodenet') || '';
-currentNodeSpace = $.cookie('selected_nodespace') || '';
+var nodenetcookie = $.cookie('selected_nodenet') || '';
+if (nodenetcookie && nodenetcookie.indexOf('/') > 0){
+    nodenetcookie = nodenetcookie.split("/");
+    currentNodenet = nodenetcookie[0];
+    currentNodeSpace = nodenetcookie[1] || null;
+} else {
+    currentNodenet = '';
+    currentNodeSpace = '';
+}
+
 if(!$.cookie('renderlinks')){
     $.cookie('renderlinks', 'always');
 }
@@ -258,45 +266,40 @@ api.call("get_available_operations", {}, function(data){
 
 function setCurrentNodenet(uid, nodespace, changed){
     if(!nodespace){
-        nodespace = "Root";
+        nodespace = null;
     }
     $('#loading').show();
-    api.call('load_nodenet',
-        {nodenet_uid: uid,
-            nodespace: nodespace,
-            include_links: $.cookie('renderlinks') == 'always',
-        },
+    api.call('get_nodenet_metadata', {nodenet_uid: uid},
         function(data){
             $('#loading').hide();
             nodenetscope.activate();
             toggleButtons(true);
 
             var nodenetChanged = changed || (uid != currentNodenet);
-            var nodespaceChanged = changed || (nodespace != currentNodeSpace);
 
+            currentNodenet = uid;
+            currentNodeSpace = data.rootnodespace;
             if(nodenetChanged){
-                $(document).trigger('nodenetChanged', uid);
                 clipboard = {};
                 selection = {};
                 nodespaces = {};
+                nodes = {};
+                links = {};
+                nodeLayer.removeChildren();
+                linkLayer.removeChildren();
             }
+            $(document).trigger('nodenet_loaded', uid);
 
             nodenet_data = data;
             nodenet_data['renderlinks'] = $.cookie('renderlinks') || 'always';
             nodenet_data['snap_to_grid'] = $.cookie('snap_to_grid') || viewProperties.snap_to_grid;
 
             showDefaultForm();
-            currentNodeSpace = data['nodespace'];
-            currentNodenet = uid;
 
-            nodes = {};
-            links = {};
-            nodeLayer.removeChildren();
-            linkLayer.removeChildren();
-
-            $.cookie('selected_nodenet', currentNodenet, { expires: 7, path: '/' });
+            $.cookie('selected_nodenet', currentNodenet+"/", { expires: 7, path: '/' });
             if(nodenetChanged || jQuery.isEmptyObject(nodetypes)){
                 nodetypes = data.nodetypes;
+                native_modules = data.native_modules;
                 sorted_nodetypes = Object.keys(nodetypes);
                 sorted_nodetypes.sort(function(a, b){
                     if(a < b) return -1;
@@ -331,13 +334,11 @@ function setCurrentNodenet(uid, nodespace, changed){
                     showDefaultForm();
                 });
                 get_available_gatefunctions();
-                setNodespaceData(data, true);
                 getNodespaceList();
-            } else {
-                setNodespaceData(data, (nodespaceChanged));
+                $(document).trigger('refreshNodenetList');
             }
-            $(document).trigger('refreshNodenetList');
             nodenet_loaded = true;
+            refreshNodespace(nodespace)
         },
         function(data) {
             if(data.status == 500 || data.status === 0){
@@ -582,14 +583,14 @@ function addLinks(link_data){
 
 function get_nodenet_params(){
     return {
-        'nodespace': currentNodeSpace,
+        'nodespaces': [currentNodeSpace],
         'step': currentSimulationStep - 1,
         'include_links': $.cookie('renderlinks') == 'always',
     }
 }
 function get_nodenet_diff_params(){
     return {
-        'nodespace': currentNodeSpace,
+        'nodespaces': [currentNodeSpace],
         'step': window.currentSimulationStep,
     }
 }
@@ -613,19 +614,17 @@ function refreshNodespace(nodespace, step, callback){
     nodespace = nodespace || currentNodeSpace;
     params = {
         nodenet_uid: currentNodenet,
-        nodespace: nodespace,
-        step: currentSimulationStep
+        nodespaces: [nodespace],
     };
-    if(step){
-        params.step = step;
-    }
     params.include_links = nodenet_data['renderlinks'] == 'always';
-    api.call('get_nodespace', params , success=function(data){
+    api.call('get_nodes', params , success=function(data){
         var changed = nodespace != currentNodeSpace;
         if(changed){
             currentNodeSpace = nodespace;
-            $.cookie('selected_nodespace', currentNodeSpace, { expires: 7, path: '/' });
-            $("#current_nodespace_name").text(nodespaces[nodespace].name);
+            $.cookie('selected_nodenet', currentNodenet+"/"+currentNodeSpace, { expires: 7, path: '/' });
+            if(!$.isEmptyObject(nodespaces)){
+                $("#current_nodespace_name").text(nodespaces[nodespace].name);
+            }
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }
@@ -1814,7 +1813,7 @@ function setActivation(node) {
                     viewProperties.nodeColor);
             }
         }
-    } else console.warn ("node "+node.uid+" not found in current view");
+    }
 }
 
 // mark node as selected, and add it to the selected nodes
@@ -4079,12 +4078,6 @@ function updateNodespaceForm(){
             $('#nodespace_name').attr('disabled', 'disabled');
         } else {
             $('#nodespace_name').removeAttr('disabled');
-        }
-        var nodetypehtml = '';
-        for(var idx in sorted_nodetypes){
-            if(nodetypes[sorted_nodetypes[idx]].gatetypes && nodetypes[sorted_nodetypes[idx]].gatetypes.length > 0){
-                nodetypehtml += '<option>' + sorted_nodetypes[idx] + '</option>';
-            }
         }
     }
 }

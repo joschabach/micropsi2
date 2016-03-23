@@ -472,8 +472,8 @@ def delete_nodenet(nodenet_uid):
 def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, world_uid=None, owner=None):
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
-    nodenet = nodenets[nodenet_uid]
-    if nodenet.world and nodenet.world != world_uid:
+    nodenet = get_nodenet(nodenet_uid)
+    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
     if worldadapter is None:

@@ -267,7 +267,6 @@ def test_sensor_actuator_indices(test_nodenet):
     assert set(nodenet.rootpartition.sensor_indices) == {0}
 
 
-@pytest.mark.engine("theano_engine")
 def test_partition_get_node_data(test_nodenet):
     nodenet = micropsi.get_nodenet(test_nodenet)
     netapi = nodenet.netapi
@@ -282,7 +281,7 @@ def test_partition_get_node_data(test_nodenet):
         netapi.link(nodes[i], 'gen', nodes[5], 'gen', weight=((i + 2) / 10))
     netapi.link(nodes[9], 'gen', nodes[4], 'gen', 0.375)
 
-    node_data = nodenet.rootpartition.get_node_data()
+    node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
     assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid, register.uid] + [nodes[9].uid, nodes[5].uid])
 
     node_data = nodenet.get_nodes()['nodes']
@@ -294,4 +293,3 @@ def test_partition_get_node_data(test_nodenet):
 
     node_data = nodenet.get_nodes(nodespace_uids=[nodespace.uid])['nodes']
     assert len(node_data.keys()) == 12
-

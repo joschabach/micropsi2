@@ -479,7 +479,7 @@ def set_nodenet_properties(nodenet_uid, nodenet_name=None, worldadapter=None, wo
     """Sets the supplied parameters (and only those) for the nodenet with the given uid."""
 
     nodenet = get_nodenet(nodenet_uid)
-    if nodenet.world and nodenet.world != world_uid:
+    if nodenet.world and (nodenet.world != world_uid or nodenet.worldadapter != worldadapter):
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
         nodenet.world = None
     if worldadapter is None:

@@ -622,7 +622,9 @@ function refreshNodespace(nodespace, step, callback){
         if(changed){
             currentNodeSpace = nodespace;
             $.cookie('selected_nodenet', currentNodenet+"/"+currentNodeSpace, { expires: 7, path: '/' });
-            $("#current_nodespace_name").text(nodespaces[nodespace].name);
+            if(!$.isEmptyObject(nodespaces)){
+                $("#current_nodespace_name").text(nodespaces[nodespace].name);
+            }
             nodeLayer.removeChildren();
             linkLayer.removeChildren();
         }

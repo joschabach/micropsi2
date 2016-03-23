@@ -1925,7 +1925,7 @@ class TheanoPartition():
                 if 'theta' not in nodetype.gate_defaults[gate] or theta != nodetype.gate_defaults[gate]['theta']:
                     parameters['theta'] = float(theta)
 
-                if not len(gate_parameters) == 0:
+                if not len(parameters) == 0:
                     gate_parameters[gate] = parameters
 
                 gate_activations[gate] = {"default": {

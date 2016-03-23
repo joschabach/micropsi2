@@ -233,16 +233,16 @@ def test_gate_defaults_change_with_nodetype(fixed_nodenet, resourcepath,):
     assert params["foo"]["amplification"] == 5
 
 
-def test_non_standard_gate_defaults(fixed_nodenet):
-    nodenet = micropsi.nodenets[fixed_nodenet]
-    res, uid = micropsi.add_node(fixed_nodenet, 'Register', [30, 30, 10], name='test')
+def test_non_standard_gate_defaults(test_nodenet):
+    nodenet = micropsi.nodenets[test_nodenet]
+    res, uid = micropsi.add_node(test_nodenet, 'Register', [30, 30, 10], name='test')
     node = nodenet.netapi.get_node(uid)
     genparams = {'maximum': 0.5}
     micropsi.set_gate_parameters(nodenet.uid, node.uid, 'gen', genparams)
     assert node.clone_non_default_gate_parameters()['gen']['maximum'] == 0.5
     assert node.get_data()['gate_parameters'] == {'gen': {'maximum': 0.5}}
     assert nodenet.get_data()['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
-    data = micropsi.get_nodes(fixed_nodenet)
+    data = micropsi.get_nodes(test_nodenet)
     assert data['nodes'][uid]['gate_parameters'] == {'gen': {'maximum': 0.5}}
 
 

@@ -1813,7 +1813,7 @@ function setActivation(node) {
                     viewProperties.nodeColor);
             }
         }
-    } else console.warn ("node "+node.uid+" not found in current view");
+    }
 }
 
 // mark node as selected, and add it to the selected nodes

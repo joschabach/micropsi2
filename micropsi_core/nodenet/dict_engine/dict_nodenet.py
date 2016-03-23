@@ -213,10 +213,10 @@ class DictNodenet(Nodenet):
         data['nodespaces'] = {}
         followupnodes = []
 
-        if nodespace_uids is None:
-            nodespace_uids = [self.get_nodespace(None).uid]
-        elif nodespace_uids == []:
+        if nodespace_uids == []:
             nodespace_uids = self.get_nodespace_uids()
+            root = self.get_nodespace(None)
+            data['nodespaces'][root.uid] = root.get_data()
         else:
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 

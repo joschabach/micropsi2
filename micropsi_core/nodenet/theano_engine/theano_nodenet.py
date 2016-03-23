@@ -305,9 +305,7 @@ class TheanoNodenet(Nodenet):
         data['nodespaces'] = {}
         followupnodes = []
 
-        if nodespace_uids is None:
-            nodespace_uids = [self.get_nodespace(None).uid]
-        elif nodespace_uids == []:
+        if nodespace_uids == []:
             nodespace_uids = False
         else:
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]

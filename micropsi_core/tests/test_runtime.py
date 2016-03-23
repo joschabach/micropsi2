@@ -201,14 +201,15 @@ def test_get_nodes(test_nodenet):
     nodenet = micropsi.nodenets[test_nodenet]
     netapi = nodenet.netapi
     ns1 = netapi.create_nodespace(None, "ns1")
-    ns2 = netapi.create_nodespace(None, "ns1")
-    ns3 = netapi.create_nodespace(ns1.uid, "ns1")
+    ns2 = netapi.create_nodespace(None, "ns2")
+    ns3 = netapi.create_nodespace(ns1.uid, "ns3")
     n1 = netapi.create_node("Pipe", ns1.uid, "n1")
     n2 = netapi.create_node("Pipe", ns2.uid, "n2")
     n3 = netapi.create_node("Pipe", ns3.uid, "n3")
     result = micropsi.get_nodes(test_nodenet)
+    rootuid = nodenet.get_nodespace(None).uid
     assert set(result['nodes'].keys()) == {n1.uid, n2.uid, n3.uid}
-    assert set(result['nodespaces'].keys()) == {ns1.uid, ns2.uid, ns3.uid}
+    assert set(result['nodespaces'].keys()) == {rootuid, ns1.uid, ns2.uid, ns3.uid}
     result = micropsi.get_nodes(test_nodenet, [None])
     assert result['nodes'] == {}
     assert set(result['nodespaces'].keys()) == {ns1.uid, ns2.uid}

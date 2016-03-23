@@ -208,7 +208,7 @@ class DictNodenet(Nodenet):
         """
         Returns a dict with contents for the given nodespaces
         """
-        data = self.metadata.copy()
+        data = {}
         data['nodes'] = {}
         data['nodespaces'] = {}
         followupnodes = []

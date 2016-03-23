@@ -258,10 +258,6 @@ def test_get_calculation_state(app, test_nodenet, test_world, node):
     assert data['current_world_step'] > 0
     assert data['calculation_running']
 
-    assert 'nodenet' in data
-    assert data['nodenet']['current_step'] > 0
-    assert data['nodenet']['is_active']
-
     assert 'servertime' in data['monitors']['logs']
     assert 'logs' in data['monitors']['logs']
     assert len(data['monitors']['monitors'][monitor_uid]['values']) == 2
@@ -362,6 +358,7 @@ def test_merge_nodenet(app, test_nodenet, engine, node):
     assert_success(response)
     response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % uid)
     assert len(list(response.json_body['data']['nodes'].keys())) == 1
+    response = app.get_json('/rpc/get_nodenet_metadata(nodenet_uid="%s")' % uid)
     assert response.json_body['data']['name'] == 'ImporterNet'
     response = app.get_json('/rpc/delete_nodenet(nodenet_uid="%s")' % uid)
 

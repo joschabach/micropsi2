@@ -20,12 +20,15 @@ def test_generate_uid(app):
     assert re.match('[a-f0-9]+', response.json_body['data']) is not None
 
 
-def test_create_auth_token(app):
+def test_create_and_invalidate_auth_token(app):
     response = app.get_json('/rpc/create_auth_token(user="Pytest User",password="test")')
     assert_success(response)
     from micropsi_server.micropsi_app import usermanager
     token = response.json_body['data']
     assert token in usermanager.users['Pytest User']['sessions']
+    response = app.get_json('/rpc/invalidate_auth_token(token="%s")' % token)
+    assert_success(response)
+    assert token not in usermanager.users['Pytest User']['sessions']
 
 
 def test_get_nodenet_metadata(app, test_nodenet, node):

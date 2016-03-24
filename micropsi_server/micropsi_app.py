@@ -763,6 +763,11 @@ def create_auth_token(user, password, remember=True):
         else:
             return False, "User unknown"
 
+@rpc("invalidate_auth_token")
+def invalidate_auth_token(token):
+    usermanager.end_session(token)
+    return True
+
 
 @rpc("get_available_nodenets")
 def get_available_nodenets(user_id=None):

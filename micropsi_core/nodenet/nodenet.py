@@ -390,7 +390,7 @@ class Nodenet(metaclass=ABCMeta):
         """
         pass  # pragma: no cover
 
-    def get_activation_data(self, nodespace_uid=None, rounded=1):
+    def get_activation_data(self, nodespace_uids=[], rounded=1):
         """
         Returns a dict of uids to lists of activation values.
         Callers need to know the types of nodes that these activations belong to.
@@ -517,7 +517,7 @@ class Nodenet(metaclass=ABCMeta):
         pass  # pragma: no cover
 
     @abstractmethod
-    def has_nodespace_changes(self, nodespace_uid, since_step):
+    def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
         """
         Returns true, if the structure of the nodespace has changed since the given step, false otherwise
         Structural changes include everything besides activation

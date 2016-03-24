@@ -385,12 +385,15 @@ class DictNodenet(Nodenet):
                     data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
         return data
 
-    def get_activation_data(self, nodespace_uid=None, rounded=1):
+    def get_activation_data(self, nodespace_uids=None, rounded=1):
         activations = {}
-        if nodespace_uid is None:
+
+        node_ids = []
+        if nodespace_uids == []:
             node_ids = self._nodes.keys()
         else:
-            node_ids = self.get_nodespace(nodespace_uid).get_known_ids("nodes")
+            for nsuid in nodespace_uids:
+                node_ids.extend(self.get_nodespace(nsuid).get_known_ids("nodes"))
 
         for uid in node_ids:
             node = self.get_node(uid)
@@ -820,8 +823,14 @@ class DictNodenet(Nodenet):
         from micropsi_core.nodenet import gatefunctions
         return sorted([name for name, func in getmembers(gatefunctions, isfunction)])
 
-    def has_nodespace_changes(self, nodespace_uid, since_step):
-        return self.get_nodespace(nodespace_uid).contents_last_changed >= since_step
+    def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
+        if nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+
+        for nodespace_uid in nodespace_uids:
+            if self.get_nodespace(nodespace_uid).contents_last_changed >= since_step:
+                return True
+        return False
 
     def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         result = {
@@ -831,9 +840,7 @@ class DictNodenet(Nodenet):
             'nodespaces_deleted': []
         }
 
-        if nodespace_uids is None:
-            nodespace_uids = [self.get_nodespace(None).uid]
-        elif nodespace_uids == []:
+        if nodespace_uids == []:
             nodespace_uids = self.get_nodespace_uids()
         else:
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]

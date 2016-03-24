@@ -338,12 +338,12 @@ def get_nodenet_metadata(nodenet_uid):
     return data
 
 
-def get_nodenet_activation_data(nodenet_uid, nodespace=None, last_call_step=-1):
+def get_nodenet_activation_data(nodenet_uid, nodespaces=[], last_call_step=-1):
     nodenet = get_nodenet(nodenet_uid)
     with nodenet.netlock:
         data = {
-            'activations': nodenet.get_activation_data(nodespace, rounded=1),
-            'has_changes': nodenet.has_nodespace_changes(nodespace, last_call_step)
+            'activations': nodenet.get_activation_data(nodespaces, rounded=1),
+            'has_changes': nodenet.has_nodespace_changes(nodespaces, last_call_step)
         }
     return data
 
@@ -377,13 +377,13 @@ def get_calculation_state(nodenet_uid, nodenet=None, nodenet_diff=None, world=No
                 nodenet = {}
             data['nodenet'] = get_nodes(nodenet_uid, nodespaces=nodenet.get('nodespaces', []), include_links=nodenet.get('include_links', True))
         if nodenet_diff is not None:
-            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespace=nodenet_diff.get('nodespace'))
+            activations = get_nodenet_activation_data(nodenet_uid, last_call_step=nodenet_diff['step'], nodespaces=nodenet_diff.get('nodespaces', []))
             data['nodenet_diff'] = {
                 'activations': activations['activations'],
                 'modulators': nodenet_obj.construct_modulators_dict()
             }
             if activations['has_changes']:
-                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespace'), nodenet_diff['step'])
+                data['nodenet_diff']['changes'] = nodenet_obj.get_nodespace_changes(nodenet_diff.get('nodespaces', []), nodenet_diff['step'])
         if nodenet_obj.user_prompt:
             data['user_prompt'] = nodenet_obj.user_prompt
             nodenet_obj.user_prompt = None
@@ -806,11 +806,11 @@ def clone_nodes(nodenet_uid, node_uids, clonemode, nodespace=None, offset=[50, 5
         return False, "Could not clone nodes. See log for details."
 
 
-def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
+def get_nodespace_changes(nodenet_uid, ndoespaces, since_step):
     """ Returns a dict of changes that happened in the nodenet in the given nodespace since the given step.
     Contains uids of deleted nodes and nodespaces and the datadicts for changed or added nodes and nodespaces
     """
-    return get_nodenet(nodenet_uid).get_nodespace_changes([nodespace_uid], since_step)
+    return get_nodenet(nodenet_uid).get_nodespace_changes(ndoespaces, since_step)
 
 
 def __pythonify(name):

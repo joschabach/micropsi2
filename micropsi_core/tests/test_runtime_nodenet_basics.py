@@ -103,7 +103,7 @@ def test_user_notification(test_nodenet, node):
     api = micropsi.nodenets[test_nodenet].netapi
     node_obj = api.get_node(node)
     api.notify_user(node_obj, "Hello there")
-    result, data = micropsi.get_calculation_state(test_nodenet, nodenet={'nodespace': 'Root'})
+    result, data = micropsi.get_calculation_state(test_nodenet, nodenet={'nodespaces': [None]})
     assert 'user_prompt' in data
     assert data['user_prompt']['node']['uid'] == node
     assert data['user_prompt']['msg'] == "Hello there"
@@ -404,7 +404,7 @@ def test_multiple_nodenet_interference(engine, resourcepath):
 def test_get_nodespace_changes(fixed_nodenet):
     net = micropsi.nodenets[fixed_nodenet]
     net.step()
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 0)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 0)
     assert set(result['nodes_dirty'].keys()) == set(net.get_node_uids())
     assert result['nodes_deleted'] == []
     assert result['nodespaces_dirty'] == {}
@@ -418,9 +418,9 @@ def test_get_nodespace_changes(fixed_nodenet):
     net.netapi.link(newnode, 'gen', nodes['B1'], 'gen')
     newspace = net.netapi.create_nodespace(None, "nodespace")
     net.step()
-    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 1)
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, [None], 1)
     assert test['has_changes']
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     assert nodes['A1'].uid in result['nodes_dirty']
     assert nodes['A2'].uid in result['nodes_dirty']
@@ -431,7 +431,7 @@ def test_get_nodespace_changes(fixed_nodenet):
     assert len(result['nodes_dirty'].keys()) == 4
     assert len(result['nodespaces_dirty'].keys()) == 1
     net.step()
-    test = micropsi.get_nodenet_activation_data(fixed_nodenet, None, 2)
+    test = micropsi.get_nodenet_activation_data(fixed_nodenet, [None], 2)
     assert not test['has_changes']
 
 
@@ -443,9 +443,9 @@ def test_get_nodespace_changes_cycles(fixed_nodenet):
         nodes[n.name] = n
     net.netapi.delete_node(nodes['B2'])
     net.step()
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid in result['nodes_deleted']
     for i in range(101):
         net.step()
-    result = micropsi.get_nodespace_changes(fixed_nodenet, None, 1)
+    result = micropsi.get_nodespace_changes(fixed_nodenet, [None], 1)
     assert nodes['B2'].uid not in result['nodes_deleted']

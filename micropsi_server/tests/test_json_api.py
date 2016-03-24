@@ -241,7 +241,7 @@ def test_get_calculation_state(app, test_nodenet, test_world, node):
     response = app.post_json('/rpc/get_calculation_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet': {
-            'nodespace': None,
+            'nodespaces': [None],
             'step': -1,
         },
         'monitors': {
@@ -758,7 +758,7 @@ def test_get_nodespace_list(app, test_nodenet, node):
 def test_get_nodespace_activations(app, test_nodenet, node):
     response = app.post_json('/rpc/get_nodespace_activations', params={
         'nodenet_uid': test_nodenet,
-        'nodespace': None,
+        'nodespaces': [None],
         'last_call_step': -1
     })
     assert_success(response)
@@ -862,7 +862,7 @@ def test_delete_nodespace(app, test_nodenet, node):
     uid = response.json_body['data']
     response = app.post_json('/rpc/delete_nodespace', params={
         'nodenet_uid': test_nodenet,
-        'nodespace_uid': uid
+        'nodespace': uid
     })
     assert_success(response)
     response = app.get_json('/rpc/get_nodes(nodenet_uid="%s")' % test_nodenet)
@@ -1435,7 +1435,7 @@ def test_get_state_diff(app, test_nodenet, node):
     response = app.post_json('/rpc/get_calculation_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet_diff': {
-            'nodespace': None,
+            'nodespaces': [None],
             'step': 0,
         }
     })
@@ -1448,7 +1448,7 @@ def test_get_state_diff(app, test_nodenet, node):
     response = app.post_json('/rpc/get_calculation_state', params={
         'nodenet_uid': test_nodenet,
         'nodenet_diff': {
-            'nodespace': None,
+            'nodespaces': [None],
             'step': 1,
         }
     })

@@ -1046,13 +1046,13 @@ def get_nodespace_list(nodenet_uid):
 
 
 @rpc("get_nodespace_activations")
-def get_nodespace_activations(nodenet_uid, nodespace, last_call_step=-1):
-    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespace, last_call_step)
+def get_nodespace_activations(nodenet_uid, nodespaces, last_call_step=-1):
+    return True, runtime.get_nodenet_activation_data(nodenet_uid, nodespaces, last_call_step)
 
 
 @rpc("get_nodespace_changes")
-def get_nodespace_changes(nodenet_uid, nodespace_uid, since_step):
-    return runtime.get_nodespace_changes(nodenet_uid, nodespace_uid, since_step)
+def get_nodespace_changes(nodenet_uid, nodespaces, since_step):
+    return runtime.get_nodespace_changes(nodenet_uid, nodespaces, since_step)
 
 
 @rpc("get_node")
@@ -1091,8 +1091,8 @@ def delete_nodes(nodenet_uid, node_uids):
 
 
 @rpc("delete_nodespace", permission_required="manage nodenets")
-def delete_nodespace(nodenet_uid, nodespace_uid):
-    return runtime.delete_nodespace(nodenet_uid, nodespace_uid)
+def delete_nodespace(nodenet_uid, nodespace):
+    return runtime.delete_nodespace(nodenet_uid, nodespace)
 
 
 @rpc("align_nodes", permission_required="manage nodenets")

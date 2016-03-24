@@ -3219,7 +3219,7 @@ function deleteNodeHandler(nodeUid) {
     function deleteNodespaceOnServer(nodespace_uid){
         var params = {
             nodenet_uid: currentNodenet,
-            nodespace_uid: nodespace_uid
+            nodespace: nodespace_uid
         }
         api.call("delete_nodespace", params,
             success=function(data){

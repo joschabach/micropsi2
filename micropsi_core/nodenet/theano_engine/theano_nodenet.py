@@ -1135,11 +1135,11 @@ class TheanoNodenet(Nodenet):
 
         return data
 
-    def get_activation_data(self, nodespace_uid=None, rounded=1):
+    def get_activation_data(self, nodespace_uids=[], rounded=1):
         if rounded is not None:
             mult = math.pow(10, rounded)
         activations = {}
-        if nodespace_uid is None:
+        if nodespace_uids == []:
             for partition in self.partitions.values():
                 ids = np.nonzero(partition.allocated_nodes)[0]
                 for id in ids:
@@ -1150,16 +1150,18 @@ class TheanoNodenet(Nodenet):
                     else:
                         activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
         else:
-            partition = self.get_nodespace(nodespace_uid).partition
-            nodespace_id = nodespace_from_id(nodespace_uid)
-            ids = np.where(partition.allocated_node_parents == nodespace_id)[0]
-            for id in ids:
-                elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
-                offset = partition.allocated_node_offsets[id]
-                if rounded is None:
-                    activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
-                else:
-                    activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
+            for nsuid in nodespace_uids:
+                nodespace = self.get_nodespace(nsuid)
+                partition = self.get_nodespace(nodespace.uid).partition
+                nodespace_id = nodespace_from_id(nodespace.uid)
+                ids = np.where(partition.allocated_node_parents == nodespace_id)[0]
+                for id in ids:
+                    elements = get_elements_per_type(partition.allocated_nodes[id], self.native_modules)
+                    offset = partition.allocated_node_offsets[id]
+                    if rounded is None:
+                        activations[node_to_id(id, partition.pid)] = [n.item() for n in partition.a.get_value()[offset:offset+elements]]
+                    else:
+                        activations[node_to_id(id, partition.pid)] = [n.item() / mult for n in np.rint(partition.a.get_value()[offset:offset+elements]*mult)]
         return activations
 
     def get_nodetype(self, type):
@@ -1518,12 +1520,12 @@ class TheanoNodenet(Nodenet):
 
         self.proxycache.clear()
 
-        #uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
-        #uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
+        # uids_to_invalidate = self.get_node_uids(nodespace_from_uid, group_from)
+        # uids_to_invalidate.extend(self.get_node_uids(nodespace_to_uid, group_to))
 
-        #for uid in uids_to_invalidate:
-        #    if uid in self.proxycache:
-        #        del self.proxycache[uid]
+        # for uid in uids_to_invalidate:
+        #     if uid in self.proxycache:
+        #         del self.proxycache[uid]
 
     def get_available_gatefunctions(self):
         return ["identity", "absolute", "sigmoid", "tanh", "rect", "one_over_x"]
@@ -1531,10 +1533,16 @@ class TheanoNodenet(Nodenet):
     def add_slot_monitor(self, node_uid, slot, **_):
         raise RuntimeError("Theano engine does not support slot monitors")
 
-    def has_nodespace_changes(self, nodespace_uid, since_step):
-        partition = self.get_partition(nodespace_uid)
-        nodespace = self.get_nodespace(nodespace_uid)
-        return partition.has_nodespace_changes(nodespace.uid, since_step)
+    def has_nodespace_changes(self, nodespace_uids=[], since_step=0):
+        if nodespace_uids == []:
+            nodespace_uids = self.get_nodespace_uids()
+
+        for nodespace_uid in nodespace_uids:
+            nodespace = self.get_nodespace(nodespace_uid)
+            partition = self.get_partition(nodespace.uid)
+            if partition.has_nodespace_changes(nodespace.uid, since_step):
+                return True
+        return False
 
     def get_nodespace_changes(self, nodespace_uids=[], since_step=0):
         result = {
@@ -1544,16 +1552,12 @@ class TheanoNodenet(Nodenet):
             'nodespaces_deleted': []
         }
 
-        if nodespace_uids is None:
-            nodespace_uids = [self.get_nodespace(None).uid]
-        elif nodespace_uids == []:
+        if nodespace_uids == []:
             nodespace_uids = self.get_nodespace_uids()
-        else:
-            nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
         for nsuid in nodespace_uids:
-            partition = self.get_partition(nsuid)
             nodespace = self.get_nodespace(nsuid)
+            partition = self.get_partition(nodespace.uid)
             for i in range(since_step, self.current_step + 1):
                 if i in self.deleted_items:
                     result['nodespaces_deleted'].extend(self.deleted_items[i].get('nodespaces_deleted', []))

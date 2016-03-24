@@ -760,7 +760,7 @@ def test_autoalign_updates_last_changed(fixed_nodenet):
     net.step()
     net.step()
     netapi.autoalign_nodespace(netapi.get_nodespace(None).uid)
-    changes = net.get_nodespace_changes(None, 2)
+    changes = net.get_nodespace_changes([None], 2)
     for uid in net.get_node_uids():
         if net.get_node(uid).position != [12, 13, 11]:
             assert uid in changes['nodes_dirty']

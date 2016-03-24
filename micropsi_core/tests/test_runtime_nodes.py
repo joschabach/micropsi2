@@ -55,7 +55,7 @@ def test_position_always_3d(test_nodenet):
 def test_get_nodenet_activation_data(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     uid = nodes['a']
-    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, None)
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [None])
     assert activation_data["activations"][uid][0] == 0
     assert activation_data["activations"][uid][1] == 0
     assert activation_data["activations"][uid][2] == 0
@@ -66,7 +66,7 @@ def test_get_nodenet_activation_data(test_nodenet):
 
     micropsi.set_node_activation(test_nodenet, nodes['a'], 0.34556865)
 
-    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, None)
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [None])
     assert activation_data["activations"][uid][0] == 0.3
 
 
@@ -74,7 +74,7 @@ def test_get_nodenet_activation_data_for_nodespace(test_nodenet):
     nodes = prepare_nodenet(test_nodenet)
     uid = nodes['a']
     nodespace = micropsi.nodenets[test_nodenet].get_nodespace_uids()[0]
-    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, nodespace)
+    activation_data = micropsi.get_nodenet_activation_data(test_nodenet, [nodespace])
     assert activation_data["activations"][uid][0] == 0
 
 

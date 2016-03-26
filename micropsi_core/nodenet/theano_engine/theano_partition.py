@@ -1865,12 +1865,6 @@ class TheanoPartition():
 
     def get_node_data(self, ids=None, nodespace_ids=None, complete=False, include_links=True, include_followupnodes=True):
 
-        partition_has_outlinks = False
-        for partition_to_spid, to_partition in self.nodenet.partitions.items():
-            if self.spid in to_partition.inlinks:
-                partition_has_outlinks = True
-                break
-
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
         g_amplification_array = self.g_amplification.get_value(borrow=True)
@@ -1932,66 +1926,6 @@ class TheanoPartition():
                     "name": "default",
                     "uid": "default",
                     "activation": float(a[element])}}
-
-                if include_links:
-                    gate_links = []
-                    gatecolumn = w[:, element]
-                    links_indices = np.nonzero(gatecolumn)[0]
-                    for index in links_indices:
-                        target_id = self.allocated_elements_to_nodes[index]
-                        target_type = self.allocated_nodes[target_id]
-                        target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
-                        target_slot_numerical = index - self.allocated_node_offsets[target_id]
-                        target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-                        gate_links.append({
-                            "weight": float(w[index, element]),
-                            "certainty": 1,
-                            "target_slot_name": target_slot_type,
-                            "target_node_uid": node_to_id(target_id, self.pid)
-                        })
-                        followupnodes.add(node_to_id(target_id, self.pid))
-
-                    if partition_has_outlinks:
-                        # does any of the inlinks in any partition orginate from me?
-                        for partition_to_spid, to_partition in self.nodenet.partitions.items():
-                            if self.spid in to_partition.inlinks:
-                                inlinks = to_partition.inlinks[self.spid]
-                                from_elements = inlinks[0].get_value(borrow=True)
-                                to_elements = inlinks[1].get_value(borrow=True)
-                                weights = inlinks[2].get_value(borrow=True)
-                                if element in from_elements:
-                                    element_index = np.where(from_elements == element)[0][0]
-                                    gatecolumn = weights[:, element_index]
-                                    links_indices = np.nonzero(gatecolumn)[0]
-                                    for link_index in links_indices:
-                                        target_id = to_partition.allocated_elements_to_nodes[to_elements[link_index]]
-                                        target_type = to_partition.allocated_nodes[target_id]
-                                        target_slot_numerical = to_elements[link_index] - to_partition.allocated_node_offsets[target_id]
-                                        target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
-                                        target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
-                                        gate_links.append({
-                                            "weight": float(weights[link_index, element_index]),
-                                            "certainty": 1,
-                                            "target_slot_name": target_slot_type,
-                                            "target_node_uid": node_to_id(target_id, to_partition.pid)
-                                        })
-                                        followupnodes.add(node_to_id(target_id, to_partition.pid))
-                    if include_followupnodes:
-                        # check for followupnodes in other partitions
-                        for from_partition, inlinks in self.inlinks.items():
-                            from_partition = self.nodenet.partitions[from_partition]
-                            from_elements = inlinks[0].get_value(borrow=True)
-                            to_elements = inlinks[1].get_value(borrow=True)
-                            weights = inlinks[2].get_value(borrow=True)
-                            if element in to_elements:
-                                element_index = np.where(to_elements == element)[0][0]
-                                link_indices = np.nonzero(weights[element_index, :])[0]
-                                for link_index in link_indices:
-                                    source_id = from_partition.allocated_elements_to_nodes[from_elements[link_index]]
-                                    followupnodes.add(node_to_id(source_id, from_partition.pid))
-
-                    if len(gate_links) > 0:
-                        links[gate] = gate_links
 
             state = None
             if uid in self.native_module_instances:
@@ -2057,9 +1991,94 @@ class TheanoPartition():
             if complete:
                 data['index'] = id
             if include_links:
-                data['links'] = links
+                data['links'] = {}
 
             nodes[uid] = data
+
+        # fill in links if requested
+        if include_links:
+            slots, gates = np.nonzero(w)
+            for index, gate_index in enumerate(gates):
+                source_id = self.allocated_elements_to_nodes[gate_index]
+                source_uid = node_to_id(source_id, self.pid)
+                if source_uid not in nodes:
+                    continue
+
+                source_type = self.allocated_nodes[source_id]
+                source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
+                source_gate_numerical = gate_index - self.allocated_node_offsets[source_id]
+                source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+
+                slot_index = slots[index]
+                target_id = self.allocated_elements_to_nodes[slot_index]
+                target_uid = node_to_id(target_id, self.pid)
+                target_type = self.allocated_nodes[target_id]
+                target_nodetype = self.nodenet.get_nodetype(get_string_node_type(target_type, self.nodenet.native_modules))
+                target_slot_numerical = slot_index - self.allocated_node_offsets[target_id]
+                target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                linkdict = {"weight": float(w[slot_index, gate_index]),
+                            "certainty": 1,
+                            "target_slot_name": target_slot_type,
+                            "target_node_uid": target_uid}
+                if source_gate_type not in nodes[source_uid]["links"]:
+                    nodes[source_uid]["links"][source_gate_type] = []
+                nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                followupnodes.add(target_uid)
+
+            # outgoing cross-partition links
+            for partition_to_spid, to_partition in self.nodenet.partitions.items():
+                if self.spid in to_partition.inlinks:
+                    inlinks = to_partition.inlinks[self.spid]
+                    from_elements = inlinks[0].get_value(borrow=True)
+                    to_elements = inlinks[1].get_value(borrow=True)
+                    w = inlinks[2].get_value(borrow=True)
+                    slots, gates = np.nonzero(w)
+                    for index, gate_index in enumerate(gates):
+                        source_id = self.allocated_elements_to_nodes[from_elements[gate_index]]
+                        source_uid = node_to_id(source_id, self.pid)
+                        if source_uid not in nodes:
+                            continue
+
+                        source_type = self.allocated_nodes[source_id]
+                        source_nodetype = self.nodenet.get_nodetype(get_string_node_type(source_type, self.nodenet.native_modules))
+                        source_gate_numerical = from_elements[gate_index] - self.allocated_node_offsets[source_id]
+                        source_gate_type = get_string_gate_type(source_gate_numerical, source_nodetype)
+
+                        slot_index = slots[index]
+                        target_id = to_partition.allocated_elements_to_nodes[to_elements[slot_index]]
+                        target_uid = node_to_id(target_id, to_partition.pid)
+                        target_type = to_partition.allocated_nodes[target_id]
+                        target_nodetype = to_partition.nodenet.get_nodetype(get_string_node_type(target_type, to_partition.nodenet.native_modules))
+                        target_slot_numerical = to_elements[slot_index] - to_partition.allocated_node_offsets[target_id]
+                        target_slot_type = get_string_slot_type(target_slot_numerical, target_nodetype)
+                        linkdict = {"weight": float(w[slot_index, gate_index]),
+                                    "certainty": 1,
+                                    "target_slot_name": target_slot_type,
+                                    "target_node_uid": target_uid}
+                        if source_gate_type not in nodes[source_uid]["links"]:
+                            nodes[source_uid]["links"][source_gate_type] = []
+                        nodes[source_uid]["links"][source_gate_type].append(linkdict)
+                        followupnodes.add(target_uid)
+
+            # incoming cross-partition links need to be checked for followup nodes in the other partition
+            # even though we're not interested in the links themselves as they will be delivered with the nodes
+            # in the other partition.
+            # having to deliver followupnodes for links that aren't even our business is really annoying.
+            for from_partition_id, inlinks in self.inlinks.items():
+                from_partition = self.nodenet.partitions[from_partition_id]
+                from_elements = inlinks[0].get_value(borrow=True)
+                to_elements = inlinks[1].get_value(borrow=True)
+                w = inlinks[2].get_value(borrow=True)
+                slots, gates = np.nonzero(w)
+                for index, gate_index in enumerate(gates):
+                    source_id = from_partition.allocated_elements_to_nodes[from_elements[gate_index]]
+                    source_uid = node_to_id(source_id, from_partition.pid)
+
+                    slot_index = slots[index]
+                    target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
+                    target_uid = node_to_id(target_id, self.pid)
+                    if target_uid in nodes:
+                        followupnodes.add(source_uid)
 
         if include_followupnodes:
             for uid in followupnodes:

@@ -1197,6 +1197,7 @@ def run_recipe(nodenet_uid, name, parameters):
     if name in custom_recipes:
         func = custom_recipes[name]['function']
         if cfg['micropsi2'].get('profile_runner'):
+            import cProfile
             profiler = cProfile.Profile()
             profiler.enable()
         result = {'reload': True}
@@ -1205,6 +1206,8 @@ def run_recipe(nodenet_uid, name, parameters):
             result.update(ret)
         if cfg['micropsi2'].get('profile_runner'):
             profiler.disable()
+            import pstats
+            import io
             s = io.StringIO()
             sortby = 'cumtime'
             ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)

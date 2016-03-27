@@ -1863,7 +1863,7 @@ class TheanoPartition():
         nodespace_ids = nodespace_ids[np.where(self.allocated_nodespaces[nodespace_ids] == ns_id)[0]]
         return node_ids, nodespace_ids
 
-    def get_node_data(self, ids=None, ndoespaces_by_partition=None, complete=False, include_links=True, include_followupnodes=True):
+    def get_node_data(self, ids=None, nodespaces_by_partition=None, complete=False, include_links=True, include_followupnodes=True):
 
         a = self.a.get_value(borrow=True)
         g_threshold_array = self.g_threshold.get_value(borrow=True)
@@ -1874,8 +1874,8 @@ class TheanoPartition():
         g_function_selector = self.g_function_selector.get_value(borrow=True)
         w = self.w.get_value(borrow=True)
 
-        if ndoespaces_by_partition is not None:
-            node_ids = np.where(self.allocated_node_parents == ndoespaces_by_partition[self.spid])[0]
+        if nodespaces_by_partition is not None:
+            node_ids = np.where(self.allocated_node_parents == nodespaces_by_partition[self.spid])[0]
         else:
             node_ids = np.nonzero(self.allocated_nodes)[0]
 
@@ -2089,7 +2089,7 @@ class TheanoPartition():
                         links = data[uid]['links'][gate]
                         for idx, l in enumerate(links):
                             p = self.nodenet.get_partition(l['target_node_uid'])
-                            if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in ndoespaces_by_partition.get(p.spid, []):
+                            if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in nodespaces_by_partition.get(p.spid, []):
                                 del links[idx]
                         if len(data[uid]['links'][gate]) == 0:
                             del data[uid]['links'][gate]

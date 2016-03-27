@@ -317,7 +317,7 @@ class TheanoNodenet(Nodenet):
 
             for spid in nodespaces_by_partition:
                 if nodespaces_by_partition[spid]:
-                    data['nodes'].update(self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition, include_links=include_links))
+                    data['nodes'].update(self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links))
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)

@@ -212,11 +212,13 @@ class DictNodenet(Nodenet):
         data['nodes'] = {}
         data['nodespaces'] = {}
         followupnodes = []
+        fetch_all = False
 
         if nodespace_uids == []:
             nodespace_uids = self.get_nodespace_uids()
             root = self.get_nodespace(None)
             data['nodespaces'][root.uid] = root.get_data()
+            fetch_all = True
         else:
             nodespace_uids = [self.get_nodespace(uid).uid for uid in nodespace_uids]
 
@@ -226,12 +228,22 @@ class DictNodenet(Nodenet):
             for uid in nodespace.get_known_ids(entitytype="nodes"):
                 node = self.get_node(uid)
                 data['nodes'][uid] = node.get_data(include_links=include_links)
-                if include_links:
+                if include_links and not fetch_all:
                     followupnodes.extend(node.get_associated_node_uids())
+
         if include_links:
             for uid in set(followupnodes):
                 if uid not in data['nodes']:
-                    data['nodes'][uid] = self.get_node(uid).get_data(include_links=include_links)
+                    node = self.get_node(uid).get_data(include_links=True)
+                    for gate in list(node['links'].keys()):
+                        links = node['links'][gate]
+                        for idx, l in enumerate(links):
+                            if self._nodes[l['target_node_uid']].parent_nodespace not in nodespace_uids:
+                                del links[idx]
+                        if len(node['links'][gate]) == 0:
+                            del node['links'][gate]
+                    data['nodes'][uid] = node
+
         return data
 
     def save(self, filename):

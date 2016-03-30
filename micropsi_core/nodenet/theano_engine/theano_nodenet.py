@@ -315,20 +315,30 @@ class TheanoNodenet(Nodenet):
                 data['nodespaces'].update(self.construct_nodespaces_dict(nodespace_uid))
                 nodespaces_by_partition[self.get_partition(nodespace_uid).spid].append(nodespace_from_id(nodespace_uid))
 
+            followupuids = []
             for spid in nodespaces_by_partition:
                 if nodespaces_by_partition[spid]:
-                    nodes, followupnodes = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
+                    nodes, followups = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
                     data['nodes'].update(nodes)
-                    for uid in followupnodes:
-                        for gate in list(followupnodes[uid]['links'].keys()):
-                            links = followupnodes[uid]['links'][gate]
+                    followupuids.extend(followups)
+
+            followups_by_partition = dict((spid, []) for spid in self.partitions)
+            for uid in followupuids:
+                followups_by_partition[self.get_partition(uid).spid].append(node_from_id(uid))
+
+            for spid in followups_by_partition:
+                if followups_by_partition[spid]:
+                    nodes, _ = self.partitions[spid].get_node_data(ids=followups_by_partition[spid])
+                    for uid in nodes:
+                        for gate in list(nodes[uid]['links'].keys()):
+                            links = nodes[uid]['links'][gate]
                             for idx, l in enumerate(links):
                                 p = self.get_partition(l['target_node_uid'])
                                 if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in nodespaces_by_partition.get(p.spid, []):
                                     del links[idx]
-                            if len(followupnodes[uid]['links'][gate]) == 0:
-                                del followupnodes[uid]['links'][gate]
-                    data['nodes'].update(followupnodes)
+                            if len(nodes[uid]['links'][gate]) == 0:
+                                del nodes[uid]['links'][gate]
+                    data['nodes'].update(nodes)
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)

@@ -2080,16 +2080,7 @@ class TheanoPartition():
                     if target_uid in nodes:
                         followupuids.add(source_uid)
 
-
-        followupnodes = {}
-        if include_followupnodes:
-            for uid in followupuids:
-                if uid not in nodes:
-                    node_id = node_from_id(uid)
-                    node_data, _ = self.nodenet.get_partition(uid).get_node_data(ids=[node_id], include_links=True, include_followupnodes=False)
-                    followupnodes.update(node_data)
-
-        return nodes, followupnodes
+        return nodes, followupuids
 
     def integrity_check(self):
 

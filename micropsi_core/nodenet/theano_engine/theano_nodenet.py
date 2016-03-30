@@ -317,12 +317,24 @@ class TheanoNodenet(Nodenet):
 
             for spid in nodespaces_by_partition:
                 if nodespaces_by_partition[spid]:
-                    data['nodes'].update(self.partitions[spid].get_node_data(nodespaces_by_partition=nodespaces_by_partition, include_links=include_links))
+                    nodes, followupnodes = self.partitions[spid].get_node_data(nodespace_ids=nodespaces_by_partition[spid], include_links=include_links)
+                    data['nodes'].update(nodes)
+                    for uid in followupnodes:
+                        for gate in list(followupnodes[uid]['links'].keys()):
+                            links = followupnodes[uid]['links'][gate]
+                            for idx, l in enumerate(links):
+                                p = self.get_partition(l['target_node_uid'])
+                                if p.allocated_node_parents[node_from_id(l['target_node_uid'])] not in nodespaces_by_partition.get(p.spid, []):
+                                    del links[idx]
+                            if len(followupnodes[uid]['links'][gate]) == 0:
+                                del followupnodes[uid]['links'][gate]
+                    data['nodes'].update(followupnodes)
 
         else:
             data['nodespaces'] = self.construct_nodespaces_dict(None, transitive=True)
             for partition in self.partitions.values():
-                data['nodes'].update(partition.get_node_data(include_links=include_links, include_followupnodes=False))
+                nodes, _ = partition.get_node_data(include_links=include_links, include_followupnodes=False)
+                data['nodes'].update(nodes)
 
         return data
 

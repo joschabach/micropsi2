@@ -283,6 +283,11 @@ def load_nodenet(nodenet_uid):
 
             if world_uid:
                 result, worldadapter_instance = worlds[world_uid].register_nodenet(worldadapter, nodenet_uid)
+                if not result:
+                    logging.getLogger('system').warn(worldadapter_instance)
+                    worldadapter_instance = None
+                    worldadapter = None
+                    world_uid = None
 
             engine = data.get('engine') or 'dict_engine'
 

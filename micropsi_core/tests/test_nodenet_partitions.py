@@ -281,15 +281,21 @@ def test_partition_get_node_data(test_nodenet):
         netapi.link(nodes[i], 'gen', nodes[5], 'gen', weight=((i + 2) / 10))
     netapi.link(nodes[9], 'gen', nodes[4], 'gen', 0.375)
 
+    third_ns = netapi.create_nodespace(None, "third")
+    third = netapi.create_node("Register", third_ns.uid, "third")
+    netapi.link(nodes[4], 'gen', third, 'gen')
+
     node_data = nodenet.get_nodes(nodespace_uids=[None])['nodes']
-    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid, register.uid] + [nodes[9].uid, nodes[5].uid])
+    assert set(node_data.keys()) == set([n.uid for n in nodes[:5]] + [source.uid, register.uid, third.uid] + [nodes[9].uid, nodes[5].uid])
 
     node_data = nodenet.get_nodes()['nodes']
     n1, n3, n4, n9 = nodes[1], nodes[3], nodes[4], nodes[9]
     assert round(node_data[n1.uid]['links']['gen'][0]['weight'], 3) == 0.3
     assert round(node_data[n3.uid]['links']['gen'][0]['weight'], 3) == 0.5
     assert round(node_data[n9.uid]['links']['gen'][0]['weight'], 3) == 0.375
-    assert node_data[n4.uid]['links'] == {}
+    # assert node_data[n4.uid]['links'] == {}
 
     node_data = nodenet.get_nodes(nodespace_uids=[nodespace.uid])['nodes']
     assert len(node_data.keys()) == 12
+    assert node_data[n4.uid]['links'] == {}
+    assert third.uid not in node_data

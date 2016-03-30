@@ -1883,7 +1883,7 @@ class TheanoPartition():
             node_ids = np.intersect1d(node_ids, ids)
 
         nodes = {}
-        followupnodes = set()
+        followupuids = set()
         for id in node_ids:
             uid = node_to_id(id, self.pid)
             strtype = get_string_node_type(self.allocated_nodes[id], self.nodenet.native_modules)
@@ -2023,7 +2023,7 @@ class TheanoPartition():
                 if source_gate_type not in nodes[source_uid]["links"]:
                     nodes[source_uid]["links"][source_gate_type] = []
                 nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                followupnodes.add(target_uid)
+                followupuids.add(target_uid)
 
             # outgoing cross-partition links
             for partition_to_spid, to_partition in self.nodenet.partitions.items():
@@ -2058,7 +2058,7 @@ class TheanoPartition():
                         if source_gate_type not in nodes[source_uid]["links"]:
                             nodes[source_uid]["links"][source_gate_type] = []
                         nodes[source_uid]["links"][source_gate_type].append(linkdict)
-                        followupnodes.add(target_uid)
+                        followupuids.add(target_uid)
 
             # incoming cross-partition links need to be checked for followup nodes in the other partition
             # even though we're not interested in the links themselves as they will be delivered with the nodes
@@ -2078,15 +2078,18 @@ class TheanoPartition():
                     target_id = self.allocated_elements_to_nodes[to_elements[slot_index]]
                     target_uid = node_to_id(target_id, self.pid)
                     if target_uid in nodes:
-                        followupnodes.add(source_uid)
+                        followupuids.add(source_uid)
 
+
+        followupnodes = {}
         if include_followupnodes:
-            for uid in followupnodes:
+            for uid in followupuids:
                 if uid not in nodes:
                     node_id = node_from_id(uid)
-                    nodes.update(self.nodenet.get_partition(uid).get_node_data(ids=[node_id], include_links=True, include_followupnodes=False))
+                    node_data, _ = self.nodenet.get_partition(uid).get_node_data(ids=[node_id], include_links=True, include_followupnodes=False)
+                    followupnodes.update(node_data)
 
-        return nodes
+        return nodes, followupnodes
 
     def integrity_check(self):
 

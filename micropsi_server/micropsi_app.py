@@ -1244,6 +1244,10 @@ def get_agent_dashboard(nodenet_uid):
     return True, runtime.get_agent_dashboard(nodenet_uid)
 
 
+@rpc("run_netapi_command", permission_required="manage nodenets")
+def run_netapi_command(nodenet_uid, command):
+    return runtime.run_netapi_command(nodenet_uid, command)
+
 # -----------------------------------------------------------------------------------------------
 
 def main(host=None, port=None):

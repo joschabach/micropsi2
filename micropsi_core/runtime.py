@@ -54,6 +54,59 @@ native_modules = {}
 custom_recipes = {}
 custom_operations = {}
 
+netapi_consoles = {}
+
+from code import InteractiveConsole
+
+
+class FileCacher():
+    "Cache the stdout text so we can analyze it before returning it"
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.out = []
+
+    def write(self,line):
+        self.out.append(line)
+
+    def flush(self):
+        output = '\n'.join(self.out)
+        self.reset()
+        return output
+
+
+class NetapiShell(InteractiveConsole):
+    "Wrapper around Python that can filter input/output to the shell"
+    def __init__(self, netapi):
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        self.outcache = FileCacher()
+        self.errcache = FileCacher()
+        InteractiveConsole.__init__(self, locals={'netapi': netapi})
+        return
+
+    def get_output(self):
+        sys.stdout = self.outcache
+        sys.stderr = self.errcache
+
+    def return_output(self):
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+
+    def push(self,line):
+        self.get_output()
+        incomplete = InteractiveConsole.push(self,line)
+        if incomplete:
+            InteractiveConsole.push(self,'\n')
+        self.return_output()
+        err = self.errcache.flush()
+        if err and err.startswith('Traceback'):
+            parts = err.strip().split('\n')
+            return False, "%s: %s" % (parts[-3], parts[-1])
+        out = self.outcache.flush()
+        return True, out.strip()
+
 
 def add_signal_handler(handler):
     signal_handler_registry.append(handler)
@@ -316,6 +369,8 @@ def load_nodenet(nodenet_uid):
 
             nodenets[nodenet_uid].load(os.path.join(PERSISTENCY_PATH, NODENET_DIRECTORY, nodenet_uid + ".json"))
 
+            netapi_consoles[nodenet_uid] = NetapiShell(nodenets[nodenet_uid].netapi)
+
             if "settings" in data:
                 nodenets[nodenet_uid].settings = data["settings"].copy()
             else:
@@ -416,6 +471,7 @@ def unload_nodenet(nodenet_uid):
     """
     if nodenet_uid not in nodenets:
         return False
+    del netapi_consoles[nodenet_uid]
     nodenet = nodenets[nodenet_uid]
     if nodenet.world:
         worlds[nodenet.world].unregister_nodenet(nodenet.uid)
@@ -1258,6 +1314,17 @@ def get_agent_dashboard(nodenet_uid):
         data = net.get_dashboard()
         data['face'] = calc_emoexpression_parameters(net)
         return data
+
+
+def run_netapi_command(nodenet_uid, command):
+    import re
+    shell = netapi_consoles[nodenet_uid]
+    name = None
+    match = re.search("^([a-zA-Z0-9_])+ ?=", command)
+    if match:
+        name = match.group(1)
+
+    return shell.push(command)
 
 
 # --- end of API

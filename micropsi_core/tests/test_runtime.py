@@ -216,3 +216,31 @@ def test_get_nodes(test_nodenet):
     result = micropsi.get_nodes(test_nodenet, [ns1.uid])
     assert set(result['nodes'].keys()) == {n1.uid}
     assert set(result['nodespaces'].keys()) == {ns3.uid}
+
+
+def test_run_netapi_command(test_nodenet):
+    nodenet = micropsi.nodenets[test_nodenet]
+    netapi = nodenet.netapi
+    command = "foo = netapi.create_node('Pipe', None, 'foo')"
+    result, _ = micropsi.run_netapi_command(test_nodenet, command)
+    assert result
+    command = "netapi.link(foo, 'gen', foo, 'gen')"
+    result, _ = micropsi.run_netapi_command(test_nodenet, command)
+    assert result
+    nodes = netapi.get_nodes()
+    assert len(nodes) == 1
+    assert nodes[0].get_gate('gen').get_links()[0].target_node == nodes[0]
+    command = "netapi.get_node('%s')" % nodes[0].uid
+    result, node = micropsi.run_netapi_command(test_nodenet, command)
+    assert node == str(nodes[0])
+    command = "[n.name for n in netapi.get_nodes()]"
+    result, node = micropsi.run_netapi_command(test_nodenet, command)
+    assert node == "['foo']"
+    command = "netapi.create_node()"
+    result, msg = micropsi.run_netapi_command(test_nodenet, command)
+    assert not result
+    assert msg.startswith("Traceback")
+    command = "for i in range(3): netapi.create_node('Register', None, 'test%d' % i)"
+    result, msg = micropsi.run_netapi_command(test_nodenet, command)
+    assert result
+    assert len(netapi.get_nodes()) == 4

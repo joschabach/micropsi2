@@ -631,3 +631,24 @@ p.clear {
 .hint.small {
   font-size: 0.9em;
 }
+
+#console_input {
+  border-top: 0px none;
+  border-left: 0px none;
+  border-right: 0px none;
+  background: transparent;
+  box-shadow: none;
+  webkit-box-shadow: none;
+  border-radius: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  width: 50%;
+  padding-top: 4px;
+  vertical-align: middle;
+  margin: 0;
+}
+#netapi_console .code_container {
+  max-height: 180px;
+  overflow-x: scroll;
+}

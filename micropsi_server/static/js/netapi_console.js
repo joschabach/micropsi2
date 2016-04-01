@@ -70,6 +70,7 @@ $(function(){
         var code = input.val();
         if(event.keyCode == 13){
             api.call('run_netapi_command', {nodenet_uid: currentNodenet, command: code}, function(data){
+                data = data.replace(/\n+/g, '\n')
                 var hist = history.text();
                 hist += "\n" + ">>> " + code;
                 if(data){

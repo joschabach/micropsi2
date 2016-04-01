@@ -1327,6 +1327,30 @@ def run_netapi_command(nodenet_uid, command):
     return shell.push(command)
 
 
+def get_netapi_signatures(nodenet_uid):
+    import inspect
+    netapi = get_nodenet(nodenet_uid).netapi
+    methods = inspect.getmembers(netapi, inspect.ismethod)
+    data = {}
+    for name, func in methods:
+        argspec = inspect.getargspec(func)
+        arguments = argspec.args[1:]
+        defaults = argspec.defaults or []
+        params = []
+        diff = len(arguments) - len(defaults)
+        for i, arg in enumerate(arguments):
+            if i >= diff:
+                default = defaults[i - diff]
+            else:
+                default = None
+            params.append({
+                'name': arg,
+                'default': default
+            })
+        data[name] = params
+
+    return data
+
 # --- end of API
 
 def filter_native_modules(engine=None):

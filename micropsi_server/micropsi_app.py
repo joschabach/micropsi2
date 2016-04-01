@@ -1248,6 +1248,12 @@ def get_agent_dashboard(nodenet_uid):
 def run_netapi_command(nodenet_uid, command):
     return runtime.run_netapi_command(nodenet_uid, command)
 
+
+@rpc("get_netapi_signatures")
+def get_netapi_signatures(nodenet_uid):
+    return True, runtime.get_netapi_signatures(nodenet_uid)
+
+
 # -----------------------------------------------------------------------------------------------
 
 def main(host=None, port=None):

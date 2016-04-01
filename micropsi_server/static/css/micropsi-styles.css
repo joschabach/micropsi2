@@ -654,3 +654,13 @@ p.clear {
 #netapi_console .seperator{
   margin-top: -17px;
 }
+#console_autocomplete {
+  font-size: 10px;
+  max-height: 120px;
+  overflow-y: scroll;
+}
+#console_autocomplete li a.selected {
+  color: #ffffff !important;
+  text-decoration: none;
+  background-color: #0081c2 !important;
+}

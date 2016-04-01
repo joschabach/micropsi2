@@ -21,6 +21,62 @@ jQuery.fn.putCursorAtEnd = function() {
     });
 };
 
+/*! https://mths.be/startswith v0.2.0 by @mathias */
+if (!String.prototype.startsWith) {
+    (function() {
+        'use strict'; // needed to support `apply`/`call` with `undefined`/`null`
+        var defineProperty = (function() {
+            // IE 8 only supports `Object.defineProperty` on DOM elements
+            try {
+                var object = {};
+                var $defineProperty = Object.defineProperty;
+                var result = $defineProperty(object, object, object) && $defineProperty;
+            } catch(error) {}
+            return result;
+        }());
+        var toString = {}.toString;
+        var startsWith = function(search) {
+            if (this == null) {
+                throw TypeError();
+            }
+            var string = String(this);
+            if (search && toString.call(search) == '[object RegExp]') {
+                throw TypeError();
+            }
+            var stringLength = string.length;
+            var searchString = String(search);
+            var searchLength = searchString.length;
+            var position = arguments.length > 1 ? arguments[1] : undefined;
+            // `ToInteger`
+            var pos = position ? Number(position) : 0;
+            if (pos != pos) { // better `isNaN`
+                pos = 0;
+            }
+            var start = Math.min(Math.max(pos, 0), stringLength);
+            // Avoid the `indexOf` call if no match is possible
+            if (searchLength + start > stringLength) {
+                return false;
+            }
+            var index = -1;
+            while (++index < searchLength) {
+                if (string.charCodeAt(start + index) != searchString.charCodeAt(index)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+        if (defineProperty) {
+            defineProperty(String.prototype, 'startsWith', {
+                'value': startsWith,
+                'configurable': true,
+                'writable': true
+            });
+        } else {
+            String.prototype.startsWith = startsWith;
+        }
+    }());
+}
+
 function registerResizeHandler(){
     // resize handler for nodenet viewer:
     var isDragging = false;
@@ -58,69 +114,231 @@ $(function(){
 
     var history = $('#console_history');
     var container = $('#netapi_console .code_container');
+    var autocomplete_container = $('#console_autocomplete');
 
     hljs.highlightBlock(history[0]);
 
-    command_history = [];
-    history_pointer = -1;
+    var command_history = [];
+    var history_pointer = -1;
 
     registerResizeHandler();
 
-    input.keydown(function(event){
-        var code = input.val();
-        if(event.keyCode == 13){
-            api.call('run_netapi_command', {nodenet_uid: currentNodenet, command: code}, function(data){
-                data = data.replace(/\n+/g, '\n')
-                var hist = history.text();
-                hist += "\n" + ">>> " + code;
-                if(data){
-                    hist += "\n" + data;
-                }
-                history.text(hist);
-                input.val('');
-                hljs.highlightBlock(history[0]);
-                container.scrollTop(999999999)
-                command_history.push(code);
-                $(document).trigger('runner_stepped');
-            }, function(error){
-                var hist = history.text();
-                if(error.data){
-                    hist += "\n" + ">>> " + code;
-                    hist += '\nERROR: '+error.data;
-                }
-                history.text(hist);
-                input.val('');
-                hljs.highlightBlock(history[0]);
-                container.scrollTop(999999999)
-                command_history.push(code);
+    var autocomplete_data = {};
+    var autocomplete_open = false;
+    var autocomplete_pointer = -1;
+
+    if(currentNodenet){
+        enable();
+    }
+
+    bindEvents();
+
+    $(document).on('nodenet_changed', function(event, new_uid){
+        currentNodenet = new_uid;
+        if(new_uid) enable();
+        else disable();
+    });
+
+    function enable(){
+        input.removeAttr("disabled");
+        if($.isEmptyObject(autocomplete_data)){
+            api.call('get_netapi_signatures', {nodenet_uid: currentNodenet}, function(data){
+                autocomplete_data = data;
             });
         }
-        if(event.keyCode == 38){
-            // arrow up
-            if(code == '' && history_pointer == -1){
-                event.preventDefault();
-                history_pointer = command_history.length - 1;
-                input.val(command_history[history_pointer])
-                input.putCursorAtEnd()
-            } else if(history_pointer > 0 && code == command_history[history_pointer]) {
-                event.preventDefault();
-                history_pointer -= 1;
-                input.val(command_history[history_pointer])
-                input.putCursorAtEnd()
+    }
+
+    function disable(){
+        input.attr('disabled', 'disabled')
+    }
+
+    function isDisabled(){
+        return input.attr('disabled');
+    }
+
+    function bindEvents(){
+        autocomplete_container.on('click', function(event){
+            if(isDisabled()) return;
+            autocomplete_select(event);
+        });
+        input.keydown(function(event){
+            if(isDisabled()) return;
+            var code = input.val();
+            switch(event.keyCode){
+                case 38: // arrow up
+                    if(autocomplete_open){
+                        event.preventDefault();
+                        autocomplete_prev();
+                    } else if(code == '' && history_pointer == -1){
+                        event.preventDefault();
+                        history_pointer = command_history.length - 1;
+                        input.val(command_history[history_pointer])
+                        input.putCursorAtEnd()
+                    } else if(history_pointer > 0 && code == command_history[history_pointer]) {
+                        event.preventDefault();
+                        history_pointer -= 1;
+                        input.val(command_history[history_pointer])
+                        input.putCursorAtEnd()
+                    }
+                    break;
+
+                case 40: // arrow down
+                    if(autocomplete_open){
+                        event.preventDefault();
+                        autocomplete_next();
+                    } else if(history_pointer < command_history.length - 1 && code == command_history[history_pointer]) {
+                        event.preventDefault();
+                        history_pointer += 1;
+                        input.val(command_history[history_pointer])
+                        input.putCursorAtEnd()
+                    }
+                    break;
             }
-        } else if(event.keyCode == 40){
-            // arrow down
-            if(history_pointer < command_history.length - 1 && code == command_history[history_pointer]) {
-                event.preventDefault();
-                history_pointer += 1;
-                input.val(command_history[history_pointer])
-                input.putCursorAtEnd()
+        });
+        input.keyup(function(event){
+            if(isDisabled()) return;
+            var code = input.val();
+            switch(event.keyCode){
+                case 13:  // Enter
+                    if(autocomplete_open){
+                        autocomplete_select(event);
+                    } else {
+                        submitInput(code);
+                    }
+                    break;
+                case 190: // dot. autocomplete
+                    autocomplete();
+                    break;
+                case 32: // spacebar
+                    if(event.ctrlKey && !autocomplete_open){
+                        autocomplete();
+                    }
+                    break;
+                case 27:
+                    stop_autocomplete();
+                    break;
+                default:
+                    history_pointer = -1
+                    if(autocomplete_open){
+                        autocomplete();
+                    }
+            }
+        });
+        input.blur(function(){
+            stop_autocomplete();
+        })
+    }
+
+    function autocomplete_next(){
+        if(autocomplete_pointer < autocomplete_container.children().length - 1){
+            autocomplete_pointer += 1;
+            $('a.selected', autocomplete_container).removeClass('selected')
+            $($(autocomplete_container.children()[autocomplete_pointer]).children()).addClass('selected');
+        }
+    }
+
+    function autocomplete_prev(){
+        if(autocomplete_pointer > 0){
+            autocomplete_pointer -= 1;
+            $('a.selected', autocomplete_container).removeClass('selected')
+            var item = $(autocomplete_container.children()[autocomplete_pointer]);
+            $(item.children()).addClass('selected');
+        }
+    }
+
+    function autocomplete(){
+        autocomplete_open = true;
+        var code = input.val();
+        var parts = input.val().split('.');
+        var last = null;
+        var obj = null;
+        if(code.indexOf('.') > -1){
+            var last = parts[parts.length - 1];
+            var obj = parts[parts.length - 2];
+        }
+        if(!obj || obj != "netapi"){
+            return stop_autocomplete();
+        }
+        html = [];
+        for(var key in autocomplete_data){
+            if(key && (last == "" || key.startsWith(last))){
+                html.push('<li><a>'+key+'</a></li>');
             }
         }
-        else {
-            history_pointer = -1
+        if (html.length == 0){
+            return stop_autocomplete();
         }
-    })
+        autocomplete_container.html(html.join(''));
+        autocomplete_container.css({
+            'position': 'absolute',
+            'top': input.offset().top + input.height(),
+            'left': input.offset().left + (input.val().length * 4),
+            'display': 'block'
+        });
+    }
+
+    function autocomplete_select(event){
+        if($(event.target).attr('id') == 'console_input'){
+            var selected = $('a.selected', autocomplete_container).text();
+        } else {
+            var selected = $(event.target).text();
+        }
+        var val = input.val()
+        parts = val.split('.');
+        parts.pop()
+        val = parts.join('.') + '.'  + selected;
+        var params = [];
+        var data = autocomplete_data[selected];
+        for(var i=0; i < data.length; i++){
+            if(!data[i].default){
+                params.push(data[i].name);
+            } else {
+                if(isNaN(data[i].default)){
+                    params.push(data[i].name+'='+'"'+data[i].default+'"')
+                } else {
+                    params.push(data[i].name+'='+data[i].default)
+                }
+            }
+        }
+        val += '(' + params.join(', ') + ')';
+        input.val(val);
+        stop_autocomplete();
+    }
+
+    function stop_autocomplete(){
+        autocomplete_open = false;
+        autocomplete_pointer = -1;
+        autocomplete_container.html('')
+        autocomplete_container.hide();
+    }
+
+    function submitInput(code){
+        api.call('run_netapi_command', {nodenet_uid: currentNodenet, command: code}, function(data){
+            data = data.replace(/\n+/g, '\n')
+            var hist = history.text();
+            hist += "\n" + ">>> " + code;
+            if(data){
+                hist += "\n" + data;
+            }
+            history.text(hist);
+            input.val('');
+            hljs.highlightBlock(history[0]);
+            container.scrollTop(999999999)
+            command_history.push(code);
+            $(document).trigger('runner_stepped');
+        }, function(error){
+            var hist = history.text();
+            if(error.data){
+                hist += "\n" + ">>> " + code;
+                hist += '\nERROR: '+error.data;
+            }
+            history.text(hist);
+            input.val('');
+            hljs.highlightBlock(history[0]);
+            container.scrollTop(999999999)
+            command_history.push(code);
+        });
+    }
 
 });
 

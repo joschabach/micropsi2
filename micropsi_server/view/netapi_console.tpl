@@ -15,7 +15,7 @@
     <div class="section multiple">
             <pre class="code_container"><code class="python" id="console_history"># enter your code here.
 # eg: netapi.create_node("Pipe", None, "example")
-</code></pre>
+</code></pre><div class="seperator" style="text-align:center;"><a class="resizeHandle" id="consoleSizeHandle"> </a></div>
 >>><input type="text" id="console_input" />
 
     </div>

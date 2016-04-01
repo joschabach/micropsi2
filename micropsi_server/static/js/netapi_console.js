@@ -21,6 +21,32 @@ jQuery.fn.putCursorAtEnd = function() {
     });
 };
 
+function registerResizeHandler(){
+    // resize handler for nodenet viewer:
+    var isDragging = false;
+    var container = $('#netapi_console .code_container');
+    if($.cookie('netapi_console_height')){
+        container.height($.cookie('netapi_console_height'));
+    }
+    var startHeight, startPos, newHeight;
+    $("a#consoleSizeHandle").mousedown(function(event) {
+        startHeight = container.height();
+        startPos = event.pageY;
+        $(window).mousemove(function(event) {
+            isDragging = true;
+            newHeight = startHeight + (event.pageY - startPos);
+            container.height(newHeight);
+        });
+    });
+    $(window).mouseup(function(event) {
+        if(isDragging){
+            $.cookie('netapi_console_height', container.height(), {expires:7, path:'/'});
+        }
+        isDragging = false;
+        $(window).unbind("mousemove");
+    });
+}
+
 $(function(){
 
     var input = $('#console_input');
@@ -37,6 +63,8 @@ $(function(){
 
     command_history = [];
     history_pointer = -1;
+
+    registerResizeHandler();
 
     input.keydown(function(event){
         var code = input.val();

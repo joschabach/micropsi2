@@ -649,6 +649,8 @@ p.clear {
   margin: 0;
 }
 #netapi_console .code_container {
-  max-height: 180px;
-  overflow-x: scroll;
+  overflow-y: scroll;
+}
+#netapi_console .seperator{
+  margin-top: -17px;
 }

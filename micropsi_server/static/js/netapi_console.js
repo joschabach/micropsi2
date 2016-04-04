@@ -274,9 +274,15 @@ $(function(){
         }
         html = [];
         var type = nametypes[obj];
-        for(var key in autocomplete_options[type]){
+        var sorted = Object.keys(autocomplete_options[type]).sort();
+        for(var i in sorted){
+            var key = sorted[i];
             if(key && (last == "" || key.startsWith(last))){
-                html.push('<li><a>'+key+'</a></li>');
+                if(autocomplete_options[type][key] == null){
+                    html.push('<li><a data="'+key+'">'+key+'</a></li>');
+                } else {
+                    html.push('<li><a data="'+key+'">'+key+'()</a></li>');
+                }
             }
         }
         if (html.length == 0){
@@ -293,9 +299,9 @@ $(function(){
 
     function autocomplete_select(event){
         if($(event.target).attr('id') == 'console_input'){
-            var selected = $('a.selected', autocomplete_container).text();
+            var selected = $('a.selected', autocomplete_container).attr('data');
         } else {
-            var selected = $(event.target).text();
+            var selected = $(event.target).attr('data');
         }
         var val = input.val()
         var parts = input.val().split('.');
@@ -312,18 +318,20 @@ $(function(){
         var params = [];
         var type = nametypes[obj];
         var data = autocomplete_options[type][selected];
-        for(var i=0; i < data.length; i++){
-            if(!data[i].default){
-                params.push(data[i].name);
-            } else {
-                if(isNaN(data[i].default)){
-                    params.push(data[i].name+'='+'"'+data[i].default+'"')
+        if(data != null){
+            for(var i=0; i < data.length; i++){
+                if(!data[i].default){
+                    params.push(data[i].name);
                 } else {
-                    params.push(data[i].name+'='+data[i].default)
+                    if(isNaN(data[i].default)){
+                        params.push(data[i].name+'='+'"'+data[i].default+'"')
+                    } else {
+                        params.push(data[i].name+'='+data[i].default)
+                    }
                 }
             }
+            val += '(' + params.join(', ') + ')';
         }
-        val += '(' + params.join(', ') + ')';
         input.val(val);
         stop_autocomplete();
     }

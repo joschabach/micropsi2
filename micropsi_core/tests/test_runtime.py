@@ -262,6 +262,7 @@ def test_get_netapi_autocomplete(test_nodenet):
     assert data['autocomplete_options']['Gate']["get_links"] == []
     assert data['autocomplete_options']['Slot']["get_links"] == []
     assert data['autocomplete_options']['Nodespace']["get_known_ids"][0]['name'] == 'entitytype'
+    assert data['autocomplete_options']['Node']['name'] is None
     data = micropsi.get_netapi_autocomplete_data(test_nodenet, name='foonode')
     assert list(data['types'].keys()) == ['foonode']
     assert list(data['autocomplete_options'].keys()) == ['Node']

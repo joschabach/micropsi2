@@ -1381,8 +1381,6 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
                         data['types'][n] = typename
                     elif typename in nodetypes['nodetypes'] or typename in nodetypes['native_modules']:
                         data['types'][n] = 'Node'
-                    else:
-                        logging.getLogger('system').debug('no autocomplete for %s' % typename)
 
     for t in set(data['types'].values()):
         if t == 'netapi':
@@ -1391,11 +1389,11 @@ def get_netapi_autocomplete_data(nodenet_uid, name=None):
             data['autocomplete_options']['netapi'] = parsemembers(methods)
         elif t == 'Nodespace':
             from micropsi_core.nodenet.nodespace import Nodespace
-            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace, inspect.isroutine))
+            data['autocomplete_options']['Nodespace'] = parsemembers(inspect.getmembers(Nodespace))
         elif t in ['Node', 'Gate', 'Slot']:
             from micropsi_core.nodenet import node
             cls = getattr(node, t)
-            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls, inspect.isroutine))
+            data['autocomplete_options'][t] = parsemembers(inspect.getmembers(cls))
 
     return data
 

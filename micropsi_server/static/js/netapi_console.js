@@ -178,28 +178,8 @@ $(function(){
             if(isDisabled()) return;
             autocomplete_select(event);
         });
-        input.keyup(function(event){
-            if(isDisabled()) return;
-            var code = input.val();
+        input.keydown(function(event){
             switch(event.keyCode){
-                case 13:  // Enter
-                    if(autocomplete_open){
-                        autocomplete_select(event);
-                    } else {
-                        submitInput(code);
-                    }
-                    break;
-                case 190: // dot. autocomplete
-                    autocomplete();
-                    break;
-                case 32: // spacebar
-                    if(event.ctrlKey && !autocomplete_open){
-                        autocomplete();
-                    }
-                    break;
-                case 27:  // escape
-                    stop_autocomplete();
-                    break;
                 case 38: // arrow up
                     if(autocomplete_open){
                         event.preventDefault();
@@ -228,6 +208,34 @@ $(function(){
                         input.putCursorAtEnd()
                     }
                     break;
+            }
+        });
+        input.keyup(function(event){
+            if(isDisabled()) return;
+            var code = input.val();
+            switch(event.keyCode){
+                case 13:  // Enter
+                    if(autocomplete_open){
+                        autocomplete_select(event);
+                    } else {
+                        submitInput(code);
+                    }
+                    break;
+                case 190: // dot. autocomplete
+                    autocomplete();
+                    break;
+                case 32: // spacebar
+                    if(event.ctrlKey && !autocomplete_open){
+                        autocomplete();
+                    }
+                    break;
+                case 27:  // escape
+                    stop_autocomplete();
+                    break;
+                case 38: // arrow up
+                case 40: // arrow down
+                    // do nothing.
+                    break;
                 default:
                     history_pointer = -1
                     if(autocomplete_open){
@@ -244,7 +252,13 @@ $(function(){
         if(autocomplete_pointer < autocomplete_container.children().length - 1){
             autocomplete_pointer += 1;
             $('a.selected', autocomplete_container).removeClass('selected')
-            $($(autocomplete_container.children()[autocomplete_pointer]).children()).addClass('selected');
+            var child = $(autocomplete_container.children()[autocomplete_pointer]);
+            $(child.children()).addClass('selected');
+            var pos = child.offset().top;
+
+            autocomplete_container.scrollTop(
+                autocomplete_container.scrollTop() + child.position().top
+                    - autocomplete_container.height()/2 + child.height()/2);
         }
     }
 
@@ -252,8 +266,12 @@ $(function(){
         if(autocomplete_pointer > 0){
             autocomplete_pointer -= 1;
             $('a.selected', autocomplete_container).removeClass('selected')
-            var item = $(autocomplete_container.children()[autocomplete_pointer]);
-            $(item.children()).addClass('selected');
+            var child = $(autocomplete_container.children()[autocomplete_pointer]);
+            $(child.children()).addClass('selected');
+            autocomplete_container.scrollTop(
+                autocomplete_container.scrollTop() + child.position().top
+                    - autocomplete_container.height()/2 + child.height()/2);
+
         }
     }
 

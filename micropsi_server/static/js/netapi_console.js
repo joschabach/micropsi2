@@ -179,6 +179,8 @@ $(function(){
             autocomplete_select(event);
         });
         input.keydown(function(event){
+            if(isDisabled()) return;
+            var code = input.val();
             switch(event.keyCode){
                 case 38: // arrow up
                     if(autocomplete_open){

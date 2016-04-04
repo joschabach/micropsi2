@@ -239,7 +239,7 @@ def test_run_netapi_command(test_nodenet):
     command = "netapi.create_node()"
     result, msg = micropsi.run_netapi_command(test_nodenet, command)
     assert not result
-    assert msg.startswith("Traceback")
+    assert msg.startswith("TypeError")
     command = "for i in range(3): netapi.create_node('Register', None, 'test%d' % i)"
     result, msg = micropsi.run_netapi_command(test_nodenet, command)
     assert result
